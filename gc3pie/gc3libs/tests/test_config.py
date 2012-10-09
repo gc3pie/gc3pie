@@ -22,6 +22,7 @@
 # stdlib imports
 from cStringIO import StringIO
 import os
+import shutil
 import tempfile
 
 # nose
@@ -347,7 +348,46 @@ def _check_bad_conf(conf):
     finally:
         os.remove(tmp)
 
+def test_prologue_epiloge_scripts():
+    # setup conf dir and conf file
+    cfgstring = """
+[auth/ssh]
+type = ssh
+username = gc3pie
 
+[resource/test]
+type = shellcmd
+auth = ssh
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2
+max_walltime = 8
+max_cores = 2
+architecture = x86_64
+prologue = scripts/shellcmd_pre.sh
+"""
+    tmpdir = tempfile.mkdtemp()
+    
+    try:
+        # setup config file and sctipts
+        cfgfname = os.path.join(tmpdir, 'gc3pie.conf')
+        fdcfg = open(cfgfname, 'w')
+        fdcfg.write(cfgstring)
+        fdcfg.close()
+        os.mkdir(os.path.join(tmpdir, 'scripts'))
+        scriptfname = os.path.join(tmpdir, 'scripts', 'shellcmd_pre.sh')
+        scriptfd = open(scriptfname, 'w')
+        scriptfd.write('echo "Hello world"')
+        scriptfd.close()
+
+        cfg = gc3libs.config.Configuration(cfgfname)
+        resources = cfg.make_resources()
+        # assert_equal(resources['test']['prologue'], 'scripts/shellcmd_pre.sh')
+        assert os.path.isfile(resources['test']['prologue'])
+        assert_equal( os.path.abspath(resources['test']['prologue']),
+                      resources['test']['prologue'])
+    finally:
+        shutil.rmtree(tmpdir)    
 
 if __name__ == "__main__":
     import nose
