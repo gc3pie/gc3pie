@@ -348,9 +348,11 @@ def _check_bad_conf(conf):
     finally:
         os.remove(tmp)
 
-def test_prologue_epiloge_scripts():
-    # setup conf dir and conf file
-    cfgstring = """
+class TestPrologueEpilogueScripts(object):
+
+    def setUp(self):
+        # setup conf dir and conf file
+        cfgstring = """
 [auth/ssh]
 type = ssh
 username = gc3pie
@@ -365,29 +367,37 @@ max_walltime = 8
 max_cores = 2
 architecture = x86_64
 prologue = scripts/shellcmd_pre.sh
+epilogue = scripts/shellcmd_post.sh
+myapp_prologue = scripts/myapp_shellcmd_pre.sh
+myapp_epilogue = scripts/myapp_shellcmd_post.sh
 """
-    tmpdir = tempfile.mkdtemp()
-    
-    try:
+        self.tmpdir = tempfile.mkdtemp()
         # setup config file and sctipts
-        cfgfname = os.path.join(tmpdir, 'gc3pie.conf')
+        cfgfname = os.path.join(self.tmpdir, 'gc3pie.conf')
         fdcfg = open(cfgfname, 'w')
         fdcfg.write(cfgstring)
         fdcfg.close()
-        os.mkdir(os.path.join(tmpdir, 'scripts'))
-        scriptfname = os.path.join(tmpdir, 'scripts', 'shellcmd_pre.sh')
-        scriptfd = open(scriptfname, 'w')
-        scriptfd.write('echo "Hello world"')
-        scriptfd.close()
+        self.cfg = gc3libs.config.Configuration(cfgfname)
 
-        cfg = gc3libs.config.Configuration(cfgfname)
-        resources = cfg.make_resources()
+        self.scripts = ['prologue', 'epilogue', 'myapp_prologue', 'myapp_epilogue']
+        os.mkdir(os.path.join(self.tmpdir, 'scripts'))
+        for k,v in self.cfg['resources']['test'].iteritems():
+            if k in self.scripts:
+                scriptfd = open(os.path.join(self.tmpdir, v), 'w')
+                scriptfd.write('echo "Hello world"')
+                scriptfd.close()
+
+        self.cfg = gc3libs.config.Configuration(cfgfname)
+        self.resources = self.cfg.make_resources()
         # assert_equal(resources['test']['prologue'], 'scripts/shellcmd_pre.sh')
-        assert os.path.isfile(resources['test']['prologue'])
-        assert_equal( os.path.abspath(resources['test']['prologue']),
-                      resources['test']['prologue'])
-    finally:
-        shutil.rmtree(tmpdir)    
+    def test_scriptfiles_are_abs(self):
+        for script in self.scripts:
+            assert os.path.isfile(self.resources['test'][script])
+            assert_equal( os.path.abspath(self.resources['test'][script]),
+                          self.resources['test'][script])
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
 
 if __name__ == "__main__":
     import nose
