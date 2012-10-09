@@ -389,7 +389,12 @@ class LsfLrms(batch.BatchSystem):
         # submission script and can just specify the command on the
         # command-line
         sub_argv, app_argv = app.bsub(self)
-        return (str.join(' ', sub_argv), str.join(' ', app_argv))
+        prologue = self.get_prologue_script(app)
+        epilogue = self.get_epilogue_script(app)
+        if prologue or epilogue:
+            return (str.join(' ', sub_argv), str.join(' ', app_argv))
+        else:
+            return (str.join(' ', sub_argv + app_argv), '')
 
     def _parse_submit_output(self, bsub_output):
         """Parse the ``bsub`` output for the local jobid."""

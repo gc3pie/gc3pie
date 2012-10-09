@@ -447,7 +447,7 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
         # Check the content of the script file
         scriptfname = os.path.join(newjobdir, (os.listdir(newjobdir)[0]))
         scriptfile = open(scriptfname)
-        assert re.match("#!/bin/sh.*# Prologue file `.*` BEGIN.*echo prologue.*# Prologue file END.*/bin/true.*# Epilogue file `.*` BEGIN.*echo epilogue.*# Epilogue file END", scriptfile.read(), re.DOTALL|re.M)
+        assert re.match("#!/bin/sh.*# prologue file `.*` BEGIN.*echo prologue.*# prologue file END.*/bin/true.*# epilogue file `.*` BEGIN.*echo epilogue.*# epilogue file END", scriptfile.read(), re.DOTALL|re.M)
         scriptfile.close()
 
         # kill the job

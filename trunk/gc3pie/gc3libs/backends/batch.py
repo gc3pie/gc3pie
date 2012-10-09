@@ -268,6 +268,36 @@ class BatchSystem(LRMS):
         """
         raise NotImplementedError("Abstract method `_cancel_command()` called - this should have been defined in a derived class.")
 
+    def _get_prepost_scripts(self, app, scriptnames):
+        script_txt = []
+        for script in scriptnames:
+            if script in self and os.path.isfile(self[script]):
+                gc3libs.log.debug("Adding %s file `%s` to the submission script" % (script, self[script]))
+                script_file = open(self[script])
+                script_txt.append("\n# %s file `%s` BEGIN\n" % (script, self[script]))
+                script_txt.append(script_file.read())
+                script_txt.append("\n# %s file END\n" % script)
+                script_file.close()
+        return str.join("", script_txt)
+
+    def get_prologue_script(self, app):
+        """
+        This method will get the prologue script(s) for the `app`
+        application and will return a string which contains the
+        contents of the script(s) merged together.
+        """
+        prologues = ['prologue', app.application_name+'_prologue']
+        return self._get_prepost_scripts(app, prologues)
+
+    def get_epilogue_script(self, app):
+        """
+        This method will get the epilogue script(s) for the `app`
+        application and will return a string which contains the
+        contents of the script(s) merged together.
+        """
+        epilogues = ['epilogue', app.application_name+'epilogue']
+        return self._get_prepost_scripts(app, epilogues)
+
     @LRMS.authenticated
     def submit_job(self, app):
         """This method will create a remote directory to store job's
@@ -326,28 +356,16 @@ class BatchSystem(LRMS):
                 local_script_file = tempfile.NamedTemporaryFile()
                 local_script_file.write('#!/bin/sh\n')
                 # Add preamble file
-                prologues = ['prologue', app.application_name+'_prologue']
-                for prologue in prologues:
-                    if prologue in self and os.path.isfile(self[prologue]):
-                        gc3libs.log.debug("Adding prologue file `%s` to the submission script" % self[prologue])
-                        prologue_file = open(self[prologue])
-                        local_script_file.write("\n# Prologue file `%s` BEGIN\n" % self[prologue])
-                        local_script_file.write(prologue_file.read())
-                        prologue_file.close()
-                        local_script_file.write("\n# Prologue file END\n")
+                prologue = self.get_prologue_script(app)
+                if prologue:
+                    local_script_file.write(prologue)
 
                 local_script_file.write(aux_script)
 
                 # Add epilogue files
-                epilogues = [app.application_name+'_epilogue', 'epilogue']
-                for epilogue in epilogues:
-                    if epilogue in self and os.path.isfile(self[epilogue]):
-                        gc3libs.log.debug("Adding epilogue file `%s` to the submission script" % self[epilogue])
-                        epilogue_file = open(self[epilogue])
-                        local_script_file.write("\n# Epilogue file `%s` BEGIN\n" % self[epilogue])
-                        local_script_file.write(epilogue_file.read())
-                        epilogue_file.close()
-                        local_script_file.write("\n# Epilogue file END\n")
+                epilogue = self.get_epilogue_script(app)
+                if epilogue:
+                    local_script_file.write(epilogue)
 
                 local_script_file.flush()
                 # upload script to remote location
