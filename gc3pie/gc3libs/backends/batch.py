@@ -452,13 +452,11 @@ class BatchSystem(LRMS):
                 jobstatus = self._parse_stat_output(stdout)
                 job.update(jobstatus)
 
-                state = jobstatus.get('state', Run.State.UNKNOWN)
-                if state == Run.State.UNKNOWN:
+                job.state = jobstatus.get('state', Run.State.UNKNOWN)
+                if job.state == Run.State.UNKNOWN:
                     log.warning(
-                        "Unknown batch job status '%s',"
-                        " setting GC3Pie job state to `UNKNOWN`",
-                        jobstatus.get('state', ''))
-                job.state = state
+                        "Unknown batch job status,"
+                        " setting GC3Pie job state to `UNKNOWN`")
 
                 if 'exit_status' in jobstatus:
                     job.exitcode = int(jobstatus['exit_status'])
