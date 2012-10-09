@@ -325,7 +325,30 @@ class BatchSystem(LRMS):
                 # save script to a temporary file and submit that one instead
                 local_script_file = tempfile.NamedTemporaryFile()
                 local_script_file.write('#!/bin/sh\n')
+                # Add preamble file
+                prologues = ['prologue', app.application_name+'_prologue']
+                for prologue in prologues:
+                    if prologue in self and os.path.isfile(self[prologue]):
+                        gc3libs.log.debug("Adding prologue file `%s` to the submission script" % self[prologue])
+                        prologue_file = open(self[prologue])
+                        local_script_file.write("\n# Prologue file `%s` BEGIN\n" % self[prologue])
+                        local_script_file.write(prologue_file.read())
+                        prologue_file.close()
+                        local_script_file.write("\n# Prologue file END\n")
+
                 local_script_file.write(aux_script)
+
+                # Add epilogue files
+                epilogues = [app.application_name+'_epilogue', 'epilogue']
+                for epilogue in epilogues:
+                    if epilogue in self and os.path.isfile(self[epilogue]):
+                        gc3libs.log.debug("Adding epilogue file `%s` to the submission script" % self[epilogue])
+                        epilogue_file = open(self[epilogue])
+                        local_script_file.write("\n# Epilogue file `%s` BEGIN\n" % self[epilogue])
+                        local_script_file.write(epilogue_file.read())
+                        epilogue_file.close()
+                        local_script_file.write("\n# Epilogue file END\n")
+
                 local_script_file.flush()
                 # upload script to remote location
                 self.transport.put(local_script_file.name,
