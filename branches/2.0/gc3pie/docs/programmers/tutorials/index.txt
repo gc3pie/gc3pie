@@ -1,0 +1,23 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: ../../global.inc
+
+
+
+================================
+  GC3Pie programming tutorials
+================================
+
+
+This is a list of tutorials made for the `GC3Pie 2012 Training event`_
+that has been held in Zurich on 1st and 2nd  of October 2012. The
+slides and tutorials are an introduction to the GC3Pie python
+package. 
+
+
+
+
+.. _`GC3Pie 2012 Training event`: https://ocikbapps.uzh.ch/gc3wiki/teaching/gc3pie2012/

@@ -108,9 +108,23 @@ can run.</dd>
 <dd>A one-word indication of a computational <a class="reference internal" href="#term-job"><em class="xref std std-term">job</em></a> execution
 status (e.g., <tt class="docutils literal"><span class="pre">RUNNING</span></tt> or <tt class="docutils literal"><span class="pre">TERMINATED</span></tt>).  The terms <em>state</em>
 and <em>status</em> are used interchangeably in <a class="reference external" href="http://gc3pie.googlecode.com/">GC3Pie</a> documentation.</dd>
+<dt id="term-stderr">STDERR</dt>
+<dd>Abbreviation for &#8220;standard error stream&#8221;; it is the sequence of
+all text messages that a command prints to inform the user of
+problems or to report on operations progress.  The Linux/UNIX
+system allows two separate output streams, one for output proper,
+named <a class="reference internal" href="#term-stdout"><em class="xref std std-term">STDOUT</em></a>, and STDERR for &#8220;error messages&#8221;.  It is
+entirely up to the command to tag a message as &#8220;standard output&#8221;
+or &#8220;standard error&#8221;.</dd>
+<dt id="term-stdout">STDOUT</dt>
+<dd>Abbreviation for &#8220;standard output stream&#8221;.  It is the sequence of
+all characters that constitute the output of a command.  The Linux/UNIX
+system allows two separate output streams, one for output proper, and
+one for &#8220;error messages&#8221;, dubbed <a class="reference internal" href="#term-stderr"><em class="xref std std-term">STDERR</em></a>.  It is entirely up
+to the command to tag a message as &#8220;standard output&#8221; or &#8220;standard error&#8221;.</dd>
 <dt id="term-session">Session</dt>
 <dd>A <a class="reference internal" href="#term-persistent"><em class="xref std std-term">persistent</em></a> collection of GC3Pie tasks and jobs. Sessions
-are used by <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>The GC3Apps software</em></a> to store job status across program runs.</dd>
+are used by <a class="reference internal" href="users/gc3apps/index.html#gc3apps"><em>The GC3Apps software</em></a> to store job status across program runs.</dd>
 <dt id="term-walltime">Walltime</dt>
 <dd>Short for <em>wall-clock time</em>: indicates the total running time of a
 <a class="reference internal" href="#term-job"><em class="xref std std-term">job</em></a>.</dd>
