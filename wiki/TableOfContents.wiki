@@ -8,7 +8,7 @@
   * [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/gc3utils.html A GC3Utils primer]
   * GC3Libs API documentation
     ** [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html development version (trunk)]
-    ** [http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html stable release (1.0; _outdated_ -- use _trunk_ instead)]
+    ** [http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/docs/html/index.html stable release (2.0)]
   * [SlidesEtc Presentations, slides, etc.]
 
 [http://code.google.com/p/gc3pie/w/list Full list of GC3Pie wiki pages]
