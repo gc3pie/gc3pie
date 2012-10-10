@@ -37,7 +37,7 @@ Configuration file format
 -------------------------
 
 The GC3Pie configuration file follows the format understood by
-`Python *ConfigParser* <http://docs.python.org/library/configparser.html>`, 
+`Python ConfigParser <http://docs.python.org/library/configparser.html>`_, 
 which is very close to the syntax used in MS-Windows ``.INI`` files.
 See http://docs.python.org/library/configparser.html for reference.
 
@@ -62,7 +62,7 @@ The ``[DEFAULT]`` section is optional.
 
 Values defined in the ``[DEFAULT]`` section can be used to insert
 values in other sections, using the ``%(name)s`` syntax.  See
-documentation of the `Python *SafeConfigParser*
+documentation of the `Python SafeConfigParser
 <http://docs.python.org/library/configparser.html>`_ object at
 http://docs.python.org/library/configparser.html for an example.
 
@@ -92,7 +92,7 @@ Authentication types
 
 Each ``auth`` section *must* specify a ``type`` setting.
 
-`` type `` defines the authentication type that will be used to access
+``type`` defines the authentication type that will be used to access
 a resource. There are three supported authentication types:
 
   * ``ssh``; use this for resources that will be accessed by opening an SSH connection to the front-end node of a cluster.
