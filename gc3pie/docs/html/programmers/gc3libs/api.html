@@ -1219,7 +1219,7 @@ description.</p>
 
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.print_tasks_table">
-<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b7f96e4e1e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b47840401e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output a text table to stream <cite>output</cite>, giving details about
 tasks in the given states.</p>
 <p>Optional second argument <cite>states</cite> restricts the listing to
@@ -2999,7 +2999,7 @@ texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.</p>
 <dl class="class">
 <dt id="gc3libs.template.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x569fb18&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x5002b90&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
 <dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
 provided to substitute the keyword values into <cite>obj</cite>, and to
 iterate over expansions of the given keywords (optionally
@@ -3881,7 +3881,7 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b7f96e4e1e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b47840401e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
@@ -4669,10 +4669,26 @@ likely be the cause of errors later on.  Be cautious.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="gc3libs.backends.batch.BatchSystem.get_epilogue_script">
+<tt class="descname">get_epilogue_script</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.get_epilogue_script" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method will get the epilogue script(s) for the <cite>app</cite>
+application and will return a string which contains the
+contents of the script(s) merged together.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.backends.batch.BatchSystem.get_jobid_from_submit_output">
 <tt class="descname">get_jobid_from_submit_output</tt><big>(</big><em>output</em>, <em>regexp</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.get_jobid_from_submit_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parse the output of the submission command. Regexp is
 provided by the caller.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.batch.BatchSystem.get_prologue_script">
+<tt class="descname">get_prologue_script</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.get_prologue_script" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method will get the prologue script(s) for the <cite>app</cite>
+application and will return a string which contains the
+contents of the script(s) merged together.</p>
 </dd></dl>
 
 <dl class="method">

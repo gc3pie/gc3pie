@@ -65,10 +65,81 @@
             
   <div class="section" id="gc3pie-programming-tutorials">
 <h1>GC3Pie programming tutorials<a class="headerlink" href="#gc3pie-programming-tutorials" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="slides-on-specific-topics">
+<h2>Slides on specific topics<a class="headerlink" href="#slides-on-specific-topics" title="Permalink to this headline">¶</a></h2>
 <p>This is a list of tutorials made for the <a class="reference external" href="https://ocikbapps.uzh.ch/gc3wiki/teaching/gc3pie2012/">GC3Pie 2012 Training event</a>
 that has been held in Zurich on 1st and 2nd  of October 2012. The
 slides and tutorials are an introduction to the GC3Pie python
 package.</p>
+<p><a class="reference external" href="part01.pdf">Introduction ot GC3Pie</a></p>
+<blockquote>
+<div>Introduction to the software</div></blockquote>
+<p><a class="reference external" href="part03.pdf">Basic GC3Pie programming</a></p>
+<blockquote>
+<div>The <cite>Application</cite> class, the smallest building block of
+GC3Pie. Introduction to the concept of Job, states of an
+application and to the <cite>Core</cite> class.</div></blockquote>
+<p><a class="reference external" href="part04.pdf">Application requirements</a></p>
+<blockquote>
+<div>How to define extra requirements for an application, such as the
+minimum amount of memory it will use, the number of cores needed
+or the architecture of the CPUs.</div></blockquote>
+<p><a class="reference external" href="part05.pdf">Managint applications: the SessionBasedScript class</a></p>
+<blockquote>
+<div>Introduction to the higest level interface to build applications
+with GC3Pie, the <cite>SessionBasedScript</cite>. Info on how to create
+simple scripts which will take care of the execution of your
+applications, from submission to getting back the results.</div></blockquote>
+<p><a class="reference external" href="part06.pdf">GC3Pie utils</a></p>
+<blockquote>
+<div>Low level tools to debug your scripts.</div></blockquote>
+<p><a class="reference external" href="part08.pdf">Introduction to Workflows with GC3Pie</a></p>
+<blockquote>
+<div>Using a practical example (the <a class="reference internal" href="warholize/warholize.html#warholize-tutorial"><em>Warholize Tutorial</em></a>) we show
+how workflows are implemented with GC3Pie. The following slides
+will cover in more details the single steps needed to produce a
+complex workflow.</div></blockquote>
+<p><a class="reference external" href="part09.pdf">ParallelTaskCollection</a></p>
+<blockquote>
+<div>Description of the <cite>ParallelTaskCollection</cite> class, used to run
+tasks in parallel.</div></blockquote>
+<p><a class="reference external" href="part10.pdf">StagedTaskCollection</a></p>
+<blockquote>
+<div>Description of the <cite>StagedTaskCollection</cite> class, used to run a
+sequence of a fixed number of jobs.</div></blockquote>
+<p><a class="reference external" href="part11.pdf">SequentialTaskCollection</a></p>
+<blockquote>
+<div>Description of the <cite>SequentialTaskCollection</cite> class, used to run a
+sequence of jobs that can be altered during runtime.</div></blockquote>
+</div>
+<div class="section" id="warholize-tutorial">
+<h2>Warholize Tutorial<a class="headerlink" href="#warholize-tutorial" title="Permalink to this headline">¶</a></h2>
+<p>A thorough tutorial that will show you how to write a very complex
+GC3Pie application, step by step. The tutorial is developed in
+<a class="reference external" href="http://en.wikipedia.org/wiki/Literate_programming">Literate Programming</a>, which means that you can actually <em>compile</em>
+the tutorial using <a class="reference external" href="http://pylit.berlios.de/index.html">pylit</a> and get a working <cite>wharolize.py</cite> script.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="warholize/warholize.html">Warholize Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="warholize/warholize.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="warholize/warholize.html#from-top-to-bottom">From top to bottom</a></li>
+<li class="toctree-l2"><a class="reference internal" href="warholize/warholize.html#the-script">The script</a></li>
+<li class="toctree-l2"><a class="reference internal" href="warholize/warholize.html#the-workflows">The workflows</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="warholize/warholize.html#main-sequential-workflow">Main sequential workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="warholize/warholize.html#step-one-convert-to-grayscale">Step one: convert to grayscale</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="warholize/warholize.html#step-two-parallel-workflow-to-create-colorized-images">Step two: parallel workflow to create colorized images</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="warholize/warholize.html#step-three-merge-all-them-together">Step three: merge all them together</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="warholize/warholize.html#making-the-script-executable">Making the script executable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="warholize/warholize.html#testing">Testing</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
 </div>
 
 
@@ -77,6 +148,17 @@ package.</p>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">GC3Pie programming tutorials</a><ul>
+<li><a class="reference internal" href="#slides-on-specific-topics">Slides on specific topics</a></li>
+<li><a class="reference internal" href="#warholize-tutorial">Warholize Tutorial</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="../overview.html"
                         title="previous chapter">Programming overview</a></p>

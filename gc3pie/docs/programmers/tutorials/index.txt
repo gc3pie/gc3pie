@@ -12,12 +12,82 @@
 ================================
 
 
+Slides on specific topics
+-------------------------
+
 This is a list of tutorials made for the `GC3Pie 2012 Training event`_
 that has been held in Zurich on 1st and 2nd  of October 2012. The
 slides and tutorials are an introduction to the GC3Pie python
 package. 
 
 
+`Introduction ot GC3Pie <part01.pdf>`_
 
+    Introduction to the software.
+
+`Basic GC3Pie programming <part03.pdf>`_
+
+    The `Application` class, the smallest building block of
+    GC3Pie. Introduction to the concept of Job, states of an
+    application and to the `Core` class.
+
+`Application requirements <part04.pdf>`_
+
+    How to define extra requirements for an application, such as the
+    minimum amount of memory it will use, the number of cores needed
+    or the architecture of the CPUs.
+
+`Managint applications: the SessionBasedScript class <part05.pdf>`_
+
+    Introduction to the higest level interface to build applications
+    with GC3Pie, the `SessionBasedScript`. Info on how to create
+    simple scripts which will take care of the execution of your
+    applications, from submission to getting back the results.
+
+`GC3Pie utils <part06.pdf>`_
+
+    Low level tools to debug your scripts.
+
+`Introduction to Workflows with GC3Pie <part08.pdf>`_
+
+    Using a practical example (the :ref:`warholize tutorial`) we show
+    how workflows are implemented with GC3Pie. The following slides
+    will cover in more details the single steps needed to produce a
+    complex workflow.
+
+`ParallelTaskCollection <part09.pdf>`_
+
+    Description of the `ParallelTaskCollection` class, used to run
+    tasks in parallel.
+
+`StagedTaskCollection <part10.pdf>`_
+
+    Description of the `StagedTaskCollection` class, used to run a
+    sequence of a fixed number of jobs.
+
+`SequentialTaskCollection <part11.pdf>`_
+
+    Description of the `SequentialTaskCollection` class, used to run a
+    sequence of jobs that can be altered during runtime.
+
+
+Warholize Tutorial
+------------------
+
+A thorough tutorial that will show you how to write a very complex
+GC3Pie application, step by step. The tutorial is developed in
+`Literate Programming`_, which means that you can actually *compile*
+the tutorial using `pylit`_ and get a working `wharolize.py` script.
+
+
+.. toctree::
+
+  warholize/warholize
 
 .. _`GC3Pie 2012 Training event`: https://ocikbapps.uzh.ch/gc3wiki/teaching/gc3pie2012/
+
+.. _`Literate Programming`: http://en.wikipedia.org/wiki/Literate_programming
+
+.. _`pylit`: http://pylit.berlios.de/index.html
+
+
