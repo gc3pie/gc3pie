@@ -200,14 +200,17 @@ value of the ``type`` key:
   * If ``type`` is ``arc1``, then the resource is accessed using the ARC grid middleware (version 1.1.x/1.0.x);
   * If ``type`` is ``arc0``, then the resource is accessed using the ARC grid middleware (version 0.8.x);
   * If ``type`` is ``sge``, then the resource is a `Grid Engine`_ batch system, to be accessed by an SSH connection to its front-end node.
+  * If ``type`` is ``pbs``, then the resource is a `Torque/PBS`_ batch system, to be accessed by an SSH connection to its front-end node.
+  * If ``type`` is ``lsf``, then the resource is a `LSF`_ batch system, to be accessed by an SSH connection to its front-end node.
+  * If ``type`` is ``slurm``, then the resource is a `SLURM`_ batch system, to be accessed by an SSH connection to its front-end node.
   * If ``type`` is ``shellcmd``, then the resource is the computer where the GC3Pie script is running and applications are executed by just spawning a local UNIX process.
 
 All `[resource/{name}]`:file: sections (except those of ``shellcmd``
 type) *must* reference a valid ``auth/***`` section. Resources of
-``sge`` type can only reference :command:``ssh`` type sections.;
-resources of type ``arc0`` or ``arc1`` can only reference
-``[auth/***]`` sections whose type is ``voms-proxy`` or
-``grid-proxy``.
+``sge``, ``pbs``, ``lsf`` and ``slurm`` type can only reference
+:command:``ssh`` type sections.; resources of type ``arc0`` or
+``arc1`` can only reference ``[auth/***]`` sections whose type is
+``voms-proxy`` or ``grid-proxy``.
 
 Some configuration keys are commmon to all resource types:
 
@@ -310,6 +313,22 @@ with the ``sge_accounting_delay`` parameter, whose default is 15 seconds
 
   * ``sge_accounting_delay``: Time (in seconds) a failure in `qacct`:command: will *not* be considered critical.
 
+
+``pbs`` resources
+~~~~~~~~~~~~~~~~~
+
+The following configuration keys are required in a ``pbs``-type resource section:
+
+  * ``transport``: Possible values are: ``ssh`` or ``local``.   If ``ssh``, we try to connect to the host specified in ``frontend`` via SSH in order to execute Troque/PBS commands.  If ``local``, the Torque/PBS commands are run directly on the machine where GC3Pie is installed.
+  * ``frontend``: should contain the `FQDN (Fully-qualified domain name)`:abbr: of the Torque/PBS front-end node. This configuration item is only relevant if ``transport`` is ``local``. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
+
+``lsf`` resources
+~~~~~~~~~~~~~~~~~~~
+
+The following configuration keys are required in a ``lsf``-type resource section:
+
+  * ``transport``: Possible values are: ``ssh`` or ``local``.   If ``ssh``, we try to connect to the host specified in ``frontend`` via SSH in order to execute LSF commands.  If ``local``, the LSF commands are run directly on the machine where GC3Pie is installed.
+  * ``frontend``: should contain the `FQDN (Fully-qualified domain name)`:abbr: of the LSF front-end node. This configuration item is only relevant if ``transport`` is ``local``. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
 
 ``slurm`` resources
 ~~~~~~~~~~~~~~~~~~~

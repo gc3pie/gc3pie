@@ -239,15 +239,18 @@ value of the <tt class="docutils literal"><span class="pre">type</span></tt> key
 <li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">arc1</span></tt>, then the resource is accessed using the ARC grid middleware (version 1.1.x/1.0.x);</li>
 <li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">arc0</span></tt>, then the resource is accessed using the ARC grid middleware (version 0.8.x);</li>
 <li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">sge</span></tt>, then the resource is a <a class="reference external" href="http://gridengine.org/blog/2011/11/23/what-now/">Grid Engine</a> batch system, to be accessed by an SSH connection to its front-end node.</li>
+<li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">pbs</span></tt>, then the resource is a <a class="reference external" href="http://www.adaptivecomputing.com/products/open-source/torque/">Torque/PBS</a> batch system, to be accessed by an SSH connection to its front-end node.</li>
+<li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">lsf</span></tt>, then the resource is a <a class="reference external" href="http://www-03.ibm.com/systems/technicalcomputing/platformcomputing/products/lsf/index.html">LSF</a> batch system, to be accessed by an SSH connection to its front-end node.</li>
+<li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">slurm</span></tt>, then the resource is a <a class="reference external" href="https://computing.llnl.gov/linux/slurm/">SLURM</a> batch system, to be accessed by an SSH connection to its front-end node.</li>
 <li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">shellcmd</span></tt>, then the resource is the computer where the GC3Pie script is running and applications are executed by just spawning a local UNIX process.</li>
 </ul>
 </div></blockquote>
 <p>All <tt class="file docutils literal"><span class="pre">[resource/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt> sections (except those of <tt class="docutils literal"><span class="pre">shellcmd</span></tt>
 type) <em>must</em> reference a valid <tt class="docutils literal"><span class="pre">auth/***</span></tt> section. Resources of
-<tt class="docutils literal"><span class="pre">sge</span></tt> type can only reference :command:<tt class="docutils literal"><span class="pre">ssh</span></tt> type sections.;
-resources of type <tt class="docutils literal"><span class="pre">arc0</span></tt> or <tt class="docutils literal"><span class="pre">arc1</span></tt> can only reference
-<tt class="docutils literal"><span class="pre">[auth/***]</span></tt> sections whose type is <tt class="docutils literal"><span class="pre">voms-proxy</span></tt> or
-<tt class="docutils literal"><span class="pre">grid-proxy</span></tt>.</p>
+<tt class="docutils literal"><span class="pre">sge</span></tt>, <tt class="docutils literal"><span class="pre">pbs</span></tt>, <tt class="docutils literal"><span class="pre">lsf</span></tt> and <tt class="docutils literal"><span class="pre">slurm</span></tt> type can only reference
+:command:<tt class="docutils literal"><span class="pre">ssh</span></tt> type sections.; resources of type <tt class="docutils literal"><span class="pre">arc0</span></tt> or
+<tt class="docutils literal"><span class="pre">arc1</span></tt> can only reference <tt class="docutils literal"><span class="pre">[auth/***]</span></tt> sections whose type is
+<tt class="docutils literal"><span class="pre">voms-proxy</span></tt> or <tt class="docutils literal"><span class="pre">grid-proxy</span></tt>.</p>
 <p>Some configuration keys are commmon to all resource types:</p>
 <blockquote>
 <div><ul>
@@ -372,6 +375,26 @@ with the <tt class="docutils literal"><span class="pre">sge_accounting_delay</sp
 </ul>
 </div></blockquote>
 </div>
+<div class="section" id="pbs-resources">
+<h3><tt class="docutils literal"><span class="pre">pbs</span></tt> resources<a class="headerlink" href="#pbs-resources" title="Permalink to this headline">¶</a></h3>
+<p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">pbs</span></tt>-type resource section:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.   If <tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt> via SSH in order to execute Troque/PBS commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the Torque/PBS commands are run directly on the machine where GC3Pie is installed.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the Torque/PBS front-end node. This configuration item is only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="lsf-resources">
+<h3><tt class="docutils literal"><span class="pre">lsf</span></tt> resources<a class="headerlink" href="#lsf-resources" title="Permalink to this headline">¶</a></h3>
+<p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">lsf</span></tt>-type resource section:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.   If <tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt> via SSH in order to execute LSF commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the LSF commands are run directly on the machine where GC3Pie is installed.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the LSF front-end node. This configuration item is only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.</li>
+</ul>
+</div></blockquote>
+</div>
 <div class="section" id="slurm-resources">
 <h3><tt class="docutils literal"><span class="pre">slurm</span></tt> resources<a class="headerlink" href="#slurm-resources" title="Permalink to this headline">¶</a></h3>
 <p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">slurm</span></tt>-type resource section:</p>
@@ -473,6 +496,8 @@ file.</p>
 <li><a class="reference internal" href="#arc0-resources"><tt class="docutils literal"><span class="pre">arc0</span></tt> resources</a></li>
 <li><a class="reference internal" href="#arc1-resources"><tt class="docutils literal"><span class="pre">arc1</span></tt> resources</a></li>
 <li><a class="reference internal" href="#sge-resources"><tt class="docutils literal"><span class="pre">sge</span></tt> resources</a></li>
+<li><a class="reference internal" href="#pbs-resources"><tt class="docutils literal"><span class="pre">pbs</span></tt> resources</a></li>
+<li><a class="reference internal" href="#lsf-resources"><tt class="docutils literal"><span class="pre">lsf</span></tt> resources</a></li>
 <li><a class="reference internal" href="#slurm-resources"><tt class="docutils literal"><span class="pre">slurm</span></tt> resources</a></li>
 <li><a class="reference internal" href="#example-resource-sections">Example <tt class="docutils literal"><span class="pre">resource</span></tt> sections</a></li>
 </ul>

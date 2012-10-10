@@ -1,5 +1,5 @@
-The `gamess` script
-=============================
+The **ggamess** script
+======================
 
 GC3Apps provide a script drive execution of multiple ``gamess`` jobs
 each of them with a different input file. 
@@ -9,206 +9,124 @@ The purpose of GAMESS is to execute *several concurrent
 runs* of GAMESS each with separate input file. These runs are performed in
 parallel using every available GC3Pie parameters.
  
-GAMESS Testing Suite
-=============================
 
-The purpose of GAMESS Testing Suite is to simplify testing procedure for GAMESS users.
-Tests are defined inside INP files as comments of a special syntax. The user controls whether tests should be called or not and on which version of GAMESS.
 
-Key Features
-******************
-- GAMESS Testing Suite is a Python implementation of CHEKTST script released with GAMESS (<gamess>/tools/checktst) written by D. G. Fedorov, AIST, July 20, 2004.
-- New types of tests can be easily added by introducing new Python classes that follow the proposed scheme (see testScenarios.py for examples).
-- Only edition of INP files is required to define a test. 
+How to run GAMESS on the Grid
+-----------------------------
 
-**Example of execution:**
+SSH to `ocikbgtw`, then run the command (it's one single command line,
+even if it appears broken in several ones in the mail)::
 
-- ggamess.py exam01.inp exam02.inp –R 2011R1 –N –t
-- ggamess.py <path to directory with inp files> –R 2011R1 –C 20 –t
+    ggamess.py -A ~/beckya-dmulti.changes.tar.gz -R 2011R3-beckya-dmulti -s "a_session_name" "input_files_or_directories"
 
-where
--N indicates it is a new GC3Pie session (job)
--C indicates that the session will not terminate until all the jobs are terminated normally. Each 20 seconds a report on execution is generated to standard output.
--R specifies the version of GAMESS.
+The parts in double quotes should be replaced with actual content:
 
-Description
-******************
+    ``a_session_name``:
 
-The user edits GAMESS input files by introducing two types of testing scenario encoded in
-a special syntax. The Software analyzes GAMESS OUTPUT files and executes the test by
-comparing the correct value with the one found in the OUTPUT file. There are two testing scenario that have been provided:
+        Used for grouping.  This is a word of your choosing (e.g.,
+        "`test1`", "`control_group`"), used as a label to tag a group of
+        analyses. Multiple concurrent sessions can exist, and they
+        won't interfere one with the other.  Again, note that a single
+        session can run many different `.inp` files.
 
-1. Extraction of a specific value from a given target line (see TestLine class and
-grepAndAnalyze method).
+    ``input_files_or_directories``:
 
-2. Extraction of a specific value from the line AFTER a target line (see TestNextLine
-and grepAndFollow method).
+        This part consists in the path name of `.inp` files or a
+        directory containing `.inp` files.  When a directory is
+        specified, all the `.inp` files contained in it are submitted
+        as GAMESS jobs.
 
-Target lines that contain the value of interest is extracted with a regular expression (regex statement).
-If regex extracts many lines the user has a chance to specify which one to select (option head or tail). Once the line has been selected it is divided into separable strings a string that represent the value of interest is selected with positionInLine parameter.
+After running, the program will print a short summary of the session
+(how many jobs running, how many queued, how many finished).  Each
+finished job creates one directory (whose name is equal to the name of
+the input file, minus the trailing `.inp`), which contains the `.out`
+and `.dat` files.
 
-*******************
-Example input file:
-*******************
-! EXAM01.
+For shorter typing, I have defined an alias `ggms` to expand to the
+above string ``ggamess.py -A ... 2011R3-beckya-dmulti``, so you could
+shorten the command to just::
 
-! ggamess test:  grepLinesAndAnalyze("FINAL \s+ RHF", "tail", 5, -37.2380397698, app.tolE, "Eerr")
+    ggms -s "a_session_name" "input_files_or_directories"
 
-! ggamess test: grepAndFollow("OVERLAP\s +LOW", "head","head", 8, 0.64506, app.tolO, "Oerr")
-! ggamess test: grepLinesAndAnalyze("RMS \s+ G", "tail", 8, .0000004, app.tolG, "Gerr")
- 
-$CONTRL SCFTYP=RHF RUNTYP=OPTIMIZE
+For instance, to use ``ggames.py`` to analyse a single `.inp` file you
+must run::
 
-COORD=ZMT NZVAR=0 $END 
+    ggms -s "single" dmulti/inp/neutral/dmulti_cc4l.inp
 
-$SYSTEM TIMLIM=1 $END
+while to use ``ggamess.py`` to run several GAMESS jobs in parallel::
 
-$STATPT OPTTOL=1.0E-5 $END
+    ggms -s "multiple" dmulti/inp/neutral
 
-$BASIS GBASIS=STO NGAUSS=2 $END
+Tweaking execution
+------------------
 
-$GUESS GUESS=HUCKEL $END
+Command-line options (those that start with a dash character '-') can
+be used to alter the behavior of the ``ggamess.py`` command:
 
-$DATA
-Methylene...1-A-1 state...RHF/STO-2G
+  ``-A`` `filename.changes.tar.gz`
 
-Cnv 2
+      This selects the file containing your customized version of
+      GAMESS in a format suitable for running in a virtual machine on
+      the Grid.  This file should be created following the procedure
+      detailed below.
 
-C
+  ``-R`` `version`
 
-H
+      Select a specific version of GAMESS.  This should have been
+      installed in the virtual machine within a directory named
+      ``gamess-version``; for example, your modified GAMESS is saved in
+      directory ``gamess-2011R3-beckya-dmulti`` so the "`version`" string
+      is ``2011R3-beckya-dmulti``.
 
+      If you omit the ``-R`` "`version`" part, you get the default GAMESS
+      which is presently 2011R1.
 
-H
+  ``-s`` `session` 
 
-1 rCH
+      Group jobs in a named session; see above.
 
-1 rCH
-2 aHCH
-rCH=1.09
+  ``-w`` `NUM` 
 
-aHCH=110.0
+      Request a running time of at `NUM` hours.  If you omit this part,
+      the default is 8 hours.
 
-$END
+  ``-m`` `NUM` 
 
+      Request `NUM` Gigabytes of memory for running each job.  GAMESS'
+      memory is measured in words, and each word is 8 bytes; add 1 GB
+      to the total to be safe :-)
 
-Syntax
-******************
 
-The following lines added to the GAMESS INP files define the tests. There can be multiple lines in each file.
+Updating the GAMESS code
+------------------------
 
-!ggamess test: grepLinesAndAnalyze(REGEX, MATCHEDLINE,
-POSITIONINLINE, VALUE, TOLERANCE, LABEL)
+For this you will need to launch the AppPot virtual machine, which is
+done by running the following command at the command prompt on
+`ocikbgtw`::
 
-! ggamess test: grepAndFollow(REGEX, MATCHEDLINE, FOLLOWINGLINE
-POSITIONINLINE, VALUE, TOLERANCE, LABEL)
+    apppot-start.sh
 
-where:
+After a few seconds, you should find yourself at the same
+``user@rootstrap`` prompt that you get on your VirtualBox instance, so
+you can use the same commands etc.
 
-- REGEX = string. A regular expression that extracts the group of target that follow the regular expression. More information about regexp can be found in grep manual page (man grep) or under `link <http://en.wikipedia.org/wiki/Regular_expression>`_.
-
-- MATCHEDLINE = "tail" | “head” | “number”. Specifies a single line from a group of lines.
-
-Note: sometimes the extracted line does not contain target value (VALUEOUT) and the line after MATCHEDLINE must be specified. FOLLOWINGLINE is responsible for that. 
-
-- FOLLOWINGLINE = “head” | “int” | int
-
-- POSITIONINLINE = “int” | int
-
-Specifies the index of the column that corresponds to a target value. REGEX, MATCHEDLINE and POSITIONINLINE define a value (VALUEOUT) from GAMESS output file that will be compared with VALUE up to given tolerance TOL.
-
-- VALUE = float. The correct value.
-
-- TOL = float. Tolerance used for proper comparison. Tolerances for energy, vibrational frequency, IR intensity, Mean Alpha Polarization, heat of formation in kcal/mol, etc. have already been predefined and can be accessed with predefined names such as TolE, tolG, etc (see Appendix 1).
-
-The validation must meet the following equation encoded in this pseudo code:
-
-IF ABS(VALUE – VALUEOUT) > TOL \
-TEST IS NOT ACCEPTED \ 
-
-ELSE \
-TEST IS ACCEPTED
- 
-- LABEL = string. Description of type of test.
-
-Description of parameters
-************************************
-
-The parameters will be explained on two examples: \
-!ggamess test: grepLinesAndAnalyze("RMS \s+ G", "tail", 8, .0000004,
-GamessTst.tolG, "Gerr") \
-!ggamess test: grepAndFollow("OVERLAP\s+LOW", "head","head", 8,
-0.64506, GamessTst.tolO, "Oerr")
-
-- REGEX = “RMS\s+ G" or REGEX = “OVERLAP\s+LOW” will extract all the lines that contain “RMS G” or “OVERLAP\\s+LOW” string. For example in exam01.inp seven lines will be extracted.
-
-- MATCHEDLINE = “tail” will extract the last line from group of lines found by regex.
-
-MATCHEDLINE = “head” will extract the first line from group of lines found by regex.
-MATCHEDLINE = “8” will extract the 8th line from group of lines found by regex.
-
-- VALUE = .0000004 or VALUE = .64506 – correct value for comparison
-
-- Tol = GamessTst.tolG or TOL = GamessTst.tolO – predefined tolerances that are decoded into 0.00001 and 0.0001, respectively.
-
-- LABEL = "Gerr" or LABEL = “Oerr” specify the type of extracted value, e.g. RMS gradient in a.u. or IR intensity, respectively
-
-- FOLLOWINGLINE = “head” selects first line after the line extracted by MATCHEDLINE
-
-USAGE
-*******
-1. Edit INP files and define the tests using the syntax described above.
-2. Execute the tests by adding –t option to standard ggamess.py execution.
-
-If GAMESS terminates correctly GAMESS output file is automatically analyzed
-according to the tests defined in a given INP file.
-
-3. Report from the test in generated to standard output. Example report:
-
-./ggamess.py test/data/ -N -s new -R 2012R1 -vvv
-
-gc3.gc3libs: INFO: Running the remaining 43 tests.
-
- 
-
-test/data/exam43.inp: Eerr=0.00E+00  Passed.
-
-test/data/exam26.inp: Gerr=0.00E+00  Passed.
-
-test/data/exam33.inp: EAerr=0.00E+00  Passed.
-
-test/data/exam23.inp: EBerr=0.00E+00  Passed.
-
-test/data/exam28.inp: EXCerreV=3.67E-01  Passed.
-
-test/data/exam07.inp: OSCerr=5.00E-03  Passed.
-
-test/data/exam40.inp: Gerr=2.05E-02  Passed.
-
-test/data/exam03.inp: Eerr=0.00E+00  Passed.
-
-test/data/exam35.inp: Gerr=0.00E+00  Passed.
-
-test/data/exam06.inp: Eerr=0.00E+00  Passed.
-
-test/data/exam17.inp: Gerr=0.00E+00  Passed.
-
-test/data/exam16.inp: Eerr=0.00E+00         Passed.
-
-test/data/exam01.inp: Eerr=0.00E+00         Passed.
-
-Modified Files
-***************
-Following files have been added to or modified in GC3Pie:
-
-- ggamess.py
-- testUtils.py
-- testLine.py, testNextLine.py
-
-
-NOTES
-*******
-
-- Incorrect grepex expression is not supported. Example:grepLinesAndAnalyze("TOTAL \s INTERACTION \s (DELTA", .. will raise a traceback.
-- Special characters such as : < ( * need to be defined as /< /( /* 
-
+The only difference of note is that you can exchange files between the
+AppPot virtual machine and `ocikbgtw` via the `job` directory (whereas
+it's ``/scratch`` in VirtualBox).  So: files you copy into `job` in the
+AppPot VM will appear into your home directory on `ocikbgtw`, and
+conversely files from your home directory on `ocikbgtw` can be
+read/written as if they were into directory `job` in the AppPot VM.
+
+Once you have compiled a new version of GAMESS that you wish to test,
+you need to run this command (at the ``user@rootstrap`` command prompt
+in the AppPot VM)::
+
+    sudo apppot-snap changes ~/job/beckya-dmulti.changes.tar.gz
+
+This will overwrite the file ``beckya-dmulti.changes.tar.gz`` with the
+new GAMESS version.  If you don't want to overwrite it and instead
+create another one, just change the filename above (but it *has to*
+end with the string ``.changes.tar.gz``), and the use the new name for
+the ``-R`` option to ggamess.py
+
+Exit the AppPot VM by typing ``exit`` at the command prompt.

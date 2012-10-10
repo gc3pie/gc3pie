@@ -15,16 +15,11 @@ This document is the technical reference for the GC3Libs programming
 model, aimed at programmers who want to use GC3Libs to implement
 computational workflows in Python.
 
-Programming Overview
---------------------
-
 The :ref:`Programming Overview` section is the starting point for
 whoever wants to start developing applications with GC3Pie. It gives
 you an overview of the main components of the library and how they
 interact with each other.
 
-Tutorials
----------
 
 The `Tutorials`_ section contains documentation that describes in more
 detail the various component discussed in the programming overview, as
@@ -33,10 +28,6 @@ training events) and the :ref:`warholize tutorial`, that is a thorough
 tutorial that will show you how to write a very complex GC3Pie
 application step by step.
 
-
-API reference
--------------
-
 The :ref:`GC3Libs` section instead contains the API reference of
 GC3Pie library.
 
@@ -44,16 +35,7 @@ GC3Pie library.
 
   overview
   tutorials/index
-  tutorials/warholize/warholize
   gc3libs/api
 
 .. _`tutorials`: tutorials/index.html
-
-..
-   * Higher level documentation (like the "Programming Overview" page,
-     which should be extended to add scripts), including a little
-     overview of the UML diagram.
-   * tutorials, including slides from last gc3pie 2012 training and the
-   * warholize script
-   * gc3libs API reference
 
