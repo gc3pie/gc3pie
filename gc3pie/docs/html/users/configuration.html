@@ -10,22 +10,25 @@
     
     <title>Configuration File &mdash; gc3pie development (SVN $Revision$) documentation</title>
     
-    <link rel="stylesheet" href="_static/default.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
+        URL_ROOT:    '../',
         VERSION:     'development (SVN $Revision$)',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
       };
     </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="index.html" />
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="up" title="User Documentation" href="index.html" />
+    <link rel="next" title="The GC3Apps software" href="gc3apps/index.html" />
+    <link rel="prev" title="Installation of GC3Pie" href="install.html" />
  
 <script type="text/javascript">
   var _gaq = _gaq || [];
@@ -39,12 +42,19 @@
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
+          <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
+          <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
+        <li class="right" >
+          <a href="gc3apps/index.html" title="The GC3Apps software"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="install.html" title="Installation of GC3Pie"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">User Documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -57,7 +67,7 @@
 <span id="configuration"></span><h1>Configuration File<a class="headerlink" href="#configuration-file" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="location">
 <h2>Location<a class="headerlink" href="#location" title="Permalink to this headline">¶</a></h2>
-<p>All commands in <a class="reference internal" href="users/gc3apps/index.html#gc3apps"><em>The GC3Apps software</em></a> and <a class="reference internal" href="users/gc3utils.html#gc3utils"><em>The GC3Utils software</em></a> read two
+<p>All commands in <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>The GC3Apps software</em></a> and <a class="reference internal" href="gc3utils.html#gc3utils"><em>The GC3Utils software</em></a> read two
 configuration files at startup:</p>
 <blockquote>
 <div><ul class="simple">
@@ -240,15 +250,53 @@ resources of type <tt class="docutils literal"><span class="pre">arc0</span></tt
 <tt class="docutils literal"><span class="pre">grid-proxy</span></tt>.</p>
 <p>Some configuration keys are commmon to all resource types:</p>
 <blockquote>
-<div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">type</span></tt>: Resource type, see above.</li>
-<li><tt class="docutils literal"><span class="pre">auth</span></tt>: the name of a valid <tt class="file docutils literal"><span class="pre">[auth/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt> section; only the authentication section name (after the <tt class="docutils literal"><span class="pre">/</span></tt>) must be specified.</li>
-<li><tt class="docutils literal"><span class="pre">max_cores_per_job</span></tt>: Maximum number of CPU cores that a job can request; a resource will be dropped during the brokering process if a job requests more cores than this.</li>
-<li><tt class="docutils literal"><span class="pre">max_memory_per_core</span></tt>: Max amount of memory (expressed in GBs) that a job can request.</li>
-<li><tt class="docutils literal"><span class="pre">max_walltime</span></tt>: Maximum job running time (in hours).</li>
-<li><tt class="docutils literal"><span class="pre">max_cores</span></tt>: Total number of cores provided by the resource.</li>
-<li><tt class="docutils literal"><span class="pre">architecture</span></tt>: Processor architecture.  Should be one of the strings <tt class="docutils literal"><span class="pre">x86_64</span></tt> (for 64-bit Intel/AMD/VIA processors), <tt class="docutils literal"><span class="pre">i686</span></tt> (for 32-bit Intel/AMD/VIA x86 processors), or <tt class="docutils literal"><span class="pre">x86_64,i686</span></tt> if both architectures are available on the resource.</li>
-<li><tt class="docutils literal"><span class="pre">time_cmd</span></tt>: Used only when <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">shellcmd</span></tt>. The <cite>time</cite> program is used as wrapper for the application in order to collect informations about the execution when running without a real <cite>LRMS</cite>.</li>
+<div><ul>
+<li><p class="first"><tt class="docutils literal"><span class="pre">type</span></tt>: Resource type, see above.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">auth</span></tt>: the name of a valid <tt class="file docutils literal"><span class="pre">[auth/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt> section; only the authentication section name (after the <tt class="docutils literal"><span class="pre">/</span></tt>) must be specified.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">max_cores_per_job</span></tt>: Maximum number of CPU cores that a job can request; a resource will be dropped during the brokering process if a job requests more cores than this.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">max_memory_per_core</span></tt>: Max amount of memory (expressed in GBs) that a job can request.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">max_walltime</span></tt>: Maximum job running time (in hours).</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">max_cores</span></tt>: Total number of cores provided by the resource.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">architecture</span></tt>: Processor architecture.  Should be one of the strings <tt class="docutils literal"><span class="pre">x86_64</span></tt> (for 64-bit Intel/AMD/VIA processors), <tt class="docutils literal"><span class="pre">i686</span></tt> (for 32-bit Intel/AMD/VIA x86 processors), or <tt class="docutils literal"><span class="pre">x86_64,i686</span></tt> if both architectures are available on the resource.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">time_cmd</span></tt>: Used only when <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">shellcmd</span></tt>. The <cite>time</cite> program is used as wrapper for the application in order to collect informations about the execution when running without a real <cite>LRMS</cite>.</p>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">prologue</span></tt>: Used only when <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">pbs</span></tt>, <tt class="docutils literal"><span class="pre">lsf</span></tt>,</dt>
+<dd><p class="first last"><tt class="docutils literal"><span class="pre">slurm</span></tt> or <tt class="docutils literal"><span class="pre">sge</span></tt>. The content of the <cite>prologue</cite> script will
+be <em>inserted</em> into the submission script and it&#8217;s executed before
+the real application.  It is intended to execute some shell
+commands needed to setup the execution environment before running
+the application (e.g. running a <cite>module load ...</cite> command). The
+script <strong>must</strong> be a valid, plain <cite>/bin/sh</cite> script.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">epilogue</span></tt>: Used only when <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">pbs</span></tt>, <tt class="docutils literal"><span class="pre">lsf</span></tt>,</dt>
+<dd><p class="first last"><tt class="docutils literal"><span class="pre">slurm</span></tt> or <tt class="docutils literal"><span class="pre">sge</span></tt>. The content of the <cite>epilogue</cite> script will
+be <em>inserted</em> into the submission script and it&#8217;s executed after
+the real application. The script <strong>must</strong> be a valid, plain
+<cite>/bin/sh</cite> script.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">&lt;application_name&gt;_prologue</span></tt>: Same as <tt class="docutils literal"><span class="pre">prologue</span></tt>, but it is
+used only when <tt class="docutils literal"><span class="pre">&lt;application_name&gt;</span></tt>  matches the name of the
+application. Valid application names are: <cite>zods</cite>, <cite>gamess</cite>,
+<cite>turbomole</cite>, <cite>codeml</cite>, <cite>rosetta</cite>, <cite>rosetta_docking</cite>, <cite>geotop</cite>,</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">&lt;application_name&gt;_epilogue</span></tt>: Same as <tt class="docutils literal"><span class="pre">epilogue</span></tt>, but it is
+used only when <tt class="docutils literal"><span class="pre">&lt;application_name&gt;</span></tt>  matches the name of the
+application. Valid application names are: <cite>zods</cite>, <cite>gamess</cite>,
+<cite>turbomole</cite>, <cite>codeml</cite>, <cite>rosetta</cite>, <cite>rosetta_docking</cite>, <cite>geotop</cite>,</p>
+</li>
 </ul>
 </div></blockquote>
 <div class="section" id="arc0-resources">
@@ -411,7 +459,7 @@ file.</p>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Configuration File</a><ul>
 <li><a class="reference internal" href="#location">Location</a></li>
@@ -434,9 +482,15 @@ file.</p>
 </li>
 </ul>
 
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="install.html"
+                        title="previous chapter">Installation of GC3Pie</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gc3apps/index.html"
+                        title="next chapter">The GC3Apps software</a></p>
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
+    <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
@@ -455,12 +509,19 @@ file.</p>
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
+          <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
+          <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
+        <li class="right" >
+          <a href="gc3apps/index.html" title="The GC3Apps software"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="install.html" title="Installation of GC3Pie"
+             >previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" >User Documentation</a> &raquo;</li> 
       </ul>
     </div>
 

@@ -1,0 +1,27 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: ../global.inc
+
+.. _`user documentation`:
+
+======================
+  User Documentation
+======================
+
+This section describes how to `install`_ and `configure`_ GC3Pie, and
+how to run :ref:`GC3Apps` and :ref:`GC3Utils`.
+
+.. toctree::
+
+  install
+  configuration
+  gc3apps/index
+  gc3utils
+  troubleshooting
+
+
+.. _`install`: install.html
+.. _`configure`: configuration.html
