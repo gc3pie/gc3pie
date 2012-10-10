@@ -65,6 +65,8 @@
 <span id="id1"></span><h1>User Documentation<a class="headerlink" href="#user-documentation" title="Permalink to this headline">¶</a></h1>
 <p>This section describes how to <a class="reference external" href="install.html">install</a> and <a class="reference external" href="configuration.html">configure</a> GC3Pie, and
 how to run <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>The GC3Apps software</em></a> and <a class="reference internal" href="gc3utils.html#gc3utils"><em>The GC3Utils software</em></a>.</p>
+<div class="section" id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation of GC3Pie</a><ul>
@@ -87,6 +89,8 @@ how to run <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>T
 <li class="toctree-l3"><a class="reference internal" href="configuration.html#arc0-resources"><tt class="docutils literal"><span class="pre">arc0</span></tt> resources</a></li>
 <li class="toctree-l3"><a class="reference internal" href="configuration.html#arc1-resources"><tt class="docutils literal"><span class="pre">arc1</span></tt> resources</a></li>
 <li class="toctree-l3"><a class="reference internal" href="configuration.html#sge-resources"><tt class="docutils literal"><span class="pre">sge</span></tt> resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#pbs-resources"><tt class="docutils literal"><span class="pre">pbs</span></tt> resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#lsf-resources"><tt class="docutils literal"><span class="pre">lsf</span></tt> resources</a></li>
 <li class="toctree-l3"><a class="reference internal" href="configuration.html#slurm-resources"><tt class="docutils literal"><span class="pre">slurm</span></tt> resources</a></li>
 <li class="toctree-l3"><a class="reference internal" href="configuration.html#example-resource-sections">Example <tt class="docutils literal"><span class="pre">resource</span></tt> sections</a></li>
 </ul>
@@ -108,18 +112,10 @@ how to run <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>T
 <li class="toctree-l3"><a class="reference internal" href="gc3apps/intro.html#exit-code">Exit code</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="gc3apps/ggamess.html">The <cite>gamess</cite> script</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gc3apps/ggamess.html#gamess-testing-suite">GAMESS Testing Suite</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#key-features">Key Features</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#description">Description</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="gc3apps/ggamess.html#example-input-file">Example input file:</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#syntax">Syntax</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#description-of-parameters">Description of parameters</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#usage">USAGE</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#modified-files">Modified Files</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#notes">NOTES</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gc3apps/ggamess.html">The <strong>ggamess</strong> script</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#how-to-run-gamess-on-the-grid">How to run GAMESS on the Grid</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#tweaking-execution">Tweaking execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#updating-the-gamess-code">Updating the GAMESS code</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="gc3apps/ggeotop.html">The <strong class="command">ggeotop</strong> script</a><ul>
@@ -196,6 +192,7 @@ how to run <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>T
 </ul>
 </div>
 </div>
+</div>
 
 
           </div>
@@ -203,6 +200,16 @@ how to run <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>T
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">User Documentation</a><ul>
+<li><a class="reference internal" href="#table-of-contents">Table of Contents</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="../index.html"
                         title="previous chapter">Welcome to GC3Pie documentation!</a></p>

@@ -16,25 +16,6 @@
   # along with this program; if not, write to the Free Software
   # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-.. _`Warholize Tutorial`:  
-  
-Warholize Tutorial
-==================
-
-In this tutorial we will show you how to use GC3Pie libraries in order
-to build a command line script which will run a complex workflow with
-both parallel and sequential tasks.
-
-The tutorial itself contains the complete source code of the
-application (cfr. `Literate Programming`_ on Wikipedia), so that you
-will be able to test/modify it and produce a working ``warholize.py``
-script by downloading **pylit** from the `PyLit Homepage`_ and running
-the following command on the
-``gc3pie/docs/gc3libs/tutorial/warholize.txt`` file, from whitin the
-svn tree of GC3Pie::
-
-$    ./pylit warholize.txt warholize.py
-
 
 Introduction
 ------------

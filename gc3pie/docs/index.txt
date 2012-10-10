@@ -35,11 +35,11 @@ GC3Pie documentation is divided in three sections:
   run GC3Pie applications.
 
 * :ref:`Programmer Documentation`: info for programmers who want to
-  use the GC3Pie libraries to write his/her own scripts and
+  use the GC3Pie libraries to write their own scripts and
   applications.
 
-* :ref:`Developer Documentation`: detailed information for GC3Pie
-  developers.
+* :ref:`Developer Documentation`: detailed information on how to
+  contribute to GC3Pie and get your code included in the main library.
 
 ..
    GC3Pie is comprised of three main components: 
