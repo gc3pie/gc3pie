@@ -23,7 +23,7 @@ The above command creates a directory `$HOME/gc3pie`:file: and installs
 the latest release of GC3Pie and all its dependencies into it.
 
 In case you have trouble running the installation script you can send
-an email to `<mailto:gc3pie@googlegroups.com>` asking for help. Please
+an email to gc3pie@googlegroups.com asking for help. Please
 include the full output of the script in your email, in order to help
 us to identify the problem.
 
@@ -47,27 +47,35 @@ to the standard behavior.  In order to use these options, you have to:
 
 The accepted options are as follows:
 
-  -d DIRECTORY
-      Install GC3Pie in location ``DIRECTORY`` instead of ``$HOME/gc3pie``
 
-  --overwrite
+  ``-d DIRECTORY``
+
+      Install GC3Pie in location ``DIRECTORY`` instead of
+      ``$HOME/gc3pie``
+
+  ``--overwrite``
+
       Overwrite the destination directory if it already
       exists. Default behavior is to abort installation.
 
-  --develop
+  ``--develop``
+
       Instead of installing the latest *release* of GC3Pie, it will
       install the *development branch* from the SVN repository.
 
-  --yes
+  ``--yes``
+
       Run non-interactively, and assume a "yes" reply to every
       question.
 
-  -p PYTHON
+  ``-p PYTHON``
+
       Uses the given ``PYTHON`` program as python interpreter.  By
       default the installation script looks for a ``python`` binary in
       the standard ``$PATH``.
 
-  --no-gc3apps
+  ``--no-gc3apps``
+
        Do not install any of the GC3Apps, e.g., ``gcodeml``,
        ``grosetta`` and ``ggamess``.
 
@@ -322,7 +330,7 @@ access a local copy of the documentation from the sources::
   cd src/docs
   make html
 
-Note that you need the Python package `Sphinx <http://sphinx.pocoo.org>`
+Note that you need the Python package `Sphinx`_
 in order to build the documentation locally.
 
 
