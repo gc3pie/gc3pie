@@ -197,8 +197,8 @@ EOF
         # SuSE
         warn "Cannot check if requisite software is installed: SuSE and compatible Linux distributions are not yet supported. I'm proceeding anyway, but you may run into errors later. Please write to gc3pie@googlegroups.com asking for information."
     else
-        # ???
-        die 1 "Cannot determine what package manager this Linux distribution has, so I cannot check if requisite software is installed. I'm proceeding anyway, but you may run into errors later. Please write to gc3pie@googlegroups.com to get help."
+        # MacOSX maybe?
+        warn "Cannot determine what package manager this Linux distribution has, so I cannot check if requisite software is installed. I'm proceeding anyway, but you may run into errors later. Please write to gc3pie@googlegroups.com to get help."
     fi
 }
 
