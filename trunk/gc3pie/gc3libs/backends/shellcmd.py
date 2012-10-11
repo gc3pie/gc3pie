@@ -355,7 +355,18 @@ class ShellcmdLrms(LRMS):
                     # instead, which will overwrite the current
                     # instance of nosetests with /bin/true, which will
                     # exit without problem.
-                    os.execlp('/bin/true', '/bin/true')
+                    
+                    # However, not all the distribution have the
+                    # `true` command in the same place...
+                    possible_paths_to_true = [
+                        '/bin/true',     # Linux std location
+                        '/usr/bin/true', # MacOSX std location
+                        '/usr/local/bin/true', # manual installation
+                        '/opt/local/libexec/gnubin/true', # MacPorts
+                        ]
+                    for path in possible_paths_to_true:
+                        if os.path.isfile(path):
+                            os.execlp(path, path)
 
                     # In case os.execlp() will fail we still call
                     # sys.exit(0), which should be just fine if not
