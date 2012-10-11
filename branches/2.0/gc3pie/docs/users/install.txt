@@ -10,6 +10,9 @@
  Installation of GC3Pie
 ------------------------
 
+Only Linux operating systems are supported. There is, however, a
+section describing how to install GC3Pie on MacOSX at the end of this page.
+
 Quick start
 ===========
 
@@ -333,8 +336,44 @@ access a local copy of the documentation from the sources::
 Note that you need the Python package `Sphinx`_
 in order to build the documentation locally.
 
+MacOSX Installtion
+==================
+
+Installation on MacOSX machines is not supported, however it is
+possible to install it on it but there are a few issues:
+
+1) Standard MacOSX core utils does not work well with the
+   ``install.sh`` script. Specifically, you cannot use any command
+   line option with it. However:
+
+   * Standard installation works.
+
+   * if you install the GNU coreutils (we suggest you to do it via
+     `MacPorts`_ or `Fink`_) and you configure your ``PATH``
+     environment variable so that the default ``getopt`` command is
+     the GNU one, ``install.sh`` will work perfectly.
+
+2) The `shellcmd` backend of GC3Pie depends on the GNU ``time``
+   command, which is not installed on MacOSX by default. This means
+   that with a standard MacOSX installation the `shellcmd` resource
+   will NOT work. However:
+
+   * other resources, like `pbs` via `ssh` transport, will work.
+
+   * you can install the GNU time command either via `MacPorts`_,
+     `Fink`_ or from the `this url`_. After installing it you don't
+     need to update your ``PATH`` environment variable, it's enough to
+     set the ``time_cmd`` option in your GC3Pie configuration file.
+
+3) we cannot guarantee that the ARC backend will work with GC3Pie on
+   MacOSX.
+
 
 .. Local references
 
 .. _sphinx: http://sphinx.pocoo.org/
 .. _virtualenv: http://pypi.python.org/pypi/virtualenv/1.7
+
+.. _`MacPorts`: http://www.macports.org/
+.. _`Fink`: http://sourceforge.net/projects/fink/
+.. _`this url`: http://mirror.switch.ch/ftp/mirror/gnu/time/
