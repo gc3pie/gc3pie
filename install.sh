@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # @(#)install.sh
 #
 #
@@ -345,13 +345,13 @@ Options:
 
       -p, --python EXE       The python interpreter to use. The default is $(which python).
 
-      --develop              Install development version. Requires svn and gcc.
+      -D, --develop          Install development version. Requires svn and gcc.
 
-      --no-gc3apps           Do not install extra GC3 applications, like gcodeml, grosetta and gamess.
+      -n, --no-gc3apps       Do not install extra GC3 applications, like gcodeml, grosetta and gamess.
 
-      --overwrite            Remove target directory if it already exists.
+      -f, --overwrite        Remove target directory if it already exists.
 
-      --yes                  Do not ask for confirmation: assume a 'yes' reply to every question.
+      -y, --yes              Do not ask for confirmation: assume a 'yes' reply to every question.
 
       -h, --help             print this help
 EOF
@@ -359,15 +359,34 @@ EOF
 
 
 # Main program
-ARGS=$(getopt -o "d:p:h" -l "target:,python:,help,develop,no-gc3apps,overwrite,yes" -- "$@")
-eval set  -- "$ARGS"
+short_opts='d:p:hDnfy'
+long_opts='target:,python:,help,develop,no-gc3apps,overwrite,yes'
+
+if [ "x$(getopt -T)" == 'x' ]; then
+    # GNU getopt
+    args=$(getopt --name "$PROG" --shell sh -l "$long_opts" -o "$short_opts" -- "$@")
+    if [ $? -ne 0 ]; then
+        die 1 "Type '$PROG --help' to get usage information."
+    fi
+    # use 'eval' to remove getopt quoting
+    eval set -- $args
+else
+    # old-style getopt, use compatibility syntax
+    args=$(getopt "$short_opts" "$@")
+    if [ $? -ne 0 ]; then
+        die 1 "Type '$PROG --help' to get usage information."
+    fi
+    eval set -- $args
+fi
+
+# eval set  -- "$ARGS"
 
 while true
 do
     case "$1" in
         -d|--target)
             shift
-            VENVDIR=$(readlink -f $1)
+            VENVDIR=$1
             ;;
         -p|--python)
             shift
@@ -377,16 +396,16 @@ do
             usage
             exit 0
             ;;
-        --develop)
+        -D|--develop)
             DEVELOP=1
             ;;
-        --no-gc3apps)
+        -n|--no-gc3apps)
             WITHAPPS=0
             ;;
-        --overwrite)
+        -f|--overwrite)
             OVERWRITEDIR=yes
             ;;
-        --yes)
+        -y|--yes)
             ASKCONFIRMATION=0
             ;;
         --)
