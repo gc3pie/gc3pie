@@ -221,6 +221,7 @@ class GRosettaTest(TestRunner, Application):
     def __init__(self, appdir, **kw):
         TestRunner.__init__(self, appdir, kw)
         self.jobdirs = [ '0--1', '2--3', '4--5']
+        kw['output_dir'] = os.path.join(os.path.dirname(kw['output_dir']), 'rosetta')
 
         Application.__init__(
             self,
@@ -272,7 +273,7 @@ class GDockingTest(TestRunner, Application):
 
     def __init__(self, appdir, **kw):
         TestRunner.__init__(self, appdir, kw)
-        kw['output_dir'] = os.path.join(os.path.dirname(self.appdir), 'docking')
+        kw['output_dir'] = os.path.join(os.path.dirname(kw['output_dir']), 'docking')
 
         self.jobdirs = ["1bjpA.%s" % d for d in ('1--2', '3--4', '5--5')]
         Application.__init__(
