@@ -1,0 +1,4 @@
+SEQUENCE: 
+SCORE: total_score aln_ident   aln_len  aln_perc dslf_ca_dih dslf_cs_ang dslf_ss_dih dslf_ss_dst      fa_atr      fa_dun fa_intra_rep      fa_pair       fa_rep       fa_sol hbond_bb_sc hbond_lr_bb    hbond_sc hbond_sr_bb        nres       omega     p_aa_pp pro_close      rama       ref description 
+SCORE:    -114.863     0.050    55.000     0.462       0.000       0.000       0.000       0.000    -333.959      53.420        0.990       -3.199       60.065      159.331      -8.918      -6.800      -2.459     -26.550     119.000      19.337     -15.479     1.546     8.032   -20.220 S_2AAGA_2_0001
+SCORE:    -242.893     0.370   115.000     0.966       0.000       0.000       0.000       0.000    -410.941      62.496        1.021       -6.792       49.652      182.382      -9.504     -38.642      -3.370     -27.954     119.000       8.029     -19.879     0.939   -10.111   -20.220 S_2OS5A_1_0001

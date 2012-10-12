@@ -1,0 +1,275 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GC3Libs programming API &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="up" title="Programmer Documentation" href="../index.html" />
+    <link rel="next" title="Developer Documentation" href="../../developers/index.html" />
+    <link rel="prev" title="Introduction" href="../tutorials/warholize/warholize.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../developers/index.html" title="Developer Documentation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../tutorials/warholize/warholize.html" title="Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Programmer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="gc3libs-programming-api">
+<span id="gc3libs"></span><h1>GC3Libs programming API<a class="headerlink" href="#gc3libs-programming-api" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id1">
+<h2><cite>gc3libs</cite><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-cmdline">
+<h2><cite>gc3libs.cmdline</cite><a class="headerlink" href="#gc3libs-cmdline" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-config">
+<h2><cite>gc3libs.config</cite><a class="headerlink" href="#gc3libs-config" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-core">
+<h2><cite>gc3libs.core</cite><a class="headerlink" href="#gc3libs-core" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-exceptions">
+<h2><cite>gc3libs.exceptions</cite><a class="headerlink" href="#gc3libs-exceptions" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-persistence">
+<h2><cite>gc3libs.persistence</cite><a class="headerlink" href="#gc3libs-persistence" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-quantity">
+<h2><cite>gc3libs.quantity</cite><a class="headerlink" href="#gc3libs-quantity" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-session">
+<h2><cite>gc3libs.session</cite><a class="headerlink" href="#gc3libs-session" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-template">
+<h2><cite>gc3libs.template</cite><a class="headerlink" href="#gc3libs-template" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-url">
+<h2><cite>gc3libs.url</cite><a class="headerlink" href="#gc3libs-url" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-utils">
+<h2><cite>gc3libs.utils</cite><a class="headerlink" href="#gc3libs-utils" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-workflow">
+<h2><cite>gc3libs.workflow</cite><a class="headerlink" href="#gc3libs-workflow" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-application">
+<h2><cite>gc3libs.application</cite><a class="headerlink" href="#gc3libs-application" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-application-apppot">
+<h2><cite>gc3libs.application.apppot</cite><a class="headerlink" href="#gc3libs-application-apppot" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-application-gamess">
+<h2><cite>gc3libs.application.gamess</cite><a class="headerlink" href="#gc3libs-application-gamess" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-application-rosetta">
+<h2><cite>gc3libs.application.rosetta</cite><a class="headerlink" href="#gc3libs-application-rosetta" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-authentication">
+<h2><cite>gc3libs.authentication</cite><a class="headerlink" href="#gc3libs-authentication" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-authentication-ssh">
+<h2><cite>gc3libs.authentication.ssh</cite><a class="headerlink" href="#gc3libs-authentication-ssh" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-authentication-grid">
+<h2><cite>gc3libs.authentication.grid</cite><a class="headerlink" href="#gc3libs-authentication-grid" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-backends">
+<h2><cite>gc3libs.backends</cite><a class="headerlink" href="#gc3libs-backends" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-backends-batch">
+<h2><cite>gc3libs.backends.batch</cite><a class="headerlink" href="#gc3libs-backends-batch" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-backends-arc0">
+<h2><cite>gc3libs.backends.arc0</cite><a class="headerlink" href="#gc3libs-backends-arc0" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-backends-arc1">
+<h2><cite>gc3libs.backends.arc1</cite><a class="headerlink" href="#gc3libs-backends-arc1" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-backends-lsf">
+<h2><cite>gc3libs.backends.lsf</cite><a class="headerlink" href="#gc3libs-backends-lsf" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-backends-sge">
+<h2><cite>gc3libs.backends.sge</cite><a class="headerlink" href="#gc3libs-backends-sge" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-backends-pbs">
+<h2><cite>gc3libs.backends.pbs</cite><a class="headerlink" href="#gc3libs-backends-pbs" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-backends-shellcmd">
+<h2><cite>gc3libs.backends.shellcmd</cite><a class="headerlink" href="#gc3libs-backends-shellcmd" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3libs-backends-transport">
+<h2><cite>gc3libs.backends.transport</cite><a class="headerlink" href="#gc3libs-backends-transport" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="section" id="gc3utils-modules">
+<h1>GC3Utils modules<a class="headerlink" href="#gc3utils-modules" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-gc3utils">
+<span id="gc3utils"></span><h2><cite>gc3utils</cite><a class="headerlink" href="#module-gc3utils" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3utils-frontend">
+<h2><cite>gc3utils.frontend</cite><a class="headerlink" href="#gc3utils-frontend" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gc3utils-commands">
+<h2><cite>gc3utils.commands</cite><a class="headerlink" href="#gc3utils-commands" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">GC3Libs programming API</a><ul>
+<li><a class="reference internal" href="#id1"><cite>gc3libs</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-cmdline"><cite>gc3libs.cmdline</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-config"><cite>gc3libs.config</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-core"><cite>gc3libs.core</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-exceptions"><cite>gc3libs.exceptions</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-persistence"><cite>gc3libs.persistence</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-quantity"><cite>gc3libs.quantity</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-session"><cite>gc3libs.session</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-template"><cite>gc3libs.template</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-url"><cite>gc3libs.url</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-utils"><cite>gc3libs.utils</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-workflow"><cite>gc3libs.workflow</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-application"><cite>gc3libs.application</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-application-apppot"><cite>gc3libs.application.apppot</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-application-gamess"><cite>gc3libs.application.gamess</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-application-rosetta"><cite>gc3libs.application.rosetta</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-authentication"><cite>gc3libs.authentication</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-authentication-ssh"><cite>gc3libs.authentication.ssh</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-authentication-grid"><cite>gc3libs.authentication.grid</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-backends"><cite>gc3libs.backends</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-backends-batch"><cite>gc3libs.backends.batch</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-backends-arc0"><cite>gc3libs.backends.arc0</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-backends-arc1"><cite>gc3libs.backends.arc1</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-backends-lsf"><cite>gc3libs.backends.lsf</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-backends-sge"><cite>gc3libs.backends.sge</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-backends-pbs"><cite>gc3libs.backends.pbs</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-backends-shellcmd"><cite>gc3libs.backends.shellcmd</cite></a></li>
+<li><a class="reference internal" href="#gc3libs-backends-transport"><cite>gc3libs.backends.transport</cite></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#gc3utils-modules">GC3Utils modules</a><ul>
+<li><a class="reference internal" href="#module-gc3utils"><cite>gc3utils</cite></a></li>
+<li><a class="reference internal" href="#gc3utils-frontend"><cite>gc3utils.frontend</cite></a></li>
+<li><a class="reference internal" href="#gc3utils-commands"><cite>gc3utils.commands</cite></a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../tutorials/warholize/warholize.html"
+                        title="previous chapter">Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../../developers/index.html"
+                        title="next chapter">Developer Documentation</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../developers/index.html" title="Developer Documentation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../tutorials/warholize/warholize.html" title="Introduction"
+             >previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Programmer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>
