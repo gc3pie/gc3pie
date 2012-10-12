@@ -59,6 +59,9 @@ require_command svn
 python -c 'import sphinx' 2>/dev/null \
     || die 1 "Missing required Python module 'sphinx'"
 
+python -c 'import sphinx_pypi_upload' 2>/dev/null \
+    || die 1 "Missing required Python module 'sphinx_pypi_upload'"
+
 
 ## parse command-line 
 
@@ -127,6 +130,7 @@ find gc3pie -name '*.py' \
     | xargs $maybe sed -i -r -e "s|__version__ *= *'[0-9a-z\\.\-]+ *|__version__ = '$version |;"
 $maybe sed -i -r -e "s|version *= *[0-9a-z\\.\"'\-]+|version = '$version'|;" \
     gc3pie/setup.py
+sed -i -e "s|release *= *[0-9a-z\\.\"'\-]+|release = '$version'|;" gc3pie/docs/conf.py
 set +e
 
 
@@ -149,5 +153,7 @@ $maybe svn commit -m"Tagged branch '$branch' to 'tags/$version'"
 echo Uploading source package to PyPI ...
 (cd gc3pie; $maybe ./setup.py sdist upload)
 
+echo Uploading documentation to PyPI ...
+(cd gc3pie; $maybe ./setup.py upload_sphinx
 echo "All done: released '$branch' as GC3Pie '$version' ${maybe+(nah, joking...)}"
 exit 0
