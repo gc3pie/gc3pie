@@ -68,16 +68,20 @@
 <div class="section" id="quick-start">
 <h2>Quick start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h2>
 <p>We provide an installation script which automatically try to install
-GC3pie in your home directory. Running this script is as simple as
-running:</p>
+GC3pie in your home directory.  The quick installation procedure has
+only been tested on variants of the GNU/Linux operating
+system. (However, the script should work on MacOSX as well, provided
+you follow the preparation steps outlined in the &#8220;MacOSX installation&#8221;
+section below.)</p>
+<p>To install GC3Pie just type this at your terminal prompt:</p>
 <div class="highlight-python"><pre>sh -c "$(wget -O- http://gc3pie.googlecode.com/svn/install.sh)"</pre>
 </div>
 <p>The above command creates a directory <tt class="file docutils literal"><span class="pre">$HOME/gc3pie</span></tt> and installs
 the latest release of GC3Pie and all its dependencies into it.</p>
-<p>In case you have trouble running the installation script you can send
-an email to <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">gc3pie<span>&#64;</span>googlegroups<span>&#46;</span>com</a> asking for help. Please
-include the full output of the script in your email, in order to help
-us to identify the problem.</p>
+<p>In case you have trouble running the installation script, please send
+an email to <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">gc3pie<span>&#64;</span>googlegroups<span>&#46;</span>com</a> asking for help.  Include the full
+output of the script in your email, in order to help us to identify
+the problem.</p>
 </div>
 <div class="section" id="non-standard-installation-options">
 <h2>Non-standard installation options<a class="headerlink" href="#non-standard-installation-options" title="Permalink to this headline">¶</a></h2>
@@ -219,7 +223,7 @@ writable by your Linux account will be OK.</p>
 install GC3Pie into <tt class="docutils literal"><span class="pre">/opt/gc3pie</span></tt> instead.</p>
 </li>
 <li><p class="first">Check-out the <tt class="docutils literal"><span class="pre">gc3pie</span></tt> files in a <tt class="docutils literal"><span class="pre">src/</span></tt> directory:</p>
-<div class="highlight-python"><pre>svn co http://gc3pie.googlecode.com/svn/trunk/gc3pie src</pre>
+<div class="highlight-python"><pre>svn co http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie src</pre>
 </div>
 </li>
 <li><p class="first">Install the <tt class="docutils literal"><span class="pre">gc3pie</span></tt> in &#8220;develop&#8221; mode, so any modification
@@ -250,7 +254,7 @@ ln -s '../src/gc3apps/codeml/gcodeml.py' bin/gcodeml</pre>
 <li><p class="first">Before you can actually run the GC3Pie, you need to have a
 working configuration file; <a class="reference external" href="http://code.google.com/p/gc3pie/wiki/ConfigurationFile/">the ConfigurationFile Wiki page</a>
 provides an explanation of the syntax.</p>
-<p>The <a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/gc3libs/etc/gc3pie.conf.example/">example configuration file</a>
+<p>The <a class="reference external" href="http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/gc3libs/etc/gc3pie.conf.example/">example configuration file</a>
 can be used as a startup point if you want to enable access to the <a class="reference external" href="http://www.smscg.ch/">SMSCG</a> infrastructure.
 Before you can actually use this file, you will need to:</p>
 <ul class="simple">
@@ -332,8 +336,30 @@ mailing-list &lt;gc3pie&#64;googlegroups.com&gt;</cite> is there to help you :-)
 </div>
 <div class="section" id="upgrade">
 <span id="id1"></span><h2>Upgrade<a class="headerlink" href="#upgrade" title="Permalink to this headline">¶</a></h2>
-<p>These instructions show how to upgrade the GC3Pie scripts to the
-latest version found in the GC3 svn repository.</p>
+<p>If you used the installation script, the fastest way to upgrade is just to reinstall:</p>
+<ol class="arabic" start="0">
+<li><p class="first">De-activate the current GC3Pie virtual environment:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">deactivate</span>
+</pre></div>
+</div>
+<p>(If you get an error &#8220;command not found&#8221;, do not worry and proceed
+on to the next step; in case of other errors please stop here and
+report to the <cite>GC3Pie users mailing-list
+&lt;mailto:gc3pie.googlegroups.com&gt;</cite>.)</p>
+</li>
+<li><p class="first">Move the <tt class="file docutils literal"><span class="pre">$HOME/gc3pie</span></tt> directory to another location, e.g.:</p>
+<div class="highlight-python"><pre>mv $HOME/gc3pie $HOME/gc3pie.OLD</pre>
+</div>
+</li>
+<li><p class="first">Reinstall GC3Pie using the quick-install script (top of this page).</p>
+</li>
+<li><p class="first">Once you have verified that your new installation is working, you
+can remove the <tt class="file docutils literal"><span class="pre">$HOME/gc3pie.OLD</span></tt> directory.</p>
+</li>
+</ol>
+<p>If instead you installed GC3Pie using the &#8220;manual installation&#8221; instructions,
+then the following steps will update GC3Pie to the latest version
+in the code repository:</p>
 <ol class="arabic">
 <li><p class="first"><strong class="command">cd</strong> to the directory containing the GC3Pie virtualenv;
 assuming it is named <tt class="docutils literal"><span class="pre">gc3pie</span></tt> as in the above installation
@@ -359,12 +385,40 @@ r1124, these upgrade instructions will not work, and you must
 are, by running the <cite>svn info</cite> command in the <cite>src</cite> directory: watch
 out for the <cite>Revision:</cite> line.</p>
 </div>
+<div class="section" id="macosx-installation">
+<h2>MacOSX Installation<a class="headerlink" href="#macosx-installation" title="Permalink to this headline">¶</a></h2>
+<p>Installation on MacOSX machines is possible, however there are still a
+few issues.  Please let us know on the <cite>GC3Pie users mailing-list
+&lt;mailto:gc3pie&#64;googlegroups.com&gt;</cite> if you need MacOSX support.</p>
+<ol class="arabic simple">
+<li>Standard usage of the installation script (i.e., with no options) works.</li>
+<li>Options can only be given in the abbreviated one-letter form (e.g.,
+<tt class="docutils literal"><span class="pre">-d</span></tt>); the long form (e.g., <tt class="docutils literal"><span class="pre">--directory</span></tt>) will not work.</li>
+</ol>
+<ol class="arabic simple" start="2">
+<li>The <cite>shellcmd</cite> backend of GC3Pie depends on the GNU <tt class="docutils literal"><span class="pre">time</span></tt>
+command, which is not installed on MacOSX by default. This means
+that with a standard MacOSX installation the <cite>shellcmd</cite> resource
+will <strong>not</strong> work. However:<ul>
+<li>other resources, like <cite>pbs</cite> via <cite>ssh</cite> transport, will work.</li>
+<li>you can install the GNU time command either via <a class="reference external" href="http://www.macports.org/">MacPorts</a>,
+<a class="reference external" href="http://sourceforge.net/projects/fink/">Fink</a> or from the <a class="reference external" href="http://mirror.switch.ch/ftp/mirror/gnu/time/">this url</a>. After installing it you don&#8217;t
+need to update your <tt class="docutils literal"><span class="pre">PATH</span></tt> environment variable, it&#8217;s enough to
+set the <tt class="docutils literal"><span class="pre">time_cmd</span></tt> option in your GC3Pie configuration file.</li>
+</ul>
+</li>
+</ol>
+<ol class="arabic simple" start="4">
+<li>At the time of this writing, <a class="reference external" href="http://www.nordugrid.org/documents/arc-client-install.html&gt;">the ARC client libraries are not
+available on MacOSX</a>, so ARC backends will not work.</li>
+</ol>
+</div>
 <div class="section" id="html-documentation">
 <h2>HTML Documentation<a class="headerlink" href="#html-documentation" title="Permalink to this headline">¶</a></h2>
 <p>HTML documentation for the GC3Libs programming interface can be
 read online at:</p>
 <blockquote>
-<div><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html">http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html</a></div></blockquote>
+<div><a class="reference external" href="http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/docs/html/index.html">http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/docs/html/index.html</a></div></blockquote>
 <p>If you installed GC3Pie manually, or if you installed it using the
 <tt class="docutils literal"><span class="pre">install.sh</span></tt> script with the <tt class="docutils literal"><span class="pre">--develop</span></tt> option, you can also
 access a local copy of the documentation from the sources:</p>
@@ -390,6 +444,7 @@ in order to build the documentation locally.</p>
 <li><a class="reference internal" href="#non-standard-installation-options">Non-standard installation options</a></li>
 <li><a class="reference internal" href="#manual-installation">Manual installation</a></li>
 <li><a class="reference internal" href="#upgrade">Upgrade</a></li>
+<li><a class="reference internal" href="#macosx-installation">MacOSX Installation</a></li>
 <li><a class="reference internal" href="#html-documentation">HTML Documentation</a></li>
 </ul>
 </li>

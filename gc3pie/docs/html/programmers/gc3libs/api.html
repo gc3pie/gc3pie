@@ -28,7 +28,7 @@
     <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
     <link rel="up" title="Programmer Documentation" href="../index.html" />
     <link rel="next" title="Developer Documentation" href="../../developers/index.html" />
-    <link rel="prev" title="Warholize Tutorial" href="../tutorials/warholize/warholize.html" />
+    <link rel="prev" title="Introduction" href="../tutorials/warholize/warholize.html" />
  
 <script type="text/javascript">
   var _gaq = _gaq || [];
@@ -51,7 +51,7 @@
           <a href="../../developers/index.html" title="Developer Documentation"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="../tutorials/warholize/warholize.html" title="Warholize Tutorial"
+          <a href="../tutorials/warholize/warholize.html" title="Introduction"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
           <li><a href="../index.html" accesskey="U">Programmer Documentation</a> &raquo;</li> 
@@ -64,10 +64,10 @@
           <div class="body">
             
   <div class="section" id="gc3libs-programming-api">
-<h1>GC3Libs programming API<a class="headerlink" href="#gc3libs-programming-api" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="module-gc3libs">
-<span id="gc3libs"></span><h2><cite>gc3libs</cite><a class="headerlink" href="#module-gc3libs" title="Permalink to this headline">¶</a></h2>
-<p>GC3Libs is a python package for controlling the life-cycle of a Grid
+<span id="gc3libs"></span><h1>GC3Libs programming API<a class="headerlink" href="#gc3libs-programming-api" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id1">
+<h2><cite>gc3libs</cite><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-gc3libs"></span><p>GC3Libs is a python package for controlling the life-cycle of a Grid
 or batch computational job.</p>
 <p>GC3Libs provides services for submitting computational jobs to Grids
 and batch systems, controlling their execution, persisting job
@@ -1219,7 +1219,7 @@ description.</p>
 
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.print_tasks_table">
-<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b47840401e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b8d5e22a1e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output a text table to stream <cite>output</cite>, giving details about
 tasks in the given states.</p>
 <p>Optional second argument <cite>states</cite> restricts the listing to
@@ -1863,260 +1863,6 @@ calling this method.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-gc3libs.workflow">
-<span id="gc3libs-workflow"></span><h2><cite>gc3libs.workflow</cite><a class="headerlink" href="#module-gc3libs.workflow" title="Permalink to this headline">¶</a></h2>
-<p>Implementation of task collections.</p>
-<p>Tasks can be grouped into collections, which are tasks themselves,
-therefore can be controlled (started/stopped/cancelled) like a single
-whole.  Collection classes provided in this module implement the basic
-patterns of job group execution; they can be combined to form more
-complex workflows.  Hook methods are provided so that derived classes
-can implement problem-specific job control policies.</p>
-<dl class="class">
-<dt id="gc3libs.workflow.ParallelTaskCollection">
-<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">ParallelTaskCollection</tt><big>(</big><em>tasks=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection" title="Permalink to this definition">¶</a></dt>
-<dd><p>A <cite>ParallelTaskCollection</cite> runs all of its tasks concurrently.</p>
-<p>The collection state is set to <cite>TERMINATED</cite> once all tasks have
-reached the same terminal status.</p>
-<dl class="method">
-<dt id="gc3libs.workflow.ParallelTaskCollection.add">
-<tt class="descname">add</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.add" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a task to the collection.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.ParallelTaskCollection.attach">
-<tt class="descname">attach</tt><big>(</big><em>controller</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.attach" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use the given Controller interface for operations on the job
-associated with this task.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.ParallelTaskCollection.kill">
-<tt class="descname">kill</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
-<dd><p>Terminate all tasks in the collection, and set collection
-state to <cite>TERMINATED</cite>.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.ParallelTaskCollection.progress">
-<tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.progress" title="Permalink to this definition">¶</a></dt>
-<dd><p>Try to advance all jobs in the collection to the next state in
-a normal lifecycle.  Return list of task execution states.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.ParallelTaskCollection.submit">
-<tt class="descname">submit</tt><big>(</big><em>resubmit=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.submit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Start all tasks in the collection.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.ParallelTaskCollection.update_state">
-<tt class="descname">update_state</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update state of all tasks in the collection.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="gc3libs.workflow.RetryableTask">
-<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">RetryableTask</tt><big>(</big><em>task</em>, <em>max_retries=0</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.RetryableTask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wrap a <cite>Task</cite> instance and re-submit it until a specified
-termination condition is met.</p>
-<p>By default, the re-submission upon failure happens iff execution
-terminated with nonzero return code; the failed task is retried up
-to <cite>self.max_retries</cite> times (indefinitely if <cite>self.max_retries</cite> is 0).</p>
-<p>Override the <cite>retry</cite> method to implement a different retryal policy.</p>
-<p><em>Note:</em> The resubmission code is implemented in the
-<tt class="xref py py-meth docutils literal"><span class="pre">terminated()</span></tt>, so be sure to call it if you override in
-derived classes.</p>
-<dl class="method">
-<dt id="gc3libs.workflow.RetryableTask.retry">
-<tt class="descname">retry</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.RetryableTask.retry" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return <cite>True</cite> or <cite>False</cite>, depending on whether the failed task
-should be re-submitted or not.</p>
-<p>The default behavior is to retry a task iff its execution
-terminated with nonzero returncode and the maximum retry limit
-has not been reached.  If <cite>self.max_retries</cite> is 0, then the
-dependent task is retried indefinitely.</p>
-<p>Override this method in subclasses to implement a different
-policy.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.RetryableTask.update_state">
-<tt class="descname">update_state</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.RetryableTask.update_state" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update the state of the dependent task, then resubmit it if it&#8217;s
-TERMINATED and <cite>self.retry()</cite> is <cite>True</cite>.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="gc3libs.workflow.SequentialTaskCollection">
-<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">SequentialTaskCollection</tt><big>(</big><em>tasks</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection" title="Permalink to this definition">¶</a></dt>
-<dd><p>A <cite>SequentialTaskCollection</cite> runs its tasks one at a time.</p>
-<p>After a task has completed, the <cite>next</cite> method is called with the
-index of the finished task in the <cite>self.tasks</cite> list; the return
-value of the <cite>next</cite> method is then made the collection
-<cite>execution.state</cite>.  If the returned state is <cite>RUNNING</cite>, then the
-subsequent task is started, otherwise no action is performed.</p>
-<p>The default <cite>next</cite> implementation just runs the tasks in the order
-they were given to the constructor, and sets the state to
-<cite>TERMINATED</cite> when all tasks have been run.</p>
-<dl class="method">
-<dt id="gc3libs.workflow.SequentialTaskCollection.attach">
-<tt class="descname">attach</tt><big>(</big><em>controller</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.attach" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use the given Controller interface for operations on the job
-associated with this task.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.SequentialTaskCollection.kill">
-<tt class="descname">kill</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
-<dd><p>Stop execution of this sequence.  Kill currently-running task
-(if any), then set collection state to TERMINATED.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.SequentialTaskCollection.next">
-<tt class="descname">next</tt><big>(</big><em>done</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.next" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the state or task to run when step number <cite>done</cite> is completed.</p>
-<p>This method is called when a task is finished; the <cite>done</cite>
-argument contains the index number of the just-finished task
-into the <cite>self.tasks</cite> list.  In other words, the task that
-just completed is available as <cite>self.tasks[done]</cite>.</p>
-<p>The return value from <cite>next</cite> can be either a task state (i.e.,
-an instance of <cite>Run.State</cite>), or a valid index number for
-<cite>self.tasks</cite>. In the first case:</p>
-<ul class="simple">
-<li>if the return value is <cite>Run.State.TERMINATED</cite>,
-then no other jobs will be run;</li>
-<li>otherwise, the return value is assigned to <cite>execution.state</cite>
-and the next job in the <cite>self.tasks</cite> list is executed.</li>
-</ul>
-<p>If instead the return value is a (nonnegative) number, then
-tasks in the sequence will be re-run starting from that index.</p>
-<p>The default implementation runs tasks in the order they were
-given to the constructor, and sets the state to TERMINATED
-when all tasks have been run.  This method can (and should) be
-overridden in derived classes to implement policies for serial
-job execution.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.SequentialTaskCollection.submit">
-<tt class="descname">submit</tt><big>(</big><em>resubmit=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.submit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Start the current task in the collection.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.SequentialTaskCollection.update_state">
-<tt class="descname">update_state</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update state of the collection, based on the jobs&#8217; statuses.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="gc3libs.workflow.StagedTaskCollection">
-<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">StagedTaskCollection</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.StagedTaskCollection" title="Permalink to this definition">¶</a></dt>
-<dd><p>Simplified interface for creating a sequence of Tasks.
-This can be used when the number of Tasks to run is
-fixed and known at program writing time.</p>
-<p>A <cite>StagedTaskCollection</cite> subclass should define methods <cite>stage0</cite>,
-<cite>stage1</cite>, ... up to <cite>stageN</cite> (for some arbitrary value of N positive
-integer).  Each of these <cite>stageN</cite> must return a <tt class="xref py py-class docutils literal"><span class="pre">Task</span></tt>
-instance; the task returned by the <cite>stage0</cite> method will be executed
-first, followed by the task returned by <cite>stage1</cite>, and so on.
-The sequence stops at the first N such that <cite>stageN</cite> is not defined.</p>
-<p>The exit status of the whole sequence is the exit status of the
-last <cite>Task</cite> instance run.  However, if any of the <cite>stageX</cite> methods
-returns an integer value instead of a <cite>Task</cite> instance, then the
-sequence stops and that number is used as the sequence exit
-code.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="gc3libs.workflow.TaskCollection">
-<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">TaskCollection</tt><big>(</big><em>tasks=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection" title="Permalink to this definition">¶</a></dt>
-<dd><p>Base class for all task collections. A &#8220;task collection&#8221; is a
-group of tasks, that can be managed collectively as a single one.</p>
-<p>A task collection implements the same interface as the <cite>Task</cite>
-class, so you can use a <cite>TaskCollection</cite> everywhere a <cite>Task</cite> is
-required.  A task collection has a <cite>state</cite> attribute, which is an
-instance of <cite>gc3libs.Run.State</cite>; each concrete collection class
-decides how to deduce a collective state based on the individual
-task states.</p>
-<dl class="method">
-<dt id="gc3libs.workflow.TaskCollection.add">
-<tt class="descname">add</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.add" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a task to the collection.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.TaskCollection.attach">
-<tt class="descname">attach</tt><big>(</big><em>controller</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.attach" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use the given Controller interface for operations on the job
-associated with this task.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.TaskCollection.peek">
-<tt class="descname">peek</tt><big>(</big><em>what</em>, <em>offset=0</em>, <em>size=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.peek" title="Permalink to this definition">¶</a></dt>
-<dd><p>Raise a <cite>gc3libs.exceptions.InvalidOperation</cite> error, as there
-is no meaningful semantics that can be defined for <cite>peek</cite> into
-a generic collection of tasks.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.TaskCollection.remove">
-<tt class="descname">remove</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.remove" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove a task from the collection.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.TaskCollection.stats">
-<tt class="descname">stats</tt><big>(</big><em>only=None</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.stats" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a dictionary mapping each state name into the count of
-tasks in that state. In addition, the following keys are defined:</p>
-<ul class="simple">
-<li><cite>ok</cite>:  count of TERMINATED tasks with return code 0</li>
-<li><cite>failed</cite>: count of TERMINATED tasks with nonzero return code</li>
-<li><cite>total</cite>: count of managed tasks, whatever their state</li>
-</ul>
-<p>If the optional argument <cite>only</cite> is not None, tasks whose
-class is not contained in <cite>only</cite> are ignored.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>only</strong> (<em>tuple</em>) &#8211; Restrict counting to tasks of these classes.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.TaskCollection.terminated">
-<tt class="descname">terminated</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.terminated" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called when the job state transitions to <cite>TERMINATED</cite>, i.e.,
-the job has finished execution (with whatever exit status, see
-<cite>returncode</cite>) and the final output has been retrieved.</p>
-<p>Default implementation for <cite>TaskCollection</cite> is to set the
-exitcode to the maximum of the exit codes of its tasks.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.workflow.TaskCollection.update_state">
-<tt class="descname">update_state</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update the running state of all managed tasks.</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
 <div class="section" id="module-gc3libs.exceptions">
 <span id="gc3libs-exceptions"></span><h2><cite>gc3libs.exceptions</cite><a class="headerlink" href="#module-gc3libs.exceptions" title="Permalink to this headline">¶</a></h2>
 <p>Exceptions specific to the <cite>gc3libs</cite> package.</p>
@@ -2356,236 +2102,6 @@ execution site occurred.</p>
 action at a later time, because it will yield the same error again.</p>
 <p>This exception should <em>never</em> be instanciated: it is only to be used
 in <cite>except</cite> clauses to exclude &#8220;try again&#8221; situations.</p>
-</dd></dl>
-
-</div>
-<div class="section" id="module-gc3libs.session">
-<span id="gc3libs-session"></span><h2><cite>gc3libs.session</cite><a class="headerlink" href="#module-gc3libs.session" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
-<dt id="gc3libs.session.Session">
-<em class="property">class </em><tt class="descclassname">gc3libs.session.</tt><tt class="descname">Session</tt><big>(</big><em>path</em>, <em>store_url=None</em>, <em>create=True</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session" title="Permalink to this definition">¶</a></dt>
-<dd><p>A &#8216;session&#8217; is a persistent collection of tasks.</p>
-<p>Tasks added to the session are persistently recorded using an
-instance of <cite>gc3libs.persistence.Store</cite>.  Stores can be shared
-among different sessions: each session knows wich jobs it &#8216;owns&#8217;.</p>
-<p>A session is associated to a directory, which holds all the data
-releated to that session. Specifically, two files are always
-created in the session directory andused internally by this class:</p>
-<ul class="simple">
-<li><cite>index.txt</cite>: contains a list of all job IDs
-associated with this session;</li>
-<li><cite>store.url</cite>:  its contents are the URL of the store to create
-(as would be passed to the <cite>gc3libs.persistence.make_store</cite> factory).</li>
-</ul>
-<p>To only argument needed to instantiate a session is the <cite>path</cite> of
-the directory; the directory name will be used as the identifier
-of the session itself.  For example, the following code creates a
-temporary directory and the two files mentioned above inside it:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span><span class="p">;</span> <span class="n">tmpdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mktemp</span><span class="p">(</span><span class="nb">dir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">sorted</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">))</span>
-<span class="go">[&#39;created&#39;, &#39;session_ids.txt&#39;, &#39;store.url&#39;]</span>
-</pre></div>
-</div>
-<p>When a <cite>Session</cite> object is created with a <cite>path</cite> argument pointing
-to an existing valid session, the index of jobs is automatically
-loaded into memory, and the store pointed to by the <tt class="docutils literal"><span class="pre">store.url</span></tt>
-file in the session directory will be used, <em>disregarding the
-contents of the `store_url` argument.</em></p>
-<p>In other words, the <cite>store_url</cite> argument is only used when
-<em>creating a new session</em>.  If no <cite>store_url</cite> argument is passed
-(i.e., it has its default value), a <cite>Session</cite> object will
-instantiate and use a <tt class="xref py py-class docutils literal"><span class="pre">FileSystemStore</span></tt> store, keeping data
-in the <tt class="docutils literal"><span class="pre">jobs</span></tt> subdirectory of the session directory.</p>
-<p>Methods <cite>add</cite> and <cite>remove</cite> are provided to manage the collection;
-the <cite>len()</cite> operator returns the number of tasks in the session;
-iteration over a session returns the tasks one by one:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">task1</span> <span class="o">=</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">Task</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">id1</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task1</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">task2</span> <span class="o">=</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">Task</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">id2</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task2</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
-<span class="go">2</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">session</span><span class="p">:</span>
-<span class="gp">... </span>    <span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
-<span class="go">&lt;class &#39;gc3libs.Task&#39;&gt;</span>
-<span class="go">&lt;class &#39;gc3libs.Task&#39;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">session</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">id1</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
-<span class="go">1</span>
-</pre></div>
-</div>
-<p>When passed the <cite>flush=False</cite> optional argument, methods <cite>add</cite> and
-<cite>remove</cite> do not update the session metadata: i.e., the tasks are
-added or removed from the store and the in-memory task list, but
-the updated task list is not saved back to disk.  This is useful
-when making many changes in a row; call <cite>Session.flush</cite> to persist
-the full set of changes.</p>
-<p>The <tt class="xref py py-class docutils literal"><span class="pre">Store</span></tt> object is anyway accessible in the
-<tt class="xref py py-attr docutils literal"><span class="pre">store</span></tt> attribute of each <cite>Session</cite> instance:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">type</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
-<span class="go">&lt;class &#39;gc3libs.persistence.filesystem.FilesystemStore&#39;&gt;</span>
-</pre></div>
-</div>
-<p>However, <cite>Session</cite> defines methods <cite>save</cite> and <cite>load</cite> as a
-convenient proxy to the corresponding <cite>Store</cite> methods:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">obj</span> <span class="o">=</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">persistence</span><span class="o">.</span><span class="n">Persistable</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">oid</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">obj2</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">oid</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">obj</span><span class="o">.</span><span class="n">persistent_id</span> <span class="o">==</span> <span class="n">obj2</span><span class="o">.</span><span class="n">persistent_id</span>
-<span class="go">True</span>
-</pre></div>
-</div>
-<p>The whole session data can be removed by using method <cite>destroy</cite>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">session</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
-<span class="go">False</span>
-</pre></div>
-</div>
-<dl class="method">
-<dt id="gc3libs.session.Session.add">
-<tt class="descname">add</tt><big>(</big><em>task</em>, <em>flush=True</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.add" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a <cite>Task</cite> to the current session, save it to the associated
-persistent storage, and return the assigned <cite>persistent_id</cite>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># create new, empty session</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span><span class="p">;</span> <span class="n">tmpdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mktemp</span><span class="p">(</span><span class="nb">dir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
-<span class="go">0</span>
-
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># add a task to it</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">task</span> <span class="o">=</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">Task</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">tid1</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
-<span class="go">1</span>
-</pre></div>
-</div>
-<p>Duplicates are silently ignored: the same object can be added
-many times to the session, but gets the same ID each time:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># add a different task</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">tid2</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
-<span class="go">1</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">tid1</span> <span class="o">==</span> <span class="n">tid2</span>
-<span class="go">True</span>
-
-<span class="gp">&gt;&gt;&gt; </span><span class="c"># do cleanup</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">session</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
-<span class="go">False</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.session.Session.destroy">
-<tt class="descname">destroy</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.session.Session.destroy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove the session directory and all the tasks it contains
-from the store which are associated to this session.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">This will remove the associated task storage <em>if and only if</em>
-the storage is contained in the session directory!</p>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.session.Session.flush">
-<tt class="descname">flush</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.session.Session.flush" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update session metadata.</p>
-<p>Should be used after a save/remove operations, to ensure that
-the session state and metadata is correctly persisted.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.session.Session.forget">
-<tt class="descname">forget</tt><big>(</big><em>task_id</em>, <em>flush=True</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.forget" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove task identified by <cite>task_id</cite> from the current session
-<em>but not</em> from the associated storage.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.session.Session.list_ids">
-<tt class="descname">list_ids</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.session.Session.list_ids" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return set of all task IDs belonging to this session.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.session.Session.list_names">
-<tt class="descname">list_names</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.session.Session.list_names" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return set of names of tasks belonging to this session.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.session.Session.load">
-<tt class="descname">load</tt><big>(</big><em>obj_id</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load an object from persistent storage and return it.</p>
-<p>This is just a convenience proxy for calling method <cite>load</cite> on
-the <cite>Store</cite> instance associated with this session.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.session.Session.remove">
-<tt class="descname">remove</tt><big>(</big><em>task_id</em>, <em>flush=True</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.remove" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove task identified by <cite>task_id</cite> from the current session
-<em>and</em> from the associated storage.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.session.Session.save">
-<tt class="descname">save</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.save" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save an object to the persistent storage and return
-<cite>persistent_id</cite> of the saved object.</p>
-<p>This is just a convenience proxy for calling method <cite>save</cite> on
-the <cite>Store</cite> instance associated with this session.</p>
-<p>The object is <em>not</em> added to the session, nor is session
-meta-data updated:</p>
-<div class="highlight-python"><pre># create an empty session
-&gt;&gt;&gt; import tempfile; tmpdir = tempfile.mktemp(dir='.')
-&gt;&gt;&gt; session = Session(tmpdir)
-&gt;&gt;&gt; 0 == len(session)
-True
-
-# use `save` on an object
-&gt;&gt;&gt; obj = gc3libs.persistence.Persistable()
-&gt;&gt;&gt; oid = session.save(obj)
-
-# session is still empty
-&gt;&gt;&gt; 0 == len(session)
-True
-
-# do cleanup
-&gt;&gt;&gt; session.destroy()
-&gt;&gt;&gt; os.path.exists(session.path)
-False</pre>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.session.Session.save_all">
-<tt class="descname">save_all</tt><big>(</big><em>flush=True</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.save_all" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save all modified tasks to persistent storage.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.session.Session.set_end_timestamp">
-<tt class="descname">set_end_timestamp</tt><big>(</big><em>time=None</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.set_end_timestamp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a file named <cite>finished</cite> in the session directory. It&#8217;s
-creation/modification time will be used to know when the
-session has finished.</p>
-<p>Please note that <cite>Session</cite> does not know when a session is
-finished, so this method should be called by a
-<tt class="xref py py-class docutils literal"><span class="pre">SessionBasedScript</span></tt> class.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="gc3libs.session.Session.set_start_timestamp">
-<tt class="descname">set_start_timestamp</tt><big>(</big><em>time=None</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.set_start_timestamp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a file named <cite>created</cite> in the session directory. It&#8217;s
-creation/modification time will be used to know when the
-session has sarted.</p>
-</dd></dl>
-
 </dd></dl>
 
 </div>
@@ -2987,6 +2503,236 @@ class attributes for easier referencing in Python code:</p>
 </dd></dl>
 
 </div>
+<div class="section" id="module-gc3libs.session">
+<span id="gc3libs-session"></span><h2><cite>gc3libs.session</cite><a class="headerlink" href="#module-gc3libs.session" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="gc3libs.session.Session">
+<em class="property">class </em><tt class="descclassname">gc3libs.session.</tt><tt class="descname">Session</tt><big>(</big><em>path</em>, <em>store_url=None</em>, <em>create=True</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session" title="Permalink to this definition">¶</a></dt>
+<dd><p>A &#8216;session&#8217; is a persistent collection of tasks.</p>
+<p>Tasks added to the session are persistently recorded using an
+instance of <cite>gc3libs.persistence.Store</cite>.  Stores can be shared
+among different sessions: each session knows wich jobs it &#8216;owns&#8217;.</p>
+<p>A session is associated to a directory, which holds all the data
+releated to that session. Specifically, two files are always
+created in the session directory andused internally by this class:</p>
+<ul class="simple">
+<li><cite>index.txt</cite>: contains a list of all job IDs
+associated with this session;</li>
+<li><cite>store.url</cite>:  its contents are the URL of the store to create
+(as would be passed to the <cite>gc3libs.persistence.make_store</cite> factory).</li>
+</ul>
+<p>To only argument needed to instantiate a session is the <cite>path</cite> of
+the directory; the directory name will be used as the identifier
+of the session itself.  For example, the following code creates a
+temporary directory and the two files mentioned above inside it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span><span class="p">;</span> <span class="n">tmpdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mktemp</span><span class="p">(</span><span class="nb">dir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">sorted</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">))</span>
+<span class="go">[&#39;created&#39;, &#39;session_ids.txt&#39;, &#39;store.url&#39;]</span>
+</pre></div>
+</div>
+<p>When a <cite>Session</cite> object is created with a <cite>path</cite> argument pointing
+to an existing valid session, the index of jobs is automatically
+loaded into memory, and the store pointed to by the <tt class="docutils literal"><span class="pre">store.url</span></tt>
+file in the session directory will be used, <em>disregarding the
+contents of the `store_url` argument.</em></p>
+<p>In other words, the <cite>store_url</cite> argument is only used when
+<em>creating a new session</em>.  If no <cite>store_url</cite> argument is passed
+(i.e., it has its default value), a <cite>Session</cite> object will
+instantiate and use a <tt class="xref py py-class docutils literal"><span class="pre">FileSystemStore</span></tt> store, keeping data
+in the <tt class="docutils literal"><span class="pre">jobs</span></tt> subdirectory of the session directory.</p>
+<p>Methods <cite>add</cite> and <cite>remove</cite> are provided to manage the collection;
+the <cite>len()</cite> operator returns the number of tasks in the session;
+iteration over a session returns the tasks one by one:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">task1</span> <span class="o">=</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">Task</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">id1</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">task2</span> <span class="o">=</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">Task</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">id2</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+<span class="go">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">session</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+<span class="go">&lt;class &#39;gc3libs.Task&#39;&gt;</span>
+<span class="go">&lt;class &#39;gc3libs.Task&#39;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">session</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">id1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>When passed the <cite>flush=False</cite> optional argument, methods <cite>add</cite> and
+<cite>remove</cite> do not update the session metadata: i.e., the tasks are
+added or removed from the store and the in-memory task list, but
+the updated task list is not saved back to disk.  This is useful
+when making many changes in a row; call <cite>Session.flush</cite> to persist
+the full set of changes.</p>
+<p>The <tt class="xref py py-class docutils literal"><span class="pre">Store</span></tt> object is anyway accessible in the
+<tt class="xref py py-attr docutils literal"><span class="pre">store</span></tt> attribute of each <cite>Session</cite> instance:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">type</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
+<span class="go">&lt;class &#39;gc3libs.persistence.filesystem.FilesystemStore&#39;&gt;</span>
+</pre></div>
+</div>
+<p>However, <cite>Session</cite> defines methods <cite>save</cite> and <cite>load</cite> as a
+convenient proxy to the corresponding <cite>Store</cite> methods:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">obj</span> <span class="o">=</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">persistence</span><span class="o">.</span><span class="n">Persistable</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">oid</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">obj2</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">oid</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">obj</span><span class="o">.</span><span class="n">persistent_id</span> <span class="o">==</span> <span class="n">obj2</span><span class="o">.</span><span class="n">persistent_id</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>The whole session data can be removed by using method <cite>destroy</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">session</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="gc3libs.session.Session.add">
+<tt class="descname">add</tt><big>(</big><em>task</em>, <em>flush=True</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a <cite>Task</cite> to the current session, save it to the associated
+persistent storage, and return the assigned <cite>persistent_id</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># create new, empty session</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span><span class="p">;</span> <span class="n">tmpdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mktemp</span><span class="p">(</span><span class="nb">dir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+<span class="go">0</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># add a task to it</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">task</span> <span class="o">=</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">Task</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tid1</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>Duplicates are silently ignored: the same object can be added
+many times to the session, but gets the same ID each time:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># add a different task</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tid2</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tid1</span> <span class="o">==</span> <span class="n">tid2</span>
+<span class="go">True</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># do cleanup</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">session</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.destroy">
+<tt class="descname">destroy</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.session.Session.destroy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove the session directory and all the tasks it contains
+from the store which are associated to this session.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This will remove the associated task storage <em>if and only if</em>
+the storage is contained in the session directory!</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.flush">
+<tt class="descname">flush</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.session.Session.flush" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update session metadata.</p>
+<p>Should be used after a save/remove operations, to ensure that
+the session state and metadata is correctly persisted.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.forget">
+<tt class="descname">forget</tt><big>(</big><em>task_id</em>, <em>flush=True</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.forget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove task identified by <cite>task_id</cite> from the current session
+<em>but not</em> from the associated storage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.list_ids">
+<tt class="descname">list_ids</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.session.Session.list_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return set of all task IDs belonging to this session.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.list_names">
+<tt class="descname">list_names</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.session.Session.list_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return set of names of tasks belonging to this session.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.load">
+<tt class="descname">load</tt><big>(</big><em>obj_id</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load an object from persistent storage and return it.</p>
+<p>This is just a convenience proxy for calling method <cite>load</cite> on
+the <cite>Store</cite> instance associated with this session.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.remove">
+<tt class="descname">remove</tt><big>(</big><em>task_id</em>, <em>flush=True</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove task identified by <cite>task_id</cite> from the current session
+<em>and</em> from the associated storage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.save">
+<tt class="descname">save</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save an object to the persistent storage and return
+<cite>persistent_id</cite> of the saved object.</p>
+<p>This is just a convenience proxy for calling method <cite>save</cite> on
+the <cite>Store</cite> instance associated with this session.</p>
+<p>The object is <em>not</em> added to the session, nor is session
+meta-data updated:</p>
+<div class="highlight-python"><pre># create an empty session
+&gt;&gt;&gt; import tempfile; tmpdir = tempfile.mktemp(dir='.')
+&gt;&gt;&gt; session = Session(tmpdir)
+&gt;&gt;&gt; 0 == len(session)
+True
+
+# use `save` on an object
+&gt;&gt;&gt; obj = gc3libs.persistence.Persistable()
+&gt;&gt;&gt; oid = session.save(obj)
+
+# session is still empty
+&gt;&gt;&gt; 0 == len(session)
+True
+
+# do cleanup
+&gt;&gt;&gt; session.destroy()
+&gt;&gt;&gt; os.path.exists(session.path)
+False</pre>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.save_all">
+<tt class="descname">save_all</tt><big>(</big><em>flush=True</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.save_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save all modified tasks to persistent storage.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.set_end_timestamp">
+<tt class="descname">set_end_timestamp</tt><big>(</big><em>time=None</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.set_end_timestamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a file named <cite>finished</cite> in the session directory. It&#8217;s
+creation/modification time will be used to know when the
+session has finished.</p>
+<p>Please note that <cite>Session</cite> does not know when a session is
+finished, so this method should be called by a
+<tt class="xref py py-class docutils literal"><span class="pre">SessionBasedScript</span></tt> class.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.session.Session.set_start_timestamp">
+<tt class="descname">set_start_timestamp</tt><big>(</big><em>time=None</em><big>)</big><a class="headerlink" href="#gc3libs.session.Session.set_start_timestamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a file named <cite>created</cite> in the session directory. It&#8217;s
+creation/modification time will be used to know when the
+session has sarted.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="module-gc3libs.template">
 <span id="gc3libs-template"></span><h2><cite>gc3libs.template</cite><a class="headerlink" href="#module-gc3libs.template" title="Permalink to this headline">¶</a></h2>
 <p>Support and expansion of programmatic templates.</p>
@@ -2999,7 +2745,7 @@ texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.</p>
 <dl class="class">
 <dt id="gc3libs.template.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x5002b90&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x3b615f0&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
 <dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
 provided to substitute the keyword values into <cite>obj</cite>, and to
 iterate over expansions of the given keywords (optionally
@@ -3881,7 +3627,7 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b47840401e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b8d5e22a1e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
@@ -3905,7 +3651,7 @@ indented <cite>step</cite> spaces from the enclosing dictionary.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.progressive_number">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><em>qty=None</em>, <em>id_filename='/home/amessina/.gc3/next_id.txt'</em><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><em>qty=None</em>, <em>id_filename='/home/rmurri/.gc3/next_id.txt'</em><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a positive integer, whose value is guaranteed to
 be monotonically increasing across different invocations
 of this function, and also across separate instances of the
@@ -4174,6 +3920,260 @@ If the file does not exist, it is created.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmpfile</span><span class="p">)</span>
 </pre></div>
 </div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-gc3libs.workflow">
+<span id="gc3libs-workflow"></span><h2><cite>gc3libs.workflow</cite><a class="headerlink" href="#module-gc3libs.workflow" title="Permalink to this headline">¶</a></h2>
+<p>Implementation of task collections.</p>
+<p>Tasks can be grouped into collections, which are tasks themselves,
+therefore can be controlled (started/stopped/cancelled) like a single
+whole.  Collection classes provided in this module implement the basic
+patterns of job group execution; they can be combined to form more
+complex workflows.  Hook methods are provided so that derived classes
+can implement problem-specific job control policies.</p>
+<dl class="class">
+<dt id="gc3libs.workflow.ParallelTaskCollection">
+<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">ParallelTaskCollection</tt><big>(</big><em>tasks=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <cite>ParallelTaskCollection</cite> runs all of its tasks concurrently.</p>
+<p>The collection state is set to <cite>TERMINATED</cite> once all tasks have
+reached the same terminal status.</p>
+<dl class="method">
+<dt id="gc3libs.workflow.ParallelTaskCollection.add">
+<tt class="descname">add</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a task to the collection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.ParallelTaskCollection.attach">
+<tt class="descname">attach</tt><big>(</big><em>controller</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.attach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use the given Controller interface for operations on the job
+associated with this task.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.ParallelTaskCollection.kill">
+<tt class="descname">kill</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Terminate all tasks in the collection, and set collection
+state to <cite>TERMINATED</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.ParallelTaskCollection.progress">
+<tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.progress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Try to advance all jobs in the collection to the next state in
+a normal lifecycle.  Return list of task execution states.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.ParallelTaskCollection.submit">
+<tt class="descname">submit</tt><big>(</big><em>resubmit=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start all tasks in the collection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.ParallelTaskCollection.update_state">
+<tt class="descname">update_state</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update state of all tasks in the collection.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.workflow.RetryableTask">
+<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">RetryableTask</tt><big>(</big><em>task</em>, <em>max_retries=0</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.RetryableTask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrap a <cite>Task</cite> instance and re-submit it until a specified
+termination condition is met.</p>
+<p>By default, the re-submission upon failure happens iff execution
+terminated with nonzero return code; the failed task is retried up
+to <cite>self.max_retries</cite> times (indefinitely if <cite>self.max_retries</cite> is 0).</p>
+<p>Override the <cite>retry</cite> method to implement a different retryal policy.</p>
+<p><em>Note:</em> The resubmission code is implemented in the
+<tt class="xref py py-meth docutils literal"><span class="pre">terminated()</span></tt>, so be sure to call it if you override in
+derived classes.</p>
+<dl class="method">
+<dt id="gc3libs.workflow.RetryableTask.retry">
+<tt class="descname">retry</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.RetryableTask.retry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return <cite>True</cite> or <cite>False</cite>, depending on whether the failed task
+should be re-submitted or not.</p>
+<p>The default behavior is to retry a task iff its execution
+terminated with nonzero returncode and the maximum retry limit
+has not been reached.  If <cite>self.max_retries</cite> is 0, then the
+dependent task is retried indefinitely.</p>
+<p>Override this method in subclasses to implement a different
+policy.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.RetryableTask.update_state">
+<tt class="descname">update_state</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.RetryableTask.update_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the state of the dependent task, then resubmit it if it&#8217;s
+TERMINATED and <cite>self.retry()</cite> is <cite>True</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.workflow.SequentialTaskCollection">
+<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">SequentialTaskCollection</tt><big>(</big><em>tasks</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <cite>SequentialTaskCollection</cite> runs its tasks one at a time.</p>
+<p>After a task has completed, the <cite>next</cite> method is called with the
+index of the finished task in the <cite>self.tasks</cite> list; the return
+value of the <cite>next</cite> method is then made the collection
+<cite>execution.state</cite>.  If the returned state is <cite>RUNNING</cite>, then the
+subsequent task is started, otherwise no action is performed.</p>
+<p>The default <cite>next</cite> implementation just runs the tasks in the order
+they were given to the constructor, and sets the state to
+<cite>TERMINATED</cite> when all tasks have been run.</p>
+<dl class="method">
+<dt id="gc3libs.workflow.SequentialTaskCollection.attach">
+<tt class="descname">attach</tt><big>(</big><em>controller</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.attach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use the given Controller interface for operations on the job
+associated with this task.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.SequentialTaskCollection.kill">
+<tt class="descname">kill</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop execution of this sequence.  Kill currently-running task
+(if any), then set collection state to TERMINATED.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.SequentialTaskCollection.next">
+<tt class="descname">next</tt><big>(</big><em>done</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the state or task to run when step number <cite>done</cite> is completed.</p>
+<p>This method is called when a task is finished; the <cite>done</cite>
+argument contains the index number of the just-finished task
+into the <cite>self.tasks</cite> list.  In other words, the task that
+just completed is available as <cite>self.tasks[done]</cite>.</p>
+<p>The return value from <cite>next</cite> can be either a task state (i.e.,
+an instance of <cite>Run.State</cite>), or a valid index number for
+<cite>self.tasks</cite>. In the first case:</p>
+<ul class="simple">
+<li>if the return value is <cite>Run.State.TERMINATED</cite>,
+then no other jobs will be run;</li>
+<li>otherwise, the return value is assigned to <cite>execution.state</cite>
+and the next job in the <cite>self.tasks</cite> list is executed.</li>
+</ul>
+<p>If instead the return value is a (nonnegative) number, then
+tasks in the sequence will be re-run starting from that index.</p>
+<p>The default implementation runs tasks in the order they were
+given to the constructor, and sets the state to TERMINATED
+when all tasks have been run.  This method can (and should) be
+overridden in derived classes to implement policies for serial
+job execution.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.SequentialTaskCollection.submit">
+<tt class="descname">submit</tt><big>(</big><em>resubmit=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start the current task in the collection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.SequentialTaskCollection.update_state">
+<tt class="descname">update_state</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update state of the collection, based on the jobs&#8217; statuses.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.workflow.StagedTaskCollection">
+<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">StagedTaskCollection</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.StagedTaskCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simplified interface for creating a sequence of Tasks.
+This can be used when the number of Tasks to run is
+fixed and known at program writing time.</p>
+<p>A <cite>StagedTaskCollection</cite> subclass should define methods <cite>stage0</cite>,
+<cite>stage1</cite>, ... up to <cite>stageN</cite> (for some arbitrary value of N positive
+integer).  Each of these <cite>stageN</cite> must return a <tt class="xref py py-class docutils literal"><span class="pre">Task</span></tt>
+instance; the task returned by the <cite>stage0</cite> method will be executed
+first, followed by the task returned by <cite>stage1</cite>, and so on.
+The sequence stops at the first N such that <cite>stageN</cite> is not defined.</p>
+<p>The exit status of the whole sequence is the exit status of the
+last <cite>Task</cite> instance run.  However, if any of the <cite>stageX</cite> methods
+returns an integer value instead of a <cite>Task</cite> instance, then the
+sequence stops and that number is used as the sequence exit
+code.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.workflow.TaskCollection">
+<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">TaskCollection</tt><big>(</big><em>tasks=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for all task collections. A &#8220;task collection&#8221; is a
+group of tasks, that can be managed collectively as a single one.</p>
+<p>A task collection implements the same interface as the <cite>Task</cite>
+class, so you can use a <cite>TaskCollection</cite> everywhere a <cite>Task</cite> is
+required.  A task collection has a <cite>state</cite> attribute, which is an
+instance of <cite>gc3libs.Run.State</cite>; each concrete collection class
+decides how to deduce a collective state based on the individual
+task states.</p>
+<dl class="method">
+<dt id="gc3libs.workflow.TaskCollection.add">
+<tt class="descname">add</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a task to the collection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.TaskCollection.attach">
+<tt class="descname">attach</tt><big>(</big><em>controller</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.attach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use the given Controller interface for operations on the job
+associated with this task.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.TaskCollection.peek">
+<tt class="descname">peek</tt><big>(</big><em>what</em>, <em>offset=0</em>, <em>size=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.peek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raise a <cite>gc3libs.exceptions.InvalidOperation</cite> error, as there
+is no meaningful semantics that can be defined for <cite>peek</cite> into
+a generic collection of tasks.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.TaskCollection.remove">
+<tt class="descname">remove</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a task from the collection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.TaskCollection.stats">
+<tt class="descname">stats</tt><big>(</big><em>only=None</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dictionary mapping each state name into the count of
+tasks in that state. In addition, the following keys are defined:</p>
+<ul class="simple">
+<li><cite>ok</cite>:  count of TERMINATED tasks with return code 0</li>
+<li><cite>failed</cite>: count of TERMINATED tasks with nonzero return code</li>
+<li><cite>total</cite>: count of managed tasks, whatever their state</li>
+</ul>
+<p>If the optional argument <cite>only</cite> is not None, tasks whose
+class is not contained in <cite>only</cite> are ignored.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>only</strong> (<em>tuple</em>) &#8211; Restrict counting to tasks of these classes.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.TaskCollection.terminated">
+<tt class="descname">terminated</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.terminated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state transitions to <cite>TERMINATED</cite>, i.e.,
+the job has finished execution (with whatever exit status, see
+<cite>returncode</cite>) and the final output has been retrieved.</p>
+<p>Default implementation for <cite>TaskCollection</cite> is to set the
+exitcode to the maximum of the exit codes of its tasks.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.TaskCollection.update_state">
+<tt class="descname">update_state</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the running state of all managed tasks.</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -5586,21 +5586,21 @@ don&#8217;t operate on single jobs.</p>
   <h3><a href="../../index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">GC3Libs programming API</a><ul>
-<li><a class="reference internal" href="#module-gc3libs"><cite>gc3libs</cite></a></li>
+<li><a class="reference internal" href="#id1"><cite>gc3libs</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.cmdline"><cite>gc3libs.cmdline</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.config"><cite>gc3libs.config</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.core"><cite>gc3libs.core</cite></a></li>
-<li><a class="reference internal" href="#module-gc3libs.workflow"><cite>gc3libs.workflow</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.exceptions"><cite>gc3libs.exceptions</cite></a></li>
-<li><a class="reference internal" href="#module-gc3libs.session"><cite>gc3libs.session</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.persistence"><cite>gc3libs.persistence</cite></a><ul>
 <li><a class="reference internal" href="#a-usage-warning">A usage warning</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-gc3libs.quantity"><cite>gc3libs.quantity</cite></a></li>
+<li><a class="reference internal" href="#module-gc3libs.session"><cite>gc3libs.session</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.template"><cite>gc3libs.template</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.url"><cite>gc3libs.url</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.utils"><cite>gc3libs.utils</cite></a></li>
+<li><a class="reference internal" href="#module-gc3libs.workflow"><cite>gc3libs.workflow</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.application"><cite>gc3libs.application</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.application.apppot"><cite>gc3libs.application.apppot</cite></a></li>
 <li><a class="reference internal" href="#module-gc3libs.application.gamess"><cite>gc3libs.application.gamess</cite></a></li>
@@ -5629,7 +5629,7 @@ don&#8217;t operate on single jobs.</p>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="../tutorials/warholize/warholize.html"
-                        title="previous chapter">Warholize Tutorial</a></p>
+                        title="previous chapter">Introduction</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="../../developers/index.html"
                         title="next chapter">Developer Documentation</a></p>
@@ -5663,7 +5663,7 @@ don&#8217;t operate on single jobs.</p>
           <a href="../../developers/index.html" title="Developer Documentation"
              >next</a> |</li>
         <li class="right" >
-          <a href="../tutorials/warholize/warholize.html" title="Warholize Tutorial"
+          <a href="../tutorials/warholize/warholize.html" title="Introduction"
              >previous</a> |</li>
         <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
           <li><a href="../index.html" >Programmer Documentation</a> &raquo;</li> 
