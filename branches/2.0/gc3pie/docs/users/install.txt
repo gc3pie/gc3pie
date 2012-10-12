@@ -10,25 +10,28 @@
  Installation of GC3Pie
 ------------------------
 
-Only Linux operating systems are supported. There is, however, a
-section describing how to install GC3Pie on MacOSX at the end of this page.
 
 Quick start
 ===========
 
 We provide an installation script which automatically try to install
-GC3pie in your home directory. Running this script is as simple as
-running::
+GC3pie in your home directory.  The quick installation procedure has
+only been tested on variants of the GNU/Linux operating
+system. (However, the script should work on MacOSX as well, provided
+you follow the preparation steps outlined in the "MacOSX installation"
+section below.)
+
+To install GC3Pie just type this at your terminal prompt::
 
     sh -c "$(wget -O- http://gc3pie.googlecode.com/svn/install.sh)"
 
 The above command creates a directory `$HOME/gc3pie`:file: and installs
 the latest release of GC3Pie and all its dependencies into it.
 
-In case you have trouble running the installation script you can send
-an email to gc3pie@googlegroups.com asking for help. Please
-include the full output of the script in your email, in order to help
-us to identify the problem.
+In case you have trouble running the installation script, please send
+an email to gc3pie@googlegroups.com asking for help.  Include the full
+output of the script in your email, in order to help us to identify
+the problem.
 
 
 Non-standard installation options
@@ -184,7 +187,7 @@ Installation into a virtualenv has two distinct advantages:
 
 3. Check-out the ``gc3pie`` files in a ``src/`` directory::
 
-       svn co http://gc3pie.googlecode.com/svn/trunk/gc3pie src
+       svn co http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie src
 
 
 4. Install the ``gc3pie`` in "develop" mode, so any modification
@@ -220,7 +223,7 @@ Installation into a virtualenv has two distinct advantages:
    working configuration file; `the ConfigurationFile Wiki page <http://code.google.com/p/gc3pie/wiki/ConfigurationFile/>`_
    provides an explanation of the syntax.
 
-   The `example configuration file <http://gc3pie.googlecode.com/svn/trunk/gc3pie/gc3libs/etc/gc3pie.conf.example/>`_
+   The `example configuration file <http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/gc3libs/etc/gc3pie.conf.example/>`_
    can be used as a startup point if you want to enable access to the SMSCG_ infrastructure.  
    Before you can actually use this file, you will need to: 
    
@@ -290,8 +293,29 @@ Installation into a virtualenv has two distinct advantages:
 Upgrade
 =======
 
-These instructions show how to upgrade the GC3Pie scripts to the
-latest version found in the GC3 svn repository.
+If you used the installation script, the fastest way to upgrade is just to reinstall:
+
+0. De-activate the current GC3Pie virtual environment::
+
+     deactivate 
+
+   (If you get an error "command not found", do not worry and proceed
+   on to the next step; in case of other errors please stop here and
+   report to the `GC3Pie users mailing-list
+   <mailto:gc3pie.googlegroups.com>`.)
+
+1. Move the `$HOME/gc3pie`:file: directory to another location, e.g.::
+
+     mv $HOME/gc3pie $HOME/gc3pie.OLD
+
+2. Reinstall GC3Pie using the quick-install script (top of this page).
+
+3. Once you have verified that your new installation is working, you
+   can remove the `$HOME/gc3pie.OLD`:file: directory.
+
+If instead you installed GC3Pie using the "manual installation" instructions,
+then the following steps will update GC3Pie to the latest version
+in the code repository:
 
 1. `cd`:command: to the directory containing the GC3Pie virtualenv;
    assuming it is named ``gc3pie`` as in the above installation
@@ -317,13 +341,43 @@ are, by running the `svn info` command in the `src` directory: watch
 out for the `Revision:` line.
 
 
+MacOSX Installation
+===================
+
+Installation on MacOSX machines is possible, however there are still a
+few issues.  Please let us know on the `GC3Pie users mailing-list
+<mailto:gc3pie@googlegroups.com>` if you need MacOSX support.
+
+1) Standard usage of the installation script (i.e., with no options) works.
+
+2) Options can only be given in the abbreviated one-letter form (e.g.,
+   ``-d``); the long form (e.g., ``--directory``) will not work.
+
+2) The `shellcmd` backend of GC3Pie depends on the GNU ``time``
+   command, which is not installed on MacOSX by default. This means
+   that with a standard MacOSX installation the `shellcmd` resource
+   will **not** work. However:
+
+   * other resources, like `pbs` via `ssh` transport, will work.
+
+   * you can install the GNU time command either via `MacPorts`_,
+     `Fink`_ or from the `this url`_. After installing it you don't
+     need to update your ``PATH`` environment variable, it's enough to
+     set the ``time_cmd`` option in your GC3Pie configuration file.
+
+4) At the time of this writing, `the ARC client libraries are not
+   available on MacOSX`__, so ARC backends will not work.
+
+.. __:  http://www.nordugrid.org/documents/arc-client-install.html>
+
+
 HTML Documentation
 ==================
 
 HTML documentation for the GC3Libs programming interface can be
 read online at:
 
-  http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/index.html
+  http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/docs/html/index.html
 
 If you installed GC3Pie manually, or if you installed it using the
 ``install.sh`` script with the ``--develop`` option, you can also
@@ -335,38 +389,6 @@ access a local copy of the documentation from the sources::
 
 Note that you need the Python package `Sphinx`_
 in order to build the documentation locally.
-
-MacOSX Installtion
-==================
-
-Installation on MacOSX machines is not supported, however it is
-possible to install it on it but there are a few issues:
-
-1) Standard MacOSX core utils does not work well with the
-   ``install.sh`` script. Specifically, you cannot use any command
-   line option with it. However:
-
-   * Standard installation works.
-
-   * if you install the GNU coreutils (we suggest you to do it via
-     `MacPorts`_ or `Fink`_) and you configure your ``PATH``
-     environment variable so that the default ``getopt`` command is
-     the GNU one, ``install.sh`` will work perfectly.
-
-2) The `shellcmd` backend of GC3Pie depends on the GNU ``time``
-   command, which is not installed on MacOSX by default. This means
-   that with a standard MacOSX installation the `shellcmd` resource
-   will NOT work. However:
-
-   * other resources, like `pbs` via `ssh` transport, will work.
-
-   * you can install the GNU time command either via `MacPorts`_,
-     `Fink`_ or from the `this url`_. After installing it you don't
-     need to update your ``PATH`` environment variable, it's enough to
-     set the ``time_cmd`` option in your GC3Pie configuration file.
-
-3) we cannot guarantee that the ARC backend will work with GC3Pie on
-   MacOSX.
 
 
 .. Local references
