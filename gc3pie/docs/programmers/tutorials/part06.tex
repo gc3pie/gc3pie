@@ -1,0 +1,233 @@
+
+\documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usepackage{gc3}
+\usepackage{marvosym}
+
+\title[GC3Utils]{%
+GC3Pie - The GC3Pie utils
+}
+\author[Antonio Messina]{%
+  GC3: Grid Computing Competence Center, \\
+  University of Zurich
+}
+
+\date{Oct.~1, 2012}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}[fragile]
+  \frametitle{Low level tools to debug your scripts}
+  \begin{description}
+  \item[\texttt{gservers}] list status of computational resources
+  \item[\texttt{ginfo}] print detailed information about jobs in a session
+  \item[\texttt{gstat}] print status of the jobs in a session
+  \item[\texttt{gkill}] kill jobs.
+  \item[\texttt{gclean}] cleanup (call it after \lstinline|gkill|)
+  \end{description}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\texttt{gservers}}
+  \begin{lstlisting}[basicstyle=\tt\tiny]
+(gc3pie)kenny:~/$ gservers
++-------------------------------------------------------------+
+|                   localhost                                 |
++=============================================================+
+|                          Accessible? / updated   1          |
+|                     Total queued jobs / queued   0          |
+|                  Own queued jobs / user_queued   0          |
+|                    Own running jobs / user_run   0          |
+|          Max cores per job / max_cores_per_job   2          |
+| Max memory per core (MB) / max_memory_per_core   2e+09B     |
+|  Max walltime per job (minutes) / max_walltime   2.88e+10ns |
++-------------------------------------------------------------+
+(gc3pie)kenny:~/$
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\texttt{ginfo} \onslide<2>{(failure example)}}
+  \begin{lstlisting}[language=sh,basicstyle=\tt\tiny]
+(gc3pie)kenny:~/$ python ex05c -s session1
+(gc3pie)kenny:~/$ ginfo -s session1
+\end{lstlisting}
+\pause  \begin{lstlisting}[language=sh,basicstyle=\tt\tiny]
+c3.gc3libs: WARNING: Failed loading file 'session1/jobs/GArchApplication.228403':
+   ImportError: No module named ex05c
+Traceback (most recent call last):
+  File "/home/amessina/gc3pie/gc3libs/persistence/filesystem.py", line 115, in load
+    obj = self._load_from_file(filename)
+  File "/home/amessina/gc3pie/gc3libs/persistence/filesystem.py", line 92, in _load_from_file
+    obj = unpickler.load()
+ImportError: No module named ex05c
+gc3.gc3libs: WARNING: Ignoring error from loading 'GArchApplication.228403': 
+  Failed retrieving object from file 'session1/jobs/GArchApplication.228403': ImportError: 
+  No module named ex05c
+gc3.gc3libs: WARNING: Failed loading file '/home/amessina/session1/jobs/GArchApplication.228403': ImportError: No module named ex05c
+Traceback (most recent call last):
+  File "/home/amessina/gc3pie/gc3libs/persistence/filesystem.py", line 115, in load
+    obj = self._load_from_file(filename)
+  File "/home/amessina/gc3pie/gc3libs/persistence/filesystem.py", line 92, in _load_from_file
+    obj = unpickler.load()
+ImportError: No module named ex05c
+gc3.gc3libs: ERROR: Could not retrieve job 'GArchApplication.228403' (LoadError: Failed 
+retrieving object from file '/home/amessina/session1/jobs/GArchApplication.228403': ImportError: 
+No module named ex05c). Ignoring.
+  \end{lstlisting} %$
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\texttt{ginfo} (failure example)}
+  \begin{lstlisting}[language=sh,basicstyle=\tt\tiny]
+(gc3pie)kenny:~/$ python @\HL{ex05c}@ -s session1
+(gc3pie)kenny:~/$ ginfo -s session1
+\end{lstlisting}
+\begin{lstlisting}[language=sh,basicstyle=\tt\tiny]
+c3.gc3libs: WARNING: Failed loading file 'session1/jobs/GArchApplication.228403':
+   @\HL{ImportError: No module named ex05c}@
+Traceback (most recent call last):
+  File "/home/amessina/gc3pie/gc3libs/persistence/filesystem.py", line 115, in load
+    obj = self._load_from_file(filename)
+  File "/home/amessina/gc3pie/gc3libs/persistence/filesystem.py", line 92, in _load_from_file
+    obj = unpickler.load()
+ImportError: No module named ex05c
+gc3.gc3libs: WARNING: Ignoring error from loading 'GArchApplication.228403': 
+  Failed retrieving object from file 'session1/jobs/GArchApplication.228403': @\HL{ImportError: }@
+  @\HL{No module named ex05c}@
+gc3.gc3libs: WARNING: Failed loading file '/home/amessina/session1/jobs/GArchApplication.228403': ImportError: No module named ex05c
+Traceback (most recent call last):
+  File "/home/amessina/gc3pie/gc3libs/persistence/filesystem.py", line 115, in load
+    obj = self._load_from_file(filename)
+  File "/home/amessina/gc3pie/gc3libs/persistence/filesystem.py", line 92, in _load_from_file
+    obj = unpickler.load()
+@\HL{ImportError: No module named ex05c}@
+gc3.gc3libs: ERROR: Could not retrieve job 'GArchApplication.228403' (LoadError: Failed 
+retrieving object from file '/home/amessina/session1/jobs/GArchApplication.228403': @\HL{ImportError: }@
+@\HL{No module named ex05c). Ignoring.}@
+  \end{lstlisting} %$
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{GC3Utils and the \texttt{PYTHONPATH}}
+
+  In order to work, \lstinline|gc3info| and the other tools need to
+  access the class definitions of your script.
+
+  \+
+  To fix this issue, always remember to:
+  \begin{itemize}
+
+  \item add in your script file an \lstinline|if| block like the following:
+    \begin{lstlisting}
+if __name__ == "__main__":
+    from ex05c import GArchScript
+    GArchScript().run()
+    \end{lstlisting}
+
+  \item set the \lstinline|PYTHONPATH| variable to the directory
+    containing your script:
+    \begin{lstlisting}[language=sh]
+      kenny:~$ export PYTHONPATH=$(pwd)
+    \end{lstlisting}%$
+  \end{itemize}
+
+  \begin{references}
+    \url{http://code.google.com/p/gc3pie/issues/detail?id=95}
+  \end{references}
+
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\texttt{ginfo} (finally working)}
+  \begin{lstlisting}[basicstyle=\tt\scriptsize]
+    (gc3pie)kenny:~$ ginfo -s session1
+
+GArchApplication.228404
+    execution_targets: 
+    history: 
+        Submitting to 'localhost' at Sun Sep 30 12:33:22 2012 at 
+                 Sun Sep 30 12:33:22 2012
+        RUNNING at Sun Sep 30 12:33:22 2012
+        SUBMITTED at Sun Sep 30 12:33:22 2012
+        Submitted to 'localhost' at Sun Sep 30 12:33:22 2012 at 
+                 Sun Sep 30 12:33:22 2012
+    lrms_execdir: /tmp/gc3libs.rd5fzT.tmp.d
+    lrms_jobid: 27357
+    resource_name: localhost
+    state_last_changed: 1349001202.21
+    timestamp: 
+        NEW: 1349001202.2
+        RUNNING: 1349001202.21
+        SUBMITTED: 1349001202.21
+  \end{lstlisting}%$
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\texttt{gstat}}
+  \begin{lstlisting}
+(gc3pie)kenny:~$ gstat -n -s session1
+  \end{lstlisting}
+  \begin{lstlisting}[basicstyle=\tt\tiny]
+         JobID                 Job name           State                                           Info                                       
+=======================================================================================@\Righttorque@
+=====================================================
+GArchApplication.228404   GArchApplication-N1   SUBMITTED   Submitted to 'localhost' at@\Righttorque@
+ Sun Sep 30 12:33:22 2012 at Sun Sep 30 12:33:22 2012 
+  \end{lstlisting}%$
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\texttt{gkill}}
+Submit a job and check that it's running.
+\begin{lstlisting}[language=sh,basicstyle=\tt\tiny]
+(gc3pie)kenny:~$ python ex05c.py -s session1
+(gc3pie)kenny:~$ gstat  -s session1
+         JobID                 Job name           State                                        Info                                     
+=======================================================================================================================================
+GArchApplication.228411   GArchApplication-N1   SUBMITTED   Submitted
+to 'argo' at Sun Sep 30 13:04:30 2012 at Sun Sep 30 13:04:30 2012 
+\end{lstlisting}
+
+Cancel it using \lstinline|gkill|:
+\begin{lstlisting}[basicstyle=\tt\tiny]
+(gc3pie)kenny:~$ gkill -s session1 GArchApplication.228411
+Sent request to cancel job 'GArchApplication.228411'.
+\end{lstlisting}%$
+
+check that the job has been killed.
+
+\begin{lstlisting}[basicstyle=\tt\tiny]
+(gc3pie)kenny:~$ gstat  -s session1/
+         JobID                 Job name            State                                   Info                              
+============================================================================================================================
+GArchApplication.228411   GArchApplication-N1   TERMINATING   Remote job terminated by signal 15 at Sun Sep 30 13:04:51 2012 
+\end{lstlisting}%$
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\texttt{gclean}}
+  \begin{itemize}
+  \item To run after (or instead of) \lstinline|gkill|
+  \item works only on jobs in final state (\lstinline|TERMINATED| or
+    \lstinline|TERMINATING|)
+  \end{itemize}
+
+\begin{lstlisting}[basicstyle=\tt\scriptsize]
+(gc3pie)kenny:~$ gclean -s session1 GArchApplication.228411
+(gc3pie)kenny:~$ 
+\end{lstlisting}%
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{itemize}
+  \item all the gc3utils have a \lstinline|--help| option.
+  \item \lstinline|gkill| and \lstinline|gclean| accept a
+    \lstinline|-A| option to operate on all the jobs.
+  \item Documentation of all gc3pie tools is available on the internet \url{http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/gc3utils.html}
+  \end{itemize}
+\end{frame}
+
+\end{document}

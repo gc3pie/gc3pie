@@ -1,0 +1,41 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: ../global.inc
+
+.. _`programmer documentation`:
+
+============================
+  Programmer Documentation
+============================
+
+This document is the technical reference for the GC3Libs programming
+model, aimed at programmers who want to use GC3Libs to implement
+computational workflows in Python.
+
+The :ref:`Programming Overview` section is the starting point for
+whoever wants to start developing applications with GC3Pie. It gives
+an overview of the main components of the library and how they
+interact with each other.
+
+The `Tutorials`_ section contains documentation that describes in more
+detail the various components discussed in the programming overview,
+as well as many working examples (took from exercises done during the
+training events) and the :ref:`warholize tutorial`: a step-by-step
+tutorial that will show you how to write a complex GC3Pie workflow.
+
+The :ref:`GC3Libs` section instead contains the API reference of
+GC3Pie library.
+
+
+.. toctree::
+
+  overview
+  tutorials/index
+  gc3libs/api
+
+
+.. _`tutorials`: tutorials/index.html
+

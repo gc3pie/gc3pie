@@ -29,24 +29,41 @@ command-line driver scripts, in the form of Python object classes
 whose behavior can be customized by overriding specified object
 methods.
 
-GC3Pie is comprised of three main components: 
+GC3Pie documentation is divided in three sections:
 
-- :ref:`GC3Libs`: A library of Python classes for controlling the life-cycle
-  of a Grid or batch computational job collections. *GC3Libs* provides
-  services for submitting computational jobs to Grids and batch
-  systems and controlling their execution, persisting job information,
-  and retrieving the final output.
+* :ref:`User Documentation`: info on how to install, configure and
+  run GC3Pie applications.
 
-- :ref:`GC3Apps`: A collection of driver scripts to run large job
-  campaigns. These are all "glue scripts" to control hundreds or
-  thousand job instances at once; they are used in production by
-  various research groups, but are also publicly available as examples
-  of GC3Libs coding.
+* :ref:`Programmer Documentation`: info for programmers who want to
+  use the GC3Pie libraries to write their own scripts and
+  applications.
 
-- :ref:`GC3Utils`: This is a small set of low-level utilities to
-  perform various control and cleanup tasks, like querying a job's
-  running state (:command:`gstat`), forcibly terminating it
-  (:command:`gkill`), re-submitting a job (:command:`gresub`), etc.
+* :ref:`Developer Documentation`: detailed information on how to
+  contribute to GC3Pie and get your code included in the main library.
+
+..
+   GC3Pie is comprised of three main components: 
+
+   - :ref:`GC3Libs`: A library of Python classes for controlling the
+     life-cycle of a Grid or batch computational job
+     collections. *GC3Libs* provides services for submitting
+     computational jobs to Grids and batch systems and controlling
+     their execution, persisting job information, retrieving and
+     processing the final output.  *GC3Libs* also implements
+     facilities to compose collections of jobs into a single workflow,
+     with support for dependencies, parallel execution, etc.
+
+   - :ref:`GC3Apps`: A collection of driver scripts to run large job
+     campaigns. These are all "glue scripts" to control hundreds or
+     thousand job instances at once; they are used in production by
+     various research groups, but are also publicly available as examples
+     of GC3Libs coding.
+
+   - :ref:`GC3Utils`: This is a small set of low-level utilities to
+     perform various control and cleanup tasks, like querying a job's
+     running state (:command:`gstat`), forcibly terminating it
+     (:command:`gkill`), re-submitting a job (:command:`gresub`), etc.
+
 
 
 -------------------
@@ -55,13 +72,9 @@ GC3Pie is comprised of three main components:
 
 .. toctree::
 
-  install
-  configuration
-  troubleshooting
-  gc3apps/index
-  gc3utils
-  gc3libs/index
-  contributing
+  users/index
+  programmers/index
+  developers/index
   credits
   glossary
 

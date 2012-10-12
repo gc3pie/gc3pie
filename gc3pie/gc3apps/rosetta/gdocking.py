@@ -23,7 +23,7 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gdocking --help`` for program usage instructions.
 """
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.0 version (SVN $Revision$)'
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """

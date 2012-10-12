@@ -1,0 +1,256 @@
+\documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usepackage{gc3}
+
+\usepackage{graphicx}
+\usepackage{alltt}
+\usepackage{ulem}
+
+\title{%
+  The \texttt{SequentialTaskCollection}
+}
+\author[Sergio Maffioletti]{%
+  GC3: Grid Computing Competence Center, \\
+  University of Zurich
+}
+\date{Oct.~1, 2012}
+
+\begin{document}
+
+% title frame
+\maketitle
+
+\begin{frame}
+  \frametitle{Running jobs in sequence}
+  \begin{block}{}
+    A \texttt{SequentialTaskCollection} runs its tasks one at a time.
+  \end{block}
+  \begin{block}{}
+    \texttt{SequentialTaskCollection} can alter the sequence
+    on the fly, insert new stages while running and loop
+    back.
+  \end{block}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Running jobs in sequence}
+  \begin{block}{}
+    After a task has completed, the \texttt{next} method is called with the
+    index of the \texttt{finished} task in the `self.tasks` list
+  \end{block}
+  \begin{block}{}
+    the return value of the \texttt{next} method is then made the collection
+    \texttt{execution.state}.  
+  \end{block}
+
+  \begin{block}{}
+    If the returned state is `RUNNING`, then the
+    subsequent task is started, otherwise no action is performed.
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Example of a SequentialTaskCollection}
+\begin{lstlisting}
+class DemoIteration@\HL{(SequentialTaskCollection)}@:
+   def __init__(self, ...):
+        
+      # create initial task and register it
+      initial_task = GdemoApplication(...)
+      SequentialTaskCollection.__init__(
+         self, 
+         [initial_task]
+         ) 
+      \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Create initial list of tasks}
+  \begin{lstlisting}
+class DemoIteration(SequentialTaskCollection):
+  def __init__(self, ...):
+
+     # create initial task and register it
+      @\HL{initial\_task}@= GdemoApplication(...)
+     SequentialTaskCollection.__init__(
+         self, 
+         @\HL{[initial\_task]}@ 
+         )
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{\texttt{next} method used to dynamically define new task}
+  \begin{lstlisting}
+  def @\HL{next(self, iteration)}@:
+      last_application = self.tasks[iteration]
+
+      if computed_value == self.limit:
+          self.returncode = 0
+          return Run.State.TERMINATED
+      else:
+          self.add(GdemoApplication(
+                    computed_value, 
+                    self.increment, 
+                    iteration+1
+                    )
+                   )
+          return Run.State.RUNNING
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{use \texttt{iteration} to identify last terminated task}
+  \begin{lstlisting}
+  def next(self, iteration):
+      last_application = @\HL{self.tasks[iteration]}@
+
+      # extract information from 'last\_application'
+      # and process it
+
+      if computed_value == self.limit:
+          self.returncode = 0
+          return Run.State.TERMINATED
+      else:
+          self.add(GdemoApplication(
+                    computed_value, 
+                    self.increment, 
+                    iteration+1
+                    )
+                   )
+          return Run.State.RUNNING
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+ \frametitle{Define termination condition: \texttt{return Run.State.TERMINATED}}
+ \begin{lstlisting}
+  def next(self, iteration):
+      last_application = self.tasks[iteration]
+
+      if computed_value == self.limit:
+          self.returncode = 0
+          @\HL{return Run.State.TERMINATED}@
+      else:
+          self.add(GdemoApplication(
+                    computed_value, 
+                    self.increment, 
+                    iteration+1
+                    )
+                   )
+          return Run.State.RUNNING
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{an Example from gmhc-coev}
+ \begin{lstlisting}
+def next(self, iteration):
+  if self.generations_done < self.generations_to_do:
+     self.add(
+        GMhcCoevApplication(
+          self.N, 
+          self.p_mut_coeff, 
+          self.choose_or_rand, 
+          self.sick_or_not, 
+          self.off_v_last,
+          output_dir = os.path.join(
+                      self.output_dir, 
+                      'tmp'),
+          latest_work = latest_work,
+          executable = self.executable,
+          **self.extra)
+          )
+     return Run.State.RUNNING
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{...or add new task in the list and continue}
+ \begin{lstlisting}
+  def next(self, iteration):
+      last_application = self.tasks[iteration]
+
+      if computed_value == self.limit:
+          self.returncode = 0
+          return Run.State.TERMINATED
+      else:
+          @\HL{self.add(GdemoApplication(}@
+                    computed_value, 
+                    self.increment, 
+                    iteration+1
+                    )
+                   )
+          return Run.State.RUNNING
+  \end{lstlisting}
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+  \frametitle{let's look inside \texttt{SequentialTaskCollection} class}
+  \begin{lstlisting}
+class @\HL{SequentialTaskCollection(TaskCollection)}@:
+
+ def update_state(self, **extra_args):
+  ...
+  task = self.tasks[self._current_task]
+  task.update_state(**extra_args)
+  ...
+  elif (task.execution.state == Run.State.TERMINATED):
+  ...
+  nxt = self.next(self._current_task)
+  ...
+  \end{lstlisting}
+\end{frame}
+\begin{frame}[fragile]
+  \frametitle{\texttt{update\_state} called by Engine}
+  \begin{lstlisting}
+class SequentialTaskCollection(TaskCollection):
+
+ def @\HL{update\_state}@(self, **extra_args):
+  ...
+  task = self.tasks[self._current_task]
+  task.update_state(**extra_args)
+  ...
+  elif (task.execution.state == Run.State.TERMINATED):
+  ...
+  nxt = self.next(self._current_task)
+  ...
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{let's look inside \texttt{SequentialTaskCollection} class}
+  \begin{lstlisting}
+class SequentialTaskCollection(TaskCollection):
+
+ def update_state(self, **extra_args):
+  ...
+  task = self.tasks[self._current_task]
+  task.@\HL{update\_state}@(**extra_args)
+  ...
+  elif (task.execution.state == Run.State.TERMINATED):
+  ...
+  nxt = self.next(self._current_task)
+  ...
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{let's look inside \texttt{SequentialTaskCollection} class}
+  \begin{lstlisting}
+class SequentialTaskCollection(TaskCollection):
+
+ def update_state(self, **extra_args):
+  ...
+  task = self.tasks[self._current_task]
+  task.update_state(**extra_args)
+  ...
+  elif (task.execution.state == Run.State.TERMINATED):
+  ...
+  nxt = @\HL{self.next(self.\_current\_task)}@
+  ...
+  \end{lstlisting}
+\end{frame}
+
+\end{document}
