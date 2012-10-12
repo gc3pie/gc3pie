@@ -4,6 +4,8 @@
    http://docutils.sf.net/rst.html for more information.
 
 
+.. _gc3libs:
+
 -------------------------
  GC3Libs programming API
 -------------------------
@@ -29,20 +31,10 @@
 .. automodule:: gc3libs.core
     :members:
 
-`gc3libs.workflow`
-==================
-.. automodule:: gc3libs.workflow
-    :members:
-
 `gc3libs.exceptions`
 ====================
 .. automodule:: gc3libs.exceptions
    :members:
-
-`gc3libs.session`
-=================
-.. automodule:: gc3libs.session
-    :members:
 
 `gc3libs.persistence`
 =====================
@@ -52,6 +44,11 @@
 `gc3libs.quantity`
 =====================
 .. automodule:: gc3libs.quantity
+    :members:
+
+`gc3libs.session`
+=================
+.. automodule:: gc3libs.session
     :members:
 
 `gc3libs.template`
@@ -67,6 +64,11 @@
 `gc3libs.utils`
 ===============
 .. automodule:: gc3libs.utils
+    :members:
+
+`gc3libs.workflow`
+==================
+.. automodule:: gc3libs.workflow
     :members:
 
 `gc3libs.application`

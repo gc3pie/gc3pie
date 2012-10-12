@@ -44,11 +44,14 @@ GC3Pie documentation is divided in three sections:
 ..
    GC3Pie is comprised of three main components: 
 
-   - :ref:`GC3Libs`: A library of Python classes for controlling the life-cycle
-     of a Grid or batch computational job collections. *GC3Libs* provides
-     services for submitting computational jobs to Grids and batch
-     systems and controlling their execution, persisting job information,
-     and retrieving the final output.
+   - :ref:`GC3Libs`: A library of Python classes for controlling the
+     life-cycle of a Grid or batch computational job
+     collections. *GC3Libs* provides services for submitting
+     computational jobs to Grids and batch systems and controlling
+     their execution, persisting job information, retrieving and
+     processing the final output.  *GC3Libs* also implements
+     facilities to compose collections of jobs into a single workflow,
+     with support for dependencies, parallel execution, etc.
 
    - :ref:`GC3Apps`: A collection of driver scripts to run large job
      campaigns. These are all "glue scripts" to control hundreds or
