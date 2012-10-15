@@ -243,7 +243,7 @@ class BaseProxy(object):
 
     >>> p = BaseProxy(1)
     >>> type(p)
-    <class 'gc3libs.proxy.BaseProxy(int)'>
+    <class 'gc3libs.persistence.proxy.BaseProxy(int)'>
     >>> p+1
     2
     >>> type(p+1)
@@ -529,6 +529,5 @@ class Proxy(BaseProxy):
 ## main: run tests
 
 if "__main__" == __name__:
-    import doctest
-    doctest.testmod(name="proxy",
-                    optionflags=doctest.NORMALIZE_WHITESPACE)
+    import nose
+    nose.runmodule()

@@ -27,7 +27,7 @@ import shutil
 import os
 
 from gc3libs import Task, Application
-from gc3libs.proxy import BaseProxy, Proxy, MemoryPool
+from gc3libs.persistence.proxy import BaseProxy, Proxy, MemoryPool
 from gc3libs.persistence import make_store
 import gc3libs.exceptions
 

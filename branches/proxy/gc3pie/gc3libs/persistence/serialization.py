@@ -38,7 +38,7 @@ import gc3libs.exceptions
 from gc3libs.utils import same_docstring_as
 import gc3libs.url
 
-from gc3libs.proxy import Proxy
+from gc3libs.persistence.proxy import Proxy
 from gc3libs.persistence.store import Persistable
 
 
