@@ -22,6 +22,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 from gc3libs import log
+from gc3libs.persistence.store import Persistable
 
 class ProxyManager(object):
     """ProxyManager should be responsible to decide when a Proxy
@@ -32,6 +33,12 @@ class ProxyManager(object):
         __getattribute__ method of the proxy is called with argument `name`."""
         raise NotImplementedError("Abstract method `ProxyManager.getattr_called` called")
 
+
+def create_proxy_class(cls, obj, extra):
+    prxy = cls(obj)
+    if 'persistent_id' in extra:
+        prxy.persistent_id = extra['persistent_id']
+    return prxy
 
 class BaseProxy(object):
     """
@@ -58,19 +65,26 @@ class BaseProxy(object):
     TypeError: unsupported operand type(s) for +: 'BaseProxy(int)' and 'BaseProxy(list)'
 
     """
-    __slots__ = ["_obj", "__weakref__"]
+    # __slots__ = ["_obj", "__weakref__"]
     def __init__(self, obj):
         object.__setattr__(self, "_obj", obj)
     
     #
     # proxying (special cases)
     #
+    _reserved_names = ['__reduce__', '__reduce_ex__', 'persistent_id']
     def __getattribute__(self, name):
-        return getattr(object.__getattribute__(self, "_obj"), name)
+        if name in BaseProxy._reserved_names:
+            return object.__getattribute__(self, name)
+        else:
+            return getattr(object.__getattribute__(self, "_obj"), name)
     def __delattr__(self, name):
         delattr(object.__getattribute__(self, "_obj"), name)
     def __setattr__(self, name, value):
-        setattr(object.__getattribute__(self, "_obj"), name, value)
+        if name in Proxy._reserved_names:
+            object.__setattr__(self, name, value)
+        else:
+            setattr(object.__getattribute__(self, "_obj"), name, value)
     
     def __nonzero__(self):
         return bool(object.__getattribute__(self, "_obj"))
@@ -113,6 +127,7 @@ class BaseProxy(object):
             if hasattr(theclass, name) and not hasattr(cls, name):
                 namespace[name] = make_method(name)
         return type("%s(%s)" % (cls.__name__, theclass.__name__), (cls,), namespace)
+        # return type("%s(%s)" % (cls.__name__, theclass.__name__), (cls,), namespace)
     
     def __new__(cls, obj, *args, **kwargs):
         """
@@ -122,17 +137,17 @@ class BaseProxy(object):
         note: _class_proxy_cache is unique per deriving class (each deriving
         class must hold its own cache)
         """
-        # try:
-        #     cache = cls.__dict__["_class_proxy_cache"]
-        # except KeyError:
-        #     cls._class_proxy_cache = cache = {}
-        # try:
-        #     theclass = cache[obj.__class__]
-        # except KeyError:
-        #     cache[obj.__class__] = theclass = cls._create_class_proxy(obj.__class__)
         theclass = cls._create_class_proxy(obj.__class__)
         ins = object.__new__(theclass)
         return ins
+
+
+    def __reduce_ex__(self, proto):
+        return ( create_proxy_class,
+                 (BaseProxy,
+                  object.__getattribute__(self, '_obj'),
+                  object.__getattribute__(self, '__dict__') ),
+                 )
 
 class Proxy(BaseProxy):
     """This class is a Proxy which is able to store the proxied object
@@ -195,25 +210,26 @@ class Proxy(BaseProxy):
     Clean up tests.
     >>> os.remove(tmpname)    
     """
-    
-    __slots__ = ["_obj", "_obj_id", "__storage", "__manager", "proxy_forget"]
+
+    _reserved_names = BaseProxy._reserved_names + [
+        "_obj_id", "_storage", "_manager", "proxy_forget", "proxy_set_storage"]
     def __init__(self, obj, storage=None, manager=None):
         object.__setattr__(self, "_obj", obj)
-        object.__setattr__(self, "__storage", storage)
-        object.__setattr__(self, "__manager", manager)
+        object.__setattr__(self, "_storage", storage)
+        object.__setattr__(self, "_manager", manager)
     
     def __getattribute__(self, name):
-        if name.startswith('proxy_'):
+        if name in Proxy._reserved_names:
             return object.__getattribute__(self, name)
 
-        manager = object.__getattribute__(self, "__manager")
+        manager = object.__getattribute__(self, "_manager")
         if manager:
             manager.getattr_called(self, name)
         
         obj = object.__getattribute__(self, "_obj")
 
         if not obj:
-            storage = object.__getattribute__(self, "__storage")
+            storage = object.__getattribute__(self, "_storage")
             obj_id = object.__getattribute__(self, "_obj_id")
             if storage and obj_id:
                 obj = storage.load(obj_id)
@@ -222,7 +238,7 @@ class Proxy(BaseProxy):
 
     def proxy_forget(self):
         obj = object.__getattribute__(self, "_obj")
-        storage = object.__getattribute__(self, "__storage")
+        storage = object.__getattribute__(self, "_storage")
         if storage:
             try:
                 p_id = storage.save(obj)
@@ -235,6 +251,17 @@ class Proxy(BaseProxy):
             
         # object.__delattr__(self, "_obj")
 
+
+    def proxy_set_storage(self, storage):
+        object.__setattr__(self, '_storage', storage)
+
+
+    def __reduce_ex__(self, proto):
+        return ( create_proxy_class,
+                 (Proxy,
+                  object.__getattribute__(self, '_obj'),
+                  object.__getattribute__(self, '__dict__') ),
+                 )
 
 ## main: run tests
 
