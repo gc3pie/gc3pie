@@ -25,6 +25,7 @@ import time
 
 from gc3libs import log
 from gc3libs.persistence.store import Persistable, Store
+from gc3libs.persistence._ac_proxy import ACProxy
 
 class ProxyManager(object):
     """ProxyManager should be responsible to decide when a Proxy
@@ -232,32 +233,40 @@ class MemoryPool(object):
         return True
 
 
-class BaseProxy(object):
+class BaseProxy(ACProxy):
     """
     Base class for all `Proxy` objects.
-
-    This code is taken from
-    http://code.activestate.com/recipes/496741-object-proxying/
 
     To create a BaseProxy object simply type:
 
     >>> p = BaseProxy(1)
     >>> type(p)
     <class 'gc3libs.persistence.proxy.BaseProxy(int)'>
+    >>> isinstance(p, BaseProxy)
+    True
+    >>> isinstance(p, int)
+    True
+
+    The string representation of a proxy is the same as the proxied
+    object's:
+
+    >>> repr(p)
+    '1'
+    >>> str(p)
+    '1'
+    
+    Adding a proxy to another object will work but will probably
+    result in a non-proxy instance.
+    
     >>> p+1
     2
     >>> type(p+1)
     <type 'int'>
 
-    proxying builtin types can lead to exceptions:
-
-    >>> p + BaseProxy([6, 7]) # doctest: +ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    TypeError: unsupported operand type(s) for +: 'BaseProxy(int)' and 'BaseProxy(list)'
-
+    This class is designed in order to work well with `pickle` and
+    with any of the `gc3libs.persistence.store`.
     """
-    # __slots__ = ["_obj", "__weakref__"]
+
     _reserved_names = ['_obj', '__reduce__', '__reduce_ex__', 'persistent_id', '_repr', '_str']
     def __init__(self, obj):
         object.__setattr__(self, "_obj", obj)
@@ -273,17 +282,11 @@ class BaseProxy(object):
         else:
             return getattr(object.__getattribute__(self, "_obj"), name)
 
-    def __delattr__(self, name):
-        delattr(object.__getattribute__(self, "_obj"), name)
-
     def __setattr__(self, name, value):
         if name in Proxy._reserved_names:
             object.__setattr__(self, name, value)
         else:
             setattr(object.__getattribute__(self, "_obj"), name, value)
-
-    def __nonzero__(self):
-        return bool(object.__getattribute__(self, "_obj"))
 
     def __str__(self):
         return self._str
@@ -291,25 +294,6 @@ class BaseProxy(object):
     def __repr__(self):
         return self._repr
 
-    #
-    # factories
-    #
-    _special_names = [
-        '__abs__', '__add__', '__and__', '__call__', '__cmp__', '__coerce__',
-        '__contains__', '__delitem__', '__delslice__', '__div__', '__divmod__',
-        '__eq__', '__float__', '__floordiv__', '__ge__', '__getitem__',
-        '__getslice__', '__gt__', '__hash__', '__hex__', '__iadd__', '__iand__',
-        '__idiv__', '__idivmod__', '__ifloordiv__', '__ilshift__', '__imod__',
-        '__imul__', '__int__', '__invert__', '__ior__', '__ipow__', '__irshift__',
-        '__isub__', '__iter__', '__itruediv__', '__ixor__', '__le__', '__len__',
-        '__long__', '__lshift__', '__lt__', '__mod__', '__mul__', '__ne__',
-        '__neg__', '__oct__', '__or__', '__pos__', '__pow__', '__radd__',
-        '__rand__', '__rdiv__', '__rdivmod__', '__reduce__', '__reduce_ex__',
-        '__repr__', '__reversed__', '__rfloordiv__', '__rlshift__', '__rmod__',
-        '__rmul__', '__ror__', '__rpow__', '__rrshift__', '__rshift__', '__rsub__',
-        '__rtruediv__', '__rxor__', '__setitem__', '__setslice__', '__sub__',
-        '__truediv__', '__xor__', 'next',
-    ]
 
     @staticmethod
     def _make_method(name):
@@ -325,30 +309,6 @@ class BaseProxy(object):
             if hasattr(theclass, name) and not hasattr(cls, name):
                 namespace[name] = BaseProxy._make_method(name)
         return type("%s(%s)" % (cls.__name__, theclass.__name__), (cls,), namespace)
-
-    def __new__(cls, obj, *args, **kwargs):
-        """
-        Create a proxy instance referencing `obj`.
-
-        The triple `(obj, *args, **kwargs)` is passed to this class'
-        __init__, so deriving classes can define an __init__ method of
-        their own.
-
-        .. note::
-
-          `_class_proxy_cache` is unique per deriving class (each
-          deriving class must hold its own cache).
-        """
-        try:
-            cache = cls.__dict__["_class_proxy_cache"]
-        except KeyError:
-            cls._class_proxy_cache = cache = {}
-        try:
-            theclass = cache[obj.__class__]
-        except KeyError:
-            cache[obj.__class__] = theclass = cls._create_class_proxy(obj.__class__)
-        instance = object.__new__(theclass)
-        return instance
 
     def __reduce_ex__(self, proto):
         return ( create_proxy_class,
