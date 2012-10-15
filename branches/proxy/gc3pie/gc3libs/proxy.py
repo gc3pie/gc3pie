@@ -96,31 +96,31 @@ class MemoryPool(object):
         1. Setup a `gc3libs.Store` instance to use as persistent storage::
 
             >>> import tempfile, os
-            >>> from gc3libs.persistence import persistence_factory
+            >>> from gc3libs.persistence import make_store
             >>> from gc3libs import Task
             >>> (f, tmp) = tempfile.mkstemp()
-            >>> store = persistence_factory("sqlite://%s" % tmp)
+            >>> store = make_store("sqlite://%s" % tmp)
 
         2. Create a `MemoryPool` instance with this store and the maximum number
         of objects we want to save::
 
-            >>> mempool = MemoryPool(store, maxobjects=10)
+            >>> mempool = MemoryPool(store, maxobjects=5)
 
         3. Add 30 Proxy objects to the memory pool (we can add only
         `Proxy` objects)::
 
-            >>> for i in range(30):
+            >>> for i in range(15):
             ...     mempool.add(Proxy(Task(jobname=str(i))))
 
-        4. The `refresh` method removes the 20 'older' objects, where
+        4. The `refresh` method removes the 10 'older' objects, where
         'older' is computed by the time the objects were added to the
         `MemoryPool`::
 
             >>> mempool.refresh()
             >>> len([i for i in mempool if i.proxy_saved()])
-            20
-            >>> len([i for i in mempool if not i.proxy_saved()])
             10
+            >>> len([i for i in mempool if not i.proxy_saved()])
+            5
             >>> os.remove(tmp)
 
         It is currently called each time `add` is called, but this may
@@ -471,7 +471,7 @@ class Proxy(BaseProxy):
                 object.__setattr__(self, "_obj", None)
                 object.__setattr__(self, "_obj_id", p_id)
                 object.__setattr__(self, "_saved", True)
-            except Exception, ex:                
+            except Exception, ex:
                 log.error("Proxy: Error saving object to persistent storage: %s" % ex)
         else:
             log.warning("Proxy: `proxy_forget()` called but no persistent storage has been defined. Aborting *without* deleting proxied object")
