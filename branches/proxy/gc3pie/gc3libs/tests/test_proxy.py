@@ -27,7 +27,7 @@ import shutil
 import os
 
 from gc3libs import Task, Application
-from gc3libs.proxy import BaseProxy, Proxy
+from gc3libs.proxy import BaseProxy, Proxy, MemoryPool
 from gc3libs.persistence import make_store
 import gc3libs.exceptions
 
@@ -156,6 +156,30 @@ class test_proxy_class(object):
         prxy = Proxy(app)
         self.store.save(prxy)
         assert prxy._storage is not None
+
+    def test_memory_pool(self):
+        """Test MemoryPool class basic behavior"""
+        nobjects = 10
+        mempool = MemoryPool(self.store, maxobjects=nobjects)
+
+        objects = []
+        for i in range(25):
+            obj = Proxy(Task(jobname=str(i)))
+            assert obj.jobname == str(i) # let's call a getattr, to be
+                                         # sure it will be properly
+                                         # ordered
+            objects.append(obj)
+
+        mempool.extend(objects)
+        mempool.refresh()
+        # First all-maxobjs should NOT be there
+
+        assert_equal(
+            len([i for i in objects if i.proxy_saved()]),
+            15)
+        assert_equal(
+            len([i for i in objects if not i.proxy_saved()]),
+            10)
 
 
 ## main: run tests
