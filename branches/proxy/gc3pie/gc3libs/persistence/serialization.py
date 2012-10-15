@@ -38,6 +38,7 @@ import gc3libs.exceptions
 from gc3libs.utils import same_docstring_as
 import gc3libs.url
 
+from gc3libs.proxy import Proxy
 from gc3libs.persistence.store import Persistable
 
 
@@ -75,6 +76,11 @@ class _PersistentIdToSave(object):
         self._driver = driver
 
     def __call__(self, obj):
+        # Set internal storage for Proxy class, if it's not already
+        # defined.
+        if isinstance(obj, Proxy):
+            obj.proxy_set_storage(self._driver, overwrite=False)
+
         if obj is self._root:
             return None
         elif hasattr(obj, 'persistent_id'):
