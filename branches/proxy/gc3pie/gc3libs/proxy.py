@@ -339,7 +339,14 @@ class BaseProxy(object):
           `_class_proxy_cache` is unique per deriving class (each
           deriving class must hold its own cache).
         """
-        theclass = cls._create_class_proxy(obj.__class__)
+        try:
+            cache = cls.__dict__["_class_proxy_cache"]
+        except KeyError:
+            cls._class_proxy_cache = cache = {}
+        try:
+            theclass = cache[obj.__class__]
+        except KeyError:
+            cache[obj.__class__] = theclass = cls._create_class_proxy(obj.__class__)
         instance = object.__new__(theclass)
         return instance
 
@@ -464,9 +471,7 @@ class Proxy(BaseProxy):
                 object.__setattr__(self, "_obj", None)
                 object.__setattr__(self, "_obj_id", p_id)
                 object.__setattr__(self, "_saved", True)
-            except Exception, ex:
-                import nose.tools; nose.tools.set_trace()
-
+            except Exception, ex:                
                 log.error("Proxy: Error saving object to persistent storage: %s" % ex)
         else:
             log.warning("Proxy: `proxy_forget()` called but no persistent storage has been defined. Aborting *without* deleting proxied object")
