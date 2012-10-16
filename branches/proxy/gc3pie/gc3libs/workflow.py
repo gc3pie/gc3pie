@@ -232,7 +232,6 @@ class SequentialTaskCollection(TaskCollection):
         for task in self.tasks:
             if not task._attached:
                 controller.add(task)
-                task.attach(controller)
                 break
         Task.attach(self, controller)
 
@@ -328,7 +327,6 @@ class SequentialTaskCollection(TaskCollection):
                     self.changed = True
                     next_task = self.tasks[self._current_task]
                     self._controller.add(next_task)
-                    next_task.attach(self._controller)
                     self.submit(resubmit=True)
             else:
                 # `nxt` must be a valid index into `self.tasks`
@@ -655,7 +653,6 @@ class RetryableTask(Task):
         # method to the wrapped task. (Same for `detach` below.)
         Task.attach(self, controller)
         controller.add(self.task)
-        self.task.attach(controller)
 
     def detach(self):
         # see comment in `attach` above
