@@ -231,6 +231,7 @@ class SequentialTaskCollection(TaskCollection):
         """
         for task in self.tasks:
             if not task._attached:
+                controller.add(task)
                 task.attach(controller)
                 break
         Task.attach(self, controller)
@@ -287,6 +288,7 @@ class SequentialTaskCollection(TaskCollection):
         if self._current_task is None:
             self._current_task = 0
         task = self.tasks[self._current_task]
+        self._controller.submit(task, resubmit, **extra_args)
         task.submit(resubmit, **extra_args)
         if task.execution.state == Run.State.NEW:
             # submission failed, state unchanged
@@ -325,6 +327,7 @@ class SequentialTaskCollection(TaskCollection):
                     self._current_task += 1
                     self.changed = True
                     next_task = self.tasks[self._current_task]
+                    self._controller.add(next_task)
                     next_task.attach(self._controller)
                     self.submit(resubmit=True)
             else:
@@ -459,7 +462,7 @@ class ParallelTaskCollection(TaskCollection):
         task.detach()
         self.tasks.append(task)
         if self._attached:
-            task.attach(self._controller)
+            self._controller.add(task)
 
     def attach(self, controller):
         """
@@ -468,7 +471,7 @@ class ParallelTaskCollection(TaskCollection):
         """
         for task in self.tasks:
             if not task._attached:
-                task.attach(controller)
+                controller.add(task)
         Task.attach(self, controller)
 
     def kill(self, **extra_args):
@@ -496,6 +499,7 @@ class ParallelTaskCollection(TaskCollection):
         Start all tasks in the collection.
         """
         for task in self.tasks:
+            self._controller.submit(task, resubmit, **extra_args)
             task.submit(resubmit, **extra_args)
         self.execution.state = self._state()
 
@@ -650,6 +654,7 @@ class RetryableTask(Task):
         # while `self.task.attach` is the propagation of the `attach`
         # method to the wrapped task. (Same for `detach` below.)
         Task.attach(self, controller)
+        controller.add(self.task)
         self.task.attach(controller)
 
     def detach(self):
@@ -670,6 +675,7 @@ class RetryableTask(Task):
         return self.task.peek(*args, **extra_args)
 
     def submit(self, resubmit=False, **extra_args):
+        self._controller.submit(self.task, **extra_args)
         self.task.submit(**extra_args)
         # immediately update state if submission of managed task was successful;
         # otherwise this task may remain in ``NEW`` state which causes an
@@ -743,6 +749,7 @@ class RetryableTask(Task):
             if self.retry():
                 self.retried += 1
                 self.task.submit(resubmit=True)
+                self._controller.submit(task, resubmit=True)
                 own_state_new = Run.State.RUNNING
             else:
                 own_state_new = Run.State.TERMINATED

@@ -32,10 +32,17 @@ class ProxyManager(object):
     should persist its proxied object and forget it.
     """
     def getattr_called(self, proxy, name):
-        """This method is called by a `proxy` everytime the
-        __getattribute__ method of the proxy is called with argument `name`."""
-        raise NotImplementedError("Abstract method `ProxyManager.getattr_called` called")
+        """
+        This method is called by a `proxy` everytime the
+        __getattribute__ method of the proxy is called with argument
+        `name`."""
+        pass
 
+    def proxy_loaded(self, proxy):
+        """
+        This method is called whenever an object is loaded from disk.
+        """
+        pass
 
 def create_proxy_class(cls, obj, extra):
     """
@@ -424,7 +431,9 @@ class Proxy(BaseProxy):
         Save the object to the persistent storage and remove any
         reference to it.
         """
-        obj = self.proxy_load()
+        obj = object.__getattribute__(self, '_obj')
+        if not obj:
+            return
         storage = object.__getattribute__(self, "_storage")
         if storage:
             try:
@@ -453,6 +462,9 @@ class Proxy(BaseProxy):
             object.__setattr__(self, "_saved", False)
             if self._post:
                 self._post(obj)
+            manager = object.__getattribute__(self, "_manager")
+            if manager:
+                manager.proxy_loaded(obj)
         return obj
 
 

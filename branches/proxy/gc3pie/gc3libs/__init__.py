@@ -176,8 +176,6 @@ class Task(Persistable, Struct):
         if self._controller != controller:
             if self._attached:
                 self.detach()
-            #gc3libs.log.debug("Attaching %s to %s" % (self, controller))
-            controller.add(self)
             self._attached = True
             self._controller = controller
 
@@ -205,10 +203,6 @@ class Task(Persistable, Struct):
         if self._attached:
 
             self._attached = False
-            try:
-                self._controller.remove(self)
-            except:
-                pass
             self._controller = Task.__no_controller
 
 
@@ -237,7 +231,6 @@ class Task(Persistable, Struct):
         assert self._attached, ("Task.submit() called on detached task %s." % self)
         assert hasattr(self._controller, 'submit'), \
                ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
-        self._controller.submit(self, resubmit, **extra_args)
 
 
     def update_state(self, **extra_args):
