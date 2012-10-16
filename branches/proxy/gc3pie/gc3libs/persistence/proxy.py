@@ -392,15 +392,16 @@ class Proxy(BaseProxy):
     """
 
     _reserved_names = BaseProxy._reserved_names + [
-        "_obj_id", "_storage", "_manager", "_saved", "_last_access",
+        "_obj_id", "_storage", "_manager", "_saved", "_last_access", "_post",
         "proxy_forget", "proxy_set_storage", "proxy_last_accessed", "proxy_saved", "proxy_load"]
 
-    def __init__(self, obj, storage=None, manager=None):
+    def __init__(self, obj, storage=None, manager=None, post_load=None):
         BaseProxy.__init__(self, obj)
         object.__setattr__(self, "_storage", storage)
         object.__setattr__(self, "_manager", manager)
         object.__setattr__(self, "_last_access", -1)
         object.__setattr__(self, "_saved", False)
+        object.__setattr__(self, "_post", post_load)
 
 
     def __getattribute__(self, name):
@@ -450,6 +451,8 @@ class Proxy(BaseProxy):
             obj = storage.load(obj_id)
             object.__setattr__(self, "_obj", obj)
             object.__setattr__(self, "_saved", False)
+            if self._post:
+                self._post(obj)
         return obj
 
 
@@ -480,10 +483,15 @@ class Proxy(BaseProxy):
         Produce a special representation of the object so that pickle
         will be able to rebuild the Proxy instance correctly.
         """
+        extra = {}
+        try:
+            extra['persistent_id'] = self.persistent_id
+        except AttributeError:
+            pass
         return ( create_proxy_class,
                  (Proxy,
                   object.__getattribute__(self, '_obj'),
-                  object.__getattribute__(self, '__dict__') ),
+                  extra ),
                  )
 
 ## main: run tests
