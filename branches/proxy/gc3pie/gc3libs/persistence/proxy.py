@@ -89,15 +89,28 @@ class MemoryPool(object):
     overriding the two main methods: :meth:`cmp` and :meth:`keep`.
     """
 
-    def __init__(self, storage, maxobjects=0):
+    def __init__(self, storage, maxobjects=0, minobjects=None):
         """
-        Create a `MemoryPool` instance, given the associated persistent store
-        and maximum number of live objects to keep in memory.
+        Create a `MemoryPool` instance, given the associated
+        persistent store and maximum number of live objects to keep in
+        memory.
 
         The `maxobjects` argument controls how many live objects are
         kept in memory.  If `maxobjects` is 0, then no object is ever
         flushed to persistent storage (i.e., this class becomes a
         no-op).
+
+        The `minobjects` argument is used when a new refresh cycle is
+        run, and controls the minimum number of live objects the
+        MemoryPool will keep. When `maxobjects` limit is hit and a new
+        refresh cycle is run, a certain number of objects will be
+        flushed to persistent storage but no more than the current
+        number of objects minus `minobjects`.
+
+        Default value for `minobjects` is `maxobjects`/2.
+
+        If `maxobjects` is not defined, the value of `minobjects` is
+        meaningless because no refresh cycle is called.
 
         Example usage:
 
@@ -141,6 +154,10 @@ class MemoryPool(object):
         self._storage = storage
         self._proxies = []
         self.maxobjects = maxobjects
+        if not minobjects:
+            self.minobjects = maxobjects/2
+        else:
+            self.minobjects = minobjects
 
     def add(self, obj):
         """Add `proxy` object to the memory pool."""
@@ -151,7 +168,7 @@ class MemoryPool(object):
                 "MemoryPool expects `Proxy` objects, but got '%s' %s instead."
                 % (obj, type(obj)))
         self._proxies.append(obj)
-        if self.maxobjects and len(self._proxies)>self.maxobjects:
+        if self.maxobjects and len([obj for obj in self._proxies if not obj.proxy_saved()])>self.maxobjects:
             self.refresh()
 
     def extend(self, objects):
@@ -173,9 +190,9 @@ class MemoryPool(object):
             if not self.keep(obj):
                 obj.proxy_forget()
 
-        if self.maxobjects > 0:
+        if self.maxobjects:
             self._proxies.sort(cmp=lambda x,y: self.cmp(x,y))
-            for i in range(len(self._proxies) - self.maxobjects):
+            for i in range(len(self._proxies)  - self.minobjects):
                 self._proxies[i].proxy_forget()
 
     def __iter__(self):

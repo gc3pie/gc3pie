@@ -159,11 +159,11 @@ class test_proxy_class(object):
 
     def test_memory_pool(self):
         """Test MemoryPool class basic behavior"""
-        nobjects = 10
-        mempool = MemoryPool(self.store, maxobjects=nobjects)
+        numobjects, maxobjects = 25, 10
+        mempool = MemoryPool(self.store, maxobjects=maxobjects)
 
         objects = []
-        for i in range(25):
+        for i in range(numobjects):
             obj = Proxy(Task(jobname=str(i)))
             assert obj.jobname == str(i) # let's call a getattr, to be
                                          # sure it will be properly
@@ -172,14 +172,26 @@ class test_proxy_class(object):
 
         mempool.extend(objects)
         mempool.refresh()
-        # First all-maxobjs should NOT be there
 
         assert_equal(
             len([i for i in objects if i.proxy_saved()]),
-            15)
+            numobjects - mempool.minobjects)
         assert_equal(
             len([i for i in objects if not i.proxy_saved()]),
-            10)
+            mempool.minobjects)
+
+    def test_memory_pool_minobjects(self):
+        """Test MemoryPool minobjects behavior"""
+        nobjects, maxobjects, minobjects = 60, 30, 20
+        mempool = MemoryPool(self.store, maxobjects=maxobjects, minobjects=minobjects)
+        for i in range(nobjects):
+            obj = Proxy(Task(ord=i))
+            mempool.add(obj)
+
+        mempool.refresh()
+        assert_equal(
+            len([obj for obj in mempool if not obj.proxy_saved()]),
+            minobjects)
 
 
 ## main: run tests
