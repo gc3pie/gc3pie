@@ -946,11 +946,20 @@ To get detaileid info on a specific command, run:
         except gc3libs.exceptions.InvalidArgument, ex:
             raise RuntimeError('Session %s not found. Please specify a valid session directory as argument' % self.params.session)
 
-        for task_id in self.session.tasks:
-            self.session.tasks[task_id].kill()
-            self.session.remove(task_id)
+        for task_id in self.session.tasks.keys():
+            task = self.session.tasks[task_id]
+            task.attach(self._core)
+            if task.execution.state == Run.State.NEW:
+                raise gc3libs.exceptions.InvalidOperation("Job '%s' not submitted." % task)
+            if task.execution.state == Run.State.TERMINATED:
+                raise gc3libs.exceptions.InvalidOperation("Job '%s' is already in terminal state" % task)
+            else:
+                task.kill()
+                task.free()
+                self.session.remove(task_id)
         if self.session.tasks:
             raise RuntimeError("Not all tasks have been removed from the session")
+
         return 0
 
     def delete_session(self):
