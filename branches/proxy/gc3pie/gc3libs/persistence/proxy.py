@@ -26,23 +26,8 @@ import time
 from gc3libs import log
 from gc3libs.persistence.store import Persistable, Store
 from gc3libs.persistence._ac_proxy import ACProxy
+import gc3libs.exceptions
 
-class ProxyManager(object):
-    """ProxyManager should be responsible to decide when a Proxy
-    should persist its proxied object and forget it.
-    """
-    def getattr_called(self, proxy, name):
-        """
-        This method is called by a `proxy` everytime the
-        __getattribute__ method of the proxy is called with argument
-        `name`."""
-        pass
-
-    def proxy_loaded(self, proxy):
-        """
-        This method is called whenever an object is loaded from disk.
-        """
-        pass
 
 def create_proxy_class(cls, obj, extra):
     """
@@ -71,7 +56,6 @@ def create_proxy_class(cls, obj, extra):
         pxy.persistent_id = extra['persistent_id']
     return pxy
 
-
 class MemoryPool(object):
     """
     Store a set of Proxy objects but keep in memory only a fixed amount of them;
@@ -89,7 +73,7 @@ class MemoryPool(object):
     overriding the two main methods: :meth:`cmp` and :meth:`keep`.
     """
 
-    def __init__(self, storage, maxobjects=0, minobjects=None):
+    def __init__(self, storage=None, maxobjects=0, minobjects=None):
         """
         Create a `MemoryPool` instance, given the associated
         persistent store and maximum number of live objects to keep in
@@ -125,9 +109,17 @@ class MemoryPool(object):
         2. Create a `MemoryPool` instance with this store and the maximum number
         of objects we want to save::
 
-            >>> mempool = MemoryPool(store, maxobjects=5)
+            >>> from gc3libs.persistence.proxy import memory_manager as mempool
+            >>> mempool.set_storage(store)
+            >>> mempool.maxobjects(10)
+            10
 
-        3. Add 30 Proxy objects to the memory pool (we can add only
+           default value for `minobjects` is `maxobjects`/2:
+
+            >>> mempool.minobjects()
+            5
+
+        3. Add 15 Proxy objects to the memory pool (we can add only
         `Proxy` objects)::
 
             >>> for i in range(15):
@@ -142,43 +134,71 @@ class MemoryPool(object):
             10
             >>> len([i for i in mempool if not i.proxy_saved()])
             5
+            >>> mempool.flush()
             >>> os.remove(tmp)
 
         It is currently called each time `add` is called, but this may
         change in future.
           """
 
-        assert isinstance(storage, Store), \
-               ("MemoryPool: need `gc3libs.Store` instance, got '%s' %s instead."
-                % (storage, type(storage)))
         self._storage = storage
-        self._proxies = []
-        self.maxobjects = maxobjects
-        if not minobjects:
-            self.minobjects = maxobjects/2
+        self._proxies = set()
+        self._maxobjects = maxobjects
+        self._minobjects = minobjects
+
+    def maxobjects(self, num=None):
+        """
+        Getter/Setter for `maxobjects` attribute
+        """
+        if num is not None:
+            self._maxobjects = num
+        return self._maxobjects
+
+    def minobjects(self, num=None):
+        """
+        Getter/Setter for `minobjects` attribute
+        """
+        if num is not None:
+            self._minobjects = num
+        if self._minobjects is None:
+            return self._maxobjects/2
         else:
-            self.minobjects = minobjects
+            return self._minobjects
+
+    def set_storage(self, storage, overwrite=True):
+        """
+        Set the internal storage for `storage`.
+        """
+        if not self._storage or overwrite:
+            self._storage = storage
+
+    def get_storage(self):
+        return self._storage
 
     def add(self, obj):
-        """Add `proxy` object to the memory pool."""
-        try:
-            obj.proxy_set_storage(self._storage)
-        except AttributeError:
-            raise gc3libs.exceptions.InvalidArgument(
-                "MemoryPool expects `Proxy` objects, but got '%s' %s instead."
-                % (obj, type(obj)))
-        self._proxies.append(obj)
-        if self.maxobjects and len([obj for obj in self._proxies if not obj.proxy_saved()])>self.maxobjects:
+        """
+        Add `proxy` object to the memory pool.
+        """
+        self._proxies.add(obj)
+        obj.proxy_set_manager(self)
+        if self.maxobjects() and len([obj for obj in self._proxies if not obj.proxy_saved()]) > self.maxobjects():
             self.refresh()
 
     def extend(self, objects):
-        """Add sequence of objects that will be added to the pool."""
+        """
+        Add sequence of objects that will be added to the pool.
+        """
         for obj in objects:
             self.add(obj)
 
     def remove(self, obj):
-        """Remove object from the memory pool"""
+        """
+        Remove object from the memory pool
+        """
         self._proxies.remove(obj)
+
+    def flush(self):
+        self._proxies = set()
 
     def refresh(self):
         """Refresh the list of proxies, forget "old" proxies if
@@ -186,14 +206,17 @@ class MemoryPool(object):
 
         # If policy_function is defined, forget all objects we don't
         # want to remember anymore.
+        living = len([i for i in self._proxies if not i.proxy_saved()])
         for obj in self._proxies:
             if not self.keep(obj):
                 obj.proxy_forget()
+                living -= 1
 
-        if self.maxobjects:
-            self._proxies.sort(cmp=lambda x,y: self.cmp(x,y))
-            for i in range(len(self._proxies)  - self.minobjects):
-                self._proxies[i].proxy_forget()
+        if self.maxobjects():
+            proxies = sorted(self._proxies, cmp=lambda x,y: self.cmp(x,y))
+            while living > self.minobjects() and proxies:
+                proxies.pop().proxy_forget()
+                living -= 1
 
     def __iter__(self):
         return iter(self._proxies)
@@ -256,6 +279,21 @@ class MemoryPool(object):
         """
         return True
 
+    def getattr_called(self, proxy, name):
+        """
+        This method is called by a `proxy` everytime the
+        __getattribute__ method of the proxy is called with argument
+        `name`."""
+        pass
+
+    def proxy_loaded(self, proxy):
+        """
+        This method is called whenever an object is loaded from disk.
+        """
+        pass
+
+# Global Memory Manager
+memory_manager = MemoryPool()
 
 class BaseProxy(ACProxy):
     """
@@ -353,7 +391,8 @@ class Proxy(BaseProxy):
       >>> import tempfile, os
       >>> (fd, tmpname) = tempfile.mkstemp()
       >>> from gc3libs import Task
-      >>> p = Proxy(Task(jobname='NoTask'), storage=make_store("sqlite://%s" % tmpname))
+      >>> p = Proxy(Task(jobname='NoTask'))
+      >>> memory_manager.set_storage(make_store("sqlite://%s" % tmpname))
       >>> p # doctest: +ELLIPSIS
       <gc3libs.Task object at ...>
       >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
@@ -378,31 +417,11 @@ class Proxy(BaseProxy):
       >>> p.jobname
       'NoTask'
 
-    Guess what happen if you don't define a storage?
-    ::
+    If not store is defined, no object is saved to store and thus the
+    reference to the object is never deleted.
 
-      >>> p = Proxy(Task(jobname='NoTask'))
-      >>> p # doctest: +ELLIPSIS
-      <gc3libs.Task object at ...>
-      >>> p.jobname
-      'NoTask'
-      >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
-      <gc3libs.Task object at ...>
-
-    The `proxy_forget()` method will *not* delete the internal
-    reference, otherwise we would be unable to retrieve the object
-    later:
-
-      >>> p.proxy_forget()
-      >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
-      <gc3libs.Task object at ...>
-      >>> p.jobname
-      'NoTask'
-
-    If you are not able to save the object to the persistent storage
-    too, it will not be deleted::
-
-      >>> p = Proxy(Task(jobname='NoTask2'), storage=make_store('file:///path/to/non/existent/file'))
+      >>> memory_manager.set_storage(None)
+      >>> p = Proxy(Task(jobname='NoTask2'))
       >>> p.proxy_forget()
       >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
       <gc3libs.Task object at ...>
@@ -412,20 +431,24 @@ class Proxy(BaseProxy):
     (Clean up temporary files used for testing.)
     ::
 
+      >>> memory_manager.flush()
       >>> os.remove(tmpname)
     """
 
     _reserved_names = BaseProxy._reserved_names + [
-        "_obj_id", "_storage", "_manager", "_saved", "_last_access", "_post",
-        "proxy_forget", "proxy_set_storage", "proxy_last_accessed", "proxy_saved", "proxy_load"]
+        "_obj_id", "_manager", "_saved", "_last_access", "_post",
+        "proxy_set_manager",
+        "proxy_forget", "proxy_last_accessed", "proxy_saved", "proxy_load"]
 
     def __init__(self, obj, storage=None, manager=None, post_load=None):
         BaseProxy.__init__(self, obj)
-        object.__setattr__(self, "_storage", storage)
-        object.__setattr__(self, "_manager", manager)
         object.__setattr__(self, "_last_access", -1)
         object.__setattr__(self, "_saved", False)
         object.__setattr__(self, "_post", post_load)
+        if not manager:
+            manager = memory_manager
+        object.__setattr__(self, "_manager", manager)
+        manager.add(self)
 
 
     def __getattribute__(self, name):
@@ -443,6 +466,18 @@ class Proxy(BaseProxy):
         object.__setattr__(self, "_last_access", time.time())
         return getattr(obj, name)
 
+    def proxy_set_manager(self, manager):
+        """
+        Set the Memory Manager to `manager`. By default, the module's
+        memory manager will be used.
+        """
+        old =  object.__getattribute__(self, '_manager')
+        if old is manager:
+            return
+        if old and self in old:
+            old.remove(self)
+        object.__setattr__(self, '_manager', manager)
+
     def proxy_forget(self):
         """
         Save the object to the persistent storage and remove any
@@ -451,7 +486,8 @@ class Proxy(BaseProxy):
         obj = object.__getattribute__(self, '_obj')
         if not obj:
             return
-        storage = object.__getattribute__(self, "_storage")
+
+        storage = self._manager.get_storage()
         if storage:
             try:
                 p_id = storage.save(obj)
@@ -468,7 +504,8 @@ class Proxy(BaseProxy):
         Load and returns the internal object.
         """
         obj = object.__getattribute__(self, "_obj")
-        storage = object.__getattribute__(self, "_storage")
+        manager = object.__getattribute__(self, "_manager")
+        storage = manager.get_storage()
         if not obj:
             assert isinstance(storage, Store)
 
@@ -479,18 +516,8 @@ class Proxy(BaseProxy):
             object.__setattr__(self, "_saved", False)
             if self._post:
                 self._post(obj)
-            manager = object.__getattribute__(self, "_manager")
-            if manager:
-                manager.proxy_loaded(obj)
+            manager.proxy_loaded(obj)
         return obj
-
-
-    def proxy_set_storage(self, storage, overwrite=True):
-        """
-        Set the persistence store to use.
-        """
-        if overwrite or not object.__getattribute__(self, '_storage'):
-            object.__setattr__(self, '_storage', storage)
 
     def proxy_last_accessed(self):
         """
