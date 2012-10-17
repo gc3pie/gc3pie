@@ -1,0 +1,394 @@
+\documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usepackage{gc3}
+
+\title[The Session Based Script]{%
+GC3Pie - The Session Based Script
+}
+\author[Antonio Messina]{%
+  GC3: Grid Computing Competence Center, \\
+  University of Zurich
+}
+
+
+\date{Oct.~1, 2012}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}
+  \frametitle{Exercise 3.C} 
+
+  Update the exercice 3.B so that it runs 10 copies of the
+  \textbf{CpuinfoApplication} and collect statistics about CPU models
+  (how many unique ``model name'' strings)
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Why exercise 3.C failed?}
+  \begin{itemize}
+  \item \textbf{localhost} resource does not allow more than two jobs
+    at the same time.
+
+    \pause
+    \begin{itemize}
+    \item[$\Rightarrow$] \textbf{Engine}, a more advanced
+      \textit{version} of \textbf{Core}, is able to manage a list of
+      jobs and to deal with these situations.
+    \end{itemize}
+    
+    \pause
+    \+
+  \item if the script is killed, all information about the jobs are
+    lost.
+    \pause
+    \begin{itemize}
+    \item [$\Rightarrow$] a \textbf{Session} is a \textit{persistent
+        collection of jobs}. They are saved on the filesystem or a DB.
+    \end{itemize}
+    
+    \pause  
+    \+
+  \item some logic is common to any script, including code to
+    \textit{glue} all together and to parse command line options.  \pause
+    \begin{itemize}
+    \item [$\Rightarrow$] a \textbf{SessionBasedScript} automatically
+      create an \textbf{Engine}, group all the jobs into a
+      \textbf{Session}, accept some commonly used options and much more.
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Creating a SessionBasedScript is easy}
+Create a file named \texttt{demoscript.py}:
+\+
+  \begin{lstlisting}
+from gc3libs import Application
+from gc3libs.cmdline import SessionBasedScript
+
+class Gdemo(SessionBasedScript):
+    """ Gdemo script """
+    version='1.0'
+
+    def new_tasks(self, extra):
+        return [
+            Application(['/bin/hostname'], [], [],
+                        stdout='stdout.txt', **extra),
+               ]
+
+if __name__ == "__main__":
+    from demo import Gdemo
+    Gdemo().run()
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Creating a SessionBasedScript is easy}
+  \begin{lstlisting}
+from gc3libs import Application
+@\HL{from gc3libs.cmdline import SessionBasedScript}@
+
+class Gdemo(@\HL{SessionBasedScript}@):
+    """ Gdemo script """
+    version='1.0'
+
+    def new_tasks(self, extra):
+        return [
+            Application(['/bin/hostname'], [], [],
+                        stdout='stdout.txt', **extra),
+               ]
+
+if __name__ == "__main__":
+    from demo import Gdemo
+    Gdemo().run()
+  \end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Creating a SessionBasedScript is easy}
+  \begin{lstlisting}
+from gc3libs import Application
+from gc3libs.cmdline import SessionBasedScript
+
+class Gdemo(SessionBasedScript):
+    """ Gdemo script """
+    version='1.0'
+
+    @\HL{def new\_tasks(self, extra):}@
+        return [
+            Application(['/bin/hostname'], [], [],
+                        stdout='stdout.txt', **extra),
+               ]
+
+if __name__ == "__main__":
+    from demo import Gdemo
+    Gdemo().run()
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Creating a SessionBasedScript is easy}
+  \begin{lstlisting}
+from gc3libs import Application
+from gc3libs.cmdline import SessionBasedScript
+
+class Gdemo(SessionBasedScript):
+    """ Gdemo script """
+    version='1.0'
+
+    def new_tasks(self, @\HL{extra}@):
+        return [
+            Application(['/bin/hostname'], [], [],
+                        stdout='stdout.txt', @\HL{**extra}@),
+               ]
+
+if __name__ == "__main__":
+    from demo import Gdemo
+    Gdemo().run()
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Running the script}
+
+  \begin{lstlisting}[language=sh]
+kenny:~$ python demoscript.py -C 1    
+[...]
+        NEW   0/1    (0.0%)  
+    RUNNING   0/1    (0.0%)  
+    STOPPED   0/1    (0.0%)  
+  SUBMITTED   0/1    (0.0%)  
+ TERMINATED   1/1   (100.0%) 
+TERMINATING   0/1    (0.0%)  
+    UNKNOWN   0/1    (0.0%)  
+         ok   1/1   (100.0%) 
+      total   1/1   (100.0%) 
+  \end{lstlisting}%$
+  \pause
+  \+
+
+  In the current directory you will find two directories:
+  \begin{description}
+  \item[demoscript] the directory containing the session data.
+  \item[Application-N1] the directory containing the output of the
+    application.
+  \end{description}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{The session directory}
+
+  \begin{itemize}
+  \item It contains internal data used by gc3pie.
+  \item You can specify a different name using the option \lstinline|-s SESSION_NAME|
+  \item If a session already exists, the script will \textbf{not} create
+    new jobs, but instead, will update the status of the jobs in the
+    current session.
+  \end{itemize}
+
+  The bottom line is\ldots 
+
+  \pause 
+  \begin{center}
+    \textit{\textbf{don't touch it!}}
+  \end{center}
+  
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{The output directory}
+  \begin{itemize}
+  \item If you don't specify an output directory for your job, the
+    \textbf{SessionBasedScript} class will do it for you.
+  \item If an output directory already exists, this will be
+    \textit{renamed} and never overwritten.
+  \item If you pass the option \lstinline|-o DIRECTORY| to the script,
+    all the output dirs will be saved inside that directory
+  \end{itemize}
+
+  In our case, the output directory \lstinline|Application-N1| will
+  contain a file \lstinline|stdout.txt| with the output of the
+  application.
+
+  \pause\+
+  \centering\textit{Don't trust me, check yourself}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Session Based Script - command line options}
+  \begin{description}
+  \item[--help] show an help message and exits
+  \item[-C NUM] Keep running, monitoring jobs and possibly submitting
+    new ones or fetching results every NUM seconds. Exit when all jobs
+    are finished.
+  \item[-o DIR] Output files from all jobs will be collected in the
+    specified DIRECTORY path.
+  \item[-s PATH] Store the session information in the directory at
+    PATH
+  \item[-r NAME] Submit jobs to a specific computational resources.
+    NAME is a resource name or comma-separated list of such names. 
+  \item[-J NUM] Set the max NUMber of jobs (default: 50) running at
+    the same time.
+
+  \end{description}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Passing requirements to the application}
+  Some options are used to specify some requirements of the applications:
+  \begin{description}
+  \item[-c NUM] Set the number of CPU cores required for each job.
+  \item[-m GB] Set the amount of memory required per execution core
+  \item[-w DURATION] Set the time limit for each job; default is 8
+    hours.
+  \end{description}
+
+  \pause
+  and are automatically passed to the application, if you remember to
+  do it!
+  \begin{lstlisting}
+    def new_tasks(self, @\HL{extra}@):
+        return [
+            Application(['/bin/hostname'], [], [],
+                        stdout='stdout.txt', @\HL{**extra}@),
+               ]
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Exercise 5.A}
+  \begin{itemize}
+  \item Create a \textbf{GHelloWorld} application that writes the
+    string \texttt{Hello, World!} into a file.
+  \item Create a \textbf{GHelloScript} script that runs 20 instances of
+    the \textbf{GHelloWorld} application.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{How to add command line options}
+  To setup new arguments you must override the \lstinline|setup_options|
+  method of the script.
+
+  \begin{lstlisting}[showstringspaces=false]
+def setup_options(self):
+    self.add_param('-x', '--option', dest='varname',
+                   default="Default value",
+                   help="Meaningful help string"
+                   "which will be printed"
+                   "by the --help option")    
+  \end{lstlisting}
+
+  \begin{itemize}
+  \item Supports short and/or long options.
+  \item if \lstinline|dest='varname'| then the content will be
+    available inside the script as \lstinline|self.params.varname|
+  \end{itemize}
+
+  \begin{references}
+    \url{http://docs.python.org/dev/library/argparse.html#argparse.ArgumentParser.add_argument}
+  \end{references}
+\end{frame}
+
+
+
+
+\begin{frame}[fragile]
+  \frametitle{Exercise 5.B}
+  Starting from the  Exercise 5.A:
+  \begin{itemize}
+  \item add an option \lstinline|--string| which accept a string
+    argument, which is the string that will be
+  printed by the application instead of \texttt{Hello, World!}
+\item add an option \lstinline|--copies| that accept an integer
+  argument (by default, 1), and modify \lstinline|new_tasks| so that
+  it will run \lstinline|copies| number of the \textbf{GHelloWorld} application.
+  
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{SessionBasedScript - short recap}
+  What the father class will do for you:
+  \begin{itemize}
+  \item It reads and parses the GC3Pie configuration file.
+  \item It creates an \textbf{Engine} class.
+  \item It creates a \textbf{Session} to persist jobs.
+  \item It parses commonly used command line arguments.
+  \item It submit jobs, check their status, fetch their output when
+    they are finished.
+  \item It automatically sets the following parameters:
+    \begin{itemize}
+    \item \lstinline|output_dir|
+    \item \lstinline|requested_cores|
+    \item \lstinline|requested_memory|
+    \item \lstinline|requested_walltime|
+    \item \lstinline|jobname| 
+    \end{itemize}
+
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{SessionBasedScript - customization}
+To customize the script you have to modify:
+\begin{description}
+\item [\texttt{setup\_options(self)}] to add command line options
+\item [\texttt{new\_tasks(self, extra)}] method to return a list of
+  \textbf{Application}-like instances. Here, you can access command
+  line options via \lstinline|self.params.option_name|
+\item [\texttt{before\_main\_loop(self)}] to execute some code
+  \emph{before} the submission of the jobs.
+\item [\texttt{after\_main\_loop(self)}] to execute some code
+  \emph{after} the main loop. A list of all Application objects is
+  available in the \lstinline|self.session.tasks.values()| list.
+\end{description}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Exercise 5.C} Create a script which will run a variable
+  number of copies of the \textbf{CpuinfoApplication} of the
+  \lstinline|cpuinfo.py| script and will print the results at the
+  end. Remember to:
+  \begin{itemize}
+  \item in \lstinline|setup_options| add a command line option
+    \lstinline|--copies|.
+  \item in \lstinline|new_tasks| read the
+    \lstinline|self.params.copies| attribute to know how many
+    applications to run.
+  \item in \lstinline|after_main_loop| check if all the application
+    are done, and eventually print the results.
+  \end{itemize}
+\end{frame}
+
+% problems to solve:
+%     exercise A3 must fail:
+%     the localhost resource will not allow more than two jobs to run
+%         introduce the need for Engine
+%         solve exercise A3 properly
+%     if the script is killed, information about the jobs is lost
+%         introduce the need for a persistence system
+%     code duplication: every script must reuse the same scaffolding
+
+
+% the SessionBasedScript object:
+%     SessionBasedScript as a prototypical script with all the options you normally want to manage a set of jobs
+%     what parts of the generic HTC script are implemented in the SessionBasedScript
+%     define "session": a session is a persisted collection of jobs
+
+%     code example: a session_minimal.py script; run it; look at '--help'; "no jobs in session"
+
+%     how session are constructed and managed:
+%     explain the startup sequence of a SessionBasedScript, emphasizing customization points (new_tasks and setup_options particularly)
+%     explain the interface of new_tasks and its calling convention
+
+\end{document}
