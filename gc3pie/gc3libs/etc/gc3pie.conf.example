@@ -107,7 +107,30 @@ debug = 0
 #      	     that a job can request
 #    * max_walltime: Maximum job running time (in hours)
 #
-
+#    * ``prologue``: Used only when ``type`` is ``pbs``, ``lsf``,
+#       ``slurm`` or ``sge``. The content of the `prologue` script will
+#       be *inserted* into the submission script and it's executed before
+#       the real application.  It is intended to execute some shell
+#       commands needed to setup the execution environment before running
+#       the application (e.g. running a `module load ...` command). The
+#       script **must** be a valid, plain `/bin/sh` script.
+#
+#    * ``epilogue``: Used only when ``type`` is ``pbs``, ``lsf``,
+#       ``slurm`` or ``sge``. The content of the `epilogue` script will
+#       be *inserted* into the submission script and it's executed after
+#       the real application. The script **must** be a valid, plain
+#       `/bin/sh` script.
+#
+#    * ``<application_name>_prologue``: Same as ``prologue``, but it is
+#      used only when ``<application_name>``  matches the name of the
+#      application. Valid application names are: `zods`, `gamess`,
+#      `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`
+#
+#    * ``<application_name>_epilogue``: Same as ``epilogue``, but it is
+#      used only when ``<application_name>``  matches the name of the
+#      application. Valid application names are: `zods`, `gamess`,
+#      `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`
+#
 # The following two sections should be enough to run on the local
 # machine only; adjust the `max_cores` parameter to set the number of
 # jobs that you would like to spawn concurrently
