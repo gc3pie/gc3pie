@@ -21,6 +21,9 @@
 .. _GC3Pie: http://gc3pie.googlecode.com/
 .. _`GC3Pie mailing list`: mailto:gc3pie@googlegroups.com
 .. _`Grid Engine`: http://gridengine.org/blog/2011/11/23/what-now/
+.. _`Torque/PBS`: http://www.adaptivecomputing.com/products/open-source/torque/
+.. _`LSF`: http://www-03.ibm.com/systems/technicalcomputing/platformcomputing/products/lsf/index.html
+.. _`SLURM`: https://computing.llnl.gov/linux/slurm/
 .. _NorduGrid: http://www.nordugrid.org/
 .. _Rosetta: http://www.rosettacommons.org/
 .. _SMSCG: http://www.smscg.ch/
