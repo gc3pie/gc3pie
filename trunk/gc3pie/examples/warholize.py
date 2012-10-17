@@ -168,11 +168,16 @@ class WarholizeScript(SessionBasedScript):
         gc3libs.log.info("Creating main sequential task")
         tasks = []
         for (i, input_file) in enumerate(self.params.args):
+            if not os.path.isfile(input_file):
+                gc3libs.log.error("Argument `%s` is NOT a file. Ignoring" % input_file)
+                continue
             extra_args = extra.copy()
             extra_args['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
             tasks.append(WarholizeWorkflow(input_file,
                                            self.params.copies,
                                            self.params.num_colors, **extra_args))
+        if not tasks:
+            raise gc3libs.exceptions.InvalidUsage("Missing or invalid image file.")
         return [ParallelTaskCollection(tasks, **extra)]
 
 # `new_tasks` must return a list of tasks.  In GC3Pie, a *task* is
