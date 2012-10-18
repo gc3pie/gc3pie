@@ -322,7 +322,6 @@ class TestNextLine(Test):
 class TestLine(Test):	
 	def grepLinesAndAnalyze(self, pattern, matchedLinePosition, positionInLine, value, tol, name):
 		pattern = re.sub(r"[ \"]", r"", pattern) 
-
 		self.LPattern = pattern                    	
 		self.LMatchedLine = matchedLinePosition 
 		self.LFollowingLine = None 
@@ -331,4 +330,45 @@ class TestLine(Test):
 		self.LTolerances  = tol
 		self.LLabel = name
 
+class Extract(Test):
+	def setup_params(self,pattern, matchedLinePosition, positionInLine):
+		pattern = re.sub(r"[ \"]", r"", pattern) 
+		self.LPattern = pattern                    	
+		self.LMatchedLine = matchedLinePosition 
+		self.LPositionInLine = positionInLine
 	
+	def extract_energy(self):
+	 	pattern = self.LPattern
+		filename = self.name
+		if len(pattern) == 0:
+			return False
+		whichLine = self.LMatchedLine
+		positionInLine = self.LPositionInLine
+		
+		#Extract the position of the value within the target line	
+		pos = self.check_position(positionInLine)
+		gc3libs.log.debug("CHECKED positionInLine %s", pos)
+		which = self.check_matchedLine(whichLine)
+		gc3libs.log.debug("CHECKED MatchedLine %s", which)
+		if which == 0:
+			gc3libs.log.debug("ERROR: which %s is incorrect.") 
+			return False
+			
+		#Extract a list of lines that match a regexp and line indices as lists. 
+		(numList,linesFound) = self.grep_file(filename, pattern) 
+		
+		# Nothing Found
+		if (len(linesFound) == 0):
+			gc3libs.log.debug("Nothing found with your regexp.")
+			return False
+		
+		(numLine, targetLine) = self.get_targetLine(numList, linesFound, which)
+		gc3libs.log.debug("MATCHED LINE: %s", targetLine)
+		
+		#Extract the value from matched line                                                                                                		
+		valL = self.get_valueFromLine(targetLine, pos)
+                if valL is None: #Empty:
+                	gc3libs.log.debug("ERROR: Cannot retrieve the float value from line %s.", targetLine)
+                	return False
+                else:
+                	return valL
