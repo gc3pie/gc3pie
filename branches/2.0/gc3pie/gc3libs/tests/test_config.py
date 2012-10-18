@@ -355,6 +355,7 @@ class TestPrologueEpilogueScripts(object):
     """
     def setUp(self):
         # setup conf dir and conf file
+        self.files_to_remove = []
         cfgstring = """
 [auth/ssh]
 type = ssh
@@ -392,6 +393,7 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
         self.tmpdir = tempfile.mkdtemp()
         # setup config file and sctipts
         cfgfname = os.path.join(self.tmpdir, 'gc3pie.conf')
+        self.files_to_remove.append(self.tmpdir)
         fdcfg = open(cfgfname, 'w')
         fdcfg.write(cfgstring)
         fdcfg.close()
@@ -408,14 +410,22 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
         self.cfg = gc3libs.config.Configuration(cfgfname)
         # self.resources = self.cfg.make_resources()
         # assert_equal(resources['test']['prologue'], 'scripts/shellcmd_pre.sh')
+
+    def tearDown(self):
+        for dirname in self.files_to_remove:
+            shutil.rmtree(dirname)
+
     def test_scriptfiles_are_abs(self):
         """Test that prologue and epilogue scripts are absolute pathnames"""
         self.core = gc3libs.core.Core(self.cfg)
         for resource in self.core.get_resources():
-            for script in self.scripts:
-                assert os.path.isfile(resource[script])
-                assert_equal( os.path.abspath(resource[script]),
-                              resource[script])
+            for (k, v) in resource.iteritems():
+                if 'prologue' not in k and 'epilogue' not in k:
+                    continue
+                assert os.path.isfile(v)
+                assert os.path.isabs(v)
+                assert_equal( os.path.abspath(v),
+                              v)
 
     def test_pbs_prologue_and_epilogue_contents(self):
         """Test that prologue and epilogue scripts are correctly inserted into the submission script"""
@@ -441,6 +451,8 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
         assert_equal( len(newjobs), 1)
 
         newjobdir = os.path.join(jobdir, newjobs[0])
+        self.files_to_remove.append(newjobdir)
+
         # and only one file in it
         assert_equal(len(os.listdir(newjobdir)), 1)
 
@@ -454,10 +466,47 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
         if app.execution.state != Run.State.NEW:
             self.core.kill(app)
 
-        shutil.rmtree(newjobdir)
+    def test_prologue_epilogue_issue_352(self):
+        cfgstring = """
+[auth/ssh]
+type = ssh
+username = gc3pie
 
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir)
+[resource/%s]
+type = shellcmd
+auth = ssh
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2
+max_walltime = 8
+max_cores = 2
+architecture = x86_64
+"""
+        dir1, dir2 = tempfile.mkdtemp(), tempfile.mkdtemp()
+        self.files_to_remove.extend([dir1, dir2])
+        cfgfilenames = []
+
+        for d in [dir1, dir2]:
+            cfgfname = os.path.join(d, 'gc3pie.conf')
+            fdcfg = open(cfgfname, 'w')
+            fdcfg.write(cfgstring % os.path.basename(d))
+            fdcfg.close()
+            cfgfilenames.append(cfgfname)
+
+        self.cfg = gc3libs.config.Configuration(
+            cfgfilenames[0],
+            self.cfg.cfgfiles[0],
+            cfgfilenames[1], auto_enable_auth=True)
+
+        self.core = gc3libs.core.Core(self.cfg)
+        for resource in self.core.get_resources():
+            for (k, v) in resource.iteritems():
+                if 'prologue' not in k and 'epilogue' not in k:
+                    continue
+                assert os.path.isabs(v)
+                assert os.path.isfile(v)
+                assert_equal( os.path.abspath(v),
+                              v)
 
 
 if __name__ == "__main__":
