@@ -322,6 +322,7 @@ class Configuration(gc3libs.utils.Struct):
                 config_items = dict(parser.items(sectname))
                 self._perform_key_renames(config_items, self._renamed_keys, filename)
                 self._perform_value_updates(config_items, self._updated_values, filename)
+                self._perform_filename_conversion(config_items, self._path_key_regexp, filename)
                 try:
                     self._perform_type_conversions(config_items, self._convert, filename)
                 except Exception, err:
@@ -410,6 +411,17 @@ class Configuration(gc3libs.utils.Struct):
         'max_memory_per_core': _legacy_parse_memory,
         'max_walltime':        _legacy_parse_duration,
         }
+
+
+    @staticmethod
+    def _perform_filename_conversion(config_items, path_regexp, filename):
+        for key, value in config_items.iteritems():
+            if path_regexp.match(key):
+                config_items[key] = os.path.join(
+                    os.path.dirname(filename),
+                    value)
+
+    _path_key_regexp = re.compile('^(\w+_)?(prologue|epilogue)')
 
     @staticmethod
     def _perform_type_conversions(config_items, converters, filename):
@@ -577,13 +589,6 @@ class Configuration(gc3libs.utils.Struct):
                         "Missing required configuration parameter '%s' for resource '%s'"
                         % (argname, resdict['name']))
 
-            # Convert epilogue/prologue scripts to absolute path
-            for (k, v) in resdict.iteritems():
-                if k in ['prologue', 'epilogue' ] or k.endswith('_prologue') or k.endswith('_epilogue'):
-                    for cfgfile in self.cfgfiles:
-                        path = os.path.join(os.path.dirname(cfgfile), v)
-                        resdict[k] = os.path.abspath(path)
-                        break
 
             # finally, try to construct backend class...
             return cls(**dict(resdict))
