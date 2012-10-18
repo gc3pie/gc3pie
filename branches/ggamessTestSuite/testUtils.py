@@ -154,4 +154,3 @@ class GamessTestSuite:
 			 
 		self.final_flag = True # Success.
 		return self.final_flag 
-
