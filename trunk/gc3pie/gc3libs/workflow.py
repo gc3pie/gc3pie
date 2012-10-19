@@ -140,7 +140,7 @@ class TaskCollection(Task):
         """
         This method just asks the Engine to free the contained tasks.
         """
-        if self._controller:
+        if self._attached:
             for task in self.tasks:
                 self._controller.free(task)
 
