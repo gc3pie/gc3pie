@@ -946,21 +946,32 @@ To get detaileid info on a specific command, run:
         except gc3libs.exceptions.InvalidArgument, ex:
             raise RuntimeError('Session %s not found. Please specify a valid session directory as argument' % self.params.session)
 
+        rc = 0
         for task_id in self.session.tasks.keys():
             task = self.session.tasks[task_id]
             task.attach(self._core)
-            if task.execution.state == Run.State.NEW:
-                raise gc3libs.exceptions.InvalidOperation("Job '%s' not submitted." % task)
             if task.execution.state == Run.State.TERMINATED:
-                raise gc3libs.exceptions.InvalidOperation("Job '%s' is already in terminal state" % task)
-            else:
+                gc3libs.log.info("Not aborting '%s' which is already in TERMINATED state." % task)
+                rc += 1
+                continue
+            try:
                 task.kill()
+            except Exception, ex:
+                gc3libs.log.error(
+                    "Failed while killing job '%s'"
+                    "Error type %s, message %s" % (ex.__class__, ex))
+            finally:
                 task.free()
-                self.session.remove(task_id)
-        if self.session.tasks:
-            raise RuntimeError("Not all tasks have been removed from the session")
+                rc += 1
+            self.session.remove(task_id)
 
-        return 0
+        if self.session.tasks:
+            gc3libs.log.error("Not all tasks have been removed from the session.")
+
+        if rc > 125:
+            # 126 and 127 error codes have special meanings.
+            rc = 125
+        return rc
 
     def delete_session(self):
         """
