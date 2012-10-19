@@ -30,6 +30,7 @@ import shutil
 import sys
 import tempfile
 import psutil
+import errno
 
 # GC3Pie imports
 import gc3libs
@@ -96,23 +97,19 @@ class ShellcmdLrms(LRMS):
         # default is to use $TMPDIR or '/tmp' (see `tempfile.mkftemp`)
         self.spooldir = spooldir
 
-
+    @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
-        """
-        Cancel a running job.
-
-        If `app` is associated to a queued or running remote job, tell
-        the execution middleware to cancel it.
-        """
         try:
             pid = int(app.execution.lrms_jobid)
             posix.kill(pid, 15)
             # XXX: should we check that the process actually died?
             self.free_slots += app.requested_cores
         except OSError, ex:
-            if ex.errno == 10:
-                raise gc3libs.exceptions.InvalidArgument(
-                    "Job '%s' refers to non-existent local process %s"
+            if ex.errno in [errno.ECHILD, errno.ESRCH]:
+                # ECHILD: No child process
+                # ESRCH:  No such process
+                gc3libs.log.error(
+                    "Filed while killing Job '%s'. It refers to non-existent local process %s."
                     % (app, app.execution.lrms_jobid))
             else:
                 raise
