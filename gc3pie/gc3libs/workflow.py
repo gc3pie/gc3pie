@@ -136,6 +136,13 @@ class TaskCollection(Task):
         self.changed = True
         return coll_output_dir
 
+    def free(self):
+        """
+        This method just asks the Engine to free the contained tasks.
+        """
+        if self._controller:
+            for task in self.tasks:
+                self._controller.free(task)
 
     def peek(self, what, offset=0, size=None, **extra_args):
         """
