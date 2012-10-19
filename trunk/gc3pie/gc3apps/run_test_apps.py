@@ -411,16 +411,25 @@ class TestAppsScript(SessionBasedScript):
 
     def before_main_loop(self):
         print "Tests passed from command line: %s" % str.join(", ", self.params.args)
-        lrms = self._core.get_backend(self.params.test_resource)
         # The resource may requires a password to be properly
-        # initialized (e.g. x509 proxy certificates).
-        lrms.get_resource_status()
+        # initialized (e.g. x509 proxy certificates). This is usually
+        # done during submission, but when the application is
+        # submitted to, e.g., smscg, we don't have a prompt anymore,
+        # so let's try now and check that the resource is available.
+        self._core.update_resources()
+        lrms = self._core.get_backend(self.params.test_resource)
+        if not lrms.updated:
+            raise RuntimeError("Resource %s not updated. Exiting" % lrms)
 
-    def after_main_loop(self):
-        print "Status of applications:"
+    def every_main_loop(self):
+        print
+        print "Current status of applications:"
 
         for task in self.get_tasks():
             print "Task %s: %s (passed: %s)" % (task, task.execution.state, task.passed)
+        print
+
+    after_main_loop = every_main_loop
 
 if __name__ == "__main__":
     from run_test_apps import TestAppsScript
