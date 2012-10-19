@@ -895,7 +895,7 @@ To get detaileid info on a specific command, run:
         subparser.set_defaults(func=func)
         subparser.add_argument('session')
         subparser.add_argument('-v', '--verbose', action='count')
-
+        return subparser
 
     def setup(self):
         gc3libs.cmdline._Script.setup(self)
@@ -913,10 +913,12 @@ To get detaileid info on a specific command, run:
             'delete',
             self.delete_session,
             help="Delete a session from disk.")
-        self._add_subcmd(
+        subparser = self._add_subcmd(
             'list',
             self.list_jobs,
             help="List jobs related to a session.")
+        subparser.add_argument('-r', '--recursive', action="store_true", default=False,
+                            help="Show all jobs contained in a task collection, not only top-level jobs.")
 
         self._add_subcmd(
             'log',
@@ -1008,10 +1010,33 @@ To get detaileid info on a specific command, run:
         except gc3libs.exceptions.InvalidArgument, ex:
             raise RuntimeError('Session %s not found. Please specify a valid session directory as argument' % self.params.session)
 
-        job_ids = self.session.tasks.keys()
-        cmd = gc3utils.commands.cmd_gstat
-        sys.argv = ['gstat', '-n', '-s', self.params.session] + job_ids
-        return cmd().run()
+
+        def print_app_table(app, indent, recursive):
+            rows = []
+            try:
+                jobname = app.jobname
+            except AttributeError:
+                jobname = ''
+            
+            rows.append([indent + app.persistent_id,
+                         jobname,
+                         app.execution.state,
+                         app.execution.info])
+            if recursive and 'tasks' in app:
+                indent = " "*len(indent) + '  '
+                for task in app.tasks:
+                    rows.extend(print_app_table(task, indent , recursive))
+            return rows
+
+        rows = []
+        for app in self.session.tasks.values():
+            rows.extend(print_app_table(app, '', self.params.recursive))
+        table = Texttable(0)  # max_width=0 => dynamically resize cells
+        table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
+        table.set_cols_align(['l'] * 4)
+        table.header(["JobID", "Job name", "State", "Info"])
+        table.add_rows(rows, header=False)
+        print(table.draw())
 
     def show_log(self):
         """
