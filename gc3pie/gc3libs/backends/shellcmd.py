@@ -109,7 +109,7 @@ class ShellcmdLrms(LRMS):
                 # ECHILD: No child process
                 # ESRCH:  No such process
                 gc3libs.log.error(
-                    "Filed while killing Job '%s'. It refers to non-existent local process %s."
+                    "Failed while killing Job '%s'. It refers to non-existent local process %s."
                     % (app, app.execution.lrms_jobid))
             else:
                 raise
