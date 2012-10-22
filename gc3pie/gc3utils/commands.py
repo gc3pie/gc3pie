@@ -958,10 +958,6 @@ To get detaileid info on a specific command, run:
                 continue
             try:
                 task.kill()
-            except Exception, ex:
-                gc3libs.log.error(
-                    "Failed while killing job '%s'"
-                    "Error type %s, message %s" % (ex.__class__, ex))
             finally:
                 task.free()
                 rc += 1
