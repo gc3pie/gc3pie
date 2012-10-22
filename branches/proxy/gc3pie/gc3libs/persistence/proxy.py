@@ -437,7 +437,7 @@ class Proxy(BaseProxy):
 
     _reserved_names = BaseProxy._reserved_names + [
         "_obj_id", "_manager", "_saved", "_last_access", "_post",
-        "proxy_set_manager",
+        "proxy_set_manager", "changed",
         "proxy_forget", "proxy_last_accessed", "proxy_saved", "proxy_load"]
 
     def __init__(self, obj, storage=None, manager=None, post_load=None):
@@ -494,6 +494,7 @@ class Proxy(BaseProxy):
                 object.__setattr__(self, "_obj", None)
                 object.__setattr__(self, "_obj_id", p_id)
                 object.__setattr__(self, "_saved", True)
+                log.debug("Proxy: proxy_forget(): object %s saved to persistent store with persistent id %s." % (type(obj), p_id))
             except Exception, ex:
                 log.error("Proxy: Error saving object to persistent storage: %s" % ex)
         else:
@@ -503,6 +504,7 @@ class Proxy(BaseProxy):
         """
         Load and returns the internal object.
         """
+        log.debug("Proxy: called proxy_load()")
         obj = object.__getattribute__(self, "_obj")
         manager = object.__getattribute__(self, "_manager")
         storage = manager.get_storage()
@@ -514,6 +516,7 @@ class Proxy(BaseProxy):
             obj = storage.load(obj_id)
             object.__setattr__(self, "_obj", obj)
             object.__setattr__(self, "_saved", False)
+            log.debug("Proxy: proxy_load(): object %s with persistent id %s has been loaded from persistent store." % (type(obj), p_id))
             if self._post:
                 self._post(obj)
             manager.proxy_loaded(obj)
