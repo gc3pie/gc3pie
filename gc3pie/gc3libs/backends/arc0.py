@@ -279,7 +279,7 @@ class ArcLrms(LRMS):
                 'INLRMS:Q':  Run.State.SUBMITTED,
                 'INLRMS:R':  Run.State.RUNNING,
                 'INLRMS:E':  Run.State.RUNNING,
-                'INLRMS:O':  Run.State.RUNNING,
+                'INLRMS:O':  Run.State.STOPPED,
                 'INLRMS:S':  Run.State.STOPPED,
                 'INLRMS:H':  Run.State.STOPPED,
                 # the `-ING` states below are used by ARC to mean that
