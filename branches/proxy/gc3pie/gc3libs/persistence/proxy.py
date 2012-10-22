@@ -504,7 +504,6 @@ class Proxy(BaseProxy):
         """
         Load and returns the internal object.
         """
-        log.debug("Proxy: called proxy_load()")
         obj = object.__getattribute__(self, "_obj")
         manager = object.__getattribute__(self, "_manager")
         storage = manager.get_storage()
@@ -516,7 +515,16 @@ class Proxy(BaseProxy):
             obj = storage.load(obj_id)
             object.__setattr__(self, "_obj", obj)
             object.__setattr__(self, "_saved", False)
-            log.debug("Proxy: proxy_load(): object %s with persistent id %s has been loaded from persistent store." % (type(obj), p_id))
+            log.debug("Proxy: proxy_load(): object %s with persistent id %s has been loaded from persistent store." % (type(obj), obj_id))
+            try:
+                if obj.execution.state == 'TERMINATED':
+                    import inspect
+                    import os
+                    stack = ["%s:%s:%s" % (os.path.basename(i[1]), i[2], i[3]) for i in inspect.stack()]
+                    log.warning("Proxy: proxy_load(): object %s loaded when in state `TERMINATED`. Stack trace: %s" % (obj_id,   ", ".join(stack)))
+            except AttributeError:
+                pass
+
             if self._post:
                 self._post(obj)
             manager.proxy_loaded(obj)
