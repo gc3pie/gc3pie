@@ -76,6 +76,9 @@ class _PersistentIdToSave(object):
         self._driver = driver
 
     def __call__(self, obj):
+        if isinstance(obj, Proxy):
+            obj.proxy_forget()
+
         if obj is self._root:
             return None
         elif hasattr(obj, 'persistent_id'):
