@@ -739,6 +739,7 @@ class Engine(object):
         self._terminating = []
         self._terminated = []
         self._to_kill = []
+        self._terminated_by_type = {}
         self._core = controller
         self._store = store
         for task in tasks:
@@ -853,6 +854,7 @@ class Engine(object):
                 elif state == Run.State.TERMINATED:
                     transitioned.append(index) # task changed state, mark as to remove
                     self._terminated.append(task)
+                    self.terminated_stats(task)
             except gc3libs.exceptions.ConfigurationError:
                 # Unrecoverable; no sense in continuing -- pass
                 # immediately on to client code and let it handle
@@ -884,6 +886,7 @@ class Engine(object):
                     if isinstance(task, Application):
                         currently_in_flight -= 1
                 self._terminated.append(task)
+                self.terminated_stats(task)
                 transitioned.append(index)
             except Exception, x:
                 gc3libs.log.error("Ignored error in killing task '%s': %s: %s",
@@ -919,6 +922,7 @@ class Engine(object):
                     transitioned.append(index) # task changed state, mark as to remove
                 elif state == Run.State.TERMINATED:
                     self._terminated.append(task)
+                    self.terminated_stats(task)
                     transitioned.append(index) # task changed state, mark as to remove
             except Exception, x:
                 gc3libs.log.error("Ignoring error in updating state of STOPPED task '%s': %s: %s"
@@ -989,6 +993,7 @@ class Engine(object):
                                       task, x.__class__.__name__, str(x), exc_info=True)
                 if task.execution.state == Run.State.TERMINATED:
                     self._terminated.append(task)
+                    self.terminated_stats(task)
                     self._core.free(task)
                     transitioned.append(index)
                 if self._store and task.changed:
@@ -996,6 +1001,34 @@ class Engine(object):
             # remove tasks for which final output has been retrieved
             for index in reversed(transitioned):
                 del self._terminating[index]
+
+    def terminated_stats(self, task, only=None):
+        """
+        update stats for terminated tasks by simply recomputing
+        the values with the newly terminated task
+        these values will the those returned by stats() method
+        thus preventing looping on the ever growing list of
+        terminated tasks every progress cycle.
+        Proposed format:
+        _terminated_by_type as a dictionary
+        keys: type(task)
+        values: [ # of tasks with execution.returncode == 0,
+                   # of tasks with execution.returncode != 0 ]
+        This should allow to compute the following:
+        per 'instanceonly'
+        result['ok'] = self._terminated_by_type[only][0]
+        result['failed'] = self._terminated_by_type[only][1]
+        result['total'] = self._terminated_by_type[only][0] +
+                          self._terminated_by_type[only][1]
+        """
+
+        if not self._terminated_by_type.has_key(type(task)):
+            self._terminated_by_type[type(task)] = [0,0]
+
+        if task.execution.returncode == 0:
+            self._terminated_by_type[type(task)][0] += 1
+        else:
+            self._terminated_by_type[type(task)][1] += 1
 
 
     def stats(self, only=None):
@@ -1046,23 +1079,15 @@ class Engine(object):
         else:
             result[Run.State.TERMINATING] += len(self._terminating)
         if only:
-            result[Run.State.TERMINATED] += len([task for task in self._terminated
-                                                               if isinstance(task, only)])
+            result[Run.State.TERMINATED] = self._terminated_by_type[only][0] + self._terminated_by_type[only][1]
+            result['ok'] = self._terminated_by_type[0][0]
+            result['failed'] = self._terminated_by_type[0][1]
         else:
-            result[Run.State.TERMINATED] += len(self._terminated)
+            for (ok,failed) in self._terminated_by_type.values():
+                result[Run.State.TERMINATED] += ok + failed
+                result['ok'] += ok
+                result['failed'] += failed
 
-        # for TERMINATED tasks, compute the number of successes/failures
-        for task in self._terminated:
-            if only and not isinstance(task, only):
-                continue
-            if task.execution.returncode == 0:
-                result['ok'] += 1
-            else:
-                # gc3libs.log.debug(
-                #     "Task '%s' failed: return code %s (signal %s, exitcode %s)"
-                #     % (task, task.execution.returncode,
-                #        task.execution.signal, task.execution.exitcode))
-                result['failed'] += 1
         result['total'] = (result[Run.State.NEW]
                            + result[Run.State.SUBMITTED]
                            + result[Run.State.RUNNING]
