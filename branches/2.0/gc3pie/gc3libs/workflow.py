@@ -64,7 +64,7 @@ class TaskCollection(Task):
         """
         Use the given Controller interface for operations on the job
         associated with this task.
-        """        
+        """
         raise NotImplementedError("Called abstract method TaskCollection.attach() - this should be overridden in derived classes.")
 
     def detach(self):
@@ -232,7 +232,6 @@ class SequentialTaskCollection(TaskCollection):
         for task in self.tasks:
             if not task._attached:
                 task.attach(controller)
-                break
         Task.attach(self, controller)
 
     def kill(self, **extra_args):
