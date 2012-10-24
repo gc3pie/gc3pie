@@ -133,7 +133,11 @@ class ShellcmdLrms(LRMS):
         The temporary directory is removed with all its content,
         recursively.
         """
-        shutil.rmtree(app.execution.lrms_execdir)
+        try:
+            shutil.rmtree(app.execution.lrms_execdir)
+        except Exception, ex:
+            log.warning("Failed removing folder '%s': %s: %s"
+                        % (app.execution.lrms_execdir, type(ex), ex))
 
 
     @same_docstring_as(LRMS.get_resource_status)
