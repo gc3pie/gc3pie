@@ -271,13 +271,18 @@ class BatchSystem(LRMS):
     def _get_prepost_scripts(self, app, scriptnames):
         script_txt = []
         for script in scriptnames:
-            if script in self and os.path.isfile(self[script]):
-                gc3libs.log.debug("Adding %s file `%s` to the submission script" % (script, self[script]))
-                script_file = open(self[script])
-                script_txt.append("\n# %s file `%s` BEGIN\n" % (script, self[script]))
-                script_txt.append(script_file.read())
-                script_txt.append("\n# %s file END\n" % script)
-                script_file.close()
+            if script not in self:
+                gc3libs.log.debug("%s script not defined for resource %s", script, self.name)
+                continue
+            if not os.path.isfile(self[script]):
+                gc3libs.log.debug("%s script points to file '%s', which does not exist - ignoring.", script, self[script])
+                continue
+            gc3libs.log.debug("Adding %s file `%s` to the submission script" % (script, self[script]))
+            script_file = open(self[script])
+            script_txt.append("\n# %s file `%s` BEGIN\n" % (script, self[script]))
+            script_txt.append(script_file.read())
+            script_txt.append("\n# %s file END\n" % script)
+            script_file.close()
         return str.join("", script_txt)
 
     def get_prologue_script(self, app):
