@@ -57,17 +57,7 @@ np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 # FVr_a5 -> a5 # index array
 # FVr_ind -> ind # index pointer array
 
-log = logging.getLogger('gc3.gc3libs.optimizer')
-log.setLevel(logging.DEBUG)
-log.propagate = 0
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.INFO)
-import gc3libs
-log_file_name = os.path.join(gc3libs.Default.RCDIR, 'difEvolution.log')
-file_handler = logging.FileHandler(log_file_name, mode = 'w')
-file_handler.setLevel(logging.DEBUG)
-log.addHandler(stream_handler)
-log.addHandler(file_handler)
+
 
 class EvolutionaryAlgorithm(object):
     '''
@@ -120,6 +110,18 @@ class DifferentialEvolution:
             paraStruct: Dict carrying solver settings. 
             evaluator: Class carrying target and nlc. 
         '''
+        
+        log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
+        log.setLevel(logging.DEBUG)
+        log.propagate = 0
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.DEBUG)
+        import gc3libs
+        log_file_name = os.path.join(gc3libs.Default.RCDIR, 'EvolutionaryAlgorithm.log')
+        file_handler = logging.FileHandler(log_file_name, mode = 'w')
+        file_handler.setLevel(logging.DEBUG)
+        log.addHandler(stream_handler)
+        log.addHandler(file_handler)        
 
         # save parameters
         self.dim = dim
@@ -148,6 +150,7 @@ class DifferentialEvolution:
 
         # Set up loggers
         self.logger = log
+        self.logger.debug('in dif_evo')
 
         # Initialize variables that needed for state retention. 
         self.pop_old  = np.zeros( (self.pop_size, self.dim) )  # toggle population
@@ -187,24 +190,24 @@ class DifferentialEvolution:
     def iterate(self):
         self.cur_iter += 1
         if self.cur_iter == 0:
-            self.FM_pop = self.drawInitialSample()
-            self.ui  = self.FM_pop.copy()
+            self.pop = self.drawInitialSample()
+            self.ui  = self.pop.copy()
 
         elif self.cur_iter > 0:
             # self.cur_iter += 1
-            self.ui = self.modify(self.FM_pop)
+            self.ui = self.modify(self.pop)
             # Check constraints and resample points to maintain population size. 
             self.ui = self.enforceConstrReEvolve(self.ui)
 
         # EVALUATE TARGET #
         self.evaluator.createJobs_x(self.ui)
         self.S_tempvals = self.target(self.ui)
-        self.logger.debug('x -> f(x)')
-        for x, fx in zip(self.ui, self.S_tempvals):
-            self.logger.debug('%s -> %s' % (x.tolist(), fx))
+        #self.logger.debug('x -> f(x)')
+        #for x, fx in zip(self.ui, self.S_tempvals):
+            #self.logger.debug('%s -> %s' % (x.tolist(), fx))
         self.updatePopulation(self.ui, self.S_tempvals)
         # create output
-        self.printStats()
+#        self.printStats()
         # make plots
         if self.plotting:
             self.plotPopulation()   
@@ -220,9 +223,9 @@ class DifferentialEvolution:
         if self.S_bestval < self.y_conv_crit:
             converged = True
             self.logger.info('converged self.S_bestval < self.y_conv_crit')
-        if self.populationConverged(self.FM_pop):
+        if self.populationConverged(self.pop):
             converged = True
-            self.logger.info('converged self.populationConverged(self.FM_pop)')
+            self.logger.info('converged self.populationConverged(self.pop)')
         return converged
 
     def populationConverged(self, pop):
@@ -244,7 +247,7 @@ class DifferentialEvolution:
         newPop = np.array(newPop)
         newVals = np.array(newVals)
         if self.cur_iter == 0:
-            self.FM_pop = newPop.copy()
+            self.pop = newPop.copy()
             self.S_vals = newVals.copy()
             # Determine bestmemit and bestvalit for random draw. 
             self.I_best_index = np.argmin(self.S_vals)
@@ -280,7 +283,7 @@ class DifferentialEvolution:
             for k in range(self.pop_size):
                 self.n_fun_evals  = self.n_fun_evals + 1
                 if newVals[k] < self.S_vals[k]:
-                    self.FM_pop[k,:] = newPop[k, :].copy()                    # replace old vector with new one (for new iteration)
+                    self.pop[k,:] = newPop[k, :].copy()                    # replace old vector with new one (for new iteration)
                     self.S_vals[k]   = newVals[k].copy()                      # save value in "cost array"
 
                     # #----we update S_bestval only in case of success to save time-----------
@@ -300,7 +303,7 @@ class DifferentialEvolution:
 
     def modify(self, pop): 
 
-        FM_popold      = pop                 # save the old population
+        popold      = pop                 # save the old population
         prob_crossover           = self.prob_crossover
         de_step_size       = self.de_step_size
         pop_size           = self.pop_size
@@ -341,11 +344,11 @@ class DifferentialEvolution:
         a5  = a4[rt]                
 
 
-        pm1 = FM_popold[a1, :]             # shuffled population 1
-        pm2 = FM_popold[a2, :]             # shuffled population 2
-        pm3 = FM_popold[a3, :]             # shuffled population 3
-        pm4 = FM_popold[a4, :]             # shuffled population 4
-        pm5 = FM_popold[a5, :]             # shuffled population 5
+        pm1 = popold[a1, :]             # shuffled population 1
+        pm2 = popold[a2, :]             # shuffled population 2
+        pm3 = popold[a3, :]             # shuffled population 3
+        pm4 = popold[a4, :]             # shuffled population 4
+        pm5 = popold[a5, :]             # shuffled population 5
 
 
         for k in range(pop_size):                              # population filled with the best member
@@ -369,17 +372,17 @@ class DifferentialEvolution:
 
         if ( de_strategy == 1 ):                             # DE/rand/1
             ui = pm3 + de_step_size * ( pm1 - pm2 )   # differential variation
-            ui = FM_popold * mpo + ui * mui       # crossover
+            ui = popold * mpo + ui * mui       # crossover
             FM_origin = pm3
             if np.any(ui > 1.3):
                 print 'below zero'
         elif (de_strategy == 2):                         # DE/local-to-best/1
-            ui = FM_popold + de_step_size * ( bm - FM_popold ) + de_step_size * ( pm1 - pm2 )
-            ui = FM_popold * mpo + ui * mui
-            FM_origin = FM_popold
+            ui = popold + de_step_size * ( bm - popold ) + de_step_size * ( pm1 - pm2 )
+            ui = popold * mpo + ui * mui
+            FM_origin = popold
         elif (de_strategy == 3):                         # DE/best/1 with jitter
             ui = bm + ( pm1 - pm2 ) * ( (1 - 0.9999 ) * np.random.random_sample( (pop_size, dim ) ) +de_step_size )               
-            ui = FM_popold * mpo + ui * mui
+            ui = popold * mpo + ui * mui
             FM_origin = bm
         elif (de_strategy == 4):                         # DE/rand/1 with per-vector-dither
             f1 = ( ( 1 - de_step_size ) * np.random.random_sample( (pop_size, 1 ) ) + de_step_size)
@@ -387,19 +390,19 @@ class DifferentialEvolution:
                 pm5[:,k] = f1
             ui = pm3 + (pm1 - pm2) * pm5    # differential variation
             FM_origin = pm3
-            ui = FM_popold * mpo + ui * mui     # crossover
+            ui = popold * mpo + ui * mui     # crossover
         elif (de_strategy == 5):                          # DE/rand/1 with per-vector-dither
             f1 = ( ( 1 - de_step_size ) * np.random.random_sample() + de_step_size )
             ui = pm3 + ( pm1 - pm2 ) * f1         # differential variation
             FM_origin = pm3
-            ui = FM_popold * mpo + ui * mui   # crossover
+            ui = popold * mpo + ui * mui   # crossover
         else:                                              # either-or-algorithm
             if (np.random.random_sample() < 0.5):                               # Pmu = 0.5
                 ui = pm3 + de_step_size * ( pm1 - pm2 )# differential variation
                 FM_origin = pm3
             else:                                           # use F-K-Rule: K = 0.5(F+1)
                 ui = pm3 + 0.5 * ( de_step_size + 1.0 ) * ( pm1 + pm2 - 2 * pm3 )
-                ui = FM_popold * mpo + ui * mui     # crossover 
+                ui = popold * mpo + ui * mui     # crossover 
 
         return ui
 
@@ -496,7 +499,7 @@ class DifferentialEvolution:
         cSat = self.checkConstraints(pop)
         popNew = pop[cSat, :]
         while not len(popNew) >= self.pop_size:
-            reEvolvePop = self.modify(self.FM_pop) # generate a completely new set of population members
+            reEvolvePop = self.modify(self.pop) # generate a completely new set of population members
             cSat = self.checkConstraints(reEvolvePop)        # cSat a points to the elements that satisfy the constraints. 
             popNew = np.append(popNew, reEvolvePop[cSat, :], axis = 0) # Append all new members to the new population that satisfy the constraints. 
         reEvlolvedPop = popNew[:self.pop_size, :]  # Subset the popNew to length pop_size. All members will satisfy the constraints. 
@@ -544,7 +547,7 @@ class Rosenbrock:
         #********************************************************************
 
         # y_conv_crit		"Value To Reach" (stop when ofunc < y_conv_crit)
-        y_conv_crit = 1.e-8 
+        y_conv_crit = 0.1
 
         # dim		number of parameters of the objective function 
         dim = 2 
