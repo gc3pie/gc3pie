@@ -64,8 +64,7 @@ import gc3libs.debug
 import gc3libs.config
 import gc3libs.core
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
-#from gc3libs.optimizer.examples.rosenbrock.opt_rosenbrock import compute_target_rosenbrock
-from opt_rosenbrock import compute_target_rosenbrock
+from gc3libs.optimizer.examples.rosenbrock.opt_rosenbrock import compute_target_rosenbrock
 from gc3libs import Application, Run
 
 # optimizer specific imports
@@ -119,9 +118,9 @@ class GlobalOptimizer(SequentialTaskCollection):
         self.task_constructor = task_constructor
         self.extra_args = extra_args
 
-        self.optimizer.I_iter += 1
+        self.optimizer.cur_iter += 1
 
-        self.evaluator = ComputePhenotypes(self.optimizer.newPop, self.jobname, self.optimizer.I_iter, path_to_stage_dir, task_constructor)
+        self.evaluator = ComputePhenotypes(self.optimizer.newPop, self.jobname, self.optimizer.cur_iter, path_to_stage_dir, task_constructor)
 
         initial_task = self.evaluator
 
@@ -148,12 +147,12 @@ class GlobalOptimizer(SequentialTaskCollection):
             self.optimizer.newPop = self.optimizer.evolvePopulation(self.optimizer.FM_pop)
             # Check constraints and resample points to maintain population size.
             self.optimizer.newPop = self.optimizer.enforceConstrReEvolve(self.optimizer.newPop)
-            self.optimizer.I_iter += 1
-            self.evaluator = ComputePhenotypes(self.optimizer.newPop, self.jobname, self.optimizer.I_iter, self.path_to_stage_dir, self.task_constructor)
+            self.optimizer.cur_iter += 1
+            self.evaluator = ComputePhenotypes(self.optimizer.newPop, self.jobname, self.optimizer.cur_iter, self.path_to_stage_dir, self.task_constructor)
             self.add(self.evaluator)
         else:
             # post processing
-            if self.optimizer.I_plotting:
+            if self.optimizer.plotting:
                 self.plot3dTable()
 
             open(os.path.join(self.path_to_stage_dir, 'jobDone'), 'w')

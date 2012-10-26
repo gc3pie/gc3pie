@@ -38,7 +38,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __version__ = '$Revision$'
-__author__ = 'Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
+__author__ = 'Lukasz Miroslaw <lukasz.miroslaw@uzh.ch> on basis of work by Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
 
@@ -56,7 +56,7 @@ import glob
 import time
 import logging
 import numpy as np
-import shutil
+#import shutil
 
 # gc3libs imports
 import gc3libs
@@ -65,14 +65,14 @@ import gc3libs.config
 import gc3libs.core
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 #from gc3libs.optimizer.examples.rosenbrock.opt_rosenbrock import compute_target_rosenbrock
-from opt_rosenbrock import compute_target_rosenbrock
+#from opt_rosenbrock import compute_target_rosenbrock
 from gc3libs import Application, Run
 
 # optimizer specific imports
-from dif_evolution import DifferentialEvolution
+#from dif_evolution import DifferentialEvolution
 
 # For now use __file__ to determine path to the example files. Could also use pkg_resources. 
-path_to_rosenbrock_example = os.path.join(os.path.dirname(__file__), 'examples/rosenbrock/')
+path_to_rosenbrock_example = os.path.join(os.path.dirname(__file__), 'examples/molecules/')
 
 # Perform basic configuration for gc3libs logger. Adjust level to logging.DEBUG if necessary. 
 gc3libs.configure_logger(level=logging.CRITICAL)
@@ -121,7 +121,7 @@ class GlobalOptimizer(SequentialTaskCollection):
 
         self.optimizer.I_iter += 1
 
-        self.evaluator = ComputePhenotypes(self.optimizer.newPop, self.jobname, self.optimizer.I_iter, path_to_stage_dir, task_constructor)
+#        self.evaluator = ComputePhenotypes(self.optimizer.newPop, self.jobname, self.optimizer.I_iter, path_to_stage_dir, task_constructor)
 
         initial_task = self.evaluator
 
@@ -129,6 +129,7 @@ class GlobalOptimizer(SequentialTaskCollection):
         
     def next(self, *args):
         log.debug('entering gParaSearchDriver.next')
+        log.debug('EA Loop')
 
         self.changed = True
         # pass on (popMem, Application)
