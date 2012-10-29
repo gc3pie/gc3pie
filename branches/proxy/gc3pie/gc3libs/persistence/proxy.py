@@ -21,7 +21,9 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+import os
 import time
+import inspect
 
 from gc3libs import log
 from gc3libs.persistence.store import Persistable, Store
@@ -52,8 +54,8 @@ def create_proxy_class(cls, obj, extra):
     # (re)construct object
     pxy = cls(obj)
     # set pickle persistent ID
-    if 'persistent_id' in extra:
-        pxy.persistent_id = extra['persistent_id']
+    pxy.persistent_id = extra['persistent_id']
+    pxy._obj_id = extra['_obj_id']
     return pxy
 
 class MemoryPool(object):
@@ -509,19 +511,18 @@ class Proxy(BaseProxy):
         storage = manager.get_storage()
         if not obj:
             assert isinstance(storage, Store)
-
-            obj_id = object.__getattribute__(self, "_obj_id")
-            assert storage and obj_id
+            try:
+                obj_id = object.__getattribute__(self, "_obj_id")
+            except AttributeError:
+                raise ValueError("proxy_load(): %s object does not have a `_obj_id` attribute but the object has been saved." % str(self))
             obj = storage.load(obj_id)
             object.__setattr__(self, "_obj", obj)
             object.__setattr__(self, "_saved", False)
             log.debug("Proxy: proxy_load(): object %s with persistent id %s has been loaded from persistent store." % (type(obj), obj_id))
             try:
                 if obj.execution.state == 'TERMINATED':
-                    import inspect
-                    import os
                     stack = ["%s:%s:%s" % (os.path.basename(i[1]), i[2], i[3]) for i in inspect.stack()]
-                    log.warning("Proxy: proxy_load(): object %s loaded when in state `TERMINATED`. Stack trace: %s" % (obj_id,   ", ".join(stack)))
+                    log.debug("Proxy: proxy_load(): object %s loaded when in state `TERMINATED`. Stack trace: %s" % (obj_id,   ", ".join(stack)))
             except AttributeError:
                 pass
 
@@ -553,6 +554,7 @@ class Proxy(BaseProxy):
         extra = {}
         try:
             extra['persistent_id'] = self.persistent_id
+            extra['_obj_id'] = self._obj_id
         except AttributeError:
             pass
         return ( create_proxy_class,
