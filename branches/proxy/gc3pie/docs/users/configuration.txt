@@ -313,11 +313,11 @@ default is 15 seconds (matches the default in SGE, as of release 6.2):
 
   * ``sge_accounting_delay``: Time (in seconds) a failure in `qacct`:command: will *not* be considered critical.
 
-GC3Pie uses standard command line utilities to access the resource
-manager. By default these commands are searched using the standard
-``PATH`` resolution, but you can specify the full path of these
-commands or even add some extra options. The following options are
-used by the SGE backend:
+GC3Pie uses standard command line utilities to interact with the
+resource manager. By default these commands are searched using the
+``PATH`` environment variable, but you can specify the full path of
+these commands and/or add some extra options. The following options
+are used by the SGE backend:
 
   * ``qsub``: submit a job.
 
@@ -345,11 +345,11 @@ The following configuration keys are required in a ``pbs``-type resource section
     connection will be attempted to this node, in order to submit jobs
     and retrieve status info.
 
-GC3Pie uses standard command line utilities to access the resource
-manager. By default these commands are searched using the standard
-``PATH`` resolution, but you can specify the full path of these
-commands or even add some extra options. The following options are
-used by the PBS backend:
+GC3Pie uses standard command line utilities to interact with the
+resource manager. By default these commands are searched using the
+``PATH`` environment variable, but you can specify the full path of
+these commands and/or add some extra options. The following options
+are used by the PBS backend:
 
   * ``queue``: the name of the queue to which jobs are submitted. If
     empty (the default), no job will be specified during submission.
@@ -381,11 +381,11 @@ The following configuration keys are required in a ``lsf``-type resource section
     will be attempted to this node, in order to submit jobs and
     retrieve status info.
 
-GC3Pie uses standard command line utilities to access the resource
-manager. By default these commands are searched using the standard
-``PATH`` resolution, but you can specify the full path of these
-commands or even add some extra options. The following options are
-used by the LSF backend:
+GC3Pie uses standard command line utilities to interact with the
+resource manager. By default these commands are searched using the
+``PATH`` environment variable, but you can specify the full path of
+these commands and/or add some extra options. The following options
+are used by the LSF backend:
 
   * ``bsub``: submit a job.
 
@@ -413,11 +413,11 @@ The following configuration keys are required in a ``slurm``-type resource secti
     will be attempted to this node, in order to submit jobs and
     retrieve status info.
 
-GC3Pie uses standard command line utilities to access the resource
-manager. By default these commands are searched using the standard
-``PATH`` resolution, but you can specify the full path of these
-commands or even add some extra options. The following options are
-used by the SLURM backend:
+GC3Pie uses standard command line utilities to interact with the
+resource manager. By default these commands are searched using the
+``PATH`` environment variable, but you can specify the full path of
+these commands and/or add some extra options. The following options
+are used by the SLURM backend:
 
   * ``sbatch``: submit a job. 
 
