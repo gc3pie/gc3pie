@@ -477,6 +477,7 @@ class ParallelTaskCollection(TaskCollection):
         for task in self.tasks:
             if not task._attached:
                 controller.add(task)
+                break
         Task.attach(self, controller)
 
     def kill(self, **extra_args):
