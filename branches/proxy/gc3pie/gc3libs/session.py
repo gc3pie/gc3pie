@@ -34,6 +34,7 @@ import gc3libs.exceptions
 import gc3libs.persistence
 import gc3libs.utils
 
+from gc3libs.persistence.proxy import memory_manager
 
 class Session(list):
     """
@@ -335,7 +336,11 @@ class Session(list):
                 "Unable to load session: file %s is missing." % (store_fname))
             raise
         self.store = gc3libs.persistence.make_store(self.store_url, **extra_args)
-
+        # If there is no store defined for proxies we will be unable
+        # to load them. In case no store has been defined in the
+        # memory_manager, assign the current one.
+        if memory_manager and not memory_manager.get_storage():
+            memory_manager.set_storage(self.store)
         idx_filename = os.path.join(self.path, self.INDEX_FILENAME)
         try:
             idx_fd = open(idx_filename)
