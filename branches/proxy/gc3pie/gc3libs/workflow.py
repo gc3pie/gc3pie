@@ -64,7 +64,7 @@ class TaskCollection(Task):
         """
         Use the given Controller interface for operations on the job
         associated with this task.
-        """        
+        """
         raise NotImplementedError("Called abstract method TaskCollection.attach() - this should be overridden in derived classes.")
 
     def detach(self):
