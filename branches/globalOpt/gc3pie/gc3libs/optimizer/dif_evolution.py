@@ -57,6 +57,32 @@ np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 # FVr_a5 -> a5 # index array
 # FVr_ind -> ind # index pointer array
 
+import pickle
+def get_pickling_errors(obj,seen=None):
+    if seen == None:
+        seen = []
+    try:
+        state = obj.__getstate__()
+    except AttributeError:
+        return
+    if state == None:
+        return
+    if isinstance(state,tuple):
+        if not isinstance(state[0],dict):
+            state=state[1]
+        else:
+            state=state[0].update(state[1])
+    result = {}    
+    for i in state:
+        try:
+            pickle.dumps(state[i],protocol=2)
+        except pickle.PicklingError:
+            if not state[i] in seen:
+                seen.append(state[i])
+                result[i]=get_pickling_errors(state[i],seen)
+    return result
+
+
 
 
 class EvolutionaryAlgorithm(object):
@@ -117,7 +143,7 @@ class DifferentialEvolution:
         stream_handler = logging.StreamHandler()
         stream_handler.setLevel(logging.DEBUG)
         import gc3libs
-        log_file_name = os.path.join(gc3libs.Default.RCDIR, 'EvolutionaryAlgorithm.log')
+        log_file_name = os.path.join(working_dir, 'EvolutionaryAlgorithm.log')
         file_handler = logging.FileHandler(log_file_name, mode = 'w')
         file_handler.setLevel(logging.DEBUG)
         log.addHandler(stream_handler)
@@ -150,7 +176,7 @@ class DifferentialEvolution:
 
         # Set up loggers
         self.logger = log
-        self.logger.debug('in dif_evo')
+        #self.logger.debug('in dif_evo')
 
         # Initialize variables that needed for state retention. 
         self.pop_old  = np.zeros( (self.pop_size, self.dim) )  # toggle population
@@ -163,6 +189,7 @@ class DifferentialEvolution:
             self.prob_crossover = 0.5
             self.logger.debug('prob_crossover should be from interval [0,1]; set to default value 0.5')
         if self.pop_size < 5:
+            pass
             self.logger.warning('Set pop_size >= 5 for difEvoKenPrice to work. ')
 
         # Fix seed for debugging
@@ -172,9 +199,9 @@ class DifferentialEvolution:
         self.cur_iter = -1
 
         # Create folder to save plots
-        self.figSaveFolder = os.path.join(self.working_dir, 'difEvoFigures')
-        if not os.path.exists(self.figSaveFolder):
-            os.mkdir(self.figSaveFolder)
+        #self.figSaveFolder = os.path.join(self.working_dir, 'difEvoFigures')
+        #if not os.path.exists(self.figSaveFolder):
+            #os.mkdir(self.figSaveFolder)
 
 
     def deopt(self):
@@ -202,12 +229,12 @@ class DifferentialEvolution:
         # EVALUATE TARGET #
         self.evaluator.createJobs_x(self.ui)
         self.S_tempvals = self.target(self.ui)
-        #self.logger.debug('x -> f(x)')
-        #for x, fx in zip(self.ui, self.S_tempvals):
-            #self.logger.debug('%s -> %s' % (x.tolist(), fx))
+        self.logger.debug('x -> f(x)')
+        for x, fx in zip(self.ui, self.S_tempvals):
+            self.logger.debug('%s -> %s' % (x.tolist(), fx))
         self.updatePopulation(self.ui, self.S_tempvals)
         # create output
-#        self.printStats()
+        self.printStats()
         # make plots
         if self.plotting:
             self.plotPopulation()   
@@ -410,6 +437,7 @@ class DifferentialEvolution:
 
 
     def printStats(self):
+        pass
         self.logger.debug('Iteration: %d,  x: %s f(x): %f' % 
                           (self.cur_iter, self.best, self.S_bestval))
 
@@ -476,7 +504,7 @@ class DifferentialEvolution:
                 ctr += 1
             if ctr >= maxDrawSize: 
                 pass
-                #self.logger.debug('Couldnt sample a feasible point with {0} draws', maxDrawSize)
+                self.logger.debug('Couldnt sample a feasible point with {0} draws', maxDrawSize)
         return pop
 
     def checkConstraints(self, pop):
@@ -506,7 +534,28 @@ class DifferentialEvolution:
         #self.logger.debug('reEvolved population: ')
         #self.logger.debug(popNew)
         return reEvlolvedPop
-
+    
+    # Adjustments for pickling
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['nlc']
+        del state['logger']
+        return state
+    
+    def __setstate__(self, state):
+        self.__dict__ = state
+        # Restore logging
+        log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
+        log.setLevel(logging.DEBUG)
+        log.propagate = 0
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.DEBUG)
+        import gc3libs
+        log_file_name = os.path.join(working_dir, 'EvolutionaryAlgorithm.log')
+        file_handler = logging.FileHandler(log_file_name, mode = 'a')
+        file_handler.setLevel(logging.DEBUG)
+        log.addHandler(stream_handler)
+        log.addHandler(file_handler)     
 
 
 
@@ -635,6 +684,7 @@ class Rosenbrock:
                                de_strategy = de_strategy, plotting = plotting, working_dir = os.getcwd(), 
                                lower_bds = FVr_minbound, upper_bds = FVr_maxbound, x_conv_crit = None, 
                                verbosity = 'DEBUG', evaluator = self)
+        
         globalOpt.deopt()
 
     #def target(self, vectors):
