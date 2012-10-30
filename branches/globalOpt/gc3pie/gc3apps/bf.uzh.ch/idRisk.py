@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 #
 """
-ForwardPremium-specific methods and overloads. 
+ForwardPremium-specific methods and overloads.
 """
-# Copyright (C) 2011 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,34 +45,37 @@ from supportGc3 import wrapLogger
 logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logFile = __name__ + '.log')
 
 class idRiskApplication(Application):
+
+    application_name = 'idrisk'
+
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
-    
+
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
         Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args)
-    
+
     def fetch_output_error(self, ex):
 
         if self.execution.state == Run.State.TERMINATING:
         # do notify task/main application that we're done
         # ignore error, let's continue
-            self.execution.state = Run.State.TERMINATED            
+            self.execution.state = Run.State.TERMINATED
             logger.debug('fetch_output_error occured... continuing')
             if self.persistent_id:
                 logger.debug('jobid: %s exception: %s' % (self.persistent_id, str(ex)))
-            else: 
+            else:
                 logger.debug('info: %s exception: %s' % (self.info, str(ex)))
             return None
         else:
         # non-terminal state, pass on error
             return ex
-        
+
     # def submit_error(self, ex):
     #     logger.debug('submit_error occured... continuing')
-        
-    #     try: 
+
+    #     try:
     #         if self.lrms_jobid:
     #             logger.debug('jobid: %s info: %s exception: %s' % (self.lrms_jobid, self.info, str(ex)))
-    #         else: 
+    #         else:
     #             logger.debug('info: %s exception: %s' % (self.info, str(ex)))
     #     except AttributeError:
     #         logger.debug('no `lrms_jobid` hence submission didnt happen')
@@ -115,13 +118,12 @@ class idRiskApplication(Application):
         else:
             # no `simulation.out` found, signal error
             self.execution.exitcode = 2
-            
-            
-            
+
+
+
 class idRiskApppotApplication(idRiskApplication, gc3libs.application.apppot.AppPotApplication):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
-    
+
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
         print 'extra_args = %s' % extra_args
         gc3libs.application.apppot.AppPotApplication.__init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args)
-

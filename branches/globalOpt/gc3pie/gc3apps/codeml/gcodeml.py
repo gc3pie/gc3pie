@@ -79,6 +79,7 @@ import gc3libs.utils
 from gc3libs.application.codeml import CodemlApplication
 from gc3libs.cmdline import SessionBasedScript, executable_file
 from gc3libs.persistence.accessors import GET, GetValue
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
 
@@ -146,7 +147,7 @@ of newly-created jobs so that this limit is never exceeded.
                        " By default, request the CODEML-4.4.3 run time tag"
                        " and use the remotely-provided application.")
         # change default for the "-o"/"--output" option
-        self.actions['output'].default = 'PATH/NAME'
+        self.actions['output'].default = 'NAME'
 
 
     def new_tasks(self, extra):
@@ -211,12 +212,10 @@ of newly-created jobs so that this limit is never exceeded.
             kwargs['requested_cores'] = self.params.ncores
             kwargs['requested_walltime'] = self.params.walltime
             # Use the `make_directory_path` method (from
-            # `SessionBasedScript`) to expand strings like ``PATH``,
-            # ``NAME``, etc. in the template.  The ``PATH`` will be
-            # set from the directory containing the first ``.ctl``
-            # file.
+            # `SessionBasedScript`) to expand strings like
+            # ``NAME``, etc. in the template.
             jobname = (os.path.basename(dirpath) or dirpath) + '.out'
-            kwargs['output_dir'] = self.make_directory_path(self.params.output, jobname, *ctl_files)
+            kwargs['output_dir'] = self.make_directory_path(self.params.output, jobname)
 
             app = CodemlApplication(*ctl_files, **kwargs)
 
@@ -226,7 +225,6 @@ of newly-created jobs so that this limit is never exceeded.
                 CodemlRetryPolicy, # the task constructor
                 [ # the following parameters are passed to the
                     # `CodemlRetryPolicy` constructor:
-                    jobname, # = name; used for display purposes
                     app,     # = task; the codeml application object defined above
                     3        # = max_retries; max no. of retries of the task
                 ],
@@ -244,7 +242,7 @@ of newly-created jobs so that this limit is never exceeded.
                 # NB: enlarge window to at least 150 columns to read this table properly!
                 sqla.Column('class',              sqla.TEXT())    : (lambda obj: obj.__class__.__name__)                                              , # task class
                 sqla.Column('name',               sqla.TEXT())    : GetValue()             .jobname                                                   , # job name
-                sqla.Column('executable',         sqla.TEXT())    : GetValue(default=None) .executable                        ,#.ONLY(CodemlApplication), # program executable
+                sqla.Column('executable',         sqla.TEXT())    : GetValue(default=None) .arguments[0]                        ,#.ONLY(CodemlApplication), # program executable
                 sqla.Column('output_path',        sqla.TEXT())    : GetValue(default=None) .output_dir                        ,#.ONLY(CodemlApplication), # fullpath to codeml output directory
                 sqla.Column('input_path',         sqla.TEXT())    : _get_input_path                                                                   , # fullpath to codeml input directory
                 sqla.Column('mlc_exists_h0',      sqla.TEXT())    : GetValue(default=None) .exists[0]                         ,#.ONLY(CodemlApplication), # exists codeml *.H0.mlc output file
@@ -258,7 +256,7 @@ of newly-created jobs so that this limit is never exceeded.
                 sqla.Column('codeml_walltime_h1', sqla.INTEGER()) : GetValue()             .time_used[1]                      ,#.ONLY(CodemlApplication), # time used by the codeml H1 run (sec)
                 sqla.Column('aln_len',            sqla.TEXT())    : GetValue()             .aln_info['aln_len']                                    , # alignement length
                 sqla.Column('seq',                sqla.TEXT())    : GetValue()             .aln_info['n_seq']                                      , # num of sequences
-                sqla.Column('requested_walltime', sqla.INTEGER()) : GetValue(default=None) .requested_walltime                ,#.ONLY(CodemlApplication), # requested walltime
+                sqla.Column('requested_walltime', sqla.INTEGER()) : _get_requested_walltime_or_none                           , # requested walltime, in hours
                 sqla.Column('requested_cores',    sqla.INTEGER()) : GetValue(default=None) .requested_cores                   ,#.ONLY(CodemlApplication), # num of cores requested
                 sqla.Column('tags',               sqla.TEXT())    : GetValue()             .tags[0]                           ,#.ONLY(CodemlApplication), # run-time env.s (RTE) requested; e.g. 'APPS/BIO/CODEML-4.4.3'
                 sqla.Column('used_walltime',      sqla.INTEGER()) : GetValue(default=None) .execution.used_walltime           ,#.ONLY(CodemlApplication), # used walltime
@@ -288,5 +286,11 @@ def _get_input_path(job):
         return _get_input_path_CodemlApplication(job)
     elif isinstance(job, CodemlRetryPolicy):
         return _get_input_path_CodemlApplication(job.task)
+    else:
+        return None
+
+def _get_requested_walltime_or_none(job):
+    if isinstance(job, gc3libs.application.codeml.CodemlApplication):
+        return job.requested_walltime.amount(hours)
     else:
         return None

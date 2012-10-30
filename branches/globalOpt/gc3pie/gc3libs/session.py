@@ -78,9 +78,9 @@ class Session(list):
     the `len()` operator returns the number of tasks in the session;
     iteration over a session returns the tasks one by one::
 
-        >>> task1 = gc3libs.Task('task1')
+        >>> task1 = gc3libs.Task()
         >>> id1 = session.add(task1)
-        >>> task2 = gc3libs.Task('task2')
+        >>> task2 = gc3libs.Task()
         >>> id2 = session.add(task2)
         >>> len(session)
         2
@@ -176,9 +176,13 @@ class Session(list):
             except IOError, err:
                 gc3libs.log.debug("Cannot load session '%s': %s", path, str(err))
                 if err.errno == 2:  # "No such file or directory"
-                    gc3libs.log.debug(
-                        "Assuming session is incomplete or corrupted, creating it again.")
-                    self._create_session(store_url, **extra_args)
+                    if create:
+                        gc3libs.log.debug(
+                            "Assuming session is incomplete or corrupted, creating it again.")
+                        self._create_session(store_url, **extra_args)
+                    else:
+                        raise gc3libs.exceptions.InvalidArgument(
+                            "Directory '%s' does not contain a valid session" % self.path)
                 else:
                     raise
         else:
@@ -379,14 +383,14 @@ class Session(list):
         Add a `Task` to the current session, save it to the associated
         persistent storage, and return the assigned `persistent_id`::
 
-            #. create new, empty session
+            >>> # create new, empty session
             >>> import tempfile; tmpdir = tempfile.mktemp(dir='.')
             >>> session = Session(tmpdir)
             >>> len(session)
             0
 
-            #. add a task to it
-            >>> task = gc3libs.Task('task')
+            >>> # add a task to it
+            >>> task = gc3libs.Task()
             >>> tid1 = session.add(task)
             >>> len(session)
             1
@@ -394,14 +398,14 @@ class Session(list):
         Duplicates are silently ignored: the same object can be added
         many times to the session, but gets the same ID each time::
 
-            #. add a different task
+            >>> # add a different task
             >>> tid2 = session.add(task)
             >>> len(session)
             1
             >>> tid1 == tid2
             True
 
-            # do cleanup
+            >>> # do cleanup
             >>> session.destroy()
             >>> os.path.exists(session.path)
             False

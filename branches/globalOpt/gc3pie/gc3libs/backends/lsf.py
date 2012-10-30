@@ -23,6 +23,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
+import datetime
 import os
 import posixpath
 import random
@@ -31,11 +32,12 @@ import sys
 import tempfile
 import time
 
-from gc3libs.compat.collections import defaultdict
+from gc3libs.compat._collections import defaultdict
 
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
+from gc3libs.quantity import Duration, hours, minutes, seconds, Memory, GB, MB, kB, bytes
 import gc3libs.utils as utils # first, to_bytes
 from gc3libs.utils import *
 
@@ -350,28 +352,6 @@ _bjobs_long_re = re.compile(
     )
 
 
-def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
-    """
-    Return list of (remote_path, local_path) pairs corresponding to
-    """
-    # see https://github.com/fabric/fabric/issues/306 about why it is
-    # correct to use `posixpath.join` for remote paths (instead of `os.path.join`)
-    remote_path = posixpath.join(job.ssh_remote_folder, remote_relpath)
-    local_path = os.path.join(local_root_dir, local_relpath)
-    if transport.isdir(remote_path):
-        # recurse, accumulating results
-        result = [ ]
-        for entry in transport.listdir(remote_path):
-            result += _make_remote_and_local_path_pair(
-                transport, job,
-                posixpath.join(remote_relpath, entry),
-                local_path, entry)
-        return result
-    else:
-        return [(remote_path, local_path)]
-
-
-
 class LsfLrms(batch.BatchSystem):
     """
     Job control on LSF clusters (possibly by connecting via SSH to a submit node).
@@ -400,9 +380,9 @@ class LsfLrms(batch.BatchSystem):
         self.bsub = self._get_command_argv('bsub')
 
         # LSF commands
+        self._bacct = self._get_command('bacct')
         self._bjobs = self._get_command('bjobs')
         self._bkill = self._get_command('bkill')
-        self._bqueues = self._get_command('bqueues')
         self._lshosts = self._get_command('lshosts')
 
 
@@ -412,7 +392,12 @@ class LsfLrms(batch.BatchSystem):
         # submission script and can just specify the command on the
         # command-line
         sub_argv, app_argv = app.bsub(self)
-        return (str.join(' ', sub_argv + app_argv), '')
+        prologue = self.get_prologue_script(app)
+        epilogue = self.get_epilogue_script(app)
+        if prologue or epilogue:
+            return (str.join(' ', sub_argv), str.join(' ', app_argv))
+        else:
+            return (str.join(' ', sub_argv + app_argv), '')
 
     def _parse_submit_output(self, bsub_output):
         """Parse the ``bsub`` output for the local jobid."""
@@ -491,8 +476,80 @@ class LsfLrms(batch.BatchSystem):
         assert 'state' in jobstatus
         return jobstatus
 
-    # The same command is used in LSF to get the status and the accouting info
-    _parse_acct_output = _parse_stat_output
+    _TIMESTAMP_FMT = '%a %b %d %H:%M:%S %Y' # e.g., 'Mon Oct  8 12:04:56 2012'
+
+    @staticmethod
+    def _parse_timespec(ts):
+        """Parse a timestamp as it appears in LSF bjobs/bacct logs."""
+        try:
+            # FIXME: I couldn't find examples of LSF output that
+            # contain a year spec, so I'm adding the current year to
+            # the output.  This is certainly not the correct thing to
+            # do, but it works most of the time.
+            year = datetime.date.today().year
+            # XXX: datetime.strptime() only available starting Py 2.5
+            return datetime.datetime(*(time.strptime(
+                ('%s %s' % (ts, year)),
+                LsfLrms._TIMESTAMP_FMT)[0:6]))
+        except ValueError, err:
+            gc3libs.log.error(
+                "Cannot parse '%s' as an LSF timestamp: %s: %s",
+                ts, err.__class__.__name__, err)
+            raise
+
+    @staticmethod
+    def _parse_memspec(m):
+        unit = m[-1]
+        if unit == 'G':
+            return Memory(int(m[:-1]), unit=GB)
+        elif unit == 'M':
+            return Memory(int(m[:-1]), unit=MB)
+        elif unit in ['K', 'k']: # XXX: not sure which one is used
+            return Memory(int(m[:-1]), unit=kB)
+        else:
+            # XXX: what does LSF use as a default?
+            return Memory(int(m), unit=bytes)
+
+    _RESOURCE_USAGE_RE = re.compile(r'^\s+ CPU_T \s+ WAIT \s+ TURNAROUND \s+ STATUS \s+ HOG_FACTOR \s+ MEM \s+ SWAP', re.X)
+    _EVENT_RE = re.compile(
+        r'^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)'
+        ' \s+ (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+        ' \s+ [0-9]+ \s+ [0-9:]+:'
+        ' \s+ (?P<event>Submitted|Dispatched|Completed)', re.X)
+
+    @staticmethod
+    def _parse_acct_output(stdout):
+        data = dict()
+        lines = iter(stdout.split('\n'))
+        for line in lines:
+            match = LsfLrms._EVENT_RE.match(line)
+            if match:
+                timestamp = line.split(': ')[0]
+                event = match.group('event')
+                if event == 'Submitted':
+                    data['lsf_submission_time'] = LsfLrms._parse_timespec(timestamp)
+                elif event == 'Dispatched':
+                    data['lsf_start_time'] = LsfLrms._parse_timespec(timestamp)
+                elif event == 'Completed':
+                    data['lsf_completion_time'] = LsfLrms._parse_timespec(timestamp)
+                continue
+            match = LsfLrms._RESOURCE_USAGE_RE.match(line)
+            if match:
+                # actual resource usage is on next line
+                rusage = lines.next()
+                cpu_t, wait, turnaround, status, hog_factor, mem, swap = rusage.split()
+                # common backend attrs (see Issue 78)
+                if 'lsf_completion_time' in data and 'lsf_start_time' in data:
+                    data['duration'] = Duration(data['lsf_completion_time'] - data['lsf_start_time'])
+                else:
+                    # XXX: what should we use for jobs that did not run at all?
+                    data['duration'] = Duration(0, unit=seconds)
+                data['used_cpu_time'] = Duration(float(cpu_t), unit=seconds)
+                data['max_used_memory'] = LsfLrms._parse_memspec(mem) + LsfLrms._parse_memspec(swap)
+                # the resource usage line is the last interesting line
+                break
+        return data
+
 
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._bkill, jobid))
@@ -522,7 +579,6 @@ class LsfLrms(batch.BatchSystem):
             # lhost output format:
             # ($nodeid,$OStype,$model,$cpuf,$ncpus,$maxmem,$maxswp)
             _command = ('%s -w' % self._lshosts)
-            log.debug("Running `%s`... ", _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0:
                 # cannot continue
@@ -538,29 +594,24 @@ class LsfLrms(batch.BatchSystem):
             else:
                 lhosts_output = [ ]
 
-            # Run bqueues to get information about the status of system queues
-            # used to build running_jobs and queued
-            _command = self._bqueues
-            log.debug("Running `%s`... ", _command)
-            exit_code, stdout, stderr = self.transport.execute_command(_command)
-            if exit_code != 0:
-                # cannot continue
-                raise gc3libs.exceptions.LRMSError(
-                    "LSF backend failed executing '%s':"
-                    "exit code: %d; stdout: '%s'; stderr: '%s'." %
-                    (_command, exit_code, stdout, stderr))
+            # compute self.total_slots
+            self.max_cores = 0
+            for line in lhosts_output:
+                # HOST_NAME      type    model  cpuf ncpus maxmem maxswp server RESOURCES
+                (hostname, h_type, h_model, h_cpuf, h_ncpus) = line.strip().split()[0:5]
+                try:
+                    self.max_cores +=  int(h_ncpus)
+                except ValueError:
+                    # h_ncpus == '-'
+                    pass
 
-            if stdout:
-                bqueues_output = stdout.strip().split('\n')
-                bqueues_output.pop(0)
-            else:
-                bqueues_output = [ ]
-
-            # Run bjobs to get information about the jobs for a given user
-            # used to compute  self.user_run and self.user_queued
+            # Run `bjobs -u all -w` to get information about the jobs for a given
+            # user used to compute `running_jobs`, `self.queued`,
+            # `self.user_run` and `self.user_queued`.
+            #
             # bjobs output format:
             # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
-            _command = self._bjobs
+            _command = ('%s -u all -w' % self._bjobs)
             log.debug("Runing `%s`... ", _command)
             exit_code, stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0:
@@ -577,56 +628,42 @@ class LsfLrms(batch.BatchSystem):
             else:
                 bjobs_output = [ ]
 
-            # compute self.total_slots
-            self.max_cores = 0
-            for line in lhosts_output:
-                # HOST_NAME      type    model  cpuf ncpus maxmem maxswp server RESOURCES
-                (hostname, h_type, h_model, h_cpuf, h_ncpus) = line.strip().split()[0:5]
-                try:
-                    self.max_cores +=  int(h_ncpus)
-                except ValueError:
-                    # h_ncpus == '-'
-                    pass
-
-            # compute total queued
-            self.queued = 0
-            running_jobs = 0
-            for line in bqueues_output:
-                # QUEUE_NAME      PRIO STATUS          MAX JL/U JL/P JL/H NJOBS  PEND   RUN  SUSP
-                (queue_name, priority, status, max_j, jlu, jlp, jlh, n_jobs, j_pend, j_run, j_susp) = line.split()
-                self.queued += int(j_pend)
-                running_jobs += int(j_run)
-
-            self.free_slots = self.max_cores - running_jobs
-
             # user runing/queued
-            self.user_run = 0
+            used_cores = 0
+            self.queued = 0
             self.user_queued = 0
+            self.user_run = 0
 
-            queued_status = ['PEND', 'PSUSP', 'USUSP', 'SSUSP', 'WAIT', 'ZOMBI']
+            queued_statuses = ['PEND', 'PSUSP', 'USUSP', 'SSUSP', 'WAIT', 'ZOMBI']
             for line in bjobs_output:
                 # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
                 (jobid, user, stat, queue, from_h, exec_h) = line.strip().split()[0:6]
                 # to compute the number of cores allocated per each job
                 # we use the output format of EXEC_HOST field
                 # e.g.: 1*cpt178:2*cpt151
-                per_node_allocated_cores_list = exec_h.split(':')
-                for node in per_node_allocated_cores_list:
+                for node in exec_h.split(':'):
                     try:
-                        # mutli core
+                        # multi core
                         (cores, n_name) = node.split('*')
                     except ValueError:
                         # single core
                         cores = 1
-                        n_name = node
                 try:
-                    if stat in queued_status:
-                        self.user_queued += int(cores)
-                    else:
-                        self.user_run += int(cores)
+                    cores = int(cores)
                 except ValueError:
                     # core == '-'
                     pass
+                used_cores += cores
+
+                if stat in queued_statuses:
+                    self.queued += 1
+                if user == self._username:
+                    if stat in queued_statuses:
+                        self.user_queued += 1
+                    else:
+                        self.user_run += 1
+
+            self.free_slots = self.max_cores - used_cores
 
             return self
 

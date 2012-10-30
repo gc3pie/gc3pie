@@ -79,6 +79,7 @@ import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, executable_file
 import gc3libs.utils
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
 
@@ -112,6 +113,8 @@ class GeotopApplication(Application):
     # When a simulation is started again with the same arguments as described
     # above (RUNNING), then it continues from the last saving point. If
     # GEOtop finds a file indicating a successful/failed run, it terminates.
+
+    application_name = 'geotop'
 
     def _scan_and_tar(self, simulation_dir):
         try:
@@ -171,17 +174,15 @@ class GeotopApplication(Application):
         # set some execution defaults...
         extra_args.setdefault('requested_cores', 1)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
-        extra_args.setdefault('requested_walltime',8)
+        extra_args.setdefault('requested_walltime', Duration(8, hours))
         # ...and remove excess ones
         extra_args.pop('output_dir', None)
         Application.__init__(
             self,
-            # executable = executable_name,
-            executable = os.path.basename(geotop_wrapper_sh),
             # GEOtop requires only one argument: the simulation directory
             # In our case, since all input files are staged to the
             # execution directory, the only argument is fixed to ``.``
-            arguments = [ 'input.tgz', executable_name ],
+            arguments = ['./'+os.path.basename(geotop_wrapper_sh), 'input.tgz', executable_name ],
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
             # outputs = outputs,
@@ -225,7 +226,7 @@ class GeotopApplication(Application):
 
         tmp_output_dir = self.output_dir
         exclude = [
-            os.path.basename(self.executable),
+            os.path.basename(self.arguments[0]),
             self.stdout,
             self.stderr,
             GEOTOP_OUTPUT_ARCHIVE,
@@ -303,8 +304,6 @@ class GeotopTask(RetryableTask, gc3libs.utils.Struct):
     def __init__(self, simulation_dir, executable=None, **extra_args):
         RetryableTask.__init__(
             self,
-            # task name
-            os.path.basename(simulation_dir),
             # actual computational job
             GeotopApplication(simulation_dir, executable, **extra_args),
             # keyword arguments
@@ -391,18 +390,14 @@ newly-created jobs so that this limit is never exceeded.
         # as well as 'in' and 'out' fodlers
         for path in self._validate_input_folders(self.params.args):
             # construct GEOtop job
-            yield (
+            yield GeotopTask(
+                path,                   # path to the directory containing input files
+                self.params.executable, # path to the GEOtop executable
                 # job name
-                gc3libs.utils.basename_sans(path),
-                # task constructor
-                GeotopTask,
-                [ # parameters passed to the constructor, see `GeotopTask.__init__`
-                    path,                   # path to the directory containing input files
-                    self.params.executable, # path to the GEOtop executable
-                ],
+                jobname=gc3libs.utils.basename_sans(path),
                 # extra keyword arguments passed to the constructor,
                 # see `GeotopTask.__init__`
-                extra.copy()
+                **extra.copy()
                 )
 
     def _validate_input_folders(self, paths):

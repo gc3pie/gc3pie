@@ -11,7 +11,7 @@ which must be the first argument.  A list of input files follows, then
 The ``data/`` directory contains file needed for a sample run
 (courtesy of Lars Malmstroem)::
 
-    grosetta -s TEST_SESSION_NAME -C 120 --total-decoys 5 --decoys-per-job 2 data/flags data/alignment.filt data/boinc_aaquery0* data/query.* data/*.pdb
+    grosetta -s TEST_SESSION_NAME -C 120 --total-decoys 5 --decoys-per-job 2 data/grosetta.flags data/alignment.filt data/boinc_aaquery0* data/query.* data/*.pdb
 
 If everything is OK, the invocation should end with::
 
@@ -68,7 +68,7 @@ Testing ``gdocking``
 Execution of ``gdocking`` requires (at least) one  ``.pdb`` file; any
 one of the ``.pdb`` files contained in the ``data/`` directory will do::
 
-    ../gdocking.py -s XXX -C45 -vvv --decoys-per-file 5 --decoys-per-job 2 data/1bjpA.pdb
+    ../gdocking.py -s XXX -C45 -vvv --decoys-per-file 5 --decoys-per-job 2 -f data/gdocking.flags data/1bjpA.pdb
 
 The ``gdocking`` application should produce this xRSL (look for it
 into the DEBUG-level logfile)::
@@ -114,6 +114,3 @@ Execution of ``gdocking`` yields the following output:
   - ``docking_protocol.log``: output of Rosetta's ``docking_protocol`` program;
   - ``docking_protocol.stderr.txt``, ``docking_protocol.stdout.txt``: obvoius meaning.  The "stdout" file contains a copy of the ``docking_protocol.log`` contents, plus the output from the wrapper script.
   - ``docking_protocol.tar.gz``: the ``.pdb`` decoy files produced by the job.
-
-
-  

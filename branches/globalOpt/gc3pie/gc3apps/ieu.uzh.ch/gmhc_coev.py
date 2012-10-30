@@ -56,7 +56,8 @@ import time
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript
-from gc3libs.compat.collections import defaultdict
+from gc3libs.compat._collections import defaultdict
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import SequentialTaskCollection
 
 
@@ -84,10 +85,13 @@ class GMhcCoevApplication(Application):
     Custom class to wrap the execution of a single step of the
     ``MHC_coev_*`` program by A. B. Wilson and collaborators.
     """
+
+    application_name = 'mhc_coev'
+
     def __init__(self,
                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
                  output_dir, latest_work=None, executable=None, **extra_args):
-        extra_args.setdefault('requested_memory', 1)
+        extra_args.setdefault('requested_memory', 1*GB)
         extra_args.setdefault('requested_cores', 1)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
         # command-line parameters to pass to the MHC_coev_* program
@@ -106,23 +110,23 @@ class GMhcCoevApplication(Application):
             inputs = { }
         if latest_work is not None:
             inputs[latest_work] = 'latest_work.mat'
-        Application.__init__(self,
-                             executable = executable_name,
-                             arguments = [
+        Application.__init__(self, [
+                                 executable_name,
                                  # use `single_run_time` as the
                                  # maximum allowed time before saving
                                  # the MatLab workspace, but allow 5
                                  # minutes for I/O before the job is
                                  # killed forcibly by the batch system
-                                 extra_args.get('requested_walltime')*60 - 5,
+                                 extra_args.get('requested_walltime').amount(minutes) - 5,
+                                 # rest of `MHC_coev` args as passed
                                  N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
-                                 ],
+                             ],
                              inputs = inputs,
                              outputs = gc3libs.ANY_OUTPUT,
                              output_dir = output_dir,
                              stdout = 'matlab.log',
                              stderr = 'matlab.err',
-                             tags = [ 'APPS/BIO/MHC_COEV-040711' ],
+                             tags = [ 'TEST/MHC_COEV-040711ML2012' ],
                              **extra_args)
 
 
@@ -150,8 +154,11 @@ class GMhcCoevTask(SequentialTaskCollection):
         executable together with the saved workspace until
         `generations_to_do` generations have been computed.
 
-        :param int single_run_duration: Duration of a single step in minutes.
-        :param int   generations_to_do: Count of generations that ``MHC_coev`` should simulate.
+        :param single_run_duration:
+          Duration of a single step (as a `gc3libs.quantity.Duration`:class: value)
+
+        :param int generations_to_do:
+          Count of generations that ``MHC_coev`` should simulate.
 
         :param              N: Passed unchanged to the MHC_coev program.
         :param    p_mut_coeff: Passed unchanged to the MHC_coev program.
@@ -159,20 +166,21 @@ class GMhcCoevTask(SequentialTaskCollection):
         :param    sick_or_not: Passed unchanged to the MHC_coev program.
         :param     off_v_last: Passed unchanged to the MHC_coev program.
 
-        :param str output_dir: Path to a directory where output files
-        from all runs should be collected.
+        :param str output_dir:
+          Path to a directory where output files
+          from all runs should be collected.
 
-        :param str executable: Path to the ``MHC_coev`` executable
-        binary, or `None` (default) to specify that the default
-        version available on the execution site should be used.
-
-        :param grid: See `TaskCollection`.
+        :param str executable:
+          Path to the ``MHC_coev`` executable binary, or `None`
+          (default) to specify that the default version available on
+          the execution site should be used.
 
         """
         # remember values for later use
         self.executable = executable
         self.output_dir = output_dir
-        self.single_run_duration = single_run_duration
+        # allow 5 extra minutes for final saving the MatLab workspace
+        self.single_run_duration = single_run_duration + 5*minutes
         self.generations_to_do = generations_to_do
         self.p_mut_coeff = p_mut_coeff
         self.N = N
@@ -202,10 +210,9 @@ class GMhcCoevTask(SequentialTaskCollection):
             N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last,
             output_dir = os.path.join(output_dir, 'tmp'),
             executable = self.executable,
-            # XXX: rounds to the nearest hour in excess
-            requested_walltime = (single_run_duration + 60) / 60,
+            requested_walltime = self.single_run_duration,
             **extra_args)
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
+        SequentialTaskCollection.__init__(self, [initial_task])
 
 
     # regular expression for extracting the generation no. from an output file name
@@ -225,7 +232,7 @@ class GMhcCoevTask(SequentialTaskCollection):
         stderr_filename = self.tasks[done].stderr
         last_run = self.tasks[done].execution
         exclude = [
-            os.path.basename(self.tasks[done].executable),
+            os.path.basename(self.tasks[done].arguments[0]),
             stdout_filename,
             stderr_filename,
             ]
@@ -264,10 +271,18 @@ class GMhcCoevTask(SequentialTaskCollection):
         os.removedirs(task_output_dir)
 
         # scan for common failures and take correction measures
-        report = open(os.path.join(self.output_dir, stdout_filename), 'a')
+        report_filename = os.path.join(self.output_dir, stdout_filename)
+        if os.path.exists(report_filename):
+            report = open(report_filename, 'a')
+        else:
+            report = open(report_filename, 'w')
+        report.write(
+            "gmhc_coev: About last job: duration=%s, exitcode=%d, max_used_memory=%s\n"
+            % (last_run.duration, last_run.exitcode, last_run.max_used_memory))
+
 
         # 0. did the job run at all?
-        if last_run.used_walltime < 5: # 5 minutes
+        if last_run.duration < 5*minutes:
             report.write(
                 "gmhc_coev: Job %s did not run at all,"
                 " will try resubmitting to a different resource.\n"
@@ -276,27 +291,27 @@ class GMhcCoevTask(SequentialTaskCollection):
             return done
 
         # 1. out of memory?
-        elif (# generic memory error (convert both values to MBs for comparison)
-            (last_run.used_memory / 1024) >= (self.extra.requested_memory * 1024)
+        elif (# generic memory error
+            (last_run.max_used_memory >= self.extra['requested_memory'])
             # MATLAB-specific error condition
             or (last_run.exitcode == 255
                 and ('Out of memory.' in stderr_contents
                      or 'MATLAB:nomem' in stderr_contents))):
-            self.extra.requested_memory = _increase(self.extra.requested_memory, 8) # start growing linearly at 8GB
+            self.extra['requested_memory'] = _increase(self.extra['requested_memory'], 8*GB, increment=2*GB) # start growing linearly at 8GB
             report.write(
                 "gmhc_coev: Possible out-of-memory condition detected in job %s,"
-                " will request %dGB for next run.\n"
+                " will request %s for next run.\n"
                 % (self.tasks[done], self.requested_memory,))
 
         # 2. not enough time to compute even one generation?
         elif (generation_files_count == 0
               # be sure that the job has run for at least the expected time, +/- 30 minutes
-              and (last_run.used_walltime / 60) > (self.single_run_duration - 30)):
-            self.single_run_duration = _increase(self.single_run_duration, 24*60,
-                                                 increase=4*60)
+              and (last_run.duration > (self.single_run_duration - 30*minutes))):
+            self.single_run_duration = _increase(self.single_run_duration, 24*hours,
+                                                 increase=4*hours)
             report.write(
                 "gmhc_coev: Job %s could not complete 1 generation in the allotted time,"
-                " will request %d minutes for next run.\n"
+                " will request %s for next run.\n"
                 % (self.tasks[done], self.single_run_duration,))
 
         # if a `latest_work.mat` file exists, then we need
@@ -304,6 +319,9 @@ class GMhcCoevTask(SequentialTaskCollection):
         latest_work = os.path.join(self.output_dir, 'latest_work.mat')
         if not os.path.exists(latest_work):
             latest_work = None
+            report.write(
+                "gmhc_coev: No `latest_work.mat` file was produced,"
+                " next job will start from k=1.\n")
         if self.generations_done < self.generations_to_do:
             gc3libs.log.debug("Computed %s generations, %s to do; submitting another job."
                               % (self.generations_done, self.generations_to_do))
@@ -316,8 +334,7 @@ class GMhcCoevTask(SequentialTaskCollection):
                                     output_dir = os.path.join(self.output_dir, 'tmp'),
                                     latest_work = latest_work,
                                     executable = self.executable,
-                                    # XXX: need wallclock time support in minutes!!
-                                    required_walltime = max(self.single_run_duration/60, 1),
+                                    requested_walltime = self.single_run_duration,
                                     **self.extra))
             return Run.State.RUNNING
         else:
@@ -374,31 +391,17 @@ newly-created jobs so that this limit is never exceeded.
         self.add_param("-x", "--executable", metavar="PATH",
                        dest="executable", default=None,
                        help="Path to the MHC_coev_* executable file.")
-        # change default for the "-o"/"--output" option
-        self.actions['output'].default = 'NPOPSIZE/PARAMS/ITERATION'
 
 
-    def make_directory_path(self, pathspec, jobname, *args):
-        """
-        Return a path to a directory, suitable for storing the output
-        of a job (named after `jobname`).  It is not required that the
-        returned path points to an existing directory.
-
-        Adds the following expansions to the default implementation (which see):
-          * ``POPSIZE``: replaced with the value of the N parameter;
-          * ``PARAMS``: replaced with the ``__``-separated list of all 6 parameters;
-          * ``ITERATION``: replaced with the current iteration number.
-
-        """
-        basename, iteration = jobname.split('#')
-        basename = basename[9:] # strip initial 'MHC_coev_'
-        N, p_mut_coeff, choose_or_rand, sick_or_not, off_v_last = GMhcCoevScript._string_to_params(basename)
-        return SessionBasedScript.make_directory_path(self,
-            pathspec
-            .replace('POPSIZE', str(N))
-            .replace('PARAMS', basename)
-            .replace('ITERATION', iteration),
-            jobname, *args)
+    def make_directory_path(self, pathspec, jobname):
+        # XXX: Work around SessionBasedScript.process_args() that
+        # apppends the string ``NAME`` to the directory path.
+        # This is really ugly, but the whole `output_dir` thing needs to
+        # be re-thought from the beginning...
+        if pathspec.endswith('/NAME'):
+            return pathspec[:-len('/NAME')]
+        else:
+            return pathspec
 
 
     def new_tasks(self, extra):
@@ -473,19 +476,24 @@ newly-created jobs so that this limit is never exceeded.
                                 iterno, basename, iters[basename], iterno - iters[basename])
                         for iter in range(iters[basename]+1, iterno+1):
                             kwargs = extra.copy()
-                            kwargs['executable'] = self.params.executable
-                            yield (('%s#%d' % (basename, iter)),
-                                   GMhcCoevTask,
-                                   [self.params.walltime*60, # single_run_duration
-                                    self.params.generations,
-                                    N,
-                                    p_mut_coeff,
-                                    choose_or_rand,
-                                    sick_or_not,
-                                    off_v_last,
-                                    #('N%s/%s/%03d' % (N, basename, iter)),  # output_dir
-                                    ],
-                                   kwargs)
+                            base_output_dir = kwargs.pop('output_dir', self.params.output)
+                            yield GMhcCoevTask(
+                                self.params.walltime,    # single_run_duration
+                                self.params.generations,
+                                N,
+                                p_mut_coeff,
+                                choose_or_rand,
+                                sick_or_not,
+                                off_v_last,
+                                executable=self.params.executable,
+                                jobname=('%s#%d' % (basename, iter)),
+                                output_dir = os.path.join(
+                                    base_output_dir,
+                                    ("N%d" % N),    # population size
+                                    basename,       # params,
+                                    str(iter),      # this iteration nr.
+                                    ),
+                                **kwargs)
 
             else:
                 self.log.error("Ignoring input file '%s': not a CSV file.", path)

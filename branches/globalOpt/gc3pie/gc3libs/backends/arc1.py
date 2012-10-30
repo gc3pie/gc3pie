@@ -42,8 +42,9 @@ except ImportError:
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
+from gc3libs.quantity import kB, GB, MB, hours, minutes, seconds
 from gc3libs.utils import *
-from gc3libs.Resource import Resource
+
 
 
 class Arc1Lrms(LRMS):
@@ -62,6 +63,12 @@ class Arc1Lrms(LRMS):
                  lost_job_timeout=gc3libs.Default.ARC_LOST_JOB_TIMEOUT,
                  **extra_args):
 
+        log.warning(
+            "The ARC1 backend (used in resource '%s') is deprecated"
+            " and will be removed in a future release."
+            " Consider changing your configuration.",
+            name)
+
         # check if arc module has been imported
         if not have_arc_module:
             raise gc3libs.exceptions.LRMSError(
@@ -73,7 +80,7 @@ class Arc1Lrms(LRMS):
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth)
 
-        # ARC0-specific setup
+        # ARC1-specific setup
         self.lost_job_timeout = lost_job_timeout
         self.arc_ldap = arc_ldap
         if frontend is None:
@@ -441,24 +448,33 @@ class Arc1Lrms(LRMS):
                         " killed by remote batch system"
                         % arc_job.RequestedTotalWallTime.GetPeriod())
                 job.returncode = (Run.Signals.RemoteError, -1)
-            # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
+            # note: arc_job.used_memory is in KiB (!)
             elif (app.requested_memory is not None
                   and arc_job.UsedMainMemory > -1
-                  and (arc_job.UsedMainMemory / 1024) > (app.requested_memory * 1024)):
-                job.log("Job used more memory (%d MB) than requested (%d MB),"
+                  and arc_job.UsedMainMemory > app.requested_memory.amount(kB)):
+                job.log("Job used more memory (%d MB) than requested (%s),"
                         " killed by remote batch system"
-                        % (arc_job.UsedMainMemory / 1024, app.requested_memory * 1024))
+                        % (arc_job.UsedMainMemory / 1024, app.requested_memory.amount(MB)))
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
                 # presume everything went well...
                 job.returncode = (0, 0)
             # pass
-        job.lrms_jobname = arc_job.Name
 
-        job.original_exitcode = arc_job.ExitCode
-        #job.used_walltime = arc_job.UsedTotalWallTime.GetPeriod() # exressed in sec.
-        #job.used_cputime = arc_job.UsedTotalCPUTime.GetPeriod() # expressed in sec.
-        job.used_memory = arc_job.UsedMainMemory # expressed in KiB
+        # common job reporting info, see Issue #78 and `Task.update_state`
+        job.duration = gc3libs.utils.ifelse(arc_job.UsedTotalWallTime.GetPeriod() != -1,
+                                            arc_job.UsedTotalWallTime.GetPeriod() * seconds,
+                                            None)
+        job.max_used_memory = gc3libs.utils.ifelse(arc_job.UsedMainMemory != -1,
+                                                   arc_job.UsedMainMemory * kB,
+                                                   None)
+        job.used_cpu_time = gc3libs.utils.ifelse(arc_job.UsedTotalCPUTime.GetPeriod() != -1,
+                                                 arc_job.UsedTotalCPUTime.GetPeriod() * seconds,
+                                                 None)
+
+        # additional info
+        job.arc_original_exitcode = arc_job.ExitCode
+        job.arc_jobname = arc_job.Name
 
         job.state = state
         return state

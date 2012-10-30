@@ -156,6 +156,7 @@ class SwathWorkflowStage0(ParallelTaskCollection):
 
 
 class ChromaExtractLong(Application):
+    application_name = 'chromatogram_extractor'
     def __init__(self, path, **extra_args):
         outfile = replace_suffix(
             os.path.basename(path, '.mzML.gz', '._chrom.mzML'))
@@ -248,6 +249,7 @@ class ChromaExtractShortPlusNormalization(StagedTaskCollection):
 
 
 class ChromaExtractShort(Application):
+    application_name = 'chromatogram_extractor'
     def __init__(self, path, **extra_args):
         outfile = replace_suffix(
             os.path.basename(path, '.mzML.gz', '._rtnorm.chrom.mzML'))
@@ -273,6 +275,7 @@ class ChromaExtractShort(Application):
 
 
 class MRMAnalyzerApplication(Application):
+    application_name = 'mrmanalyzer'
     def __init__(self, mzmlgz_file, trafoxml_file, chrom_file, **extra_args):
         assert mzmlgz_filename.endswith('.mzML.gz')
         assert trafoxml_file.endswith('rtnorm.trafoXML')
@@ -296,6 +299,7 @@ class MRMAnalyzerApplication(Application):
 
 
 class FeatureXMLToTSVApplication(Application):
+    application_name = 'featurexml_to_tsv'
     def __init__(self, path):
         assert path.endswith('_.featureXML')
         outfile = replace_suffix(mzmlgz_file, '_.featureXML',

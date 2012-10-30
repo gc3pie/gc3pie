@@ -25,9 +25,9 @@ This simple script will create an instance of a `GdemoSimpleApp` class
 which inherits from `Application`:class and which basically run the
 command `/bin/hostname`.
 
-It will create an instance of `Core`:class and will submit the `GdemoSimpleApp`
-instance, check its status until the application is terminated and
-then fetch the output.
+It will create an instance of `Core`:class and will submit the
+`GdemoSimpleApp` instance, check its status until the application is
+terminated and then fetch the output.
 
 You can specify the resource you want to use by passing its name as
 command line argument.
@@ -45,7 +45,9 @@ import gc3libs.core
 
 
 # Configure logging. This is not really necessary but will avoid some
-# boring errors from the logging subsystem
+# boring errors from the logging subsystem. Moreover, it's important
+# to set it at least at ERROR level, otherwise some errors from your
+# code could be silently ignored.
 loglevel = logging.DEBUG
 gc3libs.configure_logger(loglevel, "gdemo")
 
@@ -56,8 +58,7 @@ class GdemoSimpleApp(gc3libs.Application):
     def __init__(self):
         gc3libs.Application.__init__(
             self,
-            executable = '/bin/hostname', # mandatory
-            arguments = [],               # mandatory
+            arguments = ['/bin/hostname'], # mandatory
             inputs = [],                  # mandatory
             outputs = [],                 # mandatory
             output_dir = "./mygc3job",    # mandatory
@@ -71,15 +72,15 @@ app = GdemoSimpleApp()
 # configuration file
 cfg = gc3libs.config.Configuration(*gc3libs.Default.CONFIG_FILE_LOCATIONS,
                                    **{'auto_enable_auth': True})
-g = gc3libs.core.Core(cfg)
+core = gc3libs.core.Core(cfg)
 
 # in case you want to select a specific resource, call
 # `Core.select_resource(...)`
-# if len(sys.argv)>1:
-#     g.select_resource(sys.argv[1])
+if len(sys.argv)>1:
+    core.select_resource(sys.argv[1])
 
 # Submit your application.
-g.submit(app)
+core.submit(app)
 
 # After submssion, you have to check the application for its state:
 print  "Job id: %s" % app.execution.lrms_jobid
@@ -93,7 +94,7 @@ while app.execution.state in [ gc3libs.Run.State.SUBMITTED,
         time.sleep(5)
         # This call will contact the resource(s) and get the current
         # job state
-        g.update_job_state(app)
+        core.update_job_state(app)
         sys.stdout.write("[ %s ]\r" % app.execution.state)
         sys.stdout.flush()
     except:
@@ -102,11 +103,12 @@ while app.execution.state in [ gc3libs.Run.State.SUBMITTED,
 print "Job is now in state %s. Fetching output." % app.execution.state
 
 # You can specify a different `download_dir` option if you want to
-# override the value used in the GdemoSimpleApp initialization (app.output_dir).
+# override the value used in the GdemoSimpleApp initialization
+# (app.output_dir).
 
 # By default overwrite is False. If the output directory exists, it
 # will be renamed by appending a unique numerical suffix in the form
 # of output_dir.~N~ with N the first available number.
-g.fetch_output(app, overwrite=False)
+core.fetch_output(app, overwrite=False)
 
 print "Done. Results are in %s" % app.output_dir

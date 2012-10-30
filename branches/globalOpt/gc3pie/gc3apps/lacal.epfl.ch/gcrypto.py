@@ -43,9 +43,10 @@ from pkg_resources import Requirement, resource_filename
 # GC3Pie interface
 import gc3libs
 from gc3libs.cmdline import SessionBasedScript, existing_file, positive_int, nonnegative_int
-from gc3libs import Application, Run, Task, RetryableTask
+from gc3libs import Application, Run, Task
 import gc3libs.exceptions
 import gc3libs.application
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection, ChunkedParameterSweep, RetryableTask
 
 DEFAULT_INPUTFILE_LOCATION="srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/crypto/lacal_input_files.tgz"
@@ -71,29 +72,24 @@ class CryptoApplication(gc3libs.Application):
 
         gnfs_executable_name = os.path.basename(gnfs_location)
 
-        # set some execution defaults...
+        # # set some execution defaults...
         extra_args.setdefault('requested_cores', 4)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
-        extra_args.setdefault('requested_walltime', 2)
-
         extra_args['jobname'] = "LACAL_%s" % str(start + extent)
-        extra_args['output_dir'] = os.path.join(output, str(start + extent))
-
-        # XXX: this will be changed once RTE will be validated
-        # will use APPS/CRYPTO/LACAL-1.0
-        # extra_args['tags'] = [ 'TEST/CRYPTO-1.0' ]
-        # extra_args['tags'] = [ 'TEST/LACAL-1.0' ]
+        extra_args['output_dir'] = os.path.join(extra_args['output_dir'], str(start + extent))
         extra_args['tags'] = [ 'APPS/CRYPTO/LACAL-1.0' ]
+        extra_args['executables'] = ['./gnfs-cmd']
+        extra_args['requested_memory'] = Memory(
+            int(extra_args['requested_memory'].amount() / float(extra_args['requested_cores'])),
+            unit=extra_args['requested_memory'].unit)
 
         gc3libs.Application.__init__(
             self,
 
-            executable = "gnfs-cmd",
-            executables = ["gnfs-cmd"],
-            arguments = [ start, extent, extra_args['requested_cores'], "input.tgz" ],
+            arguments = [ "./gnfs-cmd", start, extent, extra_args['requested_cores'], "input.tgz" ],
             inputs = {
                 input_files_archive:"input.tgz",
-                gnfs_location:"gnfs-cmd",
+                gnfs_location:"./gnfs-cmd",
                 },
             outputs = [ '@output.list' ],
             # outputs = gc3libs.ANY_OUTPUT,
@@ -132,20 +128,20 @@ class CryptoApplication(gc3libs.Application):
             # resubmit
             self.execution.returncode = (0, 99)
 
-class CryptoTask(RetryableTask, gc3libs.utils.Struct):
+
+class CryptoTask(RetryableTask):
     """
     Run ``gnfs-cmd`` on a given range
     """
     def __init__(self, start, extent, gnfs_location, input_files_archive, output, **extra_args):
         RetryableTask.__init__(
             self,
-            # task name
-            "LACAL_"+str(start), # jobname
             # actual computational job
             CryptoApplication(start, extent, gnfs_location, input_files_archive, output, **extra_args),
+            # XXX: should decide which policy to use here for max_retries
+            max_retries = 2,
             # keyword arguments
             **extra_args)
-
 
     def retry(self):
         """
@@ -158,6 +154,7 @@ class CryptoTask(RetryableTask, gc3libs.utils.Struct):
             return True
         else:
             return False
+
 
 class CryptoChunkedParameterSweep(ChunkedParameterSweep):
     """
@@ -173,6 +170,7 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
     DEFAULT_PARALLEL_RANGE_INCREMENT
     """
 
+
     def __init__(self, range_start, range_end, slice, chunk_size,
                  input_files_archive, gnfs_location, output_folder, **extra_args):
 
@@ -185,16 +183,16 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
         self.extra_args = extra_args
 
         ChunkedParameterSweep.__init__(
-            self, extra_args['jobname'], range_start, range_end, slice, chunk_size)
+            self, range_start, range_end, slice, chunk_size, **self.extra_args)
 
     def new_task(self, param, **extra_args):
         """
         Create a new `CryptoApplication` for computing the range
         `param` to `param+self.parameter_count_increment`.
         """
-        # return CryptoApplication(
-        return CryptoTask(
-            param, self.step, self.gnfs_location, self.input_files_archive, self.output_folder, **self.extra_args.copy())
+        return CryptoTask(param, self.step, self.gnfs_location, self.input_files_archive, self.output_folder, **self.extra_args.copy())
+
+
 
 
 ## the script itself
@@ -253,6 +251,19 @@ of newly-created jobs so that this limit is never exceeded.
         an (input) path name; processing of the given path names is
         done in `parse_args`:meth:
         """
+
+        # self.add_param('args',
+        #                nargs='*',
+        #                metavar=
+        #                """
+        #                [range_start] [range_end] [slice],
+        #                help=[range_start]: Positive integer value of the range start.
+        #                [range_end]: Positive integer value of the range end.
+        #                [slice]: Positive integer value of the increment.
+        #                """
+        #                )
+
+
         self.add_param('range_start', type=nonnegative_int,
                   help="Non-negative integer value of the range start.")
         self.add_param('range_end', type=positive_int,
@@ -261,6 +272,14 @@ of newly-created jobs so that this limit is never exceeded.
                   help="Positive integer value of the increment.")
 
     def parse_args(self):
+        # XXX: why is this necessary ? shouldn't add_params of 'args' handle this ?
+        # check on the use of nargs and type.
+        # if len(self.params.args) != 3:
+        #     raise ValueError("gcrypto takes exaclty 3 arguments (%d are given)" % len(self.params.args))
+        # self.params.range_start = int(self.params.args[0])
+        # self.params.range_end = int(self.params.args[1])
+        # self.params.slice = int(self.params.args[2])
+
         if self.params.range_end <= self.params.range_start:
             # Failed
             raise ValueError("End range cannot be smaller than Start range. Start range %d. End range %d" % (self.params.range_start, self.params.range_end))
@@ -284,7 +303,7 @@ of newly-created jobs so that this limit is never exceeded.
 
     def new_tasks(self, extra):
         yield (
-            "LACAL_"+str(self.params.range_start), # jobname
+            "%s-%s" % (str(self.params.range_start),str(self.params.range_end)), # jobname
             CryptoChunkedParameterSweep,
             [ # parameters passed to the constructor, see `CryptoSequence.__init__`
                 self.params.range_start,

@@ -38,11 +38,14 @@ def read_whole_file(path):
 #
 import setuptools
 import setuptools.dist
+from setuptools.command import sdist
+del sdist.finders[:]
+
 setuptools.setup(
     name = "gc3pie",
-    version = "1.1.dev", # see: http://packages.python.org/distribute/setuptools.html
+    version = "2.0.dev", # see: http://packages.python.org/distribute/setuptools.html
 
-    packages = setuptools.find_packages(exclude=['ez_setup'])+['.'],
+    packages = setuptools.find_packages(exclude=['ez_setup']),
     # metadata for upload to PyPI
     description = "A Python library and simple command-line frontend for computational job submission to multiple resources.",
     long_description = read_whole_file('README.txt'),
@@ -110,17 +113,17 @@ setuptools.setup(
         'psutil>=0.6.1',
         # Needed for parsing human-readable dates (gselect uses it).
         'parsedatetime',
-        # Unum -- define and manipulate quantities with units attached
-        #'Unum',
         ],
     # additional non-Python files to be bundled in the package
+    package_data = {
+        'gc3libs': [
+            'etc/codeml.pl',
+            'etc/gc3pie.conf.example',
+            'etc/logging.conf.example',
+            'etc/rosetta.sh',
+            ],
+    },
     data_files = [
-        ('etc', [
-            'gc3libs/etc/codeml.pl',
-            'gc3libs/etc/gc3pie.conf.example',
-            'gc3libs/etc/logging.conf.example',
-            'gc3libs/etc/rosetta.sh',
-            ],),
         ('gc3apps', [
             'gc3apps/gc3.uzh.ch/gridrun.py',
             'gc3apps/zods/gzods.py',
@@ -134,10 +137,8 @@ setuptools.setup(
             'gc3apps/codeml/gcodeml.py',
             'gc3apps/gamess/grundb.py',
             'gc3apps/gamess/ggamess.py',
-            ],),
-        ],
-
-
+            ]),
+    ],
     # `zip_safe` can ease deployment, but is only allowed if the package
     # do *not* do any __file__/__path__ magic nor do they access package data
     # files by file name (use `pkg_resources` instead).

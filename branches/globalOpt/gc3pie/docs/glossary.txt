@@ -42,6 +42,16 @@ Glossary
     term CPU is used for the package, and *core* is one of the several
     independent processing units within the package.
 
+  CPU Time
+    The total time that computing units (processor `core`:term:) are
+    actively executing a `job`:term:.  For single-threaded jobs, this
+    is normally *less* then the actual duration ('wall-clock time' or
+    `walltime`:term:), because some time is lost in I/O and system
+    operations.  For parallel jobs the CPU time is normally larger
+    than the duration, because several processor cores are active on
+    the job at the same time; the quotient of the CPU time and the
+    duration measures the efficiency of the parallel job.
+
   Job
     A computational job is a single run of a non-interactive
     application.  The prototypical example is a run of GAMESS_ on a
@@ -60,6 +70,22 @@ Glossary
     A one-word indication of a computational `job`:term: execution
     status (e.g., ``RUNNING`` or ``TERMINATED``).  The terms *state*
     and *status* are used interchangeably in GC3Pie_ documentation.
+
+  STDERR 
+    Abbreviation for "standard error stream"; it is the sequence of
+    all text messages that a command prints to inform the user of
+    problems or to report on operations progress.  The Linux/UNIX
+    system allows two separate output streams, one for output proper,
+    named `STDOUT`:term:, and STDERR for "error messages".  It is
+    entirely up to the command to tag a message as "standard output"
+    or "standard error".
+
+  STDOUT
+    Abbreviation for "standard output stream".  It is the sequence of
+    all characters that constitute the output of a command.  The Linux/UNIX
+    system allows two separate output streams, one for output proper, and
+    one for "error messages", dubbed `STDERR`:term:.  It is entirely up 
+    to the command to tag a message as "standard output" or "standard error".
 
   Session
     A :term:`persistent` collection of GC3Pie tasks and jobs. Sessions

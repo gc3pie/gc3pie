@@ -125,7 +125,8 @@ force removal of a job regardless.
                 app.attach(self._core)
 
                 if app.execution.state != Run.State.NEW:
-                    if app.execution.state != Run.State.TERMINATED:
+                    if app.execution.state not in [ Run.State.TERMINATED,
+                                                    Run.State.TERMINATING ]:
                         if self.params.force:
                             self.log.warning("Job '%s' not in terminal state:"
                                              " attempting to kill before cleaning up.", app)
@@ -624,16 +625,13 @@ released once the output files have been fetched.
                         "Output of '%s' already downloaded to '%s'"
                         % (app.persistent_id, app.output_dir))
 
-                if self.params.download_dir is None:
-                    download_dir = os.path.join(os.getcwd(), app.persistent_id)
-                else:
-                    download_dir = os.path.join(self.params.download_dir, app.persistent_id)
-
-                app.fetch_output(download_dir, overwrite=self.params.overwrite)
+                self._core.fetch_output(app, output_dir=self.params.download_dir, overwrite=self.params.overwrite)
                 if app.execution.state == Run.State.TERMINATED:
-                    print("Job final results were successfully retrieved in '%s'" % download_dir)
+                    print("Job final results were successfully retrieved in '%s'"
+                          % app._get_download_dir(self.params.download_dir))
                 else:
-                    print("A snapshot of job results was successfully retrieved in '%s'" % download_dir)
+                    print("A snapshot of job results was successfully retrieved in '%s'"
+                          % app._get_download_dir(self.params.download_dir))
                 self.session.store.replace(app.persistent_id, app)
 
             except Exception, ex:
@@ -852,13 +850,13 @@ List status of computational resources.
         for resource in sorted(resources, cmp=cmp_by_name):
             table = Texttable(0)  # max_width=0 => dynamically resize cells
             table.set_deco(Texttable.HEADER | Texttable.BORDER)  # also: .VLINES, .HLINES
-            table.set_cols_align(['r', 'l'])
-            table.header([resource.name, ""])
+            table.set_cols_align(['r', 'l', 'l'])
+            table.header(['', resource.name, ''])
 
             # not all resources support the same keys...
             def output_if_exists(name, print_name):
                 if hasattr(resource, name) and ((not self.params.keys) or name in self.params.keys):
-                    table.add_row((("%s / %s" % (print_name, name)), getattr(resource, name)))
+                    table.add_row((name, ("( %s )" % print_name), getattr(resource, name)))
             output_if_exists('frontend', "Frontend host name")
             output_if_exists('type', "Access mode")
             output_if_exists('auth', "Authorization name")
@@ -869,15 +867,25 @@ List status of computational resources.
             output_if_exists('user_run', "Own running jobs")
             #output_if_exists('free_slots', "Free job slots")
             output_if_exists('max_cores_per_job', "Max cores per job")
-            output_if_exists('max_memory_per_core', "Max memory per core (MB)")
-            output_if_exists('max_walltime', "Max walltime per job (minutes)")
+            output_if_exists('max_memory_per_core', "Max memory per core")
+            output_if_exists('max_walltime', "Max walltime per job")
             output_if_exists('applications', "Supported applications")
             print(table.draw())
 
 
 class cmd_gsession(_BaseCmd):
     """
-Manage sessions
+`gsession` get info on a session.
+
+Usage:
+
+    gsession `command` [options] SESSION_DIR
+
+commands are listed below, under `subcommands`.
+
+To get detaileid info on a specific command, run:
+
+    gsession `command` --help
     """
 
     # Setup methods
@@ -887,11 +895,16 @@ Manage sessions
         subparser.set_defaults(func=func)
         subparser.add_argument('session')
         subparser.add_argument('-v', '--verbose', action='count')
+        return subparser
 
     def setup(self):
         gc3libs.cmdline._Script.setup(self)
 
-        self.subparsers = self.argparser.add_subparsers()
+        self.subparsers = self.argparser.add_subparsers(
+            title="subcommands",
+            description="gsession accept the the following subcommands. "
+            "Each subcommand requires a `SESSION` directory as argument.")
+
         self._add_subcmd(
             'abort',
             self.abort_session,
@@ -900,10 +913,12 @@ Manage sessions
             'delete',
             self.delete_session,
             help="Delete a session from disk.")
-        self._add_subcmd(
+        subparser = self._add_subcmd(
             'list',
             self.list_jobs,
             help="List jobs related to a session.")
+        subparser.add_argument('-r', '--recursive', action="store_true", default=False,
+                            help="Show all jobs contained in a task collection, not only top-level jobs.")
 
         self._add_subcmd(
             'log',
@@ -931,14 +946,30 @@ Manage sessions
         try:
             self.session = Session(self.params.session, create=False)
         except gc3libs.exceptions.InvalidArgument, ex:
-            raise RuntimeError('Session %s not found' % self.params.session)
+            raise RuntimeError('Session %s not found. Please specify a valid session directory as argument' % self.params.session)
 
-        for task_id in self.session.tasks:
-            self.session.tasks[task_id].kill()
+        rc = 0
+        for task_id in self.session.tasks.keys():
+            task = self.session.tasks[task_id]
+            task.attach(self._core)
+            if task.execution.state == Run.State.TERMINATED:
+                gc3libs.log.info("Not aborting '%s' which is already in TERMINATED state." % task)
+                rc += 1
+                continue
+            try:
+                task.kill()
+            finally:
+                task.free()
+                rc += 1
             self.session.remove(task_id)
+
         if self.session.tasks:
-            raise RuntimeError("Not all tasks have been removed from the session")
-        return 0
+            gc3libs.log.error("Not all tasks have been removed from the session.")
+
+        if rc > 125:
+            # 126 and 127 error codes have special meanings.
+            rc = 125
+        return rc
 
     def delete_session(self):
         """
@@ -970,11 +1001,38 @@ Manage sessions
 
         This method basically call the command "gstat -n -v -s SESSION"
         """
-        self.session = Session(self.params.session, create=False)
-        job_ids = self.session.tasks.keys()
-        cmd = gc3utils.commands.cmd_gstat
-        sys.argv = ['gstat', '-n', '-v', '-s', self.params.session] + job_ids
-        return cmd().run()
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            raise RuntimeError('Session %s not found. Please specify a valid session directory as argument' % self.params.session)
+
+
+        def print_app_table(app, indent, recursive):
+            rows = []
+            try:
+                jobname = app.jobname
+            except AttributeError:
+                jobname = ''
+            
+            rows.append([indent + app.persistent_id,
+                         jobname,
+                         app.execution.state,
+                         app.execution.info])
+            if recursive and 'tasks' in app:
+                indent = " "*len(indent) + '  '
+                for task in app.tasks:
+                    rows.extend(print_app_table(task, indent , recursive))
+            return rows
+
+        rows = []
+        for app in self.session.tasks.values():
+            rows.extend(print_app_table(app, '', self.params.recursive))
+        table = Texttable(0)  # max_width=0 => dynamically resize cells
+        table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
+        table.set_cols_align(['l'] * 4)
+        table.header(["JobID", "Job name", "State", "Info"])
+        table.add_rows(rows, header=False)
+        print(table.draw())
 
     def show_log(self):
         """
@@ -983,7 +1041,10 @@ Manage sessions
         This method will print the history of the jobs in SESSION in a
         logfile fashon
         """
-        self.session = Session(self.params.session, create=False)
+        try:
+            self.session = Session(self.params.session, create=False)
+        except gc3libs.exceptions.InvalidArgument, ex:
+            raise RuntimeError('Session %s not found. Please specify a valid session directory as argument' % self.params.session)
         timestamps = []
         task_queue = list(self.session.tasks.values())
         while task_queue:

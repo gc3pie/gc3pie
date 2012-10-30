@@ -29,14 +29,14 @@ __docformat__ = 'reStructuredText'
 import shutil
 
 
-# Calls: 
+# Calls:
 # -x /home/benjamin/workspace/fpProj/model/bin/forwardPremiumOut -b ../base/ para.loop  -C 1 -N -X i686
 # 5-x /home/benjamin/workspace/idrisk/bin/idRiskOut -b ../base/ para.loop  -C 1 -N -X i686
 # -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b ../base/ para.loop  -C 1 -N
 # Need to set path to linux kernel and apppot, e.g.: export PATH=$PATH:~/workspace/apppot:~/workspace/
 
-# Remove all files in curPath if -N option specified. 
-if __name__ == '__main__':    
+# Remove all files in curPath if -N option specified.
+if __name__ == '__main__':
     import sys
     if '-N' in sys.argv:
         import os, shutil
@@ -46,12 +46,12 @@ if __name__ == '__main__':
         from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
-        if 'gIdRiskUML.csv' in filesAndFolder or 'idRiskParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
+        if 'gIdRiskUML.csv' in filesAndFolder or 'idRiskParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up.
             if 'para.loop' in os.listdir(os.getcwd()):
                 shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
                 rmFilesAndFolders(curPath)
                 shutil.copyfile(os.path.join('/tmp', 'para.loop'), os.path.join(curPath, 'para.loop'))
-            else: 
+            else:
                 rmFilesAndFolders(curPath)
 
 
@@ -165,7 +165,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 apppot_img = self.params.apppot
 
         inputs = self._search_for_input_files(self.params.args)
-        
+
         # Copy base dir
         localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
 #        gc3libs.utils.copytree(self.params.initial, '/mnt/shareOffice/ForwardPremium/Results/sensitivity/wGridSize/dfs')
@@ -182,7 +182,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                 inputs = { self.params.executable:executable }
                 # make a "stage" directory where input files are collected
                 path_to_stage_dir = self.make_directory_path(
-                    self.params.output, jobname, path_to_base_dir)
+                    self.params.output, jobname)
                 input_dir = path_to_stage_dir #os.path.join(path_to_stage_dir, 'input')
                 gc3libs.utils.mkdir(input_dir)
                 prefix_len = len(input_dir) + 1
@@ -221,17 +221,17 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
                         kwargs['apppot_changes'] = apppot_changes
                     cls = idRiskApppotApplication
                 else:
-                    cls = idRiskApplication 
+                    cls = idRiskApplication
                 #kwargs['apppot_img'] = '/home/benjamin/workspace/apppot0+ben.disk.img'
                 #kwargs['linux'] = '/home/benjamin/workspace/kernel64-3.0.8'
                 #kwargs['uml'] = '/home/benjamin/workspace/kernel64-3.0.8'
                 #kwargs['tags'] = []
                 kwargs.setdefault('tags', [ ])
-                
+
                 # hand over job to create
-                yield (jobname, cls, ['/home/user/job/' + executable, [], inputs, outputs], kwargs) 
-                #yield (jobname, cls, ['ls', [], inputs, outputs], kwargs) 
-                #yield (jobname, cls, ['cd /home/user/job && ./' + executable, [], inputs, outputs], kwargs) 
+                yield (jobname, cls, ['/home/user/job/' + executable, [], inputs, outputs], kwargs)
+                #yield (jobname, cls, ['ls', [], inputs, outputs], kwargs)
+                #yield (jobname, cls, ['cd /home/user/job && ./' + executable, [], inputs, outputs], kwargs)
 
 
 
@@ -241,4 +241,3 @@ if __name__ == '__main__':
     logger.info('Starting: \n%s' % ' '.join(sys.argv))
     gIdRiskScript().run()
     logger.info('main done')
-

@@ -217,7 +217,7 @@ of newly-created jobs so that this limit is never exceeded.
             )
 
     def setup_options(self):
-        self.add_param("-f", "--flags-file", dest="flags_file", type=existing_file,
+        self.add_param("-f", "--flags-file", dest="flags_file", 
                        default=os.path.join(gc3libs.Default.RCDIR, 'docking_protocol.flags'),
                        metavar="PATH",
                        help="Pass the specified flags file to Rosetta 'docking_protocol'"
@@ -257,5 +257,13 @@ of newly-created jobs so that this limit is never exceeded.
         self.extra['application_release'] = self.params.rosetta_release
         self.extra['number_of_decoys_to_create'] = self.params.decoys_per_job
         self.extra['collect'] = self.params.collect
+
+        try:
+            existing_file(self.params.flags_file)
+        except Exception, ex:
+            gc3libs.log.error("Invalid flags file `%s`: please supply a valid flags file by adding the option `-f PATH`" % self.params.flags_file)
+            raise ex
+        
         self.extra['flags_file'] = os.path.abspath(self.params.flags_file)
         self.log.info("Using flags file '%s'", self.extra['flags_file'])
+

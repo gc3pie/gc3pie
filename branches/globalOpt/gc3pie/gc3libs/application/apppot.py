@@ -26,6 +26,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 import gc3libs
+from gc3libs.quantity import MB
 
 
 class AppPotApplication(gc3libs.Application):
@@ -50,19 +51,23 @@ class AppPotApplication(gc3libs.Application):
     * `apppot_extra`: List of additional UML boot command-line arguments.
       (Passed to the AppPot instance via ``apppot-start``'s ``--extra`` option.)
     """
-    def __init__(self, executable, arguments, inputs, outputs, output_dir,
+
+    application_name = 'apppot'
+
+    def __init__(self, arguments, inputs, outputs, output_dir,
                  apppot_img=None, apppot_changes=None, apppot_tag='ENV/APPPOT-0.21',
                  apppot_extra=[], **extra_args):
         # AppPot-specific setup
-        apppot_start_args = [] 
+        apppot_start_args = []
         if apppot_img is not None:
             AppPotApplication._add_to_inputs(inputs, apppot_img, 'apppot.img')
             apppot_start_args += ['--apppot', 'apppot.img']
         if apppot_changes is not None:
             AppPotApplication._add_to_inputs(inputs, apppot_changes, 'apppot.changes.tar.gz')
             apppot_start_args += ['--changes', 'apppot.changes.tar.gz']
-        if extra_args.has_key('requested_memory'):
-            apppot_start_args += ['--mem', ("%dM" % (int(extra_args['requested_memory']) * 1000))]
+        if 'requested_memory' in extra_args:
+            apppot_start_args += ['--mem',
+                                  ("%dM" % (extra_args['requested_memory'].amount(MB)))]
             # FIXME: we need to remove the memory limit because batch
             # systems miscompute the amount of memory actually used by
             # an UMLx process...
@@ -70,18 +75,17 @@ class AppPotApplication(gc3libs.Application):
         if apppot_extra:
             for arg in apppot_extra:
                 apppot_start_args += ['--extra', arg]
-        apppot_start_args += [ executable ] + arguments
+        apppot_start_args += arguments
 
         if 'tags' in extra_args:
             extra_args['tags'].append(apppot_tag)
         else:
             extra_args['tags'] = [ apppot_tag ]
-        
+
         # init base class
         gc3libs.Application.__init__(
             self,
-            'apppot-start.sh', # executable
-            apppot_start_args, # arguments
+            [ './apppot-start.sh'] + apppot_start_args, # arguments
             inputs, outputs, output_dir, **extra_args)
 
     @staticmethod
@@ -103,10 +107,10 @@ class AppPotApplication(gc3libs.Application):
             # because otherwise ARC insists that 'apppot-start.sh'
             # should be included in "inputFiles", but it obviously
             # breaks all other submission schemes...
-            original_executable = self.executable
-            self.executable = '/$APPPOT_STARTUP'
+            original_executable = self.arguments[0]
+            self.arguments[0] = '/$APPPOT_STARTUP'
             jobdesc = gc3libs.Application.xrsl(self, resource)
-            self.executable = original_executable
+            self.arguments[0] = original_executable
             return jobdesc
 
 

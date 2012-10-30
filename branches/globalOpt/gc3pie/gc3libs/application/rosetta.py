@@ -49,6 +49,9 @@ class RosettaApplication(gc3libs.Application):
       * `database`: (local) path to the Rosetta DB; if this is not specified, then it is assumed that the correct location will be available at the remote execution site as environment variable ``ROSETTA_DB_LOCATION``
       * `arguments`: If present, they will be appended to the Rosetta application command line.
     """
+
+    application_name = 'rosetta'
+
     def __init__(self, application, application_release, inputs, outputs=[],
                  flags_file=None, database=None, arguments=[], **extra_args):
 
@@ -68,11 +71,6 @@ class RosettaApplication(gc3libs.Application):
         # remember the protocol name for event methods
         self.__protocol = application
 
-        # _inputs = gc3libs.Application._io_spec_to_dict(inputs)
-        # _inputs = inputs
-        _inputs = gc3libs.Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
-
-
         # since ARC/xRSL does not allow wildcards in the "outputFiles"
         # line, and Rosetta can create ouput files whose number/name
         # is not known in advance, the support script will create a
@@ -83,17 +81,12 @@ class RosettaApplication(gc3libs.Application):
             self.__protocol + '.log',
             self.__protocol + '.tar.gz'
             ]
-
-        # if len(outputs) > 0:
         if outputs:
             _arguments = ['--tar', str.join(' ', [ str(o) for o in outputs ])]
         else:
             _arguments = ['--tar', '*.pdb *.sc *.fasc']
-        # XXX: this is too gdocking-specific!
-        # for opt, file in _inputs.items():
-        #     _arguments.append(opt)
-        #     _arguments.append(os.path.basename(file))
 
+        _inputs = gc3libs.Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
         if flags_file:
             _inputs[flags_file] = self.__protocol + '.flags'
             # the `rosetta.sh` driver will do this automatically:
@@ -104,13 +97,10 @@ class RosettaApplication(gc3libs.Application):
             _arguments.append("-database")
             _arguments.append(os.path.basename(database))
 
-        #if len(arguments) > 0:
         if arguments:
             _arguments.extend(arguments)
 
-        extra_args['application_tag'] = 'rosetta'
         application_release = "APPS/BIO/ROSETTA-%s" % application_release
-        # application_release = "TEST/BIO/ROSETTA-%s"  % application_release
         if 'tags' in extra_args:
             extra_args['tags'].append(application_release)
         else:
@@ -124,11 +114,11 @@ class RosettaApplication(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-            executable = "%s" % rosetta_sh,
-            arguments = _arguments,
+            arguments = [ ("./%s" % rosetta_sh) ] + _arguments,
             inputs = _inputs,
             outputs = _outputs,
             **extra_args)
+
 
     def terminated(self):
         """
@@ -156,7 +146,6 @@ class RosettaApplication(gc3libs.Application):
                               % tar_file_name)
 
 
-
 class RosettaDockingApplication(RosettaApplication):
     """
     Specialized `Application` class for executing a single run of the
@@ -164,6 +153,9 @@ class RosettaDockingApplication(RosettaApplication):
 
     Currently used in the `gdocking` app.
     """
+
+    application_name = 'rosetta_docking'
+
     def __init__(self, pdb_file_path, native_file_path=None,
                  number_of_decoys_to_create=1, flags_file=None,
                  application_release='3.1', **extra_args):

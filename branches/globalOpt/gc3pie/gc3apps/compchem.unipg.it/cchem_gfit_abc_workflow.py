@@ -108,6 +108,7 @@ class ParallelABC(ParallelTaskCollection):
 # class Gfit3C_ABC_uml_Application --> compile on uml -->  ABC binary
 #
 class Gfit3C_ABC_uml_Application(Application):
+    application_name = 'gfit3c_abc_uml'
     def __init__(self, abc_uml_image_file, output_folder, g3c_input_file=None, dimension_file=None, surface_file=None, **extra_args):
         inputs = [(abc_uml_image_file, "abc.img")]
 
@@ -146,6 +147,7 @@ class Gfit3C_ABC_uml_Application(Application):
 # class ABC_Application --> single ABC run
 #
 class ABC_Application(Application):
+    application_name = 'abc'
     def __init__(self, executable, abc_executable, input_file, output_folder, **extra_args):
 
 
@@ -233,7 +235,6 @@ class ABC_Workflow(SessionBasedScript):
 # dimensions+gc3file --> compiling gfit + abc
          if self.params.dimensions and self.params.g3cfile:
              name = "Gfit3C_"+str(os.path.basename(self.params.g3cfile))
-             #self.real_outputfolder = self.make_directory_path(self.params.output, name)
 # yield for MainSequential_ABC
              yield (name, MainSequentialABC, [
                      name,

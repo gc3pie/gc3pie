@@ -653,7 +653,7 @@ Read `.loop` files and execute the `housingOut` program accordingly.
                 executable = os.path.basename(self.params.executable)
                 inputs = { self.params.executable:executable }
                 # make a "stage" directory where input files are collected
-                path_to_stage_dir = self.make_directory_path(self.params.output, jobname, path_to_base_dir)
+                path_to_stage_dir = self.make_directory_path(self.params.output, jobname)
                 input_dir = path_to_stage_dir #os.path.join(path_to_stage_dir, 'input')
                 gc3libs.utils.mkdir(input_dir)
                 prefix_len = len(input_dir) + 1

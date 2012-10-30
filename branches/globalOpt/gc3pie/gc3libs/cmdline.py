@@ -46,11 +46,11 @@ import csv
 import fnmatch
 import lockfile
 import logging
+import math
 import os
 import os.path
 import re
 import sys
-import random
 from texttable import Texttable
 import time
 
@@ -67,6 +67,7 @@ import gc3libs.exceptions
 import gc3libs.persistence
 import gc3libs.utils
 import gc3libs.url
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.session import Session
 
 
@@ -380,12 +381,6 @@ class _Script(cli.app.CommandLineApp):
                        default=str.join(',', gc3libs.Default.CONFIG_FILE_LOCATIONS),
                        help="Comma separated list of configuration files",
                        )
-
-        self.add_param("--config-files",
-                       action="store",
-                       default=str.join(',', gc3libs.Default.CONFIG_FILE_LOCATIONS),
-                       help="Comma separated list of configuration files",
-                       )
         return
 
     def pre_run(self):
@@ -407,11 +402,13 @@ class _Script(cli.app.CommandLineApp):
         cli.app.CommandLineApp.pre_run(self)
 
         ## setup GC3Libs logging
-        loglevel = max(1, logging.ERROR - 10 * max(0, self.params.verbose - self.verbose_logging_threshold))
-        gc3libs.configure_logger(loglevel, self.name)
+        loglevel = max(1, logging.WARNING - 10 * max(0, self.params.verbose - self.verbose_logging_threshold))
+        gc3libs.configure_logger(loglevel, "gc3utils") # alternate: self.name
         self.log = logging.getLogger('gc3.gc3utils')  # alternate: ('gc3.' + self.name)
         self.log.setLevel(loglevel)
         self.log.propagate = True
+        self.log.info("Starting %s at %s; invoked as '%s'",
+                      self.name, time.asctime(), str.join(' ', sys.argv))
 
         # Read config file(s) from command line
         self.params.config_files = self.params.config_files.split(',')
@@ -446,7 +443,8 @@ class _Script(cli.app.CommandLineApp):
             sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
             return 13
         except SystemExit, ex:
-            return ex.code
+            #  sys.exit() has been called in `post_run()`.
+            raise
         # the following exception handlers put their error message
         # into `msg` and the exit code into `rc`; the closing stanza
         # tries to log the message and only outputs it to stderr if
@@ -747,7 +745,7 @@ class SessionBasedScript(_Script):
                        " matching the glob pattern '%s'"
                        % self.input_filename_pattern)
 
-    def make_directory_path(self, pathspec, jobname, *args):
+    def make_directory_path(self, pathspec, jobname):
         """
         Return a path to a directory, suitable for storing the output
         of a job (named after `jobname`).  It is not required that the
@@ -764,27 +762,13 @@ class SessionBasedScript(_Script):
           * ``SESSION`` is replaced with the name of the current session
             (as specified by the ``-s``/``--session`` command-line option)
             with a suffix ``.out`` appended;
-          * ``PATH`` is replaced with the path to directory containing
-            `args[0]` (if it's an existing filename), or to the
-            current directory;
           * ``NAME`` is replaced with `jobname`;
           * ``DATE`` is replaced with the current date, in *YYYY-MM-DD* format;
           * ``TIME`` is replaced with the current time, in *HH:MM* format.
 
         """
-        if len(args) == 0:
-            path = os.getcwd()
-        else:
-            arg0 = str(args[0])
-            if os.path.isdir(arg0):
-                path = arg0
-            elif os.path.isfile(arg0):
-                path = os.path.dirname(arg0)
-            else:
-                path = os.getcwd()
         return (pathspec
                 .replace('SESSION', self.params.session + '.out')
-                .replace('PATH', path)
                 .replace('NAME', jobname)
                 .replace('DATE', time.strftime('%Y-%m-%d'))
                 .replace('TIME', time.strftime('%H:%M')))
@@ -807,8 +791,17 @@ class SessionBasedScript(_Script):
 
         See also: `new_tasks`:meth:
         """
+        ## default creation arguments
+        self.extra.setdefault('requested_cores', self.params.ncores)
+        self.extra.setdefault('requested_memory',
+                            self.params.ncores * self.params.memory_per_core)
+        self.extra.setdefault('requested_walltime', self.params.walltime)
+        # XXX: assumes `make_directory_path` substitutes ``NAME`` with `jobname`; keep in sync!
+        self.extra.setdefault('output_dir',
+                              self.make_directory_path(self.params.output, 'NAME'))
+
         ## build job list
-        new_jobs = list(self.new_tasks(self.extra))
+        new_jobs = list(self.new_tasks(self.extra.copy()))
         # pre-allocate Job IDs
         if len(new_jobs) > 0:
             # XXX: can't we just make `reserve` part of the `IdFactory` contract?
@@ -820,35 +813,63 @@ class SessionBasedScript(_Script):
 
         # add new jobs to the session
         existing_job_names = self.session.list_names()
-        random.seed()
-        for jobname, cls, args, kwargs in new_jobs:
-            #self.log.debug("SessionBasedScript.process_args():"
-            #               " considering adding new job defined by:"
-            #               " jobname=%s cls=%s args=%s kwargs=%s ..."
-            #               % (jobname, cls, args, kwargs))
-            if jobname in existing_job_names:
-                #self.log.debug("  ...already existing job, skipping it.")
-                continue
-            #self.log.debug("New job '%s', adding it to session." % jobname)
-            kwargs.setdefault('jobname', jobname)
-            kwargs.setdefault('requested_cores', self.params.ncores)
-            kwargs.setdefault('requested_memory',
-                              self.params.ncores * self.params.memory_per_core)
-            kwargs.setdefault('requested_walltime', self.params.walltime)
-            kwargs.setdefault('output_dir',
-                              self.make_directory_path(self.params.output,
-                                                       jobname, *args))
-            # create a new `Application` object
-            try:
-                app = cls(*args, **kwargs)
-                self.session.add(app, flush=False)
-                self.log.debug("Added task '%s' to session." % jobname)
-            except Exception, ex:
-                self.log.error("Could not create job '%s': %s."
-                               % (jobname, str(ex)), exc_info=__debug__)
-                # XXX: should we raise an exception here?
-                #raise AssertionError("Could not create job '%s': %s: %s"
-                #                     % (jobname, ex.__class__.__name__, str(ex)))
+        warning_on_old_style_given = False
+        for n, item in enumerate(new_jobs):
+            if isinstance(item, tuple):
+                if not warning_on_old_style_given:
+                    self.log.warning("Using old-style new tasks list; please update the code!")
+                    warning_on_old_style_given = True
+                # build Task for (jobname, classname, args, kwargs)
+                jobname, cls, args, kwargs = item
+                if jobname in existing_job_names:
+                    continue
+                kwargs.setdefault('jobname', jobname)
+                kwargs.setdefault('output_dir',
+                                  self.make_directory_path(self.params.output, jobname))
+                kwargs.setdefault('requested_cores',    self.extra['requested_cores'])
+                kwargs.setdefault('requested_memory',   self.extra['requested_memory'])
+                kwargs.setdefault('requested_walltime', self.extra['requested_walltime'])
+                # create a new `Task` object
+                try:
+                    task = cls(*args, **kwargs)
+                except Exception, ex:
+                    self.log.error("Could not create job '%s': %s."
+                                   % (jobname, str(ex)), exc_info=__debug__)
+                    continue
+                    # XXX: should we raise an exception here?
+                    #raise AssertionError("Could not create job '%s': %s: %s"
+                    #                     % (jobname, ex.__class__.__name__, str(ex)))
+
+            elif isinstance(item, gc3libs.Task):
+                task = item
+                if 'jobname' not in task:
+                    task.jobname = ("%s-N%d" % (task.__class__.__name__, n+1))
+
+            else:
+                raise gc3libs.exceptions.InternalError(
+                    "SessionBasedScript.process_args got %r (%s),"
+                    " but was expecting a gc3libs.Task instance" % (item, type(item)))
+
+            # patch output_dir if it's not changed from the default,
+            # or if it's not defined (e.g., TaskCollection)
+            if 'output_dir' not in task or task.output_dir == self.extra['output_dir']:
+                # user did not change the `output_dir` default, expand it now
+                self._fix_output_dir(task, task.jobname)
+
+            # all done, append to session
+            self.session.add(task, flush=False)
+            self.log.debug("Added task '%s' to session." % task.jobname)
+
+    def _fix_output_dir(self, task, name):
+        """Substitute the NAME string in output paths."""
+        task.output_dir = task.output_dir.replace('NAME', name)
+        try:
+            for subtask in task.tasks:
+                self._fix_output_dir(subtask, name)
+        except AttributeError:
+            # no subtasks
+            pass
+
 
     def new_tasks(self, extra):
         """
@@ -948,11 +969,16 @@ class SessionBasedScript(_Script):
         table.set_deco(0)     # no decorations
         table.set_cols_align(['r', 'r', 'c'])
         total = stats['total']
+        # ensure we display enough decimal digits in percentages when
+        # running a large number of jobs; see Issue 308 for a more
+        # detailed descrition of the problem
+        precision = max(1, math.log10(total) - 1)
+        fmt = '(%%.%df%%%%)' % precision
         for state in sorted(stats.keys()):
             table.add_row([
                     state,
                     "%d/%d" % (stats[state], total),
-                    "(%.1f%%)" % (100.0 * stats[state] / total)
+                    fmt % (100.00 * stats[state] / total)
                     ])
         output.write(table.draw())
         output.write("\n")
@@ -1111,21 +1137,23 @@ class SessionBasedScript(_Script):
                        " NUM must be a whole number."
                        )
         self.add_param("-m", "--memory-per-core", dest="memory_per_core",
-                       type=positive_int, default=2,  # 2 GB
+                       type=Memory, default=2*GB,  # 2 GB
                        metavar="GIGABYTES",
-                       help="Set the amount of memory required per execution core, in gigabytes (Default: %(default)s)."
-                       " Currently, GIGABYTES can only be an integer number; no fractional amounts are allowed.")
+                       help="Set the amount of memory required per execution core; default: %(default)s."
+                       " Specify this as an integral number followed by a unit, e.g.,"
+                       " '512MB' or '4GB'.")
         self.add_param("-r", "--resource", action="store", dest="resource_name", metavar="NAME",
                        default=None,
                        help="Submit jobs to a specific computational resources."
-                       " NAME is a reource name or comma-separated list of such names."
+                       " NAME is a resource name or comma-separated list of such names."
                        " Use the command `gservers` to list available resources.")
-        self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8),  # 8 hrs
+        self.add_param("-w", "--wall-clock-time", dest="wctime", default='8 hours',
                        metavar="DURATION",
-                       help="Set the time limit for each job (default %(default)s for '8 hours')."
+                       help="Set the time limit for each job; default is %(default)s."
                        " Jobs exceeding this limit will be stopped and considered as 'failed'."
-                       " The duration can be expressed as a whole number (indicating the duration in hours)"
-                       " or as a string in the form 'hours:minutes'."
+                       " The duration can be expressed as a whole number followed by a time unit,"
+                       " e.g., '3600 s', '60 minutes', '8 hours', or a combination thereof,"
+                       " e.g., '2hours 30minutes'."
                        )
 
         # 2. session control
@@ -1169,7 +1197,6 @@ class SessionBasedScript(_Script):
                        " destination directory does not exist, it is created."
                        " The following strings will be substituted into DIRECTORY,"
                        " to specify an output location that varies with each submitted job:"
-                       " the string 'PATH' is replaced by the directory where the job input resides;"
                        " the string 'NAME' is replaced by the job name;"
                        " 'DATE' is replaced by the submission date in ISO format (YYYY-MM-DD);"
                        " 'TIME' is replaced by the submission time formatted as HH:MM."
@@ -1193,23 +1220,21 @@ class SessionBasedScript(_Script):
         """
         ## call base classes first (note: calls `parse_args()`)
         _Script.pre_run(self)
+        # since it may time quite some time before jobs are created
+        # and the first report is displayed, print a startup banner so
+        # that users get some kind of feedback ...
+        print("Starting %s;"
+              " use the '-v' command-line option to get"
+              " a more verbose report of activity."
+              % (self.name,))
 
         ## consistency checks
-        n = self.params.wctime.count(":")
-        if 0 == n:  # wctime expressed in hours
-            duration = int(self.params.wctime)*60*60
-            if duration < 1:
-                raise cli.app.Error("Argument to option -w/--wall-clock-time must be a positive integer.")
-            self.params.wctime = duration
-        elif 1 == n:  # wctime expressed as 'HH:MM'
-            hrs, mins = self.params.wctime.split(":")
-            self.params.wctime = hrs*60*60 + mins*60
-        elif 2 == n:  # wctime expressed as 'HH:MM:SS'
-            hrs, mins, secs = self.params.wctime.split(":")
-            self.params.wctime = hrs*60*60 + mins*60 + secs
-        else:
-            raise cli.app.Error("Argument to option -w/--wall-clock-time must have the form 'HH:MM' or be a duration expressed in hours.")
-        self.params.walltime = int(self.params.wctime) / 3600
+        try:
+            # FIXME: backwards-compatibility, remove after 2.0 release
+            self.params.walltime = Duration(int(self.params.wctime), hours)
+        except ValueError:
+            # cannot convert to `int`, use extended parsing
+            self.params.walltime = Duration(self.params.wctime)
 
         ## determine the session file name (and possibly create an empty index)
         self.session_uri = gc3libs.url.Url(self.params.session)
@@ -1295,7 +1320,12 @@ class SessionBasedScript(_Script):
                 self.log.info("Done cleaning up old session jobs, starting with new one afresh...")
 
         ## update session based on command-line args
-        self.process_args()
+        if len(self.session) == 0:
+            self.process_args()
+        else:
+            self.log.warning(
+                "Session already exists, some command-line arguments might be ignored."
+                )
 
         # save the session list immediately, so newly added jobs will
         # be in it if the script is stopped here

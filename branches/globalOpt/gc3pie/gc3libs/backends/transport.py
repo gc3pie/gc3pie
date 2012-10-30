@@ -189,20 +189,20 @@ import gc3libs
 
 class SshTransport(Transport):
 
-    ssh = None
-    sftp = None
-    _is_open = False
-    transport_channel = None
-
     def __init__(self, remote_frontend,
                  port=gc3libs.Default.SSH_PORT,
                  username=None):
         self.remote_frontend = remote_frontend
         self.port = port
         self.username = username
+
         self.ssh = paramiko.SSHClient()
         self.ssh_config = paramiko.SSHConfig()
         self.keyfile = None
+        self.sftp = None
+        self._is_open = False
+        self.transport_channel = None
+        
         try:
             config_filename = os.path.expanduser('~/.ssh/config')
             config_file = open(config_filename)
@@ -304,6 +304,7 @@ class SshTransport(Transport):
         try:
             # check connection first
             self.connect()
+            gc3libs.log.debug("SshTransport running `%s`... ", command)
             stdin_stream, stdout_stream, stderr_stream = self.ssh.exec_command(command)
             stdout = stdout_stream.read()
             stderr = stderr_stream.read()
@@ -571,18 +572,13 @@ class LocalTransport(Transport):
         assert self._is_open is True, \
             "`Transport.execute_command()` called" \
             " on `Transport` instance closed / not yet open"
-
         try:
             self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=True)
-
             stdout, stderr = self._process.communicate()
-            exitcode = os.WEXITSTATUS(self._process.returncode)
-
-            gc3libs.log.debug("Executed local command '%s', got exit status: %d"
-                              % (command, exitcode))
-
+            exitcode = self._process.returncode
+            gc3libs.log.debug("Executed local command '%s', got exit status: %d",
+                              command, exitcode)
             return exitcode, stdout, stderr
-
         except Exception, ex:
             raise gc3libs.exceptions.TransportError("Failed executing command '%s': %s: %s"
                                      % (command, ex.__class__.__name__, str(ex)))

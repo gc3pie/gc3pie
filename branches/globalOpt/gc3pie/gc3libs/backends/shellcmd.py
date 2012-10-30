@@ -30,6 +30,7 @@ import shutil
 import sys
 import tempfile
 import psutil
+import errno
 
 # GC3Pie imports
 import gc3libs
@@ -82,7 +83,7 @@ class ShellcmdLrms(LRMS):
         LRMS.__init__(
             self, name,
             architecture, max_cores, max_cores_per_job,
-            max_memory_per_core, max_walltime, auth)
+            max_memory_per_core, max_walltime, auth, **extra_args)
 
         # use `max_cores` as the max number of processes to allow
         self.free_slots = int(max_cores)
@@ -96,23 +97,19 @@ class ShellcmdLrms(LRMS):
         # default is to use $TMPDIR or '/tmp' (see `tempfile.mkftemp`)
         self.spooldir = spooldir
 
-
+    @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
-        """
-        Cancel a running job.
-
-        If `app` is associated to a queued or running remote job, tell
-        the execution middleware to cancel it.
-        """
         try:
             pid = int(app.execution.lrms_jobid)
             posix.kill(pid, 15)
             # XXX: should we check that the process actually died?
             self.free_slots += app.requested_cores
         except OSError, ex:
-            if ex.errno == 10:
-                raise gc3libs.exceptions.InvalidArgument(
-                    "Job '%s' refers to non-existent local process %s"
+            if ex.errno in [errno.ECHILD, errno.ESRCH]:
+                # ECHILD: No child process
+                # ESRCH:  No such process
+                gc3libs.log.error(
+                    "Failed while killing Job '%s'. It refers to non-existent local process %s."
                     % (app, app.execution.lrms_jobid))
             else:
                 raise
@@ -136,7 +133,11 @@ class ShellcmdLrms(LRMS):
         The temporary directory is removed with all its content,
         recursively.
         """
-        shutil.rmtree(app.execution.lrms_execdir)
+        try:
+            shutil.rmtree(app.execution.lrms_execdir)
+        except Exception, ex:
+            log.warning("Failed removing folder '%s': %s: %s"
+                        % (app.execution.lrms_execdir, type(ex), ex))
 
 
     @same_docstring_as(LRMS.get_resource_status)
@@ -232,9 +233,8 @@ class ShellcmdLrms(LRMS):
                 "Resource %s already running maximum allowed number of jobs"
                 " (increase 'max_cores' to raise)." % self.name)
 
-        gc3libs.log.debug("Executing local command '%s %s' ..."
-                          % (app.executable, str.join(" ", app.arguments)))
-
+        gc3libs.log.debug("Executing local command '%s' ..."
+                          % (str.join(" ", app.arguments[1:])))
         # We cannot use `exec` or other front-end modules that
         # hide the differences between UNIX and Windows, exactly
         # because we need to get the PID of the submitted process.
@@ -254,6 +254,11 @@ class ShellcmdLrms(LRMS):
             # book-keeping
             self.free_slots -= app.requested_cores
             self.user_run += 1
+            # Child process will fork() again and the actual program
+            # will be executed by the nephew. In order to avoid
+            # zombies, however, we still have to wait for the child
+            # process to complete.
+            os.waitpid(pid, 0)
 
         else: # child process
             try:
@@ -267,9 +272,9 @@ class ShellcmdLrms(LRMS):
                 # try to ensure that a local executable really has
                 # execute permissions, but ignore failures (might be a
                 # link to a file we do not own)
-                if app.executable.startswith('./'):
+                if app.arguments[0].startswith('./'):
                     try:
-                        os.chmod(app.executable, 0755)
+                        os.chmod(app.arguments[0], 0755)
                     except OSError:
                         pass
 
@@ -318,14 +323,8 @@ class ShellcmdLrms(LRMS):
                         pass
 
                 ## set up environment
-                for k,v in app.environment:
+                for k,v in app.environment.iteritems():
                     os.environ[k] = v
-
-                ## finally.. exec()
-                cmd = app.executable
-                if not os.path.isabs(app.executable) and os.path.exists(app.executable):
-                    # local file
-                    cmd = os.path.join(os.getcwd(), app.executable)
 
                 # Create the directory in which the pid and the output
                 # from the wrapper script will be stored
@@ -337,7 +336,7 @@ class ShellcmdLrms(LRMS):
                     os.mkdir(wrapper_dir)
 
                 if posix.fork(): # parent process, exits to avoid zombies
-                    # The bug is cause by the fact that in order to
+                    # The bug is caused by the fact that in order to
                     # avoid creation of zombie processes we have to
                     # *daemonize*, which basically means that we have
                     # to do something like:
@@ -358,11 +357,16 @@ class ShellcmdLrms(LRMS):
                     # lot of clones of the nosetests programs running
                     # at the same time.
                     #
-                    # To avoid this we call os.execlp('/bin/true')
-                    # instead, which will overwrite the current
-                    # instance of nosetests with /bin/true, which will
+                    # To avoid this we call os.execlp('true') instead,
+                    # which will overwrite the current instance of
+                    # nosetests with the `true` command, which will
                     # exit without problem.
-                    os.execlp('/bin/true', '/bin/true')
+                    
+                    # Since not all the distribution have the `true`
+                    # command in the same place, we don't specify a
+                    # full path, and let `execlp()` to find a `true`
+                    # command using `PATH` environment variable.
+                    os.execlp('true', 'true')
 
                     # In case os.execlp() will fail we still call
                     # sys.exit(0), which should be just fine if not
@@ -379,12 +383,13 @@ class ShellcmdLrms(LRMS):
                               wrapper_dir,
                               ShellcmdLrms.WRAPPER_OUTPUT_FILENAME),
                           "-f", ShellcmdLrms.TIMEFMT,
-                          cmd, *app.arguments)
+                          "/bin/sh", "-c", 
+                          str.join(' ', app.arguments))
 
             except Exception, ex:
                 sys.excepthook(* sys.exc_info())
                 gc3libs.log.error("Failed starting local process '%s': %s"
-                                  % (app.executable, str(ex)))
+                                  % (app.arguments[0], str(ex)))
                 # simulate what the shell does in case of failed exec
                 sys.exit(127)
 

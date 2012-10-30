@@ -25,6 +25,7 @@ __version__ = 'development version (SVN $Revision$)'
 import gc3libs
 from gc3libs.compat.functools import wraps
 import gc3libs.exceptions
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 import gc3libs.utils
 
 
@@ -68,7 +69,7 @@ class LRMS(gc3libs.utils.Struct):
     |                     |              |this resource *for a single    |
     |                     |              |job*.                          |
     +---------------------+--------------+-------------------------------+
-    |`max_memory_per_core`|int           |Maximum memory (in GBs) that   |
+    |`max_memory_per_core`|Memory        |Maximum memory that            |
     |                     |              |GC3Pie can allocate to jobs on |
     |                     |              |this resource.  The value is   |
     |                     |              |*per core*, so the actual      |
@@ -77,8 +78,8 @@ class LRMS(gc3libs.utils.Struct):
     |                     |              |multiplied by the number of    |
     |                     |              |cores requested by the job.    |
     +---------------------+--------------+-------------------------------+
-    |`max_walltime`       |int           |Maximum wall-clock time (in    |
-    |                     |              |seconds) that can be allotted  |
+    |`max_walltime`       |Duration      |Maximum wall-clock time        |
+    |                     |              |that can be allotted           |
     |                     |              |to a single job running on this|
     |                     |              |resource.                      |
     +---------------------+--------------+-------------------------------+
@@ -117,8 +118,14 @@ class LRMS(gc3libs.utils.Struct):
 
         self.max_cores = int(max_cores)
         self.max_cores_per_job = int(max_cores_per_job)
-        self.max_memory_per_core = int(max_memory_per_core)
-        self.max_walltime = int(max_walltime)
+        assert isinstance(max_memory_per_core, Memory), \
+               ("Expected `Memory` value for `max_memory_per_core`, got %s instead."
+                % (type(max_memory_per_core),))
+        self.max_memory_per_core = max_memory_per_core
+        assert isinstance(max_walltime, Duration), \
+               ("Expected `Duration` value for `max_walltime`, got %s instead."
+                % (type(max_walltime),))
+        self.max_walltime = max_walltime
 
         # see `authenticated` below
         self._auth_fn = auth

@@ -1,10 +1,11 @@
-#! /usr/bin/env python 
+#! /usr/bin/env python
 #
 """
-gc3utils - A simple command-line frontend to distributed resources
+This is the main entry point for command `gc3utils`:command: -- a
+simple command-line frontend to distributed resources
 
 This is a generic front-end code; actual implementation of commands
-can be found in gc3utils/commands.py
+can be found in `gc3utils.commands`:mod:
 """
 # Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
@@ -125,7 +126,9 @@ def main():
 
 Command `gc3utils` is a unified front-end to computing resources.
 You can get more help on a specific sub-command by typing::
+
   gc3utils COMMAND --help
+
 where command is one of these:
 """)
             import gc3utils.commands

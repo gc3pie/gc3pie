@@ -31,6 +31,7 @@ import tempfile
 # 3rd party imports
 from nose.plugins.skip import SkipTest
 from nose.tools import raises, assert_equal
+from nose import with_setup
 
 try:
     import sqlalchemy
@@ -42,6 +43,8 @@ except:
 # GC3Pie imports
 import gc3libs
 from gc3libs import Run, Task
+import gc3libs.workflow
+
 import gc3libs.exceptions
 from gc3libs.persistence import make_store, Persistable
 from gc3libs.persistence.accessors import GET
@@ -67,7 +70,7 @@ def test_store_ctor_with_extra_arguments():
         'idfactory': IdFactory(),
         'protocol': DEFAULT_PROTOCOL,
         'extra_fields': {sqlalchemy.Column('extra',         sqlalchemy.TEXT())    : lambda x: "test"},
-        
+
         }
 
     def run_test(cls, args):
@@ -77,7 +80,7 @@ def test_store_ctor_with_extra_arguments():
         yield run_test, cls, args
         if os.path.exists(tmpdir):
             shutil.rmtree(tmpdir)
-    
+
 ## for testing basic functionality we do no need fully-fledged GC3Pie
 ## objects; let's define some simple make-do's.
 
@@ -127,6 +130,16 @@ class NonPersistableClassWithSlots(object):
 
 class PersistableClassWithSlots(NonPersistableClassWithSlots):
     __slots__ = ["attr", "persistent_id"]
+
+
+class MyChunkedParameterSweep(gc3libs.workflow.ChunkedParameterSweep):
+    def new_task(self, param, **extra_args):
+        return Task(**extra_args)
+
+
+class MyStagedTaskCollection(gc3libs.workflow.StagedTaskCollection):
+    def stage0(self):
+        return Task()
 
 
 def _run_generic_tests(store):
@@ -261,6 +274,31 @@ class GenericStoreChecks(object):
         # return objects for further testing
         return (container_id, objid)
 
+    def test_task_objects(self):
+        """
+        Test that all `Task`-like objects are persistable
+        """
+        def check_task(task):
+            fd, tmpfile = tempfile.mkstemp()
+            store = make_store("sqlite://%s" % tmpfile)
+            try:
+                id = store.save(task)
+                store.load(id)
+            finally:
+                os.remove(tmpfile)
+
+        for obj in [
+            Task(),
+            gc3libs.workflow.TaskCollection(tasks=[Task(), Task()]),
+            gc3libs.workflow.SequentialTaskCollection([Task(), Task()]),
+            MyStagedTaskCollection(),
+            gc3libs.workflow.ParallelTaskCollection(tasks=[Task(), Task()]),
+            MyChunkedParameterSweep(1, 20, 1, 5),
+            gc3libs.workflow.RetryableTask(Task()),
+            ]:
+            check_task.description = "Test that Task-like `%s` class is stored correctly" %  obj.__class__.__name__
+            yield check_task, obj
+
 
 class TestFilesystemStore(GenericStoreChecks):
 
@@ -328,8 +366,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
     def test_default_fields(self):
         app = gc3libs.Application(
-            executable='/bin/true',
-            arguments=[],
+            arguments=['/bin/true'],
             inputs=[],
             outputs=[],
             output_dir='/tmp',
@@ -350,8 +387,7 @@ class SqlStoreChecks(GenericStoreChecks):
     # the `jobname` attribute is optional in the `Application` ctor
     def test_persist_Application_with_no_job_name(self):
         app = gc3libs.Application(
-            executable='/bin/true',
-            arguments=[],
+            arguments=['/bin/true'],
             inputs=[],
             outputs=[],
             output_dir='/tmp')
@@ -376,7 +412,7 @@ class SqlStoreChecks(GenericStoreChecks):
                 sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): GET.extra,
                 })
 
-        obj = SimpleTask("Antonio's task")
+        obj = SimpleTask()
         # obligatory XKCD citation ;-)
         # Ric, you can't just "cite" XKCD without inserting a
         # reference: http://xkcd.com/327/

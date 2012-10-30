@@ -44,13 +44,15 @@ import sys
 import time
 import types
 import subprocess
+import shlex
 
 import logging
 import logging.config
 log = logging.getLogger("gc3.gc3libs")
 
 import gc3libs.exceptions
-
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
+from gc3libs.compat._collections import OrderedDict
 
 # this needs to be defined before we import other GC3Libs modules, as
 # they may depend on it
@@ -81,6 +83,7 @@ class Default(object):
     PBS_LRMS = 'pbs'
     LSF_LRMS = 'lsf'
     SHELLCMD_LRMS = 'shellcmd'
+    SLURM_LRMS = 'slurm'
     SUBPROCESS_LRMS = 'subprocess'
 
     # Transport information
@@ -142,13 +145,9 @@ class Task(Persistable, Struct):
     `execution`
       a `Run` instance; its state attribute is initially set to ``NEW``.
 
-    `jobname`
-      an arbitrary string associated to this task, used in the
-      `str` and `repr` methods.
-
     """
 
-    def __init__(self, name, **extra_args):
+    def __init__(self, **extra_args):
         """
         Initialize a `Task` instance.
 
@@ -160,8 +159,8 @@ class Task(Persistable, Struct):
                      :class:`gc3libs.Core` instance, or anything
                      implementing the same interface.
         """
+        Persistable.__init__(self, **extra_args)
         Struct.__init__(self, **extra_args)
-        self.jobname = name
         self.execution = Run(attach=self)
         # `_controller` and `_attached` are set by `attach()`/`detach()`
         self._attached = False
@@ -246,6 +245,32 @@ class Task(Persistable, Struct):
         In-place update of the execution state of the computational
         job associated with this `Task`.  After successful completion,
         `.execution.state` will contain the new state.
+
+        After the job has reached the `TERMINATING` state, the following
+        attributes are also set:
+
+        `execution.duration`
+          Time lapse from start to end of the job at the remote
+          execution site, as a `gc3libs.quantity.Duration`:class: value.
+          (This is also often referred to as the 'wall-clock time' or
+          `walltime`:term: of the job.)
+
+        `execution.max_used_memory`
+          Maximum amount of RAM used during job execution, represented
+          as a `gc3libs.quantity.Memory`:class: value.
+
+        `execution.used_cpu_time`
+          Total time (as a `gc3libs.quantity.Duration`:class: value) that the
+          processors has been actively executing the job's code.
+
+        The execution backend may set additional attributes; the exact
+        name and format of these additional attributes is
+        backend-specific.  However, you can easily identify the
+        backend-specific attributes because their name is prefixed
+        with the (lowercased) backend name; for instance, the
+        `PbsLrms`:class: backend sets attributes `pbs_queue`,
+        `pbs_end_time`, etc.
+
         """
         assert self._attached, ("Task.update_state() called on detached task %s." % self)
         assert hasattr(self._controller, 'update_job_state'), \
@@ -280,12 +305,40 @@ class Task(Persistable, Struct):
         :return: Path to the directory where the job output has been
                  collected.
         """
+        #result = self._controller.fetch_output(self, output_dir, overwrite, **extra_args)
         if self.execution.state == Run.State.TERMINATED:
             return self.output_dir
-        result = self._controller.fetch_output(self, output_dir, overwrite, **extra_args)
+        # advance state to TERMINATED
         if self.execution.state == Run.State.TERMINATING:
+            self.output_dir = self._get_download_dir(output_dir)
+            self.execution.info = ("Final output downloaded to '%s'" % self.output_dir)
             self.execution.state = Run.State.TERMINATED
-        return result
+            self.changed = True
+            return self.output_dir
+        else:
+            download_dir = self._get_download_dir(output_dir)
+            self.execution.info = ("Output snapshot downloaded to '%s'" % download_dir)
+            return download_dir
+
+    def _get_download_dir(self, download_dir):
+        """
+        Return a directory path where to download this Task's output files.
+
+        If the given `download_dir` is not None, return that.  Otherwise,
+        return the directory saved on this object in attribute `output_dir`.
+        If all else fails, raise `gc3libs.exceptions.InvalidArgument`.
+        """
+        # determine download dir
+        if download_dir is not None:
+            return download_dir
+        else:
+            try:
+                return self.output_dir
+            except AttributeError:
+                raise gc3libs.exceptions.InvalidArgument(
+                    "`Task._get_download_dir()` called with no explicit download directory,"
+                    " but object '%s' has no `output_dir` attribute set either."
+                    % (self, type(self)))
 
 
     def peek(self, what='stdout', offset=0, size=None, **extra_args):
@@ -539,20 +592,10 @@ class Application(Task):
     The following parameters are *required* to create an `Application`
     instance:
 
-    `executable`
-      (string) name of the application binary to be
-      launched on the remote resource; the specifics of how this is
-      handled are dependent on the submission backend, but you may
-      always run a script that you upload through the `inputs`
-      mechanism by specifying ``./scriptname`` as `executable`.
-
     `arguments`
-      List of command-line arguments to pass to `executable`; any
-      object in the list will be converted to string via Python's
-      `str()`. Note that, in contrast with the UNIX ``execvp()``
-      usage, the first argument in this list will be passed as
-      ``argv[1]``, i.e., ``argv[0]`` will always be equal to
-      `executable`.
+      List or sequence of program arguments. The program to execute is
+      the first one.; any object in the list will be converted to
+      string via Python's `str()`.
 
     `inputs`
       Files that will be copied to the remote execution node before
@@ -610,13 +653,10 @@ class Application(Task):
       Output file names are interpreted relative to this base directory.
 
     `requested_cores`,`requested_memory`,`requested_walltime`
-      specify resource requirements for the application: the
-      number of independent execution units (CPU cores), amount of
-      memory (in GB; will be converted to a whole number by
-      truncating any decimal digits), amount of wall-clock time to
-      allocate for the computational job (in hours; will be
-      converted to a whole number by truncating any decimal
-      digits).
+      specify resource requirements for the application:
+      * the number of independent execution units (CPU cores),
+      * amount of memory (as a `gc3libs.quantity.Memory`:class: object),
+      * amount of wall-clock time to allocate for the computational job (as a `gc3libs.quantity.Duration`:class: object).
 
     The following optional parameters may be additionally
     specified as keyword arguments and will be given special
@@ -674,12 +714,9 @@ class Application(Task):
     After successful construction, an `Application` object is
     guaranteed to have the following instance attributes:
 
-    `executable`
-      a string specifying the executable name
-
     `arguments`
       list of strings specifying command-line arguments for executable
-      invocation; possibly empty
+      invocation. The first element must be the executable.
 
     `inputs`
       dictionary mapping source URL (a `gc3libs.url.Url`:class:
@@ -725,9 +762,28 @@ class Application(Task):
       for submission; possibly empty.
     """
 
-    def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
+    application_name = 'generic'
+    """
+    A name for applications of this class.
+
+    This string is used as a prefix for configuration items related to
+    this application in configured resources.  For example, if the
+    `application_name` is ``foo``, then the application interface code
+    in GC3Pie might search for ``foo_cmd``, ``foo_extra_args``, etc.
+    See `qsub_sge`:meth: for an actual example.
+    """
+
+    def __init__(self, arguments, inputs, outputs, output_dir, **extra_args):
         # required parameters
-        self.executable = executable
+        if isinstance(arguments, types.StringTypes):
+            arguments = shlex.split(arguments)
+
+        if 'executable' in extra_args:
+            gc3libs.log.warning(
+                "The `executable` argument is not supported anymore in GC3Pie 2.0."
+                " Please adapt your code and use `arguments` only.")
+            arguments = [ extra_args['executable'] ] + list(arguments)
+
         self.arguments = [ str(x) for x in arguments ]
 
         self.inputs = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
@@ -776,10 +832,17 @@ class Application(Task):
         # optional params
         self.output_base_url = extra_args.pop('output_base_url', None)
 
-        # FIXME: should use appropriate unit classes for requested_*
         self.requested_cores = int(extra_args.pop('requested_cores', 1))
         self.requested_memory = extra_args.pop('requested_memory', None)
+        assert (self.requested_memory is None
+                or isinstance(self.requested_memory, gc3libs.quantity.Memory)), \
+            ("Expected `Memory` instance for `requested_memory, got %r %s instead."
+             % (self.requested_memory, type(self.requested_memory)))
         self.requested_walltime = extra_args.pop('requested_walltime', None)
+        assert (self.requested_walltime is None
+                or isinstance(self.requested_walltime, gc3libs.quantity.Duration)), \
+            ("Expected `Duration` instance for `requested_walltime, got %r %s instead."
+             % (self.requested_memory, type(self.requested_memory)))
         self.requested_architecture = extra_args.pop('requested_architecture', None)
         if self.requested_architecture is not None \
                and self.requested_architecture not in [ Run.Arch.X86_32, Run.Arch.X86_64 ]:
@@ -821,17 +884,20 @@ class Application(Task):
 
         self.tags = extra_args.pop('tags', list())
 
-        jobname = extra_args.pop('jobname', self.__class__.__name__)
-        # Check whether the first character of a jobname is an
-        # integer. SGE does not allow job names to start with a
-        # number, so add a prefix...
-        if len(jobname) == 0:
-            jobname = "GC3Pie.%s.%s" % (self.__class__.__name__, id(self))
-        elif str(jobname)[0] in string.digits:
-            jobname = "GC3Pie.%s" % jobname
+        if 'jobname' in extra_args:
+            jobname = extra_args['jobname']
+            # Check whether the first character of a jobname is an
+            # integer. SGE does not allow job names to start with a
+            # number, so add a prefix...
+            if len(jobname) == 0:
+                gc3libs.log.warning("Empty string passed as jobname to %s", self)
+                jobname = "GC3Pie.%s.%s" % (self.__class__.__name__, id(self))
+            elif str(jobname)[0] in string.digits:
+                jobname = "GC3Pie.%s" % jobname
+            extra_args['jobname'] = jobname
 
         # task setup; creates the `.execution` attribute as well
-        Task.__init__(self, jobname, **extra_args)
+        Task.__init__(self, **extra_args)
 
         # for k,v in self.outputs.iteritems():
         #     gc3libs.log.debug("outputs[%s]=%s", repr(k), repr(v))
@@ -851,7 +917,7 @@ class Application(Task):
     @staticmethod
     def _io_spec_to_dict(ctor, spec, force_abs):
         """
-        (This class is only used for internal processing of `input`
+        (This function is only used for internal processing of `input`
         and `output` fields.)
 
         Return a dictionary formed by pairs `URL:name` or `name:URL`.
@@ -896,6 +962,10 @@ class Application(Task):
             # is `spec` dict-like?
             return ctor(((str(k), str(v)) for k,v in spec.iteritems()),
                         force_abs=force_abs)
+        except UnicodeError, err:
+            raise gc3libs.exceptions.InvalidValue(
+                "Use of non-ASCII file names is not (yet) supported in GC3Pie: %s: %s"
+                % (err.__class__.__name__, str(err)))
         except AttributeError:
             # `spec` is a list-like
             def convert_to_tuple(val):
@@ -942,12 +1012,12 @@ class Application(Task):
                 continue
             if (self.requested_memory is not None
                 and self.requested_memory > self.requested_cores * lrms.max_memory_per_core):
-                gc3libs.log.info("Rejecting resource '%s': requested more memory (%d GB) that resource provides (%d GB, %d GB per CPU core)"
+                gc3libs.log.info("Rejecting resource '%s': requested more memory (%s) that resource provides (%s, %s per CPU core)"
                                  % (lrms.name, self.requested_memory, self.requested_cores*lrms.max_memory_per_core, lrms.max_memory_per_core))
                 continue
             if (self.requested_walltime is not None
                 and self.requested_walltime > lrms.max_walltime):
-                gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%d h) that resource provides (%s h)"
+                gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%s) that resource provides (%s)"
                                  % (lrms.name, self.requested_walltime, lrms.max_walltime))
                 continue
             if not lrms.validate_data(self.inputs.keys()) or not lrms.validate_data(self.outputs.values()):
@@ -972,10 +1042,8 @@ class Application(Task):
         finally, should all preceding parameters compare equal, `a` is
         preferred over `b` if it has less running jobs from the same user.
         """
-        a_ = (a.user_queued, -a.free_slots,
-              a.queued, a.user_run)
-        b_ = (b.user_queued, -b.free_slots,
-              b.queued, b.user_run)
+        a_ = (a.user_queued, -a.free_slots, a.queued, a.user_run)
+        b_ = (b.user_queued, -b.free_slots, b.queued, b.user_run)
         return cmp(a_, b_)
 
     def rank_resources(self, resources):
@@ -985,21 +1053,23 @@ class Application(Task):
         By default, less-loaded resources come first;
         see `_cmp_resources`.
         """
-        # return sorted(resources, cmp=self._cmp_resources)
-
         # shift lrms that are already in application.execution_targets
         # to the bottom of the list
         selected = sorted(resources, cmp=self._cmp_resources)
-
-        if 'execution_targets' in self.execution:
+        if '_execution_targets' in self.execution:
             for lrms in selected:
                 if (hasattr(lrms, 'frontend')
-                    and lrms.frontend in self.execution.execution_targets):
+                     and lrms.frontend in self.execution._execution_targets):
                     # append resource to the bottom of the list
                     selected.remove(lrms)
                     selected.append(lrms)
-
         return selected
+
+    def fetch_output(self, download_dir, overwrite, **extra_args):
+        """
+        Calls the corresponding method of the controller.
+        """
+        return self._controller.fetch_output(self, download_dir, overwrite, **extra_args)
 
     ##
     ## backend interface methods
@@ -1029,11 +1099,14 @@ class Application(Task):
             '(executable="/bin/sh")',
             '(gmlog=".gc3pie_arc")', # XXX: should check if conflicts with any input/output files
             ]
-        # concat `executable` and `arguments` to form the command-line
-        argv = [ self.executable ] + self.arguments
-        xrsl.append('(arguments="-c" "%s")' % str.join(' ', [('%s' % x) for x in argv]))
+        xrsl.append('(arguments="-c" "%s")' % str.join(' ', self.arguments))
         # preserve execute permission on all input files
-        executables = [ ]
+        executables = []
+        if self.has_key('executables'):
+            # there are already references to files that should be
+            # executables
+            # e.g. a reference to a remote file that cannot be checked locally
+            executables = self.executables
         for l, r in self.inputs.iteritems():
             if os.access(l.path, os.X_OK):
                 executables.append(r)
@@ -1092,12 +1165,14 @@ class Application(Task):
             xrsl += [('(runTimeEnvironment="%s")' % rte) for rte in self.tags ]
         if len(self.environment) > 0:
             xrsl.append('(environment=%s)' %
-                        str.join(' ', [ ('("%s" "%s")' % kv) for kv in self.environment ]))
+                        str.join(' ', [ ('("%s" "%s")' % kv) for kv in self.environment.iteritems() ]))
         if self.requested_walltime:
-            xrsl.append('(wallTime="%d hours")' % self.requested_walltime)
+            # xRSL assumes minutes by default
+            xrsl.append('(wallTime="%d")' % self.requested_walltime.amount(minutes))
         if self.requested_memory:
             # ARC's "memory" is memory per "rank" (= core in MPI-speak)
-            xrsl.append('(memory="%d")' % (1000 * self.requested_memory / self.requested_cores))
+            xrsl.append('(memory="%d")'
+                        % (self.requested_memory.amount(MB) / self.requested_cores))
         if self.requested_cores:
             xrsl.append('(count="%d")' % self.requested_cores)
         # XXX: the xRSL specification states that the "architecture" value
@@ -1107,7 +1182,7 @@ class Application(Task):
         # match any x86 arch...
         if self.requested_architecture is not None:
             xrsl.append('(architecture="%s")' % self.requested_architecture)
-        if self.jobname:
+        if 'jobname' in self:
             xrsl.append('(jobname="%s")' % self.jobname)
 
         # XXX: experimental
@@ -1131,19 +1206,11 @@ class Application(Task):
         Hence, to get a UNIX shell command-line, just concatenate the
         elements of the list, separating them with spaces.
 
-        The default implementation just concatenates the `executable`
-        and `arguments` attributes; override this method in derived
-        classes to provide appropriate invocation templates.
         """
-        return [self.executable] + ['"%s"' % i for i in self.arguments]
+        return self.arguments[:]
 
 
-    def qsub_sge(self, resource, _suppress_warning=False, **extra_args):
-        # XXX: the `_suppress_warning` switch is only provided for
-        # some applications to make use of this generic method without
-        # logging the user-level warning, because, e.g., it has already
-        # been taken care in some other way (cf. GAMESS' `qgms`).
-        # Use with care and don't depend on it!
+    def qsub_sge(self, resource, **extra_args):
         """
         Get an SGE ``qsub`` command-line invocation for submitting an
         instance of this application.
@@ -1180,10 +1247,17 @@ class Application(Task):
         qsub += ['-cwd', '-S', '/bin/sh']
         if self.requested_walltime:
             # SGE uses `s_rt` for wall-clock time limit, expressed in seconds
-            qsub += ['-l', 's_rt=%d' % (3600 * self.requested_walltime)]
+            qsub += ['-l', 's_rt=%d' % self.requested_walltime.amount(seconds)]
         if self.requested_memory:
-            # SGE uses `mem_free` for memory limits; 'G' suffix allowed for Gigabytes
-            qsub += ['-l', 'mem_free=%dG' % self.requested_memory]
+            # SGE uses `mem_free` for memory limits; 'M' suffix allowed for Megabytes
+            # XXX: there are a number of problems here:
+            #   - `mem_free` might not be requestable, i.e., submission will fail
+            #   - `mem_free` might be a JOB consumable, meaning the value should be the total amount of memory requested by the job
+            #   - in the end it's all matter of local configuration, so we might need to request `h_vmem` (job total) *and* `virtual_free` (per-slot consumable) ...
+            # Let's make whatever works in our cluster, and see how we can
+            # extend/change it when issue reports come...
+            qsub += ['-l', ('mem_free=%dM'
+                            % (self.requested_memory.amount(MB) / self.requested_cores))]
         if self.join:
             qsub += ['-j', 'yes']
         if self.stdout:
@@ -1197,12 +1271,26 @@ class Application(Task):
             # options are present, Grid Engine sets but ignores the
             # error-path attribute."
             qsub += ['-e', '%s' % self.stderr]
-        if self.requested_cores != 1 and not _suppress_warning:
-            # XXX: should this be an error instead?
-            log.warning("Application requested %d cores,"
-                        " but there is no generic way of expressing this requirement in SGE!"
-                        " Ignoring request, but this will likely result in malfunctioning later on.",
-                        self.requested_cores)
+        if self.requested_cores != 1:
+            pe_cfg_name = (self.application_name + '_pe')
+            if pe_cfg_name in resource:
+                pe_name = resource.get(pe_cfg_name)
+            else:
+                pe_name = resource.get('default_pe')
+                if pe_name is not None:
+                    # XXX: overly verbose reporting?
+                    log.info(
+                        "Application %s requested %d cores,"
+                        " but no '%s' configuration item is defined on resource '%s';"
+                        " using the 'default_pe' setting to submit the parallel job.",
+                        self, self.requested_cores, pe_cfg_name, resource.name)
+                else:
+                    raise gc3libs.exceptions.InternalError(
+                        "Application %s requested %d cores,"
+                        " but neither '%s' nor 'default_pe' appear in the configuration"
+                        " of resource '%s'.  Please fix the configuration and retry."
+                        % (self, self.requested_cores, pe_cfg_name, resource.name))
+            qsub += ['-pe', pe_name, ('%d' % self.requested_cores)]
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '%s' % self.jobname]
         return (qsub, self.cmdline(resource))
@@ -1239,10 +1327,12 @@ class Application(Task):
         bsub += ['-cwd', '.', '-L', '/bin/sh', '-n', ('%d' % self.requested_cores)]
         if self.requested_walltime:
             # LSF wants walltime as HH:MM (days expressed as many hours)
-            bsub += ['-W', ('%02d:00' % self.requested_walltime)]
+            hs = int(self.requested_walltime.amount(hours))
+            ms = int(self.requested_walltime.amount(minutes)) % 60
+            bsub += ['-W', ('%02d:%02d' % (hs, ms))]
         if self.requested_memory:
             # LSF uses `rusage[mem=...]` for memory limits (number of MBs)
-            bsub += ['-R', ('rusage[mem=%d]' % 1000*self.requested_memory)]
+            bsub += ['-R', ('rusage[mem=%d]' % self.requested_memory.amount(MB))]
         if self.stdout:
             bsub += ['-oo', ('%s' % self.stdout)]
             if not self.join and not self.stderr:
@@ -1265,9 +1355,9 @@ class Application(Task):
         """
         qsub = list(resource.qsub)
         if self.requested_walltime:
-            qsub += ['-l', 'walltime=%s' % (3600 * self.requested_walltime)]
+            qsub += ['-l', 'walltime=%s' % (self.requested_walltime.amount(seconds))]
         if self.requested_memory:
-            qsub += ['-l', 'mem=%dgb' % self.requested_memory]
+            qsub += ['-l', 'mem=%dmb' % self.requested_memory.amount(MB)]
         if self.stdin:
             # `self.stdin` is the full pathname on the GC3Pie client host;
             # it is copied to its basename on the execution host
@@ -1289,6 +1379,57 @@ class Application(Task):
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '"%s"' % self.jobname]
         return (qsub, self.cmdline(resource))
+
+
+    def sbatch(self, resource, **extra_args):
+        """
+        Get a SLURM ``sbatch`` command-line invocation for submitting an
+        instance of this application.
+
+        Return a pair `(cmd_argv, app_argv)`.  Both `cmd_argv` and
+        `app_argv` are *argv*-lists: the command name is included as
+        first item (index 0) of the list, further items are
+        command-line arguments; `cmd_argv` is the *argv*-list for the
+        submission command (excluding the actual application command
+        part); `app_argv` is the *argv*-list for invoking the
+        application.  By overriding this method, one can add futher
+        resource-specific options at the end of the `cmd_argv`
+        *argv*-list.
+
+        In the construction of the command-line invocation, one should
+        assume that all the input files (as named in `Application.inputs`)
+        have been copied to the current working directory, and that output
+        files should be created in this same directory.
+
+        Override this method in application-specific classes to
+        provide appropriate invocation templates and/or add different
+        submission options.
+        """
+        # sbatch --job-name="jobname" --mem-per-cpu="MBs" --input="filename" --output="filename" --no-requeue -n "number of slots" --cpus-per-task=1 --time="minutes" script.sh
+        sbatch = list(resource.sbatch)
+        sbatch += ['--no-requeue']
+        if self.requested_walltime:
+            # SLURM uses `--time` for wall-clock time limit, expressed in minutes
+            sbatch += ['--time', '%d' % self.requested_walltime.amount(minutes)]
+        if self.requested_memory:
+            # SLURM uses `mem_free` for memory limits; 'M' suffix allowed for Megabytes
+            sbatch += ['--mem-per-cpu', '%d' % (self.requested_memory.amount(MB) / self.requested_cores) ]
+        if self.stdout:
+            sbatch += ['--output', '%s' % self.stdout]
+        if self.stdin:
+            # `self.stdin` is the full pathname on the GC3Pie client host;
+            # it is copied to its basename on the execution host
+            sbatch += ['--input', '%s' % os.path.basename(self.stdin)]
+        if self.stderr:
+            # from the sbatch(1) man page: "If both the -j y and the -e
+            # options are present, Grid Engine sets but ignores the
+            # error-path attribute."
+            sbatch += ['-e', '%s' % self.stderr]
+        if self.requested_cores != 1:
+            sbatch += ['-n', ('%d' % self.requested_cores), '--cpus-per-task', '1']
+        if 'jobname' in self and self.jobname:
+            sbatch += ['--job-name', ('%s' % self.jobname)]
+        return (sbatch, self.cmdline(resource))
 
 
     # Operation error handlers; called when transition from one state
@@ -1484,14 +1625,15 @@ class Run(Struct):
         self._exitcode = None
         self._signal = None
 
-        self.execution_targets = []
+        # to overcome the "black hole" effect
+        self._execution_targets = []
 
         Struct.__init__(self, initializer, **keywd)
 
         if 'history' not in self:
             self.history = History()
         if 'timestamp' not in self:
-            self.timestamp = { }
+            self.timestamp = OrderedDict()
 
 
     @defproperty

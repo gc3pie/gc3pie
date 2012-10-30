@@ -166,36 +166,37 @@ class WarholizeScript(SessionBasedScript):
         if self.params.size:
             extra['size'] = self.params.size
         gc3libs.log.info("Creating main sequential task")
+        tasks = []
         for (i, input_file) in enumerate(self.params.args):
+            if not os.path.isfile(input_file):
+                gc3libs.log.error("Argument `%s` is NOT a file. Ignoring" % input_file)
+                continue
             extra_args = extra.copy()
             extra_args['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
-            yield ("Warholize.%d" % i,
-                   WarholizeWorkflow,
-                   [input_file,
-                    self.params.copies,
-                    self.params.num_colors],
-                   extra_args)
+            tasks.append(WarholizeWorkflow(input_file,
+                                           self.params.copies,
+                                           self.params.num_colors, **extra_args))
+        if not tasks:
+            raise gc3libs.exceptions.InvalidUsage("Missing or invalid image file.")
+        return [ParallelTaskCollection(tasks, **extra)]
 
-# `new_tasks` is used as a *generator* (but it could return a list as
-# well). Each *yielded* object is a tuple which rapresents a generic
-# Task. In GC3Pie, a task is either a single task or a complex workflow,
-# and rapresents an *execution unit*. In our case we create a
-# `WarholizeWorkflow` task which is the workflow described before. We
-# don't create an instance of the task from whitin `new_tasks`, but we
-# pass all the arguments needed. In the order:
-#
-#   * The job name (used to identify the task inside the session)
-#
-#   * the class object (not the instance!)
-#
-#   * arguments to be passed to the constructor of the class
-#
-#   * a dictionary containing the keyword arguments to be passed to the
-#     constructor of the class
+# `new_tasks` must return a list of tasks.  In GC3Pie, a *task* is
+# either a single application or a complex workflow, and rapresents an
+# *execution unit*. In our case we create a `WarholizeWorkflow` task
+# which is the workflow described before, and we return a
+# `ParallelTaskCollection` to contains all these tasks, in order to
+# execute those tasks in parallel.
 #
 # In our case we yield a different `WarholizeWorkflow` task for each
-# input file. These tasks will then run in parallel.
+# input file. These tasks will run in parallel.
 #
+# Please note that we are using the `gc3libs.log` module to log
+# informations about the execution. This module works like the
+# `logging`_ module and has methods like `error`, `warning`, `info` or
+# `debug`, but its logging level is automatically configured by
+# `SessionBasedScript`'s constructor.  This way you can increase the
+# verbosity of your script by simply adding ``-v`` options from the
+# command line.
 #
 #
 # The workflows
@@ -260,7 +261,7 @@ class WarholizeWorkflow(SequentialTaskCollection):
                 self.output_dir, resize=self.resize),
             ]
 
-        SequentialTaskCollection.__init__(self, self.jobname, self.tasks)
+        SequentialTaskCollection.__init__(self, self.tasks)
 
 # Finally, we to call the parent's constructor.
 #
@@ -315,8 +316,8 @@ class ApplicationWithCachedResults(gc3libs.Application):
     Just like `gc3libs.Application`, but do not run at all
     if the expected result is already present on the filesystem.
     """
-    def __init__(self, executable, arguments, inputs, outputs, **extra_args):
-        gc3libs.Application.__init__(self, executable, arguments, inputs, outputs, **extra_args)
+    def __init__(self, arguments, inputs, outputs, **extra_args):
+        gc3libs.Application.__init__(self, arguments, inputs, outputs, **extra_args)
         # check if all the output files are already available
 
         all_outputs_available = True
@@ -340,6 +341,7 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
         self.grayscaled_image = grayscaled_image
 
         arguments = [
+            'convert',
             os.path.basename(input_image),
             '-colorspace',
             'gray',
@@ -353,7 +355,6 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
 
         ApplicationWithCachedResults.__init__(
             self,
-            executable = 'convert',
             arguments = arguments + [grayscaled_image],
             inputs = [input_image],
             outputs = [grayscaled_image, 'stderr.txt', 'stdout.txt'],
@@ -436,7 +437,7 @@ class TricolorizeMultipleImages(ParallelTaskCollection):
                 colors,
                 self.warhol_dir))
 
-        ParallelTaskCollection.__init__(self, self.jobname, self.tasks)
+        ParallelTaskCollection.__init__(self, self.tasks)
 
 # The main loop will fill the `self.tasks` list with various
 # `TricolorizedImage`, each one with an unique combination of three
@@ -478,7 +479,7 @@ class TricolorizeImage(SequentialTaskCollection):
                 colors, self.warhol_dir),
             ]
 
-        SequentialTaskCollection.__init__(self, self.jobname, self.tasks)
+        SequentialTaskCollection.__init__(self, self.tasks)
 
     def next(self, iteration):
         last = self.tasks[-1]
@@ -509,8 +510,8 @@ class CreateLutApplication(ApplicationWithCachedResults):
             self.lutfile, input_image, str.join(", ", colors)))
         ApplicationWithCachedResults.__init__(
             self,
-            executable = "convert",
             arguments = [
+                'convert',
                 '-size',
                 '1x1'] + [
                 "xc:%s" % color for color in colors] + [
@@ -540,8 +541,8 @@ class ApplyLutApplication(ApplicationWithCachedResults):
 
         ApplicationWithCachedResults.__init__(
             self,
-            executable = "convert",
             arguments = [
+                'convert',
                 os.path.basename(input_image),
                 os.path.basename(lutfile),
                 '-clut',
@@ -604,8 +605,7 @@ class MergeImagesApplication(ApplicationWithCachedResults):
 
         ApplicationWithCachedResults.__init__(
             self,
-            executable = 'montage',
-            arguments = input_filenames + [
+            arguments = ['montage'] + input_filenames + [
                 '-tile',
                 '%dx%d' % (tile, tile),
                 '-geometry',

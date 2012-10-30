@@ -1,4 +1,7 @@
-include *.txt
-recursive-include docs conf.py *.html *.txt *.js *.css *.png
-recursive-include gc3libs/etc *.sh *.pl *.example
-recursive-include gc3apps gridrun.py gzods.py ggeotop*.py gmhc_coev.py gricomp.py gdocking.py grosetta.py gcrypto.py gcodeml.py grundb.py ggamess.py
+include *.py
+recursive-include gc3libs *.py
+recursive-include gc3apps *.py
+recursive-include gc3utils *.py
+recursive-include docs/html/ *.html *.js *.css *.svg *.jpg *.gif workflow.png
+prune gc3apps/*/test
+recursive-include gc3libs/etc *

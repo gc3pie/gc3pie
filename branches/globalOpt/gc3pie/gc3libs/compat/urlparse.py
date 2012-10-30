@@ -52,7 +52,7 @@ else:
 
     # use the `gc3libs.compat` namespace, so we can be sure this works
     # on Python 2.4 and 2.5
-    from gc3libs.compat.collections import namedtuple
+    from gc3libs.compat._collections import namedtuple
     
     class ResultMixin(object):
         """Shared methods for the parsed result objects."""

@@ -40,14 +40,22 @@ if ON_RTD:
             else:
                 return Mock()
     MOCK_MODULES = [
-        'arc',
-        'arclib',
         'M2Crypto',
         'MySQLdb',
-        'pysqlite2',
+        'arc',
+        'arclib',
+        'cli',
+        'cli.app',
+        'cli._ext.argparse',
+        'lockfile',
         'paramiko',
+        'parsedatetime',
+        'psutil',
+        'pycrypto',
+        'pysqlite2',
         'sqlalchemy',
         'sqlite3',
+        'texttable',
         ]
     for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = Mock()

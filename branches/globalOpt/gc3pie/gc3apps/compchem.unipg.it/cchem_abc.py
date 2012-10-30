@@ -56,6 +56,7 @@ from gc3libs.workflow import RetryableTask
 
 
 class ABCApplication(Application):
+    application_name = 'abc'
     def __init__(self, abc_executable, *input_files, **extra_args):
 
         gc3libs.Application.__init__(

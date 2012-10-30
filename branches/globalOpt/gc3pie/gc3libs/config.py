@@ -33,8 +33,10 @@ import sys
 # GC3Pie imports
 import gc3libs
 import gc3libs.authentication
-from gc3libs.compat.collections import defaultdict
+from gc3libs.compat._collections import defaultdict
 import gc3libs.utils
+
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.utils import defproperty
 
 
@@ -74,6 +76,24 @@ def _parse_architecture(arch_str):
     if len(archs) == 0:
         raise ValueError("Empty or invalid 'architecture' setting.")
     return set(archs)
+
+def _legacy_parse_duration(duration_str):
+    try:
+        # old-style config: integral number of hours
+        return int(duration_str)*hours
+    except ValueError:
+        # apply `Duration` parsing rules; if this fails, users will
+        # see the error message from the `Duration` parser.
+        return Duration(duration_str)
+
+def _legacy_parse_memory(memory_str):
+    try:
+        # old-style config: integral number of GBs
+        return int(memory_str)*GB
+    except ValueError:
+        # apply usual quantity parsing rules; if this fails, users
+        # will see the error message from the `Memory`/`Quantity` parser.
+        return Memory(memory_str)
 
 
 ## the main class of this module
@@ -141,6 +161,9 @@ class Configuration(gc3libs.utils.Struct):
         self.auto_enable_auth = extra_args.pop('auto_enable_auth', True)
         self.update(extra_args)
 
+        # save the list of (valid) config files
+        self.cfgfiles = []
+
         # load configuration files if any
         if len(locations) > 0:
             self.load(*locations)
@@ -174,6 +197,7 @@ class Configuration(gc3libs.utils.Struct):
                 continue # with next `filename`
 
             try:
+                self.cfgfiles.append(os.path.abspath(filename))
                 self.merge_file(filename)
                 files_successfully_read += 1
             except gc3libs.exceptions.ConfigurationError:
@@ -239,15 +263,15 @@ class Configuration(gc3libs.utils.Struct):
         type conversion is performed here, so that the returned dictionaries
         conform to a specified schema:
 
-          ===================  ==============
+          ===================  =========================
           Attribute name       Type
-          ===================  ==============
+          ===================  =========================
           architecture         set of strings
           max_cores            int
           max_cores_per_job    int
-          max_memory_per_core  int
-          max_walltime         int
-          ===================  ==============
+          max_memory_per_core  gc3libs.quantity.Memory
+          max_walltime         gc3libs.quantity.Duration
+          ===================  =========================
 
         Any attribute not mentioned in the above table will have type
         ``str`` (i.e., it is left unchanged).
@@ -298,6 +322,7 @@ class Configuration(gc3libs.utils.Struct):
                 config_items = dict(parser.items(sectname))
                 self._perform_key_renames(config_items, self._renamed_keys, filename)
                 self._perform_value_updates(config_items, self._updated_values, filename)
+                self._perform_filename_conversion(config_items, self._path_key_regexp, filename)
                 try:
                     self._perform_type_conversions(config_items, self._convert, filename)
                 except Exception, err:
@@ -383,9 +408,20 @@ class Configuration(gc3libs.utils.Struct):
         'architecture':        _parse_architecture,
         'max_cores':           int,
         'max_cores_per_job':   int,
-        'max_memory_per_core': int,
-        'max_walltime':        int,
+        'max_memory_per_core': _legacy_parse_memory,
+        'max_walltime':        _legacy_parse_duration,
         }
+
+
+    @staticmethod
+    def _perform_filename_conversion(config_items, path_regexp, filename):
+        for key, value in config_items.iteritems():
+            if path_regexp.match(key):
+                config_items[key] = os.path.join(
+                    os.path.dirname(filename),
+                    value)
+
+    _path_key_regexp = re.compile('^(\w+_)?(prologue|epilogue)')
 
     @staticmethod
     def _perform_type_conversions(config_items, converters, filename):
@@ -512,7 +548,7 @@ class Configuration(gc3libs.utils.Struct):
                 cls = ArcLrms
             elif resdict['type'] == gc3libs.Default.ARC1_LRMS:
                 from gc3libs.backends.arc1 import Arc1Lrms
-                return Arc1Lrms(**dict(resdict))
+                cls = Arc1Lrms
             elif resdict['type'] == gc3libs.Default.SGE_LRMS:
                 from gc3libs.backends.sge import SgeLrms
                 cls = SgeLrms
@@ -525,6 +561,9 @@ class Configuration(gc3libs.utils.Struct):
             elif resdict['type'] == gc3libs.Default.SHELLCMD_LRMS:
                 from gc3libs.backends.shellcmd import ShellcmdLrms
                 cls = ShellcmdLrms
+            elif resdict['type'] == gc3libs.Default.SLURM_LRMS:
+                from gc3libs.backends.slurm import SlurmLrms
+                cls = SlurmLrms
             else:
                 raise gc3libs.exceptions.ConfigurationError(
                     "Unknown resource type '%s'" % resdict['type'])
@@ -549,6 +588,9 @@ class Configuration(gc3libs.utils.Struct):
                     raise gc3libs.exceptions.ConfigurationError(
                         "Missing required configuration parameter '%s' for resource '%s'"
                         % (argname, resdict['name']))
+
+
+            # finally, try to construct backend class...
             return cls(**dict(resdict))
         except Exception, err:
             gc3libs.log.error(

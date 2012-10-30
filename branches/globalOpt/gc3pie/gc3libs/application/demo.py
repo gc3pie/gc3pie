@@ -23,12 +23,14 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
-import gc3libs
-import gc3libs.application
-from gc3libs.exceptions import *
 import os
 import os.path
 from pkg_resources import Requirement, resource_filename
+
+import gc3libs
+import gc3libs.application
+from gc3libs.exceptions import *
+from gc3libs.quantity import GB, hours
 
 
 class Square(gc3libs.Application):
@@ -36,6 +38,9 @@ class Square(gc3libs.Application):
     Square class, takes a filename containing a list of integer to be squared.
     writes an output containing the square of each of them
     """
+
+    application_name = 'demo'
+
     def __init__(self, x):
         # src_square_sh = resource_filename(Requirement.parse("gc3utils"),
         #                                   "gc3libs/etc/square.sh")
@@ -48,22 +53,18 @@ class Square(gc3libs.Application):
 
         # extra_args.setdefault('stdout', 'stdout.txt')
         # extra_args.setdefault('stderr', 'stderr.txt')
-        
-        #  gc3libs.Application.__init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
-
 
         gc3libs.Application.__init__(self,
-                                     executable = "/usr/bin/expr",
-                                     arguments = [str(x), "*", str(x)],
+                                     arguments = ["/usr/bin/expr", str(x), "*", str(x)],
                                      inputs = [],
                                      outputs = [],
                                      output_dir = None,
                                      stdout = "stdout.txt",
                                      stderr = "stderr.txt",
                                      # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
-                                     requested_memory = 1,
+                                     requested_memory = 1*GB,
                                      requested_cores = 1,
-                                     requested_walltime = 1
+                                     requested_walltime = 1*hours,
                                      )
 
 

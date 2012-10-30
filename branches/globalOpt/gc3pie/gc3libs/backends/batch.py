@@ -70,7 +70,8 @@ def generic_filename_mapping(jobname, jobid, file_name):
     except KeyError:
         return file_name
 
-def make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
+
+def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
     """
     Return list of (remote_path, local_path) pairs corresponding to
     """
@@ -267,6 +268,41 @@ class BatchSystem(LRMS):
         """
         raise NotImplementedError("Abstract method `_cancel_command()` called - this should have been defined in a derived class.")
 
+    def _get_prepost_scripts(self, app, scriptnames):
+        script_txt = []
+        for script in scriptnames:
+            if script not in self:
+                gc3libs.log.debug("%s script not defined for resource %s", script, self.name)
+                continue
+            if not os.path.isfile(self[script]):
+                gc3libs.log.debug("%s script points to file '%s', which does not exist - ignoring.", script, self[script])
+                continue
+            gc3libs.log.debug("Adding %s file `%s` to the submission script" % (script, self[script]))
+            script_file = open(self[script])
+            script_txt.append("\n# %s file `%s` BEGIN\n" % (script, self[script]))
+            script_txt.append(script_file.read())
+            script_txt.append("\n# %s file END\n" % script)
+            script_file.close()
+        return str.join("", script_txt)
+
+    def get_prologue_script(self, app):
+        """
+        This method will get the prologue script(s) for the `app`
+        application and will return a string which contains the
+        contents of the script(s) merged together.
+        """
+        prologues = ['prologue', app.application_name+'_prologue']
+        return self._get_prepost_scripts(app, prologues)
+
+    def get_epilogue_script(self, app):
+        """
+        This method will get the epilogue script(s) for the `app`
+        application and will return a string which contains the
+        contents of the script(s) merged together.
+        """
+        epilogues = ['epilogue', app.application_name+'epilogue']
+        return self._get_prepost_scripts(app, epilogues)
+
     @LRMS.authenticated
     def submit_job(self, app):
         """This method will create a remote directory to store job's
@@ -309,11 +345,11 @@ class BatchSystem(LRMS):
                                       local_path.path, self.frontend)
                 raise
 
-        if app.executable.startswith('./'):
+        if app.arguments[0].startswith('./'):
             gc3libs.log.debug("Making remote path '%s' executable.",
-                              app.executable)
+                              app.arguments[0])
             self.transport.chmod(os.path.join(ssh_remote_folder,
-                                              app.executable), 0755)
+                                              app.arguments[0]), 0755)
 
         try:
             sub_cmd, aux_script = self._submit_command(app)
@@ -323,7 +359,19 @@ class BatchSystem(LRMS):
                 script_filename = ('./script.%x.sh' % random.randint(0, sys.maxint))
                 # save script to a temporary file and submit that one instead
                 local_script_file = tempfile.NamedTemporaryFile()
+                local_script_file.write('#!/bin/sh\n')
+                # Add preamble file
+                prologue = self.get_prologue_script(app)
+                if prologue:
+                    local_script_file.write(prologue)
+
                 local_script_file.write(aux_script)
+
+                # Add epilogue files
+                epilogue = self.get_epilogue_script(app)
+                if epilogue:
+                    local_script_file.write(epilogue)
+
                 local_script_file.flush()
                 # upload script to remote location
                 self.transport.put(local_script_file.name,
@@ -409,20 +457,23 @@ class BatchSystem(LRMS):
                 jobstatus = self._parse_stat_output(stdout)
                 job.update(jobstatus)
 
-                state = jobstatus.get('state', Run.State.UNKNOWN)
-                if state == Run.State.UNKNOWN:
+                job.state = jobstatus.get('state', Run.State.UNKNOWN)
+                if job.state == Run.State.UNKNOWN:
                     log.warning(
-                        "Unknown batch job status '%s',"
-                        " setting GC3Pie job state to `UNKNOWN`",
-                        jobstatus.get('state', ''))
-                job.state = state
+                        "Unknown batch job status,"
+                        " setting GC3Pie job state to `UNKNOWN`")
 
                 if 'exit_status' in jobstatus:
                     job.exitcode = int(jobstatus['exit_status'])
                     # XXX: we should set the `signal` part accordingly
                     job.signal = 0
 
-                return job.state
+                # SLURM's `squeue` command exits with code 0 if the job ID exists
+                # in the database (i.e., a job with that ID has been run) but prints
+                # no output.  In this case, we need to continue and examine the
+                # accounting command output to get the termination status etc.
+                if job.state != Run.State.TERMINATING:
+                    return job.state
 
             # In some batch systems, jobs disappear from qstat
             # output as soon as they are finished. In these cases,
@@ -436,8 +487,8 @@ class BatchSystem(LRMS):
                 if exit_code == 0:
                     jobstatus = self._parse_acct_output(stdout)
                     job.update(jobstatus)
-                    if 'exit_status' in jobstatus:
-                        job.returncode = int(jobstatus['exit_status'])
+                    if 'exitcode' in jobstatus:
+                        job.returncode = int(jobstatus['exitcode'])
                         job.state = Run.State.TERMINATING
                     return job.state
 
@@ -568,7 +619,7 @@ class BatchSystem(LRMS):
                 if remote_relpath == gc3libs.ANY_OUTPUT:
                     remote_relpath = ''
                     local_relpath = ''
-                stageout += make_remote_and_local_path_pair(
+                stageout += _make_remote_and_local_path_pair(
                     self.transport, job, remote_relpath, download_dir, local_relpath)
 
             # copy back all files, renaming them to adhere to the ArcLRMS convention

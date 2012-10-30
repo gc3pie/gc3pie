@@ -34,7 +34,7 @@ import tempfile
 import warnings
 warnings.simplefilter("ignore")
 
-from gc3libs.compat.collections import defaultdict
+from gc3libs.compat._collections import defaultdict
 
 import gc3libs
 import gc3libs.debug
@@ -424,15 +424,10 @@ specified in the configuration file.
 
         auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
 
+        # determine download dir
+        download_dir = app._get_download_dir(download_dir)
+
         # Prepare/Clean download dir
-        if download_dir is None:
-            try:
-                download_dir = app.output_dir
-            except AttributeError:
-                raise gc3libs.exceptions.InvalidArgument(
-                    "`Core.fetch_output` called with no explicit download directory,"
-                    " but object '%s' has no `output_dir` attribute set either."
-                    % (app, type(app)))
         try:
             if overwrite:
                 if not os.path.exists(download_dir):
@@ -486,11 +481,8 @@ specified in the configuration file.
         app.changed = True
 
         if job.state == Run.State.TERMINATING:
-            job.info = ("Final output downloaded to '%s'" % download_dir)
-            job.state = Run.State.TERMINATED
             gc3libs.log.debug("Final output of '%s' retrieved" % str(app))
-        else:
-            job.info = ("Output snapshot downloaded to '%s'" % download_dir)
+        return Task.fetch_output(app, download_dir)
 
 
     def __fetch_output_task(self, task, download_dir, overwrite, **extra_args):
@@ -1049,15 +1041,15 @@ class Engine(object):
             state = task.execution.state
             result[state] += 1
         if only:
-            result[Run.State.TERMINATING] = len([task for task in self._terminating
+            result[Run.State.TERMINATING] += len([task for task in self._terminating
                                                                if isinstance(task, only)])
         else:
-            result[Run.State.TERMINATING] = len(self._terminating)
+            result[Run.State.TERMINATING] += len(self._terminating)
         if only:
-            result[Run.State.TERMINATED] = len([task for task in self._terminated
+            result[Run.State.TERMINATED] += len([task for task in self._terminated
                                                                if isinstance(task, only)])
         else:
-            result[Run.State.TERMINATED] = len(self._terminated)
+            result[Run.State.TERMINATED] += len(self._terminated)
 
         # for TERMINATED tasks, compute the number of successes/failures
         for task in self._terminated:

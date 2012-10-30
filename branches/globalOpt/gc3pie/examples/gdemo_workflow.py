@@ -70,7 +70,7 @@ class XtandemPostApplication(Application):
 
         gc3libs.log.info("\t\t\t\t\t\tCalling XtandemPostApplication.__init__(%d,%d) ... " % (param_value,iteration))
 
-        arguments = ["POST-Parameter: ",str(param_value),  " POST-Iteration: ", str(iteration)]
+        arguments = ["/bin/echo", "POST-Parameter: ",str(param_value),  " POST-Iteration: ", str(iteration)]
 
         tarfile_name = os.path.join(output_folder,str(param_value),str(iteration))+"POST.tgz"
 
@@ -84,18 +84,13 @@ class XtandemPostApplication(Application):
 
         self.iteration = iteration
         gc3libs.Application.__init__(self,
-                                     executable = "/bin/echo",
                                      arguments = arguments,
                                      inputs = {tarfile_name:os.path.basename(tarfile_name)},
                                      outputs = [],
                                      output_dir = os.path.join(output_folder,str(param_value),str(iteration),"POST"),
                                      join = True,
                                      stdout = "stdout.log",
-                                     # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
-                                     requested_memory = 1,
-                                     requested_cores = 1,
-                                     requested_walltime = 1,
-                                     *extra_args
+                                     **extra_args
                                      )
 
     def terminated(self):
@@ -109,17 +104,12 @@ class XtandemApplicationB(Application):
 
         self.iteration = iteration
         gc3libs.Application.__init__(self,
-                                     executable = "/bin/echo",
-                                     arguments = ["Parameter: ",str(param_value), " FileName: ", input_file, " Iteration: ", str(iteration)],
+                                     arguments = ["/bin/echo", "Parameter: ",str(param_value), " FileName: ", input_file, " Iteration: ", str(iteration)],
                                      inputs = [],
                                      outputs = [],
                                      output_dir = os.path.join(output_folder,str(param_value),str(iteration),os.path.basename(input_file),"B"),
                                      stdout = "stdout.txt",
                                      stderr = "stderr.txt",
-                                     # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
-                                     requested_memory = 1,
-                                     requested_cores = 1,
-                                     requested_walltime = 1,
                                      **extra_args
                                      )
     def terminated(self):
@@ -134,17 +124,12 @@ class XtandemApplicationA(Application):
 
         self.iteration = iteration
         gc3libs.Application.__init__(self,
-                                     executable = "/bin/echo",
-                                     arguments = ["Parameter: ",str(param_value), " FileName: ", input_file, " Iteration: ", str(iteration)],
+                                     arguments = ["/bin/echo", "Parameter: ",str(param_value), " FileName: ", input_file, " Iteration: ", str(iteration)],
                                      inputs = [],
                                      outputs = [],
                                      output_dir = os.path.join(output_folder,str(param_value),str(iteration),os.path.basename(input_file),"A"),
                                      stdout = "stdout.txt",
                                      stderr = "stderr.txt",
-                                     # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
-                                     requested_memory = 1,
-                                     requested_cores = 1,
-                                     requested_walltime = 1,
                                      **extra_args
                                      )
     def terminated(self):
@@ -164,33 +149,6 @@ class GdemoWorkflow(SessionBasedScript):
             input_filename_pattern = '*.ini',
             )
 
-
-    def _setup(self):
-        _Script.setup(self)
-
-        self.add_param("-v", "--verbose", action="count", dest="verbose", default=0,
-                       help="Be more detailed in reporting program activity."
-                       " Repeat to increase verbosity.")
-
-        self.add_param("-J", "--max-running", type=int, dest="max_running", default=50,
-                       metavar="NUM",
-                       help="Allow no more than NUM concurrent jobs (default: %(default)s)"
-                       " to be in SUBMITTED or RUNNING state."
-                       )
-        self.add_param("-C", "--continuous", type=int, dest="wait", default=0,
-                       metavar="INTERVAL",
-                       help="Keep running, monitoring jobs and possibly submitting new ones or"
-                       " fetching results every INTERVAL seconds. Exit when all jobs are finished."
-                       )
-        self.add_param("-w", "--wall-clock-time", dest="wctime", default=str(8), # 8 hrs
-                       metavar="DURATION",
-                       help="Each job will run for at most DURATION time"
-                       " (default: %(default)s hours), after which it"
-                       " will be killed and considered failed. DURATION can be a whole"
-                       " number, expressing duration in hours, or a string of the form HH:MM,"
-                       " specifying that a job can last at most HH hours and MM minutes."
-                       )
-        return
 
     def parse_args(self):
         self.input_folder = str(self.params.args[0])
@@ -230,7 +188,7 @@ class MainParallelIteration(ParallelTaskCollection):
 
     def __init__(self, param_value,
                  input_file_folder,
-                 output_folder):
+                 output_folder, **extra):
 
         self.jobname = "Gdemo_MainParal_"+str(param_value)
 
@@ -245,7 +203,7 @@ class MainParallelIteration(ParallelTaskCollection):
                     output_folder
                     )
                 )
-        ParallelTaskCollection.__init__(self, self.jobname, self.tasks)
+        ParallelTaskCollection.__init__(self, self.tasks, **extra)
 
 
     def __str__(self):
@@ -260,7 +218,7 @@ class InnerParallelIteration(ParallelTaskCollection):
     def __init__(self, param_value,
                  input_file,
                  output_folder,
-                 extra={}):
+                 **extra):
 
 
         gc3libs.log.info("\t\t\tCalling InnerParallelIteration.init(%d,%s)" % (param_value,input_file))
@@ -291,7 +249,7 @@ class InnerParallelIteration(ParallelTaskCollection):
             )
 
         # actually init jobs
-        ParallelTaskCollection.__init__(self, self.jobname, tasks)
+        ParallelTaskCollection.__init__(self, tasks, **extra)
 
     def __str__(self):
         return self.jobname
@@ -311,7 +269,7 @@ class InnerSequentialIterationA(SequentialTaskCollection):
         self.jobname = "Gdemo_InnerSequenceA_"+str(self.param_value)
 
         initial_task = XtandemApplicationA(param_value, input_file_name, output_folder, iteration)
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
+        SequentialTaskCollection.__init__(self, [initial_task], **extra_args)
 
     def __str__(self):
         return self.jobname
@@ -340,7 +298,7 @@ class InnerSequentialIterationB(SequentialTaskCollection):
         self.jobname = "Gdemo_InnerSequenceB_"+str(self.param_value)
 
         initial_task = XtandemApplicationB(param_value, input_file_name, output_folder, iteration)
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
+        SequentialTaskCollection.__init__(self, [initial_task], **extra_args)
 
     def __str__(self):
         return self.jobname
@@ -370,7 +328,7 @@ class MainSequentialIteration(SequentialTaskCollection):
 
         self.initial_task = MainParallelIteration(param_value,inputfile_folder,output_folder)
 
-        SequentialTaskCollection.__init__(self, self.jobname, [self.initial_task])
+        SequentialTaskCollection.__init__(self, [self.initial_task], **extra_args)
 
     def next(self, iteration):
 

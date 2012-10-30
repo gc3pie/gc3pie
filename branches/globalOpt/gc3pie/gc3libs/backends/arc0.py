@@ -35,6 +35,7 @@ warnings.simplefilter("ignore")
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
+from gc3libs.quantity import kB, GB, MB, hours, minutes, seconds
 from gc3libs.utils import *
 
 # this is where arc0 libraries are installed from release 11.05
@@ -130,26 +131,25 @@ class ArcLrms(LRMS):
             raise gc3libs.exceptions.LRMSError('Failed while killing job. Error type %s, message %s' % (ex.__class__,str(ex)))
 
 
-    # excluded_targets is the list of targets hostnames where the application
-    # has been already running; thus to be excluded for the next submission
-    # candidate_queues is the list of available queues
-    # this method simply returns a
-    def _filter_queues(self, candidate_queues, job):
+    def _filter_targets(self, candidate_targets, job):
         """
-        Excludes from the list of candidate queuse those corresponding to hosts
-        where a given job has been already running.
-        If all queues have been already tried, clear execution_targets list and
-        start again.
-        """
-        # use queue.cluster.hostname to match entries from job.execution_targets list
-        queues = [ queue for queue in candidate_queues
-                   if queue.cluster.hostname not in job.execution_targets ]
-        if not queues:
-            # assume all available targes have been tried. Clean list and start over again
-            queues = candidate_queues
-            job.execution_targets = [ ]
+        Excludes from the list of candidate execution targets those
+        corresponding to hosts where the given `job` has been already
+        running.
 
-        return queues
+        When all targets have been already tried, admit again all
+        targets as candidates.
+        """
+        if '_arc0_execution_targets' not in job:
+            job._arc0_execution_targets = [ ]
+        # use target.cluster.hostname to match entries from job._arc0_execution_targets
+        targets = [ target for target in candidate_targets
+                   if target.cluster.hostname not in job._arc0_execution_targets ]
+        if not targets:
+            # assume all available targes have been tried. Clean list and start over again
+            targets = candidate_targets
+            job._arc0_execution_targets = [ ]
+        return targets
 
 
     # ARC refreshes the InfoSys every 30 seconds by default;
@@ -163,8 +163,7 @@ class ArcLrms(LRMS):
         `arclib.Cluster` object.
         """
         if self.arc_ldap is not None:
-            log.info("Updating ARC resource information from '%s'"
-                      % self.arc_ldap)
+            log.info("Updating ARC resource information from '%s'", self.arc_ldap)
             return arclib.GetClusterResources(
                 arclib.URL(self.arc_ldap), True, '', 1)
         else:
@@ -185,10 +184,11 @@ class ArcLrms(LRMS):
         """
         jobs = {}
         clusters = self._get_clusters()
-        log.debug('Arc0LRMS._get_clusters() returned %d cluster resources.' % len(clusters))
+        log.debug('Arc0LRMS._get_clusters() returned %d cluster resources.',
+                  len(clusters))
         job_list = arclib.GetAllJobs(clusters, True, '', 3)
-        log.info("Updating list of jobs belonging to resource '%s': got %d jobs."
-                 % (self.name, len(job_list)))
+        log.info("Updating list of jobs belonging to resource '%s': got %d jobs.",
+                 self.name, len(job_list))
         for job in job_list:
             jobs[job.id] = job
         return jobs
@@ -199,12 +199,12 @@ class ArcLrms(LRMS):
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
     def _get_queues(self):
         clusters = self._get_clusters()
-        log.debug('_get_clusters returned [%d] cluster resources' % len(clusters))
+        log.debug('Arc0Lrms._get_clusters() returned %d cluster resources', len(clusters))
         if not clusters:
             # empty list of clusters. Not following back to system GIIS configuration
             # returning empty list
             return clusters
-        log.info("Updating resource Queues information")
+        log.debug("Updating ARC0 resource queue information ...")
         return arclib.GetQueueInfo(clusters, arclib.MDS_FILTER_CLUSTERINFO,
                                    True, '', 5)
 
@@ -220,22 +220,24 @@ class ArcLrms(LRMS):
         try:
             xrsl = arclib.Xrsl(xrsl)
         except Exception, ex:
-            raise gc3libs.exceptions.LRMSSubmitError('Failed in getting `Xrsl` object from arclib: %s: %s'
-                                  % (ex.__class__.__name__, str(ex)))
+            raise gc3libs.exceptions.LRMSSubmitError(
+                'Error getting `Xrsl` object from arclib: %s: %s'
+                % (ex.__class__.__name__, str(ex)))
 
-        # queues = self._get_queues()
-        queues = self._filter_queues(self._get_queues(), job)
+        queues = self._get_queues()
         if len(queues) == 0:
             raise gc3libs.exceptions.LRMSSubmitError('No ARC queues found')
 
-        targets = arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, xrsl))
+        targets = self._filter_targets(
+            arclib.PerformStandardBrokering(arclib.ConstructTargets(queues, xrsl)), job)
         if len(targets) == 0:
             raise gc3libs.exceptions.LRMSSubmitError('No ARC targets found')
 
         try:
             lrms_jobid = arclib.SubmitJob(xrsl,targets)
         except arclib.JobSubmissionError, ex:
-            raise gc3libs.exceptions.LRMSSubmitError('Got error from arclib.SubmitJob(): %s' % str(ex))
+            raise gc3libs.exceptions.LRMSSubmitError(
+                'Got error from arclib.SubmitJob(): %s' % str(ex))
 
         # save job ID for future reference
         job.lrms_jobid = lrms_jobid
@@ -244,7 +246,7 @@ class ArcLrms(LRMS):
         # this will be attached to the job object.
         # see Issue 227
         url = arclib.URL(lrms_jobid)
-        job.execution_targets.append(url.Host())
+        job._arc0_execution_targets.append(url.Host())
 
         # state is known at this point, so mark this as a successful update
         job._arc0_state_last_checked = time.time()
@@ -277,13 +279,20 @@ class ArcLrms(LRMS):
                 'INLRMS:Q':  Run.State.SUBMITTED,
                 'INLRMS:R':  Run.State.RUNNING,
                 'INLRMS:E':  Run.State.RUNNING,
-                'INLRMS:O':  Run.State.RUNNING,
                 'INLRMS:S':  Run.State.STOPPED,
                 'INLRMS:H':  Run.State.STOPPED,
-                # XXX: it seems that `INLRMS:X` is a notation used in
-                # the manual to mean `INLRMS:*`, i.e., any of the
-                # above, not an actual state ...
-                'INLRMS:X':  Run.State.STOPPED,
+                # XXX: According to the documentation ARC's `INLRMS:O`
+                # is "INLRMS:O Any other native LRMS state which can
+                # not be mapped to the above general states".  For
+                # unclear reasons, this includes SGE's "Eqw" error
+                # code: jobs in "E" state will not progress until a
+                # batch operator clears the "E" flag with `qmod -cj`,
+                # so we have to map `INLRMS:O` to GC3Pie's
+                # `Run.State.STOPPED`.  However, this seems to be an
+                # unfortunate interaction of ARC with SGE (see ARC bug
+                # 2716), so the mapping is hardly correct in general.
+                # In short: this might have to be changed again sooner or later.
+                'INLRMS:O':  Run.State.STOPPED,
                 # the `-ING` states below are used by ARC to mean that
                 # the GM has received a request for action but the job
                 # has not yet terminated; in particular, the output is
@@ -327,7 +336,6 @@ class ArcLrms(LRMS):
                     INLRMS:R        RUNNING
                     INLRMS:O        STOPPED
                     INLRMS:E        STOPPED
-                    INLRMS:X        STOPPED
                     INLRMS:S        STOPPED
                     INLRMS:H        STOPPED
                     FINISHING       RUNNING
@@ -441,13 +449,13 @@ class ArcLrms(LRMS):
                         " killed by remote batch system"
                         % arc_job.requested_cpu_time)
                 job.returncode = (Run.Signals.RemoteError, -1)
-            # note: arc_job.used_memory is in KiB (!), app.requested_memory is in GiB
+            # note: arc_job.used_memory is in KiB (!)
             elif (app.requested_memory is not None
-                  and app.requested_memory != -1 and arc_job.used_memory != -1
-                  and (arc_job.used_memory / 1024) > (app.requested_memory * 1024)):
-                job.history("Job used more memory (%d MB) than requested (%d MB),"
+                  and arc_job.used_memory != -1
+                  and arc_job.used_memory > app.requested_memory.amount(kB)):
+                job.history("Job used more memory (%d MB) than requested (%s),"
                         " killed by remote batch system"
-                        % (arc_job.used_memory / 1024, app.requested_memory * 1024))
+                        % (arc_job.used_memory / 1024, app.requested_memory.amount(MB)))
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
                 # presume everything went well...
@@ -455,12 +463,20 @@ class ArcLrms(LRMS):
         job.lrms_jobname = arc_job.job_name # see Issue #78
 
         # Common struture as described in Issue #78
-        job.queue = arc_job.queue
-        job.cores = arc_job.cpu_count
-        job.original_exitcode = arc_job.exitcode
-        job.used_walltime = arc_job.used_wall_time # exressed in sec.
-        job.used_cputime = arc_job.used_cpu_time # expressed in sec.
-        job.used_memory = arc_job.used_memory # expressed in KiB
+        job.duration = gc3libs.utils.ifelse(arc_job.used_wall_time != -1,
+                                            arc_job.used_wall_time * seconds,
+                                            None)
+        job.max_used_memory = gc3libs.utils.ifelse(arc_job.used_memory != -1,
+                                                   arc_job.used_memory * kB,
+                                                   None)
+        job.used_cpu_time = gc3libs.utils.ifelse(arc_job.used_cpu_time != -1,
+                                                 arc_job.used_cpu_time * seconds,
+                                                 None)
+
+        # additional info
+        job.cores = gc3libs.utils.ifelse(arc_job.cpu_count != -1, arc_job.cpu_count, None)
+        job.arc_original_exitcode = arc_job.exitcode
+        job.arc_queue = gc3libs.utils.ifelse(arc_job.queue != '', arc_job.queue, None)
 
         job.state = state
         return state

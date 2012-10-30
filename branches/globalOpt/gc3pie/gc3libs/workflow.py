@@ -29,17 +29,17 @@ can implement problem-specific job control policies.
 __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
-
 import time
+import os
 
-from gc3libs.compat.collections import defaultdict
+from gc3libs.compat._collections import defaultdict
 
 from gc3libs import log, Run, Task
 import gc3libs.exceptions
 import gc3libs.utils
 
 
-class TaskCollection(Task, gc3libs.utils.Struct):
+class TaskCollection(Task):
     """
     Base class for all task collections. A "task collection" is a
     group of tasks, that can be managed collectively as a single one.
@@ -52,12 +52,12 @@ class TaskCollection(Task, gc3libs.utils.Struct):
     task states.
     """
 
-    def __init__(self, jobname, tasks=None):
+    def __init__(self, tasks=None, **extra_args):
         if tasks is None:
             self.tasks = [ ]
         else:
             self.tasks = tasks
-        Task.__init__(self, jobname)
+        Task.__init__(self, **extra_args)
 
     # manipulate the "controller" interface used to control the associated task
     def attach(self, controller):
@@ -65,10 +65,7 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         Use the given Controller interface for operations on the job
         associated with this task.
         """
-        for task in self.tasks:
-            task.attach(controller)
-        Task.attach(self, controller)
-
+        raise NotImplementedError("Called abstract method TaskCollection.attach() - this should be overridden in derived classes.")
 
     def detach(self):
         for task in self.tasks:
@@ -80,10 +77,8 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         """
         Add a task to the collection.
         """
-        task.detach()
-        self.tasks.append(task)
-        if self._attached:
-            task.attach(self._controller)
+        raise NotImplementedError("Called abstract method TaskCollection.add() - this should be overridden in derived classes.")
+
 
     def remove(self, task):
         """
@@ -117,14 +112,37 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         # if `output_dir` is not None, it is interpreted as the base
         # directory where to download files; each task will get its
         # own subdir based on its `.persistent_id`
+        coll_output_dir = self._get_download_dir(output_dir)
         for task in self.tasks:
-            if output_dir is not None:
-                self._controller.fetch_output(
-                    task,
-                    os.path.join(output_dir, task.permanent_id),
-                    overwrite,
-                    **extra_args)
+            if task.execution.state == Run.State.TERMINATED:
+                continue
+            if 'output_dir' in task:
+                task_output_dir = task.output_dir
+            else:
+                task_output_dir = task.persistent_id
+            # XXX: uses a feature from `os.path.join`: if the second
+            # path is absolute, the first path is discarded and the
+            # second one is returned unchanged
+            task_output_dir = os.path.join(coll_output_dir, task_output_dir)
+            self._controller.fetch_output(
+                task,
+                task_output_dir,
+                overwrite,
+                **extra_args)
+        for task in self.tasks:
+            if task.execution.state != Run.State.TERMINATED:
+                return coll_output_dir
+        self.execution.state = Run.State.TERMINATED
+        self.changed = True
+        return coll_output_dir
 
+    def free(self):
+        """
+        This method just asks the Engine to free the contained tasks.
+        """
+        if self._attached:
+            for task in self.tasks:
+                self._controller.free(task)
 
     def peek(self, what, offset=0, size=None, **extra_args):
         """
@@ -138,28 +156,6 @@ class TaskCollection(Task, gc3libs.utils.Struct):
     def progress(self):
         raise NotImplementedError("Called abstract method TaskCollection.progress() - this should be overridden in derived classes.")
 
-
-    def wait(self, interval=60):
-        """
-        Block until execution state reaches `TERMINATED`, then return
-        a list of return codes.  Note that this does not automatically
-        fetch the output.
-
-        :param integer interval: Poll job state every this number of seconds
-        """
-        # FIXME: I'm not sure how to deal with this... Ideally, this
-        # call should suspend the current thread and wait for
-        # notifications from the Engine, but:
-        #  - there's no way to tell if we are running threaded,
-        #  - `self.controller` could be a `Core` instance, thus not capable
-        #    of running independently.
-        # For now this is a busy-wait loop, but we certainly need to revise this.
-        while True:
-            self.progress()
-            if self.execution.state == Run.State.TERMINATED:
-                return [ task.execution.returncode
-                         for task in self.tasks ]
-            time.sleep(interval)
 
 
     def stats(self, only=None):
@@ -198,6 +194,19 @@ class TaskCollection(Task, gc3libs.utils.Struct):
         return result
 
 
+    def terminated(self):
+        """
+        Called when the job state transitions to `TERMINATED`, i.e.,
+        the job has finished execution (with whatever exit status, see
+        `returncode`) and the final output has been retrieved.
+
+        Default implementation for `TaskCollection` is to set the
+        exitcode to the maximum of the exit codes of its tasks.
+        """
+        self.execution._exitcode = max(
+            task.execution._exitcode for task in self.tasks
+            )
+
 class SequentialTaskCollection(TaskCollection):
     """
     A `SequentialTaskCollection` runs its tasks one at a time.
@@ -213,11 +222,24 @@ class SequentialTaskCollection(TaskCollection):
     `TERMINATED` when all tasks have been run.
     """
 
-    def __init__(self, jobname, tasks, **extra_args):
+    def __init__(self, tasks, **extra_args):
         # XXX: check that `tasks` is a sequence type
-        TaskCollection.__init__(self, jobname, tasks)
+        TaskCollection.__init__(self, tasks, **extra_args)
         self._current_task = 0
 
+    def add(self, task):
+        task.detach()
+        self.tasks.append(task)
+
+    def attach(self, controller):
+        """
+        Use the given Controller interface for operations on the job
+        associated with this task.
+        """
+        for task in self.tasks:
+            if not task._attached:
+                task.attach(controller)
+        Task.attach(self, controller)
 
     def kill(self, **extra_args):
         """
@@ -264,59 +286,6 @@ class SequentialTaskCollection(TaskCollection):
             return Run.State.RUNNING
 
 
-    def progress(self):
-        """
-        Sequentially advance tasks in the collection through all steps
-        of a regular lifecycle.  When the last task transitions to
-        TERMINATED state, the collection's state is set to TERMINATED
-        as well and this method becomes a no-op.  If during execution,
-        any of the managed jobs gets into state `STOPPED` or
-        `UNKNOWN`, then an exception `Task.UnexpectedExecutionState`
-        is raised.
-        """
-        if execution.state == Run.State.TERMINATED:
-            return
-        if self._current_task is None:
-            # (re)submit initial task
-            self._current_task = 0
-        task = self.tasks[self._current_task]
-        task.progress()
-        if task.execution.state == Run.State.SUBMITTED and self._current_task == 0:
-            self.execution.state = Run.State.SUBMITTED
-        elif task.execution.state == Run.State.TERMINATED:
-            self._next_step()
-        else:
-            self.execution.state = Run.State.RUNNING
-
-    def _next_step(self):
-        """
-        Book-keeping for advancement through the task list.
-        Call :meth:`next` and set `execution.state` based on its
-        return value.  Also, advance `self._current_task` if not at end
-        of the list.
-        """
-        nxt = self.next(self._current_task)
-        if nxt == Run.State.TERMINATED:
-            # set returncode when all tasks are terminated
-            self.execution.returncode = 0 # optimistic start...
-            # ...but override if something has gone wrong
-            for task in self.tasks:
-                if task.execution.returncode != 0:
-                    self.execution.exitcode = 1
-                    break
-            # returncode can be overridden in the `terminated()` hook
-            self.execution.state = Run.State.TERMINATED
-            self._current_task = None
-        elif nxt in Run.State:
-            self.execution.state = nxt
-            self._current_task += 1
-        else:
-            # `nxt` must be a valid index into `self.tasks`
-            self._current_task = nxt
-            self.submit(resubmit=True)
-        self.changed = True
-
-
     def submit(self, resubmit=False, **extra_args):
         """
         Start the current task in the collection.
@@ -353,8 +322,7 @@ class SequentialTaskCollection(TaskCollection):
         # set state based on the state of current task
         if self._current_task == 0 and task.execution.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
             self.execution.state = task.execution.state
-        elif (task.execution.state == Run.State.TERMINATED
-              and self._current_task == len(self.tasks)-1):
+        elif (task.execution.state == Run.State.TERMINATED):
             nxt = self.next(self._current_task)
             if nxt in Run.State:
                 self.execution.state = nxt
@@ -362,6 +330,9 @@ class SequentialTaskCollection(TaskCollection):
                                                  Run.State.TERMINATED ]:
                     self._current_task += 1
                     self.changed = True
+                    next_task = self.tasks[self._current_task]
+                    next_task.attach(self._controller)
+                    self.submit(resubmit=True)
             else:
                 # `nxt` must be a valid index into `self.tasks`
                 self._current_task = nxt
@@ -391,15 +362,15 @@ class StagedTaskCollection(SequentialTaskCollection):
     code.
 
     """
-    def __init__(self, jobname, **extra_args):
+    def __init__(self, **extra_args):
         try:
             first_stage = self.stage0()
             if isinstance(first_stage, Task):
                 # init parent class with the initial task
-                SequentialTaskCollection.__init__(self, jobname, [first_stage], **extra_args)
+                SequentialTaskCollection.__init__(self, [first_stage], **extra_args)
             elif isinstance(first_stage, (int, long, tuple)):
                 # init parent class with no tasks, an dimmediately set the exitcode
-                SequentialTaskCollection.__init__(self, jobname, [], **extra_args)
+                SequentialTaskCollection.__init__(self, [], **extra_args)
                 self.execution.returncode = first_stage
                 self.execution.state = Run.State.TERMINATED
             else:
@@ -449,8 +420,8 @@ class ParallelTaskCollection(TaskCollection):
     reached the same terminal status.
     """
 
-    def __init__(self, jobname, tasks=None, **extra_args):
-        TaskCollection.__init__(self, jobname, tasks)
+    def __init__(self, tasks=None, **extra_args):
+        TaskCollection.__init__(self, tasks, **extra_args)
 
 
     def _state(self):
@@ -487,6 +458,24 @@ class ParallelTaskCollection(TaskCollection):
                 return state
         return Run.State.UNKNOWN
 
+    def add(self, task):
+        """
+        Add a task to the collection.
+        """
+        task.detach()
+        self.tasks.append(task)
+        if self._attached:
+            task.attach(self._controller)
+
+    def attach(self, controller):
+        """
+        Use the given Controller interface for operations on the job
+        associated with this task.
+        """
+        for task in self.tasks:
+            if not task._attached:
+                task.attach(controller)
+        Task.attach(self, controller)
 
     def kill(self, **extra_args):
         """
@@ -538,7 +527,7 @@ class ParallelTaskCollection(TaskCollection):
 
 class ChunkedParameterSweep(ParallelTaskCollection):
 
-    def __init__(self, jobname, min_value, max_value, step, chunk_size, **extra_args):
+    def __init__(self, min_value, max_value, step, chunk_size, **extra_args):
         """
         Like `ParallelTaskCollection`, but generate a sequence of jobs
         with a parameter varying from `min_value` to `max_value` in
@@ -550,10 +539,11 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         self.step = step
         self.chunk_size = chunk_size
         self._floor = min(min_value + (chunk_size * step), max_value)
-        initial = [ self.new_task(param) for param in
-                    range(min_value, self._floor, step) ]
+        initial = list()
+        for param in range(min_value, self._floor, step):
+            initial.append(self.new_task(param))
         # start with the initial chunk of jobs
-        ParallelTaskCollection.__init__(self,jobname, initial, **extra_args)
+        ParallelTaskCollection.__init__(self, initial, **extra_args)
 
 
     def new_task(self, param, **extra_args):
@@ -617,14 +607,11 @@ class RetryableTask(Task):
     derived classes.
     """
 
-    def __init__(self, name, task, max_retries=0, **extra_args):
+    def __init__(self, task, max_retries=0, **extra_args):
         """
         Wrap `task` and resubmit it until `self.retry()` returns `False`.
 
         :param Task task: A `Task` instance that should be retried.
-
-        :param str jobname: The string identifying this `Task`
-            instance, see `Task`:class:.
 
         :param int max_retries: Maximum number of times `task` should be
             re-submitted; use 0 for 'no limit'.
@@ -632,7 +619,7 @@ class RetryableTask(Task):
         self.max_retries = max_retries
         self.retried = 0
         self.task = task
-        Task.__init__(self, name, **extra_args)
+        Task.__init__(self, **extra_args)
 
     def __getattr__(self, name):
         """Proxy public attributes of the wrapped task."""
