@@ -122,7 +122,7 @@ class GlobalOptimizer(SequentialTaskCollection):
 
         initial_task = self.evaluator
 
-        SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
+        SequentialTaskCollection.__init__(self,  [initial_task], **extra_args)
         
     def next(self, *args):
         log.debug('entering gParaSearchDriver.next')
@@ -226,4 +226,4 @@ class ComputePhenotypes(ParallelTaskCollection):
         np.savetxt(os.path.join(self.iterationFolder, 'curPopulation'), inParaCombos, delimiter = '  ')
 
         self.tasks = [ task_constructor(x_vec, self.iterationFolder) for x_vec in inParaCombos ]
-        ParallelTaskCollection.__init__(self, self.jobname, self.tasks)
+        ParallelTaskCollection.__init__(self, self.tasks, **extra_args)
