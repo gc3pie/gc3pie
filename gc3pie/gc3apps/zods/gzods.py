@@ -48,6 +48,8 @@ from xml.etree.ElementTree  import ElementTree
 import gc3libs
 import gc3libs.cmdline
 
+DEFAULT_ZODS_VERSION='0.341'
+
 
 class GzodsApp(gc3libs.Application):
     """
@@ -56,7 +58,7 @@ class GzodsApp(gc3libs.Application):
 
     application_name = 'zods'
 
-    def __init__(self, filename,**extra_args):
+    def __init__(self, filename, version=DEFAULT_ZODS_VERSION, **extra_args):
         if self.check_input(filename) is None:
                 raise gc3libs.exceptions.InputFileError(
                         "Cannot find auxiliary files for input file '%s'."
@@ -73,7 +75,7 @@ class GzodsApp(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-            tags=["APPS/CHEM/ZODS-0.341"],
+            tags=[ ("APPS/CHEM/ZODS-%s" % version) ],
             arguments = [
                 'mpiexec',
                 # these are arguments to `mpiexec`
@@ -175,18 +177,25 @@ file `input.xml` using on 5 CPUs::
         """
         version = "1.0"
 
+        def setup_options(self):
+                self.add_param("-R", "--verno", metavar="VERNO",
+                               dest="verno", default=DEFAULT_ZODS_VERSION,
+                               help="Request the specified version of ZODS"
+                               " (default: %(default)s).")
+
         def new_tasks(self, extra):
            if self.params.args is None or len(self.params.args) == 0:
                 self.log.warning(
                         "No arguments given on the command line: no new jobs are created."
                         " Existing jobs will still be managed.")
-                return []
+                return
            tasks=[]
            listOfFiles = self._search_for_input_files(self.params.args, pattern="input*.xml")
            gc3libs.log.debug("List of detected input files for ZODS: %s", listOfFiles)
            for filename in listOfFiles:
                filepath = os.path.abspath(filename)
+               extra_args = extra.copy()
+               extra_args['version'] = self.params.verno
                # job name comes from input file name, minus the `.xml` ext
-               jobname = os.path.basename(filename)[:-len('.xml')]
-               tasks.append((jobname, GzodsApp, [filepath], extra.copy()))
-           return tasks
+               extra_args['jobname'] = os.path.basename(filename)[:-len('.xml')]
+               yield GzodsApp(filepath, **extra_args)
