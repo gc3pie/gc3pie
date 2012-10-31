@@ -1123,6 +1123,8 @@ class Application(Task):
             xrsl.append('(join="no")')
         if self.stdout:
             xrsl.append('(stdout="%s")' % self.stdout)
+        else:
+            xrsl.append('(stdout="/dev/null")')
         if self.stderr and not self.join:
             xrsl.append('(stderr="%s")' % self.stderr)
         if len(self.inputs) > 0:
