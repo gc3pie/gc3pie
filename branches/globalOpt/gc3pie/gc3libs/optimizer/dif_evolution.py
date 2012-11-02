@@ -57,34 +57,6 @@ np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 # FVr_a5 -> a5 # index array
 # FVr_ind -> ind # index pointer array
 
-import pickle
-def get_pickling_errors(obj,seen=None):
-    if seen == None:
-        seen = []
-    try:
-        state = obj.__getstate__()
-    except AttributeError:
-        return
-    if state == None:
-        return
-    if isinstance(state,tuple):
-        if not isinstance(state[0],dict):
-            state=state[1]
-        else:
-            state=state[0].update(state[1])
-    result = {}    
-    for i in state:
-        try:
-            pickle.dumps(state[i],protocol=2)
-        except pickle.PicklingError:
-            if not state[i] in seen:
-                seen.append(state[i])
-                result[i]=get_pickling_errors(state[i],seen)
-    return result
-
-
-
-
 class EvolutionaryAlgorithm(object):
     '''
       Base class for building an evolutionary algorithm for global optimization. 
@@ -130,7 +102,7 @@ class DifferentialEvolution:
     '''
 
     def __init__(self, dim, pop_size, de_step_size, prob_crossover, itermax, y_conv_crit, de_strategy, plotting, working_dir, 
-                 lower_bds, upper_bds, x_conv_crit, verbosity, evaluator = None):  
+                 lower_bds, upper_bds, x_conv_crit, verbosity, evaluator = None, nlc = None):  
         '''
           Inputs: 
             paraStruct: Dict carrying solver settings. 
@@ -162,15 +134,21 @@ class DifferentialEvolution:
         self.lower_bds = np.array(lower_bds)
         self.upper_bds = np.array(upper_bds)
         self.x_conv_crit = x_conv_crit
-        self.verbosity = verbosity    
+        self.verbosity = verbosity
 
         if evaluator:
             self.evaluator = evaluator
             self.target    = evaluator.target
-        try: 
-            self.nlc       = evaluator.nlc
-        except AttributeError: 
-            self.nlc = lambda x: np.array([ 1 ] * pop_size)
+        #try: 
+            #self.nlc       = evaluator.nlc
+        #except AttributeError: 
+            #self.nlc = lambda x: np.array([ 1 ] * pop_size)
+            
+        if not nlc:
+            def nlc(x):
+                return np.array([ 1 ] * pop_size)
+        self.nlc = nlc
+        
 
         self.matplotLibAvailable = matplotLibAvailable
 
@@ -538,7 +516,7 @@ class DifferentialEvolution:
     # Adjustments for pickling
     def __getstate__(self):
         state = self.__dict__.copy()
-        del state['nlc']
+   #     del state['nlc']
         del state['logger']
         return state
     
