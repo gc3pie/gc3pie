@@ -115,6 +115,7 @@ class GlobalOptimizer(SequentialTaskCollection):
         self.target_fun = target_fun
         self.task_constructor = task_constructor
         self.extra_args = extra_args
+        self.output_dir = os.getcwd()
 
         self.optimizer.cur_iter += 1
 
@@ -164,20 +165,20 @@ class GlobalOptimizer(SequentialTaskCollection):
         return self.jobname
     
     # Adjustments for pickling
-    def __getstate__(self):
-        state = Task.__getstate__(self)
-        # Check that there are no functions in state. 
-        #for attr in ['optimizer']:
-            ## 'task_constructor', 'target_fun', 'tasks', 
-            #del state[attr]
-       # state = None
-        return state
+    # def __getstate__(self):
+    #     state = Task.__getstate__(self)
+    #     # Check that there are no functions in state. 
+    #     #for attr in ['optimizer']:
+    #         ## 'task_constructor', 'target_fun', 'tasks', 
+    #         #del state[attr]
+    #    # state = None
+    #     return state
     
-    def __setstate__(self, state):
-        # restore _grid, etc.
-        Task.__setstate__(self, state)
-        # restore loggers
-        #self._setup_logging()
+    # def __setstate__(self, state):
+    #     # restore _grid, etc.
+    #     Task.__setstate__(self, state)
+    #     # restore loggers
+    #     #self._setup_logging()
 
 class ComputePhenotypes(ParallelTaskCollection):
 
@@ -203,7 +204,8 @@ class ComputePhenotypes(ParallelTaskCollection):
 
         # Set up initial variables and set the correct methods.
         self.jobname = 'evalSolverGuess' + '-' + jobname + '-' + str(iteration)
-        self.iteration = iteration        
+        self.iteration = iteration
+        self.output_dir = os.getcwd()
 
         self.path_to_stage_dir = path_to_stage_dir
         self.verbosity = 'DEBUG'
