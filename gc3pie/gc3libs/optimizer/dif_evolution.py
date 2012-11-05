@@ -82,6 +82,7 @@ np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 # FVr_a5 -> a5 # index array
 # FVr_ind -> ind # index pointer array
 
+
 class DifferentialEvolution(EvolutionaryAlgorithm):
     '''
     Differential evolution optimizer class.
@@ -96,6 +97,7 @@ class DifferentialEvolution(EvolutionaryAlgorithm):
                  x_conv_crit, y_conv_crit, de_strategy, lower_bds, upper_bds, nlc=None,
                  target_fn=None, plotting=False, working_dir=os.getcwd(), verbosity='INFO'):
 
+        # Set up loggers
         log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
         log.setLevel(logging.DEBUG)
         log.propagate = 0
@@ -107,6 +109,8 @@ class DifferentialEvolution(EvolutionaryAlgorithm):
         file_handler.setLevel(logging.DEBUG)
         log.addHandler(stream_handler)
         log.addHandler(file_handler)
+        self.logger = log
+        #self.logger.debug('in dif_evo')
 
         # save parameters
         self.target = target_fn
@@ -130,19 +134,11 @@ class DifferentialEvolution(EvolutionaryAlgorithm):
             #self.nlc = lambda x: np.array([ 1 ] * pop_size)
 
         if not nlc:
-            self.default_nlc = True
-            def nlc(x):
-                return np.array([ 1 ] * pop_size)
+            self.nlc = self._default_nlc
         else:
-            self.default_nlc = False
-        self.nlc = nlc
-
+            self.nlc = nlc
 
         self.matplotLibAvailable = matplotLibAvailable
-
-        # Set up loggers
-        self.logger = log
-        #self.logger.debug('in dif_evo')
 
         # Initialize variables that needed for state retention.
         self.pop_old  = np.zeros( (self.pop_size, self.dim) )  # toggle population
@@ -168,6 +164,9 @@ class DifferentialEvolution(EvolutionaryAlgorithm):
         #self.figSaveFolder = os.path.join(self.working_dir, 'difEvoFigures')
         #if not os.path.exists(self.figSaveFolder):
             #os.mkdir(self.figSaveFolder)
+
+    def _default_nlc(self, x):
+        return np.array([ 1 ] * self.pop_size)
 
 
     def deopt(self):
@@ -521,18 +520,11 @@ class DifferentialEvolution(EvolutionaryAlgorithm):
     # Adjustments for pickling
     def __getstate__(self):
         state = self.__dict__.copy()
-        if self.default_nlc:
-            del state['nlc']
         del state['logger']
         return state
 
     def __setstate__(self, state):
         self.__dict__ = state
-        # restore nlc
-        if self.default_nlc:
-            def nlc(x):
-                return np.array([ 1 ] * pop_size)
-            self.nlc = nlc
         # Restore logging
         log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
         log.setLevel(logging.DEBUG)
