@@ -145,8 +145,11 @@ class DifferentialEvolution:
             #self.nlc = lambda x: np.array([ 1 ] * pop_size)
             
         if not nlc:
+            self.default_nlc = True
             def nlc(x):
                 return np.array([ 1 ] * pop_size)
+        else:
+            self.default_nlc = False
         self.nlc = nlc
         
 
@@ -516,12 +519,18 @@ class DifferentialEvolution:
     # Adjustments for pickling
     def __getstate__(self):
         state = self.__dict__.copy()
-        del state['nlc']
+        if self.default_nlc:
+            del state['nlc']
         del state['logger']
         return state
     
     def __setstate__(self, state):
         self.__dict__ = state
+        # restore nlc
+        if self.default_nlc:
+            def nlc(x):
+                return np.array([ 1 ] * pop_size)
+            self.nlc = nlc
         # Restore logging
         log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
         log.setLevel(logging.DEBUG)
