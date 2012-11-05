@@ -364,11 +364,15 @@ specified in the configuration file.
 
             # XXX: Re-enabled the catch-all clause otherwise the loop stops at the first erroneous iteration
             except Exception, ex:
-                gc3libs.log.warning("Ignored error in Core.update_job_state(): %s", str(ex))
-                # print again with traceback at a higher log level
-                gc3libs.log.debug("Ignored error in Core.update_job_state(): %s: %s",
-                                  ex.__class__.__name__, str(ex), exc_info=True)
-                continue
+                if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
+                    # propagate generic exceptions for debugging purposes
+                    raise
+                else:
+                    gc3libs.log.warning("Ignored error in Core.update_job_state(): %s", str(ex))
+                    # print again with traceback at a higher log level
+                    gc3libs.log.debug("Ignored error in Core.update_job_state(): %s: %s",
+                                      ex.__class__.__name__, str(ex), exc_info=True)
+                    continue
 
     def __update_task(self, tasks, **extra_args):
         """Implementation of `update_job_state` on generic `Task` objects."""
@@ -886,11 +890,15 @@ class Engine(object):
                 self._terminated.append(task)
                 transitioned.append(index)
             except Exception, x:
-                gc3libs.log.error("Ignored error in killing task '%s': %s: %s",
-                                  task, x.__class__.__name__, str(x))
-                # print again with traceback info at a higher log level
-                gc3libs.log.debug("Ignored error in killing task '%s': %s: %s",
-                                  task, x.__class__.__name__, str(x), exc_info=True)
+                if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
+                    # propagate generic exceptions for debugging purposes
+                    raise
+                else:
+                    gc3libs.log.error("Ignored error in killing task '%s': %s: %s",
+                                      task, x.__class__.__name__, str(x))
+                    # print again with traceback info at a higher log level
+                    gc3libs.log.debug("Ignored error in killing task '%s': %s: %s",
+                                      task, x.__class__.__name__, str(x), exc_info=True)
         # remove tasks that transitioned to other states
         for index in reversed(transitioned):
             del self._to_kill[index]
@@ -950,14 +958,21 @@ class Engine(object):
                             currently_submitted += 1
                             currently_in_flight += 1
                     except Exception, x:
-                        gc3libs.log.error("Ignored error in submitting task '%s': %s: %s",
-                                          task, x.__class__.__name__, str(x))
-                        # print again with traceback at a higher log level
-                        gc3libs.log.debug("Ignored error in submitting task '%s': %s: %s",
-                                          task, x.__class__.__name__, str(x), exc_info=True)
-                        # record the fact in the task's history
-                        task.execution.history("Submission failed: %s: %s"
-                                               % (x.__class__.__name__, str(x)))
+                        if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
+                            # propagate generic exceptions for debugging purposes
+                            raise
+                        else:
+                            gc3libs.log.error(
+                                "Ignored error in submitting task '%s': %s: %s",
+                                task, x.__class__.__name__, str(x))
+                            # print again with traceback at a higher log level
+                            gc3libs.log.debug(
+                                "Ignored error in submitting task '%s': %s: %s",
+                                task, x.__class__.__name__, str(x), exc_info=True)
+                            # record the fact in the task's history
+                            task.execution.history(
+                                "Submission failed: %s: %s"
+                                % (x.__class__.__name__, str(x)))
                 index += 1
         # remove tasks that transitioned to SUBMITTED state
         for index in reversed(transitioned):
@@ -983,10 +998,16 @@ class Engine(object):
                     task.execution.state = Run.State.TERMINATED
                     task.changed = True
                 except Exception, x:
-                    gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s",
-                                      task, x.__class__.__name__, str(x))
-                    gc3libs.log.debug("Ignored error in fetching output of task '%s': %s: %s",
-                                      task, x.__class__.__name__, str(x), exc_info=True)
+                    if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
+                        # propagate generic exceptions for debugging purposes
+                        raise
+                    else:
+                        gc3libs.log.error(
+                            "Ignored error in fetching output of task '%s': %s: %s",
+                            task, x.__class__.__name__, str(x))
+                        gc3libs.log.debug(
+                            "Ignored error in fetching output of task '%s': %s: %s",
+                            task, x.__class__.__name__, str(x), exc_info=True)
                 if task.execution.state == Run.State.TERMINATED:
                     self._terminated.append(task)
                     self._core.free(task)
