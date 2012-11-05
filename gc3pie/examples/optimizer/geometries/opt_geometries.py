@@ -34,7 +34,7 @@ import os
 import sys
 from gc3libs import Application
 from gc3libs.cmdline import SessionBasedScript
-from gc3libs.optimizer.support_gc3 import update_parameter_in_file
+from gc3libs.optimizer.utils import update_parameter_in_file
 from gc3libs.application.gamess import GamessApplication
 import numpy as np
 
