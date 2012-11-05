@@ -29,19 +29,36 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
-
-import gc3libs.debug
-import re, os
-import numpy as np
-from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
-from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
-
+# General imports
+import os
+import sys
+import re
 import shutil
+import numpy as np
+import logging
 
-import logbook, sys
-from supportGc3 import wrapLogger
+# gc3libs imports
+import gc3libs.debug
 
-class paraLoop(object):
+# Support function imports
+from support_gc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
+from support_gc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
+
+# Generate a separate logging instance. Careful, running gc3libs.configure_logger again will 
+log = logging.getLogger('gc3.gc3libs.optimizer.para_loop')
+log.setLevel(logging.DEBUG)
+log.propagate = 0
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.DEBUG)
+log_file_name = os.path.join(gc3libs.Default.RCDIR, 'para_loop.log')
+file_handler = logging.FileHandler(log_file_name, mode = 'w')
+file_handler.setLevel(logging.DEBUG)
+log.addHandler(stream_handler)
+log.addHandler(file_handler)
+
+float_fmt = '%25.15f'
+
+class ParaLoop(object):
     '''
       Main class implementing a general loop algorithm. Loop over an arbitrary number of variables and values. 
       Additionally the script allows for grouping variables and then specifying a restricted set of parameter
@@ -49,11 +66,12 @@ class paraLoop(object):
       Should be subclassed together with a SessionBasedScript. 
     '''
     
-    
     def __init__(self, verbosity):
-        self.logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = verbosity.upper(), logFile = __name__ + '.log')
+#        self.logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = verbosity.upper(), logFile = __name__ + '.log')
+        self.logger = logging.getLogger('gc3.gc3libs.optimizer.para_loop')
+        self.logger.setLevel(verbosity.upper())
 
-    def process_para_file(self, path_to_para_loop):
+    def process_para_file(self, path_to_para_loop = None, params = None):
         """
         Create sets of parameter substituions for the ``forwardPremium``
         input files and yield a unique identifier for each set.  The
@@ -80,23 +98,36 @@ class paraLoop(object):
             ``para.loop`` format.
 
         """
-        params = self._read_para(path_to_para_loop)
-        num_params = len(params)
-        self.logger.debug("Read %d parameters from file '%s'" % (num_params, path_to_para_loop))
-
-        variables     = params['variables']
-        indices       = params['indices']
-        paraFiles     = params['paraFiles']
-        paraProps     = params['paraProps']
-        groups        = np.array(params['groups'], dtype = np.int16)
-        groupRestrs   = params['groupRestrs']
-        paraFileRegex = params['paraFileRegex']
-
-        # XXX: why not just use `vals = np.copy(params['vals'])` ??
-        vals = np.copy(params['vals'])
-        #vals = np.empty((num_params,), 'U100')
-        #for ixVals, paraVals in enumerate(params['vals']):
-            #vals[ixVals] = paraVals
+        
+        # There are two ways to use process_para_loop now. First one is to write a para_loop config file. 
+        # The second is to immediatly pass the params structure (e.g. a dictionary). In case of optimization
+        # it makes no sense to write the guesses to a file and then read them right back in. 
+        if path_to_para_loop:
+            params = self._read_para(path_to_para_loop)
+            num_params = len(params)
+            self.logger.debug("Read %d parameters from file '%s'" % (num_params, path_to_para_loop))
+            variables     = params['variables']
+            indices       = params['indices']
+            paraFiles     = params['paraFiles']
+            paraProps     = params['paraProps']
+            groups        = np.array(params['groups'], dtype = np.int16)
+            groupRestrs   = params['groupRestrs']
+            paraFileRegex = params['paraFileRegex']
+            oldVals = np.copy(params['vals'])
+            vals = np.array([ str2mat(val_str) for val_str in oldVals ])
+        elif params:
+            variables     = params['variables']
+            indices       = params['indices']
+            paraFiles     = params['paraFiles']
+            paraProps     = params['paraProps']
+            groups     = params['groups']
+            groupRestrs   = params['groupRestrs']
+            paraFileRegex = params['paraFileRegex']
+            vals = params['vals']
+        else:
+            print 'Error para_loop.py. Either specify path_to_para_loop or params'
+            os._exit(1)
+                
 
         # remap group numbers so that they start at 0 and increase in
         # steps of 1
@@ -160,7 +191,8 @@ class paraLoop(object):
                 raise gc3libs.exceptions.InvalidUsage(
                     "Groups have different restrictions")
             for groupVals in vals[groupSelector]:
-                values = str2vals(groupVals)
+#                values = str2vals(groupVals)
+                values = groupVals
                 groupBase[group].append(len(np.array(values)))
                 self.logger.debug('At gpremium L%d, groupvals=%s' % (500, values))
             groupIndices.append(list(getIndex(groupBase[ixGroup], groupRestr)))
@@ -200,7 +232,9 @@ class paraLoop(object):
                 group = groups[ixVar]
                 paraFile = paraFiles[ixVar]
                 adjustIndex = indices[ixVar]
-                val = format_newVal(extractVal(ixVar, vals, index))
+#                val = format_newVal(extractVal(ixVar, vals, index))
+                # This value potentially determines directory name and parameter file changes. 
+                val = (float_fmt % vals[ixVar][index[ixVar]]).strip() 
                 regex = paraFileRegex[ixVar]
                 paraIndex = str2tuple(indices[ixVar])
                 self.logger.debug('paraIndex: %s' % paraIndex)
@@ -239,7 +273,8 @@ class paraLoop(object):
                         extendedGroupIndex.append(groupIndex[curGroupIndex])
                         curGroupIndex += 1
                     else:
-                        values = vals[groupVarIndex].split(',')
+#                        values = vals[groupVarIndex].split(',')
+                        values = vals[groupVarIndex]
                         if ixMeta > 0 and groupIndices[group][metaIndices[ixMeta - 1][group]] != groupIndex: # group has changed indices
                             extendedGroupIndex.append(0)
                         elif ixMeta == 0:
@@ -251,7 +286,8 @@ class paraLoop(object):
                 groupMinus1 = groups < 0
                 if sum(groupMinus1) > 1:
                     self.logger.warning("more than one -1 variable not supported")
-                values = vals[groupMinus1][0].split(',')
+#                values = vals[groupMinus1][0].split(',')
+                values = vals[groupMinus1][0]
                 nValues = len(values)
                 if ixMeta >= nValues:
                     index.append(int(nValues - 1))
