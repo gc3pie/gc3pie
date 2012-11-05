@@ -14,14 +14,3 @@ H     1.0     0.52590    -0.72275     0.94353
 H     1.0    -1.28608     0.40565    -0.86533
 F     9.0     1.13257    -0.17493    -1.03906
 $END
- INPUT CARD>    $CONTRL SCFTYP=UHF RUNTYP=ENERGY $END                                       
- INPUT CARD>     $BASIS GBASIS=STO NGAUSS=3 $END                                            
- INPUT CARD>     $DATA                                                                      
- INPUT CARD>    Title                                                                       
- INPUT CARD>    C1                                                                          
- INPUT CARD>    C  6.0  0.07841719  0.26395532  -0.23533043                                 
- INPUT CARD>O  8.0  -1.44977537  -1.14582724  -1.46651243                                   
- INPUT CARD>O  8.0  -0.71081319  -1.06445154   0.10999262                                   
- INPUT CARD>O  8.0  0.26388465  -0.24709886  -0.71250950                                    
- INPUT CARD>H  1.0  0.23856324  1.46138232   1.38913151                                     
- INPUT CARD>H  1.0  -1.56873134  -0.73472206  -0.36208536    
