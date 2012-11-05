@@ -451,8 +451,10 @@ specified in the configuration file.
             # clear previous data staging errors
             if job.signal == Run.Signals.DataStagingFailure:
                 job.signal = 0
-        except gc3libs.exceptions.InvalidResourceName, irn:
-            gc3libs.log.warning("Failed while retrieving resource %s from core.Detailed Error message: %s" % (app.execution.resource_name, str(irn)))
+        except gc3libs.exceptions.InvalidResourceName, ex:
+            gc3libs.log.warning(
+                "Failed retrieving resource %s from core."
+                " Detailed Error message: %s" % (app.execution.resource_name, str(ex)))
             ex = app.fetch_output_error(ex)
             if isinstance(ex, Exception):
                 job.info = ("No output could be retrieved: %s" % str(ex))
@@ -460,7 +462,8 @@ specified in the configuration file.
             else:
                 return
         except gc3libs.exceptions.RecoverableDataStagingError, rex:
-            job.info = ("Temporary failure when retrieving results: %s. Ignoring error, try again." % str(rex))
+            job.info = ("Temporary failure when retrieving results: %s."
+                        " Ignoring error, try again." % str(rex))
             return
         except gc3libs.exceptions.UnrecoverableDataStagingError, ex:
             job.signal = Run.Signals.DataStagingFailure
