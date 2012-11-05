@@ -474,14 +474,19 @@ class _Script(cli.app.CommandLineApp):
             else:
                 msg %= (str(ex), self.name, '')
             rc = 1
-        except Exception, ex:
+        except cli.app.Abort, ex:
             msg = "%s: %s" % (ex.__class__.__name__, str(ex))
-            if isinstance(ex, cli.app.Abort):
-                rc = (ex.status)
-            elif isinstance(ex, EnvironmentError):
-                rc = 74  # EX_IOERR in /usr/include/sysexits.h
+            rc = ex.status
+        except EnvironmentError, ex:
+            msg = "%s: %s" % (ex.__class__.__name__, str(ex))
+            rc = os.EX_IOERR # 74 (see: /usr/include/sysexits.h )
+        except Exception, ex:
+            if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
+                # propagate generic exceptions for debugging purposes
+                raise
             else:
                 # generic error exit
+                msg = "%s: %s" % (ex.__class__.__name__, str(ex))
                 rc = 1
         # output error message and -maybe- backtrace...
         try:
