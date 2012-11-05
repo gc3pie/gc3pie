@@ -38,7 +38,7 @@ import gc3libs
 import time
 from gc3libs import Application
 from gc3libs.cmdline import SessionBasedScript
-from gc3libs.optimizer.support_gc3 import update_parameter_in_file
+from gc3libs.optimizer.utils import update_parameter_in_file
 
 # optimizer specific imports
 from gc3libs.optimizer import GlobalOptimizer
