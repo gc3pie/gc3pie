@@ -234,7 +234,7 @@ class ShellcmdLrms(LRMS):
                 " (increase 'max_cores' to raise)." % self.name)
 
         gc3libs.log.debug("Executing local command '%s' ..."
-                          % (str.join(" ", app.arguments[1:])))
+                          % (str.join(" ", app.arguments)))
         # We cannot use `exec` or other front-end modules that
         # hide the differences between UNIX and Windows, exactly
         # because we need to get the PID of the submitted process.
@@ -361,7 +361,7 @@ class ShellcmdLrms(LRMS):
                     # which will overwrite the current instance of
                     # nosetests with the `true` command, which will
                     # exit without problem.
-                    
+
                     # Since not all the distribution have the `true`
                     # command in the same place, we don't specify a
                     # full path, and let `execlp()` to find a `true`
@@ -383,7 +383,7 @@ class ShellcmdLrms(LRMS):
                               wrapper_dir,
                               ShellcmdLrms.WRAPPER_OUTPUT_FILENAME),
                           "-f", ShellcmdLrms.TIMEFMT,
-                          "/bin/sh", "-c", 
+                          "/bin/sh", "-c",
                           str.join(' ', app.arguments))
 
             except Exception, ex:
