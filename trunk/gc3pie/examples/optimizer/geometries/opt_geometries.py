@@ -34,10 +34,7 @@ import os
 import sys
 from gc3libs import Application
 from gc3libs.cmdline import SessionBasedScript
-sys.path.append('../../')
-from support_gc3 import update_parameter_in_file
-# optimizer specific imports
-from dif_evolution import DifferentialEvolution
+from gc3libs.optimizer.support_gc3 import update_parameter_in_file
 from gc3libs.application.gamess import GamessApplication
 import numpy as np
 
@@ -45,9 +42,10 @@ import logging
 import gc3libs
 gc3libs.configure_logger(logging.DEBUG)
 
+# optimizer specific imports
 import gc3libs.optimizer.global_opt
 from gc3libs.optimizer.global_opt import GlobalOptimizer
-from dif_evolution import DifferentialEvolution
+from gc3libs.optimizer.dif_evolution import DifferentialEvolution
 
 optimization_dir = os.path.join(os.getcwd(), 'optimizeGeometry')
 

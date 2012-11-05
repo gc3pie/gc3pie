@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 #
 """
-  Minimal example to illustrate global optimization using gc3pie. 
-  
+  Minimal example to illustrate global optimization using gc3pie.
+
   This example is meant as a starting point for other optimizations
-  within the gc3pie framework. 
+  within the gc3pie framework.
 """
 
 # Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
@@ -35,15 +35,14 @@ import os
 import sys
 import sys
 import gc3libs
-import time   
+import time
 from gc3libs import Application
 from gc3libs.cmdline import SessionBasedScript
-sys.path.append('../../')
-from support_gc3 import update_parameter_in_file
+from gc3libs.optimizer.support_gc3 import update_parameter_in_file
 
 # optimizer specific imports
-from gc3libs.optimizer.global_opt import GlobalOptimizer 
-from dif_evolution import DifferentialEvolution
+from gc3libs.optimizer.global_opt import GlobalOptimizer
+from gc3libs.optimizer.dif_evolution import DifferentialEvolution
 
 float_fmt = '%25.15f'
 
@@ -51,43 +50,43 @@ optimization_dir = os.path.join(os.getcwd(), 'optimizeRosenBrock')
 pop_size = 100
 def nlc(x):
     import numpy as np
-    return np.array([ 1 ] * pop_size)  
+    return np.array([ 1 ] * pop_size)
 
 def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
-    '''
-      Given solver guess `x_vals`, return an instance of :class:`Application`
-      set up to produce the output :def:`target_fun` of :class:`GlobalOptimizer'
-      analyzes to produce the corresponding function values. 
-    '''
+    """
+    Given solver guess `x_vals`, return an instance of :class:`Application`
+    set up to produce the output :def:`target_fun` of :class:`GlobalOptimizer`
+    analyzes to produce the corresponding function values.
+    """
     import shutil
-    
+
     # Set some initial variables
     path_to_rosenbrock_example = os.getcwd()
     path_to_executable = os.path.join(path_to_rosenbrock_example, 'bin/rosenbrock')
     base_dir = os.path.join(path_to_rosenbrock_example, 'base')
-    
+
     x_vars = ['x1', 'x2']
     para_files = ['parameters.in', 'parameters.in']
     para_file_formats = ['space-separated', 'space-separated']
     index = 0 # We are dealing with scalar inputs
-    
+
     jobname = 'para_' + '_'.join(['%s=' % var + ('%25.15f' % val).strip() for (var, val) in zip(x_vars, x_vals)])
     path_to_stage_dir = os.path.join(optimization_dir, iteration_directory, jobname)
-    
+
     executable = os.path.basename(path_to_executable)
     # start the inputs dictionary with syntax: client_path: server_path
     inputs = { path_to_executable:executable }
     path_to_stage_base_dir = os.path.join(path_to_stage_dir, 'base')
     shutil.copytree(base_dir, path_to_stage_base_dir, ignore=shutil.ignore_patterns('.svn'))
     for var, val, para_file, para_file_format in zip(x_vars, x_vals, para_files, para_file_formats):
-        val = (float_fmt % val).strip() 
+        val = (float_fmt % val).strip()
         update_parameter_in_file(os.path.join(path_to_stage_base_dir, para_file),
                                  var, index, val, para_file_format)
 
-    prefix_len = len(path_to_stage_base_dir) + 1        
+    prefix_len = len(path_to_stage_base_dir) + 1
     for dirpath,dirnames,filenames in os.walk(path_to_stage_base_dir):
         for filename in filenames:
-            # cut the leading part, which is == to path_to_stage_dir
+            # cut the leading part, which is == to path_to_stage_base_dir
             relpath = dirpath[prefix_len:]
             # ignore output directory contents in resubmission
             if relpath.startswith('output'):
@@ -95,7 +94,7 @@ def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
             remote_path = os.path.join(relpath, filename)
             inputs[os.path.join(dirpath, filename)] = remote_path
     # all contents of the `output` directory are to be fetched
-   # outputs = { 'output/':'' }
+    # outputs = { 'output/':'' }
     outputs = gc3libs.ANY_OUTPUT
     #{ '*':'' }
     #kwargs = extra.copy()
@@ -111,8 +110,8 @@ def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
 
 def compute_target_rosenbrock(pop_task_tuple):
     '''
-      Given a list of (population, task), compute and return list of target 
-      values. 
+    Given a list of (population, task), compute and return list of target
+    values.
     '''
     fxVals = []
     for (pop, task) in pop_task_tuple:
@@ -123,10 +122,10 @@ def compute_target_rosenbrock(pop_task_tuple):
         fxVals.append(fxVal)
     return fxVals
 
-    
+
 class RosenbrockScript(SessionBasedScript):
     """
-      Execute Rosenbrock optimization. 
+    Execute Rosenbrock optimization.
     """
 
     def __init__(self):
@@ -134,32 +133,32 @@ class RosenbrockScript(SessionBasedScript):
             self,
             version = '0.2',
             stats_only_for = Application
-        )    
+        )
 
-    def new_tasks(self, extra):     
-        
+    def new_tasks(self, extra):
+
         path_to_stage_dir = os.getcwd()
-      
-        de_solver = DifferentialEvolution(dim = 2, pop_size = pop_size, de_step_size = 0.85, prob_crossover = 1., itermax = 200, 
-                                          y_conv_crit = 0.1, de_strategy = 1, plotting = False, working_dir = path_to_stage_dir, 
+
+        de_solver = DifferentialEvolution(dim = 2, pop_size = pop_size, de_step_size = 0.85, prob_crossover = 1., itermax = 200,
+                                          y_conv_crit = 0.1, de_strategy = 1, plotting = False, working_dir = path_to_stage_dir,
                                           lower_bds = [-2, -2], upper_bds = [2,2], x_conv_crit = None, verbosity = 'DEBUG', nlc = nlc)
         initial_pop = []
         if not initial_pop:
             de_solver.newPop = de_solver.drawInitialSample()
         else:
-            de_solver.newPop = initial_pop    
-        
+            de_solver.newPop = initial_pop
+
         # create an instance globalObt
-         
+
         jobname = 'rosenbrock'
         kwargs = extra.copy()
         kwargs['path_to_stage_dir'] = optimization_dir
         kwargs['optimizer'] = de_solver
         kwargs['task_constructor'] = task_constructor_rosenbrock
         kwargs['target_fun'] = compute_target_rosenbrock
-        
+
         return [GlobalOptimizer(jobname=jobname, **kwargs)]
-            
+
 if __name__ == '__main__':
     print 'starting'
     if os.path.isdir(optimization_dir):
@@ -168,4 +167,3 @@ if __name__ == '__main__':
     os.mkdir(optimization_dir)
     RosenbrockScript().run()
     print 'done'
-
