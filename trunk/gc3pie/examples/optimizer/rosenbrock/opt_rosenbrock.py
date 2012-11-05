@@ -41,7 +41,7 @@ from gc3libs.cmdline import SessionBasedScript
 from gc3libs.optimizer.support_gc3 import update_parameter_in_file
 
 # optimizer specific imports
-from gc3libs.optimizer.global_opt import GlobalOptimizer
+from gc3libs.optimizer import GlobalOptimizer
 from gc3libs.optimizer.dif_evolution import DifferentialEvolution
 
 float_fmt = '%25.15f'
