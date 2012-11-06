@@ -64,29 +64,27 @@ import gc3libs.debug
 import gc3libs.config
 import gc3libs.core
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
-from gc3libs.optimizer.examples.rosenbrock.opt_rosenbrock import compute_target_rosenbrock
+#from gc3libs.optimizer.examples.rosenbrock.opt_rosenbrock import compute_target_rosenbrock
 from gc3libs import Application, Run
 
 # optimizer specific imports
 from dif_evolution import DifferentialEvolution
 
-# For now use __file__ to determine path to the example files. Could also use pkg_resources. 
-path_to_rosenbrock_example = os.path.join(os.path.dirname(__file__), 'examples/rosenbrock/')
-
 # Perform basic configuration for gc3libs logger. Adjust level to logging.DEBUG if necessary. 
 gc3libs.configure_logger(level=logging.CRITICAL)
 
 # Generate a separate logging instance. Careful, running gc3libs.configure_logger again will 
-log = logging.getLogger('gc3.gc3libs.optimizer')
+log = logging.getLogger('gc3.gc3libs.GlobalOptimizer')
 log.setLevel(logging.DEBUG)
 log.propagate = 0
 stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.INFO)
-log_file_name = os.path.join(gc3libs.Default.RCDIR, 'optimizer.log')
+stream_handler.setLevel(logging.DEBUG)
+log_file_name = os.path.join(gc3libs.Default.RCDIR, 'GlobalOptimizer.log')
 file_handler = logging.FileHandler(log_file_name, mode = 'w')
 file_handler.setLevel(logging.DEBUG)
 log.addHandler(stream_handler)
 log.addHandler(file_handler)
+log.debug('hello')
 
 class GlobalOptimizer(SequentialTaskCollection):
 
@@ -140,11 +138,11 @@ class GlobalOptimizer(SequentialTaskCollection):
 
         ## make plots
         #if self.optimizer.I_plotting:
-            #self.optimizer.plotPopulation(self.optimizer.FM_pop)
+            #self.optimizer.plotPopulation(self.optimizer.pop)
             #self.plot3dTable()
 
-        if not self.optimizer.checkConvergence():
-            self.optimizer.newPop = self.optimizer.evolvePopulation(self.optimizer.FM_pop)
+        if not self.optimizer.has_converged():
+            self.optimizer.newPop = self.optimizer.modify(self.optimizer.pop)
             # Check constraints and resample points to maintain population size.
             self.optimizer.newPop = self.optimizer.enforceConstrReEvolve(self.optimizer.newPop)
             self.optimizer.cur_iter += 1

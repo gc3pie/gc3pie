@@ -33,10 +33,14 @@ __docformat__ = 'reStructuredText'
 
 import os
 import sys
+import sys
+import gc3libs
+import time   
 from gc3libs import Application
 sys.path.append('../../')
 from support_gc3 import update_parameter_in_file
 # optimizer specific imports
+from gc3libs.optimizer.global_opt import GlobalOptimizer 
 from dif_evolution import DifferentialEvolution
 
 float_fmt = '%25.15f'
@@ -113,10 +117,9 @@ def compute_target_rosenbrock(pop_task_tuple):
     return fxVals
 
 
+    
 if __name__ == '__main__':
-    import sys
-    import gc3libs
-    import time    
+
 
     print 'Starting: \n%s' % ' '.join(sys.argv)
     # clean up
@@ -128,7 +131,7 @@ if __name__ == '__main__':
     
     de_solver = DifferentialEvolution(dim = 2, pop_size = 100, de_step_size = 0.85, prob_crossover = 1., itermax = 200, 
                                       y_conv_crit = 0.1, de_strategy = 1, plotting = False, working_dir = path_to_stage_dir, 
-                                      lower_bds = [-2, 2], upper_bds = [2,2], x_conv_crit = None, verbosity = 'DEBUG')
+                                      lower_bds = [-2, -2], upper_bds = [2,2], x_conv_crit = None, verbosity = 'DEBUG')
     
     initial_pop = []
     if not initial_pop:
@@ -137,7 +140,7 @@ if __name__ == '__main__':
         de_solver.newPop = initial_pop    
     
     # create an instance globalObt
-    from gc3libs.optimizer.global_opt import GlobalOptimizer
+
     globalOptObj = GlobalOptimizer(jobname = 'rosenbrock', path_to_stage_dir = '/tmp/rosenbrock', 
                                    optimizer = de_solver, task_constructor = task_constructor_rosenbrock, 
                                    target_fun = compute_target_rosenbrock)
