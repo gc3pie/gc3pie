@@ -1156,13 +1156,14 @@ class Engine(object):
 
     def fetch_output(self, task, output_dir=None, overwrite=False, **extra_args):
         """
-        Proxy for `Core.fetch_output` (which see).
+        Enqueue task for later output retrieval.
+
+        .. warning:: FIXME
+
+          The `output_dir` and `overwrite` parameters are currently ignored.
+
         """
-        if output_dir is None and self.output_dir is not None:
-            output_dir = os.path.join(self.output_dir, task.persistent_id)
-        if overwrite is None:
-            overwrite = self.fetch_output_overwrites
-        self._core.fetch_output(task, output_dir, overwrite, **extra_args)
+        self.add(task)
 
 
     def kill(self, task, **extra_args):
