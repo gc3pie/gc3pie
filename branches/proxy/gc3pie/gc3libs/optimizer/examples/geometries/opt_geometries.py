@@ -45,6 +45,7 @@ def compute_target_geometries(pop_task_tuple):
       Given a list of (population, task), compute and return list of target 
       values. 
     '''
+    import re
     enrgstr = re.compile(r'FINAL .+ ENERGY IS +(?P<enrgstr>-[0-9]+\.[0-9]+)')
     fxVals = []
     for (pop, task) in pop_task_tuple:
@@ -68,7 +69,7 @@ def create_gammes_input_file(geom, dirname):
 
     inptmpl = []
     inptmpl.append("""
-     $CONTRL SCFTYP=RHF RUNTYP=ENERGY $END
+    $CONTRL SCFTYP=UHF RUNTYP=ENERGY $END
      $BASIS GBASIS=STO NGAUSS=3 $END
      $DATA 
     Title
@@ -116,19 +117,17 @@ def task_constructor_geometries(x_vals, iteration_directory, **extra_args):
 
     # Set some initial variables
     path_to_geometries_example = os.getcwd()
-    path_to_executable = os.path.join(path_to_rosenbrock_example, 'bin/rosenbrock')
-    base_dir = os.path.join(path_to_rosenbrock_example, 'base')
 
     index = 0 # We are dealing with scalar inputs
 
-    jobname = 'para_' + '_'.join([('%25.15f' % val).strip() for val in x_vals])
+    jobname = 'para_' + '_'.join([('%8.3f' % val).strip() for val in x_vals])
     path_to_stage_dir = os.path.join(iteration_directory, jobname)
     path_to_stage_base_dir = os.path.join(path_to_stage_dir, 'base')
     inp_file_path = create_gammes_input_file(x_vals, path_to_stage_base_dir)
 
     kwargs = extra_args # e.g. architecture
-    kwargs['stdout'] = executable + '.log'
-    kwargs['join'] = True
+    kwargs['stdout'] = 'games' + '.log'
+#    kwargs['join'] = True
     kwargs['output_dir'] =  os.path.join(path_to_stage_dir, 'output')
     gc3libs.log.debug("Output dir: %s" % kwargs['output_dir'])
     kwargs['requested_architecture'] = 'x86_64'
@@ -181,11 +180,14 @@ if __name__ == '__main__':
     path_to_stage_dir = os.path.join(os.getcwd(), 'geometries') # Run the whole thing in the current directory
     # Initialize stage dir
     if not os.path.isdir(path_to_stage_dir):
-        os.makedirs(path_to_stage_dir)     
+        os.makedirs(path_to_stage_dir)
+        
+    n_atoms = 6
+    vec_dimension = 3 * n_atoms
     
-    de_solver = DifferentialEvolution(dim = 2, pop_size = 100, de_step_size = 0.85, prob_crossover = 1., itermax = 200, 
+    de_solver = DifferentialEvolution(dim = vec_dimension, pop_size = 10, de_step_size = 0.85, prob_crossover = 1., itermax = 200, 
                                       y_conv_crit = 0.1, de_strategy = 1, plotting = False, working_dir = path_to_stage_dir, 
-                                      lower_bds = [-2, 2], upper_bds = [2,2], x_conv_crit = None, verbosity = 'DEBUG')
+                                      lower_bds = [-2] * vec_dimension, upper_bds = [2] * vec_dimension, x_conv_crit = None, verbosity = 'DEBUG')
     
     initial_pop = []
     if not initial_pop:
