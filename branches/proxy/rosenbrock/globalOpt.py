@@ -29,6 +29,13 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
+# To do: 
+# Decide on directory strucutre. 
+# Decide on dependencies (numpy, matplotlib, support)
+# Make logging consistent
+# Call paraLoop directly instead of writing para.loop files. 
+
+
 # For now use export PYTHONPATH=/home/benjamin/workspace/housingProj/model/code/ to allow import 
 # of pymods
 
@@ -41,6 +48,7 @@ from difEvoKenPrice import deKenPrice
 sys.path.append('/home/benjamin/workspace/globalOpt/gc3pie')
 import logging
 import gc3libs
+import gc3libs.debug
 import gc3libs.config
 import gc3libs.core
 #from gc3libs.dag import SequentialTaskCollection, ParallelTaskCollection
@@ -51,70 +59,110 @@ import datetime
 import glob
 import time
 
-gc3libs.configure_logger(level=logging.DEBUG)
-logger = wrapLogger(loggerName = 'gParaSearchLogger', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'gParaSearch.log'))
+gc3libs.configure_logger(level=logging.CRITICAL)
+logger = wrapLogger(loggerName = 'globalOptLogger', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'globalOpt.log'))
+
+def compute_target_rosenbrock(popLocationTuple):
+    '''
+      Given a list of (population, location) compute and return list of target values. 
+    '''
+    fxVals = []
+    for (pop, loc) in popLocationTuple:
+        outputDir = os.path.join(loc, 'output')
+        f = open(os.path.join(outputDir, 'rosenbrock.out'))
+        line = f.readline().strip()
+        fxVal = float(line)
+        fxVals.append(fxVal)
+    return fxVals
  
 class GlobalOptimizer(SequentialTaskCollection):
 
-    def __init__(self, jobname, pathToStageDir, optSettings, targetSettings, **extra_args):
-    #, nPopulation, initialPop, domain, itermax, xConvCrit, yConvCrit, makePlots, optStrategy, fWeight, fCritical, nlc, solverVerb, 
-            #pathToStageDir, pathToExecutable, baseDir, xVars, computeTarget,
-            #**extra_args):
-
+    def __init__(self, jobname = 'rosenbrock', path_to_stage_dir = '/tmp/rosenbrock',
+                 n_dim = 2, n_population = 100, initial_pop = [], lower_bds = [-2, -2], upper_bds = [2, 2], bnd_constr = 0, iter_max = 200, 
+                 x_crit = None, y_crit = 1.e-8, opt_strat = 1, f_weight = 0.85, f_cross = 1., nlc = None, plot_output = 0, verbosity = 'DEBUG', 
+                 path_to_executable = '/home/benjamin/workspace/globalOpt/rosenbrock/bin/rosenbrock', 
+                 base_dir = '/home/benjamin/workspace/globalOpt/rosenbrock/base', 
+                 x_vars = ['x1', 'x2'], para_files = ['parameters.in', 'parameters.in'], para_file_formats = ['space-separated', 'space-separated'],
+                 target_fun = compute_target_rosenbrock, **extra_args ):
+                 
         '''
           Main loop for the global optimizer. 
+          
+          Keyword arguments:
+          jobname -- string that labels this optimization case. 
+          path_to_stage_dir -- directory in which to perform the optimization. 
+          
+          n_dim -- dimension of the objective function.
+          n_population -- size of the populatin. 
+          initial_pop -- population to start with. 
+          lower_bds -- Lower bounds for the input variables when drawing initial guess. 
+          upper_bds -- Upper bounds for the input variables when drawing initial guess. 
+          iter_max -- Maximum # of iterations of the solver. 
+          x_crit -- Convergence criteria for x variables. 
+          y_crit -- Convergence criteria for the y variables. 
+          plot_output -- Generate plots. 
+          opt_strat -- The kind of differential evolution strategy to use. Ranges from 1 to 6. See difEvoKenPrice.py for description. 
+          f_weight -- DE-stepsize F_weight ex [0, 2]
+          f_cross -- Crossover probabililty constant ex [0, 1]
+          nlc -- Constraint function. 
+          verbosity -- Verbosity of the solver. 
 
-          pathToStageDir  : Directory in which to perform the optimization. 
-
-          optSettings is a dictionary of optimizer settings. Key values can be. 
-
-          nDim            : Dimensionality. 
-          nPopulation     : Population size. 
-          initialPop      : The initial population if recovering from earlier failure. 
-          domain          : The domain of the x variables. List of (lowerbound, upperbound) tuples. 
-          itermax         : Maximum # of iterations of the solver. 
-          xConvCrit       : Convergence criteria for x variables. 
-          yConvCrit       : Convergence criteria for the y variables. 
-          makePlots       : Make plots? 
-          optStrategy     : The kind of differential evolution strategy to use.           
-          fWeight         : 
-          fCritical       : 
-          nlc             : Constraint function. 
-          solverVerb      : Verbosity of the solver. 
-
-          targetSettings is a dictionary of settings that specify how to compute the target values for one agent. Key values are: 
-
-          pathToExecutable: Path to main executable. 
-          baseDir         : Directory in which the input files are assembled. This directory is sent as input to the cluseter. 
-          xVars           : Names of the x variables.
-          computeTarget   : Function to analyze the output retrieved from the servers. Problem specific. 
-
+          path_to_executable -- Path to main executable. 
+          base_dir -- Directory in which the input files are assembled. This directory is sent as input to the cluseter. 
+          x_vars -- Names of the x variables.
+          para_files -- List of parameter files corresponding to the x variables. 
+          para_file_formats -- List of format strings for parameter files. Values can be: space-separated, bar-separated or a regular expression. 
+          target_fun --  Function to analyze the output retrieved from the servers and generate list of f values. 
         '''
 
-        logger.debug('entering globalOptimizer.__init__')
+#        logger.debug('entering globalOptimizer.__init__')
+        gc3libs.log.debug('entering globalOptimizer.__init__')
 
         # Set up initial variables and set the correct methods.
-        self.pathToStageDir    = pathToStageDir
+        self.jobname = jobname
+        self.path_to_stage_dir = path_to_stage_dir
 
-        self.optSettings       = optSettings                
-        self.targetSettings    = targetSettings
-        self.target            = self.targetSettings['computeTarget']
-
-        self.jobname           = jobname
-        self.extra_args        = extra_args
+        self.path_to_executable = path_to_executable
+        self.base_dir = base_dir
+        self.x_vars = x_vars
+        self.para_files = para_files
+        self.para_file_formats = para_file_formats
+        self.target_fun = target_fun
+        
+        self.extra_args = extra_args
+        
+        # Initialize stage dir
+        if not os.path.isdir(self.path_to_stage_dir):
+            os.makedirs(self.path_to_stage_dir)
 
         # Initialize solver
-        self.deSolver = deKenPrice(optSettings)             
+        opt_settings = {}
+        opt_settings['nDim']         = n_dim
+        opt_settings['nPopulation']  = n_population
+        opt_settings['F_weight']     = f_weight
+        opt_settings['F_CR']         = f_cross
+        opt_settings['lowerBds']     = lower_bds
+        opt_settings['upperBds']     = upper_bds
+        opt_settings['I_bnd_constr'] = bnd_constr
+        opt_settings['itermax']      = iter_max
+        opt_settings['F_VTR']        = y_crit
+        opt_settings['optStrategy']  = opt_strat
+        opt_settings['I_refresh']    = 0
+        opt_settings['I_plotting']   = plot_output
+        opt_settings['verbosity']    = verbosity
+        opt_settings['workingDir']   = self.path_to_stage_dir
+        
+        self.deSolver = deKenPrice(opt_settings)             
 
-        if not 'initialPop' in optSettings:
+        if not initial_pop:
             self.deSolver.newPop = self.deSolver.drawInitialSample()
         else:
-            self.deSolver.newPop = optSettings['initialPop']
+            self.deSolver.newPop = initial_pop
 
         self.deSolver.I_iter += 1
 
-        self.evaluator = computePhenotypes(self.deSolver.newPop, self.jobname, 
-                                             self.deSolver.I_iter, pathToStageDir, optSettings, targetSettings) # need to specify this
+        self.evaluator = ComputePhenotypes(self.deSolver.newPop, self.jobname, self.deSolver.I_iter, path_to_stage_dir, 
+                                           self.path_to_executable, self.base_dir, self.x_vars, self.para_files, self.para_file_formats) 
 
         initial_task = self.evaluator
 
@@ -125,9 +173,10 @@ class GlobalOptimizer(SequentialTaskCollection):
 
         self.changed = True
         # pass on (popMem, location)
-        popLocationTuple = [(popEle, os.path.join(self.pathToStageDir, 'Iteration-' + str(self.deSolver.I_iter), 
-                                'para_' + '_'.join([(var + '=' + ('%25.15f' % val).strip()) for (var,val) in zip(self.targetSettings['xVars'], popEle) ] ) ) ) for popEle in self.deSolver.newPop]
-        newVals = self.target(popLocationTuple)
+        popLocationTuple = [(popEle, 
+                             os.path.join(self.path_to_stage_dir, 'Iteration-' + str(self.deSolver.I_iter), 'para_' + '_'.join([(var + '=' + 
+                                                               ('%25.15f' % val).strip()) for (var,val) in zip(self.x_vars, popEle) ] ) ) ) for popEle in self.deSolver.newPop]
+        newVals = self.target_fun(popLocationTuple)
         self.deSolver.updatePopulation(self.deSolver.newPop, newVals)
         # Stats for initial population:
         self.deSolver.printStats()
@@ -144,15 +193,17 @@ class GlobalOptimizer(SequentialTaskCollection):
             # Check constraints and resample points to maintain population size.
             self.deSolver.newPop = self.deSolver.enforceConstrReEvolve(self.deSolver.newPop)
             self.deSolver.I_iter += 1
-            self.evaluator = computePhenotypes(self.deSolver.newPop, self.jobname, 
-                                             self.deSolver.I_iter, self.pathToStageDir, self.optSettings, self.targetSettings)
+            self.evaluator = ComputePhenotypes(self.deSolver.newPop, self.jobname, self.deSolver.I_iter, self.path_to_stage_dir, 
+                                           self.path_to_executable, self.base_dir, self.x_vars, self.para_files, self.para_file_formats)
+            #computePhenotypes(self.deSolver.newPop, self.jobname, 
+                                             #self.deSolver.I_iter, self.pathToStageDir, self.optSettings, self.targetSettings)
             self.add(self.evaluator)
         else:
             # post processing
             if self.deSolver.I_plotting:
                 self.plot3dTable()
 
-            open(os.path.join(self.pathToStageDir, 'jobDone'), 'w')
+            open(os.path.join(self.path_to_stage_dir, 'jobDone'), 'w')
             # report success of sequential task
             self.execution.returncode = 0
             return Run.State.TERMINATED
@@ -164,58 +215,57 @@ class GlobalOptimizer(SequentialTaskCollection):
     def __str__(self):
         return self.jobname
 
-class computePhenotypes(ParallelTaskCollection, paraLoop):
+class ComputePhenotypes(ParallelTaskCollection, paraLoop):
 
     def __str__(self):
         return self.jobname
 
 
-    def __init__(self, inParaCombos, jobname, iteration, pathToStageDir, optSettings, targetSettings, **extra_args):
+    def __init__(self, inParaCombos, jobname, iteration, path_to_stage_dir, 
+                 path_to_executable, base_dir, x_vars, para_files, para_file_formats, **extra_args):
 
         """
           Generate a list of tasks and initialize a ParallelTaskCollection with them. 
-          Uses paraLoop class to generate a list of (descriptions, substitutions for the input files). Descriptions are generated from
-          variable names that are hard coded in this method right now. 
+          
+          Uses paraLoop class to generate a list of (descriptions, substitutions for the input files). 
           Uses method generateTaskList to create a list of GPremiumApplication's which are invoked from a list of inputs (appropriately adjusted input files), 
           the output directory and some further settings for each run. 
 
-          inParaCombos:      List of tuples defining the parameter combinations.
-          iteration:         Current iteration number. 
-          pathToExecutable:  Path to the executable (the external program to be called). 
-          pathToStageDir:    Root path. Usually os.getcwd()
-          architecture:      32 or 64 bit.
-          baseDir:           Directory in which the input files are located. 
-          xVars:             Names of the x variables. 
-          solverVerb:        Logger verbosity. 
-          problemType:       Forward premium specific flag to determine which case to look at. 
-          analyzeResults:    Function to use to analyze the emerging output. 
-          ctryList:          Forward premium specific list of ctrys to look at. 
+          Keyword arguments: 
+          inParaCombos -- List of tuples defining the parameter combinations.
+          jobname -- Name of GlobalOptimizer instance driving the optimization. 
+          iteration -- Current iteration number. 
+          path_to_stage_dir -- Path to directory in which optimization takes place. 
+          path_to_executable --  Path to the executable (the external program to be called). 
+          base_dir -- Directory in which the input files are located. 
+          x_vars -- Names of the x variables. 
+          para_files -- List of parameter files corresponding to the x variables. 
+          para_file_formats -- List of format strings for parameter files. Values can be: space-separated, bar-separated or a regular expression. 
         """
 
         logger.debug('entering gParaSearchParalell.__init__')
 
-
         # Set up initial variables and set the correct methods.
-        self.pathToStageDir = pathToStageDir
-        self.optSettings = optSettings
-        self.targetSettings = targetSettings
-        self.iteration = iteration
-        self.jobname = 'evalSolverGuess' + '-' + jobname + '-' + str(self.iteration)
-        self.verbosity = self.optSettings['verbosity']
-        self.extra_args = extra_args
-        
-        tasks = []
+        self.jobname = 'evalSolverGuess' + '-' + jobname + '-' + str(iteration)
+        self.iteration = iteration        
 
-        # --- createJobs_x ---
+        self.path_to_stage_dir = path_to_stage_dir
+        self.path_to_executable = path_to_executable
+        self.base_dir = base_dir
+        self.x_vars = x_vars
+        self.para_files = para_files
+        self.para_file_formats = para_file_formats
+        self.verbosity = 'DEBUG'
+        self.extra_args = extra_args
 
         # Log activity
         cDate = datetime.date.today()
         cTime = datetime.datetime.time(datetime.datetime.now())
-        dateString = '{0:04d}-{1:02d}-{2:02d}-{3:02d}-{4:02d}-{5:02d}'.format(cDate.year, cDate.month, cDate.day, cTime.hour, cTime.minute, cTime.second)
-        logger.debug('Establishing parallel task on %s' % dateString)
+        date_string = '%04d--%02d--%02d--%02d--%02d--%02d' % (cDate.year, cDate.month, cDate.day, cTime.hour, cTime.minute, cTime.second)
+        gc3libs.log.debug('Establishing parallel task on %s', date_string)
 
         # Enter an iteration specific folder
-        self.iterationFolder = os.path.join(self.pathToStageDir, 'Iteration-' + str(self.iteration))
+        self.iterationFolder = os.path.join(self.path_to_stage_dir, 'Iteration-' + str(self.iteration))
         try:
             os.mkdir(self.iterationFolder)
         except OSError:
@@ -230,25 +280,18 @@ class computePhenotypes(ParallelTaskCollection, paraLoop):
         nVariables = range(len(inParaCombos[0]))
         for ixVar in nVariables:
             varValString = ', '.join([('%25.15f' % paraCombo[ixVar]).strip() for paraCombo in inParaCombos])
-            #varValString = ''
-            #for ixParaCombo, paraCombo in enumerate(inParaCombos):
-                #### Should make more precise string conversion.
-                #varValString += str(paraCombo[ixVar])
-                #if ixParaCombo < len(inParaCombos) - 1:
-                    #varValString += ', '
             vals.append( varValString )
         
-        variables = self.targetSettings['xVars']
-        groups    = [0] * len(self.targetSettings['xVars'])
-        groupRestrs = ['diagnol'] * len(self.targetSettings['xVars'])
+        self.variables = self.x_vars
+        groups    = [0] * len(self.x_vars)
+        groupRestrs = ['diagnol'] * len(self.x_vars)
         writeVals = vals
-        self.variables = variables
         self.paraCombos = inParaCombos
-        paraFiles = self.targetSettings['paraFiles']
-        paraFileRegex = self.targetSettings['paraFileFormat']
+        paraFiles = self.para_files
+        paraFileRegex = self.para_file_formats
 
         # Write a para.loop file to generate grid jobs
-        para_loop = self.writeParaLoop(variables = variables,
+        para_loop = self.writeParaLoop(variables = self.variables,
                                        groups = groups,
                                        groupRestrs = groupRestrs,
                                        vals = writeVals,
@@ -256,17 +299,17 @@ class computePhenotypes(ParallelTaskCollection, paraLoop):
                                        paraFiles = paraFiles,
                                        paraFileRegex = paraFileRegex)
 
-        paraLoop.__init__(self, verbosity = self.verbosity)
-        tasks = self.generateTaskList(para_loop, self.iterationFolder)
+        paraLoop.__init__(self, verbosity = 'CRITICAL')
+        tasks = self.gen_task_list(para_loop, self.iterationFolder)
         ParallelTaskCollection.__init__(self, self.jobname, tasks)
         
-    def generateTaskList(self, para_loop, iterationFolder):
+    def gen_task_list(self, para_loop, iterationFolder):
         # Fill the task list
         tasks = []
         for jobname, substs in self.process_para_file(para_loop):
-            executable = os.path.basename(self.targetSettings['pathToExecutable'])
+            executable = os.path.basename(self.path_to_executable)
             # start the inputs dictionary with syntax: client_path: server_path
-            inputs = { self.targetSettings['pathToExecutable']:executable }
+            inputs = { self.path_to_executable:executable }
             # make a "stage" directory where input files are collected on the client machine.
             #path_to_stage_dir = self.make_directory_path(os.path.join(iterationFolder, 'NAME'), jobname)
             path_to_stage_dir = os.path.join(iterationFolder, jobname)
@@ -275,8 +318,8 @@ class computePhenotypes(ParallelTaskCollection, paraLoop):
             gc3libs.utils.mkdir(path_to_stage_base_dir)
             prefix_len = len(path_to_stage_base_dir) + 1
             # 1. files in the "initial" dir are copied verbatim
-            baseDir = self.targetSettings['baseDir']
-            gc3libs.utils.copytree(baseDir , path_to_stage_base_dir) # copy entire input directory
+            base_dir = self.base_dir
+            gc3libs.utils.copytree(base_dir , path_to_stage_base_dir) # copy entire input directory
             # 2. apply substitutions to parameter files
             for (path, changes) in substs.iteritems():
                 for (var, val, index, regex) in changes:
@@ -301,7 +344,6 @@ class computePhenotypes(ParallelTaskCollection, paraLoop):
             kwargs = self.extra_args
             kwargs['stdout'] = executable + '.log'
             kwargs['join'] = True
-            # kwargs['output_dir'] = '/home/benjamin/Desktop'
             kwargs['output_dir'] =  os.path.join(path_to_stage_dir, 'output')
             gc3libs.log.debug("Output dir: %s" % kwargs['output_dir'])
             kwargs['requested_architecture'] = 'x86_64'
@@ -311,51 +353,13 @@ class computePhenotypes(ParallelTaskCollection, paraLoop):
         return tasks
 
 
-
-
 if __name__ == '__main__':
     logger.info('Starting: \n%s' % ' '.join(sys.argv))
     # clean up
-    os.system('rm -r Iteration*')
-    os.system('rm *.log')
+    os.system('rm -r /tmp/rosenbrock')
 
-    def computeTarget(popLocationTuple):
-        '''
-          Given a list of (population, location) compute and return list of target values. 
-        '''
-        fxVals = []
-        for (pop, loc) in popLocationTuple:
-            outputDir = os.path.join(loc, 'output')
-            f = open(os.path.join(outputDir, 'test.out'))
-            line = f.readline().strip()
-            fxVal = float(line)
-            fxVals.append(fxVal)
-        return fxVals
-    
-    # Somehow execute globalOpt.__init__()...    gParaSearchScript().run()
-    optSettings = {}
-    optSettings['nDim']         = 2
-    optSettings['nPopulation']  = 100
-    optSettings['F_weight']     = 0.85
-    optSettings['F_CR']         = 1.
-    optSettings['lowerBds']     = -2 * np.ones(optSettings['nDim']) 
-    optSettings['upperBds']     = 2 * np.ones(optSettings['nDim']) 
-    optSettings['I_bnd_constr'] = 0
-    optSettings['itermax']      = 200
-    optSettings['F_VTR']        = 1.e-8
-    optSettings['optStrategy']  = 1
-    optSettings['I_refresh']    = 1
-    optSettings['I_plotting']   = 0
-    optSettings['verbosity']    = 'DEBUG'
-    targetSettings = {}
-    targetSettings['pathToExecutable'] = os.path.join(os.getcwd(), 'bin', 'a.out')
-    targetSettings['baseDir']          = os.path.join(os.getcwd(), 'base')
-    targetSettings['xVars']            = ['x1', 'x2']
-    targetSettings['paraFiles']        = ['test.in', 'test.in']
-    targetSettings['paraFileFormat']   = ['space-separated'] * 2
-    targetSettings['computeTarget']    = computeTarget
-    globalOptObj = globalOptimizer(jobname = 'globalOptRun', pathToStageDir = os.getcwd(), optSettings = optSettings, targetSettings = targetSettings)
-    # create an instance of GdemoSimpleApp
+    # create an instance globalObt
+    globalOptObj = GlobalOptimizer(y_crit=0.1)
     app = globalOptObj
     
     # create an instance of Core. Read configuration from your default
@@ -366,25 +370,11 @@ if __name__ == '__main__':
     engine = gc3libs.core.Engine(g)
     engine.add(app)
     
-    # in case you want to select a specific resource, call
-    # `Core.select_resource(...)`
-    # if len(sys.argv)>1:
-    #     g.select_resource(sys.argv[1])
-    
-    # Submit your application.
-    # g.submit(app)
-    
-    # After submssion, you have to check the application for its state:
-    #print  "Job id: %s" % app.execution.lrms_jobid
-    
     # Periodically check the status of your application.
     while app.execution.state != gc3libs.Run.State.TERMINATED:
         try:
             print "Job in status %s " % app.execution.state
             time.sleep(5)
-            # This call will contact the resource(s) and get the current
-            # job state
-            # g.update_job_state(app)
             engine.progress()
             sys.stdout.write("[ %s ]\r" % app.execution.state)
             sys.stdout.flush()
@@ -393,13 +383,4 @@ if __name__ == '__main__':
     
     print "Job is now in state %s. Fetching output." % app.execution.state
     
-    # You can specify a different `download_dir` option if you want to
-    # override the value used in the GdemoSimpleApp initialization (app.output_dir).
-    
-    # By default overwrite is False. If the output directory exists, it
-    # will be renamed by appending a unique numerical suffix in the form
-    # of output_dir.~N~ with N the first available number.
-    # g.fetch_output(app, overwrite=False)
-    
-    # print "Done. Results are in %s" % app.output_dir    
     logger.info('main done')
