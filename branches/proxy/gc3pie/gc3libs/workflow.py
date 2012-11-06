@@ -236,9 +236,8 @@ class SequentialTaskCollection(TaskCollection):
         Use the given Controller interface for operations on the job
         associated with this task.
         """
-        for task in self.tasks:
-            if not task._attached:
-                task.attach(controller)
+        if self._current_task is not None:
+            self.tasks[self._current_task].attach(controller)
         Task.attach(self, controller)
 
     def kill(self, **extra_args):
@@ -293,7 +292,7 @@ class SequentialTaskCollection(TaskCollection):
         if self._current_task is None:
             self._current_task = 0
         task = self.tasks[self._current_task]
-        self._controller.submit(task, resubmit, **extra_args)
+        task.attach(self._controller)
         task.submit(resubmit, **extra_args)
         if task.execution.state == Run.State.NEW:
             # submission failed, state unchanged
