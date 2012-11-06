@@ -516,7 +516,7 @@ class DifferentialEvolution:
     # Adjustments for pickling
     def __getstate__(self):
         state = self.__dict__.copy()
-   #     del state['nlc']
+        del state['nlc']
         del state['logger']
         return state
     
