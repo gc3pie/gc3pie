@@ -452,6 +452,26 @@ are used by the LSF backend:</p>
 </ul>
 </div></blockquote>
 </div>
+<div class="section" id="id1">
+<h3><tt class="docutils literal"><span class="pre">pbs</span></tt> resources<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">pbs</span></tt>-type resource section:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.   If <tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt> via SSH in order to execute Troque/PBS commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the Torque/PBS commands are run directly on the machine where GC3Pie is installed.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the Torque/PBS front-end node. This configuration item is only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="id2">
+<h3><tt class="docutils literal"><span class="pre">lsf</span></tt> resources<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">lsf</span></tt>-type resource section:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.   If <tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt> via SSH in order to execute LSF commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the LSF commands are run directly on the machine where GC3Pie is installed.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the LSF front-end node. This configuration item is only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.</li>
+</ul>
+</div></blockquote>
+</div>
 <div class="section" id="slurm-resources">
 <h3><tt class="docutils literal"><span class="pre">slurm</span></tt> resources<a class="headerlink" href="#slurm-resources" title="Permalink to this headline">¶</a></h3>
 <p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">slurm</span></tt>-type resource section:</p>
@@ -575,6 +595,8 @@ file.</p>
 <li><a class="reference internal" href="#sge-resources"><tt class="docutils literal"><span class="pre">sge</span></tt> resources</a></li>
 <li><a class="reference internal" href="#pbs-resources"><tt class="docutils literal"><span class="pre">pbs</span></tt> resources</a></li>
 <li><a class="reference internal" href="#lsf-resources"><tt class="docutils literal"><span class="pre">lsf</span></tt> resources</a></li>
+<li><a class="reference internal" href="#id1"><tt class="docutils literal"><span class="pre">pbs</span></tt> resources</a></li>
+<li><a class="reference internal" href="#id2"><tt class="docutils literal"><span class="pre">lsf</span></tt> resources</a></li>
 <li><a class="reference internal" href="#slurm-resources"><tt class="docutils literal"><span class="pre">slurm</span></tt> resources</a></li>
 <li><a class="reference internal" href="#example-resource-sections">Example <tt class="docutils literal"><span class="pre">resource</span></tt> sections</a></li>
 </ul>

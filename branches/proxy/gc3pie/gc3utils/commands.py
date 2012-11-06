@@ -1013,7 +1013,7 @@ To get detaileid info on a specific command, run:
                 jobname = app.jobname
             except AttributeError:
                 jobname = ''
-            
+
             rows.append([indent + app.persistent_id,
                          jobname,
                          app.execution.state,
