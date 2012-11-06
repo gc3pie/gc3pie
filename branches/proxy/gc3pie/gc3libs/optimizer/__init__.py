@@ -1,27 +1,26 @@
 #! /usr/bin/env python
 #
 """
-  Class to perform global optimization. 
-  
-  Optimization algorithm (for example Ken Price's Differnetial 
-  Evolution algorithm) generates guesses that are evaluated in parallel 
-  using gc3pie. 
-  
-  An instance of :class:`GlobalOptimizer` will perform the entire optimization
-  in a directory on the local machine named `path_to_stage_dir`. 
-  
-  At each iteration an instance of 'ComputePhenotypes' lets the user-defined 
-  function `task_constructor` generate :class:`Application` instances that are
-  used to execute the jobs in parallel on the grid. When all
-  jobs are complete, the objective's output is analyzed with the user-supplied
-  function `target_fun'. This function returns the function value for all
-  analyzed input vectors. 
-  
-  With this information, the optimizer generates a new guess. The instance of
-  class:`GlobalOptimizer' iterates until the sepcified convergence criteria 
-  is satisfied. 
-"""
+Class to perform global optimization.
 
+Optimization algorithm (for example Ken Price's Differential
+Evolution algorithm) generates guesses that are evaluated in parallel
+using gc3pie.
+
+An instance of :class:`GlobalOptimizer` will perform the entire optimization
+in a directory on the local machine named `path_to_stage_dir`.
+
+At each iteration an instance of 'ComputePhenotypes' lets the user-defined
+function `task_constructor` generate :class:`Application` instances that are
+used to execute the jobs in parallel on the grid. When all
+jobs are complete, the objective's output is analyzed with the user-supplied
+function `target_fun'. This function returns the function value for all
+analyzed input vectors.
+
+With this information, the optimizer generates a new guess. The instance of
+class:`GlobalOptimizer' iterates until the sepcified convergence criteria
+is satisfied.
+"""
 # Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -46,7 +45,7 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
-# For now use export export PYTHONPATH=~/workspace/globalOpt/gc3pie/ to allow import 
+# For now use export export PYTHONPATH=~/workspace/globalOpt/gc3pie/ to allow import
 # of gc3libs
 
 # General imports
@@ -67,13 +66,10 @@ import gc3libs.core
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 from gc3libs import Application, Run, Task
 
-# optimizer specific imports
-from dif_evolution import DifferentialEvolution
-
-# Perform basic configuration for gc3libs logger. Adjust level to logging.DEBUG if necessary. 
+# Perform basic configuration for gc3libs logger. Adjust level to logging.DEBUG if necessary.
 gc3libs.configure_logger(level=logging.CRITICAL)
 
-# Generate a separate logging instance. Careful, running gc3libs.configure_logger again will 
+# Generate a separate logging instance. Careful, running gc3libs.configure_logger again will
 log = logging.getLogger('gc3.gc3libs.GlobalOptimizer')
 log.setLevel(logging.DEBUG)
 log.propagate = 0
@@ -86,24 +82,25 @@ log.addHandler(stream_handler)
 log.addHandler(file_handler)
 log.debug('hello')
 
+
 class GlobalOptimizer(SequentialTaskCollection):
 
     def __init__(self, jobname = '', path_to_stage_dir = '',
                  optimizer = None, task_constructor = None,
                  target_fun = None, **extra_args ):
-                 
+
         '''
-          Main loop for the global optimizer. 
-          
+          Main loop for the global optimizer.
+
           Keyword arguments:
-          jobname -- string that labels this optimization case. 
-          path_to_stage_dir -- directory in which to perform the optimization. 
-          
-          optimizer -- Optimizer instance that conforms to the abstract class optimization algorithm. 
-          task_constructor -- Takes a list of x vectors and the path to the current iteration directory. 
-                              Returns Application instances that can be executed on the grid. 
+          jobname -- string that labels this optimization case.
+          path_to_stage_dir -- directory in which to perform the optimization.
+
+          optimizer -- Optimizer instance that conforms to the abstract class optimization algorithm.
+          task_constructor -- Takes a list of x vectors and the path to the current iteration directory.
+                              Returns Application instances that can be executed on the grid.
           target_fun -- Takes a list of (x_vector, application_instance) tuples and returns the corresponding
-                        function value for the x_vector. 
+                        function value for the x_vector.
         '''
 
         log.debug('entering globalOptimizer.__init__')
@@ -124,7 +121,8 @@ class GlobalOptimizer(SequentialTaskCollection):
         initial_task = self.evaluator
 
         SequentialTaskCollection.__init__(self,  [initial_task], **extra_args)
-        
+
+
     def next(self, *args):
         log.debug('entering gParaSearchDriver.next')
 
@@ -159,26 +157,27 @@ class GlobalOptimizer(SequentialTaskCollection):
             self.execution.returncode = 0
             return Run.State.TERMINATED
         return Run.State.RUNNING
-  
-        
+
+
     def __str__(self):
         return self.jobname
-    
+
     # Adjustments for pickling
     # def __getstate__(self):
     #     state = Task.__getstate__(self)
-    #     # Check that there are no functions in state. 
+    #     # Check that there are no functions in state.
     #     #for attr in ['optimizer']:
-    #         ## 'task_constructor', 'target_fun', 'tasks', 
+    #         ## 'task_constructor', 'target_fun', 'tasks',
     #         #del state[attr]
     #    # state = None
     #     return state
-    
+
     # def __setstate__(self, state):
     #     # restore _grid, etc.
     #     Task.__setstate__(self, state)
     #     # restore loggers
     #     #self._setup_logging()
+
 
 class ComputePhenotypes(ParallelTaskCollection):
 
@@ -189,15 +188,15 @@ class ComputePhenotypes(ParallelTaskCollection):
     def __init__(self, inParaCombos, jobname, iteration, path_to_stage_dir, task_constructor, **extra_args):
 
         """
-          Generate a list of tasks and initialize a ParallelTaskCollection with them. 
+          Generate a list of tasks and initialize a ParallelTaskCollection with them.
 
-          Keyword arguments: 
+          Keyword arguments:
           inParaCombos -- List of tuples defining the parameter combinations.
-          jobname -- Name of GlobalOptimizer instance driving the optimization. 
-          iteration -- Current iteration number. 
-          path_to_stage_dir -- Path to directory in which optimization takes place. 
-          task_constructor -- Takes a list of x vectors and the path to the current iteration directory. 
-                              Returns Application instances that can be executed on the grid. 
+          jobname -- Name of GlobalOptimizer instance driving the optimization.
+          iteration -- Current iteration number.
+          path_to_stage_dir -- Path to directory in which optimization takes place.
+          task_constructor -- Takes a list of x vectors and the path to the current iteration directory.
+                              Returns Application instances that can be executed on the grid.
         """
 
         log.debug('entering gParaSearchParalell.__init__')
@@ -229,3 +228,37 @@ class ComputePhenotypes(ParallelTaskCollection):
 
         self.tasks = [ task_constructor(x_vec, self.iterationFolder) for x_vec in inParaCombos ]
         ParallelTaskCollection.__init__(self, self.tasks, **extra_args)
+
+
+class EvolutionaryAlgorithm(object):
+    '''
+    Base class for building an evolutionary algorithm for global optimization.
+    '''
+
+    def __init__(self, whatever):
+        """Document what this method should do."""
+        raise NotImplementedError("Abstract method `LRMS.free()` called - this should have been defined in a derived class.")
+
+    def update_population(self, new_pop = None, new_vals = None):
+        '''
+          Updates the solver with the newly evaluated population and the corresponding
+          new_vals.
+        '''
+        pass
+
+    def has_converged(self):
+        '''
+          Check all specified convergence criteria and return whether converged.
+        '''
+        return False
+
+    def evaluate(self, pop):
+        # For each indivdual in self.population evaluate individual
+        return fitness_vector
+
+    def select(self, pop, fitness_vec):
+        pass # return a matrix of size self.size
+
+    # a list of modified population, for example mutated, recombined, etc.
+    def modify(self, offspring):
+        return modified_population # a mixture of different variations
