@@ -3,7 +3,7 @@
 """
   Class to perform global optimization. 
   
-  Some optimization algorithm (for example Ken Price's Differnetial 
+  Optimization algorithm (for example Ken Price's Differnetial 
   Evolution algorithm) generates guesses that are evaluated in parallel 
   using gc3pie. 
   
@@ -18,7 +18,8 @@
   analyzed input vectors. 
   
   With this information, the optimizer generates a new guess. The instance of
-  class:`GlobalOptimizer' iterates until some convergence criteria is satisfied. 
+  class:`GlobalOptimizer' iterates until the sepcified convergence criteria 
+  is satisfied. 
 """
 
 # Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
@@ -64,8 +65,7 @@ import gc3libs.debug
 import gc3libs.config
 import gc3libs.core
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
-#from gc3libs.optimizer.examples.rosenbrock.opt_rosenbrock import compute_target_rosenbrock
-from gc3libs import Application, Run
+from gc3libs import Application, Run, Task
 
 # optimizer specific imports
 from dif_evolution import DifferentialEvolution
@@ -162,6 +162,22 @@ class GlobalOptimizer(SequentialTaskCollection):
         
     def __str__(self):
         return self.jobname
+    
+    # Adjustments for pickling
+    def __getstate__(self):
+        state = Task.__getstate__(self)
+        # Check that there are no functions in state. 
+        #for attr in ['optimizer']:
+            ## 'task_constructor', 'target_fun', 'tasks', 
+            #del state[attr]
+       # state = None
+        return state
+    
+    def __setstate__(self, state):
+        # restore _grid, etc.
+        Task.__setstate__(self, state)
+        # restore loggers
+        #self._setup_logging()
 
 class ComputePhenotypes(ParallelTaskCollection):
 
@@ -211,4 +227,3 @@ class ComputePhenotypes(ParallelTaskCollection):
 
         self.tasks = [ task_constructor(x_vec, self.iterationFolder) for x_vec in inParaCombos ]
         ParallelTaskCollection.__init__(self, self.jobname, self.tasks)
-
