@@ -192,7 +192,7 @@ class paraLoop(object):
             for ixVar in range(0, len(variables)):
                 self.logger.debug('variable #%d is %s' % (ixVar, variables[ixVar]))
 
-            runDescription = os.path.basename(path_to_para_loop)[:-5]
+            runDescription = 'para'# os.path.basename(path_to_para_loop)[:-5]
             substs = gc3libs.utils.defaultdict(list)
             for ixVar, var in enumerate(variables):
                 self.logger.debug('variable: %s' % variables[ixVar])
