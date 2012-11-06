@@ -30,7 +30,6 @@ __docformat__ = 'reStructuredText'
 
 
 # To do: 
-# Make logging consistent
 # Call paraLoop directly instead of writing para.loop files. 
 
 # For now use export export PYTHONPATH=~/workspace/globalOpt/gc3pie/ to allow import 
@@ -54,7 +53,7 @@ from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 from gc3libs import Application, Run
 
 # optimizer specific imports
-from support_gc3 import wrapLogger, update_parameter_in_file
+from support_gc3 import update_parameter_in_file
 from dif_evolution import DifferentialEvolution
 from para_loop import ParaLoop
 
@@ -75,6 +74,8 @@ file_handler = logging.FileHandler(log_file_name, mode = 'w')
 file_handler.setLevel(logging.DEBUG)
 log.addHandler(stream_handler)
 log.addHandler(file_handler)
+
+float_fmt = '%25.15f'
 
 def compute_target_rosenbrock(pop_location_tuple):
     '''
@@ -129,8 +130,6 @@ class GlobalOptimizer(SequentialTaskCollection):
           target_fun --  Function to analyze the output retrieved from the servers and generate list of f values. 
         '''
 
-#        logger.debug('entering globalOptimizer.__init__')
-#        gc3libs.log.debug('entering globalOptimizer.__init__')
         log.debug('entering globalOptimizer.__init__')
 
         # Set up initial variables and set the correct methods.
@@ -190,7 +189,7 @@ class GlobalOptimizer(SequentialTaskCollection):
         # pass on (popMem, location)
         pop_location_tuple = [(popEle, 
                              os.path.join(self.path_to_stage_dir, 'Iteration-' + str(self.deSolver.I_iter), 'para_' + '_'.join([(var + '=' + 
-                                                               ('%25.15f' % val).strip()) for (var,val) in zip(self.x_vars, popEle) ] ) ) ) for popEle in self.deSolver.newPop]
+                                                               (float_fmt % val).strip()) for (var,val) in zip(self.x_vars, popEle) ] ) ) ) for popEle in self.deSolver.newPop]
         newVals = self.target_fun(pop_location_tuple)
         self.deSolver.updatePopulation(self.deSolver.newPop, newVals)
         # Stats for initial population:
@@ -223,9 +222,7 @@ class GlobalOptimizer(SequentialTaskCollection):
             self.execution.returncode = 0
             return Run.State.TERMINATED
         return Run.State.RUNNING
-        
-        
-        
+  
         
     def __str__(self):
         return self.jobname
@@ -294,34 +291,27 @@ class ComputePhenotypes(ParallelTaskCollection, ParaLoop):
         vals = []
         nVariables = range(len(inParaCombos[0]))
         for ixVar in nVariables:
-            varValString = ', '.join([('%25.15f' % paraCombo[ixVar]).strip() for paraCombo in inParaCombos])
-            vals.append( varValString )
-        
-        self.variables = self.x_vars
-        groups    = [0] * len(self.x_vars)
-        groupRestrs = ['diagnol'] * len(self.x_vars)
-        writeVals = vals
-        self.paraCombos = inParaCombos
-        paraFiles = self.para_files
-        paraFileRegex = self.para_file_formats
-
-        # Write a para.loop file to generate grid jobs
-        para_loop = self.writeParaLoop(variables = self.variables,
-                                       groups = groups,
-                                       groupRestrs = groupRestrs,
-                                       vals = writeVals,
-                                       desPath = os.path.join(self.iterationFolder, 'para.loopTmp'),
-                                       paraFiles = paraFiles,
-                                       paraFileRegex = paraFileRegex)
+            vals.append([paraCombo[ixVar] for paraCombo in inParaCombos])
+     
+        params = {}
+        n_vars = len(self.x_vars)
+        params['variables'] = self.x_vars
+        params['indices'] = np.array(['(0)'] * n_vars)
+        params['paraFiles'] = self.para_files
+        params['paraProps'] = np.array(['None'] * n_vars)
+        params['groups'] = np.array([0] * n_vars)
+        params['groupRestrs'] = np.array(['diagnol'] * n_vars)
+        params['paraFileRegex'] = self.para_file_formats
+        params['vals'] = np.array(vals)
 
         ParaLoop.__init__(self, verbosity = 'CRITICAL')
-        tasks = self.gen_task_list(para_loop, self.iterationFolder)
+        tasks = self.gen_task_list(self.iterationFolder, params)
         ParallelTaskCollection.__init__(self, self.jobname, tasks)
         
-    def gen_task_list(self, para_loop, iterationFolder):
+    def gen_task_list(self, iterationFolder, params):
         # Fill the task list
         tasks = []
-        for jobname, substs in self.process_para_file(para_loop):
+        for jobname, substs in self.process_para_file(path_to_para_loop = None, params = params):
             executable = os.path.basename(self.path_to_executable)
             # start the inputs dictionary with syntax: client_path: server_path
             inputs = { self.path_to_executable:executable }
@@ -391,8 +381,8 @@ if __name__ == '__main__':
             print "Job in status %s " % app.execution.state
             time.sleep(5)
             engine.progress()
-            sys.stdout.write("[ %s ]\r" % app.execution.state)
-            sys.stdout.flush()
+#            sys.stdout.write("[ %s ]\r" % app.execution.state)
+#            sys.stdout.flush()
         except:
             raise
     

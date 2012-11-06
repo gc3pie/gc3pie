@@ -8,9 +8,7 @@ Please refer to this web site for more information: http://www.icsi.berkeley.edu
 
 import numpy as np
 import sys, os
-import logbook
 import logging
-from supportGc3 import wrapLogger
 try:
   import matplotlib
   matplotlib.use('SVG')
@@ -26,6 +24,7 @@ log = logging.getLogger('gc3.gc3libs.optimizer')
 class DifferentialEvolution:
   '''
     Differential evolution optimizer class. 
+    
     Solver iterations can be driven externally (see for ex. gParaSearchDriver) or from within the class (self.deopt()).
     Instance needs two properties, supplied through evaluator class or set externally: 
       1) Target function that takes x and generates f(x)
