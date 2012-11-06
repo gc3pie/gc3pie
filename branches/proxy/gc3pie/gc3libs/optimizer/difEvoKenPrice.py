@@ -20,63 +20,7 @@ except:
   
 np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
-
-
-class wrapLogger():
-    def __init__(self, loggerName = 'myLogger', streamVerb = 'DEBUG', logFile = 'logFile'):
-        self.loggerName = loggerName
-        self.streamVerb = streamVerb
-        self.logFile    = logFile
-        logger = getLogger(loggerName = self.loggerName, streamVerb = self.streamVerb, logFile = self.logFile)
-        self.wrappedLog = logger
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        del state['wrappedLog']
-        return state
-    def __setstate__(self, state):
-        self.__dict__ = state
-        logger = getLogger(loggerName = self.loggerName, streamVerb = self.streamVerb, logFile = self.logFile)
-        self.wrappedLog = logger
-        
-    def __getattr__(self, attr):
-        # see if this object has attr
-        # NOTE do not use hasattr, it goes into
-        # infinite recurrsion
-        if attr in self.__dict__:
-            # this object has it
-            return getattr(self, attr)
-        # proxy to the wrapped object
-        return getattr(self.wrappedLog, attr)
-    
-    def __hasattr__(self, attr):
-        if attr in self.__dict__:
-            return getattr(self, attr)
-        return getattr(self.wrappedLog, attr)
-    
-
-
-def getLogger(loggerName = 'mylogger.log', streamVerb = 'DEBUG', logFile = 'log'):
-
-    # Get a logger instance.
-    logger = logbook.Logger(name = loggerName)
-    
-    # set up logger
-    mySH = logbook.StreamHandler(stream = sys.stdout, level = streamVerb.upper(), format_string = '{record.message}', bubble = True)
-    mySH.format_string = '{record.message}'
-    logger.handlers.append(mySH)
-    if logFile:
-        myFH = logbook.FileHandler(filename = logFile, level = 'DEBUG', bubble = True)
-        myFH.format_string = '{record.message}' 
-        logger.handlers.append(myFH)   
-    
-    try:
-        stdErr = list(logbook.handlers.Handler.stack_manager.iter_context_objects())[0]
-        stdErr.pop_application()
-    except: 
-        pass
-    return logger
-
+from supportGc3 import wrapLogger
 
 class deKenPrice:
   '''
