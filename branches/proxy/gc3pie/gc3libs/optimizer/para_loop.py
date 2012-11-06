@@ -36,16 +36,29 @@ import re
 import shutil
 import numpy as np
 import logbook
+import logging
 
 # gc3libs imports
 import gc3libs.debug
 
 # Support function imports
-from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
-from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
-from supportGc3 import wrapLogger
+from support_gc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
+from support_gc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
+from support_gc3 import wrapLogger
 
-class paraLoop(object):
+# Generate a separate logging instance. Careful, running gc3libs.configure_logger again will 
+log = logging.getLogger('gc3.gc3libs.optimizer.para_loop')
+log.setLevel(logging.DEBUG)
+log.propagate = 0
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.DEBUG)
+log_file_name = os.path.join(gc3libs.Default.RCDIR, 'para_loop.log')
+file_handler = logging.FileHandler(log_file_name, mode = 'w')
+file_handler.setLevel(logging.DEBUG)
+log.addHandler(stream_handler)
+log.addHandler(file_handler)
+
+class ParaLoop(object):
     '''
       Main class implementing a general loop algorithm. Loop over an arbitrary number of variables and values. 
       Additionally the script allows for grouping variables and then specifying a restricted set of parameter
@@ -54,7 +67,9 @@ class paraLoop(object):
     '''
     
     def __init__(self, verbosity):
-        self.logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = verbosity.upper(), logFile = __name__ + '.log')
+#        self.logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = verbosity.upper(), logFile = __name__ + '.log')
+        self.logger = logging.getLogger('gc3.gc3libs.optimizer.para_loop')
+        self.logger.setLevel(verbosity.upper())
 
     def process_para_file(self, path_to_para_loop):
         """
@@ -95,11 +110,7 @@ class paraLoop(object):
         groupRestrs   = params['groupRestrs']
         paraFileRegex = params['paraFileRegex']
 
-        # XXX: why not just use `vals = np.copy(params['vals'])` ??
         vals = np.copy(params['vals'])
-        #vals = np.empty((num_params,), 'U100')
-        #for ixVals, paraVals in enumerate(params['vals']):
-            #vals[ixVals] = paraVals
 
         # remap group numbers so that they start at 0 and increase in
         # steps of 1

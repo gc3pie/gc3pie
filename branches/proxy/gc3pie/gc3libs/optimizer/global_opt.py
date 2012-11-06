@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 #
 """
-  Class to perform global optimization
+  Class to perform global optimization. 
 """
 
 # Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
@@ -54,22 +54,34 @@ from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 from gc3libs import Application, Run
 
 # optimizer specific imports
-from supportGc3 import wrapLogger, update_parameter_in_file
-from difEvoKenPrice import deKenPrice
-from paraLoop import paraLoop
+from support_gc3 import wrapLogger, update_parameter_in_file
+from dif_evolution import DifferentialEvolution
+from para_loop import ParaLoop
 
 # For now use __file__ to determine path to the example files. Could also use pkg_resources. 
 path_to_rosenbrock_example = os.path.join(os.path.dirname(__file__), 'examples/rosenbrock/')
 
+# Perform basic configuration for gc3libs logger. Adjust level to logging.DEBUG if necessary. 
 gc3libs.configure_logger(level=logging.CRITICAL)
-logger = wrapLogger(loggerName = 'globalOptLogger', streamVerb = 'INFO', logFile = os.path.join(os.getcwd(), 'globalOpt.log'))
 
-def compute_target_rosenbrock(popLocationTuple):
+# Generate a separate logging instance. Careful, running gc3libs.configure_logger again will 
+log = logging.getLogger('gc3.gc3libs.optimizer')
+log.setLevel(logging.DEBUG)
+log.propagate = 0
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.INFO)
+log_file_name = os.path.join(gc3libs.Default.RCDIR, 'optimizer.log')
+file_handler = logging.FileHandler(log_file_name, mode = 'w')
+file_handler.setLevel(logging.DEBUG)
+log.addHandler(stream_handler)
+log.addHandler(file_handler)
+
+def compute_target_rosenbrock(pop_location_tuple):
     '''
       Given a list of (population, location) compute and return list of target values. 
     '''
     fxVals = []
-    for (pop, loc) in popLocationTuple:
+    for (pop, loc) in pop_location_tuple:
         outputDir = os.path.join(loc, 'output')
         f = open(os.path.join(outputDir, 'rosenbrock.out'))
         line = f.readline().strip()
@@ -94,9 +106,9 @@ class GlobalOptimizer(SequentialTaskCollection):
           jobname -- string that labels this optimization case. 
           path_to_stage_dir -- directory in which to perform the optimization. 
           
-          n_dim -- dimension of the objective function.
-          n_population -- size of the populatin. 
-          initial_pop -- population to start with. 
+          n_dim -- Dimension of the objective function.
+          n_population -- Size of the populatin. 
+          initial_pop -- Population to start with. 
           lower_bds -- Lower bounds for the input variables when drawing initial guess. 
           upper_bds -- Upper bounds for the input variables when drawing initial guess. 
           iter_max -- Maximum # of iterations of the solver. 
@@ -118,7 +130,8 @@ class GlobalOptimizer(SequentialTaskCollection):
         '''
 
 #        logger.debug('entering globalOptimizer.__init__')
-        gc3libs.log.debug('entering globalOptimizer.__init__')
+#        gc3libs.log.debug('entering globalOptimizer.__init__')
+        log.debug('entering globalOptimizer.__init__')
 
         # Set up initial variables and set the correct methods.
         self.jobname = jobname
@@ -154,7 +167,7 @@ class GlobalOptimizer(SequentialTaskCollection):
         opt_settings['verbosity']    = verbosity
         opt_settings['workingDir']   = self.path_to_stage_dir
         
-        self.deSolver = deKenPrice(opt_settings)             
+        self.deSolver = DifferentialEvolution(opt_settings)             
 
         if not initial_pop:
             self.deSolver.newPop = self.deSolver.drawInitialSample()
@@ -171,14 +184,14 @@ class GlobalOptimizer(SequentialTaskCollection):
         SequentialTaskCollection.__init__(self, self.jobname, [initial_task])
         
     def next(self, *args):
-        logger.debug('entering gParaSearchDriver.next')
+        log.debug('entering gParaSearchDriver.next')
 
         self.changed = True
         # pass on (popMem, location)
-        popLocationTuple = [(popEle, 
+        pop_location_tuple = [(popEle, 
                              os.path.join(self.path_to_stage_dir, 'Iteration-' + str(self.deSolver.I_iter), 'para_' + '_'.join([(var + '=' + 
                                                                ('%25.15f' % val).strip()) for (var,val) in zip(self.x_vars, popEle) ] ) ) ) for popEle in self.deSolver.newPop]
-        newVals = self.target_fun(popLocationTuple)
+        newVals = self.target_fun(pop_location_tuple)
         self.deSolver.updatePopulation(self.deSolver.newPop, newVals)
         # Stats for initial population:
         self.deSolver.printStats()
@@ -217,7 +230,7 @@ class GlobalOptimizer(SequentialTaskCollection):
     def __str__(self):
         return self.jobname
 
-class ComputePhenotypes(ParallelTaskCollection, paraLoop):
+class ComputePhenotypes(ParallelTaskCollection, ParaLoop):
 
     def __str__(self):
         return self.jobname
@@ -245,7 +258,7 @@ class ComputePhenotypes(ParallelTaskCollection, paraLoop):
           para_file_formats -- List of format strings for parameter files. Values can be: space-separated, bar-separated or a regular expression. 
         """
 
-        logger.debug('entering gParaSearchParalell.__init__')
+        log.debug('entering gParaSearchParalell.__init__')
 
         # Set up initial variables and set the correct methods.
         self.jobname = 'evalSolverGuess' + '-' + jobname + '-' + str(iteration)
@@ -301,7 +314,7 @@ class ComputePhenotypes(ParallelTaskCollection, paraLoop):
                                        paraFiles = paraFiles,
                                        paraFileRegex = paraFileRegex)
 
-        paraLoop.__init__(self, verbosity = 'CRITICAL')
+        ParaLoop.__init__(self, verbosity = 'CRITICAL')
         tasks = self.gen_task_list(para_loop, self.iterationFolder)
         ParallelTaskCollection.__init__(self, self.jobname, tasks)
         
@@ -356,7 +369,7 @@ class ComputePhenotypes(ParallelTaskCollection, paraLoop):
 
 
 if __name__ == '__main__':
-    logger.info('Starting: \n%s' % ' '.join(sys.argv))
+    log.info('Starting: \n%s' % ' '.join(sys.argv))
     # clean up
     os.system('rm -r /tmp/rosenbrock')
 
@@ -385,4 +398,4 @@ if __name__ == '__main__':
     
     print "Job is now in state %s. Fetching output." % app.execution.state
     
-    logger.info('main done')
+    log.info('main done')
