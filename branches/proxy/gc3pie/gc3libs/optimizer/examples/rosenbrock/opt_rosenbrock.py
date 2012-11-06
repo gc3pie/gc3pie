@@ -121,7 +121,7 @@ if __name__ == '__main__':
     print 'Starting: \n%s' % ' '.join(sys.argv)
     # clean up
     path_to_stage_dir = '/tmp/rosenbrock'
-    os.system('rm -r ' + path_to_stage_dir)
+    os.system('rm -rf ' + path_to_stage_dir)
     # Initialize stage dir
     if not os.path.isdir(path_to_stage_dir):
         os.makedirs(path_to_stage_dir)    
