@@ -103,7 +103,7 @@ def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     kwargs['requested_architecture'] = 'x86_64'
     kwargs['requested_cores'] = 1
     # hand over job to create
-    return Application('./' + executable, [], inputs, outputs, **kwargs)
+    return Application(['./' + executable], inputs, outputs, **kwargs)
 
 def compute_target_rosenbrock(pop_task_tuple):
     '''
@@ -153,10 +153,7 @@ class RosenbrockScript(SessionBasedScript):
         kwargs['task_constructor'] = task_constructor_rosenbrock
         kwargs['target_fun'] = compute_target_rosenbrock
         
-        yield (jobname, 
-               GlobalOptimizer, 
-               [ ], 
-               kwargs)
+        return [GlobalOptimizer(jobname=jobname, **kwargs)]
             
 if __name__ == '__main__':
     print 'starting'
