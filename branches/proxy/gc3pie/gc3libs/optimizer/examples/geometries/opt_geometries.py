@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 #
 """
-  Finding minimum energy for a certain set of geometries. 
+  Finding minimum energy for a certain set of geometries.
 """
 
 # Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
@@ -485,6 +485,11 @@ def task_constructor_geometries(x_vals, iteration_directory, **extra_args):
     #kwargs['requested_cores'] = 1
     ## hand over job to create
 
+n_atoms = 6
+vec_dimension = 3 * n_atoms
+def nlc(x):
+    return np.array([ 1 ] * vec_dimension)
+
 
 class GeometriesScript(SessionBasedScript):
     """
@@ -501,12 +506,12 @@ class GeometriesScript(SessionBasedScript):
     def new_tasks(self, extra):     
         
         path_to_stage_dir = os.getcwd()
-        n_atoms = 6
-        vec_dimension = 3 * n_atoms
-    
+
+        # nlc needs to be a pickable function: http://docs.python.org/2/library/pickle.html#what-can-be-pickled-and-unpickled
         de_solver = DifferentialEvolution(dim = vec_dimension, pop_size = 10, de_step_size = 0.85, prob_crossover = 1., itermax = 200, 
                                       y_conv_crit = 0.1, de_strategy = 1, plotting = False, working_dir = path_to_stage_dir, 
-                                      lower_bds = [-2] * vec_dimension, upper_bds = [2] * vec_dimension, x_conv_crit = None, verbosity = 'DEBUG')
+                                      lower_bds = [-2] * vec_dimension, upper_bds = [2] * vec_dimension, x_conv_crit = None, verbosity = 'DEBUG',
+                                      nlc = nlc)
     
         initial_pop = []
         if not initial_pop:
