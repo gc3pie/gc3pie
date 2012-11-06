@@ -93,6 +93,8 @@ setuptools.setup(
         'psutil>=0.6.1',
         # Needed for parsing human-readable dates (gselect uses it).
         'parsedatetime',
+        # needed by Benjamin's DE optimizer code
+        'numpy',
         ],
     # additional non-Python files to be bundled in the package
     package_data = {
