@@ -82,7 +82,7 @@ class test_proxy_class(object):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
         self.store = make_store(self.tmpdir)
-        memory_manager.set_storage(None)
+        memory_manager.storage = None
         memory_manager.flush()
 
     def tearDown(self):
@@ -91,7 +91,7 @@ class test_proxy_class(object):
     def test_forget(self):
         app = Application([], [], [], '')
         prxy = Proxy(app)
-        memory_manager.set_storage(self.store)
+        memory_manager.storage = self.store
         assert prxy._obj is app
         prxy.proxy_forget()
         assert prxy._obj is None
@@ -106,7 +106,7 @@ class test_proxy_class(object):
         prxy.proxy_forget()
         assert prxy._obj is app
         # Set the external storage to use to save the object.
-        memory_manager.set_storage(self.store)
+        memory_manager.storage = self.store
         prxy.proxy_forget()
         # Now, the object reference is *empty*
         assert prxy._obj is None
@@ -116,13 +116,13 @@ class test_proxy_class(object):
     def test_persistent_id_consistency(self):
         app = Application([], [], [], '', jobname='App')
         prxy = Proxy(app)
-        memory_manager.set_storage(self.store)
+        memory_manager.storage = self.store
 
         # Force saving of the object
         prxy.proxy_forget()
         # ...and reload it
         prxy.jobname
-        
+
         # When an object is saved, a new attribute `persistent_id` is
         # set
         aid = prxy._obj.persistent_id
@@ -155,8 +155,8 @@ class test_proxy_class(object):
     def test_memory_pool(self):
         """Test MemoryPool class basic behavior"""
         numobjects, maxobjects = 25, 10
-        memory_manager.set_storage(self.store)
-        memory_manager.maxobjects(maxobjects)
+        memory_manager.storage = self.store
+        memory_manager.maxobjects = maxobjects
 
         objects = []
         for i in range(numobjects):
@@ -171,17 +171,17 @@ class test_proxy_class(object):
 
         assert_equal(
             len([i for i in objects if i.proxy_saved()]),
-            numobjects - memory_manager.minobjects())
+            numobjects - memory_manager.minobjects)
         assert_equal(
             len([i for i in objects if not i.proxy_saved()]),
-            memory_manager.minobjects())
+            memory_manager.minobjects)
 
     def test_memory_pool_minobjects(self):
         """Test MemoryPool minobjects behavior"""
         numobjects, maxobjects, minobjects = 60, 30, 20
-        memory_manager.set_storage(self.store)
-        memory_manager.minobjects(minobjects)
-        memory_manager.maxobjects(maxobjects)
+        memory_manager.storage = self.store
+        memory_manager.minobjects = minobjects
+        memory_manager.maxobjects = maxobjects
         for i in range(numobjects):
             obj = Proxy(Task(ord=i))
 

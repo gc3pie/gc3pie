@@ -26,6 +26,7 @@ import time
 import inspect
 
 from gc3libs import log
+from gc3libs.utils import defproperty
 from gc3libs.persistence.store import Persistable, Store
 from gc3libs.persistence._ac_proxy import ACProxy
 import gc3libs.exceptions
@@ -58,6 +59,7 @@ def create_proxy_class(cls, obj, extra):
     pxy._obj_id = extra['_obj_id']
     return pxy
 
+
 class MemoryPool(object):
     """
     Store a set of Proxy objects but keep in memory only a fixed amount of them;
@@ -81,23 +83,6 @@ class MemoryPool(object):
         persistent store and maximum number of live objects to keep in
         memory.
 
-        The `maxobjects` argument controls how many live objects are
-        kept in memory.  If `maxobjects` is 0, then no object is ever
-        flushed to persistent storage (i.e., this class becomes a
-        no-op).
-
-        The `minobjects` argument is used when a new refresh cycle is
-        run, and controls the minimum number of live objects the
-        MemoryPool will keep. When `maxobjects` limit is hit and a new
-        refresh cycle is run, a certain number of objects will be
-        flushed to persistent storage but no more than the current
-        number of objects minus `minobjects`.
-
-        Default value for `minobjects` is `maxobjects`/2.
-
-        If `maxobjects` is not defined, the value of `minobjects` is
-        meaningless because no refresh cycle is called.
-
         Example usage:
 
         1. Setup a `gc3libs.Store` instance to use as persistent storage::
@@ -112,13 +97,12 @@ class MemoryPool(object):
         of objects we want to save::
 
             >>> from gc3libs.persistence.proxy import memory_manager as mempool
-            >>> mempool.set_storage(store)
-            >>> mempool.maxobjects(10)
-            10
+            >>> mempool.storage = store
+            >>> mempool.maxobjects = 10
 
-           default value for `minobjects` is `maxobjects`/2:
+        The default value for `minobjects` is `maxobjects`/2:
 
-            >>> mempool.minobjects()
+            >>> mempool.minobjects
             5
 
         3. Add 15 Proxy objects to the memory pool (we can add only
@@ -143,39 +127,70 @@ class MemoryPool(object):
         change in future.
           """
 
-        self._storage = storage
+        self.storage = storage
+        self.maxobjects = maxobjects
+        self.minobjects = minobjects
         self._proxies = set()
-        self._maxobjects = maxobjects
-        self._minobjects = minobjects
 
-    def maxobjects(self, num=None):
-        """
-        Getter/Setter for `maxobjects` attribute
-        """
-        if num is not None:
-            self._maxobjects = num
-        return self._maxobjects
 
-    def minobjects(self, num=None):
+    @defproperty
+    def maxobjects():
         """
-        Getter/Setter for `minobjects` attribute
-        """
-        if num is not None:
-            self._minobjects = num
-        if self._minobjects is None:
-            return self._maxobjects/2
-        else:
-            return self._minobjects
+        How many live objects are kept in memory, maximum.
 
-    def set_storage(self, storage, overwrite=True):
-        """
-        Set the internal storage for `storage`.
-        """
-        if not self._storage or overwrite:
-            self._storage = storage
+        If `maxobjects` is 0 or `None`, then no object is ever flushed
+        to persistent storage (i.e., the `MemoryPool`:class: class
+        becomes a no-op)::
 
-    def get_storage(self):
-        return self._storage
+          >>> mempool = MemoryPool()
+          >>> mempool.maxobjects = None
+          >>> mempool.maxobjects
+          0
+
+        """
+        def fget(self):
+            return self._maxobjects
+        def fset(self, value):
+            # 0, None and False all count as `0`; other values are
+            # presumed being real max objects counters
+            if value:
+                self._maxobjects = value
+            else:
+                self._maxobjects = 0
+        return locals()
+
+
+    @defproperty
+    def minobjects():
+        """
+        Number of live objects that will be kept in memory after a
+        refresh cycle is run.
+
+        If this is set to `None`, than a value of `maxobjects/2` is
+        used::
+
+          >>> mempool = MemoryPool()
+          >>> mempool.maxobjects = 100
+          >>> mempool.minbojects = None
+          >>> mempool.minobjects
+          50
+          >>> mempool.maxobjects = 64
+          >>> mempool.minobjects
+          32
+
+        If `maxobjects` is 0, the value of `minobjects` is meaningless
+        because no refresh cycle is ever run.
+
+        """
+        def fget(self):
+            if self._minobjects is None:
+                return (self._maxobjects / 2)
+            else:
+                return self._minobjects
+        def fset(self, value):
+            self._minobjects = value
+        return locals()
+
 
     def add(self, obj):
         """
@@ -183,7 +198,7 @@ class MemoryPool(object):
         """
         self._proxies.add(obj)
         obj.proxy_set_manager(self)
-        if self.maxobjects() and len([obj for obj in self._proxies if not obj.proxy_saved()]) > self.maxobjects():
+        if self.maxobjects and len([obj for obj in self._proxies if not obj.proxy_saved()]) > self.maxobjects:
             self.refresh()
 
     def extend(self, objects):
@@ -214,9 +229,9 @@ class MemoryPool(object):
                 obj.proxy_forget()
                 living -= 1
 
-        if self.maxobjects():
+        if self.maxobjects:
             proxies = sorted(self._proxies, cmp=lambda x,y: self.cmp(x,y))
-            while living > self.minobjects() and proxies:
+            while living > self.minobjects and proxies:
                 proxies.pop().proxy_forget()
                 living -= 1
 
@@ -318,10 +333,10 @@ class BaseProxy(ACProxy):
     '1'
     >>> str(p)
     '1'
-    
+
     Adding a proxy to another object will work but will probably
     result in a non-proxy instance.
-    
+
     >>> p+1
     2
     >>> type(p+1)
@@ -394,7 +409,7 @@ class Proxy(BaseProxy):
       >>> (fd, tmpname) = tempfile.mkstemp()
       >>> from gc3libs import Task
       >>> p = Proxy(Task(jobname='NoTask'))
-      >>> memory_manager.set_storage(make_store("sqlite://%s" % tmpname))
+      >>> memory_manager.storage = make_store("sqlite://%s" % tmpname)
       >>> p # doctest: +ELLIPSIS
       <gc3libs.Task object at ...>
       >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
@@ -422,7 +437,7 @@ class Proxy(BaseProxy):
     If not store is defined, no object is saved to store and thus the
     reference to the object is never deleted.
 
-      >>> memory_manager.set_storage(None)
+      >>> memory_manager.storage = None
       >>> p = Proxy(Task(jobname='NoTask2'))
       >>> p.proxy_forget()
       >>> object.__getattribute__(p, "_obj") # doctest: +ELLIPSIS
@@ -489,7 +504,7 @@ class Proxy(BaseProxy):
         if not obj:
             return
 
-        storage = self._manager.get_storage()
+        storage = self._manager.storage
         if storage:
             try:
                 p_id = storage.save(obj)
@@ -508,7 +523,7 @@ class Proxy(BaseProxy):
         """
         obj = object.__getattribute__(self, "_obj")
         manager = object.__getattribute__(self, "_manager")
-        storage = manager.get_storage()
+        storage = manager.storage
         if not obj:
             assert isinstance(storage, Store)
             try:
