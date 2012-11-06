@@ -221,7 +221,7 @@ specified in the configuration file.
         if len(_selected_lrms_list) == 0:
             raise gc3libs.exceptions.LRMSSubmitError(
                 "No computational resources left after brokering."
-                " Aborting submission of job '%s'", app)
+                " Aborting submission of job '%s'" % app)
 
         exs = [ ]
         # Scheduler.do_brokering returns a sorted list of valid lrms
