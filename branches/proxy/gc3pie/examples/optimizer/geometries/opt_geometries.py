@@ -43,8 +43,7 @@ import gc3libs
 gc3libs.configure_logger(logging.DEBUG)
 
 # optimizer specific imports
-import gc3libs.optimizer.global_opt
-from gc3libs.optimizer.global_opt import GlobalOptimizer
+from gc3libs.optimizer import GlobalOptimizer
 from gc3libs.optimizer.dif_evolution import DifferentialEvolution
 
 optimization_dir = os.path.join(os.getcwd(), 'optimizeGeometry')
