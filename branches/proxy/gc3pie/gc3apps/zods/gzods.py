@@ -73,7 +73,7 @@ class GzodsApp(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-            tags=["APPS/CHEM/ZODS-0.336"],
+            tags=["APPS/CHEM/ZODS-0.341"],
             arguments = [
                 'mpiexec',
                 # these are arguments to `mpiexec`
