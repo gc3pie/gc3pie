@@ -238,8 +238,7 @@ class SequentialTaskCollection(TaskCollection):
         """
         for task in self.tasks:
             if not task._attached:
-                controller.add(task)
-                break
+                task.attach(controller)
         Task.attach(self, controller)
 
     def kill(self, **extra_args):
