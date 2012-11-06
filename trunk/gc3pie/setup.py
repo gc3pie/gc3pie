@@ -17,6 +17,7 @@ def read_whole_file(path):
 #
 import setuptools
 import setuptools.dist
+# avoid setuptools including `.svn` directories into the PyPI package
 from setuptools.command import sdist
 del sdist.finders[:]
 
