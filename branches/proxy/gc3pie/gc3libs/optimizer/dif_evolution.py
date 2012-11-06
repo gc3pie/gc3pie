@@ -136,7 +136,7 @@ class DifferentialEvolution:
             paraStruct: Dict carrying solver settings. 
             evaluator: Class carrying target and nlc. 
         '''
-        
+
         log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
         log.setLevel(logging.DEBUG)
         log.propagate = 0
@@ -551,7 +551,7 @@ class DifferentialEvolution:
         stream_handler = logging.StreamHandler()
         stream_handler.setLevel(logging.DEBUG)
         import gc3libs
-        log_file_name = os.path.join(working_dir, 'EvolutionaryAlgorithm.log')
+        log_file_name = os.path.join(self.working_dir, 'EvolutionaryAlgorithm.log')
         file_handler = logging.FileHandler(log_file_name, mode = 'a')
         file_handler.setLevel(logging.DEBUG)
         log.addHandler(stream_handler)

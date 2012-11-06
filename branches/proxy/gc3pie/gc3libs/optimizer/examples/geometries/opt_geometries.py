@@ -28,15 +28,27 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
+
+
 import os
 import sys
 from gc3libs import Application
+from gc3libs.cmdline import SessionBasedScript
 sys.path.append('../../')
 from support_gc3 import update_parameter_in_file
 # optimizer specific imports
 from dif_evolution import DifferentialEvolution
 from gc3libs.application.gamess import GamessApplication
 import numpy as np
+
+import logging
+import gc3libs
+gc3libs.configure_logger(logging.DEBUG)
+
+from gc3libs.optimizer.global_opt import GlobalOptimizer 
+from dif_evolution import DifferentialEvolution
+
+optimization_dir = os.path.join(os.getcwd(), 'optimizeRosenBrock')
 
 float_fmt = '%25.15f'
 
@@ -132,7 +144,8 @@ def task_constructor_geometries(x_vals, iteration_directory, **extra_args):
     gc3libs.log.debug("Output dir: %s" % kwargs['output_dir'])
     kwargs['requested_architecture'] = 'x86_64'
     kwargs['requested_cores'] = 1    
-
+    kwargs['verno'] = '2011R1'
+    
     return GamessApplication(inp_file_path=inp_file_path, **kwargs)
 
     ### Generate input file in path_to_stage_dir
@@ -170,55 +183,53 @@ def task_constructor_geometries(x_vals, iteration_directory, **extra_args):
     ## hand over job to create
 
 
-if __name__ == '__main__':
-    import sys
-    import gc3libs
-    import time    
+class GeometriesScript(SessionBasedScript):
+    """
+      Execute Geometries optimization. 
+    """
 
-    print 'Starting: \n%s' % ' '.join(sys.argv)
-    # clean up
-    path_to_stage_dir = os.path.join(os.getcwd(), 'geometries') # Run the whole thing in the current directory
-    # Initialize stage dir
-    if not os.path.isdir(path_to_stage_dir):
-        os.makedirs(path_to_stage_dir)
+    def __init__(self):
+        SessionBasedScript.__init__(
+            self,
+            version = '0.2',
+            stats_only_for = Application
+        )    
+
+    def new_tasks(self, extra):     
         
-    n_atoms = 6
-    vec_dimension = 3 * n_atoms
+        path_to_stage_dir = os.getcwd()
+        n_atoms = 6
+        vec_dimension = 3 * n_atoms
     
-    de_solver = DifferentialEvolution(dim = vec_dimension, pop_size = 10, de_step_size = 0.85, prob_crossover = 1., itermax = 200, 
+        de_solver = DifferentialEvolution(dim = vec_dimension, pop_size = 10, de_step_size = 0.85, prob_crossover = 1., itermax = 200, 
                                       y_conv_crit = 0.1, de_strategy = 1, plotting = False, working_dir = path_to_stage_dir, 
                                       lower_bds = [-2] * vec_dimension, upper_bds = [2] * vec_dimension, x_conv_crit = None, verbosity = 'DEBUG')
     
-    initial_pop = []
-    if not initial_pop:
-        de_solver.newPop = de_solver.drawInitialSample()
-    else:
-        de_solver.newPop = initial_pop
-    
-    # create an instance globalObt
-    from gc3libs.optimizer.global_opt import GlobalOptimizer
-    globalOptObj = GlobalOptimizer(jobname = 'geometries', path_to_stage_dir = path_to_stage_dir, 
-                                   optimizer = de_solver, task_constructor = task_constructor_geometries, 
-                                   target_fun = compute_target_geometries)
-    app = globalOptObj
-    
-    # create an instance of Core. Read configuration from your default
-    # configuration file
-    cfg = gc3libs.config.Configuration(*gc3libs.Default.CONFIG_FILE_LOCATIONS,
-                                       **{'auto_enable_auth': True})
-    g = gc3libs.core.Core(cfg)
-    engine = gc3libs.core.Engine(g)
-    engine.add(app)
-    
-    # Periodically check the status of your application.
-    while app.execution.state != gc3libs.Run.State.TERMINATED:
-        try:
-            print "Job in status %s " % app.execution.state
-            time.sleep(5)
-            engine.progress()
-        except:
-            raise
-    
-    print "Job is now in state %s. Fetching output." % app.execution.state
-    
-    print 'main done'
+        initial_pop = []
+        if not initial_pop:
+            de_solver.newPop = de_solver.drawInitialSample()
+        else:
+            de_solver.newPop = initial_pop    
+        
+        # create an instance globalObt
+         
+        jobname = 'geometries'
+        kwargs = extra.copy()
+        kwargs['path_to_stage_dir'] = path_to_stage_dir
+        kwargs['optimizer'] = de_solver
+        kwargs['task_constructor'] = task_constructor_geometries
+        kwargs['target_fun'] = compute_target_geometries
+
+        
+        return [GlobalOptimizer(jobname=jobname, **kwargs)]
+
+
+            
+if __name__ == '__main__':
+    print 'starting'
+    if os.path.isdir(optimization_dir):
+        import shutil
+        shutil.rmtree(optimization_dir)
+    os.mkdir(optimization_dir)
+    GeometriesScript().run()
+    print 'done'
