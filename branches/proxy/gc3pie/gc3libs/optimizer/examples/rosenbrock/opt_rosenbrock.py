@@ -48,6 +48,10 @@ from dif_evolution import DifferentialEvolution
 float_fmt = '%25.15f'
 
 optimization_dir = os.path.join(os.getcwd(), 'optimizeRosenBrock')
+pop_size = 100
+def nlc(x):
+    import numpy as np
+    return np.array([ 1 ] * pop_size)  
 
 def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     '''
@@ -135,9 +139,10 @@ class RosenbrockScript(SessionBasedScript):
     def new_tasks(self, extra):     
         
         path_to_stage_dir = os.getcwd()
-        de_solver = DifferentialEvolution(dim = 2, pop_size = 100, de_step_size = 0.85, prob_crossover = 1., itermax = 200, 
+      
+        de_solver = DifferentialEvolution(dim = 2, pop_size = pop_size, de_step_size = 0.85, prob_crossover = 1., itermax = 200, 
                                           y_conv_crit = 0.1, de_strategy = 1, plotting = False, working_dir = path_to_stage_dir, 
-                                          lower_bds = [-2, -2], upper_bds = [2,2], x_conv_crit = None, verbosity = 'DEBUG')
+                                          lower_bds = [-2, -2], upper_bds = [2,2], x_conv_crit = None, verbosity = 'DEBUG', nlc = nlc)
         initial_pop = []
         if not initial_pop:
             de_solver.newPop = de_solver.drawInitialSample()
