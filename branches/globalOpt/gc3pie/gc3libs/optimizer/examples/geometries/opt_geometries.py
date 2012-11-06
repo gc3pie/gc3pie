@@ -361,7 +361,8 @@ def compute_target_geometries(pop_task_tuple):
       values. 
     '''
     import re
-    enrgstr = re.compile(r'FINAL .+ ENERGY IS +(?P<enrgstr>-[0-9]+\.[0-9]+)')
+    #enrgstr = re.compile(r'FINAL .+ ENERGY IS +(?P<enrgstr>-[0-9]+\.[0-9]+)')
+    enrgstr = re.compile(r'FINAL')
     fxVals = []
     for (pop, task) in pop_task_tuple:
         outputDir = task.output_dir
