@@ -385,10 +385,10 @@ def create_gammes_input_file(geom, dirname):
 
     inptmpl = []
     inptmpl.append("""
-    $CONTRL SCFTYP=UHF RUNTYP=ENERGY $END
-     $BASIS GBASIS=STO NGAUSS=3 $END
-     $DATA 
-    Title
+    $CONTRL SCFTYP=RHF RUNTYP=ENERGY MAXIT=50 $END
+    $BASIS GBASIS=STO NGAUSS=3 $END
+    $DATA 
+    Water
     C1
     """)
     inptmpl.append('$END')
