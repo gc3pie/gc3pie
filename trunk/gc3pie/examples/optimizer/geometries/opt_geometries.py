@@ -79,13 +79,7 @@ def create_gammes_input_file(geom, dirname):
     import numpy as np
 
     inptmpl = []
-    inptmpl.append("""
- $CONTRL SCFTYP=UHF RUNTYP=ENERGY $END
- $BASIS GBASIS=STO NGAUSS=3 $END
- $DATA
-Title
-C1
-""")
+    inptmpl.append(""" $CONTRL SCFTYP=RHF RUNTYP=ENERGY MAXIT=50 $END\n $BASIS GBASIS=STO NGAUSS=3 $END\n $DATA\nWater\nC1\n""")
     inptmpl.append(' $END')
 
     inpfl = 'H2CO3'
