@@ -90,6 +90,207 @@ class EvolutionaryAlgorithm(object):
     def modify(self, offspring):
         return modified_population # a mixture of different variations 
 
+class SoftEvolution(object):
+    
+    def __init__(self, dim, pop_size, std_dev_mutation, itermax, y_conv_crit, de_strategy, plotting, working_dir, 
+                 lower_bds, upper_bds, x_conv_crit, verbosity, evaluator = None, nlc = None):  
+
+        log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
+
+         #vector with fitness values 
+#	self.S_vals = newVals.copy()
+   
+     # save parameters
+        self.dim = dim
+        self.pop_size = pop_size
+#         self.de_step_size = de_step_size
+#         self.prob_crossover = prob_crossover
+        self.std_dev_mutation= std_dev_mutation 
+        self.itermax = itermax
+        self.y_conv_crit = y_conv_crit
+        self.de_strategy = de_strategy
+        self.plotting = plotting
+        self.working_dir = working_dir
+        self.lower_bds = np.array(lower_bds)
+        self.upper_bds = np.array(upper_bds)
+        self.x_conv_crit = x_conv_crit
+        self.verbosity = verbosity
+ 
+#What is evaluator?
+        if evaluator:
+            self.evaluator = evaluator
+            self.target    = evaluator.target
+#What is nlc?
+        if not nlc:
+            def nlc(x):
+                return np.array([ 1 ] * pop_size)
+        self.nlc = nlc
+        
+        self.matplotLibAvailable = matplotLibAvailable
+
+        # Set up loggers
+        self.logger = log
+        #self.logger.debug('in dif_evo')
+
+        # Initialize variables that needed for state retention. 
+        self.pop_old  = np.zeros( (self.pop_size, self.dim) )  # toggle population
+        self.best = np.zeros( self.dim )                       # best population member ever
+        self.best_iter = np.zeros( self.dim )                  # best population member in iteration
+        self.n_fun_evals = 0                                   # number of function evaluations 
+
+        # Check input variables
+        if ( ( self.std_dev_mutation < 0 ) or ( self.std_dev_mutation > 5 ) ):
+            self.prob_crossover = 0.5
+            self.logger.debug('std_dev in mutation should be in the interval [0,5]; set to default value 0.5')
+        if self.pop_size < 5:
+            pass
+            self.logger.warning('Set pop_size >= 5 for difEvoKenPrice to work. ')
+
+        # Fix seed for debugging
+        np.random.seed(1000)
+
+        # set initial value for iteration count
+        self.cur_iter = -1
+
+        # Create folder to save plots
+        #self.figSaveFolder = os.path.join(self.working_dir, 'difEvoFigures')
+        #if not os.path.exists(self.figSaveFolder):
+            #os.mkdir(self.figSaveFolder)
+    def deopt(self):
+        '''
+          Perform global optimization. 
+        '''
+        self.logger.debug('entering deopt')
+        converged = False
+        while not converged:    
+            converged = self.iterate()
+        self.logger.debug('exiting ' + __name__)
+
+    def iterate(self):
+        self.cur_iter += 1
+        if self.cur_iter == 0:
+            self.pop = self.drawInitialSample()
+            self.ui  = self.pop.copy()
+
+        elif self.cur_iter > 0:
+            # self.cur_iter += 1
+            self.ui = self.modify(self.pop)
+            # Check constraints and resample points to maintain population size. 
+            self.ui = self.enforceConstrReEvolve(self.ui)
+
+        # EVALUATE TARGET #
+
+#Q: Please explain. What is self.ui and self.S_tempvals
+# createJobs is empty
+# What is evaluator.target?
+
+        self.evaluator.createJobs_x(self.ui)
+        self.S_tempvals = self.target(self.ui)
+        self.logger.debug('x -> f(x)')
+        for x, fx in zip(self.ui, self.S_tempvals):
+            self.logger.debug('%s -> %s' % (x.tolist(), fx))
+        self.updatePopulation(self.ui, self.S_tempvals)
+        # create output
+        self.printStats()
+        # make plots
+        if self.plotting:
+            self.plotPopulation()   
+
+
+    def updatePopulation(self, newPop = None, newVals = None):
+        self.logger.debug('entering updatePopulation')
+        newPop = np.array(newPop)
+        newVals = np.array(newVals)
+        if self.cur_iter == 0:
+            self.pop = newPop.copy()
+            self.S_vals = newVals.copy()
+            # Determine bestmemit and bestvalit for random draw. 
+            self.I_best_index = np.argmin(self.S_vals)
+            self.S_bestval = self.S_vals[self.I_best_index].copy()
+            self.best_iter = newPop[self.I_best_index, :].copy()
+            self.best_iter = newPop[self.I_best_index, :].copy()
+            self.S_bestvalit = self.S_bestval.copy()
+            self.best = self.best_iter.copy()
+
+
+            # for k in range(self.pop_size):                          # check the remaining members
+            #   if k == 0:
+            #     self.S_bestval = newVals[0].copy()                # best objective function value so far
+            #     self.n_fun_evals  = self.n_fun_evals + 1
+            #     self.I_best_index  = 0
+            #   self.n_fun_evals  += 1
+            #   if newVals[k] < self.S_bestval:
+            #     self.I_best_index   = k              # save its location
+            #     self.S_bestval      = newVals[k].copy()
+            # self.best_iter = newPop[self.I_best_index, :].copy() # best member of current iteration
+            # self.S_bestvalit   = self.S_bestval              # best value of current iteration
+
+            # self.best = self.best_iter            # best member ever
+
+        elif self.cur_iter > 0:
+
+            best_index = np.argmin(newVals)
+            if newVals[best_index] < self.S_bestval:
+                self.S_bestval   = newVals[best_index].copy()                    # new best value
+                self.best = newPop[best_index, :].copy()                 # new best parameter vector ever
+
+
+            for k in range(self.pop_size):
+                self.n_fun_evals  = self.n_fun_evals + 1
+                if newVals[k] < self.S_vals[k]:
+                    self.pop[k,:] = newPop[k, :].copy()                    # replace old vector with new one (for new iteration)
+                    self.S_vals[k]   = newVals[k].copy()                      # save value in "cost array"
+
+                    # #----we update S_bestval only in case of success to save time-----------
+                    # if newVals[k] < self.S_bestval:
+                    #   self.S_bestval = newVals[k].copy()                    # new best value
+                    #   self.best = newPop[k,:].copy()                 # new best parameter vector ever
+
+            self.best_iter = self.best.copy()       # freeze the best member of this iteration for the coming 
+
+        self.logger.debug('new values %s' % newVals)
+        self.logger.debug('best value %s' % self.S_bestval)
+
+
+         # iteration. This is needed for some of the strategies.
+        return 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    def has_converged():
+       converged = False
+         # Check convergence
+       if self.cur_iter > self.itermax:
+             converged = True
+             self.logger.info('Exiting difEvo. cur_iter >self.itermax ')
 
 class DifferentialEvolution:
     '''
@@ -152,7 +353,6 @@ class DifferentialEvolution:
             self.default_nlc = False
         self.nlc = nlc
         
-
         self.matplotLibAvailable = matplotLibAvailable
 
         # Set up loggers
@@ -254,7 +454,8 @@ class DifferentialEvolution:
         self.logger.debug('entering updatePopulation')
         newPop = np.array(newPop)
         newVals = np.array(newVals)
-        if self.cur_iter == 0:
+        import pdb;pdb.set_trace() 
+	if self.cur_iter == 0:
             self.pop = newPop.copy()
             self.S_vals = newVals.copy()
             # Determine bestmemit and bestvalit for random draw. 

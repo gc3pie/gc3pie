@@ -45,9 +45,10 @@ import logging
 import gc3libs
 gc3libs.configure_logger(logging.DEBUG)
 
-import gc3libs.optimizer.global_opt
-from gc3libs.optimizer.global_opt import GlobalOptimizer 
+from gc3libs.optimizer.global_opt import GlobalOptimizer
+ 
 from dif_evolution import DifferentialEvolution
+from dif_evolution import SoftEvolution
 
 optimization_dir = os.path.join(os.getcwd(), 'optimizeRosenBrock')
 
@@ -361,8 +362,9 @@ def compute_target_geometries(pop_task_tuple):
       values. 
     '''
     import re
-    #enrgstr = re.compile(r'FINAL .+ ENERGY IS +(?P<enrgstr>-[0-9]+\.[0-9]+)')
-    enrgstr = re.compile(r'FINAL')
+    regexp = 'FINAL .+ ENERGY IS +(?P<enrgstr>-[0-9]+\.[0-9]+)' 
+    enrgstr = re.compile(regexp)
+    #enrgstr = re.compile(r'FINAL')
     fxVals = []
     for (pop, task) in pop_task_tuple:
         outputDir = task.output_dir
@@ -370,28 +372,30 @@ def compute_target_geometries(pop_task_tuple):
         content = f.read()
         f.close()
         match = enrgstr.search(content)
-        if match:
-            fxVal = float(match.group('enrgstr'))
-        fxVals.append(fxVal)
+        import pdb;pdb.set_trace()
+        try:
+	    if match:
+	        fxVal = float(match.group('enrgstr'))
+                fxVals.append(fxVal)
+            else:
+	        self.log.critical("Nothing found with regexp")
+        except Exception, ex:
+            gc3libs.log.error("Nothing found with regexp: %s:"  % regexp)
+       
     return fxVals
 
 def create_gammes_input_file(geom, dirname):
     '''
-      geom: 1d numpy array defining the geometry to produce an input file for. 
+      geom: 1d numpy array defining the geometry 
+      Method takes geom and produces an input file for GAMESS. 
     '''
 
     import os
     import numpy as np
 
     inptmpl = []
-    inptmpl.append("""
-    $CONTRL SCFTYP=RHF RUNTYP=ENERGY MAXIT=50 $END
-    $BASIS GBASIS=STO NGAUSS=3 $END
-    $DATA 
-    Water
-    C1
-    """)
-    inptmpl.append('$END')
+    inptmpl.append(""" $CONTRL SCFTYP=RHF RUNTYP=ENERGY MAXIT=50 $END\n $BASIS GBASIS=STO NGAUSS=3 $END\n $DATA\nWater\nC1\n""")
+    inptmpl.append(' $END')
 
     inpfl = 'H2CO3'
     natm = 6
@@ -414,6 +418,8 @@ def create_gammes_input_file(geom, dirname):
         geomstr = geomstr + element[j] + '  ' + str(nchrg[j]) + \
             '  ' + '%10.8f'%geom[3*j] + '  ' + '%10.8f'%geom[3*j+1] + \
             '  ' + '%11.8f'%geom[3*j+2] + '\n'
+    #import pdb;pdb.set_trace()
+
     file_name = os.path.join(dirname, inpfl+'.inp')
     file = open(file_name, 'w')
     file.write(inptmpl[0] + geomstr + inptmpl[1])
@@ -508,8 +514,10 @@ class GeometriesScript(SessionBasedScript):
         
         path_to_stage_dir = os.getcwd()
 
-        # nlc needs to be a pickable function: http://docs.python.org/2/library/pickle.html#what-can-be-pickled-and-unpickled
-        de_solver = DifferentialEvolution(dim = vec_dimension, pop_size = 10, de_step_size = 0.85, prob_crossover = 1., itermax = 200, 
+	soft_solver = SoftEvolution(dim = vec_dimension, pop_size = 5, std_dev_mutation = 0.2, itermax = 200, y_conv_crit = 0.1, de_strategy = 1, plotting = False, working_dir =         path_to_stage_dir, lower_bds = [-2] * vec_dimension, upper_bds = [2] * vec_dimension, x_conv_crit = None, verbosity = 'DEBUG        ',nlc = nlc)
+        
+	# nlc needs to be a pickable function: http://docs.python.org/2/library/pickle.html#what-can-be-pickled-and-unpickled
+        de_solver = DifferentialEvolution(dim = vec_dimension, pop_size = 5, de_step_size = 0.85, prob_crossover = 1., itermax = 200, 
                                       y_conv_crit = 0.1, de_strategy = 1, plotting = False, working_dir = path_to_stage_dir, 
                                       lower_bds = [-2] * vec_dimension, upper_bds = [2] * vec_dimension, x_conv_crit = None, verbosity = 'DEBUG',
                                       nlc = nlc)

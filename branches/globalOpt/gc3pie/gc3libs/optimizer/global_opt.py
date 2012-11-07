@@ -127,7 +127,7 @@ class GlobalOptimizer(SequentialTaskCollection):
         
     def next(self, *args):
         log.debug('entering gParaSearchDriver.next')
-
+	#Q: What is self.evaluator.tasks, .newPop, self.target_fun
         self.changed = True
         # pass on (popMem, Application)
         pop_task_tuple = [(popEle, task) for (popEle, task) in zip(self.optimizer.newPop, self.evaluator.tasks)]
