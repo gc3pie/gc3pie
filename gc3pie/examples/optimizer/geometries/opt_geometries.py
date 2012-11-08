@@ -57,18 +57,28 @@ def compute_target_geometries(pop_task_tuple):
       values.
     '''
     import re
-    enrgstr = re.compile(r'FINAL .+ ENERGY IS +(?P<enrgstr>-[0-9]+\.[0-9]+)')
-    fxVals = []
+    from testScenarios import Extract
+    energy_list = []
     for (pop, task) in pop_task_tuple:
         outputDir = task.output_dir
-        f = open(os.path.join(outputDir, 'games.log'))
-        content = f.read()
-        f.close()
-        match = enrgstr.search(content)
-        if match:
-            fxVal = float(match.group('enrgstr'))
-        fxVals.append(fxVal)
-    return fxVals
+	file_output = os.path.join(outputDir, 'games.log')
+        app = Extract(file_output)
+        app.setup_params("FINAL", "last", 5 )
+        single_energy = app.extract_energy()
+        energy_list.append(single_energy)
+    return energy_list
+    #enrgstr = re.compile(r'FINAL .+ ENERGY IS +(?P<enrgstr>-[0-9]+\.[0-9]+)')
+    #fxVals = []
+    #for (pop, task) in pop_task_tuple:
+    #    outputDir = task.output_dir
+    #    f = open(os.path.join(outputDir, 'games.log'))
+    #    content = f.read()
+    #    f.close()
+    #    match = enrgstr.search(content)
+    #    if match:
+    #        fxVal = float(match.group('enrgstr'))
+    #    fxVals.append(fxVal)
+    #return fxVals
 
 def create_gammes_input_file(geom, dirname):
     '''
@@ -196,9 +206,9 @@ class GeometriesScript(SessionBasedScript):
     def new_tasks(self, extra):
 
         path_to_stage_dir = os.getcwd()
-
+        #Population size reduced to 5 for testing purposes
         # nlc needs to be a pickable function: http://docs.python.org/2/library/pickle.html#what-can-be-pickled-and-unpickled
-        de_solver = DifferentialEvolution(dim = vec_dimension, pop_size = 10, de_step_size = 0.85, prob_crossover = 1., itermax = 200,
+        de_solver = DifferentialEvolution(dim = vec_dimension, pop_size = 5, de_step_size = 0.85, prob_crossover = 1., itermax = 200,
                                       y_conv_crit = 0.1, de_strategy = 1, plotting = False, working_dir = path_to_stage_dir,
                                       lower_bds = [-2] * vec_dimension, upper_bds = [2] * vec_dimension, x_conv_crit = None, verbosity = 'DEBUG',
                                       nlc = nlc)
