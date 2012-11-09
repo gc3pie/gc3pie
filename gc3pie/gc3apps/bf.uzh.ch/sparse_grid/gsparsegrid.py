@@ -54,7 +54,7 @@ import gc3libs.utils
 
 class SparseGridApplication(Application):
     application_name = 'sgrid'
-    def __init__(self, np, fnum, dimension, lmax, epsilon,
+    def __init__(self, np, total_memory, fnum, dimension, lmax, epsilon,
                  executable=None, **extra_args):
         """
         Execute one instance of the 'sparse grid' application.
@@ -67,12 +67,9 @@ class SparseGridApplication(Application):
         :param int   Lmax:
         :param float epsilon: e.g., 1e-3, 1e-4, 1e-5
         """
-#        print 'before init %s' % self.xrsl('')
-        # ensure we request enough processors
-#        extra_args.setdefault('requested_cores', np)
         extra_args['requested_cores'] = np
-#        print 'extra_args = %s' % extra_args
-#        import pdb; pdb.set_trace()
+        extra_args['requested_memory'] = total_memory
+
         # build Application object
         gc3libs.Application.__init__(
             self,
@@ -90,8 +87,6 @@ class SparseGridApplication(Application):
             tags = [ 'TEST/SGRID-0.1' ],
             **extra_args
             )
-        print self.xrsl('')
-#        import pdb; pdb.set_trace()
 
 
 class SparseGridScript(SessionBasedScript):
@@ -132,11 +127,12 @@ class SparseGridScript(SessionBasedScript):
             jobname = ("sgrid_fnum=%d_dim=%d_Lmax=%d_epsilon=%g_mpi_cores=%d" % (fnum, dim, lmax, epsilon,ncore))
 
             extra_args = extra.copy()
-            print 'printing extra_args =%s ' % extra_args
             extra_args['output_dir'] = os.path.join(
                 self.make_directory_path(self.params.output, jobname), 'output')
             extra_args['jobname'] = jobname
-#            np = int(extra_args['cpu_cores'])
+
             # passed to Application as `requested_cores` in SparseGridApplication
             np = ncore
-            yield SparseGridApplication(np, fnum, dim, lmax, epsilon, **extra_args)
+            # Compute total memory needed for a job with np cores. 
+            total_memory = self.params.memory_per_core * np
+            yield SparseGridApplication(np, total_memory, fnum, dim, lmax, epsilon, **extra_args)
