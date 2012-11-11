@@ -80,8 +80,6 @@ file_handler = logging.FileHandler(log_file_name, mode = 'w')
 file_handler.setLevel(logging.DEBUG)
 log.addHandler(stream_handler)
 log.addHandler(file_handler)
-log.debug('hello')
-
 
 class GlobalOptimizer(SequentialTaskCollection):
 
@@ -103,7 +101,7 @@ class GlobalOptimizer(SequentialTaskCollection):
                         function value for the x_vector.
         '''
 
-        log.debug('entering globalOptimizer.__init__')
+        log.debug('entering GlobalOptimizer.__init__')
 
         # Set up initial variables and set the correct methods.
         self.jobname = jobname
@@ -116,7 +114,7 @@ class GlobalOptimizer(SequentialTaskCollection):
 
         self.optimizer.cur_iter += 1
 
-        self.evaluator = ComputePhenotypes(self.optimizer.newPop, self.jobname, self.optimizer.cur_iter, path_to_stage_dir, task_constructor)
+        self.evaluator = ComputePhenotypes(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter, path_to_stage_dir, task_constructor)
 
         initial_task = self.evaluator
 
@@ -124,35 +122,24 @@ class GlobalOptimizer(SequentialTaskCollection):
 
 
     def next(self, *args):
-        log.debug('entering gParaSearchDriver.next')
+        log.debug('entering GlobalOptimizer.next')
 
         self.changed = True
         # pass on (popMem, Application)
-        pop_task_tuple = [(popEle, task) for (popEle, task) in zip(self.optimizer.newPop, self.evaluator.tasks)]
+        pop_task_tuple = [(popEle, task) for (popEle, task) in zip(self.optimizer.new_pop, self.evaluator.tasks)]
 
         newVals = self.target_fun(pop_task_tuple)
-        self.optimizer.updatePopulation(self.optimizer.newPop, newVals)
-        # Stats for initial population:
-        self.optimizer.printStats()
-
-        ## make plots
-        #if self.optimizer.I_plotting:
-            #self.optimizer.plotPopulation(self.optimizer.pop)
-            #self.plot3dTable()
+        self.optimizer.update_population(self.optimizer.new_pop, newVals)
 
         if not self.optimizer.has_converged():
-            self.optimizer.newPop = self.optimizer.modify(self.optimizer.pop)
+            self.optimizer.new_pop = self.optimizer.modify(self.optimizer.pop)
             # Check constraints and resample points to maintain population size.
-            self.optimizer.newPop = self.optimizer.enforceConstrReEvolve(self.optimizer.newPop)
+            self.optimizer.new_pop = self.optimizer.enforce_constr_re_evolve(self.optimizer.new_pop)
             self.optimizer.cur_iter += 1
-            self.evaluator = ComputePhenotypes(self.optimizer.newPop, self.jobname, self.optimizer.cur_iter, self.path_to_stage_dir, self.task_constructor)
+            self.evaluator = ComputePhenotypes(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter, self.path_to_stage_dir, self.task_constructor)
             self.add(self.evaluator)
         else:
-            # post processing
-            if self.optimizer.plotting:
-                self.plot3dTable()
-
-            open(os.path.join(self.path_to_stage_dir, 'jobDone'), 'w')
+            open(os.path.join(self.path_to_stage_dir, 'job_done'), 'w')
             # report success of sequential task
             self.execution.returncode = 0
             return Run.State.TERMINATED

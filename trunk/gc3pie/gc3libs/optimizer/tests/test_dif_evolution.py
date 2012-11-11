@@ -22,13 +22,14 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 import os
+import logging
 
 from nose.tools import raises
 from nose.plugins.skip import SkipTest
 
 import numpy as np
 
-from gc3libs.optimizer.dif_evolution import DifferentialEvolution
+from gc3libs.optimizer.dif_evolution import DifferentialEvolutionSequential
 
 
 def rosenbrock_fn(vectors):
@@ -50,28 +51,28 @@ def test_differential_evolution_with_rosenbrock():
     dim = 2
     lower_bounds = -2 * np.ones(dim)
     upper_bounds = +2 * np.ones(dim)
-
-    opt = DifferentialEvolution(
-        target_fn=rosenbrock_fn,
+        
+    log = logging.getLogger("gc3.gc3libs")
+	
+    opt = DifferentialEvolutionSequential(
         dim = dim,          # number of parameters of the objective function
+        lower_bds = lower_bounds,
+        upper_bds = upper_bounds,
+        target_fn=rosenbrock_fn,
         pop_size = 100,     # number of population members
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
         itermax = 200,      # maximum number of iterations (generations)
         x_conv_crit = None, # stop when variation among x's is < this
         y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
-        de_strategy = 1,    # 1 to 6, see sources
-        lower_bds = lower_bounds,
-        upper_bds = upper_bounds,
-        plotting = False,
-        working_dir = os.getcwd(),
-        verbosity = 'DEBUG',
+        de_strategy = 'DE_local_to_best',
+        logger = log,
         )
 
     # run the Diff.Evo. algorithm
-    opt.deopt()
+    opt.de_opt()
 
     assert opt.has_converged()
-    assert (opt.S_bestval - 0.) < opt.y_conv_crit
+    assert (opt.bestval - 0.) < opt.y_conv_crit
     assert (opt.best[0] - 1.) < 1e-3
     assert (opt.best[1] - 1.) < 1e-3
