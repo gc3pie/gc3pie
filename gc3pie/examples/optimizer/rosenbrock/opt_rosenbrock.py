@@ -42,7 +42,9 @@ from gc3libs.optimizer.utils import update_parameter_in_file
 
 # optimizer specific imports
 from gc3libs.optimizer import GlobalOptimizer
-from gc3libs.optimizer.dif_evolution import DifferentialEvolution
+from gc3libs.optimizer.dif_evolution import DifferentialEvolutionParallel
+
+import numpy as np
 
 float_fmt = '%25.15f'
 
@@ -138,15 +140,43 @@ class RosenbrockScript(SessionBasedScript):
     def new_tasks(self, extra):
 
         path_to_stage_dir = os.getcwd()
+        
+        import logging
+        log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
+        log.setLevel(logging.DEBUG)
+        log.propagate = 0
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.DEBUG)
+        import gc3libs
+        log_file_name = os.path.join(os.getcwd(), 'EvolutionaryAlgorithm.log')
+        file_handler = logging.FileHandler(log_file_name, mode = 'w')
+        file_handler.setLevel(logging.DEBUG)
+        log.addHandler(stream_handler)
+        log.addHandler(file_handler)
 
-        de_solver = DifferentialEvolution(dim = 2, pop_size = pop_size, de_step_size = 0.85, prob_crossover = 1., itermax = 200,
-                                          y_conv_crit = 0.1, de_strategy = 1, plotting = False, working_dir = path_to_stage_dir,
-                                          lower_bds = [-2, -2], upper_bds = [2,2], x_conv_crit = None, verbosity = 'DEBUG', nlc = nlc)
+        dim = 2
+        lower_bounds = -2 * np.ones(dim)
+        upper_bounds = +2 * np.ones(dim)
+ 
+        de_solver = DifferentialEvolutionParallel(
+            dim = dim,          # number of parameters of the objective function
+            lower_bds = lower_bounds,
+            upper_bds = upper_bounds,
+            pop_size = 100,     # number of population members
+            de_step_size = 0.85,# DE-stepsize ex [0, 2]
+            prob_crossover = 1, # crossover probabililty constant ex [0, 1]
+            itermax = 200,      # maximum number of iterations (generations)
+            x_conv_crit = None, # stop when variation among x's is < this
+            y_conv_crit = 0.1, # stop when ofunc < y_conv_crit
+            de_strategy = 'DE_local_to_best',
+            logger = log,
+            )
+
         initial_pop = []
         if not initial_pop:
-            de_solver.newPop = de_solver.drawInitialSample()
+            de_solver.new_pop = de_solver.draw_initial_sample()
         else:
-            de_solver.newPop = initial_pop
+            de_solver.new_pop = initial_pop
 
         # create an instance globalObt
 
