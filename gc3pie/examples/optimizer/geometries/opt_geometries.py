@@ -44,7 +44,7 @@ gc3libs.configure_logger(logging.DEBUG)
 
 # optimizer specific imports
 from gc3libs.optimizer import GlobalOptimizer
-from gc3libs.optimizer.dif_evolution import DifferentialEvolution
+from gc3libs.optimizer.dif_evolution import DifferentialEvolutionParallel
 
 optimization_dir = os.path.join(os.getcwd(), 'optimizeGeometry')
 
@@ -204,23 +204,43 @@ class GeometriesScript(SessionBasedScript):
         )
 
     def new_tasks(self, extra):
+	    
+        import logging
+        log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
+        log.setLevel(logging.DEBUG)
+        log.propagate = 0
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.DEBUG)
+        import gc3libs
+        log_file_name = os.path.join(os.getcwd(), 'EvolutionaryAlgorithm.log')
+        file_handler = logging.FileHandler(log_file_name, mode = 'w')
+        file_handler.setLevel(logging.DEBUG)
+        log.addHandler(stream_handler)
+        log.addHandler(file_handler)	
 
-        path_to_stage_dir = os.getcwd()
         #Population size reduced to 5 for testing purposes
         # nlc needs to be a pickable function: http://docs.python.org/2/library/pickle.html#what-can-be-pickled-and-unpickled
-        de_solver = DifferentialEvolution(dim = vec_dimension, pop_size = 5, de_step_size = 0.85, prob_crossover = 1., itermax = 200,
-                                      y_conv_crit = 0.1, de_strategy = 1, plotting = False, working_dir = path_to_stage_dir,
-                                      lower_bds = [-2] * vec_dimension, upper_bds = [2] * vec_dimension, x_conv_crit = None, verbosity = 'DEBUG',
-                                      nlc = nlc)
-
-        initial_pop = []
-        if not initial_pop:
-            de_solver.newPop = de_solver.drawInitialSample()
-        else:
-            de_solver.newPop = initial_pop
+        de_solver = DifferentialEvolutionParallel(
+	    dim = vec_dimension, 
+	    lower_bds = [-2] * vec_dimension, 
+	    upper_bds = [ 2] * vec_dimension,
+	    pop_size = 5, 
+	    de_step_size = 0.85, 
+	    prob_crossover = 1., 
+	    itermax = 200,
+	    x_conv_crit = None,
+	    y_conv_crit = 0.1,
+	    de_strategy = 'DE_rand',
+	    logger = log)
+	
+	initial_pop = []
+	if not initial_pop:
+	    de_solver.new_pop = de_solver.draw_initial_sample()
+	else:
+	    de_solver.new_pop = initial_pop
 
         # create an instance globalObt
-
+        path_to_stage_dir = os.getcwd()
         jobname = 'geometries'
         kwargs = extra.copy()
         kwargs['path_to_stage_dir'] = path_to_stage_dir
