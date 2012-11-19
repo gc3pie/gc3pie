@@ -48,7 +48,7 @@ from xml.etree.ElementTree  import ElementTree
 import gc3libs
 import gc3libs.cmdline
 
-DEFAULT_ZODS_VERSION='0.341'
+DEFAULT_ZODS_VERSION='0.344'
 
 
 class GzodsApp(gc3libs.Application):
