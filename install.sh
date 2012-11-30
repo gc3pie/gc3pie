@@ -243,6 +243,7 @@ this script, in order to help us identify the problem.
 
 Aborting installation!
 EOF
+            exit 3
             ;;
     esac
 
