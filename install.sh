@@ -541,13 +541,14 @@ EOF
     fi
 fi
 
-echo "Installing GC3Pie virtualenv in $VENVDIR ..."
+echo "Installing GC3Pie virtualenv in directory '$VENVDIR' ..."
 install_virtualenv $VENVDIR
-if [ $? -ne 0 ]
+rc=$?
+if [ $rc -ne 0 ]
 then
     cat 1>&2 <<EOF
 ===========================================================================================================
-GC3Pie install: ERROR: Unable to create a new virtualenv in $VENVDIR: "virtualenv.py" script exit status: $?
+GC3Pie install: ERROR: Unable to create a new virtualenv in $VENVDIR: "virtualenv.py" script exit status: $rc
 ===========================================================================================================
 
 The script was unable to create a valid virtual environment. If the
