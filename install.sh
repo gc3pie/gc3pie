@@ -21,8 +21,8 @@
 #
 PROG="GC3Pie install"
 
-VIRTUALENV_LATEST_URL="https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
-VIRTUALENV_172_URL="https://raw.github.com/pypa/virtualenv/1.7.2/virtualenv.py"
+VIRTUALENV_LATEST_URL="http://raw.github.com/pypa/virtualenv/master/virtualenv.py"
+VIRTUALENV_172_URL="http://raw.github.com/pypa/virtualenv/1.7.2/virtualenv.py"
 PIP_11_URL="http://pypi.python.org/packages/source/p/pip/pip-1.1.tar.gz"
 GC3_SVN_URL="http://gc3pie.googlecode.com/svn/trunk/gc3pie"
 
