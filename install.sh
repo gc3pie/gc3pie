@@ -251,7 +251,7 @@ EOF
     VIRTUALENV_CMD="$PYTHON virtualenv.py"
 
     # python virtualenv.py --system-site-packages $DESTDIR
-    $VIRTUALENV_CMD --system-site-packages -p $PYTHON $DESTDIR
+    $VIRTUALENV_CMD $verbose --system-site-packages -p $PYTHON $DESTDIR
 }
 
 install_gc3pie_via_pip () {
@@ -260,7 +260,7 @@ install_gc3pie_via_pip () {
         # sometimes virtualenv installs pip as pip-X.Y, try to patch this
         for pip in $VENVDIR/bin/pip-*; do
             if test -x $pip; then
-                ln -s $pip $VENVDIR/bin/pip
+                ln $verbose -s $pip $VENVDIR/bin/pip
                 break
             fi
         done
@@ -293,9 +293,9 @@ install_gc3apps () {
     then
         for cmd in $VENVDIR/gc3apps/*.py
         do
-            ln -s $cmd $VENVDIR/bin/$(basename $cmd .py)
+            ln $verbose -s $cmd $VENVDIR/bin/$(basename $cmd .py)
             # setup.py install package_data without the 'x' permission
-            chmod +x "$cmd"
+            chmod $verbose +x "$cmd"
         done
     else
         LIBDIR=$VENVDIR/src/gc3apps
@@ -315,7 +315,7 @@ install_gc3apps () {
         for cmd in $COMMANDS
         do
             binary=$(basename $cmd .py)
-            ln -s  $LIBDIR/$cmd     $VENVDIR/bin/$binary
+            ln $verbose -s  $LIBDIR/$cmd     $VENVDIR/bin/$binary
         done
     fi
 }
@@ -344,13 +344,15 @@ Options:
 
       -h, --help             Print this help text.
 
+      -v, --verbose          Be more verbose in reporting.
+
 EOF
 }
 
 
 # Main program
-short_opts='d:p:hDnfy'
-long_opts='target:,python:,help,develop,no-gc3apps,overwrite,yes'
+short_opts='d:p:hDnfvy'
+long_opts='target:,python:,help,develop,no-gc3apps,overwrite,verbose,yes'
 
 if [ "x$(getopt -T)" = 'x' ]; then
     # GNU getopt
@@ -397,6 +399,9 @@ do
             ;;
         -y|--yes)
             ASKCONFIRMATION=0
+            ;;
+        -v|--verbose)
+            verbose='-v'
             ;;
         --)
             shift
@@ -459,10 +464,10 @@ install_required_sw
 # Download command
 if have_command curl
 then
-    download () { curl -L -s -o "$@"; }
+    download () { curl $verbose -L -s -o "$@"; }
 elif have_command wget
 then
-    download () { wget -O "$@"; }
+    download () { wget $verbose -O "$@"; }
 else
     die 6 "No 'curl' or 'wget' command found." <<EOF
 The script needs either one of the 'curl' or 'wget' commands to run.
@@ -511,7 +516,7 @@ In order to proceed, you must take one of the following action:
 EOF
     elif [ $OVERWRITEDIR = 'yes' ]; then
         echo "Removing directory $VENVDIR as requested."
-        rm -rf $VENVDIR
+        rm $verbose -rf $VENVDIR
     else
         abort 66 "Internal error: unexpected value '$OVERWRITEDIR' for OVERWRITEDIR."
     fi
