@@ -351,8 +351,8 @@ EOF
 
 
 # Main program
-short_opts='d:p:hDnfvy'
-long_opts='target:,python:,help,develop,no-gc3apps,overwrite,verbose,yes'
+short_opts='d:p:hDnfvxy'
+long_opts='target:,python:,help,debug,develop,no-gc3apps,overwrite,verbose,yes'
 
 if [ "x$(getopt -T)" = 'x' ]; then
     # GNU getopt
@@ -402,6 +402,9 @@ do
             ;;
         -v|--verbose)
             verbose='-v'
+            ;;
+        -x|--debug)
+            set -x
             ;;
         --)
             shift
