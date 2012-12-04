@@ -38,11 +38,52 @@ PYTHON=python
 
 # Auxiliary functions
 
-die () {
+# abort RC [MSG]
+#
+# Print error message MSG and abort shell execution with exit code RC.
+# If MSG is not given, read it from STDIN.
+#
+abort () {
   rc="$1"
   shift
   (echo -n "$PROG: ERROR: ";
       if [ $# -gt 0 ]; then echo "$@"; else cat; fi) 1>&2
+  exit $rc
+}
+
+# die RC HEADER <<...
+#
+# Print an error message with the given header, then abort shell
+# execution with exit code RC.  Additional text for the error message
+# *must* be passed on STDIN.
+#
+die () {
+  rc="$1"
+  header="$2"
+  shift 2
+  cat 1>&2 <<__EOF__
+====================================================
+${PROG}: ERROR: ${header}
+====================================================
+
+__EOF__
+  if [ $# -gt 0 ]; then
+      # print remaining arguments one per line
+      for line in "$@"; do
+          echo "$line" 1>&2;
+      done
+  else
+      # additional message text provided on STDIN
+      cat 1>&2;
+  fi
+  cat 1>&2 <<__EOF__
+
+If the above does not help you solve the isue, please contact the
+GC3Pie team by sending an email to gc3pie@googlegroups.com.  Include
+the full output of this script to help us identifying the problem.
+
+Aborting installation!
+__EOF__
   exit $rc
 }
 
@@ -60,7 +101,7 @@ have_command () {
 
 require_command () {
   if ! have_command "$1"; then
-    die 1 "Could not find required command '$1' in system PATH. Aborting."
+    abort 1 "Could not find required command '$1' in system PATH. Aborting."
   fi
 }
 
@@ -68,24 +109,14 @@ require_cc () {
     have_command $CC || have_command cc
     if [ $? -ne 0 ]
     then
-        cat 1>&2 <<EOF
-====================================================
-GC3Pie install: ERROR: Unable to find a C compiler!"
-====================================================
-
+        die 1 "Unable to find a C compiler!" <<EOF
 To install the GC3Pie development branch, a C language compiler
 is needed.
 
 Please, install one using the software manager of your distribution.
 If this computer already has a C compiler, set the environment variable
 CC to the full path to the C compiler command.
-
-If the above looks like Greek to you, please contact the GC3Pie team
-by sending an email to gc3pie@googlegroups.com.
-
-Aborting installation!
 EOF
-        exit 1
     fi
 }
 
@@ -93,23 +124,13 @@ require_svn () {
     have_command svn
     if [ $? -ne 0 ]
     then
-        cat 1>&2 <<EOF
-========================================================
-GC3Pie install: ERROR: Unable to find the 'svn' command!
-========================================================
-
+        die 2 "Unable to find the 'svn' command!" <<EOF
 To install the GC3Pie development branch installation,
 the SubVersion ('svn') command is needed.
 
 Please, install it using the software manager of your distribution
 or download it from http://subversion.tigris.org/
-
-If the above looks like Greek to you, please contact the GC3Pie team
-by sending an email to gc3pie@googlegroups.com.
-
-Aborting installation!
 EOF
-        exit 1
     fi
 
 }
@@ -155,11 +176,7 @@ install_required_sw () {
         # Debian/Ubuntu
         missing=$(which_missing_packages subversion python-dev gcc g++)
         if [ -n "$missing" ]; then
-            cat 1>&2 <<EOF
-=====================================================
-GC3Pie install: ERROR: missing software prerequisites
-=====================================================
-
+            die 3 "missing software prerequisites" <<EOF
 The following software packages need to be installed
 in order for GC3Pie to work: $missing
 
@@ -170,17 +187,12 @@ running the following command from the 'root' account:
     apt-get install $missing
 
 EOF
-            exit 2
         fi
     elif have_command yum; then
         # RHEL/CentOS
         missing=$(which_missing_packages subversion python-devel gcc gcc-g++)
         if [ -n "$missing" ]; then
-            cat 1>&2 <<EOF
-=====================================================
-GC3Pie install: ERROR: missing software prerequisites
-=====================================================
-
+            die 3 "missing software prerequisites" <<EOF
 The following software packages need to be installed
 in order for GC3Pie to work: $missing
 
@@ -191,7 +203,6 @@ running the following command from the 'root' account:
     yum install $missing
 
 EOF
-            exit 2
         fi
     elif have_command zypper; then
         # SuSE
@@ -227,28 +238,17 @@ EOF
             VIRTUALENV_URL=$VIRTUALENV_LATEST_URL
             ;;
         *)
-            cat 1>&2 <<EOF
-=====================================================
-GC3Pie install: ERROR: unable to check python version
-=====================================================
-
+            die 4 "unable to check python version" <<EOF
 The script was unable to check the version of the Python
 language installed (check returned an exit status of "$?").
 This check is needed to know which version of the "virtualenv"
 auxiliary script we need to download.
-
-Please contact the GC3Pie team by sending an email to
-'gc3pie@googlegroups.com' and attach the full output of
-this script, in order to help us identify the problem.
-
-Aborting installation!
 EOF
-            exit 3
             ;;
     esac
 
-        download virtualenv.py $VIRTUALENV_URL
-        VIRTUALENV_CMD="$PYTHON virtualenv.py"
+    download virtualenv.py $VIRTUALENV_URL
+    VIRTUALENV_CMD="$PYTHON virtualenv.py"
 
     # python virtualenv.py --system-site-packages $DESTDIR
     $VIRTUALENV_CMD --system-site-packages -p $PYTHON $DESTDIR
@@ -266,21 +266,9 @@ install_gc3pie_via_pip () {
         done
     fi
     if ! test -x $VENVDIR/bin/pip; then
-cat 1>&2 <<EOF
-=====================================================================
-GC3Pie install: ERROR: cannot find command 'pip' in '$VENVDIR/bin'
-=====================================================================
-
-The script was unable to create a valid virtual environment. If the
-above output does not help you in solving the issue, please contact
-the GC3Pie team by sending an email to gc3pie@googlegroups.com.
-
-Remember to attach the full output of the script, in order to help us
-to identify the problem.
-
-Aborting installation!
+        die 5 "cannot find command 'pip' in '$VENVDIR/bin'" <<EOF
+The script was unable to create a valid virtual environment.
 EOF
-        exit 1
     fi
     echo "Installing GC3Pie from PyPI package with '$VENVDIR/bin/pip' ..."
     $VENVDIR/bin/pip install gc3pie
@@ -333,7 +321,7 @@ install_gc3apps () {
 }
 
 usage () {
-cat <<EOF
+    cat <<EOF
 This program will install GC3Pie in your directory '$HOME/gc3pie'.
 
 usage:
@@ -354,7 +342,8 @@ Options:
 
       -y, --yes              Do not ask for confirmation: assume a 'yes' reply to every question.
 
-      -h, --help             print this help
+      -h, --help             Print this help text.
+
 EOF
 }
 
@@ -363,11 +352,11 @@ EOF
 short_opts='d:p:hDnfy'
 long_opts='target:,python:,help,develop,no-gc3apps,overwrite,yes'
 
-if [ "x$(getopt -T)" == 'x' ]; then
+if [ "x$(getopt -T)" = 'x' ]; then
     # GNU getopt
     args=$(getopt --name "$PROG" --shell sh -l "$long_opts" -o "$short_opts" -- "$@")
     if [ $? -ne 0 ]; then
-        die 1 "Type '$PROG --help' to get usage information."
+        abort 1 "Type '$PROG --help' to get usage information."
     fi
     # use 'eval' to remove getopt quoting
     eval set -- $args
@@ -375,7 +364,7 @@ else
     # old-style getopt, use compatibility syntax
     args=$(getopt "$short_opts" "$@")
     if [ $? -ne 0 ]; then
-        die 1 "Type '$PROG --help' to get usage information."
+        abort 1 "Type '$PROG --help' to get usage information."
     fi
     eval set -- $args
 fi
@@ -475,11 +464,7 @@ elif have_command wget
 then
     download () { wget -O "$@"; }
 else
-    cat 1>&2 <<EOF
-=========================================================
-GC3Pie install: ERROR: No 'curl' or 'wget' command found.
-=========================================================
-
+    die 6 "No 'curl' or 'wget' command found." <<EOF
 The script needs either one of the 'curl' or 'wget' commands to run.
 Please, install at least one of them using the software manager of
 your distribution, or downloading it from internet.
@@ -487,10 +472,7 @@ your distribution, or downloading it from internet.
 wget: http://www.gnu.org/software/wget/
 
 curl: http://curl.haxx.se/
-
-Aborting installation!
 EOF
-    exit 1
 fi
 
 # Install virtualenv
@@ -513,11 +495,7 @@ then
     fi
     if [ $OVERWRITEDIR = 'no' ]
     then
-cat 1>&2 <<EOF
-=============================================================================================
-GC3Pie install: ERROR: Unable to create a virtualenv in "$VENVDIR": directory already exists.
-=============================================================================================
-
+        die 7 "Unable to create virtualenv in '$VENVDIR': directory already exists." <<EOF
 The script was unable to create a virtual environment in "$VENVDIR"
 because the directory already exists.
 
@@ -530,15 +508,12 @@ In order to proceed, you must take one of the following action:
 
 * specify a different path by running this script again adding the
   option "--target" followed by a non-existent directory.
-
-Aborting installation!
 EOF
-        exit 1
     elif [ $OVERWRITEDIR = 'yes' ]; then
         echo "Removing directory $VENVDIR as requested."
         rm -rf $VENVDIR
     else
-        die 66 "Internal error: unexpected value '$OVERWRITEDIR' for OVERWRITEDIR."
+        abort 66 "Internal error: unexpected value '$OVERWRITEDIR' for OVERWRITEDIR."
     fi
 fi
 
@@ -547,21 +522,9 @@ install_virtualenv $VENVDIR
 rc=$?
 if [ $rc -ne 0 ]
 then
-    cat 1>&2 <<EOF
-===========================================================================================================
-GC3Pie install: ERROR: Unable to create a new virtualenv in $VENVDIR: "virtualenv.py" script exit status: $rc
-===========================================================================================================
-
-The script was unable to create a valid virtual environment. If the
-above output does not help you in solving the issue, please contact
-the GC3Pie team by sending an email to gc3pie@googlegroups.com.
-
-Remember to attach the full output of the script, in order to help us
-to identify the problem.
-
-Aborting installation!
+    die 8 "Unable to create a new virtualenv in '$VENVDIR': 'virtualenv.py' script exited with code $rc." <<EOF
+The script was unable to create a valid virtual environment.
 EOF
-    exit 1
 fi
 
 . $VENVDIR/bin/activate
