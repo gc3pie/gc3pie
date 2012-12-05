@@ -334,13 +334,13 @@ Options:
 
       -p, --python EXE       The python interpreter to use. The default is $(which python).
 
-      -D, --develop          Install development version. Requires svn and gcc.
-
-      -n, --no-gc3apps       Do not install extra GC3 applications, like gcodeml, grosetta and gamess.
-
       -f, --overwrite        Remove target directory if it already exists.
 
       -y, --yes              Do not ask for confirmation: assume a 'yes' reply to every question.
+
+      -D, --develop          Install development version.
+
+      -N, --no-gc3apps       Do not install extra GC3 applications, like 'gcodeml', 'grosetta' and 'ggamess'.
 
       -h, --help             Print this help text.
 
@@ -351,7 +351,7 @@ EOF
 
 
 # Main program
-short_opts='d:p:hDnfvxy'
+short_opts='d:p:hDNfvxy'
 long_opts='target:,python:,help,debug,develop,no-gc3apps,overwrite,verbose,yes'
 
 if [ "x$(getopt -T)" = 'x' ]; then
@@ -391,7 +391,7 @@ do
         -D|--develop)
             DEVELOP=1
             ;;
-        -n|--no-gc3apps)
+        -N|--no-gc3apps)
             WITHAPPS=0
             ;;
         -f|--overwrite)
