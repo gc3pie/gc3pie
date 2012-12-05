@@ -199,33 +199,59 @@ install_required_sw () {
         # Debian/Ubuntu
         missing=$(which_missing_packages subversion python-dev gcc g++)
         if [ -n "$missing" ]; then
-            die 3 "missing software prerequisites" <<EOF
+            cat <<EOF
 The following software packages need to be installed
 in order for GC3Pie to work: $missing
 
-Please ask your system administrator to install them,
-or, if you have root access, you can do that by
-running the following command from the 'root' account:
+There is a small chance that the required software
+is actually installed though we failed to detect it,
+so you may choose to proceed with GC3Pie installation
+anyway.  Be warned however, that continuing is very
+likely to fail!
+
+EOF
+            ask_yn "Proceed with installation anyway?"
+            if [ "$REPLY" = 'yes' ]; then
+                warn "Proceeding with installation at your request... keep fingers crossed!"
+            else
+                die 3 "missing software prerequisites" <<EOF
+Please ask your system administrator to install the missing packages,
+or, if you have root access, you can do that by running the following
+command from the 'root' account:
 
     apt-get install $missing
 
 EOF
+            fi
         fi
     elif have_command yum; then
         # RHEL/CentOS
         missing=$(which_missing_packages subversion python-devel gcc gcc-c++)
         if [ -n "$missing" ]; then
-            die 3 "missing software prerequisites" <<EOF
+            cat <<EOF
 The following software packages need to be installed
 in order for GC3Pie to work: $missing
 
-Please ask your system administrator to install them,
-or, if you have root access, you can do that by
-running the following command from the 'root' account:
+There is a small chance that the required software
+is actually installed though we failed to detect it,
+so you may choose to proceed with GC3Pie installation
+anyway.  Be warned however, that continuing is very
+likely to fail!
+
+EOF
+            ask_yn "Proceed with installation anyway?"
+            if [ "$REPLY" = 'yes' ]; then
+                warn "Proceeding with installation at your request... keep fingers crossed!"
+            else
+                die 3 "missing software prerequisites" <<EOF
+Please ask your system administrator to install the missing packages,
+or, if you have root access, you can do that by running the following
+command from the 'root' account:
 
     yum install $missing
 
 EOF
+            fi
         fi
     elif have_command zypper; then
         # SuSE
