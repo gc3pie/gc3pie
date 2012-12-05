@@ -422,6 +422,7 @@ do
             ;;
         -y|--yes)
             ASKCONFIRMATION=0
+            OVERWRITEDIR=yes
             ;;
         -v|--verbose)
             verbose='-v'
