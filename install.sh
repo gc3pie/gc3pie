@@ -190,7 +190,7 @@ EOF
         fi
     elif have_command yum; then
         # RHEL/CentOS
-        missing=$(which_missing_packages subversion python-devel gcc gcc-g++)
+        missing=$(which_missing_packages subversion python-devel gcc gcc-c++)
         if [ -n "$missing" ]; then
             die 3 "missing software prerequisites" <<EOF
 The following software packages need to be installed
