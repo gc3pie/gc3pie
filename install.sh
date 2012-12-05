@@ -95,6 +95,29 @@ warn () {
     echo 1>&2 "$PROG: WARNING: $@";
 }
 
+# ask_yn PROMPT
+#
+# Ask a Yes/no question preceded by PROMPT.
+# Set the env. variable REPLY to 'yes' or 'no'
+# and return 0 or 1 depending on the users'
+# answer.
+#
+ask_yn () {
+    if [ $ASKCONFIRMATION -eq 0 ]; then
+        # assume 'yes'
+        REPLY='yes'
+        return 0
+    fi
+    while true; do
+        read -p "$1 [yN] " REPLY
+        case "$REPLY" in
+            [Yy]*)    REPLY='yes'; return 0 ;;
+            [Nn]*|'') REPLY='no';  return 1 ;;
+            *)        say "Please type 'y' (yes) or 'n' (no)." ;;
+        esac
+    done
+}
+
 have_command () {
   type "$1" >/dev/null 2>/dev/null
 }
@@ -450,15 +473,11 @@ Overwrite:                $OVERWRITEDIR
 
 EOF
 
-if [ $ASKCONFIRMATION -eq 1 ]
-then
-    read -p "Are you ready to proceed? [yN] " yn
-    if [ "$yn" != "y" -a "$yn" != "Y" ]
-    then
-        echo "Aborting installation as requested"
-        exit 0
-    fi
+ask_yn "Are you ready to proceed?"
+if [ "$REPLY" = 'no' ]; then
+    echo "Aborting installation as requested."
     echo
+    exit 0
 fi
 
 # check and install prerequisites
@@ -492,13 +511,11 @@ then
         echo "but this means any files in that directory, and the ones"
         echo "underneath it will be deleted."
         echo
-        read -p "Do you want to wipe the installation directory '$VENVDIR'? [yN] " yn
-        if [ "$yn" != "y" -a "$yn" != "Y" ]
-        then
+        ask_yn "Do you want to wipe the installation directory '$VENVDIR'?"
+        OVERWRITEDIR="$REPLY"
+        if [ "$OVERWRITEDIR" = 'no' ]; then
             say "*Not* overwriting destination directory '$VENVDIR'."
             OVERWRITEDIR=no
-        else
-            OVERWRITEDIR=yes
         fi
     fi
     if [ $OVERWRITEDIR = 'no' ]
