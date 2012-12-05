@@ -133,11 +133,7 @@ class ShellcmdLrms(LRMS):
         The temporary directory is removed with all its content,
         recursively.
         """
-        try:
-            shutil.rmtree(app.execution.lrms_execdir)
-        except Exception, ex:
-            log.warning("Failed removing folder '%s': %s: %s"
-                        % (app.execution.lrms_execdir, type(ex), ex))
+        shutil.rmtree(app.execution.lrms_execdir)
 
 
     @same_docstring_as(LRMS.get_resource_status)
@@ -234,7 +230,7 @@ class ShellcmdLrms(LRMS):
                 " (increase 'max_cores' to raise)." % self.name)
 
         gc3libs.log.debug("Executing local command '%s' ..."
-                          % (str.join(" ", app.arguments)))
+                          % (str.join(" ", app.arguments[1:])))
         # We cannot use `exec` or other front-end modules that
         # hide the differences between UNIX and Windows, exactly
         # because we need to get the PID of the submitted process.
@@ -254,11 +250,6 @@ class ShellcmdLrms(LRMS):
             # book-keeping
             self.free_slots -= app.requested_cores
             self.user_run += 1
-            # Child process will fork() again and the actual program
-            # will be executed by the nephew. In order to avoid
-            # zombies, however, we still have to wait for the child
-            # process to complete.
-            os.waitpid(pid, 0)
 
         else: # child process
             try:
@@ -336,7 +327,7 @@ class ShellcmdLrms(LRMS):
                     os.mkdir(wrapper_dir)
 
                 if posix.fork(): # parent process, exits to avoid zombies
-                    # The bug is caused by the fact that in order to
+                    # The bug is cause by the fact that in order to
                     # avoid creation of zombie processes we have to
                     # *daemonize*, which basically means that we have
                     # to do something like:
@@ -357,16 +348,22 @@ class ShellcmdLrms(LRMS):
                     # lot of clones of the nosetests programs running
                     # at the same time.
                     #
-                    # To avoid this we call os.execlp('true') instead,
-                    # which will overwrite the current instance of
-                    # nosetests with the `true` command, which will
+                    # To avoid this we call os.execlp('/bin/true')
+                    # instead, which will overwrite the current
+                    # instance of nosetests with /bin/true, which will
                     # exit without problem.
-
-                    # Since not all the distribution have the `true`
-                    # command in the same place, we don't specify a
-                    # full path, and let `execlp()` to find a `true`
-                    # command using `PATH` environment variable.
-                    os.execlp('true', 'true')
+                    
+                    # However, not all the distribution have the
+                    # `true` command in the same place...
+                    possible_paths_to_true = [
+                        '/bin/true',     # Linux std location
+                        '/usr/bin/true', # MacOSX std location
+                        '/usr/local/bin/true', # manual installation
+                        '/opt/local/libexec/gnubin/true', # MacPorts
+                        ]
+                    for path in possible_paths_to_true:
+                        if os.path.isfile(path):
+                            os.execlp(path, path)
 
                     # In case os.execlp() will fail we still call
                     # sys.exit(0), which should be just fine if not
@@ -383,8 +380,8 @@ class ShellcmdLrms(LRMS):
                               wrapper_dir,
                               ShellcmdLrms.WRAPPER_OUTPUT_FILENAME),
                           "-f", ShellcmdLrms.TIMEFMT,
-                          "/bin/sh", "-c",
-                          str.join(' ', ['"%s"' % arg for arg in app.arguments]))
+                          "/bin/sh", "-c", 
+                          str.join(' ', app.arguments))
 
             except Exception, ex:
                 sys.excepthook(* sys.exc_info())

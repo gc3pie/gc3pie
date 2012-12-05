@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>GC3Libs programming API &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>GC3Libs programming API &mdash; gc3pie 2.0.0 documentation</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.0.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,7 +25,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="top" title="gc3pie 2.0.0 documentation" href="../../index.html" />
     <link rel="up" title="Programmer Documentation" href="../index.html" />
     <link rel="next" title="Developer Documentation" href="../../developers/index.html" />
     <link rel="prev" title="Introduction" href="../tutorials/warholize/warholize.html" />
@@ -53,7 +53,7 @@
         <li class="right" >
           <a href="../tutorials/warholize/warholize.html" title="Introduction"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../../index.html">gc3pie 2.0.0 documentation</a> &raquo;</li>
           <li><a href="../index.html" accesskey="U">Programmer Documentation</a> &raquo;</li> 
       </ul>
     </div>  
@@ -1031,7 +1031,8 @@ job ID; actual processing of the IDs is done in
 Implements a long-running script to submit and manage a large number
 of jobs grouped into a &#8220;session&#8221;.</p>
 <p>The generic scripts implements a command-line like the following:</p>
-<div class="highlight-python"><pre>PROG [options] INPUT [INPUT ...]</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">PROG</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span> <span class="n">INPUT</span> <span class="p">[</span><span class="n">INPUT</span> <span class="o">...</span><span class="p">]</span>
+</pre></div>
 </div>
 <p>First, the script builds a list of input files by recursively
 scanning each of the given INPUT arguments for files matching the
@@ -1219,7 +1220,7 @@ description.</p>
 
 <dl class="method">
 <dt id="gc3libs.cmdline.SessionBasedScript.print_tasks_table">
-<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2baa525e6150&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">print_tasks_table</tt><big>(</big><em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2acf0fbdc1e0&gt;</em>, <em>states=Enum(['TERMINATED'</em>, <em>'UNKNOWN'</em>, <em>'SUBMITTED'</em>, <em>'RUNNING'</em>, <em>'TERMINATING'</em>, <em>'STOPPED'</em>, <em>'NEW'])</em>, <em>only=&lt;type 'object'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.cmdline.SessionBasedScript.print_tasks_table" title="Permalink to this definition">¶</a></dt>
 <dd><p>Output a text table to stream <cite>output</cite>, giving details about
 tasks in the given states.</p>
 <p>Optional second argument <cite>states</cite> restricts the listing to
@@ -1762,9 +1763,10 @@ terminated task.</dd>
 </div></blockquote>
 <p>Any of the above can also be set by passing a keyword argument to
 the constructor (assume <tt class="docutils literal"><span class="pre">g</span></tt> is a <a class="reference internal" href="#gc3libs.core.Core" title="gc3libs.core.Core"><tt class="xref py py-class docutils literal"><span class="pre">Core</span></tt></a> instance):</p>
-<div class="highlight-python"><pre>| &gt;&gt;&gt; e = Engine(g, can_submit=False)
-| &gt;&gt;&gt; e.can_submit
-| False</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="o">|</span> <span class="o">&gt;&gt;&gt;</span> <span class="n">e</span> <span class="o">=</span> <span class="n">Engine</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">can_submit</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="o">|</span> <span class="o">&gt;&gt;&gt;</span> <span class="n">e</span><span class="o">.</span><span class="n">can_submit</span>
+<span class="o">|</span> <span class="bp">False</span>
+</pre></div>
 </div>
 <dl class="method">
 <dt id="gc3libs.core.Engine.add">
@@ -1784,7 +1786,12 @@ e.g. LRMS</p>
 <dl class="method">
 <dt id="gc3libs.core.Engine.fetch_output">
 <tt class="descname">fetch_output</tt><big>(</big><em>task</em>, <em>output_dir=None</em>, <em>overwrite=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.fetch_output" title="Permalink to this definition">¶</a></dt>
-<dd><p>Proxy for <cite>Core.fetch_output</cite> (which see).</p>
+<dd><p>Enqueue task for later output retrieval.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>FIXME</p>
+<p class="last">The <cite>output_dir</cite> and <cite>overwrite</cite> parameters are currently ignored.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -2684,24 +2691,25 @@ the <cite>Store</cite> instance associated with this session.</p>
 the <cite>Store</cite> instance associated with this session.</p>
 <p>The object is <em>not</em> added to the session, nor is session
 meta-data updated:</p>
-<div class="highlight-python"><pre># create an empty session
-&gt;&gt;&gt; import tempfile; tmpdir = tempfile.mktemp(dir='.')
-&gt;&gt;&gt; session = Session(tmpdir)
-&gt;&gt;&gt; 0 == len(session)
-True
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># create an empty session</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="nn">tempfile</span><span class="p">;</span> <span class="n">tmpdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mktemp</span><span class="p">(</span><span class="nb">dir</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="mi">0</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+<span class="bp">True</span>
 
-# use `save` on an object
-&gt;&gt;&gt; obj = gc3libs.persistence.Persistable()
-&gt;&gt;&gt; oid = session.save(obj)
+<span class="c"># use `save` on an object</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">obj</span> <span class="o">=</span> <span class="n">gc3libs</span><span class="o">.</span><span class="n">persistence</span><span class="o">.</span><span class="n">Persistable</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">oid</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
-# session is still empty
-&gt;&gt;&gt; 0 == len(session)
-True
+<span class="c"># session is still empty</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="mi">0</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+<span class="bp">True</span>
 
-# do cleanup
-&gt;&gt;&gt; session.destroy()
-&gt;&gt;&gt; os.path.exists(session.path)
-False</pre>
+<span class="c"># do cleanup</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">session</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+<span class="bp">False</span>
+</pre></div>
 </div>
 </dd></dl>
 
@@ -2745,7 +2753,7 @@ texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.</p>
 <dl class="class">
 <dt id="gc3libs.template.Template">
-<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x50fc5f0&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x45e5410&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
 <dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
 provided to substitute the keyword values into <cite>obj</cite>, and to
 iterate over expansions of the given keywords (optionally
@@ -3627,7 +3635,7 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2baa525e6150&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2acf0fbdc1e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
@@ -3651,13 +3659,14 @@ indented <cite>step</cite> spaces from the enclosing dictionary.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.progressive_number">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><em>qty=None</em>, <em>id_filename='/home/amessina/.gc3/next_id.txt'</em><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><em>qty=None</em>, <em>id_filename='/home/rmurri/.gc3/next_id.txt'</em><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a positive integer, whose value is guaranteed to
 be monotonically increasing across different invocations
 of this function, and also across separate instances of the
 calling program.</p>
 <p>Example:</p>
-<div class="highlight-python"><pre>(create a temporary directory to avoid bug #)</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">(</span><span class="n">create</span> <span class="n">a</span> <span class="n">temporary</span> <span class="n">directory</span> <span class="n">to</span> <span class="n">avoid</span> <span class="n">bug</span> <span class="c">#)</span>
+</pre></div>
 </div>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span><span class="o">,</span> <span class="nn">os</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
@@ -5671,7 +5680,7 @@ don&#8217;t operate on single jobs.</p>
         <li class="right" >
           <a href="../tutorials/warholize/warholize.html" title="Introduction"
              >previous</a> |</li>
-        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../../index.html">gc3pie 2.0.0 documentation</a> &raquo;</li>
           <li><a href="../index.html" >Programmer Documentation</a> &raquo;</li> 
       </ul>
     </div>

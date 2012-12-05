@@ -19,7 +19,7 @@ Top-level interface to Grid functionality.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.1 version (SVN $Revision$)'
 __date__ = '$Date$'
 
 
@@ -221,7 +221,7 @@ specified in the configuration file.
         if len(_selected_lrms_list) == 0:
             raise gc3libs.exceptions.LRMSSubmitError(
                 "No computational resources left after brokering."
-                " Aborting submission of job '%s'" % app)
+                " Aborting submission of job '%s'", app)
 
         exs = [ ]
         # Scheduler.do_brokering returns a sorted list of valid lrms
@@ -364,15 +364,11 @@ specified in the configuration file.
 
             # XXX: Re-enabled the catch-all clause otherwise the loop stops at the first erroneous iteration
             except Exception, ex:
-                if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
-                    # propagate generic exceptions for debugging purposes
-                    raise
-                else:
-                    gc3libs.log.warning("Ignored error in Core.update_job_state(): %s", str(ex))
-                    # print again with traceback at a higher log level
-                    gc3libs.log.debug("Ignored error in Core.update_job_state(): %s: %s",
-                                      ex.__class__.__name__, str(ex), exc_info=True)
-                    continue
+                gc3libs.log.warning("Ignored error in Core.update_job_state(): %s", str(ex))
+                # print again with traceback at a higher log level
+                gc3libs.log.debug("Ignored error in Core.update_job_state(): %s: %s",
+                                  ex.__class__.__name__, str(ex), exc_info=True)
+                continue
 
     def __update_task(self, tasks, **extra_args):
         """Implementation of `update_job_state` on generic `Task` objects."""
@@ -451,10 +447,8 @@ specified in the configuration file.
             # clear previous data staging errors
             if job.signal == Run.Signals.DataStagingFailure:
                 job.signal = 0
-        except gc3libs.exceptions.InvalidResourceName, ex:
-            gc3libs.log.warning(
-                "Failed retrieving resource %s from core."
-                " Detailed Error message: %s" % (app.execution.resource_name, str(ex)))
+        except gc3libs.exceptions.InvalidResourceName, irn:
+            gc3libs.log.warning("Failed while retrieving resource %s from core.Detailed Error message: %s" % (app.execution.resource_name, str(irn)))
             ex = app.fetch_output_error(ex)
             if isinstance(ex, Exception):
                 job.info = ("No output could be retrieved: %s" % str(ex))
@@ -462,8 +456,7 @@ specified in the configuration file.
             else:
                 return
         except gc3libs.exceptions.RecoverableDataStagingError, rex:
-            job.info = ("Temporary failure when retrieving results: %s."
-                        " Ignoring error, try again." % str(rex))
+            job.info = ("Temporary failure when retrieving results: %s. Ignoring error, try again." % str(rex))
             return
         except gc3libs.exceptions.UnrecoverableDataStagingError, ex:
             job.signal = Run.Signals.DataStagingFailure
@@ -893,15 +886,11 @@ class Engine(object):
                 self._terminated.append(task)
                 transitioned.append(index)
             except Exception, x:
-                if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
-                    # propagate generic exceptions for debugging purposes
-                    raise
-                else:
-                    gc3libs.log.error("Ignored error in killing task '%s': %s: %s",
-                                      task, x.__class__.__name__, str(x))
-                    # print again with traceback info at a higher log level
-                    gc3libs.log.debug("Ignored error in killing task '%s': %s: %s",
-                                      task, x.__class__.__name__, str(x), exc_info=True)
+                gc3libs.log.error("Ignored error in killing task '%s': %s: %s",
+                                  task, x.__class__.__name__, str(x))
+                # print again with traceback info at a higher log level
+                gc3libs.log.debug("Ignored error in killing task '%s': %s: %s",
+                                  task, x.__class__.__name__, str(x), exc_info=True)
         # remove tasks that transitioned to other states
         for index in reversed(transitioned):
             del self._to_kill[index]
@@ -961,21 +950,14 @@ class Engine(object):
                             currently_submitted += 1
                             currently_in_flight += 1
                     except Exception, x:
-                        if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
-                            # propagate generic exceptions for debugging purposes
-                            raise
-                        else:
-                            gc3libs.log.error(
-                                "Ignored error in submitting task '%s': %s: %s",
-                                task, x.__class__.__name__, str(x))
-                            # print again with traceback at a higher log level
-                            gc3libs.log.debug(
-                                "Ignored error in submitting task '%s': %s: %s",
-                                task, x.__class__.__name__, str(x), exc_info=True)
-                            # record the fact in the task's history
-                            task.execution.history(
-                                "Submission failed: %s: %s"
-                                % (x.__class__.__name__, str(x)))
+                        gc3libs.log.error("Ignored error in submitting task '%s': %s: %s",
+                                          task, x.__class__.__name__, str(x))
+                        # print again with traceback at a higher log level
+                        gc3libs.log.debug("Ignored error in submitting task '%s': %s: %s",
+                                          task, x.__class__.__name__, str(x), exc_info=True)
+                        # record the fact in the task's history
+                        task.execution.history("Submission failed: %s: %s"
+                                               % (x.__class__.__name__, str(x)))
                 index += 1
         # remove tasks that transitioned to SUBMITTED state
         for index in reversed(transitioned):
@@ -1001,16 +983,10 @@ class Engine(object):
                     task.execution.state = Run.State.TERMINATED
                     task.changed = True
                 except Exception, x:
-                    if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
-                        # propagate generic exceptions for debugging purposes
-                        raise
-                    else:
-                        gc3libs.log.error(
-                            "Ignored error in fetching output of task '%s': %s: %s",
-                            task, x.__class__.__name__, str(x))
-                        gc3libs.log.debug(
-                            "Ignored error in fetching output of task '%s': %s: %s",
-                            task, x.__class__.__name__, str(x), exc_info=True)
+                    gc3libs.log.error("Ignored error in fetching output of task '%s': %s: %s",
+                                      task, x.__class__.__name__, str(x))
+                    gc3libs.log.debug("Ignored error in fetching output of task '%s': %s: %s",
+                                      task, x.__class__.__name__, str(x), exc_info=True)
                 if task.execution.state == Run.State.TERMINATED:
                     self._terminated.append(task)
                     self._core.free(task)
@@ -1131,14 +1107,13 @@ class Engine(object):
 
     def fetch_output(self, task, output_dir=None, overwrite=False, **extra_args):
         """
-        Enqueue task for later output retrieval.
-
-        .. warning:: FIXME
-
-          The `output_dir` and `overwrite` parameters are currently ignored.
-
+        Proxy for `Core.fetch_output` (which see).
         """
-        self.add(task)
+        if output_dir is None and self.output_dir is not None:
+            output_dir = os.path.join(self.output_dir, task.persistent_id)
+        if overwrite is None:
+            overwrite = self.fetch_output_overwrites
+        self._core.fetch_output(task, output_dir, overwrite, **extra_args)
 
 
     def kill(self, task, **extra_args):

@@ -27,7 +27,7 @@ can implement problem-specific job control policies.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.1 version (SVN $Revision$)'
 
 import time
 import os
@@ -114,7 +114,7 @@ class TaskCollection(Task):
         # own subdir based on its `.persistent_id`
         coll_output_dir = self._get_download_dir(output_dir)
         for task in self.tasks:
-            if task.execution.state != Run.State.TERMINATING:
+            if task.execution.state == Run.State.TERMINATED:
                 continue
             if 'output_dir' in task:
                 task_output_dir = task.output_dir
@@ -129,24 +129,12 @@ class TaskCollection(Task):
                 task_output_dir,
                 overwrite,
                 **extra_args)
-        # if any sub-task is not yet TERMINATED, return the base
-        # output directory for the collection...
         for task in self.tasks:
             if task.execution.state != Run.State.TERMINATED:
                 return coll_output_dir
-        # ...otherwise set the state to TERMINATED
         self.execution.state = Run.State.TERMINATED
         self.changed = True
         return coll_output_dir
-
-
-    def free(self):
-        """
-        This method just asks the Engine to free the contained tasks.
-        """
-        if self._attached:
-            for task in self.tasks:
-                self._controller.free(task)
 
 
     def peek(self, what, offset=0, size=None, **extra_args):
@@ -211,7 +199,6 @@ class TaskCollection(Task):
         self.execution._exitcode = max(
             task.execution._exitcode for task in self.tasks
             )
-
 
 class SequentialTaskCollection(TaskCollection):
     """

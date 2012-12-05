@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>The ggamess script &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>The ggamess script &mdash; gc3pie 2.0.0 documentation</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.0.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,7 +25,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="top" title="gc3pie 2.0.0 documentation" href="../../index.html" />
     <link rel="up" title="The GC3Apps software" href="index.html" />
     <link rel="next" title="The ggeotop script" href="ggeotop.html" />
     <link rel="prev" title="Introduction to session-based scripts" href="intro.html" />
@@ -53,7 +53,7 @@
         <li class="right" >
           <a href="intro.html" title="Introduction to session-based scripts"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../../index.html">gc3pie 2.0.0 documentation</a> &raquo;</li>
           <li><a href="../index.html" >User Documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">The GC3Apps software</a> &raquo;</li> 
       </ul>
@@ -76,7 +76,8 @@ parallel using every available GC3Pie parameters.</p>
 <h2>How to run GAMESS on the Grid<a class="headerlink" href="#how-to-run-gamess-on-the-grid" title="Permalink to this headline">¶</a></h2>
 <p>SSH to <cite>ocikbgtw</cite>, then run the command (it&#8217;s one single command line,
 even if it appears broken in several ones in the mail):</p>
-<div class="highlight-python"><pre>ggamess.py -A ~/beckya-dmulti.changes.tar.gz -R 2011R3-beckya-dmulti -s "a_session_name" "input_files_or_directories"</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ggamess</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">A</span> <span class="o">~/</span><span class="n">beckya</span><span class="o">-</span><span class="n">dmulti</span><span class="o">.</span><span class="n">changes</span><span class="o">.</span><span class="n">tar</span><span class="o">.</span><span class="n">gz</span> <span class="o">-</span><span class="n">R</span> <span class="mi">2011</span><span class="n">R3</span><span class="o">-</span><span class="n">beckya</span><span class="o">-</span><span class="n">dmulti</span> <span class="o">-</span><span class="n">s</span> <span class="s">&quot;a_session_name&quot;</span> <span class="s">&quot;input_files_or_directories&quot;</span>
+</pre></div>
 </div>
 <p>The parts in double quotes should be replaced with actual content:</p>
 <blockquote>
@@ -102,14 +103,17 @@ and <cite>.dat</cite> files.</p>
 <p>For shorter typing, I have defined an alias <cite>ggms</cite> to expand to the
 above string <tt class="docutils literal"><span class="pre">ggamess.py</span> <span class="pre">-A</span> <span class="pre">...</span> <span class="pre">2011R3-beckya-dmulti</span></tt>, so you could
 shorten the command to just:</p>
-<div class="highlight-python"><pre>ggms -s "a_session_name" "input_files_or_directories"</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ggms</span> <span class="o">-</span><span class="n">s</span> <span class="s">&quot;a_session_name&quot;</span> <span class="s">&quot;input_files_or_directories&quot;</span>
+</pre></div>
 </div>
 <p>For instance, to use <tt class="docutils literal"><span class="pre">ggames.py</span></tt> to analyse a single <cite>.inp</cite> file you
 must run:</p>
-<div class="highlight-python"><pre>ggms -s "single" dmulti/inp/neutral/dmulti_cc4l.inp</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ggms</span> <span class="o">-</span><span class="n">s</span> <span class="s">&quot;single&quot;</span> <span class="n">dmulti</span><span class="o">/</span><span class="n">inp</span><span class="o">/</span><span class="n">neutral</span><span class="o">/</span><span class="n">dmulti_cc4l</span><span class="o">.</span><span class="n">inp</span>
+</pre></div>
 </div>
 <p>while to use <tt class="docutils literal"><span class="pre">ggamess.py</span></tt> to run several GAMESS jobs in parallel:</p>
-<div class="highlight-python"><pre>ggms -s "multiple" dmulti/inp/neutral</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ggms</span> <span class="o">-</span><span class="n">s</span> <span class="s">&quot;multiple&quot;</span> <span class="n">dmulti</span><span class="o">/</span><span class="n">inp</span><span class="o">/</span><span class="n">neutral</span>
+</pre></div>
 </div>
 </div>
 <div class="section" id="tweaking-execution">
@@ -167,7 +171,8 @@ read/written as if they were into directory <cite>job</cite> in the AppPot VM.</
 <p>Once you have compiled a new version of GAMESS that you wish to test,
 you need to run this command (at the <tt class="docutils literal"><span class="pre">user&#64;rootstrap</span></tt> command prompt
 in the AppPot VM):</p>
-<div class="highlight-python"><pre>sudo apppot-snap changes ~/job/beckya-dmulti.changes.tar.gz</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sudo</span> <span class="n">apppot</span><span class="o">-</span><span class="n">snap</span> <span class="n">changes</span> <span class="o">~/</span><span class="n">job</span><span class="o">/</span><span class="n">beckya</span><span class="o">-</span><span class="n">dmulti</span><span class="o">.</span><span class="n">changes</span><span class="o">.</span><span class="n">tar</span><span class="o">.</span><span class="n">gz</span>
+</pre></div>
 </div>
 <p>This will overwrite the file <tt class="docutils literal"><span class="pre">beckya-dmulti.changes.tar.gz</span></tt> with the
 new GAMESS version.  If you don&#8217;t want to overwrite it and instead
@@ -232,7 +237,7 @@ the <tt class="docutils literal"><span class="pre">-R</span></tt> option to ggam
         <li class="right" >
           <a href="intro.html" title="Introduction to session-based scripts"
              >previous</a> |</li>
-        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../../index.html">gc3pie 2.0.0 documentation</a> &raquo;</li>
           <li><a href="../index.html" >User Documentation</a> &raquo;</li>
           <li><a href="index.html" >The GC3Apps software</a> &raquo;</li> 
       </ul>

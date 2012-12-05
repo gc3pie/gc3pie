@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>The gcrypto script &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>The gcrypto script &mdash; gc3pie 2.0.0 documentation</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.0.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,7 +25,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="top" title="gc3pie 2.0.0 documentation" href="../../index.html" />
     <link rel="up" title="The GC3Apps software" href="index.html" />
     <link rel="next" title="The GC3Utils software" href="../gc3utils.html" />
     <link rel="prev" title="The grosetta and gdocking scripts" href="grosetta.html" />
@@ -53,7 +53,7 @@
         <li class="right" >
           <a href="grosetta.html" title="The grosetta and gdocking scripts"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../../index.html">gc3pie 2.0.0 documentation</a> &raquo;</li>
           <li><a href="../index.html" >User Documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">The GC3Apps software</a> &raquo;</li> 
       </ul>
@@ -229,14 +229,15 @@ option (default value is 50 simulatenous jobs).</p>
 <tt class="docutils literal"><span class="pre">SAMPLE_SESSION</span></tt> (see the documentation of the <tt class="docutils literal"><span class="pre">--session</span></tt> option
 in <a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a>).  The command above creates the jobs,
 submits them, and finally prints the following status report:</p>
-<div class="highlight-python"><pre>Status of jobs in the 'SAMPLE_SESSION' session: (at 10:53:46, 02/28/12)
-NEW   0/50    (0.0%)
-RUNNING   0/50    (0.0%)
-STOPPED   0/50    (0.0%)
-SUBMITTED   50/50   (100.0%)
-TERMINATED   0/50    (0.0%)
-TERMINATING   0/50    (0.0%)
-total   50/50   (100.0%)</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">Status</span> <span class="n">of</span> <span class="n">jobs</span> <span class="ow">in</span> <span class="n">the</span> <span class="s">&#39;SAMPLE_SESSION&#39;</span> <span class="n">session</span><span class="p">:</span> <span class="p">(</span><span class="n">at</span> <span class="mi">10</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">46</span><span class="p">,</span> <span class="mo">02</span><span class="o">/</span><span class="mi">28</span><span class="o">/</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">NEW</span>   <span class="mi">0</span><span class="o">/</span><span class="mi">50</span>    <span class="p">(</span><span class="mf">0.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">RUNNING</span>   <span class="mi">0</span><span class="o">/</span><span class="mi">50</span>    <span class="p">(</span><span class="mf">0.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">STOPPED</span>   <span class="mi">0</span><span class="o">/</span><span class="mi">50</span>    <span class="p">(</span><span class="mf">0.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">SUBMITTED</span>   <span class="mi">50</span><span class="o">/</span><span class="mi">50</span>   <span class="p">(</span><span class="mf">100.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">TERMINATED</span>   <span class="mi">0</span><span class="o">/</span><span class="mi">50</span>    <span class="p">(</span><span class="mf">0.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">TERMINATING</span>   <span class="mi">0</span><span class="o">/</span><span class="mi">50</span>    <span class="p">(</span><span class="mf">0.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">total</span>   <span class="mi">50</span><span class="o">/</span><span class="mi">50</span>   <span class="p">(</span><span class="mf">100.0</span><span class="o">%</span><span class="p">)</span>
+</pre></div>
 </div>
 <p>Note that the status report counts the number of <em>jobs in the
 session</em>, not the total number of jobs that would correspond to the
@@ -247,15 +248,16 @@ being monitored;</p>
 all jobs have finished running and the output files have been
 correctly retrieved.  On successful completion, the command given in
 <em>example 2.</em> above, would print:</p>
-<div class="highlight-python"><pre>Status of jobs in the 'SAMPLE_SESSION' session: (at 11:05:50, 02/28/12)
-NEW   0/400k    (0.0%)
-RUNNING   0/400k    (0.0%)
-STOPPED   0/400k    (0.0%)
-SUBMITTED   0/400k    (0.0%)
-TERMINATED   50/400k   (100.0%)
-TERMINATING   0/400k    (0.0%)
-ok   400k/400k   (100.0%)
-total   400k/400k   (100.0%)</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">Status</span> <span class="n">of</span> <span class="n">jobs</span> <span class="ow">in</span> <span class="n">the</span> <span class="s">&#39;SAMPLE_SESSION&#39;</span> <span class="n">session</span><span class="p">:</span> <span class="p">(</span><span class="n">at</span> <span class="mi">11</span><span class="p">:</span><span class="mo">05</span><span class="p">:</span><span class="mi">50</span><span class="p">,</span> <span class="mo">02</span><span class="o">/</span><span class="mi">28</span><span class="o">/</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">NEW</span>   <span class="mi">0</span><span class="o">/</span><span class="mi">400</span><span class="n">k</span>    <span class="p">(</span><span class="mf">0.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">RUNNING</span>   <span class="mi">0</span><span class="o">/</span><span class="mi">400</span><span class="n">k</span>    <span class="p">(</span><span class="mf">0.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">STOPPED</span>   <span class="mi">0</span><span class="o">/</span><span class="mi">400</span><span class="n">k</span>    <span class="p">(</span><span class="mf">0.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">SUBMITTED</span>   <span class="mi">0</span><span class="o">/</span><span class="mi">400</span><span class="n">k</span>    <span class="p">(</span><span class="mf">0.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">TERMINATED</span>   <span class="mi">50</span><span class="o">/</span><span class="mi">400</span><span class="n">k</span>   <span class="p">(</span><span class="mf">100.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">TERMINATING</span>   <span class="mi">0</span><span class="o">/</span><span class="mi">400</span><span class="n">k</span>    <span class="p">(</span><span class="mf">0.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">ok</span>   <span class="mi">400</span><span class="n">k</span><span class="o">/</span><span class="mi">400</span><span class="n">k</span>   <span class="p">(</span><span class="mf">100.0</span><span class="o">%</span><span class="p">)</span>
+<span class="n">total</span>   <span class="mi">400</span><span class="n">k</span><span class="o">/</span><span class="mi">400</span><span class="n">k</span>   <span class="p">(</span><span class="mf">100.0</span><span class="o">%</span><span class="p">)</span>
+</pre></div>
 </div>
 <p>Each job will be named after the parameter range it has computed (e.g.
 800001000, 800002000, ... ) (you could see this by passing
@@ -306,15 +308,17 @@ every 120 seconds; output from finished jobs is retrieved and new jobs
 are submitted at the same interval.</p>
 <p>The above command will start by printing a status report like the
 following:</p>
-<div class="highlight-python"><pre>Status of jobs in the 'example.csv' session:
-SUBMITTED   1/1 (100.0%)</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">Status</span> <span class="n">of</span> <span class="n">jobs</span> <span class="ow">in</span> <span class="n">the</span> <span class="s">&#39;example.csv&#39;</span> <span class="n">session</span><span class="p">:</span>
+<span class="n">SUBMITTED</span>   <span class="mi">1</span><span class="o">/</span><span class="mi">1</span> <span class="p">(</span><span class="mf">100.0</span><span class="o">%</span><span class="p">)</span>
+</pre></div>
 </div>
 <p>It will continue printing an updated status report every 120 seconds
 until the requested parameter range has been computed.</p>
 <p>In GC3Pie terminology when a job is finished and its output has been
 successfully retrieved, the job is marked as <tt class="docutils literal"><span class="pre">TERMINATED</span></tt>:</p>
-<div class="highlight-python"><pre>Status of jobs in the 'example.csv' session:
-TERMINATED   1/1 (100.0%)</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">Status</span> <span class="n">of</span> <span class="n">jobs</span> <span class="ow">in</span> <span class="n">the</span> <span class="s">&#39;example.csv&#39;</span> <span class="n">session</span><span class="p">:</span>
+<span class="n">TERMINATED</span>   <span class="mi">1</span><span class="o">/</span><span class="mi">1</span> <span class="p">(</span><span class="mf">100.0</span><span class="o">%</span><span class="p">)</span>
+</pre></div>
 </div>
 </div>
 </div>
@@ -328,13 +332,16 @@ session execution.</p>
 <p>To cancel a running job, you can use the command <strong class="command">gkill</strong>.  For
 instance, to cancel <em>job.16</em>, you would type the following command
 into the terminal:</p>
-<div class="highlight-python"><pre>gkill job.16</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">gkill</span> <span class="n">job</span><span class="o">.</span><span class="mi">16</span>
+</pre></div>
 </div>
 <p>or:</p>
-<div class="highlight-python"><pre>gkill -s example job.16</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">gkill</span> <span class="o">-</span><span class="n">s</span> <span class="n">example</span> <span class="n">job</span><span class="o">.</span><span class="mi">16</span>
+</pre></div>
 </div>
 <p>gkill could also be used to cancel jobs in  a given state</p>
-<div class="highlight-python"><pre>gkill -s example -l UNKNOWN</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">gkill</span> <span class="o">-</span><span class="n">s</span> <span class="n">example</span> <span class="o">-</span><span class="n">l</span> <span class="n">UNKNOWN</span>
+</pre></div>
 </div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
@@ -350,7 +357,8 @@ the details about a job; the <strong class="command">ginfo</strong> command does
 all the details that GC3Utils know about a single job.</p>
 <p>For instance, to print out detailed information about <cite>job.13</cite> in
 session <cite>example</cite>, you would type</p>
-<div class="highlight-python"><pre>ginfo -s example job.13</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ginfo</span> <span class="o">-</span><span class="n">s</span> <span class="n">example</span> <span class="n">job</span><span class="o">.</span><span class="mi">13</span>
+</pre></div>
 </div>
 <p>For a job in <tt class="docutils literal"><span class="pre">RUNNING</span></tt> or <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> state, only little
 information is known: basically, where the job is running, and when it
@@ -544,7 +552,7 @@ job.13
         <li class="right" >
           <a href="grosetta.html" title="The grosetta and gdocking scripts"
              >previous</a> |</li>
-        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../../index.html">gc3pie 2.0.0 documentation</a> &raquo;</li>
           <li><a href="../index.html" >User Documentation</a> &raquo;</li>
           <li><a href="index.html" >The GC3Apps software</a> &raquo;</li> 
       </ul>

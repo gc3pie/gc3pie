@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>The GC3Utils software &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>The GC3Utils software &mdash; gc3pie 2.0.0 documentation</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.0.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,7 +25,7 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="top" title="gc3pie 2.0.0 documentation" href="../index.html" />
     <link rel="up" title="User Documentation" href="index.html" />
     <link rel="next" title="Troubleshooting GC3Pie" href="troubleshooting.html" />
     <link rel="prev" title="The gcrypto script" href="gc3apps/gcrypto.html" />
@@ -53,7 +53,7 @@
         <li class="right" >
           <a href="gc3apps/gcrypto.html" title="The gcrypto script"
              accesskey="P">previous</a> |</li>
-        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../index.html">gc3pie 2.0.0 documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">User Documentation</a> &raquo;</li> 
       </ul>
     </div>  
@@ -99,13 +99,14 @@ look it up in the <a class="reference internal" href="../glossary.html#glossary"
 </pre></div>
 </div>
 <p>will print to the screen a table like the following:</p>
-<div class="highlight-python"><pre>Job ID    Status
-====================
-job.12    TERMINATED
-job.15    SUBMITTED
-job.16    RUNNING
-job.17    RUNNING
-job.23    NEW</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">Job</span> <span class="n">ID</span>    <span class="n">Status</span>
+<span class="o">====================</span>
+<span class="n">job</span><span class="o">.</span><span class="mi">12</span>    <span class="n">TERMINATED</span>
+<span class="n">job</span><span class="o">.</span><span class="mi">15</span>    <span class="n">SUBMITTED</span>
+<span class="n">job</span><span class="o">.</span><span class="mi">16</span>    <span class="n">RUNNING</span>
+<span class="n">job</span><span class="o">.</span><span class="mi">17</span>    <span class="n">RUNNING</span>
+<span class="n">job</span><span class="o">.</span><span class="mi">23</span>    <span class="n">NEW</span>
+</pre></div>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -167,33 +168,36 @@ output and error stream.</p>
 long-running computation as <em>job.16</em> and you know from <strong class="command">gstat</strong> that
 it got into <tt class="docutils literal"><span class="pre">RUNNING</span></tt> state; then to take a peek at what this job is
 doing, you issue the following command:</p>
-<div class="highlight-python"><pre>gtail job.16</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">gtail</span> <span class="n">job</span><span class="o">.</span><span class="mi">16</span>
+</pre></div>
 </div>
 <p>This would produce the following output, from which you can deduce how
 far <a class="reference external" href="http://www.msg.ameslab.gov/gamess/">GAMESS</a> has progressed into the computation:</p>
-<div class="highlight-python"><pre>RECOMMEND NRAD ABOVE  50 FOR ZETA'S ABOVE 1E+4
+<div class="highlight-python"><div class="highlight"><pre><span class="n">RECOMMEND</span> <span class="n">NRAD</span> <span class="n">ABOVE</span>  <span class="mi">50</span> <span class="n">FOR</span> <span class="n">ZETA</span><span class="s">&#39;S ABOVE 1E+4</span>
 
-RECOMMEND NRAD ABOVE  75 FOR ZETA'S ABOVE 1E+5
+<span class="n">RECOMMEND</span> <span class="n">NRAD</span> <span class="n">ABOVE</span>  <span class="mi">75</span> <span class="n">FOR</span> <span class="n">ZETA</span><span class="s">&#39;S ABOVE 1E+5</span>
 
-RECOMMEND NRAD ABOVE 125 FOR ZETA'S ABOVE 1E+6
+<span class="n">RECOMMEND</span> <span class="n">NRAD</span> <span class="n">ABOVE</span> <span class="mi">125</span> <span class="n">FOR</span> <span class="n">ZETA</span><span class="s">&#39;S ABOVE 1E+6</span>
 
-DFT IS SWITCHED OFF, PERFORMING PURE SCF UNTIL SWOFF THRESHOLD IS REACHED.
+<span class="n">DFT</span> <span class="n">IS</span> <span class="n">SWITCHED</span> <span class="n">OFF</span><span class="p">,</span> <span class="n">PERFORMING</span> <span class="n">PURE</span> <span class="n">SCF</span> <span class="n">UNTIL</span> <span class="n">SWOFF</span> <span class="n">THRESHOLD</span> <span class="n">IS</span> <span class="n">REACHED</span><span class="o">.</span>
 
 
-ITER EX DEM     TOTAL ENERGY        E CHANGE  DENSITY CHANGE    DIIS ERROR
+<span class="n">ITER</span> <span class="n">EX</span> <span class="n">DEM</span>     <span class="n">TOTAL</span> <span class="n">ENERGY</span>        <span class="n">E</span> <span class="n">CHANGE</span>  <span class="n">DENSITY</span> <span class="n">CHANGE</span>    <span class="n">DIIS</span> <span class="n">ERROR</span>
 
-  1  0  0    -1079.0196780290 -1079.0196780290   0.343816910   1.529879639
+  <span class="mi">1</span>  <span class="mi">0</span>  <span class="mi">0</span>    <span class="o">-</span><span class="mf">1079.0196780290</span> <span class="o">-</span><span class="mf">1079.0196780290</span>   <span class="mf">0.343816910</span>   <span class="mf">1.529879639</span>
 
-         * * *   INITIATING DIIS PROCEDURE   * * *
+         <span class="o">*</span> <span class="o">*</span> <span class="o">*</span>   <span class="n">INITIATING</span> <span class="n">DIIS</span> <span class="n">PROCEDURE</span>   <span class="o">*</span> <span class="o">*</span> <span class="o">*</span>
 
-  2  1  0    -1081.1910665431    -2.1713885141   0.056618918   0.105322104
+  <span class="mi">2</span>  <span class="mi">1</span>  <span class="mi">0</span>    <span class="o">-</span><span class="mf">1081.1910665431</span>    <span class="o">-</span><span class="mf">2.1713885141</span>   <span class="mf">0.056618918</span>   <span class="mf">0.105322104</span>
 
-  3  2  0    -1081.2658345285    -0.0747679855   0.019565324   0.044813607</pre>
+  <span class="mi">3</span>  <span class="mi">2</span>  <span class="mi">0</span>    <span class="o">-</span><span class="mf">1081.2658345285</span>    <span class="o">-</span><span class="mf">0.0747679855</span>   <span class="mf">0.019565324</span>   <span class="mf">0.044813607</span>
+</pre></div>
 </div>
 <p>By default, <strong class="command">gtail</strong> only outputs the last 10 lines of a job
 output/error stream. To see more, use the command line option <tt class="docutils literal"><span class="pre">-n</span></tt>;
 for example, to see the last 25 lines of the output, issue the command:</p>
-<div class="highlight-python"><pre>gtail -n 25 job.16</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">gtail</span> <span class="o">-</span><span class="n">n</span> <span class="mi">25</span> <span class="n">job</span><span class="o">.</span><span class="mi">16</span>
+</pre></div>
 </div>
 <p>The command <strong class="command">gtail</strong> is especially useful for long computations: you
 can see how far a job has gotten and, e.g., cancel it if it&#8217;s gotten
@@ -208,7 +212,8 @@ update it as time passes, until you hit Ctrl+C to interrupt it.</p>
 <p>To cancel a running job, you can use the command <strong class="command">gkill</strong>.  For
 instance, to cancel <em>job.16</em>, you would type the following command
 into the terminal:</p>
-<div class="highlight-python"><pre>gkill job.16</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">gkill</span> <span class="n">job</span><span class="o">.</span><span class="mi">16</span>
+</pre></div>
 </div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
@@ -222,10 +227,12 @@ into the terminal:</p>
 <p>Once a job has reached <tt class="docutils literal"><span class="pre">RUNNING</span></tt> status (check with <strong class="command">gstat</strong>),
 you can retrieve its output files with the <strong class="command">gget</strong> command.  For
 instance, to download the output files of <em>job.15</em> you would use:</p>
-<div class="highlight-python"><pre>gget job.15</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">gget</span> <span class="n">job</span><span class="o">.</span><span class="mi">15</span>
+</pre></div>
 </div>
 <p>This command will print out a message like:</p>
-<div class="highlight-python"><pre>Job results successfully retrieved in '/path/to/some/directory'</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">Job</span> <span class="n">results</span> <span class="n">successfully</span> <span class="n">retrieved</span> <span class="ow">in</span> <span class="s">&#39;/path/to/some/directory&#39;</span>
+</pre></div>
 </div>
 <p>If you are not running the <strong class="command">gget</strong> command on your copmputer, but
 rather on a shared front-end like <cite>ocikbgtw</cite>, you can copy+paste the
@@ -233,7 +240,8 @@ path within quotes to the <a class="reference external" href="http://kb.iu.edu/d
 usual workstation.  For example, you can run the following command in
 a terminal on your computer to get the output files back to your
 workstation:</p>
-<div class="highlight-python"><pre>sftp ocikbgtw:'/path/to/some/directory'</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sftp</span> <span class="n">ocikbgtw</span><span class="p">:</span><span class="s">&#39;/path/to/some/directory&#39;</span>
+</pre></div>
 </div>
 <p>This will take you to the directory where the output files have been stored.</p>
 </div>
@@ -243,7 +251,8 @@ workstation:</p>
 need to use the <strong class="command">gclean</strong> command for that.</p>
 <p>Just call the <strong class="command">gclean</strong> command followed by the job identifier
 <em>job.NNN</em>.  For example:</p>
-<div class="highlight-python"><pre>gclean job.23</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">gclean</span> <span class="n">job</span><span class="o">.</span><span class="mi">23</span>
+</pre></div>
 </div>
 <p>In normal operation, you can only remove jobs that are in the
 <tt class="docutils literal"><span class="pre">TERMINATED</span></tt> status; if you want to force <strong class="command">gclean</strong> to remove a job
@@ -257,7 +266,8 @@ was running went unexpectedly down), you can re-submit it with the
 <strong class="command">gresub</strong> command.</p>
 <p>Just call <strong class="command">gresub</strong>  followed by the job identifier
 <em>job.NNN</em>.  For example:</p>
-<div class="highlight-python"><pre>gresub job.42</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">gresub</span> <span class="n">job</span><span class="o">.</span><span class="mi">42</span>
+</pre></div>
 </div>
 <p>Resubmitting a job that is not in a terminal state (i.e.,
 <tt class="docutils literal"><span class="pre">TERMINATED</span></tt>) results in the job being killed (as with <strong class="command">gkill</strong>)
@@ -333,7 +343,8 @@ the details about a job; the <strong class="command">ginfo</strong> command does
 all the details that GC3Utils know about a single job.</p>
 <p>For instance, to print out detailed information about <cite>job.13</cite> in
 session <cite>TEST1</cite>, you would type:</p>
-<div class="highlight-python"><pre>ginfo -s TEST1 job.13</pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ginfo</span> <span class="o">-</span><span class="n">s</span> <span class="n">TEST1</span> <span class="n">job</span><span class="o">.</span><span class="mi">13</span>
+</pre></div>
 </div>
 <p>For a job in <tt class="docutils literal"><span class="pre">RUNNING</span></tt> or <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> state, only little
 information is known: basically, where the job is running, and when it
@@ -493,7 +504,7 @@ job.13
         <li class="right" >
           <a href="gc3apps/gcrypto.html" title="The gcrypto script"
              >previous</a> |</li>
-        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../index.html">gc3pie 2.0.0 documentation</a> &raquo;</li>
           <li><a href="index.html" >User Documentation</a> &raquo;</li> 
       </ul>
     </div>

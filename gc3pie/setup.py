@@ -5,6 +5,27 @@ from distribute_setup import use_setuptools
 use_setuptools()
 
 
+# XXX: `./setup.py` fails with "error: invalid command 'develop'" when
+# package `distribute` is first downloaded by `distribute_setup`;
+# subsequent invocations of it (when the `distribute-*.egg` file is
+# already there run fine, apparently.  So, let us re-exec ourselves
+# to ensure that `distribute` is loaded properly.
+#REINVOKE = "__SETUP_REINVOKE"
+# import sys
+# import os
+# if not os.environ.has_key(REINVOKE):
+#     # mutating os.environ doesn't work in old Pythons
+#     os.putenv(REINVOKE, "1")
+#     try:
+#         os.execvp(sys.executable, [sys.executable] + sys.argv)
+#     except OSError, x:
+#         sys.stderr.write("Failed to re-exec '%s' (got error '%s');"
+#                          " continuing anyway, keep fingers crossed.\n"
+#                          % (str.join(' ', sys.argv), str(x)))
+# if hasattr(os, "unsetenv"):
+#     os.unsetenv(REINVOKE)
+
+
 def read_whole_file(path):
     stream = open(path, 'r')
     text = stream.read()
@@ -17,13 +38,12 @@ def read_whole_file(path):
 #
 import setuptools
 import setuptools.dist
-# avoid setuptools including `.svn` directories into the PyPI package
 from setuptools.command import sdist
 del sdist.finders[:]
 
 setuptools.setup(
     name = "gc3pie",
-    version = "2.0.dev", # see: http://packages.python.org/distribute/setuptools.html
+    version = '2.0.1', # see: http://packages.python.org/distribute/setuptools.html
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
     # metadata for upload to PyPI
@@ -93,8 +113,6 @@ setuptools.setup(
         'psutil>=0.6.1',
         # Needed for parsing human-readable dates (gselect uses it).
         'parsedatetime',
-        # needed by Benjamin's DE optimizer code
-        'numpy',
         ],
     # additional non-Python files to be bundled in the package
     package_data = {

@@ -20,7 +20,7 @@ Job control on ARC0 resources.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.1 version (SVN $Revision$)'
 
 
 import sys
@@ -279,20 +279,9 @@ class ArcLrms(LRMS):
                 'INLRMS:Q':  Run.State.SUBMITTED,
                 'INLRMS:R':  Run.State.RUNNING,
                 'INLRMS:E':  Run.State.RUNNING,
+                'INLRMS:O':  Run.State.RUNNING,
                 'INLRMS:S':  Run.State.STOPPED,
                 'INLRMS:H':  Run.State.STOPPED,
-                # XXX: According to the documentation ARC's `INLRMS:O`
-                # is "INLRMS:O Any other native LRMS state which can
-                # not be mapped to the above general states".  For
-                # unclear reasons, this includes SGE's "Eqw" error
-                # code: jobs in "E" state will not progress until a
-                # batch operator clears the "E" flag with `qmod -cj`,
-                # so we have to map `INLRMS:O` to GC3Pie's
-                # `Run.State.STOPPED`.  However, this seems to be an
-                # unfortunate interaction of ARC with SGE (see ARC bug
-                # 2716), so the mapping is hardly correct in general.
-                # In short: this might have to be changed again sooner or later.
-                'INLRMS:O':  Run.State.STOPPED,
                 # the `-ING` states below are used by ARC to mean that
                 # the GM has received a request for action but the job
                 # has not yet terminated; in particular, the output is

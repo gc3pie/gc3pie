@@ -63,7 +63,7 @@ has one subdirectory for each of the main parts of GC3Pie:
 
 * The ``gc3libs`` directory contains the GC3Libs code, which is the
   core of GC3Pie.  GC3Libs are extensively described in the `API
-  <gc3libs>`:ref: section of this document; read the module descriptions
+  <api.html>`_ section of this document; read the module descriptions
   to find out where your new suggested functionality would suit best.
   If unsure, ask on the `GC3Pie mailing list`_.
 

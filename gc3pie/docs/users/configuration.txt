@@ -305,127 +305,38 @@ When a job has finished, the SGE batch system does not (by default)
 immediately write its information into the accounting database.  This
 creates a time window during which no information is reported about
 the job by SGE, as if it never existed.  In order not to mistake this
-for a "job lost" error, GC3Libs allow a "grace time": `qacct`:command:
-job information lookups are allowed to fail for a certain time span
-after the first time `qstat`:command: failed. The duration of this
-time span is set with the ``sge_accounting_delay`` parameter, whose
-default is 15 seconds (matches the default in SGE, as of release 6.2):
+for a "job lost" error, GC3Libs allow a "grace time": `qacct`:command: job
+information lookups are allowed to fail for a certain time span after
+the first time `qstat`:command: failed. The duration of this time span is set
+with the ``sge_accounting_delay`` parameter, whose default is 15 seconds
+(matches the default in SGE, as of release 6.2): 
 
   * ``sge_accounting_delay``: Time (in seconds) a failure in `qacct`:command: will *not* be considered critical.
 
-GC3Pie uses standard command line utilities to interact with the
-resource manager. By default these commands are searched using the
-``PATH`` environment variable, but you can specify the full path of
-these commands and/or add some extra options. The following options
-are used by the SGE backend:
-
-  * ``qsub``: submit a job.
-
-  * ``qacct``: get info on resources used by a job.
-
-  * ``qdel``: cancel a job.
-
-  * ``qstat``: get the status of a job or the status of available
-    resources.
 
 ``pbs`` resources
 ~~~~~~~~~~~~~~~~~
 
 The following configuration keys are required in a ``pbs``-type resource section:
 
-  * ``transport``: Possible values are: ``ssh`` or ``local``.  If
-    ``ssh``, we try to connect to the host specified in ``frontend``
-    via SSH in order to execute Troque/PBS commands.  If ``local``,
-    the Torque/PBS commands are run directly on the machine where
-    GC3Pie is installed.
-
-  * ``frontend``: should contain the `FQDN (Fully-qualified domain
-    name)`:abbr: of the Torque/PBS front-end node. This configuration
-    item is only relevant if ``transport`` is ``local``. An SSH
-    connection will be attempted to this node, in order to submit jobs
-    and retrieve status info.
-
-GC3Pie uses standard command line utilities to interact with the
-resource manager. By default these commands are searched using the
-``PATH`` environment variable, but you can specify the full path of
-these commands and/or add some extra options. The following options
-are used by the PBS backend:
-
-  * ``queue``: the name of the queue to which jobs are submitted. If
-    empty (the default), no job will be specified during submission.
-
-  * ``qsub``: submit a job.
-
-  * ``qdel``: cancel a job.
-
-  * ``qstat``: get the status of a job or the status of available
-    resources.
- 
-  * ``tracejob``: get info on resources used by a job.
-
+  * ``transport``: Possible values are: ``ssh`` or ``local``.   If ``ssh``, we try to connect to the host specified in ``frontend`` via SSH in order to execute Troque/PBS commands.  If ``local``, the Torque/PBS commands are run directly on the machine where GC3Pie is installed.
+  * ``frontend``: should contain the `FQDN (Fully-qualified domain name)`:abbr: of the Torque/PBS front-end node. This configuration item is only relevant if ``transport`` is ``local``. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
 
 ``lsf`` resources
 ~~~~~~~~~~~~~~~~~~~
 
 The following configuration keys are required in a ``lsf``-type resource section:
 
-  * ``transport``: Possible values are: ``ssh`` or ``local``.  If
-    ``ssh``, we try to connect to the host specified in ``frontend``
-    via SSH in order to execute LSF commands.  If ``local``, the LSF
-    commands are run directly on the machine where GC3Pie is
-    installed.
-
-  * ``frontend``: should contain the `FQDN (Fully-qualified domain
-    name)`:abbr: of the LSF front-end node. This configuration item is
-    only relevant if ``transport`` is ``local``. An SSH connection
-    will be attempted to this node, in order to submit jobs and
-    retrieve status info.
-
-GC3Pie uses standard command line utilities to interact with the
-resource manager. By default these commands are searched using the
-``PATH`` environment variable, but you can specify the full path of
-these commands and/or add some extra options. The following options
-are used by the LSF backend:
-
-  * ``bsub``: submit a job.
-
-  * ``bjobs``: get the status and resource usage of a job.
-
-  * ``bkill``: cancel a job.
-
-  * ``lshosts``: get info on available resources.
-
+  * ``transport``: Possible values are: ``ssh`` or ``local``.   If ``ssh``, we try to connect to the host specified in ``frontend`` via SSH in order to execute LSF commands.  If ``local``, the LSF commands are run directly on the machine where GC3Pie is installed.
+  * ``frontend``: should contain the `FQDN (Fully-qualified domain name)`:abbr: of the LSF front-end node. This configuration item is only relevant if ``transport`` is ``local``. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
 
 ``slurm`` resources
 ~~~~~~~~~~~~~~~~~~~
 
 The following configuration keys are required in a ``slurm``-type resource section:
 
-  * ``transport``: Possible values are: ``ssh`` or ``local``.  If
-    ``ssh``, we try to connect to the host specified in ``frontend``
-    via SSH in order to execute SLURM commands.  If ``local``, the
-    SLURM commands are run directly on the machine where GC3Pie is
-    installed.
-
-  * ``frontend``: should contain the `FQDN (Fully-qualified domain
-    name)`:abbr: of the SLURM front-end node. This configuration item
-    is only relevant if ``transport`` is ``local``. An SSH connection
-    will be attempted to this node, in order to submit jobs and
-    retrieve status info.
-
-GC3Pie uses standard command line utilities to interact with the
-resource manager. By default these commands are searched using the
-``PATH`` environment variable, but you can specify the full path of
-these commands and/or add some extra options. The following options
-are used by the SLURM backend:
-
-  * ``sbatch``: submit a job. 
-
-  * ``scancel``: cancel a job.
-
-  * ``squeue``: get the status of a job or of the available resources.
-
-  * ``sacct``: get info on resources used by a job.
+  * ``transport``: Possible values are: ``ssh`` or ``local``.   If ``ssh``, we try to connect to the host specified in ``frontend`` via SSH in order to execute SLURM commands.  If ``local``, the SLURM commands are run directly on the machine where GC3Pie is installed.
+  * ``frontend``: should contain the `FQDN (Fully-qualified domain name)`:abbr: of the SLURM front-end node. This configuration item is only relevant if ``transport`` is ``local``. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
 
 
 Example ``resource`` sections
