@@ -26,6 +26,9 @@ See the output of ``gcodeml --help`` for program usage instructions.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2012-12-05:
+    * Allow requesting a specific version of CODEML/PAML
+      via a command-line option.
   2012-06-20:
     * Save extended job information if the store allows it
       (presently, only `SqlStore` does).  The definition of
@@ -140,12 +143,17 @@ of newly-created jobs so that this limit is never exceeded.
                        help="Upload output files to this URL,"
                        "which must be a protocol that ARC supports."
                        "(e.g., 'gsiftp://...')")
+        self.add_param("-R", "--verno", metavar="VERNO",
+                       dest="verno", default=CodemlApplication.DEFAULT_CODEML_VERSION,
+                       help="Request the specified version of CODEML/PAML"
+                       " (default: %(default)s).")
         self.add_param("-x", "--codeml-executable", metavar="PATH",
                        action="store", dest="codeml",
                        type=executable_file, default=None,
-                       help="Local path to the CODEML executable."
-                       " By default, request the CODEML-4.4.3 run time tag"
-                       " and use the remotely-provided application.")
+                       help=("Local path to the CODEML executable."
+                             " By default, request the CODEML-%s run time tag"
+                             " and use the remotely-provided application."
+                           % CodemlApplication.DEFAULT_CODEML_VERSION))
         # change default for the "-o"/"--output" option
         self.actions['output'].default = 'NAME'
 
@@ -208,6 +216,7 @@ of newly-created jobs so that this limit is never exceeded.
             # need to pass the named arguments as part of the `extra_args`
             # dictionary.
             kwargs['codeml'] = self.params.codeml
+            kwargs['version'] = self.params.verno
             kwargs['requested_memory'] = self.params.memory_per_core
             kwargs['requested_cores'] = self.params.ncores
             kwargs['requested_walltime'] = self.params.walltime
