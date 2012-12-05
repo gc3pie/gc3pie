@@ -60,10 +60,12 @@ class CodemlApplication(gc3libs.Application):
 
     application_name = 'codeml'
 
+    DEFAULT_CODEML_VERSION = '4.4.3'
+
     def __init__(self, *ctls, **extra_args):
         # optional keyword argument 'codeml', defaulting to None
         codeml = extra_args.get('codeml', None)
-
+        version = extra_args.get('version', self.DEFAULT_CODEML_VERSION)
         # we're submitting CODEML jobs thorugh the support script
         # "codeml.pl", so do the specific setup tailored to this
         # script' usage
@@ -75,10 +77,11 @@ class CodemlApplication(gc3libs.Application):
         inputs = { codeml_pl:'codeml.pl' }
         if codeml is None:
             # use the RTE
+            rte = ('APPS/BIO/CODEML-%s' % version)
             if 'tags' in extra_args:
-                extra_args['tags'].append('APPS/BIO/CODEML-4.4.3')
+                extra_args['tags'].append(rte)
             else:
-                extra_args['tags'] = [ 'APPS/BIO/CODEML-4.4.3' ]
+                extra_args['tags'] = [ rte ]
         else:
             # use provided binary
             inputs[codeml] = 'codeml'
