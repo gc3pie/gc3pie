@@ -154,6 +154,6 @@ echo Uploading source package to PyPI ...
 (cd gc3pie; $maybe ./setup.py sdist upload)
 
 echo Uploading documentation to PyPI ...
-(cd gc3pie; $maybe ./setup.py upload_sphinx
+(cd gc3pie; $maybe ./setup.py upload_sphinx)
 echo "All done: released '$branch' as GC3Pie '$version' ${maybe+(nah, joking...)}"
 exit 0
