@@ -1,0 +1,60 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+
+.. _gc3libs:
+
+-------------------------
+ GC3Libs programming API
+-------------------------
+
+.. toctree::
+
+   gc3libs.txt
+   gc3libs/application.txt
+   gc3libs/application/apppot.txt
+   gc3libs/application/codeml.txt
+   gc3libs/application/demo.txt
+   gc3libs/application/gamess.txt
+   gc3libs/application/rosetta.txt
+   gc3libs/application/turbomole.txt
+   gc3libs/authentication.txt
+   gc3libs/authentication/grid.txt
+   gc3libs/authentication/myproxylib.txt
+   gc3libs/authentication/ssh.txt
+   gc3libs/backends.txt
+   gc3libs/backends/arc0.txt
+   gc3libs/backends/arc1.txt
+   gc3libs/backends/batch.txt
+   gc3libs/backends/lsf.txt
+   gc3libs/backends/pbs.txt
+   gc3libs/backends/sge.txt
+   gc3libs/backends/shellcmd.txt
+   gc3libs/backends/slurm.txt
+   gc3libs/backends/transport.txt
+   gc3libs/cmdline.txt
+   gc3libs/config.txt
+   gc3libs/core.txt
+   gc3libs/debug.txt
+   gc3libs/exceptions.txt
+   gc3libs/optimizer.txt
+   gc3libs/optimizer/dif_evolution.txt
+   gc3libs/optimizer/utils.txt
+   gc3libs/persistence.txt
+   gc3libs/persistence/accessors.txt
+   gc3libs/persistence/filesystem.txt
+   gc3libs/persistence/idfactory.txt
+   gc3libs/persistence/serialization.txt
+   gc3libs/persistence/sql.txt
+   gc3libs/persistence/store.txt
+   gc3libs/quantity.txt
+   gc3libs/session.txt
+   gc3libs/template.txt
+   gc3libs/url.txt
+   gc3libs/utils.txt
+   gc3libs/workflow.txt
+   gc3utils.txt
+   gc3utils/commands.txt
+   gc3utils/frontend.txt
