@@ -465,12 +465,12 @@ fi
 install_required_sw
 
 # Download command
-if have_command curl
-then
-    download () { curl $verbose --insecure -L -s -o "$@"; }
-elif have_command wget
+if have_command wget
 then
     download () { wget $verbose --no-check-certificate -O "$@"; }
+elif have_command curl
+then
+    download () { curl $verbose --insecure -L -s -o "$@"; }
 else
     die 6 "No 'curl' or 'wget' command found." <<EOF
 The script needs either one of the 'curl' or 'wget' commands to run.
