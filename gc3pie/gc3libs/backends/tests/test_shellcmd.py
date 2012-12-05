@@ -23,6 +23,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
+import errno
 import os
 import shutil
 import sys
@@ -181,11 +182,7 @@ type=none
             )
         self.core.submit(app)
         self.cleanup_file(app.execution.lrms_execdir)
-        # import nose.tools; nose.tools.set_trace()
         pid = app.execution.lrms_jobid
-
-        # Forget about the child process.
-        os.waitpid(pid, 0)
 
         # The wrapper process should die and write the final status
         # and the output to a file, so that `Core` will be able to
