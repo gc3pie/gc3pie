@@ -53,20 +53,30 @@ class _PStruct(Struct, Persistable):
 
 def test_create():
     tmpdir = tempfile.mktemp(dir='.')
-    sess = Session(tmpdir)
-    assert os.path.isdir(sess.path)
-    sess.destroy()
+    try:
+        sess = Session(tmpdir)
+        assert os.path.isdir(sess.path)
+        sess.destroy()
+    except:
+        if os.path.exists(tmpdir):
+            shutil.rmtree(tmpdir)
+        raise
 
 @raises(gc3libs.exceptions.LoadError,sqlalchemy.exc.OperationalError)
 def test_destroy():
     tmpdir = tempfile.mktemp(dir='.')
-    sess = Session(tmpdir)
-    tid = sess.add(_PStruct(a=1, b='foo'))
-    sess.destroy()
-    # destroy should kill all traces of the sessiondir
-    assert not os.path.exists(sess.path)
-    # in particular, no task can be loaded
-    sess.load(tid)
+    try:
+        sess = Session(tmpdir)
+        tid = sess.add(_PStruct(a=1, b='foo'))
+        sess.destroy()
+        # destroy should kill all traces of the sessiondir
+        assert not os.path.exists(sess.path)
+        # in particular, no task can be loaded
+        sess.load(tid)
+    except:
+        if os.path.exists(tmpdir):
+            shutil.rmtree(tmpdir)
+        raise
 
 
 class TestOldstyleConversion:
@@ -316,11 +326,12 @@ class TestMysqlSession(StubForSqlSession):
                 tmpdir,
                 store_url="mysql://gc3user:gc3pwd@localhost/gc3")
         except sqlalchemy.exc.OperationalError:
+            if os.path.exists(tmpdir):
+                shutil.rmtree(tmpdir)
             raise SkipTest("Cannot connect to MySQL database.")
 
     def tearDown(self):
         self.sess.destroy()
-
 
 ## main: run tests
 
