@@ -229,7 +229,7 @@ class GeometriesScript(SessionBasedScript):
             prob_crossover = 1.,
             itermax = 200,
             x_conv_crit = None,
-            y_conv_crit = 0.1,
+            y_conv_crit = None,
             de_strategy = 'DE_rand',
             logger = log
         )
