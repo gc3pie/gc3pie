@@ -125,9 +125,12 @@ class GamessApplication(gc3libs.Application):
         """
         gc3libs.log.debug("Running GamessApplication post-processing hook...")
         output_dir = self.output_dir
-        output_filename = os.path.join(
-            output_dir,
-            os.path.splitext(os.path.basename(self.inp_file_path))[0] + '.out')
+        if self.stdout:
+            output_filename = os.path.join(output_dir, self.stdout)
+        else:
+            output_filename = os.path.join(
+                output_dir,
+                os.path.splitext(os.path.basename(self.inp_file_path))[0] + '.out')
         if not os.path.exists(output_filename):
             # no output file, override exit code if it indicates success
             if self.execution.exitcode == os.EX_OK:
