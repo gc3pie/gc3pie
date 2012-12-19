@@ -29,7 +29,7 @@ from nose.plugins.skip import SkipTest
 
 import numpy as np
 
-from gc3libs.optimizer.dif_evolution import DifferentialEvolutionSequential
+from gc3libs.optimizer.dif_evolution import DifferentialEvolutionSequential, DifferentialEvolutionParallel
 
 
 def rosenbrock_fn(vectors):
@@ -42,7 +42,7 @@ def rosenbrock_fn(vectors):
     return np.array(result)
 
 
-def test_differential_evolution_with_rosenbrock():
+def test_differential_evolution_sequential_with_rosenbrock():
 
     # FVr_minbound,FVr_maxbound   vector of lower and bounds of initial population
     #               the algorithm seems to work especially well if [FVr_minbound,FVr_maxbound]
@@ -71,6 +71,55 @@ def test_differential_evolution_with_rosenbrock():
 
     # run the Diff.Evo. algorithm
     opt.de_opt()
+
+    assert opt.has_converged()
+    assert (opt.bestval - 0.) < opt.y_conv_crit
+    assert (opt.best[0] - 1.) < 1e-3
+    assert (opt.best[1] - 1.) < 1e-3
+    
+    
+def test_differential_evolution_parallel_with_rosenbrock():
+
+    # FVr_minbound,FVr_maxbound   vector of lower and bounds of initial population
+    #               the algorithm seems to work especially well if [FVr_minbound,FVr_maxbound]
+    #               covers the region where the global minimum is expected
+    #               *** note: these are no bound constraints!! ***
+    dim = 2
+    lower_bounds = -2 * np.ones(dim)
+    upper_bounds = +2 * np.ones(dim)
+        
+    log = logging.getLogger("gc3.gc3libs")
+	
+    opt = DifferentialEvolutionParallel(
+        dim = dim,          # number of parameters of the objective function
+        lower_bds = lower_bounds,
+        upper_bds = upper_bounds,
+#        target_fn=rosenbrock_fn,
+        pop_size = 100,     # number of population members
+        de_step_size = 0.85,# DE-stepsize ex [0, 2]
+        prob_crossover = 1, # crossover probabililty constant ex [0, 1]
+        itermax = 200,      # maximum number of iterations (generations)
+        x_conv_crit = None, # stop when variation among x's is < this
+        y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
+        de_strategy = 'DE_local_to_best',
+        logger = log,
+        )
+
+    opt.new_pop = opt.draw_initial_sample()
+    newVals = rosenbrock_fn(opt.new_pop)
+    opt.cur_iter += 1
+    opt.update_population(opt.new_pop, newVals)    
+    
+    has_converged = False
+    while not has_converged:
+            opt.new_pop = opt.enforce_constr_re_evolve(opt.modify(opt.pop))
+            opt.cur_iter += 1
+            ### The evaluation needs to be parallelized 
+            newVals = rosenbrock_fn(opt.new_pop)
+            ###
+            opt.update_population(opt.new_pop, newVals)               
+            has_converged = opt.has_converged()
+
 
     assert opt.has_converged()
     assert (opt.bestval - 0.) < opt.y_conv_crit
