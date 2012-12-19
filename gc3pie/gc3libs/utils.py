@@ -42,7 +42,7 @@ import UserDict
 
 from gc3libs.compat._collections import defaultdict, OrderedDict
 import gc3libs.compat.functools as functools
-import gc3libs.compat._lockfile as lockfile
+import gc3libs.compat.lockfile as lockfile
 
 import gc3libs
 import gc3libs.exceptions
