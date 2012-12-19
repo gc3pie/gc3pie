@@ -61,7 +61,7 @@ def compute_target_geometries(pop_task_tuple):
     energy_list = []
     for (pop, task) in pop_task_tuple:
         outputDir = task.output_dir
-    file_output = os.path.join(outputDir, 'gamess.log')
+        file_output = os.path.join(outputDir, 'gamess.log')
         app = Extract(file_output)
         app.setup_params("FINAL", "last", 5 )
         single_energy = app.extract_energy()
