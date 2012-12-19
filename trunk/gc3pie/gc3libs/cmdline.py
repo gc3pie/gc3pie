@@ -495,7 +495,8 @@ class _Script(cli.app.CommandLineApp):
         except:
             # no logging setup, output to stderr
             sys.stderr.write("%s: FATAL ERROR: %s\n" % (self.name, msg))
-            if self.params.verbose > self.verbose_logging_threshold + 2:
+            # be careful here as `self.params` might not have been properly constructed yet
+            if ('verbose' in self.params and self.params.verbose > self.verbose_logging_threshold + 2):
                 sys.excepthook(* sys.exc_info())
         # ...and exit
         return 1
