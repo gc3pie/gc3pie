@@ -61,7 +61,7 @@ def compute_target_geometries(pop_task_tuple):
     energy_list = []
     for (pop, task) in pop_task_tuple:
         outputDir = task.output_dir
-	file_output = os.path.join(outputDir, 'games.log')
+    file_output = os.path.join(outputDir, 'gamess.log')
         app = Extract(file_output)
         app.setup_params("FINAL", "last", 5 )
         single_energy = app.extract_energy()
@@ -71,7 +71,7 @@ def compute_target_geometries(pop_task_tuple):
     #fxVals = []
     #for (pop, task) in pop_task_tuple:
     #    outputDir = task.output_dir
-    #    f = open(os.path.join(outputDir, 'games.log'))
+    #    f = open(os.path.join(outputDir, 'gamess.log'))
     #    content = f.read()
     #    f.close()
     #    match = enrgstr.search(content)
@@ -80,7 +80,7 @@ def compute_target_geometries(pop_task_tuple):
     #    fxVals.append(fxVal)
     #return fxVals
 
-def create_gammes_input_file(geom, dirname):
+def create_gamess_input_file(geom, dirname):
     '''
       geom: 1d numpy array defining the geometry to produce an input file for.
     '''
@@ -119,7 +119,7 @@ def create_gammes_input_file(geom, dirname):
     file.close()
     return file_name
 
-#create_gammes_input_file(np.array([ 1.,1.,1.,2.,2.,2.,3.,3.,3.,4.,4.,4.,5.,5.,5.,6.,6.,6.]), os.getcwd())
+#create_gamess_input_file(np.array([ 1.,1.,1.,2.,2.,2.,3.,3.,3.,4.,4.,4.,5.,5.,5.,6.,6.,6.]), os.getcwd())
 #print 'done'
 
 def task_constructor_geometries(x_vals, iteration_directory, **extra_args):
@@ -138,10 +138,10 @@ def task_constructor_geometries(x_vals, iteration_directory, **extra_args):
     jobname = 'para_' + '_'.join([('%8.3f' % val).strip() for val in x_vals])
     path_to_stage_dir = os.path.join(iteration_directory, jobname)
     path_to_stage_base_dir = os.path.join(path_to_stage_dir, 'base')
-    inp_file_path = create_gammes_input_file(x_vals, path_to_stage_base_dir)
+    inp_file_path = create_gamess_input_file(x_vals, path_to_stage_base_dir)
 
     kwargs = extra_args # e.g. architecture
-    kwargs['stdout'] = 'games' + '.log'
+    kwargs['stdout'] = 'gamess.log'
 #    kwargs['join'] = True
     kwargs['output_dir'] =  os.path.join(path_to_stage_dir, 'output')
     gc3libs.log.debug("Output dir: %s" % kwargs['output_dir'])
@@ -204,7 +204,7 @@ class GeometriesScript(SessionBasedScript):
         )
 
     def new_tasks(self, extra):
-	    
+
         import logging
         log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
         log.setLevel(logging.DEBUG)
@@ -216,28 +216,29 @@ class GeometriesScript(SessionBasedScript):
         file_handler = logging.FileHandler(log_file_name, mode = 'w')
         file_handler.setLevel(logging.DEBUG)
         log.addHandler(stream_handler)
-        log.addHandler(file_handler)	
+        log.addHandler(file_handler)
 
         #Population size reduced to 5 for testing purposes
         # nlc needs to be a pickable function: http://docs.python.org/2/library/pickle.html#what-can-be-pickled-and-unpickled
         de_solver = DifferentialEvolutionParallel(
-	    dim = vec_dimension, 
-	    lower_bds = [-2] * vec_dimension, 
-	    upper_bds = [ 2] * vec_dimension,
-	    pop_size = 5, 
-	    de_step_size = 0.85, 
-	    prob_crossover = 1., 
-	    itermax = 200,
-	    x_conv_crit = None,
-	    y_conv_crit = 0.1,
-	    de_strategy = 'DE_rand',
-	    logger = log)
-	
-	initial_pop = []
-	if not initial_pop:
-	    de_solver.new_pop = de_solver.draw_initial_sample()
-	else:
-	    de_solver.new_pop = initial_pop
+            dim = vec_dimension,
+            lower_bds = [-2] * vec_dimension,
+            upper_bds = [ 2] * vec_dimension,
+            pop_size = 5,
+            de_step_size = 0.85,
+            prob_crossover = 1.,
+            itermax = 200,
+            x_conv_crit = None,
+            y_conv_crit = 0.1,
+            de_strategy = 'DE_rand',
+            logger = log
+        )
+
+    initial_pop = []
+    if not initial_pop:
+        de_solver.new_pop = de_solver.draw_initial_sample()
+    else:
+        de_solver.new_pop = initial_pop
 
         # create an instance globalObt
         path_to_stage_dir = os.getcwd()
