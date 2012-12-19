@@ -81,8 +81,6 @@ setuptools.setup(
         # ("pycrypto" is actually a dependency of Paramiko, but
         # setuptools apparently does not process dependencies recursively)
         'paramiko', 'pycrypto>=1.9',
-        # lockfile 0.9 dropped support for Python 2.4; let's stick with 0.8
-        'lockfile==0.8',
         # texttable -- format tabular text output
         'texttable',
         # pyCLI -- object-oriented command-line app programming
