@@ -234,11 +234,11 @@ class GeometriesScript(SessionBasedScript):
             logger = log
         )
 
-    initial_pop = []
-    if not initial_pop:
-        de_solver.new_pop = de_solver.draw_initial_sample()
-    else:
-        de_solver.new_pop = initial_pop
+        initial_pop = []
+        if not initial_pop:
+            de_solver.new_pop = de_solver.draw_initial_sample()
+        else:
+            de_solver.new_pop = initial_pop
 
         # create an instance globalObt
         path_to_stage_dir = os.getcwd()
@@ -248,7 +248,6 @@ class GeometriesScript(SessionBasedScript):
         kwargs['optimizer'] = de_solver
         kwargs['task_constructor'] = task_constructor_geometries
         kwargs['target_fun'] = compute_target_geometries
-
 
         return [GlobalOptimizer(jobname=jobname, **kwargs)]
 
