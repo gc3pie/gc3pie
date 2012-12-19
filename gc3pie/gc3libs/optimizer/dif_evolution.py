@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 #
 """
-Driver script for performing an global optimization over the parameter space.
+Differential Evolution Optimizer
 This code is an adaptation of the following MATLAB code: http://www.icsi.berkeley.edu/~storn/DeMat.zip
 Please refer to this web site for more information: http://www.icsi.berkeley.edu/~storn/code.html#deb1
 """
@@ -80,7 +80,7 @@ np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
 class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
     '''
-    Differential evolution optimizer class.
+    Differential Evolution Optimizer class.
 
     Inputs: 
         # de_strategy    1 --> DE_rand:
@@ -109,6 +109,22 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
     def __init__(self, dim, lower_bds, upper_bds, target_fn, pop_size = 100, de_step_size = 0.85, 
                  prob_crossover = 1.0, itermax = 100, x_conv_crit = None, y_conv_crit = None, 
                  de_strategy = 'DE_rand', nlc=None, logger=None):
+        '''
+        Arguments: 
+        `dim` -- Dimensionality of the problem. 
+        `lower_bds` -- List of lower bounds for input variables. These are used to draw the initial sample but are not constraints. 
+        `upper_bd` -- List of upper bounds for input variables. These are used to draw the initial sample but are not constraints. 
+        `target_fn` -- Target that takes as input a population and returns the target function value. 
+        `pop_size` -- Population size. 
+        `de_step_size` -- Differential Evolution step size. 
+        `prob_crossover` -- Probability new population draws will replace old members. 
+        `itermax` -- Maximum # of iterations. 
+        `x_conv_crit` -- Abort optimization if all population members are within a certain distance to each other. 
+        `y_conv_crit` -- Terminate opitimization when target function has reached a certain value. 
+        `de_strategy` -- Specify a certain Differential Evolution strategy from the list above. String input e.g. DE_rand_either_or_algorithm. 
+        `nlc` -- Optional function that implements nonlinear constraints. 
+        `logger` -- Configured logger to use. 
+        '''
 
         if logger:
             self.logger = logger
@@ -162,9 +178,9 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
           Perform global optimization.
         '''
         self.logger.debug('entering de_opt')
-        converged = False
-        while not converged:
-            converged = self.iterate()
+        has_converged = False
+        while not has_converged:
+            has_converged = self.iterate()
         self.logger.debug('exiting ' + __name__)
 
     def iterate(self):
@@ -487,6 +503,14 @@ class DifferentialEvolutionWithPlotting(DifferentialEvolutionSequential):
 
 
 class DifferentialEvolutionParallel(DifferentialEvolutionSequential):
+    '''
+    `DifferentialEvolutionParallel` explicitly allows for an another process to control the 
+    optimization. The methods `de_opt` and `iterate` are left unspecified and the outside 
+    process can instead directly call the methods that are called by `de_opt` and `iterate` 
+    (see code for `DifferentialEvolutionSequential`) when needed. 
+    An example of how `DifferentialEvolutionParallel` can be used is found in 
+    `GlobalOptimizer` located in `optimizer/__init__.py`. 
+    '''
 
     def __init__(self, dim, lower_bds, upper_bds, pop_size = 100, de_step_size = 0.85, 
                  prob_crossover = 1.0, itermax = 100, x_conv_crit = None, y_conv_crit = None, 
