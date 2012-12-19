@@ -88,9 +88,14 @@ def create_gamess_input_file(geom, dirname):
     import os
     import numpy as np
 
-    inptmpl = []
-    inptmpl.append(""" $CONTRL SCFTYP=RHF RUNTYP=ENERGY MAXIT=50 $END\n $BASIS GBASIS=STO NGAUSS=3 $END\n $DATA\nWater\nC1\n""")
-    inptmpl.append(' $END')
+    inptmpl_pre = """
+ $CONTRL SCFTYP=RHF RUNTYP=ENERGY MAXIT=290 $END
+ $BASIS GBASIS=STO NGAUSS=3 $END
+ $DATA
+Water
+C1
+"""
+    inptmp_post = """ $END"""
 
     inpfl = 'H2CO3'
     natm = 6
@@ -115,7 +120,7 @@ def create_gamess_input_file(geom, dirname):
             '  ' + '%11.8f'%geom[3*j+2] + '\n'
     file_name = os.path.join(dirname, inpfl+'.inp')
     file = open(file_name, 'w')
-    file.write(inptmpl[0] + geomstr + inptmpl[1])
+    file.write(inptmpl_pre + geomstr + inptmpl_post)
     file.close()
     return file_name
 
