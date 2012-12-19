@@ -95,7 +95,7 @@ def create_gamess_input_file(geom, dirname):
 Water
 C1
 """
-    inptmp_post = """ $END"""
+    inptmpl_post = """ $END"""
 
     inpfl = 'H2CO3'
     natm = 6
