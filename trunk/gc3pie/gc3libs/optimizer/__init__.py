@@ -112,8 +112,6 @@ class GlobalOptimizer(SequentialTaskCollection):
         self.extra_args = extra_args
         self.output_dir = os.getcwd()
 
-        self.optimizer.cur_iter += 1
-
         self.evaluator = ComputePhenotypes(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter, path_to_stage_dir, task_constructor)
 
         initial_task = self.evaluator
@@ -129,13 +127,12 @@ class GlobalOptimizer(SequentialTaskCollection):
         pop_task_tuple = [(popEle, task) for (popEle, task) in zip(self.optimizer.new_pop, self.evaluator.tasks)]
 
         newVals = self.target_fun(pop_task_tuple)
-        self.optimizer.update_population(self.optimizer.new_pop, newVals)
+        self.optimizer.update_opt_state(newVals)
 
         if not self.optimizer.has_converged():
             self.optimizer.new_pop = self.optimizer.modify(self.optimizer.pop)
             # Check constraints and resample points to maintain population size.
             self.optimizer.new_pop = self.optimizer.enforce_constr_re_evolve(self.optimizer.new_pop)
-            self.optimizer.cur_iter += 1
             self.evaluator = ComputePhenotypes(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter, self.path_to_stage_dir, self.task_constructor)
             self.add(self.evaluator)
         else:
@@ -226,7 +223,7 @@ class EvolutionaryAlgorithm(object):
         """Document what this method should do."""
         raise NotImplementedError("Abstract method `LRMS.free()` called - this should have been defined in a derived class.")
 
-    def update_population(self, new_pop = None, new_vals = None):
+    def update_opt_state(self, new_vals = None):
         '''
           Updates the solver with the newly evaluated population and the corresponding
           new_vals.

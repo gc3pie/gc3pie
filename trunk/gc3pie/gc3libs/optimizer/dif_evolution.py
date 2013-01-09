@@ -36,6 +36,20 @@ from gc3libs.optimizer import EvolutionaryAlgorithm
 
 np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
+# helper functions to draw initial sample
+def draw_initial_sample(self):
+    # Draw population
+    pop = self.draw_population(self.pop_size, self.dim)
+    # Check constraints and resample points to maintain population size.
+    return self.enforce_constr_re_sample(pop) 
+
+def draw_population(lower_bds, upper_bds, size, dim):
+    pop = np.zeros( (size, dim ) )
+    for k in range(size):
+        pop[k,:] = lower_bds + np.random.random_sample( dim ) * ( upper_bds - lower_bds )    
+    return pop
+
+
 # Variable changes from matlab implementation
 # I_D -> dim
 # I_NP -> pop_size
@@ -66,7 +80,7 @@ np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 # FVr_rot -> rot  # rotating index array (size I_NP)
 # FVr_rotd -> rotd  # rotating index array (size I_D)
 # FVr_rt -> rt  # another rotating index array
-# FVr_rtd -> rtd # rotating index array for exponential crossover
+# FVr_rtd -> rtd # rotating ininstalldex array for exponential crossover
 # FVr_a1 -> a1 # index array
 # FVr_a2 -> a2 # index array
 # FVr_a3 -> a3 # index array
@@ -103,17 +117,17 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
 
 
     1) Target function that takes x and generates f(x)
-    2) nlc function that takes x and generates constraint function values c(x) >= 0.
+    2) filter_fn function that takes x and generates constraint function values c(x) >= 0.
     '''
 
-    def __init__(self, dim, lower_bds, upper_bds, target_fn, pop_size = 100, de_step_size = 0.85, 
+    def __init__(self, dim, lower_bds, upper_bds, target_fn, pop_size = 100, initial_pop = None, de_step_size = 0.85, 
                  prob_crossover = 1.0, itermax = 100, x_conv_crit = None, y_conv_crit = None, 
-                 de_strategy = 'DE_rand', nlc=None, logger=None):
+                 de_strategy = 'DE_rand', filter_fn=None, logger=None):
         '''
         Arguments: 
         `dim` -- Dimensionality of the problem. 
         `lower_bds` -- List of lower bounds for input variables. These are used to draw the initial sample but are not constraints. 
-        `upper_bd` -- List of upper bounds for input variables. These are used to draw the initial sample but are not constraints. 
+        `upper_bds` -- List of upper bounds for input variables. These are used to draw the initial sample but are not constraints. 
         `target_fn` -- Target that takes as input a population and returns the target function value. 
         `pop_size` -- Population size. 
         `de_step_size` -- Differential Evolution step size. 
@@ -122,7 +136,7 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         `x_conv_crit` -- Abort optimization if all population members are within a certain distance to each other. 
         `y_conv_crit` -- Terminate opitimization when target function has reached a certain value. 
         `de_strategy` -- Specify a certain Differential Evolution strategy from the list above. String input e.g. DE_rand_either_or_algorithm. 
-        `nlc` -- Optional function that implements nonlinear constraints. 
+        `filter_fn` -- Optional function that implements nonlinear constraints. 
         `logger` -- Configured logger to use. 
         '''
 
@@ -130,11 +144,15 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
             self.logger = logger
         else:
             self.logger = logging.getLogger('gc3.gc3libs')
+            
+        if not np.any(initial_pop):
+            initial_pop = draw_population(lower_bds, upper_bds, pop_size, dim)
 
         # save parameters
         self.target_fn = target_fn
         self.dim = dim
-        self.pop_size = pop_size
+        
+
         self.de_step_size = de_step_size
         self.prob_crossover = prob_crossover
         self.itermax = itermax
@@ -143,11 +161,14 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         self.lower_bds = np.array(lower_bds)
         self.upper_bds = np.array(upper_bds)
         self.x_conv_crit = x_conv_crit
-
-        if not nlc:
-            self.nlc = self._default_nlc
+        self.pop_size = len(initial_pop)
+      
+        if not filter_fn:
+            self.filter_fn = self._default_filter_fn
         else:
-            self.nlc = nlc
+            self.filter_fn = filter_fn
+
+        self.new_pop = self.enforce_constr_re_sample(initial_pop)
 
         # Initialize variables that needed for state retention.
         self.pop_old  = np.zeros( (self.pop_size, self.dim) )  # toggle population
@@ -167,10 +188,10 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         np.random.seed(1000)
 
         # set initial value for iteration count
-        self.cur_iter = -1
+        self.cur_iter = 0
 
-    def _default_nlc(self, x):
-        return np.array([ 1 ] * self.pop_size)
+    def _default_filter_fn(self, x):
+        return np.array([ True ] * self.pop_size)
 
 
     def de_opt(self):
@@ -184,23 +205,23 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         self.logger.debug('exiting ' + __name__)
 
     def iterate(self):
-        self.cur_iter += 1
+#        self.cur_iter += 1
         if self.cur_iter == 0:
-            self.pop = self.draw_initial_sample()
-            self.ui  = self.pop.copy()
+#            self.pop = self.draw_initial_sample()
+            self.pop = self.new_pop.copy()
 
         elif self.cur_iter > 0:
             # self.cur_iter += 1
             self.ui = self.modify(self.pop)
             # Check constraints and resample points to maintain population size.
-            self.ui = self.enforce_constr_re_evolve(self.ui)
+            self.new_pop = self.enforce_constr_re_evolve(self.ui)
 
         # EVALUATE TARGET #
-        self.S_tempvals = self.target_fn(self.ui)
+        self.S_tempvals = self.target_fn(self.new_pop)
         self.logger.debug('x -> f(x)')
-        for x, fx in zip(self.ui, self.S_tempvals):
+        for x, fx in zip(self.new_pop, self.S_tempvals):
             self.logger.debug('%s -> %s' % (x.tolist(), fx))
-        self.update_population(self.ui, self.S_tempvals)
+        self.update_opt_state(self.S_tempvals)
         # create output
         self.print_stats()
 
@@ -233,52 +254,57 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         # Check constraints and resample points to maintain population size.
         return self.enforce_constr_re_sample(pop)
 
-    def update_population(self, new_pop = None, newVals = None):
-        self.logger.debug('entering update_population')
-        new_pop = np.array(new_pop)
+    def update_opt_state(self, newVals = None):
+        '''
+        Stores populatoin and according function values. 
+        Updates the best pop members so far. 
+        '''
+        
+        self.logger.debug('entering update_opt_state')
         newVals = np.array(newVals)
         if self.cur_iter == 0:
-            self.pop = new_pop.copy()
+            self.pop = self.new_pop.copy()
             self.vals = newVals.copy()
             # Determine bestmemit and bestvalit for random draw.
             self.best_index = np.argmin(self.vals)
             self.bestval = self.vals[self.best_index].copy()
-            self.best_iter = new_pop[self.best_index, :].copy()
-            self.best_iter = new_pop[self.best_index, :].copy()
+            self.best_iter = self.new_pop[self.best_index, :].copy()
             self.bestvalit = self.bestval.copy()
             self.best = self.best_iter.copy()
 
         elif self.cur_iter > 0:
-
             best_index = np.argmin(newVals)
             if newVals[best_index] < self.bestval:
                 self.bestval   = newVals[best_index].copy()                    # new best value
-                self.best = new_pop[best_index, :].copy()                 # new best parameter vector ever
+                self.best = self.new_pop[best_index, :].copy()                 # new best parameter vector ever
 
             for k in range(self.pop_size):
                 self.n_fun_evals  = self.n_fun_evals + 1
                 if newVals[k] < self.vals[k]:
-                    self.pop[k,:] = new_pop[k, :].copy()                    # replace old vector with new one (for new iteration)
+                    self.pop[k,:] = self.new_pop[k, :].copy()                    # replace old vector with new one (for new iteration)
                     self.vals[k]   = newVals[k].copy()                      # save value in "cost array"
 
             self.best_iter = self.best.copy()       # freeze the best member of this iteration for the coming
+                                                     # iteration. This is needed for some of the strategies.
 
         self.logger.debug('new values %s' % newVals)
         self.logger.debug('best value %s' % self.bestval)
         
-        self.after_update_population()
-                                                                                    # iteration. This is needed for some of the strategies.
+        self.after_update_opt_state()
+        
+        self.cur_iter += 1
+                                                                                    
         return
 
     def modify(self, pop):
 
-        popold      = pop                 # save the old population
-        prob_crossover           = self.prob_crossover
-        de_step_size       = self.de_step_size
-        pop_size           = self.pop_size
-        dim            = self.dim
-        best_iter  = self.best_iter
-        de_strategy     = self.de_strategy
+        popold = pop                 # save the old population
+        prob_crossover = self.prob_crossover
+        de_step_size = self.de_step_size
+        pop_size = self.pop_size
+        dim = self.dim
+        best_iter = self.best_iter
+        de_strategy = self.de_strategy
 
         pm1   = np.zeros( (pop_size, dim) )   # initialize population matrix 1
         pm2   = np.zeros( (pop_size, dim) )   # initialize population matrix 2
@@ -389,18 +415,33 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         '''
           Check that each ele satisfies fullfills all constraints. If not, then draw a new population memeber and check constraint.
         '''
+        ctr = 0
+        max_n_resample = 100
+        dim = self.dim
+        # check filter_fn | should I use pop or self.pop here? 
+        pop_valid = self.filter_fn(pop)
+        n_invalid_pop = (pop_valid == False).sum()
+        while n_invalid_pop > 0 and ctr < max_n_resample:
+            resampled_pop = draw_population(self.lower_bds, self.upper_bds, n_invalid_pop, self.dim)
+            pop[~pop_valid] = resampled_pop
+        return pop
+
+    def enforce_constr_re_sample_old(self, pop):
+        '''
+          Check that each ele satisfies fullfills all constraints. If not, then draw a new population memeber and check constraint.
+        '''
         maxDrawSize = self.pop_size * 100
         dim = self.dim
         for ixEle, ele in enumerate(pop):
-            constr = self.nlc(ele)
+            constr = self.filter_fn(ele)
             ctr = 0
             while not sum(constr > 0) == len(constr) and ctr < maxDrawSize:
                 pop[ixEle, :] = self.draw_population_member(dim)
-                constr = self.nlc(ele)
+                constr = self.filter_fn(ele)
                 ctr += 1
             if ctr >= maxDrawSize:
                 pass
-                self.logger.debug('Couldnt sample a feasible point with {0} draws', maxDrawSize)
+                self.logger.critical('Couldnt sample a feasible point with {0} draws', maxDrawSize)
         return pop
 
     def check_constraints(self, pop):
@@ -410,7 +451,7 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         '''
         cSat = np.empty( ( len(pop) ), dtype = bool)
         for ixEle, ele in enumerate(pop):
-            constr = self.nlc(ele)
+            constr = self.filter_fn(ele)
             cSat[ixEle] = sum(constr > 0) == len(constr)
         return cSat
 
@@ -441,9 +482,9 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
     def __setstate__(self, state):
         self.__dict__ = state
         
-    def after_update_population(self):
+    def after_update_opt_state(self):
         '''
-        Hook method called at the end of update_population to implement plotting or printing stats. 
+        Hook method called at the end of update_opt_state to implement plotting or printing stats. 
         Override in subclass. 
         '''
         self.print_stats()
@@ -453,9 +494,9 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
                           (self.cur_iter, self.best, self.bestval))
 
 class DifferentialEvolutionWithPlotting(DifferentialEvolutionSequential):
-    def after_update_population(self):
+    def after_update_opt_state(self):
         '''
-        Hook method called at the end of update_population to implement plotting or printing stats. 
+        Hook method called at the end of update_opt_state to implement plotting or printing stats. 
         Override in subclass. 
         '''
         self.print_stats()
@@ -487,8 +528,8 @@ class DifferentialEvolutionWithPlotting(DifferentialEvolutionSequential):
         ax.plot([self.lower_bds[0], self.lower_bds[0]], [ymin, ymax])
         ax.plot([self.upper_bds[0], self.upper_bds[0]], [ymin, ymax])
         # all other linear constraints
-        c_xmin = self.nlc.linearConstr(xmin)
-        c_xmax = self.nlc.linearConstr(xmax)
+        c_xmin = self.filter_fn.linearConstr(xmin)
+        c_xmax = self.filter_fn.linearConstr(xmax)
         for ixC in range(len(c_xmin)):
             ax.plot([xmin, xmax], [c_xmin[ixC], c_xmax[ixC]])
         ax.axis(xmin = xmin, xmax = xmax,
@@ -512,18 +553,22 @@ class DifferentialEvolutionParallel(DifferentialEvolutionSequential):
     `GlobalOptimizer` located in `optimizer/__init__.py`. 
     '''
 
-    def __init__(self, dim, lower_bds, upper_bds, pop_size = 100, de_step_size = 0.85, 
+    def __init__(self, dim, lower_bds, upper_bds, pop_size = 100, initial_pop = None, de_step_size = 0.85, 
                  prob_crossover = 1.0, itermax = 100, x_conv_crit = None, y_conv_crit = None, 
-                 de_strategy = 'DE_rand', nlc=None, logger=None):
+                 de_strategy = 'DE_rand', filter_fn=None, logger=None):
 
         if logger:
             self.logger = logger
         else:
             self.logger = logging.getLogger('gc3.gc3libs')
+            
+        if not np.any(initial_pop):
+            initial_pop = draw_population(lower_bds, upper_bds, pop_size, dim)
+
 
         # save parameters
         self.dim = dim
-        self.pop_size = pop_size
+        
         self.de_step_size = de_step_size
         self.prob_crossover = prob_crossover
         self.itermax = itermax
@@ -532,11 +577,14 @@ class DifferentialEvolutionParallel(DifferentialEvolutionSequential):
         self.lower_bds = np.array(lower_bds)
         self.upper_bds = np.array(upper_bds)
         self.x_conv_crit = x_conv_crit
+        self.pop_size = len(initial_pop)
 
-        if not nlc:
-            self.nlc = self._default_nlc
+        if not filter_fn:
+            self.filter_fn = self._default_filter_fn
         else:
-            self.nlc = nlc
+            self.filter_fn = filter_fn
+
+        self.new_pop = self.enforce_constr_re_sample(initial_pop)
 
         # Initialize variables that needed for state retention.
         self.pop_old  = np.zeros( (self.pop_size, self.dim) )  # toggle population
@@ -556,7 +604,7 @@ class DifferentialEvolutionParallel(DifferentialEvolutionSequential):
         np.random.seed(1000)
 
         # set initial value for iteration count
-        self.cur_iter = -1
+        self.cur_iter = 0
 
         # Create folder to save plots
         #self.figSaveFolder = os.path.join(self.working_dir, 'difEvoFigures')
