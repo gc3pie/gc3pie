@@ -5,7 +5,7 @@ Differential Evolution Optimizer
 This code is an adaptation of the following MATLAB code: http://www.icsi.berkeley.edu/~storn/DeMat.zip
 Please refer to this web site for more information: http://www.icsi.berkeley.edu/~storn/code.html#deb1
 """
-# Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -81,60 +81,47 @@ from gc3libs.optimizer import draw_population
 # S_bestval -> bestval
 # S_bestvalit -> bestvalit
 
-class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
+class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     '''
-    Differential Evolution Optimizer class.
+    :class:`DifferentialEvolutionAlgorithm` explicitly allows for
+    an another process to control the optimization. The methods
+    `de_opt` and `iterate` are left unspecified and the outside
+    process can instead directly call the methods that are called by
+    `de_opt` and `iterate` (see code for
+    `DifferentialEvolutionSequential`) when needed.  An example of how
+    :class:`DifferentialEvolutionAlgorithm` can be used is found in
+    `GlobalOptimizer` located in `optimizer/__init__.py`.
 
-    Inputs: 
-        # de_strategy    1 --> DE_rand:
-        #                      the classical version of DE.
-        #                2 --> DE_local_to_best:
-        #                      a version which has been used by quite a number
-        #                      of scientists. Attempts a balance between robustness
-        #                      and fast convergence.
-        #                3 --> DE_best_with_jitter:
-        #                      taylored for small population sizes and fast convergence.
-        #                      Dimensionality should not be too high.
-        #                4 --> DE_rand_with_per_vector_dither:
-        #                      Classical DE with dither to become even more robust.
-        #                5 --> DE_rand_with_per_generation_dither:
-        #                      Classical DE with dither to become even more robust.
-        #                      Choosing de_step_size = 0.3 is a good start here.
-        #                6 --> DE_rand_either_or_algorithm:
-        #                      Alternates between differential mutation and three-point-
-        #                      recombination.
-
-
-    1) Target function that takes x and generates f(x)
-    2) filter_fn function that takes x and generates constraint function values c(x) >= 0.
     '''
-    def __init__(self, initial_pop, dim, target_fn, de_step_size = 0.85, 
-                 prob_crossover = 1.0, itermax = 100, dx_conv_crit = None, y_conv_crit = None, 
-                 de_strategy = 'DE_rand', filter_fn=None, logger=None):
+
+    def __init__(self, initial_pop, dim,
+                 de_step_size = 0.85, prob_crossover = 1.0, itermax = 100,
+                 dx_conv_crit = None, y_conv_crit = None,
+                 de_strategy = 'DE_rand', filter_fn=None, logger=None, seed=None):
         '''
-        Arguments: 
-        `dim` -- Dimensionality of the problem. 
-        `lower_bds` -- List of lower bounds for input variables. These are used to draw the initial sample but are not constraints. 
-        `upper_bds` -- List of upper bounds for input variables. These are used to draw the initial sample but are not constraints. 
-        `target_fn` -- Target that takes as input a population and returns the target function value. 
-        `pop_size` -- Population size. 
-        `de_step_size` -- Differential Evolution step size. 
-        `prob_crossover` -- Probability new population draws will replace old members. 
-        `itermax` -- Maximum # of iterations. 
-        `dx_conv_crit` -- Abort optimization if all population members are within a certain distance to each other. 
-        `y_conv_crit` -- Terminate opitimization when target function has reached a certain value. 
-        `de_strategy` -- Specify a certain Differential Evolution strategy from the list above. String input e.g. DE_rand_either_or_algorithm. 
-        `filter_fn` -- Optional function that implements nonlinear constraints. 
-        `logger` -- Configured logger to use. 
+        Arguments:
+        `dim` -- Dimensionality of the problem.
+        `de_step_size` -- Differential Evolution step size.
+        `prob_crossover` -- Probability new population draws will replace old members.
+        `itermax` -- Maximum # of iterations.
+        `dx_conv_crit` -- Abort optimization if all population members are within a certain distance to each other.
+        `y_conv_crit` -- Terminate opitimization when target function has reached a certain value.
+        `de_strategy` -- Specify a certain Differential Evolution strategy from the list above. String input e.g. DE_rand_either_or_algorithm.
+        `filter_fn` -- Optional function that implements nonlinear constraints.
+        `logger` -- Configured logger to use.
+        `seed` -- Seed to initialize NumPy's random number generator
         '''
+
+        # Check input variables
+        assert 0.0 <= prob_crossover <= 1.0, "prob_crossover should be from interval [0,1]"
+        assert len(initial_pop) >= 5, "DifferentialEvolution requires at least 5 vectors in the population!"
 
         if logger:
             self.logger = logger
         else:
             self.logger = logging.getLogger('gc3.gc3libs')
-            
+
         # save parameters
-        self.target_fn = target_fn
         self.dim = dim
         self.de_step_size = de_step_size
         self.prob_crossover = prob_crossover
@@ -143,7 +130,7 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         self.de_strategy = de_strategy
         self.dx_conv_crit = dx_conv_crit
         self.pop_size = len(initial_pop)
-      
+
         if not filter_fn:
             self.filter_fn = self._default_filter_fn
         else:
@@ -152,61 +139,20 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         self.new_pop = initial_pop # self.enforce_constr_re_sample(initial_pop)
 
         # Initialize variables that needed for state retention.
-        self.pop_old  = np.zeros( (self.pop_size, self.dim) )  # toggle population
         self.best = np.zeros( self.dim )                       # best population member ever
         self.best_iter = np.zeros( self.dim )                  # best population member in iteration
         self.n_fun_evals = 0                                   # number of function evaluations
 
-        # Check input variables
-        if ( ( self.prob_crossover < 0 ) or ( self.prob_crossover > 1 ) ):
-            self.prob_crossover = 0.5
-            self.logger.debug('prob_crossover should be from interval [0,1]; set to default value 0.5')
-        if self.pop_size < 5:
-            pass
-            self.logger.warning('Set pop_size >= 5 for difEvoKenPrice to work. ')
-
-        # Fix seed for debugging
-        np.random.seed(1000)
-
         # set initial value for iteration count
         self.cur_iter = 0
+
+        # initialize NumPy's RNG
+        np.random.seed(seed)
+
 
     def _default_filter_fn(self, x):
         return np.array([ True ] * self.pop_size)
 
-
-    def de_opt(self):
-        '''
-          Perform global optimization.
-        '''
-        self.logger.debug('entering de_opt')
-        has_converged = False
-        while not has_converged:
-            has_converged = self.iterate()
-        self.logger.debug('exiting ' + __name__)
-
-    def iterate(self):
-#        self.cur_iter += 1
-        if self.cur_iter == 0:
-#            self.pop = self.draw_initial_sample()
-            self.pop = self.new_pop.copy()
-
-        elif self.cur_iter > 0:
-            # self.cur_iter += 1
-            self.new_pop = self.evolve()
-            # Check constraints and resample points to maintain population size.
-#            self.new_pop = self.enforce_constr_re_evolve(self.ui)
-
-        # EVALUATE TARGET #
-        self.S_tempvals = self.target_fn(self.new_pop)
-        self.logger.debug('x -> f(x)')
-        for x, fx in zip(self.new_pop, self.S_tempvals):
-            self.logger.debug('%s -> %s' % (x.tolist(), fx))
-        self.update_opt_state(self.S_tempvals)
-        # create output
-        self.print_stats()
-
-        return self.has_converged()
 
     def has_converged(self):
         converged = False
@@ -217,24 +163,26 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         if self.bestval < self.y_conv_crit:
             converged = True
             self.logger.info('converged self.bestval < self.y_conv_crit')
-        if self.population_converged(self.pop):
+        if self.has_dx_converged():
             converged = True
             self.logger.info('converged self.population_converged(self.pop)')
         return converged
 
-    def population_converged(self, pop):
+
+    def has_dx_converged(self):
         '''
-        Check if population has converged.
+        Check if all population members are within the given dx limits.
         '''
-        diff = np.abs(pop[:, :] - pop[0, :])
-        return (diff <= self.dx_conv_crit).all()
+        dxs = np.abs(self.pop[:, :] - self.pop[0, :])
+        return (dxs <= self.dx_conv_crit).all()
+
 
     def update_opt_state(self, newVals = None):
         '''
-        Stores populatoin and according function values. 
-        Updates the best pop members so far. 
+        Stores populatoin and according function values.
+        Updates the best pop members so far.
         '''
-        
+
         self.logger.debug('entering update_opt_state')
         newVals = np.array(newVals)
         if self.cur_iter == 0:
@@ -264,11 +212,11 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
 
         self.logger.debug('new values %s' % newVals)
         self.logger.debug('best value %s' % self.bestval)
-        
+
         self.after_update_opt_state()
-        
+
         self.cur_iter += 1
-                                                                                    
+
         return
 
     def evolve(self):
@@ -299,33 +247,195 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
 
     def __setstate__(self, state):
         self.__dict__ = state
-        
+
     def after_update_opt_state(self):
         '''
-        Hook method called at the end of update_opt_state to implement plotting or printing stats. 
-        Override in subclass. 
+        Hook method called at the end of update_opt_state to implement plotting or printing stats.
+        Override in subclass.
         '''
         self.print_stats()
-        
+
     def print_stats(self):
-        self.logger.debug('Iteration: %d,  x: %s f(x): %f' %
-                          (self.cur_iter, self.best, self.bestval))
+        self.logger.info('Iteration: %d,  x: %s f(x): %f',
+                         self.cur_iter, self.best, self.bestval)
+
+
+def evolve_fn(population, prob_crossover, de_step_size, dim, best_iter, de_strategy):
+    """
+    Return new population, evolved according to `de_strategy`.
+    """
+
+    pop_size = len(population)
+
+    # BJ: Need to add +1 in definition of ind otherwise there is one zero index that leaves creates no shuffling.
+    ind = np.random.permutation(4) + 1   # index pointer array.
+    rot  = np.arange(0, pop_size, 1)     # rotating index array (size pop_size)
+    rt   = np.zeros(pop_size)            # another rotating index array
+    ## index arrays
+    a1  = np.random.permutation(pop_size)   # shuffle locations of vectors
+    a2  = a1[ ( rot + ind[0] ) % pop_size ] # rotate vector locations by ind[0] positions
+    a3  = a2[ ( rot + ind[1] ) % pop_size ]
+    a4  = a3[ ( rot + ind[2] ) % pop_size ]
+    a5  = a4[ ( rot + ind[3] ) % pop_size ]
+
+    pm1 = population[a1, :] # shuffled population matrix 1
+    pm2 = population[a2, :] # shuffled population matrix 2
+    pm3 = population[a3, :] # shuffled population matrix 3
+    pm4 = population[a4, :] # shuffled population matrix 4
+    pm5 = population[a5, :] # shuffled population matrix 5
+
+    ## "best member" matrix
+    bm    = np.zeros( (pop_size, dim) )   # initialize FVr_bestmember  matrix
+    for k in range(pop_size):                              # population filled with the best member
+        bm[k,:] = best_iter                       # of the last iteration
+
+    ## mask for intermediate population
+    mui = np.random.random_sample( (pop_size, dim ) ) < prob_crossover  # all random numbers < prob_crossover are 1, 0 otherwise
+
+    #----Insert this if you want exponential crossover.----------------
+    #rotd = np.arange(0, dim, 1) # rotating index array (size dim)
+    #rtd  = np.zeros(dim)        # rotating index array for exponential crossover
+    #mui = sort(mui')            # transpose, collect 1's in each column
+    #for k  = 1:pop_size
+    #  n = floor(rand*dim)
+    #  if (n > 0)
+    #     rtd     = rem(rotd+n,dim)
+    #     mui(:,k) = mui(rtd+1,k) #rotate column k by n
+    #  end
+    #end
+    #mui = mui'                       # transpose back
+    #----End: exponential crossover------------------------------------
+
+    ## inverse mask to mui (mpo + mui == <vector of 1's>)
+    mpo = mui < 0.5
+
+    if ( de_strategy == 'DE_rand' ):
+        #origin = pm3
+        ui = pm3 + de_step_size * ( pm1 - pm2 )   # differential variation
+        ui = population * mpo + ui * mui       # crossover
+    elif (de_strategy == 'DE_local_to_best'):
+        #origin = population
+        ui = population + de_step_size * ( bm - population ) + de_step_size * ( pm1 - pm2 )
+        ui = population * mpo + ui * mui
+    elif (de_strategy == 'DE_best_with_jitter'):
+        #origin = bm
+        ui = bm + ( pm1 - pm2 ) * ( (1 - 0.9999 ) * np.random.random_sample( (pop_size, dim ) ) + de_step_size )
+        ui = population * mpo + ui * mui
+    elif (de_strategy == 'DE_rand_with_per_vector_dither'):
+        #origin = pm3
+        f1 = ( ( 1 - de_step_size ) * np.random.random_sample( (pop_size, 1 ) ) + de_step_size)
+        for k in range(dim):
+            pm5[:,k] = f1
+        ui = pm3 + (pm1 - pm2) * pm5    # differential variation
+        ui = population * mpo + ui * mui     # crossover
+    elif (de_strategy == 'DE_rand_with_per_generation_dither'):
+        #origin = pm3
+        f1 = ( ( 1 - de_step_size ) * np.random.random_sample() + de_step_size )
+        ui = pm3 + ( pm1 - pm2 ) * f1         # differential variation
+        ui = population * mpo + ui * mui   # crossover
+    elif ( de_strategy == 'DE_rand_either_or_algorithm' ):
+        #origin = pm3
+        if (np.random.random_sample() < 0.5):                               # Pmu = 0.5
+            ui = pm3 + de_step_size * ( pm1 - pm2 )# differential variation
+        else:                                           # use F-K-Rule: K = 0.5(F+1)
+            ui = pm3 + 0.5 * ( de_step_size + 1.0 ) * ( pm1 + pm2 - 2 * pm3 )
+            ui = population * mpo + ui * mui     # crossover
+
+    return ui
+
+
+class DifferentialEvolutionSequential(DifferentialEvolutionAlgorithm):
+    '''
+    Differential Evolution Optimizer class.
+
+    Inputs:
+        # de_strategy    1 --> DE_rand:
+        #                      the classical version of DE.
+        #                2 --> DE_local_to_best:
+        #                      a version which has been used by quite a number
+        #                      of scientists. Attempts a balance between robustness
+        #                      and fast convergence.
+        #                3 --> DE_best_with_jitter:
+        #                      taylored for small population sizes and fast convergence.
+        #                      Dimensionality should not be too high.
+        #                4 --> DE_rand_with_per_vector_dither:
+        #                      Classical DE with dither to become even more robust.
+        #                5 --> DE_rand_with_per_generation_dither:
+        #                      Classical DE with dither to become even more robust.
+        #                      Choosing de_step_size = 0.3 is a good start here.
+        #                6 --> DE_rand_either_or_algorithm:
+        #                      Alternates between differential mutation and three-point-
+        #                      recombination.
+
+
+    1) Target function that takes x and generates f(x)
+    2) filter_fn function that takes x and generates constraint function values c(x) >= 0.
+    '''
+    def __init__(self, initial_pop, dim, target_fn, de_step_size = 0.85,
+                 prob_crossover = 1.0, itermax = 100,
+                 dx_conv_crit = None, y_conv_crit = None,
+                 de_strategy = 'DE_rand', filter_fn=None, logger=None, seed=None):
+        '''
+        In addition to initialization parameters of
+        :class:`DifferentialEvolutionAlgorithm` (which see), there is
+        one more:
+
+        `target_fn` -- Function to evaluate a population and return the corresponding values.
+        '''
+
+        DifferentialEvolutionAlgorithm.__init__(
+            self, initial_pop, dim,
+            de_step_size, prob_crossover, itermax,
+            dx_conv_crit, y_conv_crit,
+            de_strategy, filter_fn, logger, seed)
+        self.target_fn = target_fn
+
+
+    def de_opt(self):
+        '''
+        Perform global optimization.
+        '''
+        self.logger.debug('entering de_opt')
+        has_converged = False
+        while not has_converged:
+            has_converged = self.iterate()
+        self.logger.debug('exiting ' + __name__)
+
+
+    def iterate(self):
+        if self.cur_iter == 0:
+            self.pop = self.new_pop.copy()
+        elif self.cur_iter > 0:
+            self.new_pop = self.evolve()
+
+        # EVALUATE TARGET #
+        vals = self.target_fn(self.new_pop)
+        if __debug__:
+            self.logger.debug('x -> f(x)')
+            for x, fx in zip(self.new_pop, vals):
+                self.logger.debug('%s -> %s' % (x.tolist(), fx))
+        self.update_opt_state(vals)
+        # create output
+        self.print_stats()
+
+        return self.has_converged()
+
 
 class DifferentialEvolutionWithPlotting(DifferentialEvolutionSequential):
     def after_update_opt_state(self):
         '''
-        Hook method called at the end of update_opt_state to implement plotting or printing stats. 
-        Override in subclass. 
+        Hook method called at the end of update_opt_state to implement plotting or printing stats.
+        Override in subclass.
         '''
         self.print_stats()
         self.plot_population(self.pop)
-        
+
     def plot_population(self, pop):
         if not self.dim == 2:
             self.logger.critical('plot_population is implemented only for self.dim = 2')
         import matplotlib
         matplotlib.use('SVG')
-        import matplotlib.pyplot as plt        
+        import matplotlib.pyplot as plt
         x = pop[:, 0]
         y = pop[:, 1]
         # determine bounds
@@ -355,184 +465,6 @@ class DifferentialEvolutionWithPlotting(DifferentialEvolutionSequential):
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_title('Best: x %s, f(x) %f' % (self.best, self.bestval))
-        
+
         figure_dir = os.path.join(os.getcwd(), 'dif_evo_figs')
-        fig.savefig(os.path.join(figure_dir, 'pop%d' % (self.cur_iter)))    
-    
-
-
-class DifferentialEvolutionParallel(DifferentialEvolutionSequential):
-    '''
-    `DifferentialEvolutionParallel` explicitly allows for an another process to control the 
-    optimization. The methods `de_opt` and `iterate` are left unspecified and the outside 
-    process can instead directly call the methods that are called by `de_opt` and `iterate` 
-    (see code for `DifferentialEvolutionSequential`) when needed. 
-    An example of how `DifferentialEvolutionParallel` can be used is found in 
-    `GlobalOptimizer` located in `optimizer/__init__.py`. 
-    '''
-
-    def __init__(self, initial_pop, dim, de_step_size = 0.85, 
-                 prob_crossover = 1.0, itermax = 100, dx_conv_crit = None, y_conv_crit = None, 
-                 de_strategy = 'DE_rand', filter_fn=None, logger=None):
-
-        if logger:
-            self.logger = logger
-        else:
-            self.logger = logging.getLogger('gc3.gc3libs')
-            
-        if not np.any(initial_pop):
-            initial_pop = draw_population(lower_bds, upper_bds, pop_size, dim)
-
-
-        # save parameters
-        self.dim = dim
-        
-        self.de_step_size = de_step_size
-        self.prob_crossover = prob_crossover
-        self.itermax = itermax
-        self.y_conv_crit = y_conv_crit
-        self.de_strategy = de_strategy
-        self.dx_conv_crit = dx_conv_crit
-        self.pop_size = len(initial_pop)
-
-        if not filter_fn:
-            self.filter_fn = self._default_filter_fn
-        else:
-            self.filter_fn = filter_fn
-
-        self.new_pop = initial_pop # self.enforce_constr_re_sample(initial_pop)
-
-        # Initialize variables that needed for state retention.
-        self.pop_old  = np.zeros( (self.pop_size, self.dim) )  # toggle population
-        self.best = np.zeros( self.dim )                       # best population member ever
-        self.best_iter = np.zeros( self.dim )                  # best population member in iteration
-        self.n_fun_evals = 0                                   # number of function evaluations
-
-        # Check input variables
-        if ( ( self.prob_crossover < 0 ) or ( self.prob_crossover > 1 ) ):
-            self.prob_crossover = 0.5
-            self.logger.debug('prob_crossover should be from interval [0,1]; set to default value 0.5')
-        if self.pop_size < 5:
-            pass
-            self.logger.warning('Set pop_size >= 5 for difEvoKenPrice to work. ')
-
-        # Fix seed for debugging
-        np.random.seed(1000)
-
-        # set initial value for iteration count
-        self.cur_iter = 0
-
-        # Create folder to save plots
-        #self.figSaveFolder = os.path.join(self.working_dir, 'difEvoFigures')
-        #if not os.path.exists(self.figSaveFolder):
-            #os.mkdir(self.figSaveFolder)
-            
-    def de_opt(self):
-        '''
-        This is implemented in gc3libs.optimizer.GlobalOptimizer. 
-        '''
-        pass
-
-    def iterate(self):
-        '''
-        This is implemented in gc3libs.optimizer.GlobalOptimizer.next. 
-        '''        
-        pass
-    
-    
-def evolve_fn(popold, prob_crossover, de_step_size, dim, best_iter, de_strategy):
-
-    pop_size = len(popold)
-    
-    pm1   = np.zeros( (pop_size, dim) )   # initialize population matrix 1
-    pm2   = np.zeros( (pop_size, dim) )   # initialize population matrix 2
-    pm3   = np.zeros( (pop_size, dim) )   # initialize population matrix 3
-    pm4   = np.zeros( (pop_size, dim) )   # initialize population matrix 4
-    pm5   = np.zeros( (pop_size, dim) )   # initialize population matrix 5
-    bm    = np.zeros( (pop_size, dim) )   # initialize FVr_bestmember  matrix
-    ui    = np.zeros( (pop_size, dim) )   # intermediate population of perturbed vectors
-    mui   = np.zeros( (pop_size, dim) )   # mask for intermediate population
-    mpo   = np.zeros( (pop_size, dim) )   # mask for old population
-    rot  = np.arange(0, pop_size, 1)    # rotating index array (size pop_size)
-    rotd = np.arange(0, dim, 1)     # rotating index array (size dim)
-    rt   = np.zeros(pop_size)            # another rotating index array
-    rtd  = np.zeros(dim)                 # rotating index array for exponential crossover
-    a1   = np.zeros(pop_size)                # index array
-    a2   = np.zeros(pop_size)                # index array
-    a3   = np.zeros(pop_size)                # index array
-    a4   = np.zeros(pop_size)                # index array
-    a5   = np.zeros(pop_size)                # index array
-    ind  = np.zeros(4)
-
-    # BJ: Need to add +1 in definition of ind otherwise there is one zero index that leaves creates no shuffling.
-    ind = np.random.permutation(4) + 1             # index pointer array.
-    a1  = np.random.permutation(pop_size)              # shuffle locations of vectors
-    rt  = ( rot + ind[0] ) % pop_size          # rotate indices by ind(1) positions
-    a2  = a1[rt]                           # rotate vector locations
-    rt  = ( rot + ind[1] ) % pop_size
-    a3  = a2[rt]
-    rt  = ( rot + ind[2] ) % pop_size
-    a4  = a3[rt]
-    rt  = ( rot + ind[3] ) % pop_size
-    a5  = a4[rt]
-
-
-    pm1 = popold[a1, :]             # shuffled population 1
-    pm2 = popold[a2, :]             # shuffled population 2
-    pm3 = popold[a3, :]             # shuffled population 3
-    pm4 = popold[a4, :]             # shuffled population 4
-    pm5 = popold[a5, :]             # shuffled population 5
-
-
-    for k in range(pop_size):                              # population filled with the best member
-        bm[k,:] = best_iter                       # of the last iteration
-
-    mui = np.random.random_sample( (pop_size, dim ) ) < prob_crossover  # all random numbers < prob_crossover are 1, 0 otherwise
-
-    #----Insert this if you want exponential crossover.----------------
-    #mui = sort(mui')         # transpose, collect 1's in each column
-    #for k  = 1:pop_size
-    #  n = floor(rand*dim)
-    #  if (n > 0)
-    #     rtd     = rem(rotd+n,dim)
-    #     mui(:,k) = mui(rtd+1,k) #rotate column k by n
-    #  end
-    #end
-    #mui = mui'                       # transpose back
-    #----End: exponential crossover------------------------------------
-
-    mpo = mui < 0.5    # inverse mask to mui
-
-    if ( de_strategy == 'DE_rand' ):
-        ui = pm3 + de_step_size * ( pm1 - pm2 )   # differential variation
-        ui = popold * mpo + ui * mui       # crossover
-        FM_origin = pm3
-    elif (de_strategy == 'DE_local_to_best'):              
-        ui = popold + de_step_size * ( bm - popold ) + de_step_size * ( pm1 - pm2 )
-        ui = popold * mpo + ui * mui
-        FM_origin = popold
-    elif (de_strategy == 'DE_best_with_jitter'):           
-        ui = bm + ( pm1 - pm2 ) * ( (1 - 0.9999 ) * np.random.random_sample( (pop_size, dim ) ) +de_step_size )
-        ui = popold * mpo + ui * mui
-        FM_origin = bm
-    elif (de_strategy == 'DE_rand_with_per_vector_dither'):
-        f1 = ( ( 1 - de_step_size ) * np.random.random_sample( (pop_size, 1 ) ) + de_step_size)
-        for k in range(dim):
-            pm5[:,k] = f1
-        ui = pm3 + (pm1 - pm2) * pm5    # differential variation
-        FM_origin = pm3
-        ui = popold * mpo + ui * mui     # crossover
-    elif (de_strategy == 'DE_rand_with_per_generation_dither'):                          
-        f1 = ( ( 1 - de_step_size ) * np.random.random_sample() + de_step_size )
-        ui = pm3 + ( pm1 - pm2 ) * f1         # differential variation
-        FM_origin = pm3
-        ui = popold * mpo + ui * mui   # crossover
-    elif ( de_strategy == 'DE_rand_either_or_algorithm' ):
-        if (np.random.random_sample() < 0.5):                               # Pmu = 0.5
-            ui = pm3 + de_step_size * ( pm1 - pm2 )# differential variation
-            FM_origin = pm3
-        else:                                           # use F-K-Rule: K = 0.5(F+1)
-            ui = pm3 + 0.5 * ( de_step_size + 1.0 ) * ( pm1 + pm2 - 2 * pm3 )
-            ui = popold * mpo + ui * mui     # crossover
-
-    return ui
+        fig.savefig(os.path.join(figure_dir, 'pop%d' % (self.cur_iter)))

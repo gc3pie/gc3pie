@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, 2012, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2013, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -29,9 +29,9 @@ from nose.plugins.skip import SkipTest
 
 import numpy as np
 
-from gc3libs.optimizer.dif_evolution import DifferentialEvolutionSequential, DifferentialEvolutionParallel
+from gc3libs.optimizer.dif_evolution import DifferentialEvolutionSequential, DifferentialEvolutionAlgorithm
 from gc3libs.optimizer import draw_population
-				
+
 def rosenbrock_fn(vectors):
     result = []
     for vector in vectors:
@@ -52,13 +52,13 @@ def test_differential_evolution_sequential_with_rosenbrock():
     pop_size = 100
     lower_bounds = -2 * np.ones(dim)
     upper_bounds = +2 * np.ones(dim)
-        
+
     log = logging.getLogger("gc3.gc3libs")
-    
+
     initial_pop = draw_population(lower_bounds, upper_bounds, dim, pop_size)
-	
+
     opt = DifferentialEvolutionSequential(
-        initial_pop = initial_pop, 
+        initial_pop = initial_pop,
         dim = dim,          # number of parameters of the objective function
         target_fn=rosenbrock_fn,
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
@@ -69,6 +69,14 @@ def test_differential_evolution_sequential_with_rosenbrock():
         de_strategy = 'DE_local_to_best',
         logger = log
         )
+    assert opt.target_fn == rosenbrock_fn
+    assert opt.de_step_size == 0.85
+    assert opt.prob_crossover == 1.0
+    assert opt.itermax == 200
+    assert opt.dx_conv_crit == None
+    assert opt.y_conv_crit == 1e-5
+    assert opt.de_strategy == 'DE_local_to_best'
+    assert opt.logger == log
 
     # run the Diff.Evo. algorithm
     opt.de_opt()
@@ -77,8 +85,8 @@ def test_differential_evolution_sequential_with_rosenbrock():
     assert (opt.bestval - 0.) < opt.y_conv_crit
     assert (opt.best[0] - 1.) < 1e-3
     assert (opt.best[1] - 1.) < 1e-3
-    
-    
+
+
 def test_differential_evolution_parallel_with_rosenbrock():
 
     # FVr_minbound,FVr_maxbound   vector of lower and bounds of initial population
@@ -89,13 +97,13 @@ def test_differential_evolution_parallel_with_rosenbrock():
     pop_size = 100
     lower_bounds = -2 * np.ones(dim)
     upper_bounds = +2 * np.ones(dim)
-        
+
     log = logging.getLogger("gc3.gc3libs")
-    
+
     initial_pop = draw_population(lower_bounds, upper_bounds, dim, pop_size)
-	
-    opt = DifferentialEvolutionParallel(
-        initial_pop = initial_pop, 
+
+    opt = DifferentialEvolutionAlgorithm(
+        initial_pop = initial_pop,
         dim = dim,          # number of parameters of the objective function
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
@@ -107,12 +115,12 @@ def test_differential_evolution_parallel_with_rosenbrock():
         )
 
     newVals = rosenbrock_fn(opt.new_pop)
-    opt.update_opt_state(newVals)    
-    
+    opt.update_opt_state(newVals)
+
     has_converged = False
     while not has_converged:
             opt.new_pop = opt.evolve()
-            ### The evaluation needs to be parallelized 
+            ### The evaluation needs to be parallelized
             newVals = rosenbrock_fn(opt.new_pop)
             opt.update_opt_state(newVals)
             has_converged = opt.has_converged()
