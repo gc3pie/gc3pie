@@ -10,7 +10,7 @@ using gc3pie.
 An instance of :class:`GlobalOptimizer` will perform the entire optimization
 in a directory on the local machine named `path_to_stage_dir`.
 
-At each iteration an instance of 'ComputePhenotypes' lets the user-defined
+At each iteration an instance of 'ComputeTargetVals' lets the user-defined
 function `task_constructor` generate :class:`Application` instances that are
 used to execute the jobs in parallel on the grid. When all
 jobs are complete, the objective's output is analyzed with the user-supplied
@@ -85,7 +85,8 @@ class GlobalOptimizer(SequentialTaskCollection):
 
     def __init__(self, jobname = '', path_to_stage_dir = '',
                  optimizer = None, task_constructor = None,
-                 target_fun = None, **extra_args ):
+                 target_fun = None, cur_pop_file = '', 
+                 **extra_args ):
 
         '''
           Main loop for the global optimizer.
@@ -99,6 +100,8 @@ class GlobalOptimizer(SequentialTaskCollection):
                               Returns Application instances that can be executed on the grid.
           target_fun -- Takes a list of (x_vector, application_instance) tuples and returns the corresponding
                         function value for the x_vector.
+          cur_pop_file -- Filename under which the population is stored in the current iteration dir. 
+                          The population is discarded if no file is specified. 
         '''
 
         log.debug('entering GlobalOptimizer.__init__')
@@ -109,10 +112,12 @@ class GlobalOptimizer(SequentialTaskCollection):
         self.optimizer = optimizer
         self.target_fun = target_fun
         self.task_constructor = task_constructor
+        self.cur_pop_file = cur_pop_file
         self.extra_args = extra_args
         self.output_dir = os.getcwd()
 
-        self.evaluator = ComputePhenotypes(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter, path_to_stage_dir, task_constructor)
+        self.evaluator = ComputeTargetVals(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter, 
+                                           path_to_stage_dir, self.cur_pop_file, task_constructor)
 
         initial_task = self.evaluator
 
@@ -133,9 +138,11 @@ class GlobalOptimizer(SequentialTaskCollection):
             self.optimizer.new_pop = self.optimizer.evolve()
             # Check constraints and resample points to maintain population size.
   #          self.optimizer.new_pop = self.optimizer.enforce_constr_re_evolve(self.optimizer.new_pop)
-            self.evaluator = ComputePhenotypes(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter, self.path_to_stage_dir, self.task_constructor)
+            self.evaluator = ComputeTargetVals(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter, 
+                                               self.path_to_stage_dir, self.cur_pop_file, self.task_constructor)
             self.add(self.evaluator)
         else:
+            # !! save should be optional !!
             open(os.path.join(self.path_to_stage_dir, 'job_done'), 'w')
             # report success of sequential task
             self.execution.returncode = 0
@@ -163,13 +170,13 @@ class GlobalOptimizer(SequentialTaskCollection):
     #     #self._setup_logging()
 
 
-class ComputePhenotypes(ParallelTaskCollection):
+class ComputeTargetVals(ParallelTaskCollection):
 
     def __str__(self):
         return self.jobname
 
 
-    def __init__(self, inParaCombos, jobname, iteration, path_to_stage_dir, task_constructor, **extra_args):
+    def __init__(self, inParaCombos, jobname, iteration, path_to_stage_dir, cur_pop_file, task_constructor, **extra_args):
 
         """
           Generate a list of tasks and initialize a ParallelTaskCollection with them.
@@ -179,11 +186,13 @@ class ComputePhenotypes(ParallelTaskCollection):
           jobname -- Name of GlobalOptimizer instance driving the optimization.
           iteration -- Current iteration number.
           path_to_stage_dir -- Path to directory in which optimization takes place.
+          cur_pop_file -- Filename under which the population is stored in the current iteration dir. 
+                          The population is discarded if no file is specified. 
           task_constructor -- Takes a list of x vectors and the path to the current iteration directory.
                               Returns Application instances that can be executed on the grid.
         """
 
-        log.debug('entering gParaSearchParalell.__init__')
+        log.debug('entering ComputeTargetVals.__init__')
 
         # Set up initial variables and set the correct methods.
         self.jobname = 'evalSolverGuess' + '-' + jobname + '-' + str(iteration)
@@ -191,6 +200,7 @@ class ComputePhenotypes(ParallelTaskCollection):
         self.output_dir = os.getcwd()
 
         self.path_to_stage_dir = path_to_stage_dir
+        self.cur_pop_file = cur_pop_file
         self.verbosity = 'DEBUG'
         self.extra_args = extra_args
 
@@ -208,7 +218,8 @@ class ComputePhenotypes(ParallelTaskCollection):
             print '%s already exists' % self.iterationFolder
 
         # save population to file
-        np.savetxt(os.path.join(self.iterationFolder, 'curPopulation'), inParaCombos, delimiter = '  ')
+        if cur_pop_file:
+            np.savetxt(os.path.join(self.iterationFolder, cur_pop_file), inParaCombos, delimiter = '  ')
 
         self.tasks = [ task_constructor(x_vec, self.iterationFolder) for x_vec in inParaCombos ]
         ParallelTaskCollection.__init__(self, self.tasks, **extra_args)

@@ -30,21 +30,8 @@ from nose.plugins.skip import SkipTest
 import numpy as np
 
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionSequential, DifferentialEvolutionParallel
-
-# helper functions to draw initial sample
-def draw_initial_sample(self):
-    # Draw population
-    pop = self.draw_population(self.pop_size, self.dim)
-    # Check constraints and resample points to maintain population size.
-    return self.enforce_constr_re_sample(pop) 
-
-def draw_population(lower_bds, upper_bds, size, dim):
-    pop = np.zeros( (size, dim ) )
-    for k in range(size):
-        pop[k,:] = lower_bds + np.random.random_sample( dim ) * ( upper_bds - lower_bds )    
-    return pop
-
-
+from gc3libs.optimizer import draw_population
+				
 def rosenbrock_fn(vectors):
     result = []
     for vector in vectors:
@@ -80,7 +67,7 @@ def test_differential_evolution_sequential_with_rosenbrock():
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
         itermax = 200,      # maximum number of iterations (generations)
-        x_conv_crit = None, # stop when variation among x's is < this
+        dx_conv_crit = None, # stop when variation among x's is < this
         y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
         de_strategy = 'DE_local_to_best',
         logger = log
@@ -120,7 +107,7 @@ def test_differential_evolution_parallel_with_rosenbrock():
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
         itermax = 200,      # maximum number of iterations (generations)
-        x_conv_crit = None, # stop when variation among x's is < this
+        dx_conv_crit = None, # stop when variation among x's is < this
         y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
         de_strategy = 'DE_local_to_best',
         logger = log
