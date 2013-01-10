@@ -89,7 +89,7 @@ def create_gamess_input_file(geom, dirname):
     import numpy as np
 
     inptmpl_pre = """
- $CONTRL SCFTYP=RHF RUNTYP=ENERGY MAXIT=290 $END
+ $CONTRL SCFTYP=RHF RUNTYP=ENERGY MAXIT=190 $END
  $BASIS GBASIS=STO NGAUSS=3 $END
  $DATA
 Water
