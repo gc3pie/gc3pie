@@ -130,9 +130,9 @@ class GlobalOptimizer(SequentialTaskCollection):
         self.optimizer.update_opt_state(newVals)
 
         if not self.optimizer.has_converged():
-            self.optimizer.new_pop = self.optimizer.modify(self.optimizer.pop)
+            self.optimizer.new_pop = self.optimizer.evolve()
             # Check constraints and resample points to maintain population size.
-            self.optimizer.new_pop = self.optimizer.enforce_constr_re_evolve(self.optimizer.new_pop)
+  #          self.optimizer.new_pop = self.optimizer.enforce_constr_re_evolve(self.optimizer.new_pop)
             self.evaluator = ComputePhenotypes(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter, self.path_to_stage_dir, self.task_constructor)
             self.add(self.evaluator)
         else:
@@ -244,5 +244,12 @@ class EvolutionaryAlgorithm(object):
         pass # return a matrix of size self.size
 
     # a list of modified population, for example mutated, recombined, etc.
-    def modify(self, offspring):
+    def evolve(self, offspring):
         return modified_population # a mixture of different variations
+
+
+def draw_population(lower_bds, upper_bds, size, dim):
+    pop = np.zeros( (size, dim ) )
+    for k in range(size):
+        pop[k,:] = lower_bds + np.random.random_sample( dim ) * ( upper_bds - lower_bds )    
+    return pop
