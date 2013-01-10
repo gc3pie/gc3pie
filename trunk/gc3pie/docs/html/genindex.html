@@ -127,7 +127,7 @@
   </dt>
 
       
-  <dt><a href="programmers/api/gc3libs/optimizer/dif_evolution.html#gc3libs.optimizer.dif_evolution.DifferentialEvolutionSequential.after_update_population">after_update_population() (gc3libs.optimizer.dif_evolution.DifferentialEvolutionSequential method)</a>
+  <dt><a href="programmers/api/gc3libs/optimizer/dif_evolution.html#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.after_update_opt_state">after_update_opt_state() (gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm method)</a>
   </dt>
 
       
@@ -275,10 +275,6 @@
   </dt>
 
       
-  <dt><a href="programmers/api/gc3libs/optimizer/dif_evolution.html#gc3libs.optimizer.dif_evolution.DifferentialEvolutionSequential.check_constraints">check_constraints() (gc3libs.optimizer.dif_evolution.DifferentialEvolutionSequential method)</a>
-  </dt>
-
-      
   <dt><a href="programmers/api/gc3libs/backends/arc0.html#gc3libs.backends.arc0.ArcLrms.close">close() (gc3libs.backends.arc0.ArcLrms method)</a>
   </dt>
 
@@ -352,12 +348,12 @@
   <dt><a href="programmers/api/gc3libs.html#gc3libs.Application.cmdline">cmdline() (gc3libs.Application method)</a>, <a href="programmers/gc3libs/gc3libs.html#gc3libs.Application.cmdline">[1]</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="programmers/api/gc3libs/application/codeml.html#gc3libs.application.codeml.CodemlApplication">CodemlApplication (class in gc3libs.application.codeml)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="glossary.html#term-command-line"><strong>Command-line</strong></a>
   </dt>
@@ -372,6 +368,10 @@
 
       
   <dt><a href="programmers/api/gc3libs/backends/sge.html#gc3libs.backends.sge.compute_nr_of_slots">compute_nr_of_slots() (in module gc3libs.backends.sge)</a>
+  </dt>
+
+      
+  <dt><a href="programmers/api/gc3libs/optimizer.html#gc3libs.optimizer.ComputeTargetVals">ComputeTargetVals (class in gc3libs.optimizer)</a>
   </dt>
 
       
@@ -468,14 +468,18 @@
   <dt><a href="programmers/api/gc3libs/session.html#gc3libs.session.Session.destroy">destroy() (gc3libs.session.Session method)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="programmers/api/gc3libs.html#gc3libs.Task.detach">detach() (gc3libs.Task method)</a>, <a href="programmers/gc3libs/gc3libs.html#gc3libs.Task.detach">[1]</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="programmers/api/gc3libs/exceptions.html#gc3libs.exceptions.DetachedFromGridError">DetachedFromGridError</a>
+  </dt>
+
+      
+  <dt><a href="programmers/api/gc3libs/optimizer/dif_evolution.html#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm">DifferentialEvolutionAlgorithm (class in gc3libs.optimizer.dif_evolution)</a>
   </dt>
 
       
@@ -487,7 +491,7 @@
   </dt>
 
       
-  <dt><a href="programmers/api/gc3libs/optimizer/dif_evolution.html#gc3libs.optimizer.dif_evolution.DifferentialEvolutionSequential.draw_population_member">draw_population_member() (gc3libs.optimizer.dif_evolution.DifferentialEvolutionSequential method)</a>
+  <dt><a href="programmers/api/gc3libs/optimizer.html#gc3libs.optimizer.draw_population">draw_population() (in module gc3libs.optimizer)</a>
   </dt>
 
       
@@ -505,14 +509,6 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="programmers/api/gc3libs/optimizer/dif_evolution.html#gc3libs.optimizer.dif_evolution.DifferentialEvolutionSequential.enforce_constr_re_evolve">enforce_constr_re_evolve() (gc3libs.optimizer.dif_evolution.DifferentialEvolutionSequential method)</a>
-  </dt>
-
-      
-  <dt><a href="programmers/api/gc3libs/optimizer/dif_evolution.html#gc3libs.optimizer.dif_evolution.DifferentialEvolutionSequential.enforce_constr_re_sample">enforce_constr_re_sample() (gc3libs.optimizer.dif_evolution.DifferentialEvolutionSequential method)</a>
-  </dt>
-
-      
   <dt><a href="programmers/api/gc3libs/core.html#gc3libs.core.Engine">Engine (class in gc3libs.core)</a>
   </dt>
 
@@ -524,14 +520,18 @@
   <dt><a href="programmers/api/gc3libs/exceptions.html#gc3libs.exceptions.Error">Error</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="programmers/api/gc3libs/cmdline.html#gc3libs.cmdline.SessionBasedScript.every_main_loop">every_main_loop() (gc3libs.cmdline.SessionBasedScript method)</a>
   </dt>
 
       
   <dt><a href="programmers/api/gc3libs/optimizer.html#gc3libs.optimizer.EvolutionaryAlgorithm">EvolutionaryAlgorithm (class in gc3libs.optimizer)</a>
+  </dt>
+
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="programmers/api/gc3libs/optimizer/dif_evolution.html#gc3libs.optimizer.dif_evolution.evolve_fn">evolve_fn() (in module gc3libs.optimizer.dif_evolution)</a>
   </dt>
 
       
@@ -976,6 +976,10 @@
   <dt><a href="programmers/api/gc3libs/persistence/accessors.html#gc3libs.persistence.accessors.GetValue">GetValue (class in gc3libs.persistence.accessors)</a>
   </dt>
 
+      
+  <dt><a href="programmers/api/gc3libs/optimizer.html#gc3libs.optimizer.GlobalOptimizer">GlobalOptimizer (class in gc3libs.optimizer)</a>
+  </dt>
+
   </dl></td>
 </tr></table>
 
@@ -984,6 +988,10 @@
   <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="programmers/api/gc3libs/optimizer.html#gc3libs.optimizer.EvolutionaryAlgorithm.has_converged">has_converged() (gc3libs.optimizer.EvolutionaryAlgorithm method)</a>
+  </dt>
+
+      
+  <dt><a href="programmers/api/gc3libs/optimizer/dif_evolution.html#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.has_dx_converged">has_dx_converged() (gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm method)</a>
   </dt>
 
   </dl></td>
@@ -1384,10 +1392,6 @@
 
       
   <dt><a href="programmers/api/gc3libs/utils.html#gc3libs.utils.PlusInfinity">PlusInfinity (class in gc3libs.utils)</a>
-  </dt>
-
-      
-  <dt><a href="programmers/api/gc3libs/optimizer/dif_evolution.html#gc3libs.optimizer.dif_evolution.DifferentialEvolutionSequential.population_converged">population_converged() (gc3libs.optimizer.dif_evolution.DifferentialEvolutionSequential method)</a>
   </dt>
 
       
@@ -2018,9 +2022,15 @@
   </dt>
 
       
-  <dt><a href="programmers/api/gc3libs/optimizer.html#gc3libs.optimizer.EvolutionaryAlgorithm.update_population">update_population() (gc3libs.optimizer.EvolutionaryAlgorithm method)</a>
+  <dt><a href="programmers/api/gc3libs/optimizer/dif_evolution.html#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.update_opt_state">update_opt_state() (gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm method)</a>
   </dt>
 
+      <dd><dl>
+        
+  <dt><a href="programmers/api/gc3libs/optimizer.html#gc3libs.optimizer.EvolutionaryAlgorithm.update_opt_state">(gc3libs.optimizer.EvolutionaryAlgorithm method)</a>
+  </dt>
+
+      </dl></dd>
       
   <dt><a href="programmers/api/gc3libs/core.html#gc3libs.core.Core.update_resources">update_resources() (gc3libs.core.Core method)</a>
   </dt>
