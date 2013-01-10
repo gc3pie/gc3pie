@@ -14,14 +14,14 @@ At each iteration an instance of 'ComputeTargetVals' lets the user-defined
 function `task_constructor` generate :class:`Application` instances that are
 used to execute the jobs in parallel on the grid. When all
 jobs are complete, the objective's output is analyzed with the user-supplied
-function `target_fun'. This function returns the function value for all
+function `target_fun`. This function returns the function value for all
 analyzed input vectors.
 
 With this information, the optimizer generates a new guess. The instance of
-class:`GlobalOptimizer' iterates until the sepcified convergence criteria
+:class:`GlobalOptimizer` iterates until the sepcified convergence criteria
 is satisfied.
 """
-# Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -81,28 +81,38 @@ file_handler.setLevel(logging.DEBUG)
 log.addHandler(stream_handler)
 log.addHandler(file_handler)
 
+
 class GlobalOptimizer(SequentialTaskCollection):
+    """Main loop for the global optimizer.
+
+    :param str jobname:       string that labels this optimization case.
+
+    :param path_to_stage_dir: directory in which to perform the optimization.
+
+    :param optimizer:         Optimizer instance that conforms to the abstract class optimization algorithm.
+
+    :param task_constructor: A function that takes a list of x vectors
+                             and the path to the current iteration
+                             directory, and returns Application
+                             instances that can be executed on the
+                             grid.
+
+    :param target_fun:       Takes a list of (x_vector,
+                             application_instance) tuples and returns
+                             the corresponding function value for the
+                             x_vector.
+
+    :param cur_pop_file:     Filename under which the population is stored
+                             in the current iteration dir. The
+                             population is discarded if no file is
+                             specified.
+
+    """
 
     def __init__(self, jobname = '', path_to_stage_dir = '',
                  optimizer = None, task_constructor = None,
-                 target_fun = None, cur_pop_file = '', 
+                 target_fun = None, cur_pop_file = '',
                  **extra_args ):
-
-        '''
-          Main loop for the global optimizer.
-
-          Keyword arguments:
-          jobname -- string that labels this optimization case.
-          path_to_stage_dir -- directory in which to perform the optimization.
-
-          optimizer -- Optimizer instance that conforms to the abstract class optimization algorithm.
-          task_constructor -- Takes a list of x vectors and the path to the current iteration directory.
-                              Returns Application instances that can be executed on the grid.
-          target_fun -- Takes a list of (x_vector, application_instance) tuples and returns the corresponding
-                        function value for the x_vector.
-          cur_pop_file -- Filename under which the population is stored in the current iteration dir. 
-                          The population is discarded if no file is specified. 
-        '''
 
         log.debug('entering GlobalOptimizer.__init__')
 
@@ -116,7 +126,7 @@ class GlobalOptimizer(SequentialTaskCollection):
         self.extra_args = extra_args
         self.output_dir = os.getcwd()
 
-        self.evaluator = ComputeTargetVals(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter, 
+        self.evaluator = ComputeTargetVals(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter,
                                            path_to_stage_dir, self.cur_pop_file, task_constructor)
 
         initial_task = self.evaluator
@@ -138,7 +148,7 @@ class GlobalOptimizer(SequentialTaskCollection):
             self.optimizer.new_pop = self.optimizer.evolve()
             # Check constraints and resample points to maintain population size.
   #          self.optimizer.new_pop = self.optimizer.enforce_constr_re_evolve(self.optimizer.new_pop)
-            self.evaluator = ComputeTargetVals(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter, 
+            self.evaluator = ComputeTargetVals(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter,
                                                self.path_to_stage_dir, self.cur_pop_file, self.task_constructor)
             self.add(self.evaluator)
         else:
@@ -172,25 +182,22 @@ class GlobalOptimizer(SequentialTaskCollection):
 
 class ComputeTargetVals(ParallelTaskCollection):
 
+    """
+    Generate a list of tasks and initialize a ParallelTaskCollection with them.
+
+    :param inParaCombos: List of tuples defining the parameter combinations.
+    :param jobname: Name of GlobalOptimizer instance driving the optimization.
+    :param iteration: Current iteration number.
+    :param path_to_stage_dir: Path to directory in which optimization takes place.
+    :param cur_pop_file: Filename under which the population is stored in the current iteration dir. The population is discarded if no file is specified.
+    :param task_constructor: Takes a list of x vectors and the path to the current iteration directory. Returns Application instances that can be executed on the grid.
+    """
+
     def __str__(self):
         return self.jobname
 
 
     def __init__(self, inParaCombos, jobname, iteration, path_to_stage_dir, cur_pop_file, task_constructor, **extra_args):
-
-        """
-          Generate a list of tasks and initialize a ParallelTaskCollection with them.
-
-          Keyword arguments:
-          inParaCombos -- List of tuples defining the parameter combinations.
-          jobname -- Name of GlobalOptimizer instance driving the optimization.
-          iteration -- Current iteration number.
-          path_to_stage_dir -- Path to directory in which optimization takes place.
-          cur_pop_file -- Filename under which the population is stored in the current iteration dir. 
-                          The population is discarded if no file is specified. 
-          task_constructor -- Takes a list of x vectors and the path to the current iteration directory.
-                              Returns Application instances that can be executed on the grid.
-        """
 
         log.debug('entering ComputeTargetVals.__init__')
 
@@ -263,16 +270,16 @@ def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None):
     '''
       Check that each ele satisfies fullfills all constraints. If not, then draw a new population memeber and check constraint.
     '''
-    
+
     pop = lower_bds + np.random.random_sample( (size, dim) ) * ( upper_bds - lower_bds )
 
     # If a filter function is specified, resample until a sample fullfilling the filter
-    # is found. 
+    # is found.
     if filter_fn:
         ctr = 0
         max_n_resample = 100
         dim = self.dim
-        # check filter_fn | should I use pop or self.pop here? 
+        # check filter_fn | should I use pop or self.pop here?
         pop_valid = self.filter_fn(pop)
         n_invalid_pop = (pop_valid == False).sum()
         while n_invalid_pop > 0 and ctr < max_n_resample:
