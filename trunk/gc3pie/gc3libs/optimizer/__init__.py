@@ -259,8 +259,27 @@ class EvolutionaryAlgorithm(object):
         return modified_population # a mixture of different variations
 
 
-def draw_population(lower_bds, upper_bds, size, dim):
-    pop = np.zeros( (size, dim ) )
-    for k in range(size):
-        pop[k,:] = lower_bds + np.random.random_sample( dim ) * ( upper_bds - lower_bds )    
+def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None):
+    '''
+      Check that each ele satisfies fullfills all constraints. If not, then draw a new population memeber and check constraint.
+    '''
+    
+    pop = lower_bds + np.random.random_sample( (size, dim) ) * ( upper_bds - lower_bds )
+
+    # If a filter function is specified, resample until a sample fullfilling the filter
+    # is found. 
+    if filter_fn:
+        ctr = 0
+        max_n_resample = 100
+        dim = self.dim
+        # check filter_fn | should I use pop or self.pop here? 
+        pop_valid = self.filter_fn(pop)
+        n_invalid_pop = (pop_valid == False).sum()
+        while n_invalid_pop > 0 and ctr < max_n_resample:
+            resampled_pop = lower_bds + np.random.random_sample( (n_invalid_pop, dim) ) * ( upper_bds - lower_bds )
+            #draw_population(self.lower_bds, self.upper_bds, n_invalid_pop, self.dim)
+            pop[~pop_valid] = resampled_pop
+            pop_valid = self.filter_fn(pop)
+            n_invalid_pop = (pop_valid == False).sum()
+
     return pop

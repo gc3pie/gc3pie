@@ -133,9 +133,6 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         else:
             self.logger = logging.getLogger('gc3.gc3libs')
             
-        if not np.any(initial_pop):
-            initial_pop = draw_population(lower_bds, upper_bds, pop_size, dim)
-
         # save parameters
         self.target_fn = target_fn
         self.dim = dim
@@ -152,7 +149,7 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         else:
             self.filter_fn = filter_fn
 
-        self.new_pop = self.enforce_constr_re_sample(initial_pop)
+        self.new_pop = initial_pop # self.enforce_constr_re_sample(initial_pop)
 
         # Initialize variables that needed for state retention.
         self.pop_old  = np.zeros( (self.pop_size, self.dim) )  # toggle population
@@ -232,12 +229,6 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         diff = np.abs(pop[:, :] - pop[0, :])
         return (diff <= self.dx_conv_crit).all()
 
-    def draw_initial_sample(self):
-        # Draw population
-        pop = self.draw_population(self.pop_size, self.dim)
-        # Check constraints and resample points to maintain population size.
-        return self.enforce_constr_re_sample(pop)
-
     def update_opt_state(self, newVals = None):
         '''
         Stores populatoin and according function values. 
@@ -298,47 +289,6 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
             total_filled += n_pop_valid
         modified_pop[~pop_valid_orig] = fillin_pop
         return modified_pop
-
-
-    def draw_population(self, size, dim):
-        pop = np.zeros( (size, dim ) )
-        for k in range(size):
-            pop[k,:] = self.draw_population_member(dim)
-        return pop
-
-    def draw_population_member(self, dim):
-        '''
-          Draw one population member of dimension dim.
-        '''
-        return self.lower_bds + np.random.random_sample( dim ) * ( self.upper_bds - self.lower_bds )
-
-    def enforce_constr_re_sample(self, pop):
-        '''
-          Check that each ele satisfies fullfills all constraints. If not, then draw a new population memeber and check constraint.
-        '''
-        ctr = 0
-        max_n_resample = 100
-        dim = self.dim
-        # check filter_fn | should I use pop or self.pop here? 
-        pop_valid = self.filter_fn(pop)
-        n_invalid_pop = (pop_valid == False).sum()
-        while n_invalid_pop > 0 and ctr < max_n_resample:
-            resampled_pop = draw_population(self.lower_bds, self.upper_bds, n_invalid_pop, self.dim)
-            pop[~pop_valid] = resampled_pop
-            pop_valid = self.filter_fn(pop)
-            n_invalid_pop = (pop_valid == False).sum()            
-        return pop
-
-    def check_constraints(self, pop):
-        '''
-          Check which ele satisfies all constraints.
-          cSat: Vector of length nPopulation. Each element signals whether the corresponding population member satisfies all constraints.
-        '''
-        cSat = np.empty( ( len(pop) ), dtype = bool)
-        for ixEle, ele in enumerate(pop):
-            constr = self.filter_fn(ele)
-            cSat[ixEle] = sum(constr > 0) == len(constr)
-        return cSat
 
     # Adjustments for pickling
     def __getstate__(self):
@@ -421,7 +371,7 @@ class DifferentialEvolutionParallel(DifferentialEvolutionSequential):
     `GlobalOptimizer` located in `optimizer/__init__.py`. 
     '''
 
-    def __init__(self, dim, lower_bds, upper_bds, pop_size = 100, initial_pop = None, de_step_size = 0.85, 
+    def __init__(self, initial_pop, dim, de_step_size = 0.85, 
                  prob_crossover = 1.0, itermax = 100, dx_conv_crit = None, y_conv_crit = None, 
                  de_strategy = 'DE_rand', filter_fn=None, logger=None):
 
@@ -442,8 +392,6 @@ class DifferentialEvolutionParallel(DifferentialEvolutionSequential):
         self.itermax = itermax
         self.y_conv_crit = y_conv_crit
         self.de_strategy = de_strategy
-        self.lower_bds = np.array(lower_bds)
-        self.upper_bds = np.array(upper_bds)
         self.dx_conv_crit = dx_conv_crit
         self.pop_size = len(initial_pop)
 
@@ -452,7 +400,7 @@ class DifferentialEvolutionParallel(DifferentialEvolutionSequential):
         else:
             self.filter_fn = filter_fn
 
-        self.new_pop = self.enforce_constr_re_sample(initial_pop)
+        self.new_pop = initial_pop # self.enforce_constr_re_sample(initial_pop)
 
         # Initialize variables that needed for state retention.
         self.pop_old  = np.zeros( (self.pop_size, self.dim) )  # toggle population
