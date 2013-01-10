@@ -233,10 +233,17 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
             reevolved_pop = evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy)
             pop_valid = self.filter_fn(reevolved_pop)
             n_pop_valid = (pop_valid == True).sum()
-            fillin_pop[total_filled:n_pop_valid] = reevolved_pop[pop_valid]
-            total_filled += n_pop_valid
+            new_total_filled = min(total_filled + n_pop_valid, len(fillin_pop))
+            fillin_pop[total_filled:new_total_filled] = reevolved_pop[pop_valid]
+            total_filled = new_total_filled
+        if total_filled < n_invalid_orig:
+            self.logger.warning(
+                "%d population members are invalid even after re-sampling %d times."
+                "  You might want to increase `max_n_resample`.",
+                (n_invalid_orig - total_filled), max_n_resample)
         modified_pop[~pop_valid_orig] = fillin_pop
         return modified_pop
+
 
     # Adjustments for pickling
     def __getstate__(self):
