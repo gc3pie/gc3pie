@@ -141,7 +141,6 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         # Initialize variables that needed for state retention.
         self.best = np.zeros( self.dim )                       # best population member ever
         self.best_iter = np.zeros( self.dim )                  # best population member in iteration
-        self.n_fun_evals = 0                                   # number of function evaluations
 
         # set initial value for iteration count
         self.cur_iter = 0
@@ -177,41 +176,47 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         return (dxs <= self.dx_conv_crit).all()
 
 
-    def update_opt_state(self, newVals = None):
+    def update_opt_state(self, new_vals):
         '''
-        Stores populatoin and according function values.
-        Updates the best pop members so far.
+        Stores set of function values corresponding to the current
+        population, then updates optimizer state in many ways:
+
+        * update the `.best*` variables accordingly;
+        * merges the two populations (old and new), keeping only the members with lower corresponding value;
+        * advances iteration count.
         '''
 
         self.logger.debug('entering update_opt_state')
-        newVals = np.array(newVals)
+
         if self.cur_iter == 0:
             self.pop = self.new_pop.copy()
-            self.vals = newVals.copy()
-            # Determine bestmemit and bestvalit for random draw.
+            self.vals = np.array(new_vals)
+            # determine bestmemit and bestvalit for random draw.
             self.best_index = np.argmin(self.vals)
             self.bestval = self.vals[self.best_index].copy()
             self.best_iter = self.new_pop[self.best_index, :].copy()
+            # the following only applies in the 1st iteration
             self.bestvalit = self.bestval.copy()
             self.best = self.best_iter.copy()
 
-        elif self.cur_iter > 0:
-            best_index = np.argmin(newVals)
-            if newVals[best_index] < self.bestval:
-                self.bestval   = newVals[best_index].copy()                    # new best value
+        else:
+            new_vals = np.array(new_vals)
+            best_index = np.argmin(new_vals)
+            if new_vals[best_index] < self.bestval:
+                self.bestval   = new_vals[best_index].copy()                    # new best value
                 self.best = self.new_pop[best_index, :].copy()                 # new best parameter vector ever
 
+            # merge the two populations, keeping the member with lowest corresponding value
             for k in range(self.pop_size):
-                self.n_fun_evals  = self.n_fun_evals + 1
-                if newVals[k] < self.vals[k]:
+                if new_vals[k] < self.vals[k]:
                     self.pop[k,:] = self.new_pop[k, :].copy()                    # replace old vector with new one (for new iteration)
-                    self.vals[k]   = newVals[k].copy()                      # save value in "cost array"
+                    self.vals[k]   = new_vals[k].copy()                      # save value in "cost array"
 
             self.best_iter = self.best.copy()       # freeze the best member of this iteration for the coming
                                                      # iteration. This is needed for some of the strategies.
 
-        self.logger.debug('new values %s' % newVals)
-        self.logger.debug('best value %s' % self.bestval)
+        self.logger.debug('new values %s', new_vals)
+        self.logger.debug('best value %s', self.bestval)
 
         self.after_update_opt_state()
 
@@ -219,9 +224,9 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
 
         return
 
+
     def evolve(self):
         modified_pop = evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy)
-
         # re-evolve if some members do not fullfill fiter_fn
         ctr = 0
         max_n_resample = 100
