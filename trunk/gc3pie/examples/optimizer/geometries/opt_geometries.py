@@ -233,7 +233,7 @@ class GeometriesScript(SessionBasedScript):
             de_step_size = 0.85,
             prob_crossover = 1.,
             itermax = 200,
-            x_conv_crit = None,
+            dx_conv_crit = None,
             y_conv_crit = None,
             de_strategy = 'DE_rand',
             logger = log

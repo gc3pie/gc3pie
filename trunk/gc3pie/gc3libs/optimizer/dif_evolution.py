@@ -55,7 +55,7 @@ from gc3libs.optimizer import draw_population
 # I_plotting -> plotting
 # lower_bds
 # upper_bds
-# x_conv_crit
+# dx_conv_crit
 # verbosity
 # FM_pm1 -> pm1
 # FM_pm2 -> pm2 population matrix (pm)
@@ -108,9 +108,8 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
     1) Target function that takes x and generates f(x)
     2) filter_fn function that takes x and generates constraint function values c(x) >= 0.
     '''
-
     def __init__(self, initial_pop, dim, target_fn, de_step_size = 0.85, 
-                 prob_crossover = 1.0, itermax = 100, x_conv_crit = None, y_conv_crit = None, 
+                 prob_crossover = 1.0, itermax = 100, dx_conv_crit = None, y_conv_crit = None, 
                  de_strategy = 'DE_rand', filter_fn=None, logger=None):
         '''
         Arguments: 
@@ -122,7 +121,7 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         `de_step_size` -- Differential Evolution step size. 
         `prob_crossover` -- Probability new population draws will replace old members. 
         `itermax` -- Maximum # of iterations. 
-        `x_conv_crit` -- Abort optimization if all population members are within a certain distance to each other. 
+        `dx_conv_crit` -- Abort optimization if all population members are within a certain distance to each other. 
         `y_conv_crit` -- Terminate opitimization when target function has reached a certain value. 
         `de_strategy` -- Specify a certain Differential Evolution strategy from the list above. String input e.g. DE_rand_either_or_algorithm. 
         `filter_fn` -- Optional function that implements nonlinear constraints. 
@@ -145,7 +144,7 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         self.itermax = itermax
         self.y_conv_crit = y_conv_crit
         self.de_strategy = de_strategy
-        self.x_conv_crit = x_conv_crit
+        self.dx_conv_crit = dx_conv_crit
         self.pop_size = len(initial_pop)
       
         if not filter_fn:
@@ -231,7 +230,7 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         Check if population has converged.
         '''
         diff = np.abs(pop[:, :] - pop[0, :])
-        return (diff <= self.x_conv_crit).all()
+        return (diff <= self.dx_conv_crit).all()
 
     def draw_initial_sample(self):
         # Draw population
@@ -423,7 +422,7 @@ class DifferentialEvolutionParallel(DifferentialEvolutionSequential):
     '''
 
     def __init__(self, dim, lower_bds, upper_bds, pop_size = 100, initial_pop = None, de_step_size = 0.85, 
-                 prob_crossover = 1.0, itermax = 100, x_conv_crit = None, y_conv_crit = None, 
+                 prob_crossover = 1.0, itermax = 100, dx_conv_crit = None, y_conv_crit = None, 
                  de_strategy = 'DE_rand', filter_fn=None, logger=None):
 
         if logger:
@@ -445,7 +444,7 @@ class DifferentialEvolutionParallel(DifferentialEvolutionSequential):
         self.de_strategy = de_strategy
         self.lower_bds = np.array(lower_bds)
         self.upper_bds = np.array(upper_bds)
-        self.x_conv_crit = x_conv_crit
+        self.dx_conv_crit = dx_conv_crit
         self.pop_size = len(initial_pop)
 
         if not filter_fn:
