@@ -55,15 +55,12 @@ def test_differential_evolution_sequential_with_rosenbrock():
         
     log = logging.getLogger("gc3.gc3libs")
     
-    initial_pop = draw_population(lower_bounds, upper_bounds, pop_size, dim)
+    initial_pop = draw_population(lower_bounds, upper_bounds, dim, pop_size)
 	
     opt = DifferentialEvolutionSequential(
         initial_pop = initial_pop, 
         dim = dim,          # number of parameters of the objective function
-        #lower_bds = lower_bounds,
-        #upper_bds = upper_bounds,
         target_fn=rosenbrock_fn,
-#        pop_size = 100,     # number of population members
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
         itermax = 200,      # maximum number of iterations (generations)
@@ -95,15 +92,11 @@ def test_differential_evolution_parallel_with_rosenbrock():
         
     log = logging.getLogger("gc3.gc3libs")
     
-    initial_pop = draw_population(lower_bounds, upper_bounds, pop_size, dim)
+    initial_pop = draw_population(lower_bounds, upper_bounds, dim, pop_size)
 	
     opt = DifferentialEvolutionParallel(
-        dim = dim,          # number of parameters of the objective function
-        lower_bds = lower_bounds,
-        upper_bds = upper_bounds,
-#        target_fn=rosenbrock_fn,
-#        pop_size = 100,     # number of population members
         initial_pop = initial_pop, 
+        dim = dim,          # number of parameters of the objective function
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
         itermax = 200,      # maximum number of iterations (generations)
@@ -113,19 +106,14 @@ def test_differential_evolution_parallel_with_rosenbrock():
         logger = log
         )
 
-    opt.new_pop = opt.draw_initial_sample()
     newVals = rosenbrock_fn(opt.new_pop)
-#    opt.cur_iter += 1
     opt.update_opt_state(newVals)    
     
     has_converged = False
     while not has_converged:
             opt.new_pop = opt.evolve()
-#            opt.new_pop = opt.enforce_constr_re_evolve(opt.modify(opt.pop))
- #           opt.cur_iter += 1
             ### The evaluation needs to be parallelized 
             newVals = rosenbrock_fn(opt.new_pop)
-            ###
             opt.update_opt_state(newVals)
             has_converged = opt.has_converged()
 

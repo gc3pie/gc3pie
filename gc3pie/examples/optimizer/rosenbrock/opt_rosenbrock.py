@@ -165,8 +165,6 @@ class RosenbrockScript(SessionBasedScript):
  
         de_solver = DifferentialEvolutionParallel(
             dim = dim,          # number of parameters of the objective function
-            lower_bds = lower_bounds,
-            upper_bds = upper_bounds,
          #   pop_size = 100,     # number of population members
             initial_pop = initial_pop,
             de_step_size = 0.85,# DE-stepsize ex [0, 2]
