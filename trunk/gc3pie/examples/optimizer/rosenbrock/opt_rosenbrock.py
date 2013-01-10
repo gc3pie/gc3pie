@@ -48,6 +48,19 @@ import numpy as np
 
 float_fmt = '%25.15f'
 
+# helper functions to draw initial sample
+def draw_initial_sample(self):
+    # Draw population
+    pop = self.draw_population(self.pop_size, self.dim)
+    # Check constraints and resample points to maintain population size.
+    return self.enforce_constr_re_sample(pop) 
+
+def draw_population(lower_bds, upper_bds, size, dim):
+    pop = np.zeros( (size, dim ) )
+    for k in range(size):
+        pop[k,:] = lower_bds + np.random.random_sample( dim ) * ( upper_bds - lower_bds )    
+    return pop
+
 optimization_dir = os.path.join(os.getcwd(), 'optimizeRosenBrock')
 pop_size = 100
 def nlc(x):
@@ -155,14 +168,18 @@ class RosenbrockScript(SessionBasedScript):
         log.addHandler(file_handler)
 
         dim = 2
+        pop_size = 100
         lower_bounds = -2 * np.ones(dim)
         upper_bounds = +2 * np.ones(dim)
+        
+        initial_pop = draw_population(lower_bounds, upper_bounds, pop_size, dim)
  
         de_solver = DifferentialEvolutionParallel(
             dim = dim,          # number of parameters of the objective function
             lower_bds = lower_bounds,
             upper_bds = upper_bounds,
-            pop_size = 100,     # number of population members
+         #   pop_size = 100,     # number of population members
+            initial_pop = initial_pop,
             de_step_size = 0.85,# DE-stepsize ex [0, 2]
             prob_crossover = 1, # crossover probabililty constant ex [0, 1]
             itermax = 200,      # maximum number of iterations (generations)
@@ -172,11 +189,11 @@ class RosenbrockScript(SessionBasedScript):
             logger = log,
             )
 
-        initial_pop = []
-        if not initial_pop:
-            de_solver.new_pop = de_solver.draw_initial_sample()
-        else:
-            de_solver.new_pop = initial_pop
+        #initial_pop = []
+        #if not initial_pop:
+            #de_solver.new_pop = de_solver.draw_initial_sample()
+        #else:
+            #de_solver.new_pop = initial_pop
 
         # create an instance globalObt
 

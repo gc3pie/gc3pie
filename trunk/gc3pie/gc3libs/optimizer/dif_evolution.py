@@ -36,18 +36,7 @@ from gc3libs.optimizer import EvolutionaryAlgorithm
 
 np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
-# helper functions to draw initial sample
-def draw_initial_sample(self):
-    # Draw population
-    pop = self.draw_population(self.pop_size, self.dim)
-    # Check constraints and resample points to maintain population size.
-    return self.enforce_constr_re_sample(pop) 
-
-def draw_population(lower_bds, upper_bds, size, dim):
-    pop = np.zeros( (size, dim ) )
-    for k in range(size):
-        pop[k,:] = lower_bds + np.random.random_sample( dim ) * ( upper_bds - lower_bds )    
-    return pop
+from gc3libs.optimizer import draw_population
 
 
 # Variable changes from matlab implementation
@@ -120,7 +109,7 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
     2) filter_fn function that takes x and generates constraint function values c(x) >= 0.
     '''
 
-    def __init__(self, dim, lower_bds, upper_bds, target_fn, pop_size = 100, initial_pop = None, de_step_size = 0.85, 
+    def __init__(self, initial_pop, dim, target_fn, de_step_size = 0.85, 
                  prob_crossover = 1.0, itermax = 100, x_conv_crit = None, y_conv_crit = None, 
                  de_strategy = 'DE_rand', filter_fn=None, logger=None):
         '''
@@ -151,15 +140,11 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         # save parameters
         self.target_fn = target_fn
         self.dim = dim
-        
-
         self.de_step_size = de_step_size
         self.prob_crossover = prob_crossover
         self.itermax = itermax
         self.y_conv_crit = y_conv_crit
         self.de_strategy = de_strategy
-        self.lower_bds = np.array(lower_bds)
-        self.upper_bds = np.array(upper_bds)
         self.x_conv_crit = x_conv_crit
         self.pop_size = len(initial_pop)
       
@@ -212,9 +197,9 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
 
         elif self.cur_iter > 0:
             # self.cur_iter += 1
-            self.ui = self.modify(self.pop)
+            self.new_pop = self.evolve()
             # Check constraints and resample points to maintain population size.
-            self.new_pop = self.enforce_constr_re_evolve(self.ui)
+#            self.new_pop = self.enforce_constr_re_evolve(self.ui)
 
         # EVALUATE TARGET #
         self.S_tempvals = self.target_fn(self.new_pop)
@@ -296,108 +281,25 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
                                                                                     
         return
 
-    def modify(self, pop):
+    def evolve(self):
+        modified_pop = evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy)
 
-        popold = pop                 # save the old population
-        prob_crossover = self.prob_crossover
-        de_step_size = self.de_step_size
-        pop_size = self.pop_size
-        dim = self.dim
-        best_iter = self.best_iter
-        de_strategy = self.de_strategy
+        # re-evolve if some members do not fullfill fiter_fn
+        ctr = 0
+        max_n_resample = 100
+        pop_valid_orig = self.filter_fn(modified_pop)
+        n_invalid_orig = (pop_valid_orig == False).sum()
+        fillin_pop = self.pop[~pop_valid_orig]
+        total_filled = 0
+        while total_filled < n_invalid_orig and ctr < max_n_resample:
+            reevolved_pop = evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy)
+            pop_valid = self.filter_fn(reevolved_pop)
+            n_pop_valid = (pop_valid == True).sum()
+            fillin_pop[total_filled:n_pop_valid] = reevolved_pop[pop_valid]
+            total_filled += n_pop_valid
+        modified_pop[~pop_valid_orig] = fillin_pop
+        return modified_pop
 
-        pm1   = np.zeros( (pop_size, dim) )   # initialize population matrix 1
-        pm2   = np.zeros( (pop_size, dim) )   # initialize population matrix 2
-        pm3   = np.zeros( (pop_size, dim) )   # initialize population matrix 3
-        pm4   = np.zeros( (pop_size, dim) )   # initialize population matrix 4
-        pm5   = np.zeros( (pop_size, dim) )   # initialize population matrix 5
-        bm    = np.zeros( (pop_size, dim) )   # initialize FVr_bestmember  matrix
-        ui    = np.zeros( (pop_size, dim) )   # intermediate population of perturbed vectors
-        mui   = np.zeros( (pop_size, dim) )   # mask for intermediate population
-        mpo   = np.zeros( (pop_size, dim) )   # mask for old population
-        rot  = np.arange(0, pop_size, 1)    # rotating index array (size pop_size)
-        rotd = np.arange(0, dim, 1)     # rotating index array (size dim)
-        rt   = np.zeros(pop_size)            # another rotating index array
-        rtd  = np.zeros(dim)                 # rotating index array for exponential crossover
-        a1   = np.zeros(pop_size)                # index array
-        a2   = np.zeros(pop_size)                # index array
-        a3   = np.zeros(pop_size)                # index array
-        a4   = np.zeros(pop_size)                # index array
-        a5   = np.zeros(pop_size)                # index array
-        ind  = np.zeros(4)
-
-        # BJ: Need to add +1 in definition of ind otherwise there is one zero index that leaves creates no shuffling.
-        ind = np.random.permutation(4) + 1             # index pointer array.
-        a1  = np.random.permutation(pop_size)              # shuffle locations of vectors
-        rt  = ( rot + ind[0] ) % pop_size          # rotate indices by ind(1) positions
-        a2  = a1[rt]                           # rotate vector locations
-        rt  = ( rot + ind[1] ) % pop_size
-        a3  = a2[rt]
-        rt  = ( rot + ind[2] ) % pop_size
-        a4  = a3[rt]
-        rt  = ( rot + ind[3] ) % pop_size
-        a5  = a4[rt]
-
-
-        pm1 = popold[a1, :]             # shuffled population 1
-        pm2 = popold[a2, :]             # shuffled population 2
-        pm3 = popold[a3, :]             # shuffled population 3
-        pm4 = popold[a4, :]             # shuffled population 4
-        pm5 = popold[a5, :]             # shuffled population 5
-
-
-        for k in range(pop_size):                              # population filled with the best member
-            bm[k,:] = best_iter                       # of the last iteration
-
-        mui = np.random.random_sample( (pop_size, dim ) ) < prob_crossover  # all random numbers < prob_crossover are 1, 0 otherwise
-
-        #----Insert this if you want exponential crossover.----------------
-        #mui = sort(mui')         # transpose, collect 1's in each column
-        #for k  = 1:pop_size
-        #  n = floor(rand*dim)
-        #  if (n > 0)
-        #     rtd     = rem(rotd+n,dim)
-        #     mui(:,k) = mui(rtd+1,k) #rotate column k by n
-        #  end
-        #end
-        #mui = mui'                       # transpose back
-        #----End: exponential crossover------------------------------------
-
-        mpo = mui < 0.5    # inverse mask to mui
-
-        if ( de_strategy == 'DE_rand' ):
-            ui = pm3 + de_step_size * ( pm1 - pm2 )   # differential variation
-            ui = popold * mpo + ui * mui       # crossover
-            FM_origin = pm3
-        elif (de_strategy == 'DE_local_to_best'):              
-            ui = popold + de_step_size * ( bm - popold ) + de_step_size * ( pm1 - pm2 )
-            ui = popold * mpo + ui * mui
-            FM_origin = popold
-        elif (de_strategy == 'DE_best_with_jitter'):           
-            ui = bm + ( pm1 - pm2 ) * ( (1 - 0.9999 ) * np.random.random_sample( (pop_size, dim ) ) +de_step_size )
-            ui = popold * mpo + ui * mui
-            FM_origin = bm
-        elif (de_strategy == 'DE_rand_with_per_vector_dither'):
-            f1 = ( ( 1 - de_step_size ) * np.random.random_sample( (pop_size, 1 ) ) + de_step_size)
-            for k in range(dim):
-                pm5[:,k] = f1
-            ui = pm3 + (pm1 - pm2) * pm5    # differential variation
-            FM_origin = pm3
-            ui = popold * mpo + ui * mui     # crossover
-        elif (de_strategy == 'DE_rand_with_per_generation_dither'):                          
-            f1 = ( ( 1 - de_step_size ) * np.random.random_sample() + de_step_size )
-            ui = pm3 + ( pm1 - pm2 ) * f1         # differential variation
-            FM_origin = pm3
-            ui = popold * mpo + ui * mui   # crossover
-        elif ( de_strategy == 'DE_rand_either_or_algorithm' ):
-            if (np.random.random_sample() < 0.5):                               # Pmu = 0.5
-                ui = pm3 + de_step_size * ( pm1 - pm2 )# differential variation
-                FM_origin = pm3
-            else:                                           # use F-K-Rule: K = 0.5(F+1)
-                ui = pm3 + 0.5 * ( de_step_size + 1.0 ) * ( pm1 + pm2 - 2 * pm3 )
-                ui = popold * mpo + ui * mui     # crossover
-
-        return ui
 
     def draw_population(self, size, dim):
         pop = np.zeros( (size, dim ) )
@@ -424,24 +326,8 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
         while n_invalid_pop > 0 and ctr < max_n_resample:
             resampled_pop = draw_population(self.lower_bds, self.upper_bds, n_invalid_pop, self.dim)
             pop[~pop_valid] = resampled_pop
-        return pop
-
-    def enforce_constr_re_sample_old(self, pop):
-        '''
-          Check that each ele satisfies fullfills all constraints. If not, then draw a new population memeber and check constraint.
-        '''
-        maxDrawSize = self.pop_size * 100
-        dim = self.dim
-        for ixEle, ele in enumerate(pop):
-            constr = self.filter_fn(ele)
-            ctr = 0
-            while not sum(constr > 0) == len(constr) and ctr < maxDrawSize:
-                pop[ixEle, :] = self.draw_population_member(dim)
-                constr = self.filter_fn(ele)
-                ctr += 1
-            if ctr >= maxDrawSize:
-                pass
-                self.logger.critical('Couldnt sample a feasible point with {0} draws', maxDrawSize)
+            pop_valid = self.filter_fn(pop)
+            n_invalid_pop = (pop_valid == False).sum()            
         return pop
 
     def check_constraints(self, pop):
@@ -454,23 +340,6 @@ class DifferentialEvolutionSequential(EvolutionaryAlgorithm):
             constr = self.filter_fn(ele)
             cSat[ixEle] = sum(constr > 0) == len(constr)
         return cSat
-
-    def enforce_constr_re_evolve(self, pop):
-        '''
-          Check that each ele satisfies fullfills all constraints. If not, then draw a generate a new population memeber from the existing ones
-          self.modify and check constraint.
-        '''
-        popNew = np.zeros( (self.pop_size, self.dim ) )
-        cSat = self.check_constraints(pop)
-        popNew = pop[cSat, :]
-        while not len(popNew) >= self.pop_size:
-            reEvolvePop = self.modify(self.pop) # generate a completely new set of population members
-            cSat = self.check_constraints(reEvolvePop)        # cSat a points to the elements that satisfy the constraints.
-            popNew = np.append(popNew, reEvolvePop[cSat, :], axis = 0) # Append all new members to the new population that satisfy the constraints.
-        reEvlolvedPop = popNew[:self.pop_size, :]  # Subset the popNew to length pop_size. All members will satisfy the constraints.
-        #self.logger.debug('reEvolved population: ')
-        #self.logger.debug(popNew)
-        return reEvlolvedPop
 
     # Adjustments for pickling
     def __getstate__(self):
@@ -622,3 +491,101 @@ class DifferentialEvolutionParallel(DifferentialEvolutionSequential):
         This is implemented in gc3libs.optimizer.GlobalOptimizer.next. 
         '''        
         pass
+    
+    
+def evolve_fn(popold, prob_crossover, de_step_size, dim, best_iter, de_strategy):
+
+    pop_size = len(popold)
+    
+    pm1   = np.zeros( (pop_size, dim) )   # initialize population matrix 1
+    pm2   = np.zeros( (pop_size, dim) )   # initialize population matrix 2
+    pm3   = np.zeros( (pop_size, dim) )   # initialize population matrix 3
+    pm4   = np.zeros( (pop_size, dim) )   # initialize population matrix 4
+    pm5   = np.zeros( (pop_size, dim) )   # initialize population matrix 5
+    bm    = np.zeros( (pop_size, dim) )   # initialize FVr_bestmember  matrix
+    ui    = np.zeros( (pop_size, dim) )   # intermediate population of perturbed vectors
+    mui   = np.zeros( (pop_size, dim) )   # mask for intermediate population
+    mpo   = np.zeros( (pop_size, dim) )   # mask for old population
+    rot  = np.arange(0, pop_size, 1)    # rotating index array (size pop_size)
+    rotd = np.arange(0, dim, 1)     # rotating index array (size dim)
+    rt   = np.zeros(pop_size)            # another rotating index array
+    rtd  = np.zeros(dim)                 # rotating index array for exponential crossover
+    a1   = np.zeros(pop_size)                # index array
+    a2   = np.zeros(pop_size)                # index array
+    a3   = np.zeros(pop_size)                # index array
+    a4   = np.zeros(pop_size)                # index array
+    a5   = np.zeros(pop_size)                # index array
+    ind  = np.zeros(4)
+
+    # BJ: Need to add +1 in definition of ind otherwise there is one zero index that leaves creates no shuffling.
+    ind = np.random.permutation(4) + 1             # index pointer array.
+    a1  = np.random.permutation(pop_size)              # shuffle locations of vectors
+    rt  = ( rot + ind[0] ) % pop_size          # rotate indices by ind(1) positions
+    a2  = a1[rt]                           # rotate vector locations
+    rt  = ( rot + ind[1] ) % pop_size
+    a3  = a2[rt]
+    rt  = ( rot + ind[2] ) % pop_size
+    a4  = a3[rt]
+    rt  = ( rot + ind[3] ) % pop_size
+    a5  = a4[rt]
+
+
+    pm1 = popold[a1, :]             # shuffled population 1
+    pm2 = popold[a2, :]             # shuffled population 2
+    pm3 = popold[a3, :]             # shuffled population 3
+    pm4 = popold[a4, :]             # shuffled population 4
+    pm5 = popold[a5, :]             # shuffled population 5
+
+
+    for k in range(pop_size):                              # population filled with the best member
+        bm[k,:] = best_iter                       # of the last iteration
+
+    mui = np.random.random_sample( (pop_size, dim ) ) < prob_crossover  # all random numbers < prob_crossover are 1, 0 otherwise
+
+    #----Insert this if you want exponential crossover.----------------
+    #mui = sort(mui')         # transpose, collect 1's in each column
+    #for k  = 1:pop_size
+    #  n = floor(rand*dim)
+    #  if (n > 0)
+    #     rtd     = rem(rotd+n,dim)
+    #     mui(:,k) = mui(rtd+1,k) #rotate column k by n
+    #  end
+    #end
+    #mui = mui'                       # transpose back
+    #----End: exponential crossover------------------------------------
+
+    mpo = mui < 0.5    # inverse mask to mui
+
+    if ( de_strategy == 'DE_rand' ):
+        ui = pm3 + de_step_size * ( pm1 - pm2 )   # differential variation
+        ui = popold * mpo + ui * mui       # crossover
+        FM_origin = pm3
+    elif (de_strategy == 'DE_local_to_best'):              
+        ui = popold + de_step_size * ( bm - popold ) + de_step_size * ( pm1 - pm2 )
+        ui = popold * mpo + ui * mui
+        FM_origin = popold
+    elif (de_strategy == 'DE_best_with_jitter'):           
+        ui = bm + ( pm1 - pm2 ) * ( (1 - 0.9999 ) * np.random.random_sample( (pop_size, dim ) ) +de_step_size )
+        ui = popold * mpo + ui * mui
+        FM_origin = bm
+    elif (de_strategy == 'DE_rand_with_per_vector_dither'):
+        f1 = ( ( 1 - de_step_size ) * np.random.random_sample( (pop_size, 1 ) ) + de_step_size)
+        for k in range(dim):
+            pm5[:,k] = f1
+        ui = pm3 + (pm1 - pm2) * pm5    # differential variation
+        FM_origin = pm3
+        ui = popold * mpo + ui * mui     # crossover
+    elif (de_strategy == 'DE_rand_with_per_generation_dither'):                          
+        f1 = ( ( 1 - de_step_size ) * np.random.random_sample() + de_step_size )
+        ui = pm3 + ( pm1 - pm2 ) * f1         # differential variation
+        FM_origin = pm3
+        ui = popold * mpo + ui * mui   # crossover
+    elif ( de_strategy == 'DE_rand_either_or_algorithm' ):
+        if (np.random.random_sample() < 0.5):                               # Pmu = 0.5
+            ui = pm3 + de_step_size * ( pm1 - pm2 )# differential variation
+            FM_origin = pm3
+        else:                                           # use F-K-Rule: K = 0.5(F+1)
+            ui = pm3 + 0.5 * ( de_step_size + 1.0 ) * ( pm1 + pm2 - 2 * pm3 )
+            ui = popold * mpo + ui * mui     # crossover
+
+    return ui
