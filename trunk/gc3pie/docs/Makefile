@@ -16,6 +16,16 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 .PHONY: help clean html dirhtml pickle json htmlhelp qthelp latex changes linkcheck doctest
 
+.check-sphinxbuild-ok:
+	@rm -f .check-sphinxbuild-ok
+	@if $(SPHINXBUILD) --help 2>&1 | fgrep -q Sphinx ; then \
+		echo OK > .check-sphinxbuild-ok; \
+		true; \
+	 else \
+		echo 1>&2 "Command '$(SPHINXBUILD)' apparently does not run Sphinx. Please correct this and try again."; \
+		false; \
+	 fi
+
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  html      to make standalone HTML files"
@@ -44,16 +54,17 @@ clean:
 		$(BUILDDIR)/classes_gc3pie.dot \
 		$(BUILDDIR)/gc3libs.UML.png \
 		$(BUILDDIR)/gc3libs.UML.svg \
+		.check-sphinxbuild-ok \
 		;
 
-html: $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/gc3libs.UML.svg
+html: .check-sphinxbuild-ok $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/gc3libs.UML.svg
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	mv $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/html/_images/
 	mv $(BUILDDIR)/gc3libs.UML.svg $(BUILDDIR)/html/_images/
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
-dirhtml: $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/gc3libs.UML.svg
+dirhtml:  .check-sphinxbuild-ok $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/gc3libs.UML.svg
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
 	mv $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/html/_images/
 	mv $(BUILDDIR)/gc3libs.UML.svg $(BUILDDIR)/html/_images/
@@ -71,23 +82,23 @@ $(BUILDDIR)/gc3libs.UML.svg: classes_gc3pie.dot
 	@echo "Generating UML diagram... (SVG format)"
 	$(DOT) -Tsvg classes_gc3pie.dot > $(BUILDDIR)/gc3libs.UML.svg
 
-pickle:
+pickle: .check-sphinxbuild-ok 
 	$(SPHINXBUILD) -b pickle $(ALLSPHINXOPTS) $(BUILDDIR)/pickle
 	@echo
 	@echo "Build finished; now you can process the pickle files."
 
-json:
+json: .check-sphinxbuild-ok
 	$(SPHINXBUILD) -b json $(ALLSPHINXOPTS) $(BUILDDIR)/json
 	@echo
 	@echo "Build finished; now you can process the JSON files."
 
-htmlhelp:
+htmlhelp: .check-sphinxbuild-ok
 	$(SPHINXBUILD) -b htmlhelp $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
 	@echo
 	@echo "Build finished; now you can run HTML Help Workshop with the" \
 	      ".hhp project file in $(BUILDDIR)/htmlhelp."
 
-qthelp:
+qthelp: .check-sphinxbuild-ok
 	$(SPHINXBUILD) -b qthelp $(ALLSPHINXOPTS) $(BUILDDIR)/qthelp
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
@@ -96,25 +107,25 @@ qthelp:
 	@echo "To view the help file:"
 	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/gc3pie.qhc"
 
-latex:
+latex: .check-sphinxbuild-ok
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@echo
 	@echo "Build finished; the LaTeX files are in $(BUILDDIR)/latex."
 	@echo "Run \`make all-pdf' or \`make all-ps' in that directory to" \
 	      "run these through (pdf)latex."
 
-changes:
+changes: .check-sphinxbuild-ok
 	$(SPHINXBUILD) -b changes $(ALLSPHINXOPTS) $(BUILDDIR)/changes
 	@echo
 	@echo "The overview file is in $(BUILDDIR)/changes."
 
-linkcheck:
+linkcheck: .check-sphinxbuild-ok
 	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) $(BUILDDIR)/linkcheck
 	@echo
 	@echo "Link check complete; look for any errors in the above output " \
 	      "or in $(BUILDDIR)/linkcheck/output.txt."
 
-doctest:
+doctest: .check-sphinxbuild-ok
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
