@@ -212,13 +212,10 @@ class EC2Lrms(LRMS):
         return self.resources[app.ec2_instance_id].update_job_state(app)
         
 
-    @same_docstring_as(LRMS.submit_job)
-    def submit_job(self, job):
+    def _create_instance(self):
         """
-        Create an instance, create a resource related to that instance and then submit the job on that instance
+        Create an instance.
         """
-        # Create an instance
-        # max_count and min_count are set in order to be sure that only one instance will be run
         args={'key_name'  : self.keypair_name,
               'min_count' : 1,
               'max_count' : 1}
@@ -227,12 +224,25 @@ class EC2Lrms(LRMS):
         if 'user_data' in self:
             args['user_data'] = self.user_data
 
+        # FIXME: we should add check/creation of proper security
+        # groups
+
         reservation = connection.run_instances(self.image_id, **args)
         vm = reservation.instances[0]
         
         # wait until the instance is ready
         while vm.update() == 'pending':
             time.sleep(3)
+        return vm
+
+    @same_docstring_as(LRMS.submit_job)
+    def submit_job(self, job):
+        """
+        Create an instance, create a resource related to that instance and then submit the job on that instance
+        """
+        # Create an instance
+        # max_count and min_count are set in order to be sure that only one instance will be run
+        vm = self._create_instance()
 
         job.ec2_instance_id = vm.id
 
