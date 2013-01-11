@@ -52,7 +52,7 @@ class EC2Lrms(LRMS):
                  architecture, max_cores, max_cores_per_job,
                  max_memory_per_core, max_walltime, 
                  # these are specific of the EC2Lrms class
-                 pool_size_max, pool_size_min, ec2_region,
+                 pool_size_max, pool_size_min, ec2_region, ec2_url,
                  keypair_name, public_key, image_id,
                  auth=None, **extra_args):
         LRMS.__init__(
@@ -76,7 +76,7 @@ class EC2Lrms(LRMS):
         auth = self._auth_fn()
         self.ec2_access_key = auth.ec2_access_key
         self.ec2_secret_key = auth.ec2_secret_key
-        self.ec2_url = gc3libs.url.Url(self.ec2_url)
+        self.ec2_url = gc3libs.url.Url(ec2_url)
 
         self.keypair_name = keypair_name
         self.public_key = public_key
@@ -120,16 +120,20 @@ class EC2Lrms(LRMS):
                                                          localkey_fingerprint,
                                                          keypairs[self.keypair_name].fingerprint))
 
-        # Optional parameters must be removed from `extra_args`
-        # dictionary
+        # `self.subresource_args` is used to create subresources
         self.subresource_args = extra_args
+        self.subresource_args['type'] = self.subresource_type
+        for key in ['architecture', 'max_cores', 'max_cores_per_job', 'max_memory_per_core', 'max_walltime']:
+            self.subresource_args[key] = self[key]
 
     def _get_vm(self, vm_id):
         """
         Return the instance with id `vm_id`, if any. 
         """
-        reservation = self._conn.get_all_instances(instance_ids=[vm_id])
-        instances = dict((i.id, i) for i in reservation.instances)
+        # NOTE: since `vm_id` is supposed to be unique, we assume
+        # reservations only contains one element.
+        reservations = self._conn.get_all_instances(instance_ids=[vm_id])
+        instances = dict((i.id, i) for i in reservations[0].instances)
         if vm_id not in instances:
             raise InstanceNotFound("Instance with id %s has not found in EC2 cloud %s" % (vm_id, self.auth.ec2_auth_url))
         return instances[vm_id]
@@ -141,8 +145,25 @@ class EC2Lrms(LRMS):
         """
         args = self.subresource_args.copy()
         args['frontend'] = remote_ip
-        cfg = gc3libs.config.Configuration()
-        return cfg._make_resource(args)
+        args['transport'] = "ssh"
+        args['name'] = "%s@%s" % (remote_ip, self.name)
+        args['auth'] = args['vm_auth']
+        cfg = gc3libs.config.Configuration(*gc3libs.Default.CONFIG_FILE_LOCATIONS,
+                                            **{'auto_enable_auth': True})
+        resource = cfg._make_resource(args)
+        time_waited = 0
+        gc3libs.log.debug("Waiting for resource %s to become ready" % resource.name)
+        while time_waited < gc3libs.Default.EC2_MAX_WAITING_TIME_FOR_VM_TO_BECOME_RUNNING:
+            time_waited += gc3libs.Default.EC2_MIN_WAIT_TIME
+            try:
+                resource.transport.connect()
+                break
+            except Exception, ex:
+                gc3libs.log.debug("Ignoring error while trying to connect to the instance %s: %s" % (remote_ip, ex))
+                time.sleep(gc3libs.Default.EC2_MIN_WAIT_TIME)
+        return resource
+            
+        
 
     def _get_remote_resource(self, vm_id):
         """
@@ -173,7 +194,7 @@ class EC2Lrms(LRMS):
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
         resource = self._get_remote_resource(app.ec2_instance_id)
-        return resource.cancel_job(app.job_id)
+        return resource.cancel_job(app)
 
     @same_docstring_as(LRMS.free)
     def free(self, app):
@@ -185,12 +206,17 @@ class EC2Lrms(LRMS):
         than `TERMINATED` results in undefined behavior and will
         likely be the cause of errors later on.  Be cautious.
         """
-        vm = self._get_vm(app.ec2_instance_id)
-        vm.terminate()
-        resource = self.resources[app.ec2_instance_id]
         # XXX: this should probably done only when no other VMs are
         # using this resource.
-        resource.free()
+
+        # FIXME: freeing the resource from the application is probably
+        # not needed since instances are not persistent.
+
+        # resource = self.resources[app.ec2_instance_id]
+        # resource.free(app)
+        gc3libs.log.debug("Terminating VM with id `%s`" % app.ec2_instance_id) 
+        vm = self._get_vm(app.ec2_instance_id)
+        vm.terminate()
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
@@ -207,7 +233,7 @@ class EC2Lrms(LRMS):
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
         if app.ec2_instance_id not in self.resources:
-            self.resources[app.ec2_instance_id] = self._make_resource(app.ec2_instance_ip)
+            self.resources[app.ec2_instance_id] = self._get_remote_resource(app.ec2_instance_id)
         
         return self.resources[app.ec2_instance_id].update_job_state(app)
         
@@ -226,13 +252,22 @@ class EC2Lrms(LRMS):
 
         # FIXME: we should add check/creation of proper security
         # groups
-
-        reservation = connection.run_instances(self.image_id, **args)
+        gc3libs.log.debug("Create new VM using image id `%s`" % self.image_id) 
+        reservation = self._conn.run_instances(self.image_id, **args)
         vm = reservation.instances[0]
         
         # wait until the instance is ready
+        gc3libs.log.debug("Waiting for VM with id `%s` to go into RUNNING state" % vm.id)
+        time_waited=0
         while vm.update() == 'pending':
-            time.sleep(3)
+            if time_waited > gc3libs.Default.EC2_MAX_WAITING_TIME_FOR_VM_TO_BECOME_RUNNING:
+                vm.terminate()
+                raise Exception("VM %s not ready after %s seconds. Exiting." % (vm.id, time_waited))
+            time.sleep(gc3libs.Default.EC2_MIN_WAIT_TIME)
+            time_waited += gc3libs.Default.EC2_MIN_WAIT_TIME
+
+        gc3libs.log.info("VM with id `%s` is now RUNNING and has `public_dns_name` `%s`"
+                         " and `private_dns_name` `%s`" % (vm.id, vm.public_dns_name, vm.private_dns_name))
         return vm
 
     @same_docstring_as(LRMS.submit_job)
@@ -242,6 +277,19 @@ class EC2Lrms(LRMS):
         """
         # Create an instance
         # max_count and min_count are set in order to be sure that only one instance will be run
+
+        # FIXME:
+        # * check if the job has a ec2_instance_id
+        # * if not, create instance
+        # * check the status of the instance
+        # * if it's in pending, return a temporary error
+        # * if it's in error, return a permanent error
+        # * if it's running, create the resource:
+        #   - submit to the vm. If you have an error, return a temporary error
+        #     unless the error reported by the resource is permanent
+        #
+        # The idea is that int this way we use Engine to retry to submit the job untile all the VMs are running.
+        # This also means that we may need to use the pool_max variable...
         vm = self._create_instance()
 
         job.ec2_instance_id = vm.id
@@ -251,11 +299,42 @@ class EC2Lrms(LRMS):
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
-        raise NotImplementedError("Abstract method `LRMS.peek()` called - this should have been defined in a derived class.")
+        job = app.execution
+        assert job.has_key('lrms_execdir'), \
+            "Missing attribute `lrms_execdir` on `Job` instance passed to `PbsLrms.peek`."
+
+        if size is None:
+            size = sys.maxint
+
+        _filename_mapping = generic_filename_mapping(job.lrms_jobname, job.lrms_jobid, remote_filename)
+        _remote_filename = os.path.join(job.lrms_execdir, _filename_mapping)
+
+        try:
+            self.transport.connect()
+            remote_handler = self.transport.open(_remote_filename, mode='r', bufsize=-1)
+            remote_handler.seek(offset)
+            data = remote_handler.read(size)
+        except Exception, ex:
+            log.error("Could not read remote file '%s': %s: %s",
+                              _remote_filename, ex.__class__.__name__, str(ex))
+
+        try:
+            local_file.write(data)
+        except (TypeError, AttributeError):
+            output_file = open(local_file, 'w+b')
+            output_file.write(data)
+            output_file.close()
+        log.debug('... Done.')
 
     @same_docstring_as(LRMS.validate_data)
     def validate_data(self, data_file_list=None):
-        raise NotImplementedError("Abstract method 'LRMS.validate_data()' called - this should have been defined in a derived class.")
+        """
+        Supported protocols: file
+        """
+        for url in data_file_list:
+            if not url.scheme in ['file']:
+                return False
+        return True
 
     @same_docstring_as(LRMS.close)
     def close(self):
