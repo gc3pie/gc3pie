@@ -285,9 +285,9 @@ SUMMARY:      ( time unit: second )
     assert_equal(acct['max_used_memory'], Memory('227MB'))
     # timestamps
     year = datetime.date.today().year
-    assert_equal(acct['lsf_submission_time'], datetime.datetime(2012, 10, 8, 17, 7, 54))
-    assert_equal(acct['lsf_start_time'],      datetime.datetime(2012, 10, 8, 17, 8, 44))
-    assert_equal(acct['lsf_completion_time'], datetime.datetime(2012, 10, 8, 17, 9, 51))
+    assert_equal(acct['lsf_submission_time'], datetime.datetime(year, 10, 8, 17, 7, 54))
+    assert_equal(acct['lsf_start_time'],      datetime.datetime(year, 10, 8, 17, 8, 44))
+    assert_equal(acct['lsf_completion_time'], datetime.datetime(year, 10, 8, 17, 9, 51))
 
 
 def test_bacct_done1():
@@ -333,9 +333,9 @@ SUMMARY:      ( time unit: second )
     assert_equal(acct['max_used_memory'], Memory('37MB'))
     # timestamps
     year = datetime.date.today().year
-    assert_equal(acct['lsf_submission_time'], datetime.datetime(2012, 10, 8, 17,  8, 54))
-    assert_equal(acct['lsf_start_time'],      datetime.datetime(2012, 10, 8, 17, 10,  1))
-    assert_equal(acct['lsf_completion_time'], datetime.datetime(2012, 10, 8, 17, 10,  7))
+    assert_equal(acct['lsf_submission_time'], datetime.datetime(year, 10, 8, 17,  8, 54))
+    assert_equal(acct['lsf_start_time'],      datetime.datetime(year, 10, 8, 17, 10,  1))
+    assert_equal(acct['lsf_completion_time'], datetime.datetime(year, 10, 8, 17, 10,  7))
 
 
 def test_bacct_killed():
@@ -381,9 +381,9 @@ SUMMARY:      ( time unit: second )
     assert_equal(acct['max_used_memory'], Memory('35MB'))
     # timestamps
     year = datetime.date.today().year
-    assert_equal(acct['lsf_submission_time'], datetime.datetime(2012, 10, 5, 17, 49, 35))
-    assert_equal(acct['lsf_start_time'],      datetime.datetime(2012, 10, 5, 17, 50, 35))
-    assert_equal(acct['lsf_completion_time'], datetime.datetime(2012, 10, 5, 17, 51, 30))
+    assert_equal(acct['lsf_submission_time'], datetime.datetime(year, 10, 5, 17, 49, 35))
+    assert_equal(acct['lsf_start_time'],      datetime.datetime(year, 10, 5, 17, 50, 35))
+    assert_equal(acct['lsf_completion_time'], datetime.datetime(year, 10, 5, 17, 51, 30))
 
 
 
