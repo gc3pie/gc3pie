@@ -54,13 +54,15 @@ class Transport(object):
         """
         raise NotImplementedError("Abstract method `Transport.chmod()` called - this should have been defined in a derived class.")
 
-    def execute_command(self, command):
+    def execute_command(self, command, detach=False):
         """
         Execute a command using the available tranport media.
         The command's input and output streams are returned
         as python ``file``-like objects representing exit_status, stdout, stderr.
 
         :param string command: the command to execute
+
+        :param bool detach: if True, do not wait for IO from the command, but instead, returns as soon as possible. Default is False.
 
         :return: the exit_status (int), stdout (ChannelFile), and stderr (ChannelFile) of the executing command
 
@@ -265,7 +267,7 @@ class SshTransport(Transport):
                 else:
                     # some of the standard keys are present, but not working.
                     a = paramiko.Agent()
-                    if not a.conn:
+                    if not a._conn:
                         # No ssh-agent is running
                         gc3libs.log.error(
                             "Remote host %s does not accept any of the standard ssh keys (~/.ssh/id_dsa, ~/.ssh/id_rsa). "
@@ -300,14 +302,17 @@ class SshTransport(Transport):
 
 
     @same_docstring_as(Transport.execute_command)
-    def execute_command(self, command):
+    def execute_command(self, command, detach=False):
         try:
             # check connection first
             self.connect()
             gc3libs.log.debug("SshTransport running `%s`... ", command)
             stdin_stream, stdout_stream, stderr_stream = self.ssh.exec_command(command)
-            stdout = stdout_stream.read()
-            stderr = stderr_stream.read()
+            stdout = ''
+            stderr = ''
+            if not detach:
+                stdout = stdout_stream.read()
+                stderr = stderr_stream.read()
             exitcode = stdout_stream.channel.recv_exit_status()
             gc3libs.log.debug("Executed command '%s' on host '%s'; exit code: %d"
                               % (command, self.remote_frontend, exitcode))
@@ -568,10 +573,12 @@ class LocalTransport(Transport):
             return -1
 
     @same_docstring_as(Transport.execute_command)
-    def execute_command(self, command):
+    def execute_command(self, command, detach=False):
         assert self._is_open is True, \
             "`Transport.execute_command()` called" \
             " on `Transport` instance closed / not yet open"
+        if detach:
+            return self.execute_command_and_detach(self, command)
         try:
             self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=True)
             stdout, stderr = self._process.communicate()
