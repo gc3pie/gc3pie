@@ -44,7 +44,7 @@ from gc3libs.backends import LRMS
 import gc3libs.exceptions
 from gc3libs.quantity import kB, GB, MB, hours, minutes, seconds
 from gc3libs.utils import *
-
+import gc3libs.url
 
 
 class Arc1Lrms(LRMS):

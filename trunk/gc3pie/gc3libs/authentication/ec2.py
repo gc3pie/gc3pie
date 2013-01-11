@@ -52,11 +52,6 @@ class EC2Auth(object):
                     "Configuration error. Missing mandatory " \
                     "`ec2_secret_key` key"
 
-            if 'ec2_url' not in auth:
-                auth['ec2_url'] = os.getenv('EC2_URL')
-                assert auth['ec2_url'], \
-                    "Configuration error. Missing mandatory `ec2_url` key"
-
         except AssertionError, x:
             raise gc3libs.exceptions.ConfigurationError(
                 'Erroneous configuration parameter: %s' % str(x))
