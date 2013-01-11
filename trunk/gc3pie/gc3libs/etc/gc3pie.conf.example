@@ -233,3 +233,49 @@ architecture=x64_64
 # #bjobs = bjobs
 # #bkill = /path/to/my/bkill.sh
 # #lshosts = lshosts
+
+[auth/ec2cloud1]
+type=ec2
+# If this variable is empty, then the `EC2_ACCESS_KEY` environment
+# variable is will be used, if any.
+ec2_access_key=''
+# If this variable is empty, then the `EC2_SECRET_KEY` environment
+# variable is will be used, if any.
+ec2_secret_key=''
+# If this variable is empty, then the `EC2_URL` environment
+# variable is will be used, if any.
+ec2_url=
+
+[auth/ami_01]
+type=ssh
+username=ubuntu
+# keypair is automatically created if it does not exists
+keypair=''
+# If keypair does not exists, a new one will be created starting from
+# `public_key`. Note that if the desired keypair exists, a check is
+# done on its fingerprint and a warning is issued if it does not match
+# with the one in `public_key`
+public_key='' # if keypair exists,
+
+[resource/ec2instance]
+enabled=yes
+type=shellcmd
+transport=ssh
+auth=ami_01
+# image_size='m1.small'
+image_id='ami-00000002'
+user_data=''
+architecture = x86_64
+
+[resource/cloud1]
+# This is basically a resource of resources.
+enabled=yes
+type=cloud
+auth=ec2cloud1
+remote_resource=ec2instance
+# This value can be overwritten by the `remote_resource` resource
+architecture = x86_64
+pool_size_max=None
+pool_size_min=0
+# allocation strategy: decides when a new instance must be created.
+# vm_pool_allocation_strategy=conservative
