@@ -173,6 +173,7 @@ Auth.register('none', NoneAuth)
 # FIXME: it would be nice to have some kind of auto-discovery instead
 import gc3libs.authentication.grid
 import gc3libs.authentication.ssh
+import gc3libs.authentication.ec2
 
 ## main: run tests
 

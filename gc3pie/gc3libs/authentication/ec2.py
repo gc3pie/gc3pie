@@ -35,7 +35,7 @@ class EC2Auth(object):
             # test validity
             assert auth['type'] == 'ec2', \
                 "Configuration error. Unknown type; %s. Valid type: ec2" \
-                auth.type
+                % auth.type
         except AssertionError, x:
             raise gc3libs.exceptions.ConfigurationError(
                 'Erroneous configuration parameter: %s' % str(x))
