@@ -451,7 +451,7 @@ class Configuration(gc3libs.utils.Struct):
                 except Exception, err:
                     gc3libs.log.critical(
                         "Failed initializing Auth module: %s: %s",
-                        ex.__class__.__name__, str(err))
+                        err.__class__.__name__, str(err))
                     raise
             return self._auth_factory
         return locals()
