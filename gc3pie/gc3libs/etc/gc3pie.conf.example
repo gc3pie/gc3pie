@@ -234,48 +234,113 @@ architecture=x64_64
 # #bkill = /path/to/my/bkill.sh
 # #lshosts = lshosts
 
-[auth/ec2cloud1]
-type=ec2
-# If this variable is empty, then the `EC2_ACCESS_KEY` environment
-# variable is will be used, if any.
-ec2_access_key=''
-# If this variable is empty, then the `EC2_SECRET_KEY` environment
-# variable is will be used, if any.
-ec2_secret_key=''
-# If this variable is empty, then the `EC2_URL` environment
-# variable is will be used, if any.
-ec2_url=
+#################
+# CLOUD BACKEND #
+#################
 
-[auth/ami_01]
-type=ssh
-username=ubuntu
-# keypair is automatically created if it does not exists
-keypair=''
-# If keypair does not exists, a new one will be created starting from
-# `public_key`. Note that if the desired keypair exists, a check is
-# done on its fingerprint and a warning is issued if it does not match
-# with the one in `public_key`
-public_key='' # if keypair exists,
+# [auth/ec2cloud1]
+# type=ec2
+#
+# If `ec2_access_key` is empty, then the `EC2_ACCESS_KEY` environment
+# variable is will be used, if any.
+# 
+# ec2_access_key=''
+#
+# If `ec2_secret_key` is empty, then the `EC2_SECRET_KEY` environment
+# variable is will be used, if any.
+# 
+# ec2_secret_key=''
 
-[resource/ec2instance]
-enabled=yes
-type=shellcmd
-transport=ssh
-auth=ami_01
-# image_size='m1.small'
-image_id='ami-00000002'
-user_data=''
-architecture = x86_64
+# [auth/ami_01]
+# type=ssh
+# username=ubuntu
 
-[resource/cloud1]
-# This is basically a resource of resources.
-enabled=yes
-type=cloud
-auth=ec2cloud1
-remote_resource=ec2instance
-# This value can be overwritten by the `remote_resource` resource
-architecture = x86_64
-pool_size_max=None
-pool_size_min=0
-# allocation strategy: decides when a new instance must be created.
-# vm_pool_allocation_strategy=conservative
+# [resource/cloud1]
+# enabled=yes
+# auth=ec2cloud1
+#
+# This resource will create a new VM for each submitted job, and a
+# resource associated to the VM. These subresources define the way we
+# access the VM. It is usually a `shellcmd` backend with `ssh`
+# transport, but in the future this may change.
+#
+# The `type` option defines which backend we want to use and which
+# subresource type. The syntax is:
+#
+# `backend`+`subresourcetype`
+#
+# where `backend` is one of `ec2boto` or `ec2libcloud` (`ec2boto` is
+# currently the suggested one) while `subresourcetype` can currently
+# be only `shellcmd`
+# 
+# type=ec2boto+shellcmd
+
+# If `ec2_url` is empty, then the `EC2_URL` environment variable
+# is will be used, if any. If EC2_URL is empty too, the default url
+# for AWS will be used.
+# 
+# ec2_url=
+
+# EC2 Region to use. It is usually needed only if AWS is not used.
+#
+# ec2_region=nova
+
+#####################
+# VM AUTHENTICATION #
+#####################
+# In order to access the VM, a keypair is usually used. GC3Pie is able
+# to configure a new keypair if needed.
+# 
+# If the keypair `keypair_name` does not exists, a new one will be
+# created and the public key in `public_key` will be imported. If the
+# keypair exists, the fingerprint will be checked and an error is
+# raised if it does not match `public_key`s fingerpring.
+#
+# keypair_name=anto1
+# public_key=~/.ssh/id_dsa.pub
+
+# `vm_auth` refers to the auth stanza in the current configuration
+# file to use for remote VM. Basically, it contains only the username
+# to use when connecting to the VM.
+# 
+# vm_auth=ubuntu_ssh
+
+# `instance_type` can be null. In this case, `m1.small` will be used.
+# 
+# instance_type=m1.small
+
+# Image id to use
+# 
+# image_id=ami-0000001f
+
+# `user_data` is a script passed to the virtual machine and executed
+# right after the startup procedure.
+#
+# user_data=
+
+###################
+# SECURITY GROUPS #
+###################
+# GC3Pie is able to configure security groups associated to the VM.
+#
+# If a security group with this name is not found, a new one will be
+# created.  If it does exist but not all rules defined in
+# `security_group_rules` are present, missing rules will be added to
+# the security group.
+#
+# security_group_name=gc3pie_ssh
+# security_group_rules=tcp:22:22:0.0.0.0/0
+#   icmp:-1:-1:0.0.0.0/0
+
+# These values are currently not used: only 1 VM per job will be instantiated.
+#
+# pool_size_max=-1
+# pool_size_min=0
+
+# Values currently used by the resource broker of GC3Pie.
+#
+# max_cores_per_job = 8
+# max_memory_per_core = 2
+# max_walltime = 8
+# max_cores = 32
+# architecture = x86_64
