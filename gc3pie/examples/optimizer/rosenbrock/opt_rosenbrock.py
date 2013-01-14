@@ -164,8 +164,6 @@ class RosenbrockScript(SessionBasedScript):
         initial_pop = draw_population(lower_bds=lower_bounds, upper_bds=upper_bounds, size=pop_size, dim=dim)
  
         de_solver = DifferentialEvolutionAlgorithm(
-            dim = dim,          # number of parameters of the objective function
-         #   pop_size = 100,     # number of population members
             initial_pop = initial_pop,
             de_step_size = 0.85,# DE-stepsize ex [0, 2]
             prob_crossover = 1, # crossover probabililty constant ex [0, 1]
