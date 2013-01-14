@@ -312,10 +312,14 @@ class EC2Lrms(LRMS):
             self._import_keypair()
         else:
             keyfile = os.path.expanduser(self.public_key)
+            if keyfile.endswith('.pub'):
+                keyfile = keyfile[:-4]
+            else:
+                gc3libs.log.warning("`public_key` option in configuration file should contains path to a public key. Found %s instead: %s" % self.public_key)
             try:
-                pkey = paramiko.DSSKey.from_private_key_file(keyfile[:-4])
+                pkey = paramiko.DSSKey.from_private_key_file(keyfile)
             except:
-                pkey = paramiko.RSAKey.from_private_key_file(keyfile[:-4])
+                pkey = paramiko.RSAKey.from_private_key_file(keyfile)
 
             # Check key fingerprint
             localkey_fingerprint = ':'.join(i.encode('hex') for i in pkey.get_fingerprint())
