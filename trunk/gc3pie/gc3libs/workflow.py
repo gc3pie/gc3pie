@@ -30,6 +30,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 import time
+import operator
 import os
 
 from gc3libs.compat._collections import defaultdict
@@ -58,6 +59,18 @@ class TaskCollection(Task):
         else:
             self.tasks = tasks
         Task.__init__(self, **extra_args)
+
+    @gc3libs.utils.defproperty
+    def changed():
+        """
+        Evaluates to `True` if this task or any of its subtasks has been modified
+        and should be saved to persistent storage.
+        """
+        def fget(self):
+            return self._changed or operator.or_(task.changed for task in self.tasks)
+        def fset(self, value):
+            self._changed = value
+        return locals()
 
     # manipulate the "controller" interface used to control the associated task
     def attach(self, controller):
@@ -626,6 +639,18 @@ class RetryableTask(Task):
         self.retried = 0
         self.task = task
         Task.__init__(self, **extra_args)
+
+    @gc3libs.utils.defproperty
+    def changed():
+        """
+        Evaluates to `True` if this task or any of its subtasks has been modified
+        and should be saved to persistent storage.
+        """
+        def fget(self):
+            return self._changed or self.task.changed
+        def fset(self, value):
+            self._changed = value
+        return locals()
 
     def __getattr__(self, name):
         """Proxy public attributes of the wrapped task."""
