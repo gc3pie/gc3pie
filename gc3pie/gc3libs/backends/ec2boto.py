@@ -52,7 +52,7 @@ class EC2Lrms(LRMS):
                  architecture, max_cores, max_cores_per_job,
                  max_memory_per_core, max_walltime, 
                  # these are specific of the EC2Lrms class
-                 pool_size_max, pool_size_min, ec2_region, ec2_url,
+                 ec2_region, ec2_url,
                  keypair_name, public_key, image_id,
                  auth=None, **extra_args):
         LRMS.__init__(
@@ -71,10 +71,6 @@ class EC2Lrms(LRMS):
 
         self.region = ec2_region
 
-        self.pool_size_max = int(pool_size_max)
-        if self.pool_size_max > 0:
-            self.pool_size_max = int(self.pool_size_max)
-        self.pool_size_min = int(pool_size_min)
         # Mapping of job.ec2_instance_id => LRMS
         self.resources = {}
 
