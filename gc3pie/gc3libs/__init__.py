@@ -85,7 +85,7 @@ class Default(object):
     SHELLCMD_LRMS = 'shellcmd'
     SLURM_LRMS = 'slurm'
     SUBPROCESS_LRMS = 'subprocess'
-    EC2_LRMS = 'ec2'
+    EC2_BOTO_LRMS = 'ec2boto'
     # Maximum time to wait for the VM to become running
     EC2_MAX_WAITING_TIME_FOR_VM_TO_BECOME_RUNNING = 180
     # Time to sleep between two check of the VM status.

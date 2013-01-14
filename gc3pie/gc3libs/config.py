@@ -564,8 +564,8 @@ class Configuration(gc3libs.utils.Struct):
             elif resdict['type'] == gc3libs.Default.SLURM_LRMS:
                 from gc3libs.backends.slurm import SlurmLrms
                 cls = SlurmLrms
-            elif resdict['type'].split('+')[0] == gc3libs.Default.EC2_LRMS:
-                from gc3libs.backends.ec2 import EC2Lrms
+            elif resdict['type'].split('+')[0] == gc3libs.Default.EC2_BOTO_LRMS:
+                from gc3libs.backends.ec2boto import EC2Lrms
                 cls = EC2Lrms
             else:
                 raise gc3libs.exceptions.ConfigurationError(
