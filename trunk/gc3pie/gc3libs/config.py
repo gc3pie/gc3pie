@@ -567,6 +567,9 @@ class Configuration(gc3libs.utils.Struct):
             elif resdict['type'].split('+')[0] == gc3libs.Default.EC2_BOTO_LRMS:
                 from gc3libs.backends.ec2boto import EC2Lrms
                 cls = EC2Lrms
+            elif resdict['type'].split('+')[0] == gc3libs.Default.EC2_LIBCLOUD_LRMS:
+                from gc3libs.backends.ec2libcloud import EC2Lrms
+                cls = EC2Lrms
             else:
                 raise gc3libs.exceptions.ConfigurationError(
                     "Unknown resource type '%s'" % resdict['type'])
