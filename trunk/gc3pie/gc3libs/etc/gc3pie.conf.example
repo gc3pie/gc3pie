@@ -332,11 +332,6 @@ architecture=x64_64
 # security_group_rules=tcp:22:22:0.0.0.0/0
 #   icmp:-1:-1:0.0.0.0/0
 
-# These values are currently not used: only 1 VM per job will be instantiated.
-#
-# pool_size_max=-1
-# pool_size_min=0
-
 # Values currently used by the resource broker of GC3Pie.
 #
 # max_cores_per_job = 8
