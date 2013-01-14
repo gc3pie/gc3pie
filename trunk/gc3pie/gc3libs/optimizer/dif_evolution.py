@@ -155,9 +155,6 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     def has_converged(self):
         converged = False
         # Check convergence
-        if self.cur_iter > self.itermax:
-            converged = True
-            self.logger.info('Exiting difEvo. cur_iter >self.itermax ')
         if self.bestval < self.y_conv_crit:
             converged = True
             self.logger.info('converged self.bestval < self.y_conv_crit')
@@ -388,7 +385,7 @@ class DifferentialEvolutionSequential(DifferentialEvolutionAlgorithm):
         '''
         self.logger.debug('entering de_opt')
         has_converged = False
-        while not has_converged:
+        while not has_converged and self.cur_iter <= self.itermax:
             has_converged = self.iterate()
         self.logger.debug('exiting ' + __name__)
 
