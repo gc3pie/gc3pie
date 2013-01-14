@@ -82,43 +82,19 @@ class EC2Lrms(LRMS):
         self.public_key = public_key
 
         self.image_id = image_id
+        self._parse_security_group()
 
         region = boto.ec2.regioninfo.RegionInfo(name=ec2_region, endpoint=self.ec2_url.hostname)
 
-        self._conn = boto.connect_ec2(aws_access_key_id=self.ec2_access_key,
-                                      aws_secret_access_key=self.ec2_secret_key, 
-                                      is_secure=False, 
-                                      port=self.ec2_url.port,
-                                      host=self.ec2_url.hostname,
-                                      path=self.ec2_url.path, 
-                                      region=region)
+        args = {'aws_access_key_id': self.ec2_access_key,
+                'aws_secret_access_key': self.ec2_secret_key,
+                'is_secure': False,
+                'port': self.ec2_url.port,
+                'host': self.ec2_url.hostname,
+                'path': self.ec2_url.path,
+                'region': region}
 
-        # Check if the desired keypair is present
-        keypairs = dict((k.name, k) for k in self._conn.get_all_key_pairs())
-        if self.keypair_name not in keypairs:
-            gc3libs.log.info("Keypair `%s` not found: creating it using public key `%s`" \
-                                 % (self.keypair_name, self.public_key))
-            # Create keypair if it does not exist and give an error if it 
-            # exists but have different fingerprint
-            self._setup_keypair()
-        else:
-            keyfile = os.path.expanduser(self.public_key)
-            try:
-                pkey = paramiko.DSSKey.from_private_key_file(keyfile[:-4])
-            except:
-                pkey = paramiko.RSAKey.from_private_key_file(keyfile[:-4])
-
-            # Check key fingerprint
-            localkey_fingerprint = ':'.join(i.encode('hex') for i in pkey.get_fingerprint())
-            if localkey_fingerprint != keypairs[self.keypair_name].fingerprint:
-                gc3libs.log.error("Keypair `%s` is present but has different fingerprint: "
-                                  "%s != %s. Aborting!" % (self.keypair_name,
-                                                           localkey_fingerprint,
-                                                           keypairs[self.keypair_name].fingerprint))
-                raise Exception("Keypair `%s` is present but has different fingerprint: "
-                                "%s != %s. Aborting!" % (self.keypair_name,
-                                                         localkey_fingerprint,
-                                                         keypairs[self.keypair_name].fingerprint))
+        self._conn = boto.connect_ec2(**args)
 
         # `self.subresource_args` is used to create subresources
         self.subresource_args = extra_args
@@ -174,10 +150,10 @@ class EC2Lrms(LRMS):
             self.resources[vm_id] = self._make_resource(vm.public_dns_name)
         return self.resources[vm_id]
 
-    @LRMS.authenticated    
-    def _setup_keypair(self):
+    def _import_keypair(self):
         """
-        Create a new keypair using values found in the configuration file
+        Create a new keypair and import the public key defined in the
+        configuration file.
         """
         fd = open(os.path.expanduser(self.public_key))
         try:
@@ -190,6 +166,70 @@ class EC2Lrms(LRMS):
                                                   self.keypair_name))
         except:
             fd.close()
+
+    def _parse_security_group(self):
+        """
+        Parse configuration file and set `self.security_group_rules`
+        with a list of dictionaries containing the rule sets
+        """
+        rules = self.security_group_rules.split('\n')
+        self.security_group_rules = []
+        for rule in rules:
+            rulesplit = rule.split(':')
+            if len(rulesplit) != 4:
+                gc3libs.log.warning("Invalid rule specification in `security_group_rules`: %s" % rule)
+                continue
+            self.security_group_rules.append(
+                { 'ip_protocol': rulesplit[0],
+                  'from_port':   int(rulesplit[1]),
+                  'to_port':     int(rulesplit[2]),
+                  'cidr_ip':     rulesplit[3]}
+                )
+
+    def _setup_security_groups(self):
+        """
+        Check the current configuration and set up a security group if
+        it does not exist
+        """
+        if not self.security_group_name:
+            gc3libs.log.error("Group name in `security_group_name` configuration option cannot be empty!")
+            return
+        security_groups = self._conn.get_all_security_groups()
+        groups = dict((g.name, g) for g in security_groups)
+        # Check if the security group exists already
+        if self.security_group_name not in groups:
+            try:
+                security_group = self._conn.create_security_group(
+                    self.security_group_name, "GC3Pie_%s" %  self.security_group_name)
+            except Exception, ex:
+                gc3libs.log.error("Error creating security group %s: "
+                                  "%s" % (self.security_group_name, ex))
+                raise Exception("Error creating security group %s: "
+                                "%s" % (self.security_group_name, ex))
+
+            for rule in self.security_group_rules:
+                try:
+                    security_group.authorize(**rule)
+                except Exception, ex:
+                    gc3libs.log.error(
+                        "Ignoring error adding rule %s to security group %s: %s" \
+                            % (str(rule), self.security_group_name, str(ex)))
+
+        else:
+            # Check if the security group has all the rules we want
+            security_group = groups[self.security_group_name]
+            current_rules = []
+            for rule in security_group.rules:
+                rule_dict = {'ip_protocol' : rule.ip_protocol,
+                             'from_port'   : int(rule.from_port),
+                             'to_port'     : int(rule.to_port),
+                             'cidr_ip'     : str(rule.grants[0]),
+                             }
+                current_rules.append(rule_dict)
+
+            for new_rule in self.security_group_rules:
+                if new_rule not in current_rules:
+                    security_group.authorize(**new_rule)
 
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
@@ -250,6 +290,38 @@ class EC2Lrms(LRMS):
         if 'user_data' in self:
             args['user_data'] = self.user_data
 
+        # Check if the desired keypair is present
+        keypairs = dict((k.name, k) for k in self._conn.get_all_key_pairs())
+        if self.keypair_name not in keypairs:
+            gc3libs.log.info("Keypair `%s` not found: creating it using public key `%s`" \
+                                 % (self.keypair_name, self.public_key))
+            # Create keypair if it does not exist and give an error if it
+            # exists but have different fingerprint
+            self._import_keypair()
+        else:
+            keyfile = os.path.expanduser(self.public_key)
+            try:
+                pkey = paramiko.DSSKey.from_private_key_file(keyfile[:-4])
+            except:
+                pkey = paramiko.RSAKey.from_private_key_file(keyfile[:-4])
+
+            # Check key fingerprint
+            localkey_fingerprint = ':'.join(i.encode('hex') for i in pkey.get_fingerprint())
+            if localkey_fingerprint != keypairs[self.keypair_name].fingerprint:
+                gc3libs.log.error("Keypair `%s` is present but has different fingerprint: "
+                                  "%s != %s. Aborting!" % (self.keypair_name,
+                                                           localkey_fingerprint,
+                                                           keypairs[self.keypair_name].fingerprint))
+                raise Exception("Keypair `%s` is present but has different fingerprint: "
+                                "%s != %s. Aborting!" % (self.keypair_name,
+                                                         localkey_fingerprint,
+                                                         keypairs[self.keypair_name].fingerprint))
+
+        # Setup security groups
+        if 'security_group_name' in self:
+            self._setup_security_groups()
+            args['security_groups'] = [self.security_group_name]
+
         # FIXME: we should add check/creation of proper security
         # groups
         gc3libs.log.debug("Create new VM using image id `%s`" % self.image_id) 
@@ -265,6 +337,11 @@ class EC2Lrms(LRMS):
                 raise Exception("VM %s not ready after %s seconds. Exiting." % (vm.id, time_waited))
             time.sleep(gc3libs.Default.EC2_MIN_WAIT_TIME)
             time_waited += gc3libs.Default.EC2_MIN_WAIT_TIME
+
+        if vm.state != 'running':
+            gc3libs.log.error(
+                "VM with id `%s` is in %s state. Aborting" % (vm.id, vm.state))
+            raise Exception("VM with id `%s` is in %s state. Aborting" % (vm.id, vm.state))
 
         gc3libs.log.info("VM with id `%s` is now RUNNING and has `public_dns_name` `%s`"
                          " and `private_dns_name` `%s`" % (vm.id, vm.public_dns_name, vm.private_dns_name))
