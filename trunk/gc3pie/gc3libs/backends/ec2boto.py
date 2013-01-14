@@ -60,6 +60,11 @@ class EC2Lrms(LRMS):
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth, **extra_args)
 
+        self.free_slots = int(max_cores)
+        self.user_run = 0
+        self.user_queued = 0
+        self.queued = 0
+
         self.subresource_type = self.type.split('+', 1)[1]
         if self.subresource_type not in available_subresource_types:
             raise Exception("Invalid resource type: %s" % self.type)
@@ -76,7 +81,10 @@ class EC2Lrms(LRMS):
         auth = self._auth_fn()
         self.ec2_access_key = auth.ec2_access_key
         self.ec2_secret_key = auth.ec2_secret_key
-        self.ec2_url = gc3libs.url.Url(ec2_url)
+        if ec2_url:
+            self.ec2_url = gc3libs.url.Url(ec2_url)
+        else:
+            self.ec2_url = None
 
         self.keypair_name = keypair_name
         self.public_key = public_key
@@ -84,15 +92,19 @@ class EC2Lrms(LRMS):
         self.image_id = image_id
         self._parse_security_group()
 
-        region = boto.ec2.regioninfo.RegionInfo(name=ec2_region, endpoint=self.ec2_url.hostname)
 
         args = {'aws_access_key_id': self.ec2_access_key,
                 'aws_secret_access_key': self.ec2_secret_key,
-                'is_secure': False,
-                'port': self.ec2_url.port,
-                'host': self.ec2_url.hostname,
-                'path': self.ec2_url.path,
-                'region': region}
+                }
+
+        if self.ec2_url:
+            region = boto.ec2.regioninfo.RegionInfo(name=ec2_region, endpoint=self.ec2_url.hostname)
+            args['region'] = region
+            args['port'] = self.ec2_url.port
+            args['host'] = self.ec2_url.hostname
+            args['path'] = self.ec2_url.path
+            if self.ec2_url.scheme in ['http']:
+                args['is_secure'] = False
 
         self._conn = boto.connect_ec2(**args)
 
@@ -164,8 +176,10 @@ class EC2Lrms(LRMS):
                              " as keypir `%s`" % (imported_key.name,
                                                   imported_key.fingerprint,
                                                   self.keypair_name))
-        except:
+        except Exception, ex:
+            gc3libs.log.error("Error importing keypair %s: %s" % (self.keypair_name, ex))
             fd.close()
+            raise ex
 
     def _parse_security_group(self):
         """
@@ -199,6 +213,7 @@ class EC2Lrms(LRMS):
         # Check if the security group exists already
         if self.security_group_name not in groups:
             try:
+                gc3libs.log.info("Creating security group %s" %  self.security_group_name)
                 security_group = self._conn.create_security_group(
                     self.security_group_name, "GC3Pie_%s" %  self.security_group_name)
             except Exception, ex:
@@ -209,6 +224,7 @@ class EC2Lrms(LRMS):
 
             for rule in self.security_group_rules:
                 try:
+                    gc3libs.log.debug("Adding rule %s to security group %s." % (rule, self.security_group_name))
                     security_group.authorize(**rule)
                 except Exception, ex:
                     gc3libs.log.error(
