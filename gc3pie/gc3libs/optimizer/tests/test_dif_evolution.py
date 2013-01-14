@@ -63,7 +63,7 @@ def test_differential_evolution_sequential_with_rosenbrock():
         target_fn=rosenbrock_fn,
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
-        itermax = 200,      # maximum number of iterations (generations)
+        itermax = 1000,      # maximum number of iterations (generations)
         dx_conv_crit = None, # stop when variation among x's is < this
         y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
         de_strategy = 'DE_local_to_best',
@@ -72,7 +72,7 @@ def test_differential_evolution_sequential_with_rosenbrock():
     assert opt.target_fn == rosenbrock_fn
     assert opt.de_step_size == 0.85
     assert opt.prob_crossover == 1.0
-    assert opt.itermax == 200
+    assert opt.itermax == 1000
     assert opt.dx_conv_crit == None
     assert opt.y_conv_crit == 1e-5
     assert opt.de_strategy == 'DE_local_to_best'
@@ -107,7 +107,7 @@ def test_differential_evolution_parallel_with_rosenbrock():
         dim = dim,          # number of parameters of the objective function
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
-        itermax = 200,      # maximum number of iterations (generations)
+        itermax = 1000,      # maximum number of iterations (generations)
         dx_conv_crit = None, # stop when variation among x's is < this
         y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
         de_strategy = 'DE_local_to_best',

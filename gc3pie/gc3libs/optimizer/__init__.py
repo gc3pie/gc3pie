@@ -225,9 +225,8 @@ class ComputeTargetVals(ParallelTaskCollection):
         # Log activity
         cDate = datetime.date.today()
         cTime = datetime.datetime.time(datetime.datetime.now())
-        date_string = 
-        '%04d--%02d--%02d--%02d--%02d--%02d' % (cDate.year, cDate.month, 
-                                                cDate.day, cTime.hour, 
+        date_string = '%04d--%02d--%02d--%02d--%02d--%02d' % (cDate.year, 
+                                                cDate.month, cDate.day, cTime.hour, 
                                                 cTime.minute, cTime.second)
         gc3libs.log.debug('Establishing parallel task on %s', date_string)
 
@@ -308,3 +307,32 @@ def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None):
             n_invalid_pop = (pop_valid == False).sum()
 
     return pop
+
+def populate(create_fn, filter_fn=None, max_n_resample=100):
+    pop = create_fn()
+    if filter_fn:
+        # re-evolve if some members do not fullfill fiter_fn
+        pop_valid_orig = filter_fn(pop)
+        n_invalid_orig = (pop_valid_orig == False).sum()
+        fillin_pop = pop[~pop_valid_orig]
+        total_filled = 0
+        ctr = 0
+        while total_filled < n_invalid_orig and ctr < max_n_resample:
+            new_pop = create_fn()
+            new_pop_valid = filter_fn(new_pop)
+            n_pop_valid = (new_pop_valid == True).sum()
+            new_total_filled = min(total_filled + n_pop_valid, len(fillin_pop))
+            fillin_pop[total_filled:new_total_filled] = new_pop[new_pop_valid]
+            total_filled = new_total_filled
+        if total_filled < n_invalid_orig:
+            self.logger.warning(
+                "%d population members are invalid even after re-sampling %d times."
+                "  You might want to increase `max_n_resample`.",
+                (n_invalid_orig - total_filled), max_n_resample)
+        pop[~pop_valid_orig] = fillin_pop
+    return pop
+
+
+def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None):
+    return populate(create_fn=lambda:(lower_bds + np.random.random_sample( (size, dim) ) * ( upper_bds - lower_bds )), 
+                    filter_fn=filter_fn)
