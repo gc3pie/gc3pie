@@ -1349,10 +1349,11 @@ class SessionBasedScript(_Script):
 
         # ...now do a first round of submit/update/retrieve
         self.before_main_loop()
-        rc = self._main_loop()
-        if self.params.wait > 0:
-            self.log.info("sleeping for %d seconds..." % self.params.wait)
-            try:
+        rc = 13 # Keep in sync with `_Script.run()` method
+        try:
+            rc = self._main_loop()
+            if self.params.wait > 0:
+                self.log.info("sleeping for %d seconds..." % self.params.wait)
                 while rc > 3:
                     # Python scripts become unresponsive during
                     # `time.sleep()`, so we just do the wait in small
@@ -1361,8 +1362,9 @@ class SessionBasedScript(_Script):
                     for x in xrange(self.params.wait):
                         time.sleep(1)
                     rc = self._main_loop()
-            except KeyboardInterrupt:  # gracefully intercept Ctrl+C
-                pass
+        except KeyboardInterrupt: # gracefully intercept Ctrl+C
+            sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
+            pass
         self.after_main_loop()
 
         if rc in [0, 2]:
