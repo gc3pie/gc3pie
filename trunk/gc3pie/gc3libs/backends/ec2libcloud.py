@@ -64,6 +64,11 @@ class EC2Lrms(LRMS):
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth, **extra_args)
 
+        self.free_slots = int(max_cores)
+        self.user_run = 0
+        self.user_queued = 0
+        self.queued = 0
+
         self.subresource_type = self.type.split('+', 1)[1]
         if self.subresource_type not in available_subresource_types:
             raise Exception("Invalid resource type: %s" % self.type)
