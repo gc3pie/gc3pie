@@ -59,7 +59,6 @@ def test_differential_evolution_sequential_with_rosenbrock():
 
     opt = DifferentialEvolutionSequential(
         initial_pop = initial_pop,
-        dim = dim,          # number of parameters of the objective function
         target_fn=rosenbrock_fn,
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
@@ -104,7 +103,6 @@ def test_differential_evolution_parallel_with_rosenbrock():
 
     opt = DifferentialEvolutionAlgorithm(
         initial_pop = initial_pop,
-        dim = dim,          # number of parameters of the objective function
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
         itermax = 1000,      # maximum number of iterations (generations)

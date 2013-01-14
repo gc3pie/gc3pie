@@ -94,21 +94,20 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
 
     '''
 
-    def __init__(self, initial_pop, dim,
-                 de_step_size = 0.85, prob_crossover = 1.0, itermax = 100,
+    def __init__(self, initial_pop, de_step_size = 0.85, prob_crossover = 1.0, itermax = 100,
                  dx_conv_crit = None, y_conv_crit = None,
                  de_strategy = 'DE_rand', filter_fn=None, logger=None, seed=None):
         '''
-        Arguments:
-        `dim` -- Dimensionality of the problem.
-        `de_step_size` -- Differential Evolution step size.
-        `prob_crossover` -- Probability new population draws will replace old members.
-        `itermax` -- Maximum # of iterations.
-        `dx_conv_crit` -- Abort optimization if all population members are within a certain distance to each other.
-        `y_conv_crit` -- Terminate opitimization when target function has reached a certain value.
-        `de_strategy` -- Specify a certain Differential Evolution strategy from the list above. String input e.g. DE_rand_either_or_algorithm.
-        `filter_fn` -- Optional function that implements nonlinear constraints.
-        `logger` -- Configured logger to use.
+        Arguments: 
+        `de_step_size` -- Differential Evolution step size. `prob_crossover` -- Probability new
+        population draws will replace old members. `itermax` -- Maximum # of
+        iterations. `dx_conv_crit` -- Abort optimization if all population
+        members are within a certain distance to each other. `y_conv_crit` --
+        Terminate opitimization when target function has reached a certain
+        value. `de_strategy` -- Specify a certain Differential Evolution
+        strategy from the list above. String input e.g.
+        DE_rand_either_or_algorithm. `filter_fn` -- Optional function that
+        implements nonlinear constraints. `logger` -- Configured logger to use.
         `seed` -- Seed to initialize NumPy's random number generator
         '''
 
@@ -122,7 +121,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
             self.logger = logging.getLogger('gc3.gc3libs')
 
         # save parameters
-        self.dim = dim
+        self.dim = len(initial_pop[0])
         self.de_step_size = de_step_size
         self.prob_crossover = prob_crossover
         self.itermax = itermax
@@ -229,31 +228,6 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
             create_fn=lambda : evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy),
             filter_fn=self.filter_fn
         )
-
-    #def evolve(self):
-        #modified_pop = evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy)
-        ## re-evolve if some members do not fullfill fiter_fn
-        #ctr = 0
-        #max_n_resample = 100
-        #pop_valid_orig = self.filter_fn(modified_pop)
-        #n_invalid_orig = (pop_valid_orig == False).sum()
-        #fillin_pop = self.pop[~pop_valid_orig]
-        #total_filled = 0
-        #while total_filled < n_invalid_orig and ctr < max_n_resample:
-            #reevolved_pop = evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy)
-            #pop_valid = self.filter_fn(reevolved_pop)
-            #n_pop_valid = (pop_valid == True).sum()
-            #new_total_filled = min(total_filled + n_pop_valid, len(fillin_pop))
-            #fillin_pop[total_filled:new_total_filled] = reevolved_pop[pop_valid]
-            #total_filled = new_total_filled
-        #if total_filled < n_invalid_orig:
-            #self.logger.warning(
-                #"%d population members are invalid even after re-sampling %d times."
-                #"  You might want to increase `max_n_resample`.",
-                #(n_invalid_orig - total_filled), max_n_resample)
-        #modified_pop[~pop_valid_orig] = fillin_pop
-        #return modified_pop
-
 
     # Adjustments for pickling
     def __getstate__(self):
@@ -388,7 +362,7 @@ class DifferentialEvolutionSequential(DifferentialEvolutionAlgorithm):
     1) Target function that takes x and generates f(x)
     2) filter_fn function that takes x and generates constraint function values c(x) >= 0.
     '''
-    def __init__(self, initial_pop, dim, target_fn, de_step_size = 0.85,
+    def __init__(self, initial_pop, target_fn, de_step_size = 0.85,
                  prob_crossover = 1.0, itermax = 100,
                  dx_conv_crit = None, y_conv_crit = None,
                  de_strategy = 'DE_rand', filter_fn=None, logger=None, seed=None):
@@ -401,7 +375,7 @@ class DifferentialEvolutionSequential(DifferentialEvolutionAlgorithm):
         '''
 
         DifferentialEvolutionAlgorithm.__init__(
-            self, initial_pop, dim,
+            self, initial_pop, 
             de_step_size, prob_crossover, itermax,
             dx_conv_crit, y_conv_crit,
             de_strategy, filter_fn, logger, seed)
