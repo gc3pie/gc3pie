@@ -89,7 +89,8 @@ class GlobalOptimizer(SequentialTaskCollection):
 
     :param path_to_stage_dir: directory in which to perform the optimization.
 
-    :param optimizer:         Optimizer instance that conforms to the abstract class optimization algorithm.
+    :param optimizer: Optimizer instance that conforms to the abstract class
+     optimization algorithm.
 
     :param task_constructor: A function that takes a list of x vectors
                              and the path to the current iteration
@@ -186,18 +187,28 @@ class ComputeTargetVals(ParallelTaskCollection):
     Generate a list of tasks and initialize a ParallelTaskCollection with them.
 
     :param inParaCombos: List of tuples defining the parameter combinations.
-    :param jobname: Name of GlobalOptimizer instance driving the optimization.
-    :param iteration: Current iteration number.
-    :param path_to_stage_dir: Path to directory in which optimization takes place.
-    :param cur_pop_file: Filename under which the population is stored in the current iteration dir. The population is discarded if no file is specified.
-    :param task_constructor: Takes a list of x vectors and the path to the current iteration directory. Returns Application instances that can be executed on the grid.
+    
+    :param jobname: Name of GlobalOptimizer instance driving the
+     optimization. 
+    
+    :param iteration: Current iteration number. 
+    
+    :param path_to_stage_dir: Path to directory in which optimization takes
+    place.
+
+    :param cur_pop_file: Filename under which the population is stored in the
+    current iteration dir. The population is discarded if no file is
+    specified. :param task_constructor: Takes a list of x vectors and the
+    path to the current iteration directory. Returns Application instances
+    that can be executed on the grid.
     """
 
     def __str__(self):
         return self.jobname
 
 
-    def __init__(self, inParaCombos, jobname, iteration, path_to_stage_dir, cur_pop_file, task_constructor, **extra_args):
+    def __init__(self, inParaCombos, jobname, iteration, path_to_stage_dir,
+                 cur_pop_file, task_constructor, **extra_args):
 
         log.debug('entering ComputeTargetVals.__init__')
 
@@ -214,11 +225,15 @@ class ComputeTargetVals(ParallelTaskCollection):
         # Log activity
         cDate = datetime.date.today()
         cTime = datetime.datetime.time(datetime.datetime.now())
-        date_string = '%04d--%02d--%02d--%02d--%02d--%02d' % (cDate.year, cDate.month, cDate.day, cTime.hour, cTime.minute, cTime.second)
+        date_string = 
+        '%04d--%02d--%02d--%02d--%02d--%02d' % (cDate.year, cDate.month, 
+                                                cDate.day, cTime.hour, 
+                                                cTime.minute, cTime.second)
         gc3libs.log.debug('Establishing parallel task on %s', date_string)
 
         # Enter an iteration specific folder
-        self.iterationFolder = os.path.join(self.path_to_stage_dir, 'Iteration-' + str(self.iteration))
+        self.iterationFolder = os.path.join(self.path_to_stage_dir,
+                                            'Iteration-' + str(self.iteration))
         try:
             os.mkdir(self.iterationFolder)
         except OSError:
@@ -226,9 +241,12 @@ class ComputeTargetVals(ParallelTaskCollection):
 
         # save population to file
         if cur_pop_file:
-            np.savetxt(os.path.join(self.iterationFolder, cur_pop_file), inParaCombos, delimiter = '  ')
+            np.savetxt(os.path.join(self.iterationFolder, cur_pop_file),
+                       inParaCombos, delimiter = ' ')
 
-        self.tasks = [ task_constructor(x_vec, self.iterationFolder) for x_vec in inParaCombos ]
+        self.tasks = [
+            task_constructor(x_vec, self.iterationFolder) for x_vec in inParaCombos
+        ]
         ParallelTaskCollection.__init__(self, self.tasks, **extra_args)
 
 
