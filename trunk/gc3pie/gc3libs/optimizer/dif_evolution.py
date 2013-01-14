@@ -36,7 +36,7 @@ from gc3libs.optimizer import EvolutionaryAlgorithm
 
 np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
-from gc3libs.optimizer import draw_population
+from gc3libs.optimizer import draw_population, populate
 
 
 # Variable changes from matlab implementation
@@ -224,30 +224,35 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
 
         return
 
-
     def evolve(self):
-        modified_pop = evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy)
-        # re-evolve if some members do not fullfill fiter_fn
-        ctr = 0
-        max_n_resample = 100
-        pop_valid_orig = self.filter_fn(modified_pop)
-        n_invalid_orig = (pop_valid_orig == False).sum()
-        fillin_pop = self.pop[~pop_valid_orig]
-        total_filled = 0
-        while total_filled < n_invalid_orig and ctr < max_n_resample:
-            reevolved_pop = evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy)
-            pop_valid = self.filter_fn(reevolved_pop)
-            n_pop_valid = (pop_valid == True).sum()
-            new_total_filled = min(total_filled + n_pop_valid, len(fillin_pop))
-            fillin_pop[total_filled:new_total_filled] = reevolved_pop[pop_valid]
-            total_filled = new_total_filled
-        if total_filled < n_invalid_orig:
-            self.logger.warning(
-                "%d population members are invalid even after re-sampling %d times."
-                "  You might want to increase `max_n_resample`.",
-                (n_invalid_orig - total_filled), max_n_resample)
-        modified_pop[~pop_valid_orig] = fillin_pop
-        return modified_pop
+        return populate(
+            create_fn=lambda : evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy),
+            filter_fn=self.filter_fn
+        )
+
+    #def evolve(self):
+        #modified_pop = evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy)
+        ## re-evolve if some members do not fullfill fiter_fn
+        #ctr = 0
+        #max_n_resample = 100
+        #pop_valid_orig = self.filter_fn(modified_pop)
+        #n_invalid_orig = (pop_valid_orig == False).sum()
+        #fillin_pop = self.pop[~pop_valid_orig]
+        #total_filled = 0
+        #while total_filled < n_invalid_orig and ctr < max_n_resample:
+            #reevolved_pop = evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy)
+            #pop_valid = self.filter_fn(reevolved_pop)
+            #n_pop_valid = (pop_valid == True).sum()
+            #new_total_filled = min(total_filled + n_pop_valid, len(fillin_pop))
+            #fillin_pop[total_filled:new_total_filled] = reevolved_pop[pop_valid]
+            #total_filled = new_total_filled
+        #if total_filled < n_invalid_orig:
+            #self.logger.warning(
+                #"%d population members are invalid even after re-sampling %d times."
+                #"  You might want to increase `max_n_resample`.",
+                #(n_invalid_orig - total_filled), max_n_resample)
+        #modified_pop[~pop_valid_orig] = fillin_pop
+        #return modified_pop
 
 
     # Adjustments for pickling
