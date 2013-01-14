@@ -42,7 +42,7 @@ from gc3libs.optimizer.utils import update_parameter_in_file
 
 # optimizer specific imports
 from gc3libs.optimizer import GlobalOptimizer
-from gc3libs.optimizer.dif_evolution import DifferentialEvolutionParallel
+from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
 
 import numpy as np
 
@@ -161,9 +161,9 @@ class RosenbrockScript(SessionBasedScript):
         lower_bounds = -2 * np.ones(dim)
         upper_bounds = +2 * np.ones(dim)
         
-        initial_pop = draw_population(lower_bounds, upper_bounds, pop_size, dim)
+        initial_pop = draw_population(lower_bds=lower_bounds, upper_bds=upper_bounds, size=pop_size, dim=dim)
  
-        de_solver = DifferentialEvolutionParallel(
+        de_solver = DifferentialEvolutionAlgorithm(
             dim = dim,          # number of parameters of the objective function
          #   pop_size = 100,     # number of population members
             initial_pop = initial_pop,
