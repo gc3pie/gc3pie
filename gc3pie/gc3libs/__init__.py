@@ -87,10 +87,6 @@ class Default(object):
     SUBPROCESS_LRMS = 'subprocess'
     EC2_BOTO_LRMS = 'ec2boto'
     EC2_LIBCLOUD_LRMS = 'ec2libcloud'
-    # Maximum time to wait for the VM to become running
-    EC2_MAX_WAITING_TIME_FOR_VM_TO_BECOME_RUNNING = 180
-    # Time to sleep between two check of the VM status.
-    EC2_MIN_WAIT_TIME = 5
 
     # Transport information
     SSH_PORT = 22
