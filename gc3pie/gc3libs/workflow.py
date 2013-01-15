@@ -10,7 +10,7 @@ patterns of job group execution; they can be combined to form more
 complex workflows.  Hook methods are provided so that derived classes
 can implement problem-specific job control policies.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -30,7 +30,6 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 import time
-import operator
 import os
 
 from gc3libs.compat._collections import defaultdict
@@ -67,7 +66,12 @@ class TaskCollection(Task):
         and should be saved to persistent storage.
         """
         def fget(self):
-            return self._changed or operator.or_(task.changed for task in self.tasks)
+            if self._changed:
+                return True
+            for task in self.tasks:
+                if task._changed:
+                    return True
+            return False
         def fset(self, value):
             self._changed = value
         return locals()
