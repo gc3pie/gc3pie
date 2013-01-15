@@ -59,7 +59,7 @@ class EC2Lrms(LRMS):
                  max_memory_per_core, max_walltime,
                  # these are specific of the EC2Lrms class
                  ec2_region, ec2_url,
-                 keypair_name, public_key, image_id,
+                 keypair_name, public_key, image_id, instance_type=None,
                  auth=None, **extra_args):
         LRMS.__init__(
             self, name,
@@ -92,6 +92,8 @@ class EC2Lrms(LRMS):
         self.public_key = public_key
 
         self.image_id = image_id
+        self.instance_type = instance_type
+
         self._parse_security_group()
 
         args = {'aws_access_key_id': self.ec2_access_key,
@@ -309,15 +311,16 @@ class EC2Lrms(LRMS):
 
         return self.resources[app.ec2_instance_id].update_job_state(app)
 
-    def _create_instance(self):
+    def _create_instance(self, image_id, instance_type=None):
         """
         Create an instance.
         """
         args = {'key_name':  self.keypair_name,
                 'min_count': 1,
                 'max_count': 1}
-        if 'instance_type' in self:
+        if instance_type:
             args['instance_type'] = self.instance_type
+
         if 'user_data' in self:
             args['user_data'] = self.user_data
 
@@ -368,8 +371,8 @@ class EC2Lrms(LRMS):
 
         # FIXME: we should add check/creation of proper security
         # groups
-        gc3libs.log.debug("Create new VM using image id `%s`" % self.image_id)
-        reservation = self._conn.run_instances(self.image_id, **args)
+        gc3libs.log.debug("Create new VM using image id `%s`" % image_id)
+        reservation = self._conn.run_instances(image_id, **args)
         vm = reservation.instances[0]
 
         gc3libs.log.info(
@@ -400,7 +403,9 @@ class EC2Lrms(LRMS):
         if hasattr(job, 'ec2_instance_id'):
             vm = self._get_vm(job.ec2_instance_id)
         else:
-            vm = self._create_instance()
+            image_id = job.get('ec2_image_id', self.image_id)
+            instance_type = job.get('ec2_instance_type', self.instance_type)
+            vm = self._create_instance(image_id, instance_type=instance_type)
             job.ec2_instance_id = vm.id
             job.changed = True
 

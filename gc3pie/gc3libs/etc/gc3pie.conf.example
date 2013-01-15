@@ -304,11 +304,16 @@ architecture=x64_64
 # 
 # vm_auth=ubuntu_ssh
 
-# `instance_type` can be null. In this case, `m1.small` will be used.
+# Default instance type to use. If `instance_type` is empty or not
+# defined, `m1.small` will be used instead. If an Application() has an
+# `ec2_instance_type` attribute, it will be used instead of the
+# default one.
 # 
 # instance_type=m1.small
 
-# Image id to use
+# Default image id to use (in EC2 format). If an Application() has an
+# `ec2_image_id` attribute, it will be used instead of the default
+# one.
 # 
 # image_id=ami-0000001f
 
