@@ -85,8 +85,7 @@ class Default(object):
     SHELLCMD_LRMS = 'shellcmd'
     SLURM_LRMS = 'slurm'
     SUBPROCESS_LRMS = 'subprocess'
-    EC2_BOTO_LRMS = 'ec2boto'
-    EC2_LIBCLOUD_LRMS = 'ec2libcloud'
+    EC2_LRMS = 'ec2'
 
     # Transport information
     SSH_PORT = 22
