@@ -328,8 +328,20 @@ architecture=x64_64
 # the security group.
 #
 # security_group_name=gc3pie_ssh
-# security_group_rules=tcp:22:22:0.0.0.0/0
-#   icmp:-1:-1:0.0.0.0/0
+# security_group_rules=tcp:22:22:0.0.0.0/0,icmp:-1:-1:0.0.0.0/0
+#
+# `security_group_rules` is a comma separated list of security
+# rules. Each rule is basically an entry in the firewall to allow some
+# internet traffic.  A rule specification is the form:
+#
+#   <rule>    : protocol:from_port:to_port:ipnetwork
+#
+# where:
+#
+#   `protocol` is one of "icmp", "udp", "tcp"
+#   from_port  is an integer (use -1 for icmp)
+#   to_port    is an integer (use -1 for icmp)
+#   ipnetwork  is a network specification in the form `IP/netmask` (0.0.0.0/0 for any ip)
 
 # Values currently used by the resource broker of GC3Pie.
 #

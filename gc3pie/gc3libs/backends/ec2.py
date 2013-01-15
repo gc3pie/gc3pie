@@ -193,10 +193,10 @@ class EC2Lrms(LRMS):
         Parse configuration file and set `self.security_group_rules`
         with a list of dictionaries containing the rule sets
         """
-        rules = self.security_group_rules.split('\n')
+        rules = self.security_group_rules.split(',')
         self.security_group_rules = []
         for rule in rules:
-            rulesplit = rule.split(':')
+            rulesplit = rule.strip().split(':')
             if len(rulesplit) != 4:
                 gc3libs.log.warning("Invalid rule specification in"
                                     " `security_group_rules`: %s" % rule)
