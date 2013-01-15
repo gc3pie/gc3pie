@@ -87,8 +87,6 @@ setuptools.setup(
         'pyCLI>=2.0.3',
         # Needed by SqlStore
         'sqlalchemy',
-        # Needed by ShellCmd backend
-        'psutil>=0.6.1',
         # Needed for parsing human-readable dates (gselect uses it).
         'parsedatetime',
         # needed by Benjamin's DE optimizer code
