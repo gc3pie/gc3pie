@@ -41,7 +41,7 @@ from gc3libs.cmdline import SessionBasedScript
 from gc3libs.optimizer.utils import update_parameter_in_file
 
 # optimizer specific imports
-from gc3libs.optimizer import GlobalOptimizer
+from gc3libs.optimizer import GridOptimizer
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
 
 import numpy as np
@@ -59,7 +59,7 @@ def nlc(x):
 def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     """
     Given solver guess `x_vals`, return an instance of :class:`Application`
-    set up to produce the output :def:`target_fun` of :class:`GlobalOptimizer`
+    set up to produce the output :def:`target_fun` of :class:`GridOptimizer`
     analyzes to produce the corresponding function values.
     """
     import shutil
@@ -179,12 +179,12 @@ class RosenbrockScript(SessionBasedScript):
         jobname = 'rosenbrock'
         kwargs = extra.copy()
         kwargs['path_to_stage_dir'] = optimization_dir
-        kwargs['optimizer'] = de_solver
+        kwargs['opt_algorithm'] = de_solver
         kwargs['task_constructor'] = task_constructor_rosenbrock
         kwargs['target_fun'] = compute_target_rosenbrock
         kwargs['cur_pop_file'] = 'cur_pop'
 
-        return [GlobalOptimizer(jobname=jobname, **kwargs)]
+        return [GridOptimizer(jobname=jobname, **kwargs)]
 
 if __name__ == '__main__':
     print 'starting'

@@ -90,7 +90,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     `de_opt` and `iterate` (see code for
     `DifferentialEvolutionSequential`) when needed.  An example of how
     :class:`DifferentialEvolutionAlgorithm` can be used is found in
-    `GlobalOptimizer` located in `optimizer/__init__.py`.
+    `GridOptimizer` located in `optimizer/__init__.py`.
 
     '''
 
