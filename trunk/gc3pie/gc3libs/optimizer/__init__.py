@@ -7,7 +7,7 @@ Optimization algorithm (for example Ken Price's Differential
 Evolution algorithm) generates guesses that are evaluated in parallel
 using gc3pie.
 
-An instance of :class:`GlobalOptimizer` will perform the entire optimization
+An instance of :class:`GridOptimizer` will perform the entire optimization
 in a directory on the local machine named `path_to_stage_dir`.
 
 At each iteration an instance of 'ComputeTargetVals' lets the user-defined
@@ -18,7 +18,7 @@ function `target_fun`. This function returns the function value for all
 analyzed input vectors.
 
 With this information, the optimizer generates a new guess. The instance of
-:class:`GlobalOptimizer` iterates until the sepcified convergence criteria
+:class:`GridOptimizer` iterates until the sepcified convergence criteria
 is satisfied.
 """
 # Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
@@ -70,27 +70,36 @@ from gc3libs import Application, Run, Task
 gc3libs.configure_logger(level=logging.CRITICAL)
 
 # Generate a separate logging instance. Careful, running gc3libs.configure_logger again will
-log = logging.getLogger('gc3.gc3libs.GlobalOptimizer')
+log = logging.getLogger('gc3.gc3libs.GridOptimizer')
 log.setLevel(logging.DEBUG)
 log.propagate = 0
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.DEBUG)
-log_file_name = os.path.join(gc3libs.Default.RCDIR, 'GlobalOptimizer.log')
+log_file_name = os.path.join(gc3libs.Default.RCDIR, 'GridOptimizer.log')
 file_handler = logging.FileHandler(log_file_name, mode = 'w')
 file_handler.setLevel(logging.DEBUG)
 log.addHandler(stream_handler)
 log.addHandler(file_handler)
 
 
-class GlobalOptimizer(SequentialTaskCollection):
+
+# Could call this GridOptimizer
+
+# class LocalOptimizer
+# SequentialOptimizer
+# OptimizeLocal
+
+# gc3Optimizer
+# DistributedOptimizer
+class GridOptimizer(SequentialTaskCollection):
     """Main loop for the global optimizer.
 
     :param str jobname:       string that labels this optimization case.
 
     :param path_to_stage_dir: directory in which to perform the optimization.
 
-    :param optimizer: Optimizer instance that conforms to the abstract class
-     optimization algorithm.
+    :param opt_algorithm:    Evolutionary algorithm instance that conforms 
+                             to :class:`EvolutionaryAlgorithm`. 
 
     :param task_constructor: A function that takes a list of x vectors
                              and the path to the current iteration
@@ -111,23 +120,23 @@ class GlobalOptimizer(SequentialTaskCollection):
     """
 
     def __init__(self, jobname = '', path_to_stage_dir = '',
-                 optimizer = None, task_constructor = None,
+                 opt_algorithm = None, task_constructor = None,
                  target_fun = None, cur_pop_file = '',
                  **extra_args ):
 
-        log.debug('entering GlobalOptimizer.__init__')
+        log.debug('entering GridOptimizer.__init__')
 
         # Set up initial variables and set the correct methods.
         self.jobname = jobname
         self.path_to_stage_dir = path_to_stage_dir
-        self.optimizer = optimizer
+        self.opt_algorithm = opt_algorithm
         self.target_fun = target_fun
         self.task_constructor = task_constructor
         self.cur_pop_file = cur_pop_file
         self.extra_args = extra_args
         self.output_dir = os.getcwd()
 
-        self.evaluator = ComputeTargetVals(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter,
+        self.evaluator = ComputeTargetVals(self.opt_algorithm.new_pop, self.jobname, self.opt_algorithm.cur_iter,
                                            path_to_stage_dir, self.cur_pop_file, task_constructor)
 
         initial_task = self.evaluator
@@ -136,27 +145,25 @@ class GlobalOptimizer(SequentialTaskCollection):
 
 
     def next(self, *args):
-        log.debug('entering GlobalOptimizer.next')
+        log.debug('entering GridOptimizer.next')
 
         self.changed = True
         # pass on (popMem, Application)
-        pop_task_tuple = [(popEle, task) for (popEle, task) in zip(self.optimizer.new_pop, self.evaluator.tasks)]
+        pop_task_tuple = [(popEle, task) for (popEle, task) in zip(self.opt_algorithm.new_pop, self.evaluator.tasks)]
 
         newVals = self.target_fun(pop_task_tuple)
-        self.optimizer.update_opt_state(newVals)
+        self.opt_algorithm.update_opt_state(newVals)
 
-        if not self.optimizer.has_converged():
-            self.optimizer.new_pop = self.optimizer.evolve()
-            # Check constraints and resample points to maintain population size.
-  #          self.optimizer.new_pop = self.optimizer.enforce_constr_re_evolve(self.optimizer.new_pop)
-            self.evaluator = ComputeTargetVals(self.optimizer.new_pop, self.jobname, self.optimizer.cur_iter,
+        if not self.opt_algorithm.has_converged():
+            self.opt_algorithm.new_pop = self.opt_algorithm.evolve()
+            self.evaluator = ComputeTargetVals(self.opt_algorithm.new_pop, self.jobname, self.opt_algorithm.cur_iter,
                                                self.path_to_stage_dir, self.cur_pop_file, self.task_constructor)
             self.add(self.evaluator)
         else:
-            # !! save should be optional !!
+            self.execution.returncode = 0
+            # ! should we keep creation of a file to signal completion??
             open(os.path.join(self.path_to_stage_dir, 'job_done'), 'w')
             # report success of sequential task
-            self.execution.returncode = 0
             return Run.State.TERMINATED
         return Run.State.RUNNING
 
@@ -168,7 +175,7 @@ class GlobalOptimizer(SequentialTaskCollection):
     # def __getstate__(self):
     #     state = Task.__getstate__(self)
     #     # Check that there are no functions in state.
-    #     #for attr in ['optimizer']:
+    #     #for attr in ['opt_algorithm']:
     #         ## 'task_constructor', 'target_fun', 'tasks',
     #         #del state[attr]
     #    # state = None
@@ -188,7 +195,7 @@ class ComputeTargetVals(ParallelTaskCollection):
 
     :param inParaCombos: List of tuples defining the parameter combinations.
     
-    :param jobname: Name of GlobalOptimizer instance driving the
+    :param jobname: Name of GridOptimizer instance driving the
      optimization. 
     
     :param iteration: Current iteration number. 

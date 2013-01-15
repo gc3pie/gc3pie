@@ -43,7 +43,7 @@ import gc3libs
 gc3libs.configure_logger(logging.DEBUG)
 
 # optimizer specific imports
-from gc3libs.optimizer import GlobalOptimizer
+from gc3libs.optimizer import GridOptimizer
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionParallel
 
 optimization_dir = os.path.join(os.getcwd(), 'optimizeGeometry')
@@ -130,7 +130,7 @@ C1
 def task_constructor_geometries(x_vals, iteration_directory, **extra_args):
     '''
     Given solver guess `x_vals`, return an instance of :class:`Application`
-    set up to produce the output :def:`target_fun` of :class:`GlobalOptimizer`
+    set up to produce the output :def:`target_fun` of :class:`GridOptimizer`
     analyzes to produce the corresponding function values.
     '''
     import shutil
@@ -250,11 +250,11 @@ class GeometriesScript(SessionBasedScript):
         jobname = 'geometries'
         kwargs = extra.copy()
         kwargs['path_to_stage_dir'] = path_to_stage_dir
-        kwargs['optimizer'] = de_solver
+        kwargs['opt_algorithm'] = de_solver
         kwargs['task_constructor'] = task_constructor_geometries
         kwargs['target_fun'] = compute_target_geometries
 
-        return [GlobalOptimizer(jobname=jobname, **kwargs)]
+        return [GridOptimizer(jobname=jobname, **kwargs)]
 
 
 
