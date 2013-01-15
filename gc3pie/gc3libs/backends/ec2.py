@@ -27,8 +27,16 @@ import paramiko
 import time
 
 # EC2 APIs
-import boto
-import boto.ec2.regioninfo
+try:
+    import boto
+    import boto.ec2.regioninfo
+except ImportError:
+    from gc3libs.exceptions import ConfigurationError
+    raise ConfigurationError(
+        "EC2 backend has been requested but no `boto` package"
+        " was found. Please, install `boto` with `pip boto`"
+        " or `easy_install boto` and try again, or update your"
+        " configuration file.")
 
 # GC3Pie imports
 import gc3libs

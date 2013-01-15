@@ -487,11 +487,14 @@ class Configuration(gc3libs.utils.Struct):
                     continue
                 assert name == backend.name
             except Exception, err:
+                # Print the backtrace only if loglevel is DEBUG or
+                # more.
+                exc_info = gc3libs.log.level <= gc3libs.logging.DEBUG
                 gc3libs.log.warning(
                     "Failed creating backend for resource '%s' of type '%s': %s: %s",
                     resdict.get('name', '(unknown name)'),
                     resdict.get('type', '(unknown type)'),
-                    err.__class__.__name__, str(err), exc_info=__debug__)
+                    err.__class__.__name__, str(err), exc_info=exc_info)
                 if ignore_errors:
                     continue
                 else:
