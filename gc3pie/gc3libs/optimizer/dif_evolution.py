@@ -83,33 +83,42 @@ from gc3libs.optimizer import draw_population, populate
 
 class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     '''
-    :class:`DifferentialEvolutionAlgorithm` explicitly allows for
-    an another process to control the optimization. The methods
-    `de_opt` and `iterate` are left unspecified and the outside
-    process can instead directly call the methods that are called by
-    `de_opt` and `iterate` (see code for
-    `DifferentialEvolutionSequential`) when needed.  An example of how
+    Differential Evolution Optimizer class.
+    :class:`DifferentialEvolutionAlgorithm` explicitly allows for an another
+    process to control the optimization. The methods `de_opt` and `iterate` are
+    left unspecified and the outside process can instead directly call the
+    methods that are called by `de_opt` and `iterate` (see code for
+    `DifferentialEvolutionSequential`) when needed. An example of how
     :class:`DifferentialEvolutionAlgorithm` can be used is found in
     `GridOptimizer` located in `optimizer/__init__.py`.
 
+    :param str de_strategy: e.g. DE_rand_either_or_algorithm. Allowed are: 
+    :param `de_step_size`: Differential Evolution step size. 
+    :param `prob_crossover`: Probability new population draws will replace old members. 
+    :param `itermax`: Maximum # of iterations. 
+    :param `dx_conv_crit`: Abort optimization if all population members are within a certain distance to each other.
+    :param `y_conv_crit`: Declare convergence when the target function is below a `y_conv_crit`. 
+    :param `filter_fn`: Optional function that implements nonlinear constraints. 
+    :param `logger`: Configured logger to use.
+    :param `seed`: Seed to initialize NumPy's random number generator.
+
+    Full list of `de_strategy`s: 
+
+    1. DE_rand: The classical version of DE. 
+    2. DE_local_to_best: A version which has been used by quite a number of
+            scientists. Attempts a balance between robustness # and fast convergence. 
+    3. DE_best_with_jitter: Taylored for small population sizes and fast
+            convergence. # Dimensionality should not be too high.
+    4. DE_rand_with_per_vector_dither: Classical DE with dither to become even more robust. 
+    5. DE_rand_with_per_generation_dither: Classical DE with dither to become even more robust. 
+                                           Choosing de_step_size = 0.3 is a good start here. 
+    6. DE_rand_either_or_algorithm: Alternates between differential mutation and three-point- recombination. 
     '''
 
     def __init__(self, initial_pop, de_step_size = 0.85, prob_crossover = 1.0, itermax = 100,
                  dx_conv_crit = None, y_conv_crit = None,
                  de_strategy = 'DE_rand', filter_fn=None, logger=None, seed=None):
-        '''
-        Arguments: 
-        `de_step_size` -- Differential Evolution step size. `prob_crossover` -- Probability new
-        population draws will replace old members. `itermax` -- Maximum # of
-        iterations. `dx_conv_crit` -- Abort optimization if all population
-        members are within a certain distance to each other. `y_conv_crit` --
-        Terminate opitimization when target function has reached a certain
-        value. `de_strategy` -- Specify a certain Differential Evolution
-        strategy from the list above. String input e.g.
-        DE_rand_either_or_algorithm. `filter_fn` -- Optional function that
-        implements nonlinear constraints. `logger` -- Configured logger to use.
-        `seed` -- Seed to initialize NumPy's random number generator
-        '''
+
 
         # Check input variables
         assert 0.0 <= prob_crossover <= 1.0, "prob_crossover should be from interval [0,1]"
@@ -148,29 +157,27 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         np.random.seed(seed)
 
 
-    def _default_filter_fn(self, x):
-        return np.array([ True ] * self.pop_size)
-
 
     def has_converged(self):
+        '''
+        Checks convergence based on two criteria: 
+
+        1) Is the lowest target value in the population below `y_conv_crit`. 
+        2) Are all population members within `dx_conv_crit` from the first population member. 
+        '''
         converged = False
-        # Check convergence
+        # Check `y_conv_crit`
         if self.bestval < self.y_conv_crit:
             converged = True
             self.logger.info('converged self.bestval < self.y_conv_crit')
-        if self.has_dx_converged():
+
+        # Check `dx_conv_crit`
+        dxs = np.abs(self.pop[:, :] - self.pop[0, :])
+        has_dx_converged = (dxs <= self.dx_conv_crit).all()        
+        if has_dx_converged:
             converged = True
             self.logger.info('converged self.population_converged(self.pop)')
         return converged
-
-
-    def has_dx_converged(self):
-        '''
-        Check if all population members are within the given dx limits.
-        '''
-        dxs = np.abs(self.pop[:, :] - self.pop[0, :])
-        return (dxs <= self.dx_conv_crit).all()
-
 
     def update_opt_state(self, new_vals):
         '''
@@ -209,7 +216,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
                     self.vals[k]   = new_vals[k].copy()                      # save value in "cost array"
 
             self.best_iter = self.best.copy()       # freeze the best member of this iteration for the coming
-                                                     # iteration. This is needed for some of the strategies.
+                                                        # iteration. This is needed for some of the strategies.
 
         self.logger.debug('new values %s', new_vals)
         self.logger.debug('best value %s', self.bestval)
@@ -221,10 +228,20 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         return
 
     def evolve(self):
+        '''
+        Generates a new population fullfilling `filter_fn`. 
+        '''
         return populate(
             create_fn=lambda : evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy),
             filter_fn=self.filter_fn
         )
+
+
+    def _default_filter_fn(self, x):
+        return np.array([ True ] * self.pop_size)
+
+
+
 
     # Adjustments for pickling
     def __getstate__(self):
@@ -251,6 +268,13 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
 def evolve_fn(population, prob_crossover, de_step_size, dim, best_iter, de_strategy):
     """
     Return new population, evolved according to `de_strategy`.
+
+    :param population: Population generating offspring from. 
+    :param prob_crossover: Probability new population draws will replace old members. 
+    :param de_step_size: Differential Evolution step size.
+    :param dim: Dimension of each population member. 
+    :param best_iter: Best population member of the current population. 
+    :param de_strategy: Differential Evolution strategy. See :class:`DifferentialEvolutionAlgorithm`.  
     """
 
     pop_size = len(population)
@@ -333,43 +357,20 @@ def evolve_fn(population, prob_crossover, de_step_size, dim, best_iter, de_strat
 
 
 class DifferentialEvolutionSequential(DifferentialEvolutionAlgorithm):
+
     '''
-    Differential Evolution Optimizer class.
-
-    Inputs:
-        # de_strategy    1 --> DE_rand:
-        #                      the classical version of DE.
-        #                2 --> DE_local_to_best:
-        #                      a version which has been used by quite a number
-        #                      of scientists. Attempts a balance between robustness
-        #                      and fast convergence.
-        #                3 --> DE_best_with_jitter:
-        #                      taylored for small population sizes and fast convergence.
-        #                      Dimensionality should not be too high.
-        #                4 --> DE_rand_with_per_vector_dither:
-        #                      Classical DE with dither to become even more robust.
-        #                5 --> DE_rand_with_per_generation_dither:
-        #                      Classical DE with dither to become even more robust.
-        #                      Choosing de_step_size = 0.3 is a good start here.
-        #                6 --> DE_rand_either_or_algorithm:
-        #                      Alternates between differential mutation and three-point-
-        #                      recombination.
-
-
-    1) Target function that takes x and generates f(x)
-    2) filter_fn function that takes x and generates constraint function values c(x) >= 0.
-    '''
-    def __init__(self, initial_pop, target_fn, de_step_size = 0.85,
-                 prob_crossover = 1.0, itermax = 100,
-                 dx_conv_crit = None, y_conv_crit = None,
-                 de_strategy = 'DE_rand', filter_fn=None, logger=None, seed=None):
-        '''
         In addition to initialization parameters of
         :class:`DifferentialEvolutionAlgorithm` (which see), there is
         one more:
 
         `target_fn` -- Function to evaluate a population and return the corresponding values.
-        '''
+    '''
+
+    def __init__(self, initial_pop, target_fn, de_step_size = 0.85,
+                 prob_crossover = 1.0, itermax = 100,
+                 dx_conv_crit = None, y_conv_crit = None,
+                 de_strategy = 'DE_rand', filter_fn=None, logger=None, seed=None):
+
 
         DifferentialEvolutionAlgorithm.__init__(
             self, initial_pop, 
@@ -381,7 +382,7 @@ class DifferentialEvolutionSequential(DifferentialEvolutionAlgorithm):
 
     def de_opt(self):
         '''
-        Perform global optimization.
+        Drives optimization until convergence or `itermax` is reached. 
         '''
         self.logger.debug('entering de_opt')
         has_converged = False
@@ -391,6 +392,13 @@ class DifferentialEvolutionSequential(DifferentialEvolutionAlgorithm):
 
 
     def iterate(self):
+        '''
+        Performs one step in the optimization process using 
+        :class:`DifferentialEvolutionAlgorithm`:`evolve` to generate a new population, 
+        `target_fn` to evaluate the new population and 
+        :class:`DifferentialEvolutionAlgorithm`:`update_op_state` to retain the surviving 
+        population. 
+        '''
         if self.cur_iter == 0:
             self.pop = self.new_pop.copy()
         elif self.cur_iter > 0:
