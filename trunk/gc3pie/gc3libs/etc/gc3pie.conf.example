@@ -264,16 +264,15 @@ architecture=x64_64
 # access the VM. It is usually a `shellcmd` backend with `ssh`
 # transport, but in the future this may change.
 #
-# The `type` option defines which backend we want to use and which
-# subresource type. The syntax is:
+# The `type` option defines which backend we want to use for the
+# subresource. The syntax is:
 #
-# `backend`+`subresourcetype`
+# ec2+`subresourcetype`
 #
-# where `backend` is one of `ec2boto` or `ec2libcloud` (`ec2boto` is
-# currently the suggested one) while `subresourcetype` can currently
-# be only `shellcmd`
+# where `subresourcetype` is any valid resource type. However, we
+# currently only support `shellcmd`.
 # 
-# type=ec2boto+shellcmd
+# type=ec2+shellcmd
 
 # If `ec2_url` is empty, then the `EC2_URL` environment variable
 # is will be used, if any. If EC2_URL is empty too, the default url
