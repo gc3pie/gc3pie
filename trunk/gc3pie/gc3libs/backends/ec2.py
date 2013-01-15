@@ -40,7 +40,7 @@ except ImportError:
 
 # GC3Pie imports
 import gc3libs
-from gc3libs.exceptions import RecoverableError, UnrecoverableError
+from gc3libs.exceptions import RecoverableError, UnrecoverableError, ConfigurationError
 import gc3libs.url
 from gc3libs import Run
 from gc3libs.utils import same_docstring_as
@@ -59,7 +59,7 @@ class EC2Lrms(LRMS):
                  max_memory_per_core, max_walltime,
                  # these are specific of the EC2Lrms class
                  ec2_region, ec2_url,
-                 keypair_name, public_key, image_id, instance_type=None,
+                 keypair_name, public_key, image_id=None, image_name=None, instance_type=None,
                  auth=None, **extra_args):
         LRMS.__init__(
             self, name,
@@ -91,9 +91,6 @@ class EC2Lrms(LRMS):
         self.keypair_name = keypair_name
         self.public_key = public_key
 
-        self.image_id = image_id
-        self.instance_type = instance_type
-
         self._parse_security_group()
 
         args = {'aws_access_key_id': self.ec2_access_key,
@@ -112,6 +109,26 @@ class EC2Lrms(LRMS):
                 args['is_secure'] = False
 
         self._conn = boto.connect_ec2(**args)
+
+        if image_id:
+            self.image_id = image_id
+        elif image_name:
+            all_images = self._conn.get_all_images()
+            images = [i for i in all_images if i.name == image_name]
+            if not images:
+                raise ConfigurationError(
+                    "Image with name `%s` not found. Please specify a valid"
+                    " image name or image id in the configuration file."
+                    % image_name)
+            elif len(images) != 1:
+                raise ConfigurationError(
+                    "Multiple images found with name `%s`: %s"
+                    " Please specify an unique image id in configuration"
+                    " file." % (image_name, [i.id for i in images]))
+        else:
+            raise ConfigurationError(
+                "Nor `image_id` or `image_name` has been specified in the configuration file.")
+        self.instance_type = instance_type
 
         # `self.subresource_args` is used to create subresources
         self.subresource_args = extra_args
