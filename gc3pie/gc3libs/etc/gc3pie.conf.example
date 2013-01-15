@@ -317,6 +317,12 @@ architecture=x64_64
 # 
 # image_id=ami-0000001f
 
+# Default image name to use. The value of `image_name` is ignored if
+# `image_id` is present. Moreover, an error is raised if more than one
+# image with the same image name is available on the cloud.
+#
+# image_name
+
 # `user_data` is a script passed to the virtual machine and executed
 # right after the startup procedure.
 #
