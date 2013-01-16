@@ -36,17 +36,20 @@ from gc3libs import log, Run
 from gc3libs.utils import same_docstring_as, samefile, copy_recursively, Struct
 from gc3libs.backends import LRMS
 
-def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_dir, local_relpath):
+
+def _make_remote_and_local_path_pair(transport, job, remote_relpath,
+                                     local_root_dir, local_relpath):
     """
     Return list of (remote_path, local_path) pairs corresponding to
     """
     # see https://github.com/fabric/fabric/issues/306 about why it is
-    # correct to use `posixpath.join` for remote paths (instead of `os.path.join`)
+    # correct to use `posixpath.join` for remote paths (instead of
+    # `os.path.join`)
     remote_path = posixpath.join(job.execution.lrms_execdir, remote_relpath)
     local_path = os.path.join(local_root_dir, local_relpath)
     if transport.isdir(remote_path):
         # recurse, accumulating results
-        result = [ ]
+        result = list()
         for entry in transport.listdir(remote_path):
             result += _make_remote_and_local_path_pair(
                 transport, job,
@@ -55,6 +58,7 @@ def _make_remote_and_local_path_pair(transport, job, remote_relpath, local_root_
         return result
     else:
         return [(remote_path, local_path)]
+
 
 class ShellcmdLrms(LRMS):
     """
@@ -81,7 +85,28 @@ class ShellcmdLrms(LRMS):
     """
 
     # this matches what the ARC grid-manager does
-    TIMEFMT = "WallTime=%es\nKernelTime=%Ss\nUserTime=%Us\nCPUUsage=%P\nMaxResidentMemory=%MkB\nAverageResidentMemory=%tkB\nAverageTotalMemory=%KkB\nAverageUnsharedMemory=%DkB\nAverageUnsharedStack=%pkB\nAverageSharedMemory=%XkB\nPageSize=%ZB\nMajorPageFaults=%F\nMinorPageFaults=%R\nSwaps=%W\nForcedSwitches=%c\nWaitSwitches=%w\nInputs=%I\nOutputs=%O\nSocketReceived=%r\nSocketSent=%s\nSignals=%k\nReturnCode=%x\n"
+    TIMEFMT = """WallTime=%es
+KernelTime=%Ss
+UserTime=%Us
+CPUUsage=%P
+MaxResidentMemory=%MkB
+AverageResidentMemory=%tkB
+AverageTotalMemory=%KkB
+AverageUnsharedMemory=%DkB
+AverageUnsharedStack=%pkB
+AverageSharedMemory=%XkB
+PageSize=%ZB
+MajorPageFaults=%F
+MinorPageFaults=%R
+Swaps=%W
+ForcedSwitches=%c
+WaitSwitches=%w
+Inputs=%I
+Outputs=%O
+SocketReceived=%r
+SocketSent=%s
+Signals=%k
+ReturnCode=%x"""
     WRAPPER_DIR = '.gc3pie_shellcmd'
     WRAPPER_SCRIPT = 'wrapper_script.sh'
     WRAPPER_OUTPUT_FILENAME = 'resource_usage.txt'
@@ -141,7 +166,8 @@ class ShellcmdLrms(LRMS):
             raise gc3libs.exceptions.InvalidArgument(
                 "Invalid field `lrms_jobid` in Job '%s':"
                 " expected a number, got '%s' (%s) instead"
-                % (app, app.execution.lrms_jobid, type(app.execution.lrms_jobid)))
+                % (app, app.execution.lrms_jobid,
+                   type(app.execution.lrms_jobid)))
 
         self.transport.connect()
         exit_code, stdout, stderr = self.transport.execute_command(
@@ -151,7 +177,8 @@ class ShellcmdLrms(LRMS):
         if exit_code != 0:
             # Error killing the process. It may not exists or we don't
             # have permission to kill it.
-            exit_code, stdout, stderr = self.transport.execute_command("ps ax | grep -E '^ *%d '" % pid)
+            exit_code, stdout, stderr = self.transport.execute_command(
+                "ps ax | grep -E '^ *%d '" % pid)
             if exit_code == 0:
                 # The PID refers to an existing process, but we
                 # couldn't kill it.
@@ -160,16 +187,13 @@ class ShellcmdLrms(LRMS):
             else:
                 # The PID refers to a non-existing process.
                 gc3libs.log.error(
-                    "Failed while killing Job '%s'. It refers to non-existent local process %s."
-                    % (app, app.execution.lrms_jobid))
-
-
+                    "Failed while killing Job '%s'. It refers to non-existent"
+                    " local process %s." % (app, app.execution.lrms_jobid))
 
     @same_docstring_as(LRMS.close)
     def close(self):
         # XXX: free any resources in use?
         pass
-
 
     def free(self, app):
         """
@@ -185,13 +209,11 @@ class ShellcmdLrms(LRMS):
             log.warning("Failed removing folder '%s': %s: %s"
                         % (app.execution.lrms_execdir, type(ex), ex))
 
-
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
         # if we have been doing our own book-keeping well, then
         # there's no resource status to update
         return self
-
 
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir, overwrite=False):
@@ -201,26 +223,29 @@ class ShellcmdLrms(LRMS):
                 " is not supported in the Shellcmd backend.")
         try:
             self.transport.connect()
-            # Make list of files to copy, in the form of (remote_path, local_path) pairs.
-            # This entails walking the `Application.outputs` list to expand wildcards
-            # and directory references.
-            stageout = [ ]
+            # Make list of files to copy, in the form of (remote_path,
+            # local_path) pairs.  This entails walking the
+            # `Application.outputs` list to expand wildcards and
+            # directory references.
+            stageout = list()
             for remote_relpath, local_url in app.outputs.iteritems():
                 local_relpath = local_url.path
                 if remote_relpath == gc3libs.ANY_OUTPUT:
                     remote_relpath = ''
                     local_relpath = ''
                 stageout += _make_remote_and_local_path_pair(
-                    self.transport, app, remote_relpath, download_dir, local_relpath)
+                    self.transport, app, remote_relpath,
+                    download_dir, local_relpath)
 
-            # copy back all files, renaming them to adhere to the ArcLRMS convention
+            # copy back all files, renaming them to adhere to the
+            # ArcLRMS convention
             log.debug("Downloading job output into '%s' ...", download_dir)
             for remote_path, local_path in stageout:
                 log.debug("Downloading remote file '%s' to local file '%s'",
                           remote_path, local_path)
                 if (overwrite
-                    or not os.path.exists(local_path)
-                    or os.path.isdir(local_path)):
+                        or not os.path.exists(local_path)
+                        or os.path.isdir(local_path)):
                     log.debug("Copying remote '%s' to local '%s'"
                               % (remote_path, local_path))
                     # ignore missing files (this is what ARC does too)
@@ -231,11 +256,10 @@ class ShellcmdLrms(LRMS):
                              " will not be overwritten!",
                              local_path)
 
-            return # XXX: should we return list of downloaded files?
+            return  # XXX: should we return list of downloaded files?
 
         except:
             raise
-
 
     def update_job_state(self, app):
         """
@@ -245,7 +269,8 @@ class ShellcmdLrms(LRMS):
         """
         self.transport.connect()
         pid = app.execution.lrms_jobid
-        exit_code, stdout, stderr = self.transport.execute_command("ps ax | grep -E '^ *%d '" % pid)
+        exit_code, stdout, stderr = self.transport.execute_command(
+            "ps ax | grep -E '^ *%d '" % pid)
         if exit_code == 0:
             # Process exists. Check the status
             status = stdout.split()[2]
@@ -270,7 +295,8 @@ class ShellcmdLrms(LRMS):
                 wrapper_file = self.transport.open(wrapper_filename, 'r')
             except:
                 raise gc3libs.exceptions.InvalidArgument(
-                    "Job '%s' refers to process wrapper %s which ended unexpectedly"
+                    "Job '%s' refers to process wrapper %s which"
+                    " ended unexpectedly"
                     % (app, app.execution.lrms_jobid))
             try:
                 outcoming = self._parse_wrapper_output(wrapper_file)
@@ -279,7 +305,6 @@ class ShellcmdLrms(LRMS):
                 wrapper_file.close()
 
         return app.execution.state
-
 
     def submit_job(self, app):
         """
@@ -301,7 +326,9 @@ class ShellcmdLrms(LRMS):
             "mktemp -d %s " % posixpath.join(
                 self.spooldir, 'gc3libs.XXXXXX.tmp.d'))
         if exit_code != 0:
-            gc3libs.log.error("Error creating temporary directory on host %s: %s" % (self.frontend, stderr))
+            gc3libs.log.error(
+                "Error creating temporary directory on host %s: %s"
+                % (self.frontend, stderr))
 
         execdir = stdout.strip()
 
@@ -309,23 +336,24 @@ class ShellcmdLrms(LRMS):
 
         # FIXME: this code is took from
         # gc3libs.backends.batch.BatchSystem.submit_job
-        for local_path,remote_path in app.inputs.items():
+        for local_path, remote_path in app.inputs.items():
             remote_path = posixpath.join(execdir, remote_path)
             remote_parent = os.path.dirname(remote_path)
             try:
                 if remote_parent not in ['', '.']:
                     log.debug("Making remote directory '%s'" % remote_parent)
                     self.transport.makedirs(remote_parent)
-                log.debug("Transferring file '%s' to '%s'" % (local_path.path, remote_path))
+                log.debug("Transferring file '%s' to '%s'" % (local_path.path,
+                                                              remote_path))
                 self.transport.put(local_path.path, remote_path)
                 # preserve execute permission on input files
                 if os.access(local_path.path, os.X_OK):
                     self.transport.chmod(remote_path, 0755)
             except:
-                log.critical("Copying input file '%s' to remote host '%s' failed",
-                                      local_path.path, self.frontend)
+                log.critical(
+                    "Copying input file '%s' to remote host '%s' failed",
+                    local_path.path, self.frontend)
                 raise
-
 
         app.execution.lrms_execdir = execdir
         app.execution.state = Run.State.RUNNING
@@ -356,8 +384,8 @@ class ShellcmdLrms(LRMS):
 
         ## set up environment
         env_arguments = ''
-        for k,v in app.environment.iteritems():
-            env_arguments += "%s=%s; " (k,v)
+        for k, v in app.environment.iteritems():
+            env_arguments += "%s=%s; " (k, v)
 
         arguments = str.join(' ', ['"%s"' % arg for arg in app.arguments])
 
@@ -372,7 +400,7 @@ class ShellcmdLrms(LRMS):
 
         # Build
         pidfilename = posixpath.join(wrapper_dir,
-                                   ShellcmdLrms.WRAPPER_PID)
+                                     ShellcmdLrms.WRAPPER_PID)
         wrapper_output_filename = posixpath.join(
             wrapper_dir,
             ShellcmdLrms.WRAPPER_OUTPUT_FILENAME)
@@ -417,8 +445,8 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
                         continue
                 if 'pidfile' not in locals():
                     raise gc3libs.exceptions.LRMSSubmitError(
-                        "Unable to get pidfile of submitted process from execution"
-                        " directory `%s`. Pidfile `%s` not found."
+                        "Unable to get pidfile of submitted process from"
+                        " execution directory `%s`. Pidfile `%s` not found."
                         % (execdir, pidfilename))
         pid = pidfile.read().strip()
         try:
