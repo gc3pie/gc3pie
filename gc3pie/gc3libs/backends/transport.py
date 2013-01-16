@@ -578,7 +578,7 @@ class LocalTransport(Transport):
             "`Transport.execute_command()` called" \
             " on `Transport` instance closed / not yet open"
         if detach:
-            return self.execute_command_and_detach(self, command)
+            return self.execute_command_and_detach(command)
         try:
             self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=True)
             stdout, stderr = self._process.communicate()
