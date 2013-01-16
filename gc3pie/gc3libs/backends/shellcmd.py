@@ -445,8 +445,13 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
                         continue
                 if 'pidfile' not in locals():
                     raise gc3libs.exceptions.LRMSSubmitError(
+<<<<<<< HEAD
                         "Unable to get pidfile of submitted process from"
                         " execution directory `%s`. Pidfile `%s` not found."
+=======
+                        "Unable to get pidfile of submitted process from execution"
+                        " directory `%s`. Pidfile `%s` not found."
+>>>>>>> Fix an error causing the shellcmd backend hangs until the job is done.
                         % (execdir, pidfilename))
         pid = pidfile.read().strip()
         try:
