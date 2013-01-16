@@ -150,7 +150,6 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
 
         # Initialize variables that needed for state retention.
         self.best_x = np.zeros( self.dim )                       # best population member ever
-        self.best_x_iter = np.zeros( self.dim )                  # best population member in iteration
 
         # set initial value for iteration count
         self.cur_iter = 0
@@ -210,8 +209,6 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
             # Store the best population members
             self.best_x = self.new_pop[self.best_ix, :].copy()
             self.best_y = self.vals[self.best_ix].copy()
-            # the following only applies in the 1st iteration
-            self.best_x_iter = self.best_x.copy()
 
         else:
             new_vals = np.array(new_vals)
@@ -225,8 +222,6 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
             self.pop[ix_superior,:] = self.new_pop[ix_superior, :].copy()
             self.vals[ix_superior]   = new_vals[ix_superior].copy() 
             
-            self.best_x_iter = self.best_x.copy()       # freeze the best member of this iteration for the coming
-                                                        # iteration. This is needed for some of the strategies.
         self.logger.debug('new values %s', new_vals)
         self.logger.debug('best value %s', self.best_y)
 
@@ -241,7 +236,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         Generates a new population fullfilling `filter_fn`. 
         '''
         return populate(
-            create_fn=lambda : evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_x_iter, self.de_strategy),
+            create_fn=lambda : evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_x, self.de_strategy),
             filter_fn=self.filter_fn
         )
 
