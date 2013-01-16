@@ -27,6 +27,7 @@ from getpass import getuser
 import os
 import os.path
 import posixpath
+import time
 
 # GC3Pie imports
 import gc3libs
@@ -304,8 +305,8 @@ class ShellcmdLrms(LRMS):
 
         execdir = stdout.strip()
 
-        # Copy input files to remote dir 
-        
+        # Copy input files to remote dir
+
         # FIXME: this code is took from
         # gc3libs.backends.batch.BatchSystem.submit_job
         for local_path,remote_path in app.inputs.items():
@@ -324,7 +325,7 @@ class ShellcmdLrms(LRMS):
                 log.critical("Copying input file '%s' to remote host '%s' failed",
                                       local_path.path, self.frontend)
                 raise
-        
+
 
         app.execution.lrms_execdir = execdir
         app.execution.state = Run.State.RUNNING
@@ -369,7 +370,7 @@ class ShellcmdLrms(LRMS):
         if not self.transport.isdir(wrapper_dir):
             self.transport.makedirs(wrapper_dir)
 
-        # Build 
+        # Build
         pidfilename = posixpath.join(wrapper_dir,
                                    ShellcmdLrms.WRAPPER_PID)
         wrapper_output_filename = posixpath.join(
@@ -385,23 +386,47 @@ class ShellcmdLrms(LRMS):
         wrapper_script.write("""#!/bin/sh
 echo $$ > %s
 cd %s
-%s -o %s -f '%s' /bin/sh %s -c '%s %s'
-""" % (pidfilename, execdir, self.time_cmd, 
-       wrapper_output_filename, 
-       ShellcmdLrms.TIMEFMT, redirection_arguments, 
+exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
+""" % (pidfilename, execdir, self.time_cmd,
+       wrapper_output_filename,
+       ShellcmdLrms.TIMEFMT, redirection_arguments,
        env_arguments, arguments))
         wrapper_script.close()
 
         self.transport.chmod(wrapper_script_fname, 0755)
 
         # Execute the script in background
-        self.transport.execute_command(
-            '%s & ' % wrapper_script_fname, detach=False)
+        self.transport.execute_command(wrapper_script_fname, detach=True)
 
         # Just after the script has been started the pidfile should be
         # filled in with the correct pid.
-        pidfile = self.transport.open(pidfilename, 'r')
-        pid = int(pidfile.read().strip())
+        #
+        # However, the script can have not been able to write the
+        # pidfile yet, so we have to wait a little bit for it...
+        try:
+            pidfile = self.transport.open(pidfilename, 'r')
+        except gc3libs.exceptions.TransportError, ex:
+            if '[Errno 2]' in ex.message:
+                # errno 2: no such file or directory
+                for retry in range(5):
+                    time.sleep(1)
+                    try:
+                        pidfile = self.transport.open(pidfilename, 'r')
+                        break
+                    except:
+                        continue
+                if 'pidfile' not in locals():
+                    raise gc3libs.exceptions.LRMSSubmitError(
+                        "Unable to get pidfile of submitted process from execution"
+                        " directory `%s`. Pidfile `%s` not found."
+                        % (execdir, pidfilename))
+        pid = pidfile.read().strip()
+        try:
+            pid = int(pid)
+        except ValueError:
+            pidfile.close()
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "Invalid pid `%s` in pidfile %s." % (pid, pidfilename))
         pidfile.close()
 
         # Update application and current resources
@@ -423,7 +448,6 @@ cd %s
             output_file = open(local_file, 'w+b')
             output_file.write(data)
             output_file.close()
-
 
     def validate_data(self, data_file_list=[]):
         """
@@ -450,8 +474,9 @@ cd %s
         wrapper_file.seek(0)
         wrapper_output = Struct()
         for line in wrapper_file:
-            if '=' not in line: continue
-            k,v = line.strip().split('=', 1)
+            if '=' not in line:
+                continue
+            k, v = line.strip().split('=', 1)
             wrapper_output[k] = v
 
         return wrapper_output
