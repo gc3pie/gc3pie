@@ -448,7 +448,7 @@ class EC2Lrms(LRMS):
             raise UnrecoverableError(
                 "VM with id `%s` is in ERROR state."
                 " Aborting submission of job %s" % (vm.id, str(job)))
-        elif vm.state in ['shutting-down', 'terminated']:
+        elif vm.state in ['shutting-down', 'terminated', 'stopped']:
             # The VM has been terminated, probably from outside GC3Pie.
             raise UnrecoverableError("VM with id `%s` is in terminal state."
                                      " Aborting submission of job %s"
