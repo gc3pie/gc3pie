@@ -309,6 +309,17 @@ class EC2Lrms(LRMS):
         gc3libs.log.debug("Terminating VM with id `%s`", app.ec2_instance_id)
         vm = self._get_vm(app.ec2_instance_id)
         vm.terminate()
+        # Remove ec2_instance_id from app, so that, for instance, a
+        # RetryableTask will not try to access this VM again.
+        if 'ec2_used_instance_ids' not in app:
+            app.ec2_used_instance_ids = [app.ec2_instance_id]
+        else:
+            app.ec2_used_instance_ids.append(app.ec2_instance_id)
+        # remove resource associated to the vm
+        if app.ec2_instance_id in self.resources:
+            self.resources[app.ec2_instance_id].close()
+            self.resources.pop(app.ec2_instance_id)
+        del app.ec2_instance_id
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
