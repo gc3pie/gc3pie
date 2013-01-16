@@ -76,10 +76,12 @@ from gc3libs.optimizer import draw_population, populate
 # FVr_a4 -> a4 # index array
 # FVr_a5 -> a5 # index array
 # FVr_ind -> ind # index pointer array
-# I_best_index -> best_index
+# I_best_index -> best_ix
 # S_vals -> vals
-# S_bestval -> bestval
-# S_bestvalit -> bestvalit
+# S_bestval -> best_y
+# S_bestvalit -> best_y_iter
+# best -> best_x
+# best_iter -> best_x_iter
 
 class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     '''
@@ -108,7 +110,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     2. DE_local_to_best: A version which has been used by quite a number of
             scientists. Attempts a balance between robustness # and fast convergence. 
     3. DE_best_with_jitter: Taylored for small population sizes and fast
-            convergence. # Dimensionality should not be too high.
+            convergence. Dimensionality should not be too high.
     4. DE_rand_with_per_vector_dither: Classical DE with dither to become even more robust. 
     5. DE_rand_with_per_generation_dither: Classical DE with dither to become even more robust. 
                                            Choosing de_step_size = 0.3 is a good start here. 
@@ -147,8 +149,8 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         self.new_pop = initial_pop # self.enforce_constr_re_sample(initial_pop)
 
         # Initialize variables that needed for state retention.
-        self.best = np.zeros( self.dim )                       # best population member ever
-        self.best_iter = np.zeros( self.dim )                  # best population member in iteration
+        self.best_x = np.zeros( self.dim )                       # best population member ever
+        self.best_x_iter = np.zeros( self.dim )                  # best population member in iteration
 
         # set initial value for iteration count
         self.cur_iter = 0
@@ -167,16 +169,16 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         '''
         converged = False
         # Check `y_conv_crit`
-        if self.bestval < self.y_conv_crit:
+        if self.best_y < self.y_conv_crit:
             converged = True
-            self.logger.info('converged self.bestval < self.y_conv_crit')
+            self.logger.info('Converged: self.best_y < self.y_conv_crit')
 
         # Check `dx_conv_crit`
         dxs = np.abs(self.pop[:, :] - self.pop[0, :])
         has_dx_converged = (dxs <= self.dx_conv_crit).all()        
         if has_dx_converged:
             converged = True
-            self.logger.info('converged self.population_converged(self.pop)')
+            self.logger.info('Converged: All population members within `dx_conv_crit` from the first population member. ')
         return converged
 
     def update_opt_state(self, new_vals):
@@ -190,36 +192,43 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         '''
 
         self.logger.debug('entering update_opt_state')
+        
+        # In variable names `best` refers to a population member with the 
+        # lowest target function value within some group: 
+        
+        # best_x_iter: Coordinates of the best within the current population. 
+        # best_y_iter: Val of the best within the current population. 
+        # best_x: Coordinates of the best population member since the optimization started. 
+        # best_y: Val of the best population member since the optimization started. 
 
         if self.cur_iter == 0:
             self.pop = self.new_pop.copy()
             self.vals = np.array(new_vals)
-            # determine bestmemit and bestvalit for random draw.
-            self.best_index = np.argmin(self.vals)
-            self.bestval = self.vals[self.best_index].copy()
-            self.best_iter = self.new_pop[self.best_index, :].copy()
+            # Determine the member with the lowest target value
+            self.best_ix = np.argmin(self.vals)
+            
+            # Store the best population members
+            self.best_x = self.new_pop[self.best_ix, :].copy()
+            self.best_y = self.vals[self.best_ix].copy()
             # the following only applies in the 1st iteration
-            self.bestvalit = self.bestval.copy()
-            self.best = self.best_iter.copy()
+            self.best_x_iter = self.best_x.copy()
 
         else:
             new_vals = np.array(new_vals)
-            best_index = np.argmin(new_vals)
-            if new_vals[best_index] < self.bestval:
-                self.bestval   = new_vals[best_index].copy()                    # new best value
-                self.best = self.new_pop[best_index, :].copy()                 # new best parameter vector ever
-
-            # merge the two populations, keeping the member with lowest corresponding value
-            for k in range(self.pop_size):
-                if new_vals[k] < self.vals[k]:
-                    self.pop[k,:] = self.new_pop[k, :].copy()                    # replace old vector with new one (for new iteration)
-                    self.vals[k]   = new_vals[k].copy()                      # save value in "cost array"
-
-            self.best_iter = self.best.copy()       # freeze the best member of this iteration for the coming
+            best_ix = np.argmin(new_vals)
+            if new_vals[best_ix] < self.best_y:
+                self.best_x = self.new_pop[best_ix, :].copy()                 # new best parameter vector ever
+                self.best_y = new_vals[best_ix].copy()                        # new best value
+            
+            # Perform a one-on-one battle by index, keeping the member with lowest corresponding value            
+            ix_superior = new_vals < self.vals
+            self.pop[ix_superior,:] = self.new_pop[ix_superior, :].copy()
+            self.vals[ix_superior]   = new_vals[ix_superior].copy() 
+            
+            self.best_x_iter = self.best_x.copy()       # freeze the best member of this iteration for the coming
                                                         # iteration. This is needed for some of the strategies.
-
         self.logger.debug('new values %s', new_vals)
-        self.logger.debug('best value %s', self.bestval)
+        self.logger.debug('best value %s', self.best_y)
 
         self.after_update_opt_state()
 
@@ -232,7 +241,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         Generates a new population fullfilling `filter_fn`. 
         '''
         return populate(
-            create_fn=lambda : evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_iter, self.de_strategy),
+            create_fn=lambda : evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_x_iter, self.de_strategy),
             filter_fn=self.filter_fn
         )
 
@@ -262,7 +271,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
 
     def print_stats(self):
         self.logger.info('Iteration: %d,  x: %s f(x): %f',
-                         self.cur_iter, self.best, self.bestval)
+                         self.cur_iter, self.best_x, self.best_y)
 
 
 def evolve_fn(population, prob_crossover, de_step_size, dim, best_iter, de_strategy):
@@ -460,7 +469,7 @@ class DifferentialEvolutionWithPlotting(DifferentialEvolutionSequential):
                 ymin = ymin, ymax = ymax)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
-        ax.set_title('Best: x %s, f(x) %f' % (self.best, self.bestval))
+        ax.set_title('Best: x %s, f(x) %f' % (self.best_x, self.best_y))
 
         figure_dir = os.path.join(os.getcwd(), 'dif_evo_figs')
         fig.savefig(os.path.join(figure_dir, 'pop%d' % (self.cur_iter)))

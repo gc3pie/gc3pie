@@ -81,9 +81,9 @@ def test_differential_evolution_sequential_with_rosenbrock():
     opt.de_opt()
 
     assert opt.has_converged()
-    assert (opt.bestval - 0.) < opt.y_conv_crit
-    assert (opt.best[0] - 1.) < 1e-3
-    assert (opt.best[1] - 1.) < 1e-3
+    assert (opt.best_y - 0.) < opt.y_conv_crit
+    assert (opt.best_x[0] - 1.) < 1e-3
+    assert (opt.best_x[1] - 1.) < 1e-3
 
 
 def test_differential_evolution_parallel_with_rosenbrock():
@@ -125,6 +125,6 @@ def test_differential_evolution_parallel_with_rosenbrock():
 
 
     assert opt.has_converged()
-    assert (opt.bestval - 0.) < opt.y_conv_crit
-    assert (opt.best[0] - 1.) < 1e-3
-    assert (opt.best[1] - 1.) < 1e-3
+    assert (opt.best_y - 0.) < opt.y_conv_crit
+    assert (opt.best_x[0] - 1.) < 1e-3
+    assert (opt.best_x[1] - 1.) < 1e-3
