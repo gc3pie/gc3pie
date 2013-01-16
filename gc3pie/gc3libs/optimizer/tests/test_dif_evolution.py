@@ -52,6 +52,7 @@ def test_differential_evolution_sequential_with_rosenbrock():
     pop_size = 100
     lower_bounds = -2 * np.ones(dim)
     upper_bounds = +2 * np.ones(dim)
+    prob_cross = 0.8
 
     log = logging.getLogger("gc3.gc3libs")
 
@@ -61,7 +62,7 @@ def test_differential_evolution_sequential_with_rosenbrock():
         initial_pop = initial_pop,
         target_fn=rosenbrock_fn,
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
-        prob_crossover = 1, # crossover probabililty constant ex [0, 1]
+        prob_crossover = prob_cross, # crossover probabililty constant ex [0, 1]
         itermax = 1000,      # maximum number of iterations (generations)
         dx_conv_crit = None, # stop when variation among x's is < this
         y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
@@ -70,7 +71,7 @@ def test_differential_evolution_sequential_with_rosenbrock():
         )
     assert opt.target_fn == rosenbrock_fn
     assert opt.de_step_size == 0.85
-    assert opt.prob_crossover == 1.0
+    assert opt.prob_crossover == prob_cross
     assert opt.itermax == 1000
     assert opt.dx_conv_crit == None
     assert opt.y_conv_crit == 1e-5
@@ -104,7 +105,7 @@ def test_differential_evolution_parallel_with_rosenbrock():
     opt = DifferentialEvolutionAlgorithm(
         initial_pop = initial_pop,
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
-        prob_crossover = 1, # crossover probabililty constant ex [0, 1]
+        prob_crossover = 0.8, # crossover probabililty constant ex [0, 1]
         itermax = 1000,      # maximum number of iterations (generations)
         dx_conv_crit = None, # stop when variation among x's is < this
         y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit

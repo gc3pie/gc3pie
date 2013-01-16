@@ -38,51 +38,6 @@ np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
 from gc3libs.optimizer import draw_population, populate
 
-
-# Variable changes from matlab implementation
-# I_D -> dim
-# I_NP -> pop_size
-# FM_popold -> pop_old
-# FVr_bestmem -> best
-# FVr_bestmemit -> best_cur_iter
-# I_nfeval -> n_fun_evals
-# I_cur_iter -> cur_iter
-# F_weight -> de_step_size
-# F_CR -> prob_crossover
-# I_itermax -> itermax
-# F_VTR -> y_conv_crit
-# I_strategy -> de_strategy
-# I_plotting -> plotting
-# lower_bds
-# upper_bds
-# dx_conv_crit
-# verbosity
-# FM_pm1 -> pm1
-# FM_pm2 -> pm2 population matrix (pm)
-# FM_pm3 -> pm3
-# FM_pm4 -> pm4
-# FM_pm5 -> pm5
-# FM_bm  -> bm best member matrix
-# FM_ui  -> ui ??
-# FM_mui -> mui # mask for intermediate population
-# FM_mpo -> mpo # mask for old population
-# FVr_rot -> rot  # rotating index array (size I_NP)
-# FVr_rotd -> rotd  # rotating index array (size I_D)
-# FVr_rt -> rt  # another rotating index array
-# FVr_rtd -> rtd # rotating ininstalldex array for exponential crossover
-# FVr_a1 -> a1 # index array
-# FVr_a2 -> a2 # index array
-# FVr_a3 -> a3 # index array
-# FVr_a4 -> a4 # index array
-# FVr_a5 -> a5 # index array
-# FVr_ind -> ind # index pointer array
-# I_best_index -> best_ix
-# S_vals -> vals
-# S_bestval -> best_y
-# S_bestvalit -> best_y_iter
-# best -> best_x
-# best_iter -> best_x_iter
-
 class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     '''
     Differential Evolution Optimizer class.
@@ -94,15 +49,17 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     :class:`DifferentialEvolutionAlgorithm` can be used is found in
     `GridOptimizer` located in `optimizer/__init__.py`.
 
+    :param initial_pop: Initial population for the optimization. 
     :param str de_strategy: e.g. DE_rand_either_or_algorithm. Allowed are: 
     :param `de_step_size`: Differential Evolution step size. 
     :param `prob_crossover`: Probability new population draws will replace old members. 
+    :param exp_cross bool: Set True to use exponential crossover. 
     :param `itermax`: Maximum # of iterations. 
     :param `dx_conv_crit`: Abort optimization if all population members are within a certain distance to each other.
     :param `y_conv_crit`: Declare convergence when the target function is below a `y_conv_crit`. 
     :param `filter_fn`: Optional function that implements nonlinear constraints. 
-    :param `logger`: Configured logger to use.
     :param `seed`: Seed to initialize NumPy's random number generator.
+    :param `logger`: Configured logger to use.
 
     Full list of `de_strategy`s: 
 
@@ -117,9 +74,8 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     6. DE_rand_either_or_algorithm: Alternates between differential mutation and three-point- recombination. 
     '''
 
-    def __init__(self, initial_pop, de_step_size = 0.85, prob_crossover = 1.0, itermax = 100,
-                 dx_conv_crit = None, y_conv_crit = None,
-                 de_strategy = 'DE_rand', filter_fn=None, logger=None, seed=None):
+    def __init__(self, initial_pop, de_strategy = 'DE_rand', de_step_size = 0.85, prob_crossover = 1.0, exp_cross = False, 
+                 itermax = 100, dx_conv_crit = None, y_conv_crit = None, filter_fn=None, seed=None, logger=None):
 
 
         # Check input variables
@@ -135,6 +91,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         self.dim = len(initial_pop[0])
         self.de_step_size = de_step_size
         self.prob_crossover = prob_crossover
+        self.exp_cross = exp_cross
         self.itermax = itermax
         self.y_conv_crit = y_conv_crit
         self.de_strategy = de_strategy
@@ -214,8 +171,8 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
             new_vals = np.array(new_vals)
             best_ix = np.argmin(new_vals)
             if new_vals[best_ix] < self.best_y:
-                self.best_x = self.new_pop[best_ix, :].copy()                 # new best parameter vector ever
-                self.best_y = new_vals[best_ix].copy()                        # new best value
+                self.best_x = self.new_pop[best_ix, :].copy()
+                self.best_y = new_vals[best_ix].copy()
             
             # Perform a one-on-one battle by index, keeping the member with lowest corresponding value            
             ix_superior = new_vals < self.vals
@@ -236,7 +193,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         Generates a new population fullfilling `filter_fn`. 
         '''
         return populate(
-            create_fn=lambda : evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_x, self.de_strategy),
+            create_fn=lambda : evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_x, self.de_strategy, self.exp_cross),
             filter_fn=self.filter_fn
         )
 
@@ -269,7 +226,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
                          self.cur_iter, self.best_x, self.best_y)
 
 
-def evolve_fn(population, prob_crossover, de_step_size, dim, best_iter, de_strategy):
+def evolve_fn(population, prob_crossover, de_step_size, dim, best_iter, de_strategy, exp_cross):
     """
     Return new population, evolved according to `de_strategy`.
 
@@ -278,13 +235,14 @@ def evolve_fn(population, prob_crossover, de_step_size, dim, best_iter, de_strat
     :param de_step_size: Differential Evolution step size.
     :param dim: Dimension of each population member. 
     :param best_iter: Best population member of the current population. 
-    :param de_strategy: Differential Evolution strategy. See :class:`DifferentialEvolutionAlgorithm`.  
+    :param de_strategy: Differential Evolution strategy. See :class:`DifferentialEvolutionAlgorithm`.
+    :param exp_cross bool: Set True to use exponential crossover. 
     """
 
     pop_size = len(population)
 
     # BJ: Need to add +1 in definition of ind otherwise there is one zero index that leaves creates no shuffling.
-    ind = np.random.permutation(4) + 1   # index pointer array.
+    ind  = np.random.permutation(4) + 1  # index pointer array. e.g. [2, 1, 4, 3]
     rot  = np.arange(0, pop_size, 1)     # rotating index array (size pop_size)
     rt   = np.zeros(pop_size)            # another rotating index array
     ## index arrays
@@ -300,35 +258,34 @@ def evolve_fn(population, prob_crossover, de_step_size, dim, best_iter, de_strat
     pm4 = population[a4, :] # shuffled population matrix 4
     pm5 = population[a5, :] # shuffled population matrix 5
 
-    ## "best member" matrix
+    # "best member" matrix
     bm    = np.zeros( (pop_size, dim) )   # initialize FVr_bestmember  matrix
     for k in range(pop_size):                              # population filled with the best member
         bm[k,:] = best_iter                       # of the last iteration
 
-    ## mask for intermediate population
+    # mask for intermediate population
     mui = np.random.random_sample( (pop_size, dim ) ) < prob_crossover  # all random numbers < prob_crossover are 1, 0 otherwise
+    
+    if exp_cross:
+        rotd = np.arange(dim)                    # rotating index array, i.e. [0, 1, 2, ..., dim]
+        rtd  = np.zeros(dim,dtype=np.int)        # rotating index array for exponential crossover
+        mui  = np.sort(mui.transpose(), axis=0)  # Prepare intermediate population for indexing. 
+                                                 # Columns are pop members. Put all False indices in the first rows. 
+        for k in range(pop_size):
+            n = int(np.floor(np.random.rand() * dim))
+            if n > 0:
+                rtd = (rotd + n) % dim            # Build actual rotation vector. 
+                                                  # e.g. dim = 6, n = 2 -> [3,2,1,0,1,2]
+                mui[:, k] = mui[rtd, k]           # Rotate indices for kth population member by n. 
+        mui = mui.transpose()
 
-    #----Insert this if you want exponential crossover.----------------
-    #rotd = np.arange(0, dim, 1) # rotating index array (size dim)
-    #rtd  = np.zeros(dim)        # rotating index array for exponential crossover
-    #mui = sort(mui')            # transpose, collect 1's in each column
-    #for k  = 1:pop_size
-    #  n = floor(rand*dim)
-    #  if (n > 0)
-    #     rtd     = rem(rotd+n,dim)
-    #     mui(:,k) = mui(rtd+1,k) #rotate column k by n
-    #  end
-    #end
-    #mui = mui'                       # transpose back
-    #----End: exponential crossover------------------------------------
-
-    ## inverse mask to mui (mpo + mui == <vector of 1's>)
+    # inverse mask to mui (mpo + mui == <vector of 1's>)
     mpo = mui < 0.5
 
     if ( de_strategy == 'DE_rand' ):
         #origin = pm3
         ui = pm3 + de_step_size * ( pm1 - pm2 )   # differential variation
-        ui = population * mpo + ui * mui       # crossover
+        ui = population * mpo + ui * mui          # crossover
     elif (de_strategy == 'DE_local_to_best'):
         #origin = population
         ui = population + de_step_size * ( bm - population ) + de_step_size * ( pm1 - pm2 )
@@ -369,18 +326,15 @@ class DifferentialEvolutionSequential(DifferentialEvolutionAlgorithm):
 
         `target_fn` -- Function to evaluate a population and return the corresponding values.
     '''
-
-    def __init__(self, initial_pop, target_fn, de_step_size = 0.85,
-                 prob_crossover = 1.0, itermax = 100,
-                 dx_conv_crit = None, y_conv_crit = None,
-                 de_strategy = 'DE_rand', filter_fn=None, logger=None, seed=None):
+        
+    def __init__(self, initial_pop, target_fn, 
+                 de_strategy = 'DE_rand', de_step_size = 0.85, prob_crossover = 1.0, exp_cross = False, 
+                 itermax = 100, dx_conv_crit = None, y_conv_crit = None, filter_fn=None, seed=None, logger=None):
 
 
         DifferentialEvolutionAlgorithm.__init__(
-            self, initial_pop, 
-            de_step_size, prob_crossover, itermax,
-            dx_conv_crit, y_conv_crit,
-            de_strategy, filter_fn, logger, seed)
+                             self, initial_pop, de_strategy, de_step_size, prob_crossover, exp_cross, 
+                             itermax, dx_conv_crit, y_conv_crit, filter_fn, seed, logger)
         self.target_fn = target_fn
 
 
@@ -468,3 +422,51 @@ class DifferentialEvolutionWithPlotting(DifferentialEvolutionSequential):
 
         figure_dir = os.path.join(os.getcwd(), 'dif_evo_figs')
         fig.savefig(os.path.join(figure_dir, 'pop%d' % (self.cur_iter)))
+        
+        
+        
+        
+        
+        # Variable changes from matlab implementation
+        # I_D -> dim
+        # I_NP -> pop_size
+        # FM_popold -> pop_old
+        # FVr_bestmem -> best
+        # FVr_bestmemit -> best_cur_iter
+        # I_nfeval -> n_fun_evals
+        # I_cur_iter -> cur_iter
+        # F_weight -> de_step_size
+        # F_CR -> prob_crossover
+        # I_itermax -> itermax
+        # F_VTR -> y_conv_crit
+        # I_strategy -> de_strategy
+        # I_plotting -> plotting
+        # lower_bds
+        # upper_bds
+        # dx_conv_crit
+        # verbosity
+        # FM_pm1 -> pm1
+        # FM_pm2 -> pm2 population matrix (pm)
+        # FM_pm3 -> pm3
+        # FM_pm4 -> pm4
+        # FM_pm5 -> pm5
+        # FM_bm  -> bm best member matrix
+        # FM_ui  -> ui ??
+        # FM_mui -> mui # mask for intermediate population
+        # FM_mpo -> mpo # mask for old population
+        # FVr_rot -> rot  # rotating index array (size I_NP)
+        # FVr_rotd -> rotd  # rotating index array (size I_D)
+        # FVr_rt -> rt  # another rotating index array
+        # FVr_rtd -> rtd # rotating ininstalldex array for exponential crossover
+        # FVr_a1 -> a1 # index array
+        # FVr_a2 -> a2 # index array
+        # FVr_a3 -> a3 # index array
+        # FVr_a4 -> a4 # index array
+        # FVr_a5 -> a5 # index array
+        # FVr_ind -> ind # index pointer array
+        # I_best_index -> best_ix
+        # S_vals -> vals
+        # S_bestval -> best_y
+        # S_bestvalit -> best_y_iter
+        # best -> best_x
+        # best_iter -> best_x_iter
