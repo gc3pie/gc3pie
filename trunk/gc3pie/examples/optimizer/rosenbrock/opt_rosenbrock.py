@@ -7,7 +7,7 @@
   within the gc3pie framework.
 """
 
-# Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -112,19 +112,15 @@ def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     # hand over job to create
     return Application(['./' + executable], inputs, outputs, **kwargs)
 
-def compute_target_rosenbrock(pop_task_tuple):
+def compute_target_rosenbrock(task):
     '''
-    Given a list of (population, task), compute and return list of target
-    values.
+    Extract and return the target value computed by a single run of
+    the `rosenbrock` program.
     '''
-    fxVals = []
-    for (pop, task) in pop_task_tuple:
-        outputDir = task.output_dir
-        f = open(os.path.join(outputDir, 'rosenbrock.out'))
-        line = f.readline().strip()
-        fxVal = float(line)
-        fxVals.append(fxVal)
-    return fxVals
+    outputDir = task.output_dir
+    f = open(os.path.join(outputDir, 'rosenbrock.out'))
+    line = f.readline().strip()
+    return float(line)
 
 
 class RosenbrockScript(SessionBasedScript):
@@ -142,7 +138,7 @@ class RosenbrockScript(SessionBasedScript):
     def new_tasks(self, extra):
 
         path_to_stage_dir = os.getcwd()
-        
+
         import logging
         log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
         log.setLevel(logging.DEBUG)
@@ -160,9 +156,9 @@ class RosenbrockScript(SessionBasedScript):
         pop_size = 100
         lower_bounds = -2 * np.ones(dim)
         upper_bounds = +2 * np.ones(dim)
-        
+
         initial_pop = draw_population(lower_bds=lower_bounds, upper_bds=upper_bounds, size=pop_size, dim=dim)
- 
+
         de_solver = DifferentialEvolutionAlgorithm(
             initial_pop = initial_pop,
             de_step_size = 0.85,# DE-stepsize ex [0, 2]
@@ -181,7 +177,7 @@ class RosenbrockScript(SessionBasedScript):
         kwargs['path_to_stage_dir'] = optimization_dir
         kwargs['opt_algorithm'] = de_solver
         kwargs['task_constructor'] = task_constructor_rosenbrock
-        kwargs['target_fun'] = compute_target_rosenbrock
+        kwargs['extract_value_fn'] = compute_target_rosenbrock
         kwargs['cur_pop_file'] = 'cur_pop'
 
         return [GridOptimizer(jobname=jobname, **kwargs)]
