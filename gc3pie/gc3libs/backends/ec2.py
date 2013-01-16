@@ -40,7 +40,8 @@ except ImportError:
 
 # GC3Pie imports
 import gc3libs
-from gc3libs.exceptions import RecoverableError, UnrecoverableError, ConfigurationError
+from gc3libs.exceptions import RecoverableError, UnrecoverableError, \
+    ConfigurationError
 import gc3libs.url
 from gc3libs import Run
 from gc3libs.utils import same_docstring_as
@@ -59,8 +60,8 @@ class EC2Lrms(LRMS):
                  max_memory_per_core, max_walltime,
                  # these are specific of the EC2Lrms class
                  ec2_region, ec2_url,
-                 keypair_name, public_key, image_id=None, image_name=None, instance_type=None,
-                 auth=None, **extra_args):
+                 keypair_name, public_key, image_id=None, image_name=None,
+                 instance_type=None, auth=None, **extra_args):
         LRMS.__init__(
             self, name,
             architecture, max_cores, max_cores_per_job,
@@ -127,7 +128,8 @@ class EC2Lrms(LRMS):
                     " file." % (image_name, [i.id for i in images]))
         else:
             raise ConfigurationError(
-                "Nor `image_id` or `image_name` has been specified in the configuration file.")
+                "Nor `image_id` or `image_name` has been specified in the"
+                " configuration file.")
         self.instance_type = instance_type
 
         # `self.subresource_args` is used to create subresources
