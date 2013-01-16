@@ -134,6 +134,9 @@ class Transport(object):
         Permission bits are copied. source and destination are path
         names given as strings.
 
+        If destination contains non existing directories they will be
+        automatically created.
+
         Any exception raised by operations will be passed through.
 
         :param str source: the file to copy
@@ -154,6 +157,9 @@ class Transport(object):
         unless the optional third argument `ignore_nonexisting` is
         `True`, in which case exceptions arising from a non-existing
         source or destination path will be ignored.
+
+        If destination contains non existing directories they will be
+        automatically created.
 
         :param str source: the file to copy
         :param str destination: the destination file or directory
@@ -414,6 +420,9 @@ class SshTransport(Transport):
             else:
                 # check connection first
                 self.connect()
+                parent = os.path.dirname(destination)
+                if not os.path.exists(parent):
+                    os.makedirs(parent)
                 self.sftp.get(source, destination)
         except Exception, ex:
             # IOError(errno=2) means the remote path is not existing
@@ -632,6 +641,10 @@ class LocalTransport(Transport):
                               " source: %s. destination: %s"
                               % (source, destination))
             if source != destination:
+                # If destination parents does not exist, create it:
+                parent = os.path.dirname(destination)
+                if not os.path.exists(parent):
+                    os.makedirs(parent)
                 return shutil.copy(source, destination)
             else:
                 gc3libs.log.warning("Attempt to copy file over itself"
