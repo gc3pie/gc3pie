@@ -564,7 +564,7 @@ class LocalTransport(Transport):
                 "Error changing local path '%s' mode to 0%o: %s: %s"
                 % (path, mode, ex.__class__.__name__, str(ex)))
 
-    def execute_command_and_detach(self, command):
+    def _execute_command_and_detach(self, command):
         assert self._is_open is True, \
             "`Transport.execute_command()` called" \
             " on `Transport` instance closed / not yet open"
@@ -589,7 +589,7 @@ class LocalTransport(Transport):
             "`Transport.execute_command()` called" \
             " on `Transport` instance closed / not yet open"
         if detach:
-            return self.execute_command_and_detach(command)
+            return self._execute_command_and_detach(command)
         try:
             self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=True)
             stdout, stderr = self._process.communicate()
