@@ -98,8 +98,8 @@ class GridOptimizer(SequentialTaskCollection):
 
     :param path_to_stage_dir: directory in which to perform the optimization.
 
-    :param opt_algorithm:    Evolutionary algorithm instance that conforms 
-                             to :class:`EvolutionaryAlgorithm`. 
+    :param opt_algorithm:    Evolutionary algorithm instance that conforms
+                             to :class:`EvolutionaryAlgorithm`.
 
     :param task_constructor: A function that takes a list of x vectors
                              and the path to the current iteration
@@ -107,10 +107,10 @@ class GridOptimizer(SequentialTaskCollection):
                              instances that can be executed on the
                              grid.
 
-    :param target_fun:       Takes a list of (x_vector,
-                             application_instance) tuples and returns
-                             the corresponding function value for the
-                             x_vector.
+    :param extract_value_fn: Takes an `Application`:class: instance returns
+                             the function value computed in that task.
+                             The default implementation just looks for a
+                             `.value` attribute on the application instance.
 
     :param cur_pop_file:     Filename under which the population is stored
                              in the current iteration dir. The
@@ -121,7 +121,8 @@ class GridOptimizer(SequentialTaskCollection):
 
     def __init__(self, jobname = '', path_to_stage_dir = '',
                  opt_algorithm = None, task_constructor = None,
-                 target_fun = None, cur_pop_file = '',
+                 extract_value_fn = (lambda app: app.value),
+                 cur_pop_file = '',
                  **extra_args ):
 
         log.debug('entering GridOptimizer.__init__')
@@ -130,42 +131,48 @@ class GridOptimizer(SequentialTaskCollection):
         self.jobname = jobname
         self.path_to_stage_dir = path_to_stage_dir
         self.opt_algorithm = opt_algorithm
-        self.target_fun = target_fun
+        self.extract_value_fn = extract_value_fn
         self.task_constructor = task_constructor
         self.cur_pop_file = cur_pop_file
         self.extra_args = extra_args
         self.output_dir = os.getcwd()
 
-        self.evaluator = ComputeTargetVals(self.opt_algorithm.new_pop, self.jobname, self.opt_algorithm.cur_iter,
-                                           path_to_stage_dir, self.cur_pop_file, task_constructor)
-
-        initial_task = self.evaluator
+        self.new_pop = self.opt_algorithm.pop
+        initial_task = ComputeTargetVals(
+            self.opt_algorithm.pop, self.jobname, self.opt_algorithm.cur_iter,
+            path_to_stage_dir, self.cur_pop_file, task_constructor)
 
         SequentialTaskCollection.__init__(self,  [initial_task], **extra_args)
 
+    def next(self, done):
+        log.debug('entering GridOptimizer.next(%d)', done)
 
-    def next(self, *args):
-        log.debug('entering GridOptimizer.next')
+        # feed back results from the evaluation just completed
+        new_pop = self.new_pop
+        new_vals = [ self.extract_value(task) for task in self.tasks[done].tasks ]
+        self.opt_algorithm.update_opt_state(new_pop, new_vals)
 
         self.changed = True
-        # pass on (popMem, Application)
-        pop_task_tuple = [(popEle, task) for (popEle, task) in zip(self.opt_algorithm.new_pop, self.evaluator.tasks)]
 
-        newVals = self.target_fun(pop_task_tuple)
-        self.opt_algorithm.update_opt_state(newVals)
-
-        if not self.opt_algorithm.has_converged():
-            self.opt_algorithm.new_pop = self.opt_algorithm.evolve()
-            self.evaluator = ComputeTargetVals(self.opt_algorithm.new_pop, self.jobname, self.opt_algorithm.cur_iter,
-                                               self.path_to_stage_dir, self.cur_pop_file, self.task_constructor)
-            self.add(self.evaluator)
-        else:
-            self.execution.returncode = 0
-            # ! should we keep creation of a file to signal completion??
-            open(os.path.join(self.path_to_stage_dir, 'job_done'), 'w')
-            # report success of sequential task
+        if opt_algorithm.cur_iter > opt_algorithm.itermax:
+            # maximum number of iterations exceeded
+            # XXX: what return code is appropriate here?
+            self.execution.exitcode = os.EX_TEMPFAIL
             return Run.State.TERMINATED
-        return Run.State.RUNNING
+
+        # still within allowed number of iterations, check convergence
+        if self.opt_algorithm.has_converged():
+            # report success of sequential task
+            self.execution.returncode = 0
+            return Run.State.TERMINATED
+        else:
+            # prepare next evaluation
+            self.new_pop = self.opt_algorithm.evolve()
+            self.add(
+                ComputeTargetVals(
+                    self.new_pop, self.jobname, self.opt_algorithm.cur_iter,
+                    self.path_to_stage_dir, self.cur_pop_file, self.task_constructor))
+            return Run.State.RUNNING
 
 
     def __str__(self):
@@ -176,7 +183,7 @@ class GridOptimizer(SequentialTaskCollection):
     #     state = Task.__getstate__(self)
     #     # Check that there are no functions in state.
     #     #for attr in ['opt_algorithm']:
-    #         ## 'task_constructor', 'target_fun', 'tasks',
+    #         ## 'task_constructor', 'extract_value_fn', 'tasks',
     #         #del state[attr]
     #    # state = None
     #     return state
@@ -189,17 +196,16 @@ class GridOptimizer(SequentialTaskCollection):
 
 
 class ComputeTargetVals(ParallelTaskCollection):
-
     """
     Generate a list of tasks and initialize a ParallelTaskCollection with them.
 
     :param inParaCombos: List of tuples defining the parameter combinations.
-    
+
     :param jobname: Name of GridOptimizer instance driving the
-     optimization. 
-    
-    :param iteration: Current iteration number. 
-    
+     optimization.
+
+    :param iteration: Current iteration number.
+
     :param path_to_stage_dir: Path to directory in which optimization takes
     place.
 
@@ -232,8 +238,8 @@ class ComputeTargetVals(ParallelTaskCollection):
         # Log activity
         cDate = datetime.date.today()
         cTime = datetime.datetime.time(datetime.datetime.now())
-        date_string = '%04d--%02d--%02d--%02d--%02d--%02d' % (cDate.year, 
-                                                cDate.month, cDate.day, cTime.hour, 
+        date_string = '%04d--%02d--%02d--%02d--%02d--%02d' % (cDate.year,
+                                                cDate.month, cDate.day, cTime.hour,
                                                 cTime.minute, cTime.second)
         gc3libs.log.debug('Establishing parallel task on %s', date_string)
 
@@ -261,33 +267,110 @@ class EvolutionaryAlgorithm(object):
     Base class for building an evolutionary algorithm for global optimization.
     '''
 
-    def __init__(self, whatever):
+    def __init__(self, initial_pop,
+                 # criteria for convergence
+                 itermax = 100, dx_conv_crit = None, y_conv_crit = None,
+                 # hooks for "extra" functions, e.g., printg/logging/plotting
+                 logger=None, after_update_opt_state=[]):
         """Document what this method should do."""
-        raise NotImplementedError("Abstract method `LRMS.free()` called - this should have been defined in a derived class.")
 
-    def update_opt_state(self, new_vals = None):
-        '''
-          Updates the solver with the newly evaluated population and the corresponding
-          new_vals.
-        '''
-        pass
+        if logger:
+            self.logger = logger
+        else:
+            self.logger = logging.getLogger('gc3.gc3libs')
+
+        # save parameters
+        self.pop = initial_pop
+        self.dim = len(initial_pop[0])
+        self.pop_size = len(initial_pop)
+
+        self.y_conv_crit = y_conv_crit
+        self.dx_conv_crit = dx_conv_crit
+
+        self.itermax = itermax
+        self.cur_iter = 0
+
+        self.after_update_opt_state = after_update_opt_state
+
 
     def has_converged(self):
         '''
-          Check all specified convergence criteria and return whether converged.
+        Checks convergence based on two criteria:
+
+        1) Is the lowest target value in the population below `y_conv_crit`.
+        2) Are all population members within `dx_conv_crit` from the first population member.
         '''
-        return False
+        converged = False
+        # Check `y_conv_crit`
+        if self.best_y < self.y_conv_crit:
+            converged = True
+            self.logger.info('Converged: self.best_y < self.y_conv_crit')
 
-    def evaluate(self, pop):
-        # For each indivdual in self.population evaluate individual
-        return fitness_vector
+        # Check `dx_conv_crit`
+        dxs = np.abs(self.pop[:, :] - self.pop[0, :])
+        has_dx_converged = (dxs <= self.dx_conv_crit).all()
+        if has_dx_converged:
+            converged = True
+            self.logger.info('Converged: All population members within `dx_conv_crit` from the first population member. ')
+        return converged
 
-    def select(self, pop, fitness_vec):
-        pass # return a matrix of size self.size
+    def update_opt_state(self, new_pop, new_vals):
+        '''
+        Stores set of function values corresponding to the current
+        population, then updates optimizer state in many ways:
 
-    # a list of modified population, for example mutated, recombined, etc.
-    def evolve(self, offspring):
-        return modified_population # a mixture of different variations
+        * update the `.best*` variables accordingly;
+        * merges the two populations (old and new), keeping only the members with lower corresponding value;
+        * advances iteration count.
+        '''
+
+        self.logger.debug('entering update_opt_state')
+
+        # In variable names `best` refers to a population member with the
+        # lowest target function value within some group:
+
+        # best_x: Coordinates of the best population member since the optimization started.
+        # best_y: Val of the best population member since the optimization started.
+
+        new_vals = np.array(new_vals)
+        # determine the member with the lowest target value
+        best_ix = np.argmin(new_vals)
+        if self.cur_iter == 0 or new_vals[best_ix] < self.best_y:
+            # store the best population members
+            self.best_x = new_pop[best_ix, :].copy()
+            self.best_y = new_vals[best_ix].copy()
+
+        if self.cur_iter > 0:
+            # update self.pop and self.vals
+            self.select(new_pop, new_vals)
+        else:
+            self.pop = new_pop
+            self.vals = new_vals
+
+        self.logger.debug('new values %s', new_vals)
+        self.logger.debug('best value %s', self.best_y)
+
+        for fn in self.after_update_opt_state:
+            fn(self)
+
+        self.cur_iter += 1
+
+
+    def select(self, new_pop, new_vals):
+        """
+        Update `self.pop` and `self.vals` given the new population
+        and the corresponding fitness vector.
+        """
+        raise NotImplemented(
+            "Method `EvolutionaryAlgorithm.select` should be implemented in subclasses!")
+
+
+    def evolve(self):
+        '''
+        Generates a new population fullfilling `filter_fn`.
+        '''
+        raise NotImplemented(
+            "Method `EvolutionaryAlgorithm.evolve` should be implemented in subclasses!")
 
 
 def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None):
@@ -341,5 +424,5 @@ def populate(create_fn, filter_fn=None, max_n_resample=100):
 
 
 def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None):
-    return populate(create_fn=lambda:(lower_bds + np.random.random_sample( (size, dim) ) * ( upper_bds - lower_bds )), 
+    return populate(create_fn=lambda:(lower_bds + np.random.random_sample( (size, dim) ) * ( upper_bds - lower_bds )),
                     filter_fn=filter_fn)
