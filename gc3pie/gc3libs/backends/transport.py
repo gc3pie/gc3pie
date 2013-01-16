@@ -312,6 +312,8 @@ class SshTransport(Transport):
         try:
             # check connection first
             self.connect()
+            if detach:
+                command = command + ' &'
             gc3libs.log.debug("SshTransport running `%s`... ", command)
             stdin_stream, stdout_stream, stderr_stream = self.ssh.exec_command(command)
             stdout = ''
