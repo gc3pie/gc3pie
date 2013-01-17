@@ -35,10 +35,21 @@ if ON_RTD:
         def __getattr__(cls, name):
             if name in ('__file__', '__path__'):
                 return '/dev/null'
-            elif name[0] == name[0].upper():
+            elif Mock.__isclassname(name):
                 return type(name, (), {})
             else:
                 return Mock()
+        @staticmethod
+        def __isclassname(name):
+            for char in name:
+                # find first letter in the name
+                if not char.isalpha():
+                    continue
+                # class names must begin with uppercase letter
+                if char == char.upper():
+                    return True
+                else:
+                    return False
     MOCK_MODULES = [
         'M2Crypto',
         'MySQLdb',
