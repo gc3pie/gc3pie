@@ -55,7 +55,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     process to control the optimization. The methods `de_opt` and `iterate` are
     left unspecified and the outside process can instead directly call the
     methods that are called by `de_opt` and `iterate` (see code for
-    `DifferentialEvolutionSequential`) when needed. An example of how
+    `LocalDrivera`) when needed. An example of how
     :class:`DifferentialEvolutionAlgorithm` can be used is found in
     `GridOptimizer` located in `optimizer/__init__.py`.
 
@@ -255,131 +255,46 @@ def log_stats(algo, logger=logging.getLogger()):
                 algo.cur_iter, algo.best_x, algo.best_y)
 
 
-
-class DifferentialEvolutionSequential(object):
-
-    '''
-        In addition to initialization parameters of
-        :class:`DifferentialEvolutionAlgorithm` (which see), there is
-        one more:
-
-        `target_fn` -- Function to evaluate a population and return the corresponding values.
-    '''
-
-    def __init__(self, opt_algorithm, target_fn, logger=None):
-        self.opt_algorithm = opt_algorithm
-        self.target_fn = target_fn
-        if logger:
-            self.logger = logger
-        else:
-            self.logger = logging.getLogger('gc3.gc3libs')
-
-
-    def de_opt(self):
-        '''
-        Drives optimization until convergence or `itermax` is reached.
-        '''
-        self.logger.debug('entering de_opt')
-        new_pop = self.opt_algorithm.pop
-        has_converged = False
-        while not has_converged and self.opt_algorithm.cur_iter <= self.opt_algorithm.itermax:
-            # EVALUATE TARGET #
-            new_vals = self.target_fn(new_pop)
-            if __debug__:
-                self.logger.debug('x -> f(x)')
-                for x, fx in zip(new_pop, new_vals):
-                    self.logger.debug('%s -> %s' % (x.tolist(), fx))
-            self.opt_algorithm.update_opt_state(new_pop, new_vals)
-            # create output
-            has_converged = self.opt_algorithm.has_converged()
-            new_pop = self.opt_algorithm.evolve()
-        self.logger.debug('exiting ' + __name__)
-
-
-def plot_population(algo):
-    pop = algo.pop
-    if not self.dim == 2:
-        self.logger.critical('plot_population is implemented only for self.dim = 2')
-    import matplotlib
-    matplotlib.use('SVG')
-    import matplotlib.pyplot as plt
-    x = pop[:, 0]
-    y = pop[:, 1]
-    # determine bounds
-    xDif = self.upper_bds[0] - self.lower_bds[0]
-    yDif = self.upper_bds[1] - self.lower_bds[1]
-    scaleFac = 0.3
-    xmin = self.lower_bds[0] - scaleFac * xDif
-    xmax = self.upper_bds[0] + scaleFac * xDif
-    ymin = self.lower_bds[1] - scaleFac * yDif
-    ymax = self.upper_bds[1] + scaleFac * yDif
-
-    # make plot
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-
-    ax.scatter(x, y)
-    # x box constraints
-    ax.plot([self.lower_bds[0], self.lower_bds[0]], [ymin, ymax])
-    ax.plot([self.upper_bds[0], self.upper_bds[0]], [ymin, ymax])
-    # all other linear constraints
-    c_xmin = self.filter_fn.linearConstr(xmin)
-    c_xmax = self.filter_fn.linearConstr(xmax)
-    for ixC in range(len(c_xmin)):
-        ax.plot([xmin, xmax], [c_xmin[ixC], c_xmax[ixC]])
-    ax.axis(xmin = xmin, xmax = xmax,
-            ymin = ymin, ymax = ymax)
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_title('Best: x %s, f(x) %f' % (self.best_x, self.best_y))
-
-    figure_dir = os.path.join(os.getcwd(), 'dif_evo_figs')
-    fig.savefig(os.path.join(figure_dir, 'pop%d' % (self.cur_iter)))
-
-
-
-
-
-        # Variable changes from matlab implementation
-        # I_D -> dim
-        # I_NP -> pop_size
-        # FM_popold -> pop_old
-        # FVr_bestmem -> best
-        # FVr_bestmemit -> best_cur_iter
-        # I_nfeval -> n_fun_evals
-        # I_cur_iter -> cur_iter
-        # F_weight -> de_step_size
-        # F_CR -> prob_crossover
-        # I_itermax -> itermax
-        # F_VTR -> y_conv_crit
-        # I_strategy -> de_strategy
-        # I_plotting -> plotting
-        # lower_bds
-        # upper_bds
-        # dx_conv_crit
-        # verbosity
-        # FM_pm1 -> pm1
-        # FM_pm2 -> pm2 population matrix (pm)
-        # FM_pm3 -> pm3
-        # FM_pm4 -> pm4
-        # FM_pm5 -> pm5
-        # FM_bm  -> bm best member matrix
-        # FM_ui  -> ui ??
-        # FM_mui -> mui # mask for intermediate population
-        # FM_mpo -> mpo # mask for old population
-        # FVr_rot -> rot  # rotating index array (size I_NP)
-        # FVr_rotd -> rotd  # rotating index array (size I_D)
-        # FVr_rt -> rt  # another rotating index array
-        # FVr_rtd -> rtd # rotating ininstalldex array for exponential crossover
-        # FVr_a1 -> a1 # index array
-        # FVr_a2 -> a2 # index array
-        # FVr_a3 -> a3 # index array
-        # FVr_a4 -> a4 # index array
-        # FVr_a5 -> a5 # index array
-        # FVr_ind -> ind # index pointer array
-        # I_best_index -> best_ix
-        # S_vals -> vals
-        # S_bestval -> best_y
-        # S_bestvalit -> best_y_iter
-        # best -> best_x
-        # best_iter -> best_x_iter
+# Variable changes from matlab implementation
+# I_D -> dim
+# I_NP -> pop_size
+# FM_popold -> pop_old
+# FVr_bestmem -> best
+# FVr_bestmemit -> best_cur_iter
+# I_nfeval -> n_fun_evals
+# I_cur_iter -> cur_iter
+# F_weight -> de_step_size
+# F_CR -> prob_crossover
+# I_itermax -> itermax
+# F_VTR -> y_conv_crit
+# I_strategy -> de_strategy
+# I_plotting -> plotting
+# lower_bds
+# upper_bds
+# dx_conv_crit
+# verbosity
+# FM_pm1 -> pm1
+# FM_pm2 -> pm2 population matrix (pm)
+# FM_pm3 -> pm3
+# FM_pm4 -> pm4
+# FM_pm5 -> pm5
+# FM_bm  -> bm best member matrix
+# FM_ui  -> ui ??
+# FM_mui -> mui # mask for intermediate population
+# FM_mpo -> mpo # mask for old population
+# FVr_rot -> rot  # rotating index array (size I_NP)
+# FVr_rotd -> rotd  # rotating index array (size I_D)
+# FVr_rt -> rt  # another rotating index array
+# FVr_rtd -> rtd # rotating ininstalldex array for exponential crossover
+# FVr_a1 -> a1 # index array
+# FVr_a2 -> a2 # index array
+# FVr_a3 -> a3 # index array
+# FVr_a4 -> a4 # index array
+# FVr_a5 -> a5 # index array
+# FVr_ind -> ind # index pointer array
+# I_best_index -> best_ix
+# S_vals -> vals
+# S_bestval -> best_y
+# S_bestvalit -> best_y_iter
+# best -> best_x
+# best_iter -> best_x_iter

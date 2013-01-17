@@ -29,7 +29,8 @@ from nose.plugins.skip import SkipTest
 
 import numpy as np
 
-from gc3libs.optimizer.dif_evolution import DifferentialEvolutionSequential, DifferentialEvolutionAlgorithm
+from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
+from gc3libs.optimizer.drivers import LocalDriver
 from gc3libs.optimizer import draw_population
 
 def rosenbrock_fn(vectors):
@@ -76,7 +77,7 @@ def test_differential_evolution_sequential_with_rosenbrock():
     assert algo.de_strategy == 'DE_local_to_best'
     assert algo.logger == log
 
-    opt = DifferentialEvolutionSequential(algo, target_fn=rosenbrock_fn)
+    opt = LocalDriver(algo, target_fn=rosenbrock_fn)
     assert opt.target_fn == rosenbrock_fn
 
     # run the Diff.Evo. algorithm
