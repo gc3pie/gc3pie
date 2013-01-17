@@ -43,7 +43,7 @@ import gc3libs
 gc3libs.configure_logger(logging.DEBUG)
 
 # optimizer specific imports
-from gc3libs.optimizer import GridOptimizer
+from gc3libs.optimizer.drivers import GridDriver
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionParallel
 
 optimization_dir = os.path.join(os.getcwd(), 'optimizeGeometry')
@@ -254,7 +254,7 @@ class GeometriesScript(SessionBasedScript):
         kwargs['task_constructor'] = task_constructor_geometries
         kwargs['target_fun'] = compute_target_geometries
 
-        return [GridOptimizer(jobname=jobname, **kwargs)]
+        return [gc3libs.drivers.GridOptimizer(jobname=jobname, **kwargs)]
 
 
 

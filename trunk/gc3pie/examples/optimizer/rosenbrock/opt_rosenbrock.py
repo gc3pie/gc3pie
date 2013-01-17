@@ -41,7 +41,7 @@ from gc3libs.cmdline import SessionBasedScript
 from gc3libs.optimizer.utils import update_parameter_in_file
 
 # optimizer specific imports
-from gc3libs.optimizer import GridOptimizer
+from gc3libs.optimizer.drivers import GridDriver
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
 
 import numpy as np
@@ -180,7 +180,7 @@ class RosenbrockScript(SessionBasedScript):
         kwargs['extract_value_fn'] = compute_target_rosenbrock
         kwargs['cur_pop_file'] = 'cur_pop'
 
-        return [GridOptimizer(jobname=jobname, **kwargs)]
+        return [GridDriver(jobname=jobname, **kwargs)]
 
 if __name__ == '__main__':
     print 'starting'

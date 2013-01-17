@@ -66,186 +66,6 @@ import gc3libs.core
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 from gc3libs import Application, Run, Task
 
-
-# Could call this GridOptimizer
-
-# class LocalOptimizer
-# SequentialOptimizer
-# OptimizeLocal
-
-# gc3Optimizer
-# DistributedOptimizer
-class GridOptimizer(SequentialTaskCollection):
-    """Main loop for the global optimizer.
-
-    :param str jobname:       string that labels this optimization case.
-
-    :param path_to_stage_dir: directory in which to perform the optimization.
-
-    :param opt_algorithm:    Evolutionary algorithm instance that conforms
-                             to :class:`EvolutionaryAlgorithm`.
-
-    :param task_constructor: A function that takes a list of x vectors
-                             and the path to the current iteration
-                             directory, and returns Application
-                             instances that can be executed on the
-                             grid.
-
-    :param extract_value_fn: Takes an `Application`:class: instance returns
-                             the function value computed in that task.
-                             The default implementation just looks for a
-                             `.value` attribute on the application instance.
-
-    :param cur_pop_file:     Filename under which the population is stored
-                             in the current iteration dir. The
-                             population is discarded if no file is
-                             specified.
-
-    """
-
-    def __init__(self, jobname = '', path_to_stage_dir = '',
-                 opt_algorithm = None, task_constructor = None,
-                 extract_value_fn = (lambda app: app.value),
-                 cur_pop_file = '',
-                 **extra_args ):
-
-        log.debug('entering GridOptimizer.__init__')
-
-        # Set up initial variables and set the correct methods.
-        self.jobname = jobname
-        self.path_to_stage_dir = path_to_stage_dir
-        self.opt_algorithm = opt_algorithm
-        self.extract_value_fn = extract_value_fn
-        self.task_constructor = task_constructor
-        self.cur_pop_file = cur_pop_file
-        self.extra_args = extra_args
-        self.output_dir = os.getcwd()
-
-        self.new_pop = self.opt_algorithm.pop
-        initial_task = ComputeTargetVals(
-            self.opt_algorithm.pop, self.jobname, self.opt_algorithm.cur_iter,
-            path_to_stage_dir, self.cur_pop_file, task_constructor)
-
-        SequentialTaskCollection.__init__(self,  [initial_task], **extra_args)
-
-    def next(self, done):
-        log.debug('entering GridOptimizer.next(%d)', done)
-
-        # feed back results from the evaluation just completed
-        new_pop = self.new_pop
-        new_vals = [ self.extract_value(task) for task in self.tasks[done].tasks ]
-        self.opt_algorithm.update_opt_state(new_pop, new_vals)
-
-        self.changed = True
-
-        if opt_algorithm.cur_iter > opt_algorithm.itermax:
-            # maximum number of iterations exceeded
-            # XXX: what return code is appropriate here?
-            self.execution.exitcode = os.EX_TEMPFAIL
-            return Run.State.TERMINATED
-
-        # still within allowed number of iterations, check convergence
-        if self.opt_algorithm.has_converged():
-            # report success of sequential task
-            self.execution.returncode = 0
-            return Run.State.TERMINATED
-        else:
-            # prepare next evaluation
-            self.new_pop = self.opt_algorithm.evolve()
-            self.add(
-                ComputeTargetVals(
-                    self.new_pop, self.jobname, self.opt_algorithm.cur_iter,
-                    self.path_to_stage_dir, self.cur_pop_file, self.task_constructor))
-            return Run.State.RUNNING
-
-
-    def __str__(self):
-        return self.jobname
-
-    # Adjustments for pickling
-    # def __getstate__(self):
-    #     state = Task.__getstate__(self)
-    #     # Check that there are no functions in state.
-    #     #for attr in ['opt_algorithm']:
-    #         ## 'task_constructor', 'extract_value_fn', 'tasks',
-    #         #del state[attr]
-    #    # state = None
-    #     return state
-
-    # def __setstate__(self, state):
-    #     # restore _grid, etc.
-    #     Task.__setstate__(self, state)
-    #     # restore loggers
-    #     #self._setup_logging()
-
-
-class ComputeTargetVals(ParallelTaskCollection):
-    """
-    Generate a list of tasks and initialize a ParallelTaskCollection with them.
-
-    :param inParaCombos: List of tuples defining the parameter combinations.
-
-    :param jobname: Name of GridOptimizer instance driving the
-     optimization.
-
-    :param iteration: Current iteration number.
-
-    :param path_to_stage_dir: Path to directory in which optimization takes
-    place.
-
-    :param cur_pop_file: Filename under which the population is stored in the
-    current iteration dir. The population is discarded if no file is
-    specified. :param task_constructor: Takes a list of x vectors and the
-    path to the current iteration directory. Returns Application instances
-    that can be executed on the grid.
-    """
-
-    def __str__(self):
-        return self.jobname
-
-
-    def __init__(self, inParaCombos, jobname, iteration, path_to_stage_dir,
-                 cur_pop_file, task_constructor, **extra_args):
-
-        log.debug('entering ComputeTargetVals.__init__')
-
-        # Set up initial variables and set the correct methods.
-        self.jobname = 'evalSolverGuess' + '-' + jobname + '-' + str(iteration)
-        self.iteration = iteration
-        self.output_dir = os.getcwd()
-
-        self.path_to_stage_dir = path_to_stage_dir
-        self.cur_pop_file = cur_pop_file
-        self.verbosity = 'DEBUG'
-        self.extra_args = extra_args
-
-        # Log activity
-        cDate = datetime.date.today()
-        cTime = datetime.datetime.time(datetime.datetime.now())
-        date_string = '%04d--%02d--%02d--%02d--%02d--%02d' % (cDate.year,
-                                                cDate.month, cDate.day, cTime.hour,
-                                                cTime.minute, cTime.second)
-        gc3libs.log.debug('Establishing parallel task on %s', date_string)
-
-        # Enter an iteration specific folder
-        self.iterationFolder = os.path.join(self.path_to_stage_dir,
-                                            'Iteration-' + str(self.iteration))
-        try:
-            os.mkdir(self.iterationFolder)
-        except OSError:
-            print '%s already exists' % self.iterationFolder
-
-        # save population to file
-        if cur_pop_file:
-            np.savetxt(os.path.join(self.iterationFolder, cur_pop_file),
-                       inParaCombos, delimiter = ' ')
-
-        self.tasks = [
-            task_constructor(x_vec, self.iterationFolder) for x_vec in inParaCombos
-        ]
-        ParallelTaskCollection.__init__(self, self.tasks, **extra_args)
-
-
 class EvolutionaryAlgorithm(object):
     '''
     Base class for building an evolutionary algorithm for global optimization.
@@ -357,30 +177,30 @@ class EvolutionaryAlgorithm(object):
             "Method `EvolutionaryAlgorithm.evolve` should be implemented in subclasses!")
 
 
-def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None):
-    '''
-      Check that each ele satisfies fullfills all constraints. If not, then draw a new population memeber and check constraint.
-    '''
+#def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None):
+    #'''
+      #Check that each ele satisfies fullfills all constraints. If not, then draw a new population memeber and check constraint.
+    #'''
 
-    pop = lower_bds + np.random.random_sample( (size, dim) ) * ( upper_bds - lower_bds )
+    #pop = lower_bds + np.random.random_sample( (size, dim) ) * ( upper_bds - lower_bds )
 
-    # If a filter function is specified, resample until a sample fullfilling the filter
-    # is found.
-    if filter_fn:
-        ctr = 0
-        max_n_resample = 100
-        dim = self.dim
-        # check filter_fn | should I use pop or self.pop here?
-        pop_valid = self.filter_fn(pop)
-        n_invalid_pop = (pop_valid == False).sum()
-        while n_invalid_pop > 0 and ctr < max_n_resample:
-            resampled_pop = lower_bds + np.random.random_sample( (n_invalid_pop, dim) ) * ( upper_bds - lower_bds )
-            #draw_population(self.lower_bds, self.upper_bds, n_invalid_pop, self.dim)
-            pop[~pop_valid] = resampled_pop
-            pop_valid = self.filter_fn(pop)
-            n_invalid_pop = (pop_valid == False).sum()
+    ## If a filter function is specified, resample until a sample fullfilling the filter
+    ## is found.
+    #if filter_fn:
+        #ctr = 0
+        #max_n_resample = 100
+        #dim = self.dim
+        ## check filter_fn | should I use pop or self.pop here?
+        #pop_valid = self.filter_fn(pop)
+        #n_invalid_pop = (pop_valid == False).sum()
+        #while n_invalid_pop > 0 and ctr < max_n_resample:
+            #resampled_pop = lower_bds + np.random.random_sample( (n_invalid_pop, dim) ) * ( upper_bds - lower_bds )
+            ##draw_population(self.lower_bds, self.upper_bds, n_invalid_pop, self.dim)
+            #pop[~pop_valid] = resampled_pop
+            #pop_valid = self.filter_fn(pop)
+            #n_invalid_pop = (pop_valid == False).sum()
 
-    return pop
+    #return pop
 
 def populate(create_fn, filter_fn=None, max_n_resample=100):
     pop = create_fn()
