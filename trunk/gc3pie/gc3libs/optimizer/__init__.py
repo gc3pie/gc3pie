@@ -66,22 +66,6 @@ import gc3libs.core
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 from gc3libs import Application, Run, Task
 
-# Perform basic configuration for gc3libs logger. Adjust level to logging.DEBUG if necessary.
-gc3libs.configure_logger(level=logging.CRITICAL)
-
-# Generate a separate logging instance. Careful, running gc3libs.configure_logger again will
-log = logging.getLogger('gc3.gc3libs.GridOptimizer')
-log.setLevel(logging.DEBUG)
-log.propagate = 0
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.DEBUG)
-log_file_name = os.path.join(gc3libs.Default.RCDIR, 'GridOptimizer.log')
-file_handler = logging.FileHandler(log_file_name, mode = 'w')
-file_handler.setLevel(logging.DEBUG)
-log.addHandler(stream_handler)
-log.addHandler(file_handler)
-
-
 
 # Could call this GridOptimizer
 
