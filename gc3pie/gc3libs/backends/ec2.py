@@ -126,9 +126,10 @@ class EC2Lrms(LRMS):
                     "Multiple images found with name `%s`: %s"
                     " Please specify an unique image id in configuration"
                     " file." % (image_name, [i.id for i in images]))
+            self.image_id = images[0].id
         else:
             raise ConfigurationError(
-                "Nor `image_id` or `image_name` has been specified in the"
+                "No `image_id` or `image_name` has been specified in the"
                 " configuration file.")
         self.instance_type = instance_type
 
