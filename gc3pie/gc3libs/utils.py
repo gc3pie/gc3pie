@@ -8,7 +8,7 @@ function or class belongs in here is the following: place a function
 or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -919,6 +919,48 @@ def samefile(path1, path2):
             return False
         else:
             raise
+
+
+def sh_quote_safe(text):
+    """
+    Escape a string for safely passing as argument to a shell command.
+
+    Return a single-quoted string that expands to the exact literal
+    contents of `text` when used as an argument to a shell command.
+    Examples (note that backslashes are doubled because of Python's
+    string read syntax)::
+
+      >>> print(sh_quote_safe("arg"))
+      'arg'
+      >>> print(sh_quote_safe("'arg'"))
+      ''\\''arg'\\'''
+
+    """
+    return ("'%s'" % text.replace("'", r"'\''"))
+
+
+_DQUOTE_RE = re.compile(r'(\\*)"')
+"""Regular expression for escaping double quotes in strings."""
+
+def sh_quote_unsafe(text):
+    """
+    Double-quote a string for passing as argument to a shell command.
+
+    Return a double-quoted string that expands to the contents of
+    `text` but still allows variable expansion and ``\``-escapes
+    processing by the UNIX shell.  Examples (note that backslashes are
+    doubled because of Python's string read syntax)::
+
+      >>> print(sh_quote_unsafe("arg"))
+      "arg"
+      >>> print(sh_quote_unsafe('"arg"'))
+      "\\"arg\\""
+      >>> print(sh_quote_unsafe(r'"\\"arg\\""'))
+      "\\"\\\\\\"arg\\\\\\"\\""
+
+    """
+    return ('"%s"' % _DQUOTE_RE.sub(r'\1\1\"', text))
+
 
 # see http://stackoverflow.com/questions/31875/is-there-a-simple-elegant-way-to-define-singletons-in-python/1810391#1810391
 class Singleton(object):
