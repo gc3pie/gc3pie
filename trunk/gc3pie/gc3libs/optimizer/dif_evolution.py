@@ -1,9 +1,13 @@
 #! /usr/bin/env python
 #
 """
-Differential Evolution Optimizer
+Differential Evolution Optimizer. 
+
 This code is an adaptation of the following MATLAB code: http://www.icsi.berkeley.edu/~storn/DeMat.zip
 Please refer to this web site for more information: http://www.icsi.berkeley.edu/~storn/code.html#deb1
+
+Some information related to differential evolution can be found in the following papers: 
+1) Tvrdık 2008 www.proceedings2008.imcsit.org/pliks/95.pdf
 """
 # Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
 #
