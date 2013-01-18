@@ -1,7 +1,25 @@
 #! /usr/bin/env python
 #
 """
+Class to perform global optimization.
 
+Optimization algorithm (for example Ken Price's Differential
+Evolution algorithm) generates guesses that are evaluated in parallel
+using gc3pie.
+
+An instance of :class:`GridOptimizer` will perform the entire optimization
+in a directory on the local machine named `path_to_stage_dir`.
+
+At each iteration an instance of 'ComputeTargetVals' lets the user-defined
+function `task_constructor` generate :class:`Application` instances that are
+used to execute the jobs in parallel on the grid. When all
+jobs are complete, the objective's output is analyzed with the user-supplied
+function `target_fun`. This function returns the function value for all
+analyzed input vectors.
+
+With this information, the optimizer generates a new guess. The instance of
+:class:`GridOptimizer` iterates until the sepcified convergence criteria
+is satisfied.
 """
 # Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
 #
@@ -40,12 +58,17 @@ class LocalDriver(object):
         :param opt_algorithm: Evolutionary algorithm instance that conforms
                               to :class:`EvolutionaryAlgorithm`.
         :param target_fn:     Function to evaluate a population and return the corresponding values.
+        :param cur_pop_file:  Filename under which the population is stored
+                              in the current iteration dir. The
+                              population is discarded if no file is
+                              specified.
         :param `logger`:      Configured logger to use.
     '''
 
-    def __init__(self, opt_algorithm, target_fn, logger=None):
+    def __init__(self, opt_algorithm, target_fn, cur_pop_file=None, logger=None):
         self.opt_algorithm = opt_algorithm
         self.target_fn = target_fn
+        self.cur_pop_file = cur_pop_file
         if logger:
             self.logger = logger
         else:
@@ -60,12 +83,19 @@ class LocalDriver(object):
         new_pop = self.opt_algorithm.pop
         has_converged = False
         while not has_converged and self.opt_algorithm.cur_iter <= self.opt_algorithm.itermax:
+            # Save current population
+            self.iteration_folder = os.path.join(os.getcwd(), 'iter_' + str(self.opt_algorithm.cur_iter))
+            if self.cur_pop_file:
+                if not os.path.isdir(self.iteration_folder): os.mkdir(self.iteration_folder)
+                np.savetxt(os.path.join(self.iteration_folder, self.cur_pop_file),
+                           new_pop, delimiter = ' ')
+            self.logger.debug('pop = \n%s', new_pop)
             # EVALUATE TARGET #
             new_vals = self.target_fn(new_pop)
-            if __debug__:
-                self.logger.debug('x -> f(x)')
-                for x, fx in zip(new_pop, new_vals):
-                    self.logger.debug('%s -> %s' % (x.tolist(), fx))
+            #if __debug__:
+                #self.logger.debug('x -> f(x)')
+                #for x, fx in zip(new_pop, new_vals):
+                    #self.logger.debug('%s -> %s' % (x.tolist(), fx))
             self.opt_algorithm.update_opt_state(new_pop, new_vals)
             # create output
             has_converged = self.opt_algorithm.has_converged()
@@ -226,20 +256,20 @@ class ComputeTargetVals(ParallelTaskCollection):
         gc3libs.log.debug('Establishing parallel task on %s', date_string)
 
         # Enter an iteration specific folder
-        self.iterationFolder = os.path.join(self.path_to_stage_dir,
+        self.iteration_folder = os.path.join(self.path_to_stage_dir,
                                             'Iteration-' + str(self.iteration))
         try:
-            os.mkdir(self.iterationFolder)
+            os.mkdir(self.iteration_folder)
         except OSError:
-            print '%s already exists' % self.iterationFolder
+            print '%s already exists' % self.iteration_folder
 
         # save population to file
         if cur_pop_file:
-            np.savetxt(os.path.join(self.iterationFolder, cur_pop_file),
+            np.savetxt(os.path.join(self.iteration_folder, cur_pop_file),
                        inParaCombos, delimiter = ' ')
 
         self.tasks = [
-            task_constructor(x_vec, self.iterationFolder) for x_vec in inParaCombos
+            task_constructor(x_vec, self.iteration_folder) for x_vec in inParaCombos
         ]
         ParallelTaskCollection.__init__(self, self.tasks, **extra_args)
 

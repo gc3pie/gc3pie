@@ -1,25 +1,7 @@
 #! /usr/bin/env python
 #
 """
-Class to perform global optimization.
 
-Optimization algorithm (for example Ken Price's Differential
-Evolution algorithm) generates guesses that are evaluated in parallel
-using gc3pie.
-
-An instance of :class:`GridOptimizer` will perform the entire optimization
-in a directory on the local machine named `path_to_stage_dir`.
-
-At each iteration an instance of 'ComputeTargetVals' lets the user-defined
-function `task_constructor` generate :class:`Application` instances that are
-used to execute the jobs in parallel on the grid. When all
-jobs are complete, the objective's output is analyzed with the user-supplied
-function `target_fun`. This function returns the function value for all
-analyzed input vectors.
-
-With this information, the optimizer generates a new guess. The instance of
-:class:`GridOptimizer` iterates until the sepcified convergence criteria
-is satisfied.
 """
 # Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
 #
@@ -176,32 +158,6 @@ class EvolutionaryAlgorithm(object):
         raise NotImplemented(
             "Method `EvolutionaryAlgorithm.evolve` should be implemented in subclasses!")
 
-
-#def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None):
-    #'''
-      #Check that each ele satisfies fullfills all constraints. If not, then draw a new population memeber and check constraint.
-    #'''
-
-    #pop = lower_bds + np.random.random_sample( (size, dim) ) * ( upper_bds - lower_bds )
-
-    ## If a filter function is specified, resample until a sample fullfilling the filter
-    ## is found.
-    #if filter_fn:
-        #ctr = 0
-        #max_n_resample = 100
-        #dim = self.dim
-        ## check filter_fn | should I use pop or self.pop here?
-        #pop_valid = self.filter_fn(pop)
-        #n_invalid_pop = (pop_valid == False).sum()
-        #while n_invalid_pop > 0 and ctr < max_n_resample:
-            #resampled_pop = lower_bds + np.random.random_sample( (n_invalid_pop, dim) ) * ( upper_bds - lower_bds )
-            ##draw_population(self.lower_bds, self.upper_bds, n_invalid_pop, self.dim)
-            #pop[~pop_valid] = resampled_pop
-            #pop_valid = self.filter_fn(pop)
-            #n_invalid_pop = (pop_valid == False).sum()
-
-    #return pop
-
 def populate(create_fn, filter_fn=None, max_n_resample=100):
     pop = create_fn()
     if filter_fn:
@@ -227,6 +183,7 @@ def populate(create_fn, filter_fn=None, max_n_resample=100):
     return pop
 
 
-def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None):
+def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None, seed = None):
+    np.random.seed(seed)
     return populate(create_fn=lambda:(lower_bds + np.random.random_sample( (size, dim) ) * ( upper_bds - lower_bds )),
                     filter_fn=filter_fn)

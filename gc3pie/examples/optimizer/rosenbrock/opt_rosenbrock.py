@@ -147,7 +147,6 @@ class RosenbrockScript(SessionBasedScript):
         log.propagate = 0
         stream_handler = logging.StreamHandler()
         stream_handler.setLevel(logging.DEBUG)
-        import gc3libs
         log_file_name = os.path.join(os.getcwd(), 'EvolutionaryAlgorithm.log')
         file_handler = logging.FileHandler(log_file_name, mode = 'w')
         file_handler.setLevel(logging.DEBUG)
