@@ -33,6 +33,11 @@ from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
 from gc3libs.optimizer.drivers import LocalDriver
 from gc3libs.optimizer import draw_population
 
+np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
+
+magic_seed = 100
+
+
 def rosenbrock_fn(vectors):
     result = []
     for vector in vectors:
@@ -41,7 +46,6 @@ def rosenbrock_fn(vectors):
 
         result.append(F_cost)
     return np.array(result)
-
 
 def test_differential_evolution_sequential_with_rosenbrock():
 
@@ -67,7 +71,8 @@ def test_differential_evolution_sequential_with_rosenbrock():
         dx_conv_crit = None, # stop when variation among x's is < this
         y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
         de_strategy = 'DE_local_to_best',
-        logger = log
+        logger = log, 
+        seed = magic_seed
         )
     assert algo.de_step_size == 0.85
     assert algo.prob_crossover == prob_cross
@@ -112,7 +117,8 @@ def test_differential_evolution_parallel_with_rosenbrock():
         dx_conv_crit = None, # stop when variation among x's is < this
         y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
         de_strategy = 'DE_local_to_best',
-        logger = log
+        logger = log,
+        seed=magic_seed
         )
 
     new_pop = opt.pop

@@ -33,9 +33,6 @@ import sys
 import numpy as np
 
 from gc3libs.optimizer import EvolutionaryAlgorithm
-
-np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
-
 from gc3libs.optimizer import draw_population, populate
 from gc3libs.utils import Enum
 

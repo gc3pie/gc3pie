@@ -36,6 +36,9 @@ import sys
 import sys
 import gc3libs
 import time
+
+import numpy as np
+
 from gc3libs import Application
 from gc3libs.cmdline import SessionBasedScript
 from gc3libs.optimizer.utils import update_parameter_in_file
@@ -43,10 +46,9 @@ from gc3libs.optimizer.utils import update_parameter_in_file
 # optimizer specific imports
 from gc3libs.optimizer.drivers import GridDriver
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
-
-import numpy as np
-
 from gc3libs.optimizer import draw_population
+
+np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
 float_fmt = '%25.15f'
 

@@ -49,6 +49,8 @@ from gc3libs.optimizer.dif_evolution import DifferentialEvolutionParallel
 optimization_dir = os.path.join(os.getcwd(), 'optimizeGeometry')
 
 float_fmt = '%25.15f'
+np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
+
 
 
 def compute_target_geometries(pop_task_tuple):
