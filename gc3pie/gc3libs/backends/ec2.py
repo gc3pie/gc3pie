@@ -91,8 +91,32 @@ class EC2Lrms(LRMS):
 
         self.keypair_name = keypair_name
         self.public_key = public_key
+        self.image_id = image_id
+        self.image_name = image_name
+        self.instance_type = instance_type
 
         self._parse_security_group()
+        self._conn = None
+
+        # `self.subresource_args` is used to create subresources
+        self.subresource_args = extra_args
+        self.subresource_args['type'] = self.subresource_type
+        for key in ['architecture', 'max_cores', 'max_cores_per_job',
+                    'max_memory_per_core', 'max_walltime']:
+            self.subresource_args[key] = self[key]
+
+        if not image_name and not image_id:
+            raise ConfigurationError(
+                "No `image_id` or `image_name` has been specified in the"
+                " configuration file.")
+
+    def _connect(self):
+        """
+        Connect to the EC2 endpoint and check that the required
+        `image_id` exists.
+        """
+        if self._conn is not None:
+            return
 
         args = {'aws_access_key_id': self.ec2_access_key,
                 'aws_secret_access_key': self.ec2_secret_key,
@@ -100,7 +124,7 @@ class EC2Lrms(LRMS):
 
         if self.ec2_url:
             region = boto.ec2.regioninfo.RegionInfo(
-                name=ec2_region,
+                name=self.region,
                 endpoint=self.ec2_url.hostname)
             args['region'] = region
             args['port'] = self.ec2_url.port
@@ -111,41 +135,125 @@ class EC2Lrms(LRMS):
 
         self._conn = boto.connect_ec2(**args)
 
-        if image_id:
-            self.image_id = image_id
-        elif image_name:
-            all_images = self._conn.get_all_images()
-            images = [i for i in all_images if i.name == image_name]
+        all_images = self._conn.get_all_images()
+        if self.image_id:
+            if self.image_id not in [i.id for i in all_images]:
+                raise RuntimeError(
+                    "Image with id `%s` not found. Please specify a valid"
+                    " image name or image id in the configuration file."
+                    % self.image_id)
+        else:
+            images = [i for i in all_images if i.name == self.image_name]
             if not images:
-                raise ConfigurationError(
+                raise RuntimeError(
                     "Image with name `%s` not found. Please specify a valid"
                     " image name or image id in the configuration file."
-                    % image_name)
+                    % self.image_name)
             elif len(images) != 1:
-                raise ConfigurationError(
+                raise RuntimeError(
                     "Multiple images found with name `%s`: %s"
                     " Please specify an unique image id in configuration"
-                    " file." % (image_name, [i.id for i in images]))
+                    " file." % (self.image_name, [i.id for i in images]))
             self.image_id = images[0].id
-        else:
-            raise ConfigurationError(
-                "No `image_id` or `image_name` has been specified in the"
-                " configuration file.")
-        self.instance_type = instance_type
 
-        # `self.subresource_args` is used to create subresources
-        self.subresource_args = extra_args
-        self.subresource_args['type'] = self.subresource_type
-        for key in ['architecture', 'max_cores', 'max_cores_per_job',
-                    'max_memory_per_core', 'max_walltime']:
-            self.subresource_args[key] = self[key]
+    def _create_instance(self, image_id, instance_type=None):
+        """
+        Create an instance using the image `image_id` and instance
+        type `instance_type`. If not `instance_type` is defined, use
+        the default.
+
+        This method will also setup the keypair and the security
+        groups, if needed.
+        """
+        self._connect()
+
+        args = {'key_name':  self.keypair_name,
+                'min_count': 1,
+                'max_count': 1}
+        if instance_type:
+            args['instance_type'] = instance_type
+
+        if 'user_data' in self:
+            args['user_data'] = self.user_data
+
+        # Check if the desired keypair is present
+        keypairs = dict((k.name, k) for k in self._conn.get_all_key_pairs())
+        if self.keypair_name not in keypairs:
+            gc3libs.log.info(
+                "Keypair `%s` not found: creating it using public key `%s`"
+                % (self.keypair_name, self.public_key))
+            # Create keypair if it does not exist and give an error if it
+            # exists but have different fingerprint
+            self._import_keypair()
+        else:
+            keyfile = os.path.expanduser(self.public_key)
+            if keyfile.endswith('.pub'):
+                keyfile = keyfile[:-4]
+            else:
+                gc3libs.log.warning(
+                    "`public_key` option in configuration file should contains"
+                    " path to a public key. Found %s instead: %s",
+                    self.public_key)
+            try:
+                pkey = paramiko.DSSKey.from_private_key_file(keyfile)
+            except:
+                pkey = paramiko.RSAKey.from_private_key_file(keyfile)
+
+            # Check key fingerprint
+            localkey_fingerprint = str.join(
+                ':', (i.encode('hex') for i in pkey.get_fingerprint()))
+            if localkey_fingerprint != keypairs[self.keypair_name].fingerprint:
+                gc3libs.log.error(
+                    "Keypair `%s` is present but has different fingerprint: "
+                    "%s != %s. Aborting!" % (
+                        self.keypair_name,
+                        localkey_fingerprint,
+                        keypairs[self.keypair_name].fingerprint))
+                raise UnrecoverableError(
+                    "Keypair `%s` is present but has different fingerprint: "
+                    "%s != %s. Aborting!" % (
+                        self.keypair_name,
+                        localkey_fingerprint,
+                        keypairs[self.keypair_name].fingerprint))
+
+        # Setup security groups
+        if 'security_group_name' in self:
+            self._setup_security_groups()
+            args['security_groups'] = [self.security_group_name]
+
+        # FIXME: we should add check/creation of proper security
+        # groups
+        gc3libs.log.debug("Create new VM using image id `%s`", image_id)
+        try:
+            reservation = self._conn.run_instances(image_id, **args)
+        except Exception, ex:
+            raise UnrecoverableError("Error starting instance: %s" % str(ex))
+        vm = reservation.instances[0]
+
+        gc3libs.log.info(
+            "VM with id `%s` has been created and is in %s state.",
+            vm.id, vm.state)
+        return vm
+
+    def _get_remote_resource(self, vm):
+        """
+        Return the resource associated to the virtual machine with
+        `vm`.
+
+        Updates the internal list of available resources if needed.
+        """
+        if vm.id not in self.resources:
+            self.resources[vm.id] = self._make_resource(vm.public_dns_name)
+        return self.resources[vm.id]
 
     def _get_vm(self, vm_id):
         """
-        Return the instance with id `vm_id`, if any.
+        Return the instance with id `vm_id`, raises an error if there
+        is no such instance with that id.
         """
         # NOTE: since `vm_id` is supposed to be unique, we assume
         # reservations only contains one element.
+        self._connect()
         reservations = self._conn.get_all_instances(instance_ids=[vm_id])
         instances = dict((i.id, i) for i in reservations[0].instances)
         if vm_id not in instances:
@@ -153,6 +261,27 @@ class EC2Lrms(LRMS):
                 "Instance with id %s has not found in EC2 cloud %s"
                 % (vm_id, self.auth.ec2_auth_url))
         return instances[vm_id]
+
+    def _import_keypair(self):
+        """
+        Create a new keypair and import the public key defined in the
+        configuration file.
+        """
+        fd = open(os.path.expanduser(self.public_key))
+        try:
+            key_material = fd.read()
+            imported_key = self._conn.import_key_pair(
+                self.keypair_name, key_material)
+
+            gc3libs.log.info(
+                "Successfully imported key `%s` with fingerprint `%s`"
+                " as keypir `%s`" % (imported_key.name,
+                                     imported_key.fingerprint,
+                                     self.keypair_name))
+        except Exception, ex:
+            fd.close()
+            raise UnrecoverableError("Error importing keypair %s: %s"
+                                     % self.keypair_name, ex)
 
     def _make_resource(self, remote_ip):
         """
@@ -178,38 +307,6 @@ class EC2Lrms(LRMS):
                 "Remote VM at `%s` not ready yet. Retrying later" % remote_ip)
         return resource
 
-    def _get_remote_resource(self, vm):
-        """
-        Return the resource associated to the virtual machine with
-        `vm`.
-
-        Updates the internal list of available resources if needed.
-        """
-        if vm.id not in self.resources:
-            self.resources[vm.id] = self._make_resource(vm.public_dns_name)
-        return self.resources[vm.id]
-
-    def _import_keypair(self):
-        """
-        Create a new keypair and import the public key defined in the
-        configuration file.
-        """
-        fd = open(os.path.expanduser(self.public_key))
-        try:
-            key_material = fd.read()
-            imported_key = self._conn.import_key_pair(
-                self.keypair_name, key_material)
-
-            gc3libs.log.info(
-                "Successfully imported key `%s` with fingerprint `%s`"
-                " as keypir `%s`" % (imported_key.name,
-                                     imported_key.fingerprint,
-                                     self.keypair_name))
-        except Exception, ex:
-            fd.close()
-            raise UnrecoverableError("Error importing keypair %s: %s"
-                                     % self.keypair_name, ex)
-
     def _parse_security_group(self):
         """
         Parse configuration file and set `self.security_group_rules`
@@ -232,8 +329,8 @@ class EC2Lrms(LRMS):
 
     def _setup_security_groups(self):
         """
-        Check the current configuration and set up a security group if
-        it does not exist
+        Check the current configuration and set up the security group
+        if it does not exist.
         """
         if not self.security_group_name:
             gc3libs.log.error("Group name in `security_group_name`"
@@ -282,6 +379,8 @@ class EC2Lrms(LRMS):
             for new_rule in self.security_group_rules:
                 if new_rule not in current_rules:
                     security_group.authorize(**new_rule)
+
+    # Public methods
 
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
@@ -342,75 +441,6 @@ class EC2Lrms(LRMS):
 
         return self.resources[app.ec2_instance_id].update_job_state(app)
 
-    def _create_instance(self, image_id, instance_type=None):
-        """
-        Create an instance.
-        """
-        args = {'key_name':  self.keypair_name,
-                'min_count': 1,
-                'max_count': 1}
-        if instance_type:
-            args['instance_type'] = self.instance_type
-
-        if 'user_data' in self:
-            args['user_data'] = self.user_data
-
-        # Check if the desired keypair is present
-        keypairs = dict((k.name, k) for k in self._conn.get_all_key_pairs())
-        if self.keypair_name not in keypairs:
-            gc3libs.log.info(
-                "Keypair `%s` not found: creating it using public key `%s`"
-                % (self.keypair_name, self.public_key))
-            # Create keypair if it does not exist and give an error if it
-            # exists but have different fingerprint
-            self._import_keypair()
-        else:
-            keyfile = os.path.expanduser(self.public_key)
-            if keyfile.endswith('.pub'):
-                keyfile = keyfile[:-4]
-            else:
-                gc3libs.log.warning(
-                    "`public_key` option in configuration file should contains"
-                    " path to a public key. Found %s instead: %s",
-                    self.public_key)
-            try:
-                pkey = paramiko.DSSKey.from_private_key_file(keyfile)
-            except:
-                pkey = paramiko.RSAKey.from_private_key_file(keyfile)
-
-            # Check key fingerprint
-            localkey_fingerprint = str.join(
-                ':', (i.encode('hex') for i in pkey.get_fingerprint()))
-            if localkey_fingerprint != keypairs[self.keypair_name].fingerprint:
-                gc3libs.log.error(
-                    "Keypair `%s` is present but has different fingerprint: "
-                    "%s != %s. Aborting!" % (
-                        self.keypair_name,
-                        localkey_fingerprint,
-                        keypairs[self.keypair_name].fingerprint))
-                raise UnrecoverableError(
-                    "Keypair `%s` is present but has different fingerprint: "
-                    "%s != %s. Aborting!" % (
-                        self.keypair_name,
-                        localkey_fingerprint,
-                        keypairs[self.keypair_name].fingerprint))
-
-        # Setup security groups
-        if 'security_group_name' in self:
-            self._setup_security_groups()
-            args['security_groups'] = [self.security_group_name]
-
-        # FIXME: we should add check/creation of proper security
-        # groups
-        gc3libs.log.debug("Create new VM using image id `%s`" % image_id)
-        reservation = self._conn.run_instances(image_id, **args)
-        vm = reservation.instances[0]
-
-        gc3libs.log.info(
-            "VM with id `%s` has been created and is in %s state.",
-            vm.id, vm.state)
-        return vm
-
     @same_docstring_as(LRMS.submit_job)
     def submit_job(self, job):
         """
@@ -431,6 +461,7 @@ class EC2Lrms(LRMS):
         # if the job has an `ec2_instance_id` attribute, it means that
         # a VM for this job has already been created. If not, a new
         # instance is created.
+        self._connect()
         if hasattr(job, 'ec2_instance_id'):
             vm = self._get_vm(job.ec2_instance_id)
         else:
@@ -470,36 +501,9 @@ class EC2Lrms(LRMS):
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
-        job = app.execution
-        assert 'lrms_execdir' in job, \
-            "Missing attribute `lrms_execdir` on `Job` instance " \
-            "passed to `PbsLrms.peek`."
-
-        if size is None:
-            size = sys.maxint
-
-        _filename_mapping = generic_filename_mapping(job.lrms_jobname,
-                                                     job.lrms_jobid,
-                                                     remote_filename)
-        _remote_filename = os.path.join(job.lrms_execdir, _filename_mapping)
-
-        try:
-            self.transport.connect()
-            remote_handler = self.transport.open(
-                _remote_filename, mode='r', bufsize=-1)
-            remote_handler.seek(offset)
-            data = remote_handler.read(size)
-        except Exception, ex:
-            log.error("Could not read remote file '%s': %s: %s",
-                      _remote_filename, ex.__class__.__name__, str(ex))
-
-        try:
-            local_file.write(data)
-        except (TypeError, AttributeError):
-            output_file = open(local_file, 'w+b')
-            output_file.write(data)
-            output_file.close()
-        log.debug('... Done.')
+        resource = self._get_remote_resource(
+            self._get_vm(app.ec2_instance_id))
+        return resource.peek(app, remote_filename, local_file, offset, size)
 
     @same_docstring_as(LRMS.validate_data)
     def validate_data(self, data_file_list=None):
