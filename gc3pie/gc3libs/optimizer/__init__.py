@@ -141,7 +141,6 @@ class EvolutionaryAlgorithm(object):
 
         self.cur_iter += 1
 
-
     def select(self, new_pop, new_vals):
         """
         Update `self.pop` and `self.vals` given the new population
@@ -149,7 +148,6 @@ class EvolutionaryAlgorithm(object):
         """
         raise NotImplemented(
             "Method `EvolutionaryAlgorithm.select` should be implemented in subclasses!")
-
 
     def evolve(self):
         '''
@@ -162,17 +160,20 @@ def populate(create_fn, filter_fn=None, max_n_resample=100):
     pop = create_fn()
     if filter_fn:
         # re-evolve if some members do not fullfill fiter_fn
-        pop_valid_orig = filter_fn(pop)
-        n_invalid_orig = (pop_valid_orig == False).sum()
+        pop_valid_orig = np.array(filter_fn(pop))
+        n_invalid_orig = (~pop_valid_orig).sum()
         fillin_pop = pop[~pop_valid_orig]
+        n_to_fill = len(fillin_pop)
         total_filled = 0
         ctr = 0
         while total_filled < n_invalid_orig and ctr < max_n_resample:
             new_pop = create_fn()
-            new_pop_valid = filter_fn(new_pop)
-            n_pop_valid = (new_pop_valid == True).sum()
-            new_total_filled = min(total_filled + n_pop_valid, len(fillin_pop))
-            fillin_pop[total_filled:new_total_filled] = new_pop[new_pop_valid]
+            new_pop_valid = np.array(filter_fn(new_pop))
+            n_pop_valid = new_pop_valid.sum()
+            new_total_filled = min(total_filled + n_pop_valid, n_to_fill)
+            n_new_recruits = new_total_filled - total_filled
+            ix_new_recruits = np.where(new_pop_valid)[0][0:n_new_recruits]
+            fillin_pop[total_filled:new_total_filled] = new_pop[ix_new_recruits]
             total_filled = new_total_filled
         if total_filled < n_invalid_orig:
             self.logger.warning(

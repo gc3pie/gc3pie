@@ -1,6 +1,11 @@
 #! /usr/bin/env python
 #
 """
+Unit tests for the `gc3libs.optimizer.dif_evolution` module.
+
+Test using the 2-d Rosenbrock function: 
+    f(x,y) = (1-x)**2 + 100 * (y - x**2)**2
+The function has a global minimum at (x,y) = (1,1) with f(x,y) = 0
 """
 # Copyright (C) 2011, 2012, 2013, GC3, University of Zurich. All rights reserved.
 #
@@ -35,7 +40,17 @@ from gc3libs.optimizer import draw_population
 
 np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
+# Test parameters
 magic_seed = 100
+dim = 2
+pop_size = 100
+lower_bounds = -2 * np.ones(dim)
+upper_bounds = +2 * np.ones(dim)
+prob_cross = 0.8
+filter_pop_sum = 3.                # x[0] + x[1] <= filter_pop_sum
+
+log = logging.getLogger("gc3.gc3libs")
+
 
 def rosenbrock_fn(vectors):
     result = []
@@ -46,22 +61,20 @@ def rosenbrock_fn(vectors):
         result.append(F_cost)
     return np.array(result)
 
-def test_differential_evolution_sequential_with_rosenbrock():
+def rosenbrock_sample_filter(pop):
+    '''
+    Sample filter function. 
+    In optimum x[0] + x[1] = 2. 
+    '''
+    return [ x[0] + x[1] <= filter_pop_sum for x in pop ]
 
-    # FVr_minbound,FVr_maxbound   vector of lower and bounds of initial population
-    #               the algorithm seems to work especially well if [FVr_minbound,FVr_maxbound]
-    #               covers the region where the global minimum is expected
-    #               *** note: these are no bound constraints!! ***
-    dim = 2
-    pop_size = 100
-    lower_bounds = -2 * np.ones(dim)
-    upper_bounds = +2 * np.ones(dim)
-    prob_cross = 0.8
 
-    log = logging.getLogger("gc3.gc3libs")
-
+def test_LocalDriver_with_rosenbrock():
+    '''
+    Unit test for LocalDriver class. 
+    '''
     initial_pop = draw_population(lower_bds = lower_bounds, upper_bds = upper_bounds, dim = dim, size = pop_size, 
-                                  filter_fn = None, seed = magic_seed)
+                                  filter_fn = rosenbrock_sample_filter, seed = magic_seed)
 
     algo = DifferentialEvolutionAlgorithm(
         initial_pop = initial_pop,
@@ -72,6 +85,7 @@ def test_differential_evolution_sequential_with_rosenbrock():
         y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
         de_strategy = 'DE_local_to_best',
         logger = log, 
+        filter_fn=rosenbrock_sample_filter,
         seed = magic_seed
         )
     assert algo.de_step_size == 0.85
@@ -96,19 +110,9 @@ def test_differential_evolution_sequential_with_rosenbrock():
 
 def test_differential_evolution_parallel_with_rosenbrock():
 
-    # FVr_minbound,FVr_maxbound   vector of lower and bounds of initial population
-    #               the algorithm seems to work especially well if [FVr_minbound,FVr_maxbound]
-    #               covers the region where the global minimum is expected
-    #               *** note: these are no bound constraints!! ***
-    dim = 2
-    pop_size = 100
-    lower_bounds = -2 * np.ones(dim)
-    upper_bounds = +2 * np.ones(dim)
-
-    log = logging.getLogger("gc3.gc3libs")
 
     initial_pop = draw_population(lower_bds = lower_bounds, upper_bds = upper_bounds, dim = dim, size = pop_size, 
-                                  filter_fn = None, seed = magic_seed)
+                                  filter_fn = rosenbrock_sample_filter, seed = magic_seed)
 
     algo = DifferentialEvolutionAlgorithm(
         initial_pop = initial_pop,
@@ -119,6 +123,7 @@ def test_differential_evolution_parallel_with_rosenbrock():
         y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
         de_strategy = 'DE_local_to_best',
         logger = log,
+        filter_fn=rosenbrock_sample_filter,
         seed=magic_seed
         )
 
