@@ -428,7 +428,7 @@ class SshTransport(Transport):
                 pass
 
     @same_docstring_as(Transport.put)
-    def put(self, source, destination):
+    def put(self, source, destination, recursive=False):
         gc3libs.log.debug("SshTransport.put(): local source: '%s';"
                           " remote destination: '%s'; remote host: '%s'."
                           % (source, destination, self.remote_frontend))
@@ -443,7 +443,16 @@ class SshTransport(Transport):
         try:
             # check connection first
             self.connect()
-            self.sftp.put(source, destination)
+            if recursive and os.path.isdir(source):
+                # destination must be a directory. Each entry in
+                # source must be copied in destination.
+                self.makedirs(destination)
+                for entry in os.listdir(source):
+                    self.put(source + '/' + entry,
+                             destination + '/' + entry,
+                             recursive=recursive)
+            else:
+                self.sftp.put(source, destination)
         except Exception, ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not upload '%s' to '%s' on host '%s': %s: %s"
@@ -688,7 +697,7 @@ class LocalTransport(Transport):
                 pass
 
     @same_docstring_as(Transport.put)
-    def put(self, source, destination):
+    def put(self, source, destination, recursive=False):
         assert self._is_open is True, \
             "`Transport.execute_command()` called" \
             " on `Transport` instance closed / not yet open"
@@ -702,7 +711,10 @@ class LocalTransport(Transport):
                 parent = os.path.dirname(destination)
                 if not os.path.exists(parent):
                     os.makedirs(parent)
-                return shutil.copy(source, destination)
+                if recursive and os.path.isdir(source):
+                    return shutil.copytree(source, destination)
+                else:
+                    return shutil.copy(source, destination)
             else:
                 gc3libs.log.warning("Attempt to copy file over itself"
                                     " ('%s'). Ignoring." % source)
