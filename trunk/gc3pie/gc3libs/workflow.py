@@ -69,8 +69,9 @@ class TaskCollection(Task):
             if self._changed:
                 return True
             for task in self.tasks:
-                if task._changed:
-                    return True
+                if '_changed' in task:
+                    if task._changed:
+                        return True
             return False
         def fset(self, value):
             self._changed = value
