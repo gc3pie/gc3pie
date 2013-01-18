@@ -65,3 +65,11 @@ def plot_population(algo):
 
     figure_dir = os.path.join(os.getcwd(), 'dif_evo_figs')
     fig.savefig(os.path.join(figure_dir, 'pop%d' % (self.cur_iter)))
+    
+def print_stats(algo, output=sys.stdout):
+    output.write('Iteration: %d,  x: %s f(x): %f\n',
+                 algo.cur_iter, algo.best_x, algo.best_y)
+
+def log_stats(algo, logger=logging.getLogger()):
+    logger.info('Iteration: %d,  x: %s f(x): %f',
+                algo.cur_iter, algo.best_x, algo.best_y)

@@ -46,7 +46,10 @@ from gc3libs.utils import Enum
 strategies = Enum(
     'DE_rand',
     'DE_local_to_best',
-    #...
+    'DE_best_with_jitter',
+    'DE_rand_with_per_vector_dither', 
+    'DE_rand_with_per_generation_dither', 
+    'DE_rand_either_or_algorithm'
 )
 
 class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
@@ -73,17 +76,17 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
 
     The `de_strategy` value must be chosen from the
     `dif_evolution.strategies` enumeration.  Allowed values are
-    (description of the strategies taken from ...):
+    (description of the strategies taken from http://www.icsi.berkeley.edu/~storn/DeMat.zip):
 
     1. ``'DE_rand'``: The classical version of DE.
     2. ``'DE_local_to_best'``: A version which has been used by quite a number of
             scientists. Attempts a balance between robustness # and fast convergence.
-    3. DE_best_with_jitter: Taylored for small population sizes and fast
+    3. ``'DE_best_with_jitter'``: Taylored for small population sizes and fast
             convergence. Dimensionality should not be too high.
-    4. DE_rand_with_per_vector_dither: Classical DE with dither to become even more robust.
-    5. DE_rand_with_per_generation_dither: Classical DE with dither to become even more robust.
+    4. ``'DE_rand_with_per_vector_dither'``: Classical DE with dither to become even more robust.
+    5. ``'DE_rand_with_per_generation_dither'``: Classical DE with dither to become even more robust.
                                            Choosing de_step_size = 0.3 is a good start here.
-    6. DE_rand_either_or_algorithm: Alternates between differential mutation and three-point- recombination.
+    6. ``'DE_rand_either_or_algorithm'``: Alternates between differential mutation and three-point- recombination.
 
     '''
 
@@ -246,13 +249,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     def __setstate__(self, state):
         self.__dict__ = state
 
-def print_stats(algo, output=sys.stdout):
-    output.write('Iteration: %d,  x: %s f(x): %f\n',
-                 algo.cur_iter, algo.best_x, algo.best_y)
 
-def log_stats(algo, logger=logging.getLogger()):
-    logger.info('Iteration: %d,  x: %s f(x): %f',
-                algo.cur_iter, algo.best_x, algo.best_y)
 
 
 # Variable changes from matlab implementation
