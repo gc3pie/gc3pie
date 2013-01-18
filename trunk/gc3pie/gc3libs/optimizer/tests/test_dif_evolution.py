@@ -37,7 +37,6 @@ np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
 magic_seed = 100
 
-
 def rosenbrock_fn(vectors):
     result = []
     for vector in vectors:
@@ -61,7 +60,8 @@ def test_differential_evolution_sequential_with_rosenbrock():
 
     log = logging.getLogger("gc3.gc3libs")
 
-    initial_pop = draw_population(lower_bounds, upper_bounds, dim, pop_size)
+    initial_pop = draw_population(lower_bds = lower_bounds, upper_bds = upper_bounds, dim = dim, size = pop_size, 
+                                  filter_fn = None, seed = magic_seed)
 
     algo = DifferentialEvolutionAlgorithm(
         initial_pop = initial_pop,
@@ -107,9 +107,10 @@ def test_differential_evolution_parallel_with_rosenbrock():
 
     log = logging.getLogger("gc3.gc3libs")
 
-    initial_pop = draw_population(lower_bounds, upper_bounds, dim, pop_size)
+    initial_pop = draw_population(lower_bds = lower_bounds, upper_bds = upper_bounds, dim = dim, size = pop_size, 
+                                  filter_fn = None, seed = magic_seed)
 
-    opt = DifferentialEvolutionAlgorithm(
+    algo = DifferentialEvolutionAlgorithm(
         initial_pop = initial_pop,
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 0.8, # crossover probabililty constant ex [0, 1]
@@ -121,19 +122,21 @@ def test_differential_evolution_parallel_with_rosenbrock():
         seed=magic_seed
         )
 
-    new_pop = opt.pop
-    newVals = rosenbrock_fn(opt.pop)
-    opt.update_opt_state(new_pop, newVals)
+    new_pop = algo.pop
+    newVals = rosenbrock_fn(algo.pop)
+    log.debug('pop = \n%s', new_pop)
+    algo.update_opt_state(new_pop, newVals)
 
     has_converged = False
     while not has_converged:
-        new_pop = opt.evolve()
+        new_pop = algo.evolve()
+        log.debug('pop = \n%s', new_pop)
         ### The evaluation needs to be parallelized
         newVals = rosenbrock_fn(new_pop)
-        opt.update_opt_state(new_pop, newVals)
-        has_converged = opt.has_converged()
+        algo.update_opt_state(new_pop, newVals)
+        has_converged = algo.has_converged()
 
-    assert opt.has_converged()
-    assert (opt.best_y - 0.) < opt.y_conv_crit
-    assert (opt.best_x[0] - 1.) < 1e-3
-    assert (opt.best_x[1] - 1.) < 1e-3
+    assert algo.has_converged()
+    assert (algo.best_y - 0.) < algo.y_conv_crit
+    assert (algo.best_x[0] - 1.) < 1e-3
+    assert (algo.best_x[1] - 1.) < 1e-3
