@@ -345,7 +345,7 @@ ReturnCode=%x"""
                     self.transport.makedirs(remote_parent)
                 log.debug("Transferring file '%s' to '%s'" % (local_path.path,
                                                               remote_path))
-                self.transport.put(local_path.path, remote_path)
+                self.transport.put(local_path.path, remote_path, recursive=True)
                 # preserve execute permission on input files
                 if os.access(local_path.path, os.X_OK):
                     self.transport.chmod(remote_path, 0755)
@@ -385,8 +385,7 @@ ReturnCode=%x"""
         ## set up environment
         env_arguments = ''
         for k, v in app.environment.iteritems():
-            env_arguments += "%s=%s; " (k, v)
-
+            env_arguments += "%s=%s; " % (k, v)
         arguments = str.join(' ', ['"%s"' % arg for arg in app.arguments])
 
         # Create the directory in which pid, output and wrapper script
