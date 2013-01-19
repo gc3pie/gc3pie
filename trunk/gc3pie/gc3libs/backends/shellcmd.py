@@ -33,7 +33,7 @@ import time
 import gc3libs
 import gc3libs.exceptions
 from gc3libs import log, Run
-from gc3libs.utils import same_docstring_as, samefile, copy_recursively, Struct
+from gc3libs.utils import same_docstring_as, samefile, copy_recursively, Struct, sh_quote_unsafe
 from gc3libs.backends import LRMS
 
 
@@ -386,7 +386,7 @@ ReturnCode=%x"""
         env_arguments = ''
         for k, v in app.environment.iteritems():
             env_arguments += "%s=%s; " % (k, v)
-        arguments = str.join(' ', ['"%s"' % arg for arg in app.arguments])
+        arguments = str.join(' ', (sh_quote_unsafe(i) for i in app.arguments))
 
         # Create the directory in which pid, output and wrapper script
         # files will be stored
