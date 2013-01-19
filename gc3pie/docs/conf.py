@@ -70,7 +70,7 @@ if ON_RTD:
         'sqlalchemy',
         'sqlalchemy.sql',
         'sqlite3',
-        'texttable',
+        'prettytable',
         ]
     for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = Mock()

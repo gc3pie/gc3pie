@@ -42,7 +42,6 @@ import os
 import os.path
 #import shutil
 import sys
-#from texttable import Texttable
 #import types
 
 ## interface to Gc3libs
