@@ -72,6 +72,7 @@ from gc3libs.utils import read_contents
 from gc3libs.cmdline import SessionBasedScript
 from gc3libs.workflow import ParallelTaskCollection, TaskCollection
 from gc3libs.backends.shellcmd import ShellcmdLrms
+from gc3libs.backends.transport import LocalTransport
 
 
 class TestRunner(object):
@@ -95,7 +96,13 @@ class TestRunner(object):
                         '-vvvv']
 
     def compatible_resources(self, resources):
-        return [r for r in resources if isinstance(r, ShellcmdLrms)]
+        shellcmd = [r for r in resources if isinstance(r, ShellcmdLrms)]
+        shellcmd_local = [r for r in shellcmd if
+                          isinstance(r.transport, LocalTransport)]
+        if shellcmd_local:
+            return shellcmd_local
+        else:
+            return shellcmd
 
 
 class GCodemlTest(TestRunner, Application):
@@ -153,9 +160,8 @@ class GGamessTest(TestRunner, Application):
 
         Application.__init__(
             self,
-            arguments=['./ggamess.py'] + self.stdargs \
-                + ['-R', '2012R1',
-                   'exam01.inp'],
+            arguments=['./ggamess.py'] + self.stdargs + ['-R', '2012R1',
+                                                         'exam01.inp'],
             inputs=[os.path.join(self.appdir, 'ggamess.py'),
                     os.path.join(self.appdir, 'test/data/exam01.inp')],
             outputs=['exam01'],
