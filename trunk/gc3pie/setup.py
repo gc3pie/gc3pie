@@ -81,8 +81,8 @@ setuptools.setup(
         # ("pycrypto" is actually a dependency of Paramiko, but
         # setuptools apparently does not process dependencies recursively)
         'paramiko', 'pycrypto>=1.9',
-        # texttable -- format tabular text output
-        'texttable',
+        # prettytable -- format tabular text output
+        'prettytable',
         # pyCLI -- object-oriented command-line app programming
         'pyCLI>=2.0.3',
         # Needed by SqlStore

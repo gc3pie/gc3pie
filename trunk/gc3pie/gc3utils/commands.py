@@ -35,7 +35,7 @@ import sys
 import os
 import posix
 import tarfile
-from texttable import Texttable
+from prettytable import PrettyTable
 import time
 import types
 import re
@@ -276,13 +276,11 @@ GC3Libs internals.
 
         if self.params.tabular:
             # prepare table prettyprinter
-            table = Texttable(0)  # max_width=0 => dynamically resize cells
-            table.set_cols_align(['l'] * (1 + len(only_keys)))
+            table = PrettyTable()
+            table.border=True
             if self.params.header:
-                table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
-                table.header(["Job ID"] + only_keys)
-            else:
-                table.set_deco(0)
+                table.field_names = ["Job ID"] + only_keys
+                table.align = 'l'
 
         if self.params.csv:
             csv_output = csv.writer(sys.stdout)
@@ -325,7 +323,7 @@ GC3Libs internals.
                     # with `-v` and above, dump the whole `Application` object
                     utils.prettyprint(app, indent=4, width=width, only_keys=only_keys)
         if self.params.tabular:
-            print(table.draw())
+            print(table)
         failed = len(self.params.args) - ok
         # exit code is practically limited to 7 bits ...
         return utils.ifelse(failed < 127, failed, 126)
@@ -536,9 +534,12 @@ Print job state.
 
         if len(rows) > capacity and self.params.verbose == 0:
             # only print table with statistics
-            table = Texttable(0)  # max_width=0 => dynamically resize cells
-            table.set_deco(0)  # also: .VLINES, .HLINES .BORDER
-            table.set_cols_align(['r', 'c', 'r'])
+            table = PrettyTable(['state', 'num/tot', 'num/tot %'])
+            table.header=False
+            table.align['state'] = 'r'
+            table.align['num/tot'] = 'c'
+            table.align['num/tot %'] = 'r'
+
             for state, num in sorted(stats.items()):
                 if (states is None) or (str(state) in states):
                     table.add_row([
@@ -548,12 +549,11 @@ Print job state.
                         ])
         else:
             # print table of job status
-            table = Texttable(0)  # max_width=0 => dynamically resize cells
-            table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
-            table.set_cols_align(['l'] * (4 + len(keys)))
-            table.header(["JobID", "Job name", "State", "Info"] + keys)
-            table.add_rows(sorted(rows), header=False)
-        print(table.draw())
+            table = PrettyTable(["JobID", "Job name", "State", "Info"] + keys)
+            table.align = 'l'
+            for row in sorted(rows):
+                table.add_row(row)
+        print(table)
 
         if self.params.lifetimes is not None and len(lifetimes_rows) > 1:
             if self.params.lifetimes is sys.stdout:
@@ -848,10 +848,9 @@ List status of computational resources.
             return cmp(x.name, y.name)
 
         for resource in sorted(resources, cmp=cmp_by_name):
-            table = Texttable(0)  # max_width=0 => dynamically resize cells
-            table.set_deco(Texttable.HEADER | Texttable.BORDER)  # also: .VLINES, .HLINES
-            table.set_cols_align(['r', 'l', 'l'])
-            table.header(['', resource.name, ''])
+            table = PrettyTable(['', resource.name, ' '])
+            table.align = 'l'
+            table.align[''] = 'r'
 
             # not all resources support the same keys...
             def output_if_exists(name, print_name):
@@ -870,7 +869,8 @@ List status of computational resources.
             output_if_exists('max_memory_per_core', "Max memory per core")
             output_if_exists('max_walltime', "Max walltime per job")
             output_if_exists('applications', "Supported applications")
-            print(table.draw())
+            print(table)
+            print('')
 
 
 class cmd_gsession(_BaseCmd):
@@ -1027,12 +1027,11 @@ To get detaileid info on a specific command, run:
         rows = []
         for app in self.session.tasks.values():
             rows.extend(print_app_table(app, '', self.params.recursive))
-        table = Texttable(0)  # max_width=0 => dynamically resize cells
-        table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
-        table.set_cols_align(['l'] * 4)
-        table.header(["JobID", "Job name", "State", "Info"])
-        table.add_rows(rows, header=False)
-        print(table.draw())
+        table = PrettyTable(["JobID", "Job name", "State", "Info"])
+        table.align = 'l'
+        for row in rows:
+            table.add_row(row)
+        print(table)
 
     def show_log(self):
         """

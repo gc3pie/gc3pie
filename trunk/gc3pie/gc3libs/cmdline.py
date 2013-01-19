@@ -51,7 +51,7 @@ import os
 import os.path
 import re
 import sys
-from texttable import Texttable
+from prettytable import PrettyTable
 import time
 
 ## 3rd party modules
@@ -971,9 +971,11 @@ class SessionBasedScript(_Script):
         description.
 
         """
-        table = Texttable(0)  # max_width=0 => dynamically resize cells
-        table.set_deco(0)     # no decorations
-        table.set_cols_align(['r', 'r', 'c'])
+        table = PrettyTable(['state', 'n', 'n%'])
+        table.align = 'r'
+        table.align['n%'] = 'c'
+        table.border = False
+        table.header = False
         total = stats['total']
         # ensure we display enough decimal digits in percentages when
         # running a large number of jobs; see Issue 308 for a more
@@ -986,7 +988,7 @@ class SessionBasedScript(_Script):
                     "%d/%d" % (stats[state], total),
                     fmt % (100.00 * stats[state] / total)
                     ])
-        output.write(table.draw())
+        output.write(str(table))
         output.write("\n")
 
     def print_tasks_table(self, output=sys.stdout, states=gc3libs.Run.State, only=object):
@@ -1010,20 +1012,16 @@ class SessionBasedScript(_Script):
         :param states: List of states (`Run.State` items) to consider.
         :param   only: Root class (or tuple of root classes) of tasks to consider.
         """
-        table = Texttable(0)  # max_width=0 => dynamically resize cells
-        table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
-        table.header(['JobID', 'Job name', 'State', 'Info'])
-        #table.set_cols_width([10, 20, 10, 35])
-        table.set_cols_align(['l', 'l', 'l', 'l'])
-        table.add_rows([
-            (task.persistent_id, task.jobname,
-             task.execution.state, task.execution.info)
-            for task in self.session
-            if isinstance(task, only) and task.execution.in_state(*states)],
-                       header=False)
-        # XXX: uses texttable's internal implementation detail
+        table = PrettyTable(['JobID', 'Job name', 'State', 'Info'])
+        table.align = 'l'
+        for task in self.session:
+            if isinstance(task, only) and task.execution.in_state(*states):
+                table.add_row([task.persistent_id, task.jobname,
+                               task.execution.state, task.execution.info])
+
+        # XXX: uses prettytable's internal implementation detail
         if len(table._rows) > 0:
-            output.write(table.draw())
+            output.write(str(table))
             output.write("\n")
 
     def before_main_loop(self):
