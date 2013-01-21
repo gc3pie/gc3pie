@@ -3,7 +3,7 @@
 """
 Implementation of Fliege 2012
 """
-# Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
+# Copyright (C) 2013 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,15 +31,22 @@ import random  # used for non-repetitive random number
 import numpy as np
 import numpy.linalg
 
+# floating point constants (machine-dependent)
+fpinfo = np.finfo(float)
+EPSILON = fpinfo.eps
+TINY = fpinfo.tiny
+LARGE = fpinfo.max / 2.
+
 # Set numpy print options
-np.set_printoptions(linewidth = 300, precision = 5, suppress = True)
+np.set_printoptions(linewidth=300, precision=5, suppress=True)
 
-# m equations, n unknowns
-
-def main_algo(A, b):
+def main_algo(A, b, sample_fn=np.random.random):
     '''
-    A: m*n
-    b: m*1
+    Return a list of (approximate) solutions to the linear system `Ax = b`.
+
+    :param A: a NumPy `m` times `n` 2D-array, representing a matrix with `m` rows and `n` columns
+    :param b: a Numpy 1D-array real-valued vector of `n` elements
+    :param sample_fn: a function returning a random 1D-vector; the default implementation chooses all coordinates uniformly from the interval [0,1].
     '''
     # Input:
     # * A is a with m row vectors
@@ -51,22 +58,21 @@ def main_algo(A, b):
     # consistency checks
     assert n**2/n>4, "n is not large enough. Increase eq. system to fulfill n**2>4n"
     # DEBUG
-    print 'm = ', m
-    print 'n = ', n
-    print 'A = \n', A
-    print 'b = \n', b
+    print "Given data:"
+    print "  m = ", m
+    print "  n = ", n
+    print "  A = ", str.join("\n       ", str(A).split('\n'))
+    print "  b = ", b
 
     # Step 2. Generate random sample of normals (fulfilling Assumption 1.)
-#    sample_fun = np.random.randn # standard normal
-    sample_fun = np.random.random # uniform (0,1)
-    v = [ sample_fun(n) for _ in range(n+1) ] # n+1 random vectors of n elements each
-    print 'initial v ='
-    for v_ele in v:
-      print v_ele
+    v = [ sample_fn(n) for _ in range(n+1) ] # n+1 random vectors of n elements each
+    print "Initial choices of v's:"
+    for l, v_l in enumerate(v):
+        print "  v_%d = %s" % (l, v_l)
 
     # save all (i,j) pairs for later -- this is invariant in the Step 3 loop
     all_ij_pairs = [ (i,j) for i in range(n+1) for j in range(n+1) if i<j ]
-    print 'potential ij_pairs = ', all_ij_pairs
+    #print 'potential ij_pairs = ', all_ij_pairs
     assert len(all_ij_pairs) == ((n+1)*n / 2)
 
     # Step 3.
@@ -77,11 +83,11 @@ def main_algo(A, b):
         ij_pairs = random.sample(all_ij_pairs, n+1)
         assert len(ij_pairs) == n+1
         print '  ij_pairs = ', ij_pairs
-        # Step 3(b):
+        # Step 3(b): recombine the v's; use x's as temporary storage
         x = [ rec(v[i], v[j], A[k,:], b[k])
               for l, (i, j) in enumerate(ij_pairs)
-          ]
-        # Step 3(d):
+        ]
+        # Step 3(d): rename x's -> v's
         for l in range(n+1):
             v[l] = x[l]
 
@@ -89,33 +95,42 @@ def main_algo(A, b):
     return v
 
 
-def rec(u,v,a,beta):
+def rec(u, v, a, beta, q=0):
     '''
-    Recombination function:
-    u,v,a Rn. beta real
+    Recombination function, as defined in Fliege (2012).
+
+    If the optional parameter `q` is > 0, then ensure that the
+    denominator in the `t` factor is larger than `q`, by substituting
+    `v` for a random convex combination of `u` and `v`.
+
     '''
-    # print 'u = ', u
-    # print 'v = ', v
-    # print 'a = ', a
-    # print 'beta = ', beta
-    assert ( np.dot(a, (u-v)) ) != 0
-    t = (beta - np.dot(a, v)) / np.dot(a, (u - v)) # t is scalar
+    t0 = beta - np.dot(a, v)
+    t1 = np.dot(a, (u - v))
+    #assert np.abs(t1) > EPSILON
+    while q > 0 and abs(t1) < q:
+        # see remark 8 on page 7
+        c = 1. + t0 * random.random()
+        v = u + c*(v - u)
+        t1 = np.dot(a, (u - v))
+    t = t0 / t1
     return  (t * u + (1. - t) * v)
 
-def _check_distance(A, b, xs):
-    print "Distances of solutions compute by Fliege's algorithm:"
-    print "Final v:"
-    for x in xs:
-      print x
-    for i, x in enumerate(xs):
-        dist = np.linalg.norm(np.dot(A,x) - b)
-        print ("  |Av_%s - b| = %g" % (i, dist))
 
+def _check_distance(A, b, vs):
+    print "Final values of v's:"
+    for l, v_l in enumerate(vs):
+      print "  v_%d = %s" % (l, v_l)
+    print "Distances of solutions computed by Fliege's algorithm:"
+    for l, v_l in enumerate(vs):
+        dist = np.linalg.norm(np.dot(A,v_l) - b)
+        print ("  |Av_%s - b| = %g" % (l, dist))
+
+    print "Numpy's `linalg.solve` solution:"
+    v_prime = np.linalg.solve(A,b)
+    print "  v' = %s" % v_prime
     print "Distance of Numpy's `linalg.solve` solution:"
-    x_prime = np.linalg.solve(A,b)
-    print "x = \n%s" % x_prime
-    dist_prime = np.linalg.norm(np.dot(A,x_prime) - b)
-    print ("  |Ax' - b| = %g" % dist_prime)
+    dist_prime = np.linalg.norm(np.dot(A,v_prime) - b)
+    print ("  |Av' - b| = %g" % dist_prime)
 
 
 def test_with_random_matrix(dim=5):
@@ -144,5 +159,5 @@ if __name__ == '__main__':
     # Fix random numbers for debugging
     #np.random.seed(100)
 
-    #test_with_identity_matrix()
-    test_with_random_matrix()
+    test_with_identity_matrix()
+    #test_with_random_matrix()
