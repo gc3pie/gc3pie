@@ -1,8 +1,8 @@
 import time
 import os
 
-from lockfile import (LockBase, LockFailed, NotLocked, NotMyLock, LockTimeout,
-                      AlreadyLocked)
+from gc3libs.compat.lockfile import (LockBase, LockFailed, NotLocked, NotMyLock, LockTimeout,
+                                     AlreadyLocked)
 
 class LinkLockFile(LockBase):
     """Lock access to a file using atomic property of link(2).

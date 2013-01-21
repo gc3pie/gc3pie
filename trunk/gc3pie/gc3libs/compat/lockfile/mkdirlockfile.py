@@ -3,8 +3,8 @@ import os
 import sys
 import errno
 
-from lockfile import (LockBase, LockFailed, NotLocked, NotMyLock, LockTimeout,
-                      AlreadyLocked)
+from gc3libs.compat.lockfile import (LockBase, LockFailed, NotLocked, NotMyLock, LockTimeout,
+                                     AlreadyLocked)
 
 class MkdirLockFile(LockBase):
     """Lock file by creating a directory."""

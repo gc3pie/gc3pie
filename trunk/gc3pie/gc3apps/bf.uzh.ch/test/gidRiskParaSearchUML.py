@@ -838,7 +838,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
         """
 
       #  return cli.app.CommandLineApp.run(self)
-        import lockfile
+        from gc3libs.compat import lockfile
         import cli
         try:
             return cli.app.CommandLineApp.run(self)

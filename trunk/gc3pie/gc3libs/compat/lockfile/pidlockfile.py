@@ -17,8 +17,8 @@ import sys
 import errno
 import time
 
-from lockfile import (LockBase, AlreadyLocked, LockFailed, NotLocked,
-                      NotMyLock, LockTimeout)
+from gc3libs.compat.lockfile import (LockBase, AlreadyLocked, LockFailed, NotLocked,
+                                     NotMyLock, LockTimeout)
 
 
 class PIDLockFile(LockBase):
