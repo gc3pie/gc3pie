@@ -91,7 +91,7 @@ class EvolutionaryAlgorithm(object):
         if self.best_y < self.y_conv_crit:
             converged = True
             self.logger.info('Converged: self.best_y[%s] < self.y_conv_crit[%s]', 
-                             (self.best_y, self.y_conv_crit))
+                             self.best_y, self.y_conv_crit)
 
         # Check `dx_conv_crit`
         dxs = np.abs(self.pop[:, :] - self.pop[0, :])

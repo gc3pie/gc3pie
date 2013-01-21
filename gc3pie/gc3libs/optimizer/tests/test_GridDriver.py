@@ -26,6 +26,8 @@ import os
 import sys
 import logging
 import tempfile
+import shutil
+import logging
 
 from nose.tools import raises
 from nose.plugins.skip import SkipTest
@@ -42,16 +44,26 @@ from gc3libs.optimizer.drivers import GridDriver
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
 from gc3libs.optimizer import draw_population
 
+# Create a temporary stage directory
+temp_stage_dir = tempfile.mkdtemp(prefix = 'GridDriver_Rosenbrock_')
+optimization_dir = os.path.join(temp_stage_dir, 'rosenbrock_output_dir')
+
+# Nose will add command line arguments that cannot be interpreted by the SessionBasedScript. To avoid
+# error, override sys.argv. 
+sys.argv = ['test_drivers_rosenbrock.py']
+
 # General settings
+
 float_fmt = '%25.15f'
-optimization_dir = os.path.join(os.getcwd(), 'optimizeRosenBrock')
-pop_size = 10
+magic_seed = 100
+pop_size = 5
 itermax = 2
 dim = 2
 lower_bounds = -2 * np.ones(dim)
 upper_bounds = +2 * np.ones(dim)
 
-os.system('rm -r bin base optimizeRosenBrock/ EvolutionaryAlgorithm.log parameters.in')
+# Set up logger
+log_file_name = os.path.join(temp_stage_dir, 'DifferentialEvolutionAlgorithm.log')
 
 class TestGridDriver(object):
     CONF="""
@@ -72,8 +84,6 @@ type=none
 """
 
     def setUp(self):
-        # change command line options
-        sys.argv = ['test_drivers_rosenbrock.py', '-N', '-C 10']
         (fd, cfgfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
         f.write(TestGridDriver.CONF)
@@ -88,12 +98,14 @@ type=none
         
         # -- Rosenbrock setup --
         # Create base dir
-        os.mkdir('base')
-        para_file = open('base/parameters.in', 'w')
+        temp_base_dir = os.path.join(temp_stage_dir, 'base')
+        temp_bin_dir = os.path.join(temp_stage_dir, 'bin')
+        os.mkdir(temp_base_dir)
+        para_file = open(os.path.join(temp_base_dir, 'parameters.in'), 'w')
         para_file.write('x1    100.0\nx2    50.0\n')
         # Create base dir
-        os.mkdir('bin')
-        cpp_file = open('bin/rosenbrock.cpp','w')
+        os.mkdir(temp_bin_dir)
+        cpp_file = open(os.path.join(temp_bin_dir, 'rosenbrock.cpp'),'w')
         cpp_file.write(
         """
 #include "math.h"
@@ -139,7 +151,8 @@ int main()
         )
         cpp_file.flush()
         # Generate Rosenbrock binary
-        os.system('g++ bin/rosenbrock.cpp -o bin/rosenbrock')
+        compile_str = 'g++ ' + os.path.join(temp_bin_dir, 'rosenbrock.cpp') + ' -o ' + os.path.join(temp_bin_dir, 'rosenbrock')
+        os.system(compile_str)
         
         print sys.argv
         if os.path.isdir(optimization_dir):
@@ -147,7 +160,6 @@ int main()
             shutil.rmtree(optimization_dir)
         os.mkdir(optimization_dir)
         
-                
 
     def cleanup_file(self, fname):
         self.files_to_remove.append(fname)
@@ -160,11 +172,18 @@ int main()
                 os.remove(fname)
                 
         # Remove Rosenbrock output
-        print 'not implemented yet. '
+        shutil.rmtree(temp_stage_dir)
 
     def test_optimizer(self):
-    # basically, adapt `opt_rosenb4rock.py`
+        # Run Rosenbrock
         RosenbrockScript().run()
+        log_file = open(log_file_name)
+        print 'log_file = %s' % log_file_name
+        for line in log_file.readlines():
+            last_line = line
+            
+        # Check convergence
+        assert 'Converged: self.best_y' in last_line
         print 'done succesffully'
     
 
@@ -183,31 +202,27 @@ class RosenbrockScript(SessionBasedScript):
 
     def new_tasks(self, extra):
 
-        path_to_stage_dir = os.getcwd()
-
-        import logging
-        log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
+        log = logging.getLogger('gc3.gc3libs.DifferentialEvolutionAlgorithm')
         log.setLevel(logging.DEBUG)
         log.propagate = 0
         stream_handler = logging.StreamHandler()
         stream_handler.setLevel(logging.DEBUG)
-        log_file_name = os.path.join(os.getcwd(), 'EvolutionaryAlgorithm.log')
         file_handler = logging.FileHandler(log_file_name, mode = 'w')
         file_handler.setLevel(logging.DEBUG)
         log.addHandler(stream_handler)
-        log.addHandler(file_handler)
-
-
+        log.addHandler(file_handler)        
+        
         initial_pop = draw_population(lower_bds=lower_bounds, upper_bds=upper_bounds, size=pop_size, dim=dim)
-
+        
         de_solver = DifferentialEvolutionAlgorithm(
             initial_pop = initial_pop,
             de_step_size = 0.85,# DE-stepsize ex [0, 2]
             prob_crossover = 1, # crossover probabililty constant ex [0, 1]
             itermax = itermax,      # maximum number of iterations (generations)
             dx_conv_crit = None, # stop when variation among x's is < this
-            y_conv_crit = 0.5, # stop when ofunc < y_conv_crit
+            y_conv_crit = 100, # stop when ofunc < y_conv_crit
             de_strategy = 'DE_local_to_best',
+            seed=magic_seed, 
             logger = log,
             )
 
@@ -221,7 +236,16 @@ class RosenbrockScript(SessionBasedScript):
         kwargs['extract_value_fn'] = compute_target_rosenbrock
         kwargs['cur_pop_file'] = 'cur_pop'
 
-        return [GridDriver(jobname=jobname, **kwargs)]    
+        return [GridDriver(jobname=jobname, **kwargs)]
+
+    def parse_args(self):
+        """
+        Add command-line options for testing a SessionBasedScript. 
+        """
+        self.params.session = temp_stage_dir
+        self.params.store_url = temp_stage_dir
+#        self.params.new_session = True
+        self.params.wait = 10
 
 
 def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
@@ -233,9 +257,8 @@ def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     import shutil
 
     # Set some initial variables
-    path_to_rosenbrock_example = os.getcwd()
-    path_to_executable = os.path.join(path_to_rosenbrock_example, 'bin/rosenbrock')
-    base_dir = os.path.join(path_to_rosenbrock_example, 'base')
+    path_to_executable = os.path.join(temp_stage_dir, 'bin/rosenbrock')
+    base_dir = os.path.join(temp_stage_dir, 'base')
 
     x_vars = ['x1', 'x2']
     para_files = ['parameters.in', 'parameters.in']
