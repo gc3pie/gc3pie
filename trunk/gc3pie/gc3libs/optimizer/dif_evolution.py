@@ -244,7 +244,8 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     # Adjustments for pickling
     def __getstate__(self):
         state = self.__dict__.copy()
-        del state['logger']
+        if 'logger' in state.keys():
+            del state['logger']
 #        return state
         return None
 

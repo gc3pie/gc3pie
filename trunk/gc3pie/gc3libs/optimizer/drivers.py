@@ -58,6 +58,7 @@ class LocalDriver(object):
         :param opt_algorithm: Evolutionary algorithm instance that conforms
                               to :class:`EvolutionaryAlgorithm`.
         :param target_fn:     Function to evaluate a population and return the corresponding values.
+        :param path_to_stage_dir:  directory in which to perform the optimization.    
         :param cur_pop_file:  Filename under which the population is stored
                               in the current iteration dir. The
                               population is discarded if no file is
@@ -65,7 +66,8 @@ class LocalDriver(object):
         :param `logger`:      Configured logger to use.
     '''
 
-    def __init__(self, opt_algorithm, target_fn, cur_pop_file=None, logger=None):
+    def __init__(self, opt_algorithm, target_fn, path_to_stage_dir = os.getcwd(), cur_pop_file=None, logger=None):
+        self.path_to_stage_dir = path_to_stage_dir
         self.opt_algorithm = opt_algorithm
         self.target_fn = target_fn
         self.cur_pop_file = cur_pop_file
@@ -84,7 +86,7 @@ class LocalDriver(object):
         has_converged = False
         while not has_converged and self.opt_algorithm.cur_iter <= self.opt_algorithm.itermax:
             # Save current population
-            self.iteration_folder = os.path.join(os.getcwd(), 'iter_' + str(self.opt_algorithm.cur_iter))
+            self.iteration_folder = os.path.join(self.path_to_stage_dir, 'iter_' + str(self.opt_algorithm.cur_iter))
             if self.cur_pop_file:
                 if not os.path.isdir(self.iteration_folder): os.mkdir(self.iteration_folder)
                 np.savetxt(os.path.join(self.iteration_folder, self.cur_pop_file),
@@ -148,7 +150,6 @@ class GridDriver(SequentialTaskCollection):
         self.task_constructor = task_constructor
         self.cur_pop_file = cur_pop_file
         self.extra_args = extra_args
-        self.output_dir = os.getcwd()
 
         self.new_pop = self.opt_algorithm.pop
         initial_task = ComputeTargetVals(
@@ -240,7 +241,6 @@ class ComputeTargetVals(ParallelTaskCollection):
         # Set up initial variables and set the correct methods.
         self.jobname = 'evalSolverGuess' + '-' + jobname + '-' + str(iteration)
         self.iteration = iteration
-        self.output_dir = os.getcwd()
 
         self.path_to_stage_dir = path_to_stage_dir
         self.cur_pop_file = cur_pop_file
