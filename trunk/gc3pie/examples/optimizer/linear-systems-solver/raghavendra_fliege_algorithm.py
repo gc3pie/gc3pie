@@ -31,12 +31,10 @@ import random  # used for non-repetitive random number
 import numpy as np
 import numpy.linalg
 
-# get floating point constants
-fpinfo = np.finfo(float)
-EPSILON = fpinfo.eps
-TINY = fpinfo.tiny
-LARGE = fpinfo.max / 2.
+# Set numpy print options
+np.set_printoptions(linewidth = 300, precision = 5, suppress = True)
 
+# m equations, n unknowns
 
 def main_algo(A, b):
     '''
@@ -53,21 +51,22 @@ def main_algo(A, b):
     # consistency checks
     assert n**2/n>4, "n is not large enough. Increase eq. system to fulfill n**2>4n"
     # DEBUG
-    print "Given data:"
-    print "  m = ", m
-    print "  n = ", n
-    print "  A = ", str.join("\n       ", str(A).split('\n'))
-    print "  b = ", b
+    print 'm = ', m
+    print 'n = ', n
+    print 'A = \n', A
+    print 'b = \n', b
 
     # Step 2. Generate random sample of normals (fulfilling Assumption 1.)
-    v = [ np.random.randn(n) for _ in range(n+1) ] # n+1 random vectors of n elements each
-    print "Initial choices of v's:"
-    for l, v_l in enumerate(v):
-        print "  v_%d = %s" % (l, v_l)
+#    sample_fun = np.random.randn # standard normal
+    sample_fun = np.random.random # uniform (0,1)
+    v = [ sample_fun(n) for _ in range(n+1) ] # n+1 random vectors of n elements each
+    print 'initial v ='
+    for v_ele in v:
+      print v_ele
 
     # save all (i,j) pairs for later -- this is invariant in the Step 3 loop
     all_ij_pairs = [ (i,j) for i in range(n+1) for j in range(n+1) if i<j ]
-    #print 'potential ij_pairs = ', all_ij_pairs
+    print 'potential ij_pairs = ', all_ij_pairs
     assert len(all_ij_pairs) == ((n+1)*n / 2)
 
     # Step 3.
@@ -99,20 +98,22 @@ def rec(u,v,a,beta):
     # print 'v = ', v
     # print 'a = ', a
     # print 'beta = ', beta
-    assert np.abs(np.dot(a, (u-v))) > EPSILON
-    t = (beta - np.dot(a, v)) / np.dot(a, (u - v))
+    assert ( np.dot(a, (u-v)) ) != 0
+    t = (beta - np.dot(a, v)) / np.dot(a, (u - v)) # t is scalar
     return  (t * u + (1. - t) * v)
 
-
-
 def _check_distance(A, b, xs):
-    print "Distances of solutions computed by Fliege's algorithm:"
+    print "Distances of solutions compute by Fliege's algorithm:"
+    print "Final v:"
+    for x in xs:
+      print x
     for i, x in enumerate(xs):
         dist = np.linalg.norm(np.dot(A,x) - b)
         print ("  |Av_%s - b| = %g" % (i, dist))
 
     print "Distance of Numpy's `linalg.solve` solution:"
     x_prime = np.linalg.solve(A,b)
+    print "x = \n%s" % x_prime
     dist_prime = np.linalg.norm(np.dot(A,x_prime) - b)
     print ("  |Ax' - b| = %g" % dist_prime)
 
@@ -143,5 +144,5 @@ if __name__ == '__main__':
     # Fix random numbers for debugging
     #np.random.seed(100)
 
-    test_with_identity_matrix()
-    #test_with_random_matrix()
+    #test_with_identity_matrix()
+    test_with_random_matrix()
