@@ -1,13 +1,14 @@
 #! /usr/bin/env python
 #
 """
-Differential Evolution Optimizer. 
-
-This code is an adaptation of the following MATLAB code: http://www.icsi.berkeley.edu/~storn/DeMat.zip
-Please refer to this web site for more information: http://www.icsi.berkeley.edu/~storn/code.html#deb1
+Differential Evolution Algorithm. 
 
 Some information related to differential evolution can be found in the following papers: 
 1) Tvrdik 2008 www.proceedings2008.imcsit.org/pliks/95.pdf
+
+`gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.evolve_fn`:func: is an adaptation of the following MATLAB code: 
+http://www.icsi.berkeley.edu/~storn/DeMat.zip
+Please refer to http://www.icsi.berkeley.edu/~storn/code.html#deb1. 
 """
 # Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
 #
@@ -54,26 +55,26 @@ strategies = Enum(
 )
 
 class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
-    '''Differential Evolution Optimizer class.
+    '''Differential Evolution Algorithm class.
     :class:`DifferentialEvolutionAlgorithm` explicitly allows for an another
-    process to control the optimization. The methods `de_opt` and `iterate` are
-    left unspecified and the outside process can instead directly call the
-    methods that are called by `de_opt` and `iterate` (see code for
-    `LocalDrivera`) when needed. An example of how
-    :class:`DifferentialEvolutionAlgorithm` can be used is found in
-    `GridOptimizer` located in `optimizer/__init__.py`.
-
-    :param initial_pop: Initial population for the optimization.
+    process to control the optimization. Driver classes can be found
+    in `gc3libs.optimizer.drivers.py`:mod:. 
+    
+    :param numpy.array initial_pop: Initial population for the optimization.
     :param str de_strategy: e.g. DE_rand_either_or_algorithm. Allowed are:
-    :param `de_step_size`: Differential Evolution step size.
-    :param `prob_crossover`: Probability new population draws will replace old members.
-    :param exp_cross bool: Set True to use exponential crossover.
-    :param `itermax`: Maximum # of iterations.
-    :param `dx_conv_crit`: Abort optimization if all population members are within a certain distance to each other.
-    :param `y_conv_crit`: Declare convergence when the target function is below a `y_conv_crit`.
-    :param `filter_fn`: Optional function that implements nonlinear constraints.
-    :param `seed`: Seed to initialize NumPy's random number generator.
-    :param `logger`: Configured logger to use.
+    :param float `de_step_size`: Differential Evolution step size.
+    :param float `prob_crossover`: Probability new population draws will replace old members.
+    :param bool exp_cross: Set True to use exponential crossover.
+    :param int `itermax`: Maximum # of iterations.
+    :param float `dx_conv_crit`: Abort optimization if all population members are within a certain distance to each other.
+    :param float `y_conv_crit`: Declare convergence when the target function is below a `y_conv_crit`.
+    :param fun `filter_fn`: Optional function that implements nonlinear constraints.
+    :param float `seed`: Seed to initialize NumPy's random number generator.
+    :param obj `logger`: Configured logger to use.
+    :param list `after_update_opt_state`: Functions that are called at the end of 
+                `DifferentialEvolutionAlgorithm.after_update_opt_state`:meth:. Use this list
+                to provide problem-specific printing and plotting routines. Examples can be found
+                in `gc3libs.optimizer.extra`:mod:. 
 
     The `de_strategy` value must be chosen from the
     `dif_evolution.strategies` enumeration.  Allowed values are
