@@ -44,7 +44,6 @@ __docformat__ = 'reStructuredText'
 ## stdlib modules
 import csv
 import fnmatch
-import lockfile
 import logging
 import math
 import os
@@ -61,6 +60,7 @@ import cli._ext.argparse as argparse
 
 ## interface to Gc3libs
 import gc3libs
+from gc3libs.compat import lockfile
 import gc3libs.config
 import gc3libs.core
 import gc3libs.exceptions

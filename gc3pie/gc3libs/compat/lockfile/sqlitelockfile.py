@@ -1,7 +1,7 @@
 import time
 import os
 
-from lockfile import LockBase, NotLocked, NotMyLock, LockTimeout, AlreadyLocked
+from gc3libs.compat.lockfile import LockBase, NotLocked, NotMyLock, LockTimeout, AlreadyLocked
 
 class SQLiteLockFile(LockBase):
     "Demonstrate SQL-based locking."
