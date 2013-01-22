@@ -38,7 +38,7 @@ class plot_population(object):
     '''Plot the 2-dimensional population of an 
        :class:`gc3libs.optimizer.EvolutionaryAlgorithm` instance. 
        If the population is not 2-d an error message appears and no
-       plot will be created. 
+       plot is created. 
        
        :param str figure_dir: Path to the directory where plots should be stored. 
                               Directory will be created if non-existent. 

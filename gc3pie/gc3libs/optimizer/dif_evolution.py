@@ -60,7 +60,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     process to control the optimization. Driver classes can be found
     in `gc3libs.optimizer.drivers.py`:mod:. 
     
-    :param numpy.array initial_pop: Initial population for the optimization.
+    :param list initial_pop: Initial population for the optimization.
     :param str de_strategy: e.g. DE_rand_either_or_algorithm. Allowed are:
     :param float `de_step_size`: Differential Evolution step size.
     :param float `prob_crossover`: Probability new population draws will replace old members.

@@ -100,7 +100,7 @@ class TestLocalDriver(object):
             logger = log, 
             filter_fn=rosenbrock_sample_filter,
             seed = magic_seed,
-            after_update_opt_state=[print_stats, log_stats, plot_population(os.getcwd())]
+            after_update_opt_state=[print_stats, log_stats, plot_population(temp_stage_dir)]
             )
         assert algo.de_step_size == 0.85
         assert algo.prob_crossover == prob_cross
