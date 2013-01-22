@@ -74,3 +74,6 @@
 	    # basically, adapt `opt_rosenb4rock.py`
 
 ** TODO Create output function with meaningful output for the optimizer
+** TODO Use extra.py in test cases. 
+** TODO Finish documentation in all files
+** TODO Write small note on how to compile the docs

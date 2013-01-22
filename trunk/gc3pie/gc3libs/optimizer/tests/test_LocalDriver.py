@@ -28,17 +28,24 @@ __version__ = '$Revision$'
 
 import os
 import logging
+import tempfile
+import shutil
 
 from nose.tools import raises
 from nose.plugins.skip import SkipTest
 
 import numpy as np
 
+from gc3libs import configure_logger
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
 from gc3libs.optimizer.drivers import LocalDriver
 from gc3libs.optimizer import draw_population
+from gc3libs.optimizer.extra import print_stats, log_stats, plot_population
 
-np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
+# Create a temporary stage directory
+temp_stage_dir = tempfile.mkdtemp(prefix = 'LocalDriver_Rosenbrock_')
+
+np.set_printoptions(linewidth=300, precision=8, suppress=True)
 
 # Test parameters
 magic_seed = 100
@@ -49,8 +56,9 @@ upper_bounds = +2 * np.ones(dim)
 prob_cross = 0.8
 filter_pop_sum = 3.                # x[0] + x[1] <= filter_pop_sum
 
-log = logging.getLogger("gc3.gc3libs")
 
+configure_logger(level=logging.DEBUG)
+log = logging.getLogger("gc3.gc3libs")
 
 def rosenbrock_fn(vectors):
     result = []
@@ -68,80 +76,49 @@ def rosenbrock_sample_filter(pop):
     '''
     return [ x[0] + x[1] <= filter_pop_sum for x in pop ]
 
+class TestLocalDriver(object):
+    def tearDown(self):
+        # Remove Rosenbrock output
+        log.debug('Removing temporary directory: \n%s', temp_stage_dir)
+        shutil.rmtree(temp_stage_dir)
+    
+    def test_LocalDriver_with_rosenbrock(self):
+        '''
+        Unit test for LocalDriver class. 
+        '''
+        initial_pop = draw_population(lower_bds = lower_bounds, upper_bds = upper_bounds, dim = dim, size = pop_size, 
+                                      filter_fn = rosenbrock_sample_filter, seed = magic_seed)
+    
+        algo = DifferentialEvolutionAlgorithm(
+            initial_pop = initial_pop,
+            de_step_size = 0.85,# DE-stepsize ex [0, 2]
+            prob_crossover = prob_cross, # crossover probabililty constant ex [0, 1]
+            itermax = 1000,      # maximum number of iterations (generations)
+            dx_conv_crit = None, # stop when variation among x's is < this
+            y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
+            de_strategy = 'DE_local_to_best',
+            logger = log, 
+            filter_fn=rosenbrock_sample_filter,
+            seed = magic_seed,
+            after_update_opt_state=[print_stats, log_stats, plot_population(os.getcwd())]
+            )
+        assert algo.de_step_size == 0.85
+        assert algo.prob_crossover == prob_cross
+        assert algo.itermax == 1000
+        assert algo.dx_conv_crit == None
+        assert algo.y_conv_crit == 1e-5
+        assert algo.de_strategy == 'DE_local_to_best'
+        assert algo.logger == log
+    
+        opt = LocalDriver(algo, target_fn=rosenbrock_fn)
+        assert opt.target_fn == rosenbrock_fn
+    
+        # run the Diff.Evo. algorithm
+        opt.de_opt()
+    
+        assert algo.has_converged()
+        assert (algo.best_y - 0.) < algo.y_conv_crit
+        assert (algo.best_x[0] - 1.) < 1e-3
+        assert (algo.best_x[1] - 1.) < 1e-3
 
-def test_LocalDriver_with_rosenbrock():
-    '''
-    Unit test for LocalDriver class. 
-    '''
-    initial_pop = draw_population(lower_bds = lower_bounds, upper_bds = upper_bounds, dim = dim, size = pop_size, 
-                                  filter_fn = rosenbrock_sample_filter, seed = magic_seed)
 
-    algo = DifferentialEvolutionAlgorithm(
-        initial_pop = initial_pop,
-        de_step_size = 0.85,# DE-stepsize ex [0, 2]
-        prob_crossover = prob_cross, # crossover probabililty constant ex [0, 1]
-        itermax = 1000,      # maximum number of iterations (generations)
-        dx_conv_crit = None, # stop when variation among x's is < this
-        y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
-        de_strategy = 'DE_local_to_best',
-        logger = log, 
-        filter_fn=rosenbrock_sample_filter,
-        seed = magic_seed
-        )
-    assert algo.de_step_size == 0.85
-    assert algo.prob_crossover == prob_cross
-    assert algo.itermax == 1000
-    assert algo.dx_conv_crit == None
-    assert algo.y_conv_crit == 1e-5
-    assert algo.de_strategy == 'DE_local_to_best'
-    assert algo.logger == log
-
-    opt = LocalDriver(algo, target_fn=rosenbrock_fn)
-    assert opt.target_fn == rosenbrock_fn
-
-    # run the Diff.Evo. algorithm
-    opt.de_opt()
-
-    assert algo.has_converged()
-    assert (algo.best_y - 0.) < algo.y_conv_crit
-    assert (algo.best_x[0] - 1.) < 1e-3
-    assert (algo.best_x[1] - 1.) < 1e-3
-
-
-#def test_differential_evolution_parallel_with_rosenbrock():
-
-
-    #initial_pop = draw_population(lower_bds = lower_bounds, upper_bds = upper_bounds, dim = dim, size = pop_size, 
-                                  #filter_fn = rosenbrock_sample_filter, seed = magic_seed)
-
-    #algo = DifferentialEvolutionAlgorithm(
-        #initial_pop = initial_pop,
-        #de_step_size = 0.85,# DE-stepsize ex [0, 2]
-        #prob_crossover = 0.8, # crossover probabililty constant ex [0, 1]
-        #itermax = 1000,      # maximum number of iterations (generations)
-        #dx_conv_crit = None, # stop when variation among x's is < this
-        #y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
-        #de_strategy = 'DE_local_to_best',
-        #logger = log,
-        #filter_fn=rosenbrock_sample_filter,
-        #seed=magic_seed
-        #)
-
-    #new_pop = algo.pop
-    #newVals = rosenbrock_fn(algo.pop)
-    #log.debug('pop = \n%s', new_pop)
-    #algo.update_opt_state(new_pop, newVals)
-
-    #has_converged = False
-    #while not has_converged:
-        #new_pop = algo.evolve()
-        #log.debug('pop = \n%s', new_pop)
-        #### The evaluation needs to be parallelized
-        #newVals = rosenbrock_fn(new_pop)
-        #algo.update_opt_state(new_pop, newVals)
-        #has_converged = algo.has_converged()
-
-    #assert algo.has_converged()
-    #assert (algo.best_y - 0.) < algo.y_conv_crit
-    #assert (algo.best_x[0] - 1.) < 1e-3
-    #assert (algo.best_x[1] - 1.) < 1e-3
