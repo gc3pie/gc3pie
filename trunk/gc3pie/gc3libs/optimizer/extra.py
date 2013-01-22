@@ -25,6 +25,8 @@ __version__ = '$Revision$'
 __author__ = 'Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
 __docformat__ = 'reStructuredText'
 
+import logging
+import sys
 
 def plot_population(algo):
     pop = algo.pop
