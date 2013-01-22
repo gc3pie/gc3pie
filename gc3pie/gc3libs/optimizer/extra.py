@@ -1,9 +1,11 @@
 #! /usr/bin/env python
 #
 """
-Differential Evolution Optimizer
-This code is an adaptation of the following MATLAB code: http://www.icsi.berkeley.edu/~storn/DeMat.zip
-Please refer to this web site for more information: http://www.icsi.berkeley.edu/~storn/code.html#deb1
+Collection of tools to supplement optimization algorithm 
+:class:`gc3libs.optimizer.EvolutionaryAlgorithm`. 
+
+Include a list of desired tools in param `after_update_opt_state` of
+:class:`gc3libs.optimizer.EvolutionaryAlgorithm`. 
 """
 # Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
 #
@@ -25,53 +27,95 @@ __version__ = '$Revision$'
 __author__ = 'Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
 __docformat__ = 'reStructuredText'
 
-import logging
+
+import os
 import sys
+import logging
 
-def plot_population(algo):
-    pop = algo.pop
-    if not self.dim == 2:
-        self.logger.critical('plot_population is implemented only for self.dim = 2')
-    import matplotlib
-    matplotlib.use('SVG')
-    import matplotlib.pyplot as plt
-    x = pop[:, 0]
-    y = pop[:, 1]
-    # determine bounds
-    xDif = self.upper_bds[0] - self.lower_bds[0]
-    yDif = self.upper_bds[1] - self.lower_bds[1]
-    scaleFac = 0.3
-    xmin = self.lower_bds[0] - scaleFac * xDif
-    xmax = self.upper_bds[0] + scaleFac * xDif
-    ymin = self.lower_bds[1] - scaleFac * yDif
-    ymax = self.upper_bds[1] + scaleFac * yDif
+log = logging.getLogger("gc3.gc3libs")
 
-    # make plot
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
+class plot_population(object):
+    '''Plot the 2-dimensional population of an 
+       :class:`gc3libs.optimizer.EvolutionaryAlgorithm` instance. 
+       If the population is not 2-d an error message appears and no
+       plot will be created. 
+       
+       :param str figure_dir: Path to the directory where plots should be stored. 
+                              Directory will be created if non-existent. 
+    '''
+    def __init__(self, figure_dir):
+        if not os.path.isdir(figure_dir):
+            os.mkdir(figure_dir)        
+        self.figure_dir = figure_dir
 
-    ax.scatter(x, y)
-    # x box constraints
-    ax.plot([self.lower_bds[0], self.lower_bds[0]], [ymin, ymax])
-    ax.plot([self.upper_bds[0], self.upper_bds[0]], [ymin, ymax])
-    # all other linear constraints
-    c_xmin = self.filter_fn.linearConstr(xmin)
-    c_xmax = self.filter_fn.linearConstr(xmax)
-    for ixC in range(len(c_xmin)):
-        ax.plot([xmin, xmax], [c_xmin[ixC], c_xmax[ixC]])
-    ax.axis(xmin = xmin, xmax = xmax,
-            ymin = ymin, ymax = ymax)
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_title('Best: x %s, f(x) %f' % (self.best_x, self.best_y))
+    def __call__(self, algo):
+        '''Plot population for `algo`.  
+        
+           :param str algo: Instance of :class:`gc3libs.optimizer.EvolutionaryAlgorithm`. 
+        '''        
+        log.debug('entering plot_population.__call__')
+        pop = algo.pop
+        if not algo.dim == 2:
+            algo.logger.critical('plot_population is implemented only for algo.dim = 2')
+            return
+        import matplotlib
+        matplotlib.use('SVG')
+        import matplotlib.pyplot as plt
+        x = pop[:, 0]
+        y = pop[:, 1]
+        # determine bounds
+        x0_min = algo.pop[:,0].min()
+        x1_min = algo.pop[:,1].min()
+        x0_max = algo.pop[:,0].max()
+        x1_max = algo.pop[:,1].max()
+        
+        # Determine plotting area
+        x_dif = x0_max - x0_min
+        y_dif = x1_max - x1_min
+        scaleFac = 0.3
+        x0_min_plot = x0_min - scaleFac * x_dif
+        x0_max_plot = x0_max + scaleFac * x_dif
+        x1_min_plot = x1_min - scaleFac * y_dif
+        x1_max_plot = x1_max + scaleFac * y_dif
+    
+        # make plot
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+    
+        ax.scatter(x, y)
+        # x box constraints
+        ax.plot([x0_min, x0_min], [x1_min_plot, x1_max_plot])
+        ax.plot([x0_max, x0_max], [x1_min_plot, x1_max_plot])
+        ax.plot([x0_min_plot, x0_max_plot], [x1_min, x1_min])
+        ax.plot([x0_min_plot, x0_max_plot], [x1_max, x1_max])
+        
+        ## all other linear constraints
+        #c_x_min_plot = algo.filter_fn.linearConstr(x_min_plot)
+        #c_xmax = algo.filter_fn.linearConstr(xmax)
+        #for ixC in range(len(c_x_min_plot)):
+            #ax.plot([x_min_plot, xmax], [c_x_min_plot[ixC], c_xmax[ixC]])
+        ax.axis(xmin = x0_min_plot, xmax = x0_max_plot,
+                ymin = x1_min_plot, ymax = x1_max_plot)
+        
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        
+        ax.set_title('Best: x %s, f(x) %f' % (algo.best_x, algo.best_y))
 
-    figure_dir = os.path.join(os.getcwd(), 'dif_evo_figs')
-    fig.savefig(os.path.join(figure_dir, 'pop%d' % (self.cur_iter)))
+        fig.savefig(os.path.join(self.figure_dir, 'pop%d' % (algo.cur_iter)))
     
 def print_stats(algo, output=sys.stdout):
-    output.write('Iteration: %d,  x: %s f(x): %f\n',
-                 algo.cur_iter, algo.best_x, algo.best_y)
+    '''Print summary statistics for `algo`.  
+    
+       :param str algo: Instance of :class:`gc3libs.optimizer.EvolutionaryAlgorithm`. 
+       :param output: Output stream. 
+    '''
+    output.write('Iteration: %d,  x: %s f(x): %f\n' % (algo.cur_iter, algo.best_x, algo.best_y))
 
 def log_stats(algo, logger=logging.getLogger()):
+    '''Log summary statistics for `algo`.  
+    
+       :param str algo: Instance of :class:`gc3libs.optimizer.EvolutionaryAlgorithm`. 
+    '''
     logger.info('Iteration: %d,  x: %s f(x): %f',
                 algo.cur_iter, algo.best_x, algo.best_y)
