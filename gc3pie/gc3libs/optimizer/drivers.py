@@ -242,10 +242,13 @@ class ComputeTargetVals(ParallelTaskCollection):
         log.debug('entering ComputeTargetVals.__init__')
 
         # Set up initial variables and set the correct methods.
-        self.jobname = 'evalSolverGuess' + '-' + jobname + '-' + str(iteration)
+        self.jobname = jobname + '-' + 'compute_target_vals' + '-' + str(iteration)
         self.iteration = iteration
 
         self.path_to_stage_dir = path_to_stage_dir
+        # ComputeTargetVals produces no output.  
+        # But attribute needs to be specified. 
+        self.output_dir = path_to_stage_dir 
         self.cur_pop_file = cur_pop_file
         self.verbosity = 'DEBUG'
         self.extra_args = extra_args

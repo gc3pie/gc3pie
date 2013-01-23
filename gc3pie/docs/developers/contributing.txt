@@ -476,6 +476,53 @@ for each of them.
   .. __: http://en.wikipedia.org/wiki/Shebang_(Unix)
 
 
+Documentation
+-------------
+The documentation can be found in gc3pie/docs. It is generated using
+Sphinx (http://sphinx-doc.org/contents.html).
+
+GC3Pie documentation is divided in three sections:
+
+* :ref:`User Documentation`: info on how to install, configure and run
+  GC3Pie applications.
+
+* :ref:`Programmer Documentation`: info for programmers who want to
+  use the GC3Pie libraries to write their own scripts and
+  applications.
+
+* :ref:`Developer Documentation`: detailed information on how to
+  contribute to GC3Pie and get your code included in the main library.
+
+The :ref:`GC3Libs programming API` is the most relevant part of the
+docs for developers contributing code and is generated automatically
+from the docstrings inside the modules. Automatic documentation in
+Sphinx is described under
+http://sphinx-doc.org/tutorial.html#autodoc. While updating the docs
+of existing modules is simply done by running $ make html, adding
+documentation for a new module requires one of the following two steps
+
+- Add a reference to the new module in
+  `programmers/api/index.txt`. Additionally, create a file that
+  enables automatic documentation for the module. For the module
+  `core.py`, for example, automatic documentation is enabled by
+  `gc3pie/programmers/api/gc3libs/core.txt`.
+
+::
+
+   `gc3libs.core` ==============
+   .. automodule:: gc3libs.core
+   :members:
+
+- Execute `gc3pie/docs/programmers/api/makehier.sh`, which automates
+  the above.
+
+Docstrings are written in `reStructuredText` format
+(http://docutils.sourceforge.net/rst.html). To be able to
+cross-reference between differen objects in the documentation, you
+should be familiar with Sphinx domains in general
+(http://sphinx-doc.org/domains.html#the-python-domain) and the Python
+domain in particular
+(http://sphinx-doc.org/domains.html#cross-referencing-python-objects).
 
 Questions?
 ----------

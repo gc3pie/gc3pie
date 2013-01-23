@@ -50,7 +50,7 @@ optimization_dir = os.path.join(temp_stage_dir, 'rosenbrock_output_dir')
 
 # Nose will add command line arguments that cannot be interpreted by the SessionBasedScript. To avoid
 # error, override sys.argv. 
-sys.argv = ['test_drivers_rosenbrock.py']
+sys.argv = ['test_drivers_rosenbrock.py', '-vvvvvvvvv']
 
 # General settings
 
@@ -246,7 +246,8 @@ class RosenbrockScript(SessionBasedScript):
         self.params.store_url = temp_stage_dir
 #        self.params.new_session = True
         self.params.wait = 10
-
+#        self.params.verbose = logging.DEBUG
+        
 
 def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     """

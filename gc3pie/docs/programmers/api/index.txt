@@ -6,6 +6,8 @@
 
 .. _gc3libs:
 
+.. _`GC3Libs programming API`:
+
 -------------------------
  GC3Libs programming API
 -------------------------
