@@ -79,6 +79,9 @@ def make_random_vector(dim, distribution=(lambda: numtype(random.random()))):
     """
     return [ numtype(distribution()) for _ in range(dim) ]
 
+def prettyprint_vector(x):
+    return '[ ' + str.join(" ", (str(x_l) for x_l in x)) + ' ]'
+
 
 ## main algorithm
 
@@ -110,28 +113,32 @@ def main_algo(A, b, sample_fn=make_random_vector):
     v = [ sample_fn(n) for _ in range(n+1) ] # n+1 random vectors of n elements each
     print "Initial choices of v's:"
     for l, v_l in enumerate(v):
-        print "  v_%d = %s" % (l, v_l)
+        print "  v_%d = %s" % (l, prettyprint_vector(v_l))
 
-    # save all (i,j) pairs for later -- this is invariant in the Step 3 loop
-    all_ij_pairs = [ (i,j) for i in range(n+1) for j in range(n+1) if i<j ]
-    #print 'potential ij_pairs = ', all_ij_pairs
-    assert len(all_ij_pairs) == ((n+1)*n / 2)
+    ij_pairs = [ (0,j) for j in range(1,n+1) ] + [ tuple(random.sample(range(1,n+1), 2)) ]
+    print 'ij_pairs = ', ij_pairs
+    assert len(ij_pairs) == len(v)
 
     # Step 3.
     for k in range(m): # loop over eqs
         print "Step 3, iteration %d starting ..." % k
-        # Step 3(a): choose n+1 random pairs (i_l, j_l) with i_l < j_l
-        # pick randomly from all_ij_pairs set to get n+1 random pairs
-        ij_pairs = random.sample(all_ij_pairs, n+1)
-        assert len(ij_pairs) == n+1
+        # Step 3(a): CANCELED, we now use a fixed set of indices
         print '  ij_pairs = ', ij_pairs
         # Step 3(b): recombine the v's; use x's as temporary storage
-        x = [ rec(v[i], v[j], A[k], b[k])
-              for l, (i, j) in enumerate(ij_pairs)
-        ]
+        try:
+            x = [ rec(v[i], v[j], A[k], b[k])
+                  for l, (i, j) in enumerate(ij_pairs)
+              ]
+        except ZeroDivisionError:
+            print ('**** STOP in main_algo() ****')
+            for l in range(len(x)):
+                print ("x_%d = %s" % (l, prettyprint_vector(x[l])))
+            raise
         # Step 3(d): rename x's -> v's
         for l in range(n+1):
             v[l] = x[l]
+        # check progress
+        _check_distance(A, b, v, k)
 
     # final result
     return v
@@ -150,33 +157,42 @@ def rec(u, v, a, beta, q=0):
     assert len(v) == len(a)
     t0 = beta - dot_product(a, v)
     t1 = dot_product(a, [(u[i] - v[i]) for i in range(len(u))])
+    if t1 == 0:
+        print ("**** STOP in rec() ****")
+        print ("u = %s" % prettyprint_vector(u))
+        print ("v = %s" % prettyprint_vector(v))
+        print ("a = %s" % prettyprint_vector(a))
+        raise ZeroDivisionError()
     t = t0 / t1
     return  [ (t*u[i] + (1-t)*v[i]) for i in range(len(u)) ]
 
 
-def _check_distance(A, b, vs):
+def _check_distance(A, b, vs, k=None):
+    if k is None:
+        k = len(b)
     print "Final values of v's:"
     for l, v_l in enumerate(vs):
-      print "  v_%d = %s" % (l, v_l)
+      print "  v_%d = %s" % (l, prettyprint_vector(v_l))
     print "Distances of solutions computed by Fliege's algorithm:"
     for l, v_l in enumerate(vs):
         dist = norm([
             matrix_vector_product(A,v_l)[i] - b[i]
-            for i in range(len(b))
+            for i in range(k)
         ])
         print ("  |Av_%d - b| = %g" % (l, dist))
 
-    print "Numpy's `linalg.solve` solution:"
-    A_ = np.array([ [ float(A[i][j])
-                      for j in range(len(A[0])) ]
-                    for i in range(len(A)) ],
-                  ndmin=2)
-    b_ = np.array([ float(b[k]) for k in range(len(b)) ])
-    v_prime = np.linalg.solve(A_, b_)
-    print "  v' = %s" % v_prime
-    print "Distance of Numpy's `linalg.solve` solution:"
-    dist_prime = np.linalg.norm(np.dot(A_,v_prime) - b_)
-    print ("  |Av' - b| = %g" % dist_prime)
+    if k == len(b):
+        print "Numpy's `linalg.solve` solution:"
+        A_ = np.array([ [ float(A[i][j])
+                          for j in range(len(A[0])) ]
+                        for i in range(len(A)) ],
+                      ndmin=2)
+        b_ = np.array([ float(b[k]) for k in range(len(b)) ])
+        v_prime = np.linalg.solve(A_, b_)
+        print "  v' = %s" % v_prime
+        print "Distance of Numpy's `linalg.solve` solution:"
+        dist_prime = np.linalg.norm(np.dot(A_,v_prime) - b_)
+        print ("  |Av' - b| = %g" % dist_prime)
 
 
 def test_with_random_matrix(dim=5):
