@@ -198,16 +198,22 @@ ReturnCode=%x"""
     def free(self, app):
         """
         Delete the temporary directory where a child process has run.
-
         The temporary directory is removed with all its content,
         recursively.
+
+        If the deletion is successful, the `lrms_execdir` attribute in
+        `app.execution` is reset to `None`; subsequent invocations of
+        this method on the same applications do nothing.
+
         """
         try:
-            self.transport.connect()
-            self.transport.remove_tree(app.execution.lrms_execdir)
+            if app.execution.lrms_execdir is not None:
+                self.transport.connect()
+                self.transport.remove_tree(app.execution.lrms_execdir)
+                app.execution.lrms_execdir = None
         except Exception, ex:
-            log.warning("Failed removing folder '%s': %s: %s"
-                        % (app.execution.lrms_execdir, type(ex), ex))
+            log.warning("Failed removing folder '%s': %s: %s",
+                        app.execution.lrms_execdir, ex.__class__.__name__, ex)
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
