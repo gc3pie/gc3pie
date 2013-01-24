@@ -3,7 +3,7 @@
 """
 Unit tests for the `gc3libs.optimizer.dif_evolution` module.
 
-Test using the 2-d Rosenbrock function: 
+Test using the 2-d Rosenbrock function:
     f(x,y) = (1-x)**2 + 100 * (y - x**2)**2
 The function has a global minimum at (x,y) = (1,1) with f(x,y) = 0
 """
@@ -73,8 +73,8 @@ def rosenbrock_fn(vectors):
 
 def rosenbrock_sample_filter(pop):
     '''
-    Sample filter function. 
-    In optimum x[0] + x[1] = 2. 
+    Sample filter function.
+    In optimum x[0] + x[1] = 2.
     '''
     return [ x[0] + x[1] <= filter_pop_sum for x in pop ]
 
@@ -83,14 +83,14 @@ class TestLocalDriver(object):
         # Remove Rosenbrock output
         log.debug('Removing temporary directory: \n%s', temp_stage_dir)
         shutil.rmtree(temp_stage_dir)
-    
+
     def test_LocalDriver_with_rosenbrock(self):
         '''
-        Unit test for LocalDriver class. 
+        Unit test for LocalDriver class.
         '''
-        initial_pop = draw_population(lower_bds = lower_bounds, upper_bds = upper_bounds, dim = dim, size = pop_size, 
+        initial_pop = draw_population(lower_bds = lower_bounds, upper_bds = upper_bounds, dim = dim, size = pop_size,
                                       filter_fn = rosenbrock_sample_filter, seed = magic_seed)
-    
+
         algo = DifferentialEvolutionAlgorithm(
             initial_pop = initial_pop,
             de_step_size = 0.85,# DE-stepsize ex [0, 2]
@@ -99,7 +99,7 @@ class TestLocalDriver(object):
             dx_conv_crit = None, # stop when variation among x's is < this
             y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
             de_strategy = 'DE_local_to_best',
-            logger = log, 
+            logger = log,
             filter_fn=rosenbrock_sample_filter,
             seed = magic_seed,
             after_update_opt_state=[print_stats, log_stats]
@@ -115,13 +115,11 @@ class TestLocalDriver(object):
 
         opt = LocalDriver(algo, target_fn=rosenbrock_fn, fmt="%12.8f")
         assert opt.target_fn == rosenbrock_fn
-    
+
         # run the Diff.Evo. algorithm
         opt.de_opt()
-    
+
         assert algo.has_converged()
         assert (algo.best_y - 0.) < algo.y_conv_crit
         assert (algo.best_x[0] - 1.) < 1e-3
         assert (algo.best_x[1] - 1.) < 1e-3
-
-
