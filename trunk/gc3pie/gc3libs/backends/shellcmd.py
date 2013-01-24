@@ -2,7 +2,7 @@
 """
 Run applications as local processes.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -430,23 +430,22 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
         #
         # However, the script can have not been able to write the
         # pidfile yet, so we have to wait a little bit for it...
-        try:
-            pidfile = self.transport.open(pidfilename, 'r')
-        except gc3libs.exceptions.TransportError, ex:
-            if '[Errno 2]' in ex.message:
-                # errno 2: no such file or directory
-                for retry in range(5):
-                    time.sleep(1)
-                    try:
-                        pidfile = self.transport.open(pidfilename, 'r')
-                        break
-                    except:
-                        continue
-                if 'pidfile' not in locals():
-                    raise gc3libs.exceptions.LRMSSubmitError(
-                        "Unable to get pidfile of submitted process from"
-                        " execution directory `%s`. Pidfile `%s` not found."
-                        % (execdir, pidfilename))
+        pidfile = None
+        for retry in gc3libs.utils.ExponentialBackoff():
+            try:
+                pidfile = self.transport.open(pidfilename, 'r')
+                break
+            except gc3libs.exceptions.TransportError, ex:
+                if '[Errno 2]' in ex.message: # no such file or directory
+                    time.sleep(retry)
+                    continue
+                else:
+                    raise
+        if pidfile is None:
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "Unable to get PID file of submitted process from"
+                " execution directory `%s`: %s"
+                % (execdir, pidfilename, str(ex)))
         pid = pidfile.read().strip()
         try:
             pid = int(pid)
