@@ -32,6 +32,7 @@ import itertools
 import os
 import os.path
 import posix
+import random
 import re
 import shutil
 import sys
@@ -403,6 +404,48 @@ class Enum(frozenset):
             raise SyntaxError("Cannot assign enumeration values.")
     def __delattr__(self, name):
             raise SyntaxError("Cannot delete enumeration values.")
+
+
+class ExponentialBackoff(object):
+    """Generate waiting times with the `exponential backoff`_ algorithm.
+
+    Returned times are in seconds (or fractions thereof); they are
+    integral multiples of the basic time slot, which is set with the
+    `slot_duration` constructor parameter.
+
+    After `max_retries` have been attempted, any call to this iterator
+    will raise a `StopIteration` exception.
+
+    The `ExponentialBackoff` class implements the iterator protocol,
+    so you can just retrieve waiting times with the `.next()` method,
+    or by looping over it::
+
+      >>> for wt in ExponentialBackoff():
+      ...   print wt,
+
+
+    .. _`exponential backoff`: http://en.wikipedia.org/wiki/Exponential_backoff#An_example_of_an_exponential_backoff_algorithm
+
+    """
+
+    def __init__(self, slot_duration=0.05, max_retries=5):
+        self.attempt = -1
+        self.slot_duration = slot_duration
+        self.max_retries = max_retries
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        """Return next waiting time."""
+        self.attempt += 1
+        if self.attempt > self.max_retries:
+            raise StopIteration
+        return self.slot_duration * random.randint(0, 2**self.attempt - 1)
+
+    def wait(self):
+        """Wait for another while."""
+        time.sleep(self.next())
 
 
 def first(seq):
