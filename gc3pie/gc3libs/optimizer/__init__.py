@@ -72,7 +72,7 @@ class EvolutionaryAlgorithm(object):
         if logger:
             self.logger = logger
         else:
-            self.logger = logging.getLogger('gc3.gc3libs')
+            self.logger = gc3libs.log
 
         # save parameters
         self.pop = np.array(initial_pop)
@@ -120,7 +120,14 @@ class EvolutionaryAlgorithm(object):
         * advances iteration count.
         '''
 
-        self.logger.debug('entering update_opt_state')
+        gc3libs.log.debug('Entering update_opt_state ...')
+        # XXX: `new_vals` is a NumPy array, so the way it is printed
+        # is influenced by Numpy's `set_printoptions()` -- the default
+        # settings introduce line breaks at every 75th column, so the
+        # following results in a multi-line log even for moderate-size
+        # populations...  You might want to
+        # `np.set_printoptions(linewidth=1024)` or so to prevent this.
+        self.logger.debug('Updating optimizer state with new values: %s', new_vals)
 
         # In variable names `best` refers to a population member with the
         # lowest target function value within some group:

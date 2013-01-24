@@ -152,7 +152,7 @@ class GridDriver(SequentialTaskCollection):
                  cur_pop_file = '',
                  **extra_args ):
 
-        log.debug('entering GridOptimizer.__init__')
+        gc3libs.log.debug('entering GridOptimizer.__init__')
 
         # Set up initial variables and set the correct methods.
         self.jobname = jobname
@@ -171,7 +171,7 @@ class GridDriver(SequentialTaskCollection):
         SequentialTaskCollection.__init__(self,  [initial_task], **extra_args)
 
     def next(self, done):
-        log.debug('entering GridOptimizer.next(%d)', done)
+        gc3libs.log.debug('entering GridOptimizer.next(%d)', done)
 
         # feed back results from the evaluation just completed
         new_pop = self.new_pop
@@ -249,7 +249,7 @@ class ComputeTargetVals(ParallelTaskCollection):
     def __init__(self, pop, jobname, iteration, path_to_stage_dir,
                  cur_pop_file, task_constructor, **extra_args):
 
-        log.debug('entering ComputeTargetVals.__init__')
+        gc3libs.log.debug('entering ComputeTargetVals.__init__')
 
         # Set up initial variables and set the correct methods.
         self.jobname = jobname + '-' + 'compute_target_vals' + '-' + str(iteration)
