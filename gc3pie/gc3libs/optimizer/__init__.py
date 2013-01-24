@@ -99,7 +99,7 @@ class EvolutionaryAlgorithm(object):
         # Check `y_conv_crit`
         if self.best_y < self.y_conv_crit:
             converged = True
-            self.logger.info('Converged: self.best_y[%s] < self.y_conv_crit[%s]', 
+            self.logger.info('Converged: self.best_y[%s] < self.y_conv_crit[%s]',
                              self.best_y, self.y_conv_crit)
 
         # Check `dx_conv_crit`
@@ -150,8 +150,7 @@ class EvolutionaryAlgorithm(object):
             self.pop = new_pop
             self.vals = new_vals
 
-        self.logger.debug('new values %s', new_vals)
-        self.logger.debug('best value %s', self.best_y)
+        self.logger.debug('Computed best value: %s (at index %d)', self.best_y, best_ix)
 
         for fn in self.after_update_opt_state:
             fn(self)
