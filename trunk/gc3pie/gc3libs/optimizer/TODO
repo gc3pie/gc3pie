@@ -1,6 +1,6 @@
 -*- mode: org -*-
 
-`* gc3libs.optimizer [4/15]
+* gc3libs.optimizer [17/24]
 ** DONE have `evolve_fn` compute the `dim` parameter from `population`
 ** DONE `has_converged` should not check for iteration numbers
 ** DONE rename `DifferntialEvolutionSequential` not to suggest it's a `SequentialTaskCollection`
@@ -30,7 +30,7 @@
    This might require something like this (taken from gc3libs/backends/tests/test_shellcmd.py`:)
 
     class TestGridDriver(object):
-       	CONF="""
+        CONF="""
     [resource/localhost_test]
     type=shellcmd
     transport=local
@@ -47,34 +47,51 @@
     type=none
     """
 
-       	def setUp(self):
-	    (fd, cfgfile) = tempfile.mkstemp()
-	    f = os.fdopen(fd, 'w+')
-	    f.write(TestGridDriver.CONF)
-	    f.close()
-	    self.files_to_remove = [cfgfile]
+        def setUp(self):
+            (fd, cfgfile) = tempfile.mkstemp()
+            f = os.fdopen(fd, 'w+')
+            f.write(TestGridDriver.CONF)
+            f.close()
+            self.files_to_remove = [cfgfile]
 
-	    self.cfg = gc3libs.config.Configuration()
-	    self.cfg.merge_file(cfgfile)
+            self.cfg = gc3libs.config.Configuration()
+            self.cfg.merge_file(cfgfile)
 
-	    self.core = gc3libs.core.Core(self.cfg)
-	    self.backend = self.core.get_backend('localhost_test')
+            self.core = gc3libs.core.Core(self.cfg)
+            self.backend = self.core.get_backend('localhost_test')
 
-       	def cleanup_file(self, fname):
-	    self.files_to_remove.append(fname)
+        def cleanup_file(self, fname):
+            self.files_to_remove.append(fname)
 
-       	def tearDown(self):
-	    for fname in self.files_to_remove:
-	       	if os.path.isdir(fname):
-		    shutil.rmtree(fname)
-	       	elif os.path.exists(fname):
-		    os.remove(fname)
+        def tearDown(self):
+            for fname in self.files_to_remove:
+                if os.path.isdir(fname):
+                    shutil.rmtree(fname)
+                elif os.path.exists(fname):
+                    os.remove(fname)
 
-       	def test_optimizer(self):
-	    # basically, adapt `opt_rosenb4rock.py`
+        def test_optimizer(self):
+            # basically, adapt `opt_rosenb4rock.py`
 
 ** TODO Create output function with meaningful output for the optimizer
-** DONE Use extra.py in test cases. 
+** DONE Use extra.py in test cases.
 ** DONE Finish documentation in all files
-** TODO Write small note on how to compile the docs
+** DONE Write small note on how to compile the docs
 ** TODO Check continuation problem with opt_rosenbrock.py
+** TODO is `utils.py` still needed? if not, remove it :-)
+** TODO rewrite `rosenbrock.cpp` to `rosenbrock.py` and use the Python version in tests
+
+   (Because we know that we have a Python interpreter; we're not sure if a C++ compiler is available.)
+
+** TODO rename `GridDriver` to `ParallelDriver` and `LocalDriver` to `SequentialDriver`?
+
+   - `TaskCollectionDriver`? (A bit verbose?)
+   - `TaskDriver`? (A `Task` is a specific object in GC3Pie but could be anything in "nromal speak".  Plus it looks a lot like `TaxiDriver`.)
+
+   All of the above make sense for people who know GC3Pie, but won't make sense for anyone else, esp. newbies.
+
+   - `ParallelTaskDriver` -- suggests that computational work is done in parallel
+   - `ParallelDriver` -- shorted version of the above, but then we would rename the `LocalDriver` to `SequentialDriver` which might lead to confusion with `SequentialTaskCollection`s?
+** TODO test_GridDriver: decide whether to mkdtemp in setUp() or keep it as it is
+
+   Maybe use `setUpModule()` and `tesrDownModule()`, see: https://gist.github.com/3796718
