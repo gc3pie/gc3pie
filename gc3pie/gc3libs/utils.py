@@ -420,9 +420,11 @@ class ExponentialBackoff(object):
     so you can just retrieve waiting times with the `.next()` method,
     or by looping over it::
 
+      >>> random.seed(314) # not-so-random for testing purposes...
       >>> for wt in ExponentialBackoff():
       ...   print wt,
-
+      ...
+      0.0 0.0 0.0 0.25 0.15 0.3
 
     .. _`exponential backoff`: http://en.wikipedia.org/wiki/Exponential_backoff#An_example_of_an_exponential_backoff_algorithm
 
