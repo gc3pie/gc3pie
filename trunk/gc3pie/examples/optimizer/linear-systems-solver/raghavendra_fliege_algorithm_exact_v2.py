@@ -30,6 +30,7 @@ __docformat__ = 'reStructuredText'
 # `fractions.Fraction` and `fractions.Decimal` types are both OK.
 import fractions
 numtype = fractions.Fraction
+#numtype = float
 
 import math
 import os
@@ -176,15 +177,10 @@ def main_algo(A, b, sample_fn=make_random_vector, N=None):
         for l in range(N):
             v[l] = x[l]
         # check progress
-        #_check_distance(A, b, v, k)
+        _check_distance(A, b, v, k)
 
     # final result
     return v
-
-
-def perturb(x, k):
-    """Randomly perturb vector `x`, but keep the first `k` coordinates fixed."""
-    return [ x_l for x_l in x[:k] ] + [ (x_l + numtype(random.random())) for x_l in x[k:] ]
 
 
 def rec(u, v, a, beta, k):
@@ -200,9 +196,8 @@ def rec(u, v, a, beta, k):
     assert len(u) == len(v)
     assert len(v) == len(a)
     while u == v:
-        print ("<<<< WARNING in rec(): u==v, perturbing v.")
-        v = perturb(v, k)
-        print ("Now v = %s" % prettyprint_vector(v))
+        print ("<<<< STOP in rec(): u==v")
+        raise ZeroDivisionError("u==v in rec()")
     attempts = 0
     while True:
         t0 = beta - dot_product(a, v)
@@ -217,9 +212,11 @@ def rec(u, v, a, beta, k):
         if attempts > 3:
             raise ZeroDivisionError("<<<< Maximum number of retries exceeded!")
         else:
-            print ("<<<< RETRY with a perturbed v")
-            v = perturb(v, k)
-            print ("Now v = %s" % prettyprint_vector(v))
+            print ("<<<< RETRY with mu*u-nu*v")
+            mu = numtype(random.random())
+            nu = numtype(random.random())
+            u = scalar_vector_product(mu, u)
+            v = scalar_vector_product(nu, v)
             attempts += 1
             continue
     t = t0 / t1
@@ -257,23 +254,29 @@ def _check_distance(A, b, vs, k=None):
         print ("  |Av' - b| = %g" % dist_prime)
 
 
-def test_with_random_matrix(dim=5):
+def test_with_random_matrix(dim=5, N=None):
     A = np.random.randint(low=1, high=9,size=(dim, dim))
     b = np.random.randint(low=1, high=9,size=(dim,))
 
     rank = np.linalg.matrix_rank(A)
     assert rank == dim, 'Matrix needs to have full rank. '
 
-    x = main_algo(A, b)
+    if N is None:
+        N = dim
+
+    x = main_algo(A, b, N=N)
 
     _check_distance(A, b, x)
 
 
-def test_with_identity_matrix(dim=5):
+def test_with_identity_matrix(dim=5, N=None):
     A = identity_matrix(dim)
     b = [ numtype(random.randint(1,9)) for _ in range(dim) ]
 
-    x = main_algo(A, b)
+    if N is None:
+        N = dim
+
+    x = main_algo(A, b, N=N)
 
     _check_distance(A, b, x)
 
@@ -283,5 +286,5 @@ if __name__ == '__main__':
     # Fix random numbers for debugging
     #np.random.seed(100)
 
-    test_with_identity_matrix(10)
-    #test_with_random_matrix()
+    #test_with_identity_matrix(5)
+    test_with_random_matrix(5, 10)
