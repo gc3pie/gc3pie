@@ -184,10 +184,8 @@ class RosenbrockScript(SessionBasedScript):
         return [GridDriver(jobname=jobname, **kwargs)]
 
 if __name__ == '__main__':
-    print 'starting'
     if os.path.isdir(optimization_dir):
         import shutil
         shutil.rmtree(optimization_dir)
     os.mkdir(optimization_dir)
     RosenbrockScript().run()
-    print 'done'
