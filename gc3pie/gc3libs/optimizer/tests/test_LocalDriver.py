@@ -45,7 +45,9 @@ from gc3libs.optimizer.extra import print_stats, log_stats, plot_population
 # Create a temporary stage directory
 temp_stage_dir = tempfile.mkdtemp(prefix = 'LocalDriver_Rosenbrock_')
 
-np.set_printoptions(linewidth=300, precision=8, suppress=True)
+# Not used here, but it also influences how log lines are printed from
+# `DifferentialEvolutionAlgorithm.update_opt_state()`.
+np.set_printoptions(linewidth=1024, suppress=True)
 
 # Test parameters
 magic_seed = 100
@@ -110,8 +112,8 @@ class TestLocalDriver(object):
         assert algo.y_conv_crit == 1e-5
         assert algo.de_strategy == 'DE_local_to_best'
         assert algo.logger == log
-    
-        opt = LocalDriver(algo, target_fn=rosenbrock_fn)
+
+        opt = LocalDriver(algo, target_fn=rosenbrock_fn, fmt="%12.8f")
         assert opt.target_fn == rosenbrock_fn
     
         # run the Diff.Evo. algorithm
