@@ -86,6 +86,8 @@ def main_algo(A, b, sample_fn=np.random.random):
         # Step 3(d): rename x's -> v's
         for l in range(n+1):
             v[l] = x[l]
+        # check progress
+        _check_distance(A, b, v, k)
 
     # final result
     return v
@@ -108,25 +110,32 @@ def rec(u, v, a, beta, q=0):
         c = 1. + t0 * random.random()
         v = u + c*(v - u)
         t1 = np.dot(a, (u - v))
+    if t1 == 0:
+        raise ZeroDivisionError()
+    elif t1 < TINY:
+        print ("*** WARNING: tiny denominator in rec(%s, %s, %s, %s)" % (u,v,a,beta))
     t = t0 / t1
     return  (t * u + (1. - t) * v)
 
 
-def _check_distance(A, b, vs):
+def _check_distance(A, b, vs, k=None):
+    if k is None:
+        k = len(b)
     print "Final values of v's:"
     for l, v_l in enumerate(vs):
       print "  v_%d = %s" % (l, v_l)
     print "Distances of solutions computed by Fliege's algorithm:"
     for l, v_l in enumerate(vs):
-        dist = np.linalg.norm(np.dot(A,v_l) - b)
+        dist = np.linalg.norm(np.dot(A[0:k,:],v_l) - b[0:k])
         print ("  |Av_%s - b| = %g" % (l, dist))
 
-    print "Numpy's `linalg.solve` solution:"
-    v_prime = np.linalg.solve(A,b)
-    print "  v' = %s" % v_prime
-    print "Distance of Numpy's `linalg.solve` solution:"
-    dist_prime = np.linalg.norm(np.dot(A,v_prime) - b)
-    print ("  |Av' - b| = %g" % dist_prime)
+    if k == len(b):
+        print "Numpy's `linalg.solve` solution:"
+        v_prime = np.linalg.solve(A,b)
+        print "  v' = %s" % v_prime
+        print "Distance of Numpy's `linalg.solve` solution:"
+        dist_prime = np.linalg.norm(np.dot(A,v_prime) - b)
+        print ("  |Av' - b| = %g" % dist_prime)
 
 
 def test_with_random_matrix(dim=5):
