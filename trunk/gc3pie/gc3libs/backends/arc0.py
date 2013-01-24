@@ -3,7 +3,7 @@
 """
 Job control on ARC0 resources.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -549,10 +549,10 @@ class ArcLrms(LRMS):
     @LRMS.authenticated
     def free(self, app):
         job = app.execution
-        jftpc = arclib.JobFTPControl()
 
         # Clean remote job sessiondir
         try:
+            jftpc = arclib.JobFTPControl()
             retval = jftpc.Clean(job.lrms_jobid)
         except arclib.FTPControlError:
             log.warning("Failed removing remote folder '%s'" % job.lrms_jobid)
