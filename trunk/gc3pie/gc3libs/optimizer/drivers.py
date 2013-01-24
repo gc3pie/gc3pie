@@ -3,14 +3,14 @@
 """
 Drivers to perform global optimization.
 
-Global optimizations can be performed sequentially on 
-a local machine using :class:`LocalDriver`. 
+Global optimizations can be performed sequentially on
+a local machine using :class:`LocalDriver`.
 To make use of parallelization, :class:`GridDriver` allows submission of
-jobs to gc3pie ressources. 
+jobs to gc3pie ressources.
 
-Drivers use an algorithm instance that conforms to 
-:class:`gc3libs.optimizer.EvolutionaryAlgorithm` to generate new 
-populations. 
+Drivers use an algorithm instance that conforms to
+:class:`gc3libs.optimizer.EvolutionaryAlgorithm` to generate new
+populations.
 """
 # Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
 #
@@ -85,7 +85,8 @@ class LocalDriver(object):
             # Save current population
             self.iteration_folder = os.path.join(self.path_to_stage_dir, 'iter_' + str(self.opt_algorithm.cur_iter))
             if self.cur_pop_file:
-                if not os.path.isdir(self.iteration_folder): os.mkdir(self.iteration_folder)
+                if not os.path.isdir(self.iteration_folder):
+                    os.mkdir(self.iteration_folder)
                 np.savetxt(os.path.join(self.iteration_folder, self.cur_pop_file),
                            new_pop, delimiter = ' ')
             # EVALUATE TARGET #
@@ -113,14 +114,14 @@ class LocalDriver(object):
 
 
 class GridDriver(SequentialTaskCollection):
-    """Drives an optimization using `opt_algorithm` on the grid. 
-    
+    """Drives an optimization using `opt_algorithm` on the grid.
+
     At each iteration an instance of :class:`ComputeTargetVals` uses
     :func:`task_constructor` to generate :class:`gc3libs.Application` instances to be
     executed in parallel. When all jobs are complete, the output is analyzed
     with the user-supplied function :func:`extract_value_fn`. This function
     returns the function value for all analyzed input vectors.
-    
+
     :param str jobname:       string that labels this optimization case.
 
     :param path_to_stage_dir: directory in which to perform the optimization.
@@ -223,16 +224,16 @@ class GridDriver(SequentialTaskCollection):
 class ComputeTargetVals(ParallelTaskCollection):
     """
     :class:`gc3libs.workflow.ParallelTaskCollection` to evaluate the current
-    `pop` using the user-supplied :func:`task_constructor`. 
+    `pop` using the user-supplied :func:`task_constructor`.
 
-    :param list pop: Population to evaluate. 
+    :param list pop: Population to evaluate.
 
     :param str jobname: Name of :class:`GridDriver` instance driving the
      optimization.
 
     :param int iteration: Current iteration number.
 
-    :param str path_to_stage_dir: Path to directory in which optimization takes 
+    :param str path_to_stage_dir: Path to directory in which optimization takes
                                   place.
 
     :param str cur_pop_file: Filename under which the population is stored in the
@@ -256,9 +257,9 @@ class ComputeTargetVals(ParallelTaskCollection):
         self.iteration = iteration
 
         self.path_to_stage_dir = path_to_stage_dir
-        # ComputeTargetVals produces no output.  
-        # But attribute needs to be specified. 
-        self.output_dir = path_to_stage_dir 
+        # ComputeTargetVals produces no output.
+        # But attribute needs to be specified.
+        self.output_dir = path_to_stage_dir
         self.cur_pop_file = cur_pop_file
         self.verbosity = 'DEBUG'
         self.extra_args = extra_args
@@ -288,7 +289,3 @@ class ComputeTargetVals(ParallelTaskCollection):
             task_constructor(pop_mem, self.iteration_folder) for pop_mem in pop
         ]
         ParallelTaskCollection.__init__(self, self.tasks, **extra_args)
-
-
-
-

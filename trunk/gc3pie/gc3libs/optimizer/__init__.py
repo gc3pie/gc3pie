@@ -51,16 +51,16 @@ from gc3libs import Application, Run, Task
 class EvolutionaryAlgorithm(object):
     '''
     Base class for building an evolutionary algorithm for global optimization.
-    
+
     :param list initial_pop: Initial population for the optimization.
     :param int `itermax`: Maximum # of iterations.
     :param float `dx_conv_crit`: Abort optimization if all population members are within a certain distance to each other.
     :param float `y_conv_crit`: Declare convergence when the target function is below a `y_conv_crit`.
     :param obj `logger`: Configured logger to use.
-    :param list `after_update_opt_state`: Functions that are called at the end of 
+    :param list `after_update_opt_state`: Functions that are called at the end of
                 `update_opt_state`:meth:. Use this list
                 to provide problem-specific printing and plotting routines. Examples can be found
-                in `gc3libs.optimizer.extra`:mod:. 
+                in `gc3libs.optimizer.extra`:mod:.
     '''
 
     def __init__(self, initial_pop,
@@ -110,13 +110,14 @@ class EvolutionaryAlgorithm(object):
             self.logger.info('Converged: All population members within `dx_conv_crit` from the first population member. ')
         return converged
 
+
     def update_opt_state(self, new_pop, new_vals):
         '''
         Stores set of function values corresponding to the current
         population, then updates optimizer state in many ways:
 
         * update the `.best*` variables accordingly;
-        * uses :meth:`select` to determine the surviving population. 
+        * uses :meth:`select` to determine the surviving population.
         * advances iteration count.
         '''
 
@@ -172,6 +173,7 @@ class EvolutionaryAlgorithm(object):
         raise NotImplemented(
             "Method `EvolutionaryAlgorithm.evolve` should be implemented in subclasses!")
 
+
 def populate(create_fn, filter_fn=None, max_n_resample=100):
     '''
     Uses :func:`create_fn` to generate a new population. If :func:`filter_fn` is not
@@ -180,13 +182,13 @@ def populate(create_fn, filter_fn=None, max_n_resample=100):
     `max_n_resample` calls to :func:`create_fn`. If `max_n_resample` is reached, a
     warning is issued and the optimization continues with the remaining
     "invalid" members.
-    
-    :param fun create_fn: Generates a new population. Takes no arguments. 
-    :param fun filter_fn: Determines population's validity. 
+
+    :param fun create_fn: Generates a new population. Takes no arguments.
+    :param fun filter_fn: Determines population's validity.
                           Takes no arguments and returns a list of bools
-                          indicating each members validity. 
+                          indicating each members validity.
     :param int max_n_resample: Maximum number of resamples to be drawn to
-                               satisfy :func:`filter_fn`. 
+                               satisfy :func:`filter_fn`.
     '''
     pop = create_fn()
     if filter_fn:
@@ -218,14 +220,14 @@ def populate(create_fn, filter_fn=None, max_n_resample=100):
 def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None, seed = None):
     '''
     Draw a random population with the following criteria:
-    
-    :param list lower_bds: List of length `dim` indicating the lower bound in each dimension. 
-    :param list upper_bds: List of length `dim` indicating the upper bound in each dimension. 
-    :param int dim: Dimension of each population member. 
-    :param int size: Population size. 
-    :param fun filter_fn: Determines population's validity. 
+
+    :param list lower_bds: List of length `dim` indicating the lower bound in each dimension.
+    :param list upper_bds: List of length `dim` indicating the upper bound in each dimension.
+    :param int dim: Dimension of each population member.
+    :param int size: Population size.
+    :param fun filter_fn: Determines population's validity.
                           Takes no arguments and returns a list of bools
-                          indicating each members validity. 
+                          indicating each members validity.
     :param float `seed`: Seed to initialize NumPy's random number generator.
     '''
     np.random.seed(seed)

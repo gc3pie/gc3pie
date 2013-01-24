@@ -48,8 +48,8 @@ from gc3libs.optimizer import draw_population
 temp_stage_dir = tempfile.mkdtemp(prefix = 'GridDriver_Rosenbrock_')
 optimization_dir = os.path.join(temp_stage_dir, 'rosenbrock_output_dir')
 
-# Nose will add command line arguments that cannot be interpreted by the SessionBasedScript. To avoid
-# error, override sys.argv. 
+# Nose will add command line arguments that cannot be interpreted by
+# the SessionBasedScript. To avoid error, override sys.argv.
 sys.argv = ['test_drivers_rosenbrock.py', '-vvvvvvvvv']
 
 # General settings
@@ -95,7 +95,7 @@ type=none
 
         self.core = gc3libs.core.Core(self.cfg)
         self.backend = self.core.get_backend('localhost_test')
-        
+
         # -- Rosenbrock setup --
         # Create base dir
         temp_base_dir = os.path.join(temp_stage_dir, 'base')
@@ -113,18 +113,18 @@ type=none
 #include <iostream>
 #include <ostream>
 #include <stdio.h>
-        
-        
+
+
 using std::cout;
 using std::endl;
-        
+
 using std::ifstream;
 using std::ofstream;
-        
+
 int main()
 {
   cout << "Compute Rosenbrock function" << endl;
-        
+
   ifstream indata; // indata is like cin
   double x; // variable for input value
   double y;
@@ -145,7 +145,7 @@ int main()
   myfile << fun << endl;
   myfile.close();
 
-  cout << "main ended" << endl; 
+  cout << "main ended" << endl;
 }
         """
         )
@@ -153,13 +153,13 @@ int main()
         # Generate Rosenbrock binary
         compile_str = 'g++ ' + os.path.join(temp_bin_dir, 'rosenbrock.cpp') + ' -o ' + os.path.join(temp_bin_dir, 'rosenbrock')
         os.system(compile_str)
-        
+
         print sys.argv
         if os.path.isdir(optimization_dir):
             import shutil
             shutil.rmtree(optimization_dir)
         os.mkdir(optimization_dir)
-        
+
 
     def cleanup_file(self, fname):
         self.files_to_remove.append(fname)
@@ -170,7 +170,7 @@ int main()
                 shutil.rmtree(fname)
             elif os.path.exists(fname):
                 os.remove(fname)
-                
+
         # Remove Rosenbrock output
         shutil.rmtree(temp_stage_dir)
 
@@ -181,11 +181,11 @@ int main()
         print 'log_file = %s' % log_file_name
         for line in log_file.readlines():
             last_line = line
-            
+
         # Check convergence
         assert 'Converged: self.best_y' in last_line
         print 'done succesffully'
-    
+
 
 class RosenbrockScript(SessionBasedScript):
     """
@@ -210,10 +210,10 @@ class RosenbrockScript(SessionBasedScript):
         file_handler = logging.FileHandler(log_file_name, mode = 'w')
         file_handler.setLevel(logging.DEBUG)
         log.addHandler(stream_handler)
-        log.addHandler(file_handler)        
-        
+        log.addHandler(file_handler)
+
         initial_pop = draw_population(lower_bds=lower_bounds, upper_bds=upper_bounds, size=pop_size, dim=dim)
-        
+
         de_solver = DifferentialEvolutionAlgorithm(
             initial_pop = initial_pop,
             de_step_size = 0.85,# DE-stepsize ex [0, 2]
@@ -222,7 +222,7 @@ class RosenbrockScript(SessionBasedScript):
             dx_conv_crit = None, # stop when variation among x's is < this
             y_conv_crit = 100, # stop when ofunc < y_conv_crit
             de_strategy = 'DE_local_to_best',
-            seed=magic_seed, 
+            seed=magic_seed,
             logger = log,
             )
 
@@ -240,14 +240,14 @@ class RosenbrockScript(SessionBasedScript):
 
     def parse_args(self):
         """
-        Add command-line options for testing a SessionBasedScript. 
+        Add command-line options for testing a SessionBasedScript.
         """
         self.params.session = temp_stage_dir
         self.params.store_url = temp_stage_dir
 #        self.params.new_session = True
         self.params.wait = 10
 #        self.params.verbose = logging.DEBUG
-        
+
 
 def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     """
@@ -313,5 +313,5 @@ def compute_target_rosenbrock(task):
     f = open(os.path.join(outputDir, 'rosenbrock.out'))
     line = f.readline().strip()
     return float(line)
-    
+
 print 'done'
