@@ -94,14 +94,13 @@ specified in the configuration file.
           - or it can be a string: only resources whose name matches
             (wildcards ``*`` and ``?`` are allowed) are retained.
         """
-        try:
-            self._lrms = dict( (name,lrms) for (name,lrms) in self._lrms.iteritems()
-                               if match(lrms) )
-        except:
-            # `match` is not callable, then assume it's a
-            # glob pattern and select resources whose name matches
-            self._lrms = dict( (name,lrms) for (name,lrms) in self._lrms.iteritems()
-                               if fnmatch(lrms.name, match) )
+        for lrms in self._lrms.itervalues():
+            try:
+                if not match(lrms):
+                    lrms.enabled = False
+            except:
+                if not fnmatch(lrms.name, match):
+                    lrms.enabled = False
         return len(self._lrms)
 
 
@@ -178,7 +177,8 @@ specified in the configuration file.
         elif job.state != Run.State.NEW:
             return
 
-        if len(self._lrms) == 0:
+        lrms_list = filter(lambda x: x.enabled, self._lrms.itervalues())
+        if len(lrms_list) == 0:
             raise gc3libs.exceptions.NoResources(
                 "Could not initialize any computational resource"
                 " - please check log and configuration file.")
@@ -186,7 +186,7 @@ specified in the configuration file.
         gc3libs.log.debug('Performing brokering ...')
         # decide which resource to use
         # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
-        _selected_lrms_list = app.compatible_resources(self._lrms.itervalues())
+        _selected_lrms_list = app.compatible_resources(lrms_list)
         gc3libs.log.debug('Application scheduler returned %d matching resources',
                            len(_selected_lrms_list))
         if 0 == len(_selected_lrms_list):
