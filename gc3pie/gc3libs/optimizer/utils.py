@@ -71,7 +71,7 @@ def str2tuple(strIn, conv=int):
     return tuple(conv(x) for x in items)
 
 
-class getIndex():
+class getIndex:
 # Python bug http://stackoverflow.com/questions/1152238/python-iterators-how-to-dynamically-assign-self-next-within-a-new-style-class
 # Cannot use new type class, that is: class getIndex(object) does not allow setting next method on the fly. 
     """
