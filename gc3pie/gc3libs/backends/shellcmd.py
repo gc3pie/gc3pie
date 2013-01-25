@@ -442,7 +442,7 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
                 pidfile = self.transport.open(pidfilename, 'r')
                 break
             except gc3libs.exceptions.TransportError, ex:
-                if '[Errno 2]' in ex.message: # no such file or directory
+                if '[Errno 2]' in str(ex): # no such file or directory
                     time.sleep(retry)
                     continue
                 else:
