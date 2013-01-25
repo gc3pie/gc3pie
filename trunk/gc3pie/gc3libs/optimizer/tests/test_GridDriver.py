@@ -50,7 +50,7 @@ optimization_dir = os.path.join(temp_stage_dir, 'rosenbrock_output_dir')
 
 # Nose will add command line arguments that cannot be interpreted by
 # the SessionBasedScript. To avoid error, override sys.argv.
-sys.argv = ['test_drivers_rosenbrock.py', '-vvvvvvvvv']
+sys.argv = ['test_drivers_rosenbrock.py', '-vvv' ]
 
 # General settings
 
@@ -88,6 +88,7 @@ type=none
         f = os.fdopen(fd, 'w+')
         f.write(TestGridDriver.CONF)
         f.close()
+        sys.argv += ['--config-files', cfgfile, '-r', 'localhost_test']
         self.files_to_remove = [cfgfile]
 
         self.cfg = gc3libs.config.Configuration()
@@ -154,7 +155,6 @@ int main()
         compile_str = 'g++ ' + os.path.join(temp_bin_dir, 'rosenbrock.cpp') + ' -o ' + os.path.join(temp_bin_dir, 'rosenbrock')
         os.system(compile_str)
 
-        print sys.argv
         if os.path.isdir(optimization_dir):
             import shutil
             shutil.rmtree(optimization_dir)
@@ -178,13 +178,11 @@ int main()
         # Run Rosenbrock
         RosenbrockScript().run()
         log_file = open(log_file_name)
-        print 'log_file = %s' % log_file_name
         for line in log_file.readlines():
             last_line = line
 
         # Check convergence
         assert 'Converged: self.best_y' in last_line
-        print 'done succesffully'
 
 
 class RosenbrockScript(SessionBasedScript):
@@ -314,4 +312,8 @@ def compute_target_rosenbrock(task):
     line = f.readline().strip()
     return float(line)
 
-print 'done'
+## main: run tests
+
+if "__main__" == __name__:
+    import nose
+    nose.runmodule()
