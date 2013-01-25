@@ -86,7 +86,8 @@ setuptools.setup(
         # pyCLI -- object-oriented command-line app programming
         'pyCLI>=2.0.3',
         # Needed by SqlStore
-        'sqlalchemy',
+        # 0.7.9 is the latest version with Python2.4 support
+        'sqlalchemy==0.7.9',
         # Needed for parsing human-readable dates (gselect uses it).
         'parsedatetime',
         # needed by Benjamin's DE optimizer code
