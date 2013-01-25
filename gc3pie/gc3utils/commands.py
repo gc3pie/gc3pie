@@ -3,7 +3,7 @@
 """
 Implementation of the `core` command-line front-ends.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -962,9 +962,8 @@ To get detaileid info on a specific command, run:
                 gc3libs.log.error(
                     "Failed while killing job '%s'"
                     "Error type %s, message %s" % (ex.__class__, ex))
-            finally:
-                task.free()
-                rc += 1
+            task.free()
+            rc += 1
             self.session.remove(task_id)
 
         if self.session.tasks:
@@ -1017,7 +1016,7 @@ To get detaileid info on a specific command, run:
                 jobname = app.jobname
             except AttributeError:
                 jobname = ''
-            
+
             rows.append([indent + app.persistent_id,
                          jobname,
                          app.execution.state,
