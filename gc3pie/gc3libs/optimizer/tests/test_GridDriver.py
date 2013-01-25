@@ -243,7 +243,7 @@ class RosenbrockScript(SessionBasedScript):
         self.params.session = temp_stage_dir
         self.params.store_url = temp_stage_dir
 #        self.params.new_session = True
-        self.params.wait = 10
+        self.params.wait = 1
 #        self.params.verbose = logging.DEBUG
 
 
@@ -271,7 +271,7 @@ def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     # start the inputs dictionary with syntax: client_path: server_path
     inputs = { path_to_executable:executable }
     path_to_stage_base_dir = os.path.join(path_to_stage_dir, 'base')
-    shutil.copytree(base_dir, path_to_stage_base_dir, ignore=shutil.ignore_patterns('.svn'))
+    shutil.copytree(base_dir, path_to_stage_base_dir)
     for var, val, para_file, para_file_format in zip(x_vars, x_vals, para_files, para_file_formats):
         val = (float_fmt % val).strip()
         update_parameter_in_file(os.path.join(path_to_stage_base_dir, para_file),
