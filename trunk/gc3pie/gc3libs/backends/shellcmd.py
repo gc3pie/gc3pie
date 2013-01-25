@@ -451,7 +451,7 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Unable to get PID file of submitted process from"
                 " execution directory `%s`: %s"
-                % (execdir, pidfilename, str(ex)))
+                % (execdir, pidfilename))
         pid = pidfile.read().strip()
         try:
             pid = int(pid)
