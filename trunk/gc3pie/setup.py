@@ -90,7 +90,10 @@ setuptools.setup(
         # Needed for parsing human-readable dates (gselect uses it).
         'parsedatetime',
         # needed by Benjamin's DE optimizer code
-        'numpy',
+        # To add as an *optional* dependency
+        # 'numpy',
+        # To add as an *optional* dependency
+        # 'boto',
         ],
     # additional non-Python files to be bundled in the package
     package_data = {
