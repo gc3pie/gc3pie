@@ -128,7 +128,7 @@ class EvolutionaryAlgorithm(object):
         # following results in a multi-line log even for moderate-size
         # populations...  You might want to
         # `np.set_printoptions(linewidth=1024)` or so to prevent this.
-        self.logger.debug('Updating optimizer state with new values: %s', new_vals)
+        self.logger.debug('Updating optimizer state with new values: %s', str(new_vals))
 
         # In variable names `best` refers to a population member with the
         # lowest target function value within some group:
