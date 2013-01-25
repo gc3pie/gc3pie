@@ -156,7 +156,6 @@ int main()
         os.system(compile_str)
 
         if os.path.isdir(optimization_dir):
-            import shutil
             shutil.rmtree(optimization_dir)
         os.mkdir(optimization_dir)
 
@@ -253,7 +252,6 @@ def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     set up to produce the output :def:`target_fun` of :class:`GridOptimizer`
     analyzes to produce the corresponding function values.
     """
-    import shutil
 
     # Set some initial variables
     path_to_executable = os.path.join(temp_stage_dir, 'bin/rosenbrock')
@@ -271,6 +269,9 @@ def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     # start the inputs dictionary with syntax: client_path: server_path
     inputs = { path_to_executable:executable }
     path_to_stage_base_dir = os.path.join(path_to_stage_dir, 'base')
+    # Python 2.4 does not automatically create all the directories in
+    # the target directory of copytree()
+    os.makedirs(os.path.dirname(path_to_stage_base_dir))
     shutil.copytree(base_dir, path_to_stage_base_dir)
     for var, val, para_file, para_file_format in zip(x_vars, x_vals, para_files, para_file_formats):
         val = (float_fmt % val).strip()
