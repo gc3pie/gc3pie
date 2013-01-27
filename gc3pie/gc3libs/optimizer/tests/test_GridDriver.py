@@ -50,10 +50,9 @@ optimization_dir = os.path.join(temp_stage_dir, 'rosenbrock_output_dir')
 
 # Nose will add command line arguments that cannot be interpreted by
 # the SessionBasedScript. To avoid error, override sys.argv.
-sys.argv = ['test_drivers_rosenbrock.py', '-vvv' ]
+sys.argv = ['test_drivers_rosenbrock.py' ]
 
 # General settings
-
 float_fmt = '%25.15f'
 magic_seed = 100
 pop_size = 5
@@ -64,6 +63,8 @@ upper_bounds = +2 * np.ones(dim)
 
 # Set up logger
 log_file_name = os.path.join(temp_stage_dir, 'DifferentialEvolutionAlgorithm.log')
+log = logging.getLogger("gc3.gc3libs")
+log.setLevel(logging.CRITICAL)
 
 class TestGridDriver(object):
     CONF="""
@@ -200,13 +201,10 @@ class RosenbrockScript(SessionBasedScript):
     def new_tasks(self, extra):
 
         log = logging.getLogger('gc3.gc3libs.DifferentialEvolutionAlgorithm')
-        log.setLevel(logging.DEBUG)
+        log.setLevel(logging.INFO)
         log.propagate = 0
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.DEBUG)
         file_handler = logging.FileHandler(log_file_name, mode = 'w')
-        file_handler.setLevel(logging.DEBUG)
-        log.addHandler(stream_handler)
+        file_handler.setLevel(logging.INFO)
         log.addHandler(file_handler)
 
         initial_pop = draw_population(lower_bds=lower_bounds, upper_bds=upper_bounds, size=pop_size, dim=dim)
