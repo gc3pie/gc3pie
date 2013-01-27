@@ -37,7 +37,7 @@ import numpy as np
 import gc3libs
 from gc3libs import Application
 from gc3libs.cmdline import SessionBasedScript
-from gc3libs.optimizer.utils import update_parameter_in_file
+from gc3libs.optimizer import update_parameter_in_file
 
 # optimizer specific imports
 from gc3libs.optimizer.drivers import GridDriver
