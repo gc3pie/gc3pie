@@ -9,8 +9,8 @@
     ** [http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/docs/html/users/troubleshooting.html Troubleshooting known issues]    
   * [http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/docs/html/users/gc3utils.html A GC3Utils primer]
   * GC3Libs API documentation:
-    ** [http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/docs/html/programmers/api.html 2.0 release]
-    ** [http://gc3pie.readthedocs.org/en/latest/programmers/gc3libs/api.html development version (trunk)]
+    ** [http://packages.python.org/gc3pie/programmers/gc3libs/api.html 2.0 release]
+    ** [http://gc3pie.readthedocs.org/en/latest/programmers/api/index.html development version (trunk)]
   * [SlidesEtc Presentations, slides, etc.]
 
 [http://code.google.com/p/gc3pie/w/list Full list of GC3Pie wiki pages]
