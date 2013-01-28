@@ -88,7 +88,7 @@ def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     for var, val, para_file, para_file_format in zip(x_vars, x_vals, para_files, para_file_formats):
         val = (float_fmt % val).strip()
         update_parameter_in_file(os.path.join(path_to_stage_base_dir, para_file),
-                                 var, index, val, para_file_format)
+                                 var, val, para_file_format)
 
     prefix_len = len(path_to_stage_base_dir) + 1
     for dirpath,dirnames,filenames in os.walk(path_to_stage_base_dir):

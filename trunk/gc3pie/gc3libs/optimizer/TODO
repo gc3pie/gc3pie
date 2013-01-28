@@ -1,6 +1,6 @@
 -*- mode: org -*-
 
-* gc3libs.optimizer [17/24]
+* gc3libs.optimizer [18/24]
 ** DONE have `evolve_fn` compute the `dim` parameter from `population`
 ** DONE `has_converged` should not check for iteration numbers
 ** DONE rename `DifferntialEvolutionSequential` not to suggest it's a `SequentialTaskCollection`
@@ -78,7 +78,7 @@
 ** DONE Finish documentation in all files
 ** DONE Write small note on how to compile the docs
 ** TODO Check continuation problem with opt_rosenbrock.py
-** TODO is `utils.py` still needed? if not, remove it :-)
+** DONE is `utils.py` still needed? if not, remove it :-)
 ** TODO rewrite `rosenbrock.cpp` to `rosenbrock.py` and use the Python version in tests
 
    (Because we know that we have a Python interpreter; we're not sure if a C++ compiler is available.)
