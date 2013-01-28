@@ -44,13 +44,14 @@ __docformat__ = 'reStructuredText'
 ## stdlib modules
 import csv
 import fnmatch
+import lockfile
 import logging
 import math
 import os
 import os.path
 import re
 import sys
-from prettytable import PrettyTable
+from texttable import Texttable
 import time
 
 ## 3rd party modules
@@ -60,7 +61,6 @@ import cli._ext.argparse as argparse
 
 ## interface to Gc3libs
 import gc3libs
-from gc3libs.compat import lockfile
 import gc3libs.config
 import gc3libs.core
 import gc3libs.exceptions
@@ -474,19 +474,14 @@ class _Script(cli.app.CommandLineApp):
             else:
                 msg %= (str(ex), self.name, '')
             rc = 1
-        except cli.app.Abort, ex:
-            msg = "%s: %s" % (ex.__class__.__name__, str(ex))
-            rc = ex.status
-        except EnvironmentError, ex:
-            msg = "%s: %s" % (ex.__class__.__name__, str(ex))
-            rc = os.EX_IOERR # 74 (see: /usr/include/sysexits.h )
         except Exception, ex:
-            if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
-                # propagate generic exceptions for debugging purposes
-                raise
+            msg = "%s: %s" % (ex.__class__.__name__, str(ex))
+            if isinstance(ex, cli.app.Abort):
+                rc = (ex.status)
+            elif isinstance(ex, EnvironmentError):
+                rc = 74  # EX_IOERR in /usr/include/sysexits.h
             else:
                 # generic error exit
-                msg = "%s: %s" % (ex.__class__.__name__, str(ex))
                 rc = 1
         # output error message and -maybe- backtrace...
         try:
@@ -971,11 +966,9 @@ class SessionBasedScript(_Script):
         description.
 
         """
-        table = PrettyTable(['state', 'n', 'n%'])
-        table.align = 'r'
-        table.align['n%'] = 'c'
-        table.border = False
-        table.header = False
+        table = Texttable(0)  # max_width=0 => dynamically resize cells
+        table.set_deco(0)     # no decorations
+        table.set_cols_align(['r', 'r', 'c'])
         total = stats['total']
         # ensure we display enough decimal digits in percentages when
         # running a large number of jobs; see Issue 308 for a more
@@ -988,7 +981,7 @@ class SessionBasedScript(_Script):
                     "%d/%d" % (stats[state], total),
                     fmt % (100.00 * stats[state] / total)
                     ])
-        output.write(str(table))
+        output.write(table.draw())
         output.write("\n")
 
     def print_tasks_table(self, output=sys.stdout, states=gc3libs.Run.State, only=object):
@@ -1012,16 +1005,20 @@ class SessionBasedScript(_Script):
         :param states: List of states (`Run.State` items) to consider.
         :param   only: Root class (or tuple of root classes) of tasks to consider.
         """
-        table = PrettyTable(['JobID', 'Job name', 'State', 'Info'])
-        table.align = 'l'
-        for task in self.session:
-            if isinstance(task, only) and task.execution.in_state(*states):
-                table.add_row([task.persistent_id, task.jobname,
-                               task.execution.state, task.execution.info])
-
-        # XXX: uses prettytable's internal implementation detail
+        table = Texttable(0)  # max_width=0 => dynamically resize cells
+        table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
+        table.header(['JobID', 'Job name', 'State', 'Info'])
+        #table.set_cols_width([10, 20, 10, 35])
+        table.set_cols_align(['l', 'l', 'l', 'l'])
+        table.add_rows([
+            (task.persistent_id, task.jobname,
+             task.execution.state, task.execution.info)
+            for task in self.session
+            if isinstance(task, only) and task.execution.in_state(*states)],
+                       header=False)
+        # XXX: uses texttable's internal implementation detail
         if len(table._rows) > 0:
-            output.write(str(table))
+            output.write(table.draw())
             output.write("\n")
 
     def before_main_loop(self):
@@ -1347,11 +1344,10 @@ class SessionBasedScript(_Script):
 
         # ...now do a first round of submit/update/retrieve
         self.before_main_loop()
-        rc = 13 # Keep in sync with `_Script.run()` method
-        try:
-            rc = self._main_loop()
-            if self.params.wait > 0:
-                self.log.info("sleeping for %d seconds..." % self.params.wait)
+        rc = self._main_loop()
+        if self.params.wait > 0:
+            self.log.info("sleeping for %d seconds..." % self.params.wait)
+            try:
                 while rc > 3:
                     # Python scripts become unresponsive during
                     # `time.sleep()`, so we just do the wait in small
@@ -1360,9 +1356,8 @@ class SessionBasedScript(_Script):
                     for x in xrange(self.params.wait):
                         time.sleep(1)
                     rc = self._main_loop()
-        except KeyboardInterrupt: # gracefully intercept Ctrl+C
-            sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
-            pass
+            except KeyboardInterrupt:  # gracefully intercept Ctrl+C
+                pass
         self.after_main_loop()
 
         if rc in [0, 2]:

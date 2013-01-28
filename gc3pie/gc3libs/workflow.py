@@ -10,7 +10,7 @@ patterns of job group execution; they can be combined to form more
 complex workflows.  Hook methods are provided so that derived classes
 can implement problem-specific job control policies.
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -27,7 +27,7 @@ can implement problem-specific job control policies.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.2 version (SVN $Revision$)'
 
 import time
 import os
@@ -58,24 +58,6 @@ class TaskCollection(Task):
         else:
             self.tasks = tasks
         Task.__init__(self, **extra_args)
-
-    @gc3libs.utils.defproperty
-    def changed():
-        """
-        Evaluates to `True` if this task or any of its subtasks has been modified
-        and should be saved to persistent storage.
-        """
-        def fget(self):
-            if self._changed:
-                return True
-            for task in self.tasks:
-                if '_changed' in task:
-                    if task._changed:
-                        return True
-            return False
-        def fset(self, value):
-            self._changed = value
-        return locals()
 
     # manipulate the "controller" interface used to control the associated task
     def attach(self, controller):
@@ -132,7 +114,7 @@ class TaskCollection(Task):
         # own subdir based on its `.persistent_id`
         coll_output_dir = self._get_download_dir(output_dir)
         for task in self.tasks:
-            if task.execution.state != Run.State.TERMINATING:
+            if task.execution.state == Run.State.TERMINATED:
                 continue
             if 'output_dir' in task:
                 task_output_dir = task.output_dir
@@ -147,24 +129,12 @@ class TaskCollection(Task):
                 task_output_dir,
                 overwrite,
                 **extra_args)
-        # if any sub-task is not yet TERMINATED, return the base
-        # output directory for the collection...
         for task in self.tasks:
             if task.execution.state != Run.State.TERMINATED:
                 return coll_output_dir
-        # ...otherwise set the state to TERMINATED
         self.execution.state = Run.State.TERMINATED
         self.changed = True
         return coll_output_dir
-
-
-    def free(self):
-        """
-        This method just asks the Engine to free the contained tasks.
-        """
-        if self._attached:
-            for task in self.tasks:
-                self._controller.free(task)
 
 
     def peek(self, what, offset=0, size=None, **extra_args):
@@ -229,7 +199,6 @@ class TaskCollection(Task):
         self.execution._exitcode = max(
             task.execution._exitcode for task in self.tasks
             )
-
 
 class SequentialTaskCollection(TaskCollection):
     """
@@ -644,18 +613,6 @@ class RetryableTask(Task):
         self.retried = 0
         self.task = task
         Task.__init__(self, **extra_args)
-
-    @gc3libs.utils.defproperty
-    def changed():
-        """
-        Evaluates to `True` if this task or any of its subtasks has been modified
-        and should be saved to persistent storage.
-        """
-        def fget(self):
-            return self._changed or self.task.changed
-        def fset(self, value):
-            self._changed = value
-        return locals()
 
     def __getattr__(self, name):
         """Proxy public attributes of the wrapped task."""

@@ -8,7 +8,7 @@ function or class belongs in here is the following: place a function
 or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -25,14 +25,13 @@ sources of a different project and it would not stop working.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.2 version (SVN $Revision$)'
 
 
 import itertools
 import os
 import os.path
 import posix
-import random
 import re
 import shutil
 import sys
@@ -40,10 +39,10 @@ import time
 import cStringIO as StringIO
 import UserDict
 
+import lockfile
 
 from gc3libs.compat._collections import defaultdict, OrderedDict
 import gc3libs.compat.functools as functools
-import gc3libs.compat.lockfile as lockfile
 
 import gc3libs
 import gc3libs.exceptions
@@ -404,50 +403,6 @@ class Enum(frozenset):
             raise SyntaxError("Cannot assign enumeration values.")
     def __delattr__(self, name):
             raise SyntaxError("Cannot delete enumeration values.")
-
-
-class ExponentialBackoff(object):
-    """Generate waiting times with the `exponential backoff`_ algorithm.
-
-    Returned times are in seconds (or fractions thereof); they are
-    integral multiples of the basic time slot, which is set with the
-    `slot_duration` constructor parameter.
-
-    After `max_retries` have been attempted, any call to this iterator
-    will raise a `StopIteration` exception.
-
-    The `ExponentialBackoff` class implements the iterator protocol,
-    so you can just retrieve waiting times with the `.next()` method,
-    or by looping over it::
-
-      >>> random.seed(314) # not-so-random for testing purposes...
-      >>> for wt in ExponentialBackoff():
-      ...   print wt,
-      ...
-      0.0 0.0 0.0 0.25 0.15 0.3
-
-    .. _`exponential backoff`: http://en.wikipedia.org/wiki/Exponential_backoff#An_example_of_an_exponential_backoff_algorithm
-
-    """
-
-    def __init__(self, slot_duration=0.05, max_retries=5):
-        self.attempt = -1
-        self.slot_duration = slot_duration
-        self.max_retries = max_retries
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        """Return next waiting time."""
-        self.attempt += 1
-        if self.attempt > self.max_retries:
-            raise StopIteration
-        return self.slot_duration * random.randint(0, 2**self.attempt - 1)
-
-    def wait(self):
-        """Wait for another while."""
-        time.sleep(self.next())
 
 
 def first(seq):
@@ -964,48 +919,6 @@ def samefile(path1, path2):
             return False
         else:
             raise
-
-
-def sh_quote_safe(text):
-    """
-    Escape a string for safely passing as argument to a shell command.
-
-    Return a single-quoted string that expands to the exact literal
-    contents of `text` when used as an argument to a shell command.
-    Examples (note that backslashes are doubled because of Python's
-    string read syntax)::
-
-      >>> print(sh_quote_safe("arg"))
-      'arg'
-      >>> print(sh_quote_safe("'arg'"))
-      ''\\''arg'\\'''
-
-    """
-    return ("'%s'" % text.replace("'", r"'\''"))
-
-
-_DQUOTE_RE = re.compile(r'(\\*)"')
-"""Regular expression for escaping double quotes in strings."""
-
-def sh_quote_unsafe(text):
-    """
-    Double-quote a string for passing as argument to a shell command.
-
-    Return a double-quoted string that expands to the contents of
-    `text` but still allows variable expansion and ``\``-escapes
-    processing by the UNIX shell.  Examples (note that backslashes are
-    doubled because of Python's string read syntax)::
-
-      >>> print(sh_quote_unsafe("arg"))
-      "arg"
-      >>> print(sh_quote_unsafe('"arg"'))
-      "\\"arg\\""
-      >>> print(sh_quote_unsafe(r'"\\"arg\\""'))
-      "\\"\\\\\\"arg\\\\\\"\\""
-
-    """
-    return ('"%s"' % _DQUOTE_RE.sub(r'\1\1\"', text))
-
 
 # see http://stackoverflow.com/questions/31875/is-there-a-simple-elegant-way-to-define-singletons-in-python/1810391#1810391
 class Singleton(object):

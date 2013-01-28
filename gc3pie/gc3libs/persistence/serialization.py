@@ -78,8 +78,6 @@ class _PersistentIdToSave(object):
         if obj is self._root:
             return None
         elif hasattr(obj, 'persistent_id'):
-            if hasattr(obj, 'changed') and obj.changed:
-                self._driver.save(obj)
             return obj.persistent_id
         elif isinstance(obj, Persistable):
             self._driver.save(obj)

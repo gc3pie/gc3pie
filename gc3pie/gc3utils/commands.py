@@ -3,7 +3,7 @@
 """
 Implementation of the `core` command-line front-ends.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -20,7 +20,7 @@ Implementation of the `core` command-line front-ends.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.2 version (SVN $Revision$)'
 __author__ = "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, "
 "Riccardo Murri <riccardo.murri@uzh.ch>"
 "Antonio Messina <arcimboldo@gmail.com>"
@@ -35,7 +35,7 @@ import sys
 import os
 import posix
 import tarfile
-from prettytable import PrettyTable
+from texttable import Texttable
 import time
 import types
 import re
@@ -276,11 +276,13 @@ GC3Libs internals.
 
         if self.params.tabular:
             # prepare table prettyprinter
-            table = PrettyTable()
-            table.border=True
+            table = Texttable(0)  # max_width=0 => dynamically resize cells
+            table.set_cols_align(['l'] * (1 + len(only_keys)))
             if self.params.header:
-                table.field_names = ["Job ID"] + only_keys
-                table.align = 'l'
+                table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
+                table.header(["Job ID"] + only_keys)
+            else:
+                table.set_deco(0)
 
         if self.params.csv:
             csv_output = csv.writer(sys.stdout)
@@ -323,7 +325,7 @@ GC3Libs internals.
                     # with `-v` and above, dump the whole `Application` object
                     utils.prettyprint(app, indent=4, width=width, only_keys=only_keys)
         if self.params.tabular:
-            print(table)
+            print(table.draw())
         failed = len(self.params.args) - ok
         # exit code is practically limited to 7 bits ...
         return utils.ifelse(failed < 127, failed, 126)
@@ -534,12 +536,9 @@ Print job state.
 
         if len(rows) > capacity and self.params.verbose == 0:
             # only print table with statistics
-            table = PrettyTable(['state', 'num/tot', 'num/tot %'])
-            table.header=False
-            table.align['state'] = 'r'
-            table.align['num/tot'] = 'c'
-            table.align['num/tot %'] = 'r'
-
+            table = Texttable(0)  # max_width=0 => dynamically resize cells
+            table.set_deco(0)  # also: .VLINES, .HLINES .BORDER
+            table.set_cols_align(['r', 'c', 'r'])
             for state, num in sorted(stats.items()):
                 if (states is None) or (str(state) in states):
                     table.add_row([
@@ -549,11 +548,12 @@ Print job state.
                         ])
         else:
             # print table of job status
-            table = PrettyTable(["JobID", "Job name", "State", "Info"] + keys)
-            table.align = 'l'
-            for row in sorted(rows):
-                table.add_row(row)
-        print(table)
+            table = Texttable(0)  # max_width=0 => dynamically resize cells
+            table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
+            table.set_cols_align(['l'] * (4 + len(keys)))
+            table.header(["JobID", "Job name", "State", "Info"] + keys)
+            table.add_rows(sorted(rows), header=False)
+        print(table.draw())
 
         if self.params.lifetimes is not None and len(lifetimes_rows) > 1:
             if self.params.lifetimes is sys.stdout:
@@ -848,9 +848,10 @@ List status of computational resources.
             return cmp(x.name, y.name)
 
         for resource in sorted(resources, cmp=cmp_by_name):
-            table = PrettyTable(['', resource.name, ' '])
-            table.align = 'l'
-            table.align[''] = 'r'
+            table = Texttable(0)  # max_width=0 => dynamically resize cells
+            table.set_deco(Texttable.HEADER | Texttable.BORDER)  # also: .VLINES, .HLINES
+            table.set_cols_align(['r', 'l', 'l'])
+            table.header(['', resource.name, ''])
 
             # not all resources support the same keys...
             def output_if_exists(name, print_name):
@@ -869,8 +870,7 @@ List status of computational resources.
             output_if_exists('max_memory_per_core', "Max memory per core")
             output_if_exists('max_walltime', "Max walltime per job")
             output_if_exists('applications', "Supported applications")
-            print(table)
-            print('')
+            print(table.draw())
 
 
 class cmd_gsession(_BaseCmd):
@@ -958,9 +958,12 @@ To get detaileid info on a specific command, run:
                 continue
             try:
                 task.kill()
-            finally:
-                task.free()
-                rc += 1
+            except Exception, ex:
+                gc3libs.log.error(
+                    "Failed killing job '%s'"
+                    "Error type %s, message %s" % (ex.__class__, ex))
+            task.free()
+            rc += 1
             self.session.remove(task_id)
 
         if self.session.tasks:
@@ -1013,7 +1016,7 @@ To get detaileid info on a specific command, run:
                 jobname = app.jobname
             except AttributeError:
                 jobname = ''
-            
+
             rows.append([indent + app.persistent_id,
                          jobname,
                          app.execution.state,
@@ -1027,11 +1030,12 @@ To get detaileid info on a specific command, run:
         rows = []
         for app in self.session.tasks.values():
             rows.extend(print_app_table(app, '', self.params.recursive))
-        table = PrettyTable(["JobID", "Job name", "State", "Info"])
-        table.align = 'l'
-        for row in rows:
-            table.add_row(row)
-        print(table)
+        table = Texttable(0)  # max_width=0 => dynamically resize cells
+        table.set_deco(Texttable.HEADER)  # also: .VLINES, .HLINES .BORDER
+        table.set_cols_align(['l'] * 4)
+        table.header(["JobID", "Job name", "State", "Info"])
+        table.add_rows(rows, header=False)
+        print(table.draw())
 
     def show_log(self):
         """

@@ -46,7 +46,7 @@ import os
 import os.path
 import shutil
 import sys
-from prettytable import PrettyTable
+from texttable import Texttable
 import types
 
 # interface to Gc3libs
@@ -522,9 +522,10 @@ class GeorgeScript(SessionBasedScript):
 
 
     def print_summary_table(self, output, stats):
-        table = PrettyTable(['Input', 'Iteration', 'Tasks Generated/Total', 'Progress'])
-        table.align = 'c'
-        table.align['Input'] = 'l'
+        table = Texttable(0) # max_width=0 => dynamically resize cells
+        table.set_deco(0)    # no decorations
+        table.add_row(['Input', 'Iteration', 'Tasks Generated/Total', 'Progress'])
+        table.set_cols_align(['l', 'c', 'c', 'c'])
         def compute_stats(collection):
             result = collection.stats()
             def add_stats(s1, s2):
@@ -568,5 +569,5 @@ class GeorgeScript(SessionBasedScript):
                 "%d/%d" % (generated_tasks, total_tasks),
                 str.join(", ", progresses)
                 ])
-        output.write(str(table))
+        output.write(table.draw())
         output.write("\n")

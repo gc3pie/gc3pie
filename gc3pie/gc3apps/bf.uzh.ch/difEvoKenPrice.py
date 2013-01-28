@@ -96,10 +96,10 @@ class deKenPrice:
     if evaluator:
       self.evaluator = evaluator
       self.target    = evaluator.target
-    try: 
-      self.nlc       = evaluator.nlc
-    except AttributeError: 
-      self.nlc = lambda x: np.array([ 1 ] * paraStruct['nPopulation'])
+      try: 
+        self.nlc       = evaluator.nlc
+      except AttributeError: 
+        self.nlc = lambda x: [ 1 ] * len(paraStruct['I_NP'])
          
     self.S_struct = paraStruct
 
@@ -141,22 +141,25 @@ class deKenPrice:
   def setOptions(self, struct):
     # This is just for notational convenience and to keep the code uncluttered.--------
 
-    self.I_D          = self.S_struct['nDim']
-    self.I_NP         = self.S_struct['nPopulation']
+    self.I_NP         = self.S_struct['I_NP']
     self.F_weight     = self.S_struct['F_weight']
     self.F_CR         = self.S_struct['F_CR']
-    self.I_itermax    = self.S_struct['itermax']
+    self.I_D          = self.S_struct['I_D']
+    self.I_itermax    = self.S_struct['I_itermax']
     self.F_VTR        = self.S_struct['F_VTR']
-    self.I_strategy   = self.S_struct['optStrategy']
+    self.I_strategy   = self.S_struct['I_strategy']
     self.I_plotting   = self.S_struct['I_plotting']
-    self.workingDir   = self.S_struct['workingDir']
     try: 
-      self.lowerBds     = np.array(self.S_struct['lowerBds'])
-      self.upperBds     = np.array(self.S_struct['upperBds'])
+      self.lowerBds     = self.S_struct['lowerBds']
+      self.upperBds     = self.S_struct['upperBds']      
       self.xConvCrit    = self.S_struct['xConvCrit']
+      self.workingDir   = self.S_struct['workingDir']
       self.verbosity    = self.S_struct['verbosity']
-    except:    
+    except AttributeError: 
+      self.lowerBds     = 
+      self.upperBds     = self.S_struct['upperBds']        
       self.xConvCrit = 1.e-7
+      self.workingDir = os.getcwd()
       self.verbosity = 'DEBUG'
 
 
@@ -220,8 +223,6 @@ class deKenPrice:
 
   def updatePopulation(self, newPop = None, newVals = None):
     self.logger.debug('entering updatePopulation')
-    newPop = np.array(newPop)
-    newVals = np.array(newVals)
     if self.I_iter == 0:
       self.FM_pop = newPop.copy()
       self.S_vals = newVals.copy()
@@ -537,7 +538,7 @@ class Rosenbrock:
     I_bnd_constr = 0  #1: use bounds as bound constraints, 0: no bound constraints      
 
     # I_NP            number of population members
-    I_NP = 100  #pretty high number - needed for demo purposes only
+    I_NP = 20  #pretty high number - needed for demo purposes only
 
     # I_itermax       maximum number of iterations (generations)
     I_itermax = 200 
@@ -574,7 +575,7 @@ class Rosenbrock:
     I_refresh = 3
 
     # I_plotting    Will use plotting if set to 1. Will skip plotting otherwise.
-    I_plotting = 0
+    I_plotting = 1
 
     #-----Problem dependent constant values for plotting----------------
 
@@ -590,53 +591,39 @@ class Rosenbrock:
     #end
 
     S_struct = {}
-    S_struct['nPopulation']         = I_NP
+    S_struct['I_NP']         = I_NP
     S_struct['F_weight']     = F_weight
     S_struct['F_CR']         = F_CR 
-    S_struct['nDim']          = I_D 
-    S_struct['lowerBds'] = FVr_minbound
-    S_struct['upperBds'] = FVr_maxbound
+    S_struct['I_D']          = I_D 
+    S_struct['FVr_minbound'] = FVr_minbound
+    S_struct['FVr_maxbound'] = FVr_maxbound
     S_struct['I_bnd_constr'] = I_bnd_constr
-    S_struct['itermax']    = I_itermax
+    S_struct['I_itermax']    = I_itermax
     S_struct['F_VTR']        = F_VTR
-    S_struct['optStrategy']   = I_strategy
+    S_struct['I_strategy']   = I_strategy
     S_struct['I_refresh']    = I_refresh
     S_struct['I_plotting']   = I_plotting
 
 #    deKenPrice(self, S_struct)
-    globalOpt = deKenPrice(S_struct, self)
-    globalOpt.deopt()
+    deKenPrice(S_struct, self)
 
-  #def target(self, vectors):
-
-    #S_MSEvec = []
-    #for vector in vectors:
-      ##---Rosenbrock saddle-------------------------------------------
-      #F_cost = 100 * ( vector[1] - vector[0]**2 )**2 + ( 1 - vector[0] )**2
-
-      ##----strategy to put everything into a cost function------------
-      #S_MSE = {}
-      #S_MSE['I_nc']      = 0 #no constraints
-      #S_MSE['FVr_ca']    = 0 #no constraint array
-      #S_MSE['I_no']      = 1 #number of objectives (costs)
-      #S_MSE['FVr_oa'] = []
-      #S_MSE['FVr_oa'].append(F_cost)
-      #S_MSEvec.append(S_MSE)
-
-    #return S_MSEvec
-    
-  def createJobs_x(self, abc):
-    pass
-  
   def target(self, vectors):
 
-    result = []
+    S_MSEvec = []
     for vector in vectors:
       #---Rosenbrock saddle-------------------------------------------
       F_cost = 100 * ( vector[1] - vector[0]**2 )**2 + ( 1 - vector[0] )**2
 
-      result.append(F_cost)
-    return np.array(result)
+      #----strategy to put everything into a cost function------------
+      S_MSE = {}
+      S_MSE['I_nc']      = 0 #no constraints
+      S_MSE['FVr_ca']    = 0 #no constraint array
+      S_MSE['I_no']      = 1 #number of objectives (costs)
+      S_MSE['FVr_oa'] = []
+      S_MSE['FVr_oa'].append(F_cost)
+      S_MSEvec.append(S_MSE)
+
+    return S_MSEvec
 
 
 
@@ -644,5 +631,5 @@ class Rosenbrock:
 if __name__ == '__main__':
   x = np.array([3., 5., 6.])
 #  jacobianFD(x, testFun)
-  problem = Rosenbrock()
+  Rosenbrock()
 

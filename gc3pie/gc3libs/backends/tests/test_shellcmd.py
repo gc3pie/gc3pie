@@ -23,7 +23,6 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
-import errno
 import os
 import shutil
 import sys
@@ -86,6 +85,7 @@ type=none
         assert_equal(self.backend.user_run, 0)
         assert_equal(self.backend.user_queued, 0)
 
+
     def test_submission_ok(self):
         """
         Test a successful submission cycle and the backends' resource book-keeping.
@@ -130,6 +130,8 @@ type=none
         assert_equal(self.backend.free_slots,  2)
         assert_equal(self.backend.user_queued, 0)
         assert_equal(self.backend.user_run,    0)
+
+
 
     @raises(gc3libs.exceptions.LRMSSubmitError)
     def test_submission_too_many_jobs(self):
@@ -179,7 +181,11 @@ type=none
             )
         self.core.submit(app)
         self.cleanup_file(app.execution.lrms_execdir)
+        # import nose.tools; nose.tools.set_trace()
         pid = app.execution.lrms_jobid
+
+        # Forget about the child process.
+        os.waitpid(pid, 0)
 
         # The wrapper process should die and write the final status
         # and the output to a file, so that `Core` will be able to
@@ -197,33 +203,6 @@ type=none
 
         assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
         assert_equal(app.execution.returncode, 0)
-
-    def test_app_argument_with_spaces(self):
-        """Check that arguments with spaces are not splitted
-        """
-        tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
-        self.cleanup_file(tmpdir)
-
-        app = gc3libs.Application(
-            arguments = ['/bin/ls', '-d', '/ /'],
-            inputs = [],
-            outputs = [],
-            output_dir = tmpdir,
-            stdout = "stdout.txt",
-            stderr = "stderr.txt",
-            requested_cores = 1,
-            )
-        self.core.submit(app)
-        self.cleanup_file(app.execution.lrms_execdir)
-        MAX_WAIT = 10 # seconds
-        WAIT = 0.1 # seconds
-        waited = 0
-        while app.execution.state != gc3libs.Run.State.TERMINATING and waited < MAX_WAIT:
-            time.sleep(WAIT)
-            waited += WAIT
-            self.core.update_job_state(app)
-        assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
-        assert_equal(app.execution.returncode, 2)
 
     def test_time_cmd_args(self):
         assert_equal( self.backend.time_cmd , '/usr/bin/time')

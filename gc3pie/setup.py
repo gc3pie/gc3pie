@@ -17,13 +17,12 @@ def read_whole_file(path):
 #
 import setuptools
 import setuptools.dist
-# avoid setuptools including `.svn` directories into the PyPI package
 from setuptools.command import sdist
 del sdist.finders[:]
 
 setuptools.setup(
     name = "gc3pie",
-    version = "2.0.dev", # see: http://packages.python.org/distribute/setuptools.html
+    version = '2.0.2', # see: http://packages.python.org/distribute/setuptools.html
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
     # metadata for upload to PyPI
@@ -80,21 +79,19 @@ setuptools.setup(
         # paramiko and pycrypto are required for SSH operations
         # ("pycrypto" is actually a dependency of Paramiko, but
         # setuptools apparently does not process dependencies recursively)
-        'paramiko', 'pycrypto>=1.9',
-        # prettytable -- format tabular text output
-        'prettytable',
+        'paramiko==1.7.7.2', 'pycrypto==2.6',
+        # lockfile 0.9 dropped support for Python 2.4; let's stick with 0.8
+        'lockfile==0.8',
+        # texttable -- format tabular text output
+        'texttable==0.8.1',
         # pyCLI -- object-oriented command-line app programming
-        'pyCLI>=2.0.3',
-        # Needed by SqlStore
-        # 0.7.9 is the latest version with Python2.4 support
+        'pyCLI==2.0.3',
+        # Needed by SqlStore; 0.7.9 is the latest version with Python2.4 support
         'sqlalchemy==0.7.9',
+        # Needed by ShellCmd backend
+        'psutil==0.6.1',
         # Needed for parsing human-readable dates (gselect uses it).
-        'parsedatetime',
-        # needed by Benjamin's DE optimizer code
-        # To add as an *optional* dependency
-        # 'numpy',
-        # To add as an *optional* dependency
-        # 'boto',
+        'parsedatetime==0.8.7',
         ],
     # additional non-Python files to be bundled in the package
     package_data = {
