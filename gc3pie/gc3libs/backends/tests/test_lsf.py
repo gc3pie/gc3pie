@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, 2012, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2013, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -33,6 +33,37 @@ from gc3libs.backends.lsf import LsfLrms
 from gc3libs.quantity import Duration, hours, minutes, seconds, Memory, GB, MB, kB
 
 from nose.tools import assert_equal
+
+
+_datetime_date = None
+
+def setUpModule():
+    """Mock the `datetime.date.today()` outcome in order to make the LSF parsing independent from the testing date."""
+    # save the original `datetime.date` to restore it in `tearDownModule()`
+    import datetime
+    global _datetime_date
+    _datetime_date = datetime.date
+    # mock features of `datetime.date.today()` that are actually used
+    # in `LsfLrms._parse_date()`
+    class MockDate(object):
+        def __init__(self, real):
+            self.__date = real
+        def __getattr__(self, name):
+            return getattr(self.__date, name)
+        def __call__(self, *args, **kwargs):
+            return self.__date(*args, **kwargs)
+    datetime.date = MockDate(datetime.date)
+    class Today(object):
+        def __init__(self):
+            self.year = 2012
+            self.month = 12
+    datetime.date.today = Today
+
+def tearDownModule():
+    # restore the original `datetime.date`
+    global _datetime_date
+    import datetime
+    datetime.date = _datetime_date
 
 
 def test_get_command():
