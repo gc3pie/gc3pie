@@ -4,12 +4,29 @@
 from distribute_setup import use_setuptools
 use_setuptools()
 
-
 def read_whole_file(path):
     stream = open(path, 'r')
     text = stream.read()
     stream.close
     return text
+
+
+# See http://tox.readthedocs.org/en/latest/example/basic.html#integration-with-setuptools-distribute-test-commands
+# on how to run tox when python setup.py test is run
+from setuptools.command.test import test as TestCommand
+import sys
+
+class Tox(TestCommand):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        #import here, cause outside the eggs aren't loaded
+        import tox
+        errno = tox.cmdline(self.test_args)
+        sys.exit(errno)
 
 
 # see http://peak.telecommunity.com/DevCenter/setuptools
@@ -96,6 +113,9 @@ setuptools.setup(
         # To add as an *optional* dependency
         # 'boto',
         ],
+    # Apparently, this list is read from right to left...
+    tests_require = ['tox'],
+    cmdclass = {'test': Tox},
     # additional non-Python files to be bundled in the package
     package_data = {
         'gc3libs': [
