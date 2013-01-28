@@ -43,7 +43,7 @@ import gc3libs
 gc3libs.configure_logger(logging.DEBUG)
 
 # optimizer specific imports
-from gc3libs.optimizer.drivers import GridDriver
+from gc3libs.optimizer.drivers import ParallelDriver
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionParallel
 
 optimization_dir = os.path.join(os.getcwd(), 'optimizeGeometry')

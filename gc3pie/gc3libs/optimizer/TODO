@@ -1,6 +1,6 @@
 -*- mode: org -*-
 
-* gc3libs.optimizer [18/24]
+* gc3libs.optimizer [20/24]
 ** DONE have `evolve_fn` compute the `dim` parameter from `population`
 ** DONE `has_converged` should not check for iteration numbers
 ** DONE rename `DifferntialEvolutionSequential` not to suggest it's a `SequentialTaskCollection`
@@ -73,7 +73,7 @@
         def test_optimizer(self):
             # basically, adapt `opt_rosenb4rock.py`
 
-** TODO Create output function with meaningful output for the optimizer
+** DONE Create output function with meaningful output for the optimizer
 ** DONE Use extra.py in test cases.
 ** DONE Finish documentation in all files
 ** DONE Write small note on how to compile the docs
@@ -83,7 +83,7 @@
 
    (Because we know that we have a Python interpreter; we're not sure if a C++ compiler is available.)
 
-** TODO rename `GridDriver` to `ParallelDriver` and `LocalDriver` to `SequentialDriver`?
+** DONE rename `GridDriver` to `ParallelDriver` and `LocalDriver` to `SequentialDriver`?
 
    - `TaskCollectionDriver`? (A bit verbose?)
    - `TaskDriver`? (A `Task` is a specific object in GC3Pie but could be anything in "nromal speak".  Plus it looks a lot like `TaxiDriver`.)
