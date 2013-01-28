@@ -50,13 +50,14 @@ from gc3libs.optimizer import draw_population
 
 np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
+# General settings
 float_fmt = '%25.15f'
-
-optimization_dir = os.path.join(os.getcwd(), 'optimizeRosenBrock')
+dim = 2
 pop_size = 100
-def nlc(x):
-    import numpy as np
-    return np.array([ 1 ] * pop_size)
+lower_bounds = -2 * np.ones(dim)
+upper_bounds = +2 * np.ones(dim)
+path_to_stage_dir = os.getcwd()
+optimization_dir = os.path.join(path_to_stage_dir, 'optimize_rosenbrock')
 
 def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     """
@@ -139,9 +140,6 @@ class RosenbrockScript(SessionBasedScript):
 
     def new_tasks(self, extra):
 
-        path_to_stage_dir = os.getcwd()
-
-        import logging
         log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
         log.setLevel(logging.DEBUG)
         log.propagate = 0
@@ -152,11 +150,6 @@ class RosenbrockScript(SessionBasedScript):
         file_handler.setLevel(logging.DEBUG)
         log.addHandler(stream_handler)
         log.addHandler(file_handler)
-
-        dim = 2
-        pop_size = 100
-        lower_bounds = -2 * np.ones(dim)
-        upper_bounds = +2 * np.ones(dim)
 
         initial_pop = draw_population(lower_bds=lower_bounds, upper_bds=upper_bounds, size=pop_size, dim=dim)
 
@@ -182,6 +175,16 @@ class RosenbrockScript(SessionBasedScript):
         kwargs['cur_pop_file'] = 'cur_pop'
 
         return [GridDriver(jobname=jobname, **kwargs)]
+
+    def parse_args(self):
+        """
+        Add command-line options for testing a SessionBasedScript. 
+        """
+        self.params.session = temp_stage_dir
+        self.params.store_url = temp_stage_dir
+#        self.params.new_session = True
+        self.params.wait = 10
+#        self.params.verbose = logging.DEBUG
 
 if __name__ == '__main__':
     if os.path.isdir(optimization_dir):
