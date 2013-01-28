@@ -59,7 +59,7 @@ prob_cross = 0.8
 filter_pop_sum = 3.                # x[0] + x[1] <= filter_pop_sum
 
 
-configure_logger(level=logging.DEBUG)
+configure_logger(level=logging.CRITICAL)
 log = logging.getLogger("gc3.gc3libs")
 
 def rosenbrock_fn(vectors):
