@@ -33,9 +33,10 @@ __docformat__ = 'reStructuredText'
 
 import os
 import sys
-import sys
 import gc3libs
 import time
+import logging
+import shutil
 
 import numpy as np
 
@@ -56,13 +57,12 @@ dim = 2
 pop_size = 100
 lower_bounds = -2 * np.ones(dim)
 upper_bounds = +2 * np.ones(dim)
-path_to_stage_dir = os.getcwd()
-optimization_dir = os.path.join(path_to_stage_dir, 'optimize_rosenbrock')
+
 
 def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     """
     Given solver guess `x_vals`, return an instance of :class:`Application`
-    set up to produce the output :def:`target_fun` of :class:`GridOptimizer`
+    set up to produce the output :def:`target_fun` of :class:`ParallelDriver`
     analyzes to produce the corresponding function values.
     """
     import shutil
@@ -78,7 +78,7 @@ def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     index = 0 # We are dealing with scalar inputs
 
     jobname = 'para_' + '_'.join(['%s=' % var + ('%25.15f' % val).strip() for (var, val) in zip(x_vars, x_vals)])
-    path_to_stage_dir = os.path.join(optimization_dir, iteration_directory, jobname)
+    path_to_stage_dir = os.path.join(iteration_directory, jobname)
 
     executable = os.path.basename(path_to_executable)
     # start the inputs dictionary with syntax: client_path: server_path
@@ -120,8 +120,8 @@ def compute_target_rosenbrock(task):
     Extract and return the target value computed by a single run of
     the `rosenbrock` program.
     '''
-    outputDir = task.output_dir
-    f = open(os.path.join(outputDir, 'rosenbrock.out'))
+    output_dir = task.output_dir
+    f = open(os.path.join(output_dir, 'rosenbrock.out'))
     line = f.readline().strip()
     return float(line)
 
@@ -131,12 +131,19 @@ class RosenbrockScript(SessionBasedScript):
     Execute Rosenbrock optimization.
     """
 
-    def __init__(self):
+    def __init__(self, path_to_stage_dir = os.getcwd()):
         SessionBasedScript.__init__(
             self,
             version = '0.2',
             stats_only_for = Application
         )
+        self.path_to_stage_dir = path_to_stage_dir
+        self.optimization_dir = os.path.join(path_to_stage_dir, 'optimize_rosenbrock')
+        # create optimization_dir
+        if os.path.isdir(self.optimization_dir):
+            shutil.rmtree(self.optimization_dir)
+        os.mkdir(self.optimization_dir)
+        
 
     def new_tasks(self, extra):
 
@@ -168,7 +175,7 @@ class RosenbrockScript(SessionBasedScript):
 
         jobname = 'rosenbrock'
         kwargs = extra.copy()
-        kwargs['path_to_stage_dir'] = optimization_dir
+        kwargs['path_to_stage_dir'] = self.optimization_dir
         kwargs['opt_algorithm'] = de_solver
         kwargs['task_constructor'] = task_constructor_rosenbrock
         kwargs['extract_value_fn'] = compute_target_rosenbrock
@@ -180,15 +187,12 @@ class RosenbrockScript(SessionBasedScript):
         """
         Add command-line options for testing a SessionBasedScript. 
         """
-        self.params.session = temp_stage_dir
-        self.params.store_url = temp_stage_dir
+#        self.params.session = temp_stage_dir
+#        self.params.store_url = temp_stage_dir
 #        self.params.new_session = True
         self.params.wait = 10
 #        self.params.verbose = logging.DEBUG
 
 if __name__ == '__main__':
-    if os.path.isdir(optimization_dir):
-        import shutil
-        shutil.rmtree(optimization_dir)
-    os.mkdir(optimization_dir)
-    RosenbrockScript().run()
+    path_to_stage_dir = os.getcwd()
+    RosenbrockScript(path_to_stage_dir=path_to_stage_dir).run()
