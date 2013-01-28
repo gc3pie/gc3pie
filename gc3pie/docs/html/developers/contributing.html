@@ -159,6 +159,91 @@ the application tests in <tt class="docutils literal"><span class="pre">gc3apps/
 approach, in the light of the quote: <em>It&#8217;s tested or it&#8217;s broken</em>. We
 use <a class="reference external" href="http://tox.testrun.org/latest/">tox</a> and <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> as test runners, which make creating tests very
 easy.</p>
+<div class="section" id="running-the-tests">
+<h3>Running the tests<a class="headerlink" href="#running-the-tests" title="Permalink to this headline">¶</a></h3>
+<p>You can both run tests on your current environment using <cite>nosetests</cite> or use <cite>tox_</cite> to
+create and run tests on separate environments. We suggest you to use
+<cite>nosetests</cite> while you are still fixing the problem, in order to be
+able to run only the failing test, but we strongly suggest you to run
+<cite>tox</cite> <em>before</em> committing your code.</p>
+<div class="section" id="running-tests-with-nosetests">
+<h4>Running tests with <cite>nosetests</cite><a class="headerlink" href="#running-tests-with-nosetests" title="Permalink to this headline">¶</a></h4>
+<p>In order to have the <cite>nosetests</cite> program, you need to install <cite>nose_</cite>
+in your current environment <strong>and</strong> gc3pie must be installed in
+develop mode:</p>
+<div class="highlight-python"><pre>pip install nose
+python setup.py develop</pre>
+</div>
+<p>Then, from the top level directory, run the tests with:</p>
+<div class="highlight-python"><pre>nose -c nose.cfg</pre>
+</div>
+<p>Nose will then crawl the directory tree looking for available
+tests. You can also specify a subset of the available sets, by:</p>
+<ul>
+<li><p class="first">specifying the directory from which nose should start looking for tests:</p>
+<div class="highlight-python"><pre># Run only backend-related tests
+nose -c nose.cfg gc3libs/backends</pre>
+</div>
+</li>
+<li><p class="first">specifying the file containing the tests you want to run:</p>
+<div class="highlight-python"><pre># Run only tests contained in a specific file
+nose -c nose.cfg gc3libs/tests/test_session.py</pre>
+</div>
+</li>
+<li><p class="first">specifying the id of the test (you need to run nose at least one to
+know which id is assigned to each test):</p>
+<div class="highlight-python"><pre># Run only test number 123
+nose -c nose.cfg 123</pre>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="running-multiple-tests">
+<h4>Running multiple tests<a class="headerlink" href="#running-multiple-tests" title="Permalink to this headline">¶</a></h4>
+<p>In order to test GC3Pie against multiple version of python we use
+<a class="reference external" href="http://tox.testrun.org/latest/">tox</a>, which creates virtual environments for all configured python
+version, runs <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> inside each one of them, and prints a summary of
+the test results.</p>
+<p>You don&#8217;t need to have <cite>tox</cite> installed in the virtual environment you
+use to develop gc3pie, you can create a new virtual environment and
+install <cite>tox</cite> on it with:</p>
+<div class="highlight-python"><pre>pip install tox</pre>
+</div>
+<p>Running <a class="reference external" href="http://tox.testrun.org/latest/">tox</a> is straightforward; just type <tt class="docutils literal"><span class="pre">tox</span></tt> on the command-line
+in GC3Pie&#8217;s top level source directory.</p>
+<p>The default <tt class="docutils literal"><span class="pre">tox.ini</span></tt> file shipped with GC3Pie attempts to test all
+Python versions from 2.4 to 2.7 (inclusive).  If you want to run tests
+only for a specific version of python, for instance Python 2.6, use
+the <tt class="docutils literal"><span class="pre">-e</span></tt> option:</p>
+<div class="highlight-python"><pre>tox -e py26
+[...]
+Ran 118 tests in 14.168s
+
+OK (SKIP=9)
+__________________________________________________________ [tox summary] ___________________________________________________________
+[TOX] py26: commands succeeded
+[TOX] congratulations :)</pre>
+</div>
+<p>(See section <a class="reference internal" href="#skipping-tests">skipping tests</a> for a discussion about how and when to
+define skipped tests.)</p>
+<p>Option <tt class="docutils literal"><span class="pre">-r</span></tt> instructs <strong class="command">tox</strong> to re-build the testing virtual
+environment. This is usually needed when you update the dependencies
+of GC3Pie or when you add or remove command line programs or
+configuration files. However, if you feel that the environments can be
+<em>unclean</em>, you can clean up everything by:</p>
+<ol class="arabic">
+<li><p class="first">deleting all the <tt class="docutils literal"><span class="pre">*.pyc</span></tt> file in your source tree:</p>
+<div class="highlight-python"><pre>find . -name '*.pyc' -delete</pre>
+</div>
+</li>
+<li><p class="first">deleting and recreating tox virtual environments:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">tox</span> <span class="o">-</span><span class="n">r</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+</div>
 <div class="section" id="organizing-tests">
 <h3>Organizing tests<a class="headerlink" href="#organizing-tests" title="Permalink to this headline">¶</a></h3>
 <p>Each single python file should have a test file inside a <tt class="docutils literal"><span class="pre">tests</span></tt>
@@ -319,31 +404,6 @@ created, set up, and torn down &#8211; thus approximating the Platonic
 ideal of running each test in a completely new, pristine environment.</p>
 </div>
 </div>
-<div class="section" id="running-multiple-tests">
-<h3>Running multiple tests<a class="headerlink" href="#running-multiple-tests" title="Permalink to this headline">¶</a></h3>
-<p>In order to test GC3Pie against multiple version of python we use
-<a class="reference external" href="http://tox.testrun.org/latest/">tox</a>, which creates virtual environments for all configured python
-version, runs <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> inside each one of them, and prints a summary of
-the test results.</p>
-<p>Running <a class="reference external" href="http://tox.testrun.org/latest/">tox</a> is straightforward; just type <tt class="docutils literal"><span class="pre">tox</span></tt> on the command-line
-in GC3Pie&#8217;s top level source directory.</p>
-<p>The default <tt class="docutils literal"><span class="pre">tox.ini</span></tt> file shipped with GC3Pie attempts to test all
-Python versions from 2.4 to 2.7 (inclusive).  If you want to run tests
-only for a specific version of python, for instance Python 2.6, use
-the <tt class="docutils literal"><span class="pre">-e</span></tt> option:</p>
-<div class="highlight-python"><pre>tox -e py26
-[...]
-Ran 118 tests in 14.168s
-
-OK (SKIP=9)
-__________________________________________________________ [tox summary] ___________________________________________________________
-[TOX] py26: commands succeeded
-[TOX] congratulations :)</pre>
-</div>
-<p>(See section <a class="reference internal" href="#skipping-tests">skipping tests</a> for a discussion about how and when to
-define skipped tests.)</p>
-<p>Option <tt class="docutils literal"><span class="pre">-r</span></tt> instructs <strong class="command">tox</strong> to re-build the testing virtual environment.</p>
-</div>
 <div class="section" id="opening-the-python-debugger-while-running-a-test">
 <h3>Opening the python debugger while running a test<a class="headerlink" href="#opening-the-python-debugger-while-running-a-test" title="Permalink to this headline">¶</a></h3>
 <p>When running using <cite>nosetests</cite>:command you cannot just execute
@@ -428,7 +488,7 @@ line.</p>
 <li>the module docstring (explain briefly the module purpose and
 features),</li>
 <li>the copyright and licence notice,</li>
-<li>module imports (in the order suggested by <span class="target" id="index-1"></span><a class="pep reference external" href="http://www.python.org/dev/peps/pep-0008"><strong>PEP 8</strong></a>)</li>
+<li>module imports (in the order suggested by <span class="target" id="index-0"></span><a class="pep reference external" href="http://www.python.org/dev/peps/pep-0008"><strong>PEP 8</strong></a>)</li>
 <li>and then the code...</li>
 </ul>
 <p><em>Rationale:</em> The docstring should be on top so it&#8217;s the first thing
@@ -436,6 +496,54 @@ one reads when inspecting a file.  The copyright notice is just a
 waste of space, but we&#8217;re required by law to have it.</p>
 </li>
 </ul>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>The documentation can be found in gc3pie/docs. It is generated using
+Sphinx (<a class="reference external" href="http://sphinx-doc.org/contents.html">http://sphinx-doc.org/contents.html</a>).</p>
+<p>GC3Pie documentation is divided in three sections:</p>
+<ul class="simple">
+<li><a class="reference internal" href="../users/index.html#user-documentation"><em>User Documentation</em></a>: info on how to install, configure and run
+GC3Pie applications.</li>
+<li><a class="reference internal" href="../programmers/index.html#programmer-documentation"><em>Programmer Documentation</em></a>: info for programmers who want to
+use the GC3Pie libraries to write their own scripts and
+applications.</li>
+<li><a class="reference internal" href="index.html#developer-documentation"><em>Developer Documentation</em></a>: detailed information on how to
+contribute to GC3Pie and get your code included in the main library.</li>
+</ul>
+<p>The <em class="xref std std-ref">GC3Libs programming API</em> is the most relevant part of the
+docs for developers contributing code and is generated automatically
+from the docstrings inside the modules. Automatic documentation in
+Sphinx is described under
+<a class="reference external" href="http://sphinx-doc.org/tutorial.html#autodoc">http://sphinx-doc.org/tutorial.html#autodoc</a>. While updating the docs
+of existing modules is simply done by running <tt class="docutils literal"><span class="pre">make</span> <span class="pre">html</span></tt>, adding
+documentation for a new module requires one of the following two
+procedures:</p>
+<ul>
+<li><p class="first">Add a reference to the new module in
+<tt class="file docutils literal"><span class="pre">docs/programmers/api/index.txt</span></tt>. Additionally, create a file
+that enables automatic documentation for the module. For the module
+<tt class="file docutils literal"><span class="pre">core.py</span></tt>, for example, automatic documentation is enabled by
+a file <tt class="file docutils literal"><span class="pre">docs/programmers/api/gc3libs/core.txt</span></tt> with the
+following content:</p>
+<div class="highlight-python"><pre>`gc3libs.core`
+==============
+
+.. automodule:: gc3libs.core
+     :members:</pre>
+</div>
+</li>
+<li><p class="first">Execute the script <tt class="file docutils literal"><span class="pre">docs/programmers/api/makehier.sh</span></tt>, which
+automates the above.  Note that the <tt class="file docutils literal"><span class="pre">makehier.sh</span></tt> script will
+re-create all <tt class="docutils literal"><span class="pre">.txt</span></tt> files for all GC3Pie modules, so check if
+there were some unexpected changes (e.g., with <tt class="docutils literal"><span class="pre">svn</span> <span class="pre">status</span></tt>)
+before you commit!</p>
+</li>
+</ul>
+<p>Docstrings are written in <a class="reference external" href="http://docutils.sourceforge.net/rst.html">reStructuredText</a> format.  To be able to
+cross-reference between differen objects in the documentation, you
+should be familiar with <a class="reference external" href="http://sphinx-doc.org/domains.html#the-python-domain">Sphinx domains</a> in general and the <a class="reference external" href="http://sphinx-doc.org/domains.html#cross-referencing-python-objects">Python
+domain</a> in particular.</p>
 </div>
 <div class="section" id="questions">
 <h2>Questions?<a class="headerlink" href="#questions" title="Permalink to this headline">¶</a></h2>
@@ -460,6 +568,11 @@ answer promptly.</p>
 </li>
 <li><a class="reference internal" href="#package-generation">Package generation</a></li>
 <li><a class="reference internal" href="#testing-the-code">Testing the code</a><ul>
+<li><a class="reference internal" href="#running-the-tests">Running the tests</a><ul>
+<li><a class="reference internal" href="#running-tests-with-nosetests">Running tests with <cite>nosetests</cite></a></li>
+<li><a class="reference internal" href="#running-multiple-tests">Running multiple tests</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#organizing-tests">Organizing tests</a></li>
 <li><a class="reference internal" href="#writing-tests">Writing tests</a><ul>
 <li><a class="reference internal" href="#testing-for-errors">Testing for errors</a></li>
@@ -468,11 +581,11 @@ answer promptly.</p>
 <li><a class="reference internal" href="#grouping-tests-into-classes">Grouping tests into classes</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-multiple-tests">Running multiple tests</a></li>
 <li><a class="reference internal" href="#opening-the-python-debugger-while-running-a-test">Opening the python debugger while running a test</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#coding-style">Coding style</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
 <li><a class="reference internal" href="#questions">Questions?</a></li>
 </ul>
 </li>
