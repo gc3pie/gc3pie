@@ -56,11 +56,11 @@ require_command make
 require_command python
 require_command svn
 
-python -c 'import sphinx' 2>/dev/null \
-    || die 1 "Missing required Python module 'sphinx'"
+python -c 'import sphinx' \
+    || die 1 "Cannot load required Python module 'sphinx'"
 
-python -c 'import sphinx_pypi_upload' 2>/dev/null \
-    || die 1 "Missing required Python module 'sphinx_pypi_upload'"
+python -c 'import sphinx_pypi_upload' \
+    || die 1 "Cannot load required Python module 'sphinx_pypi_upload'"
 
 
 ## parse command-line 
