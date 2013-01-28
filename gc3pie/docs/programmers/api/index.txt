@@ -6,8 +6,6 @@
 
 .. _gc3libs:
 
-.. _`GC3Libs programming API`:
-
 -------------------------
  GC3Libs programming API
 -------------------------
@@ -46,7 +44,6 @@
    gc3libs/optimizer/dif_evolution.txt
    gc3libs/optimizer/drivers.txt
    gc3libs/optimizer/extra.txt
-   gc3libs/optimizer/utils.txt
    gc3libs/persistence.txt
    gc3libs/persistence/accessors.txt
    gc3libs/persistence/filesystem.txt
