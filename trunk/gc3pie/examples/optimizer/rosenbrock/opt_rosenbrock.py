@@ -44,7 +44,7 @@ from gc3libs.cmdline import SessionBasedScript
 from gc3libs.optimizer import update_parameter_in_file
 
 # optimizer specific imports
-from gc3libs.optimizer.drivers import GridDriver
+from gc3libs.optimizer.drivers import ParallelDriver
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
 from gc3libs.optimizer import draw_population
 
@@ -174,7 +174,7 @@ class RosenbrockScript(SessionBasedScript):
         kwargs['extract_value_fn'] = compute_target_rosenbrock
         kwargs['cur_pop_file'] = 'cur_pop'
 
-        return [GridDriver(jobname=jobname, **kwargs)]
+        return [ParallelDriver(jobname=jobname, **kwargs)]
 
     def parse_args(self):
         """

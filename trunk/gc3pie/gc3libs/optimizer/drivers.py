@@ -45,7 +45,7 @@ from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 
 
 
-class LocalDriver(object):
+class SequentialDriver(object):
     """Drives an optimization using `opt_algorithm` on the local machine.
 
     The user-supplied :func:`target_fun` computes target values for the
@@ -113,7 +113,7 @@ class LocalDriver(object):
 
 
 
-class GridDriver(SequentialTaskCollection):
+class ParallelDriver(SequentialTaskCollection):
     """Drives an optimization using `opt_algorithm` on the grid.
 
     At each iteration an instance of :class:`ComputeTargetVals` uses
