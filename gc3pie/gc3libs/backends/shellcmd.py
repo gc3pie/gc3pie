@@ -33,8 +33,10 @@ import time
 import gc3libs
 import gc3libs.exceptions
 from gc3libs import log, Run
-from gc3libs.utils import same_docstring_as, samefile, copy_recursively, Struct, sh_quote_unsafe
+from gc3libs.utils import same_docstring_as, samefile, copy_recursively
+from gc3libs.utils import Struct, sh_quote_unsafe
 from gc3libs.backends import LRMS
+from gc3libs.quantity import Memory
 
 
 def _make_remote_and_local_path_pair(transport, job, remote_relpath,
@@ -130,12 +132,6 @@ ReturnCode=%x"""
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth, **extra_args)
 
-        # use `max_cores` as the max number of processes to allow
-        self.free_slots = int(max_cores)
-        self.user_run = 0
-        self.user_queued = 0
-        self.queued = 0
-
         # GNU time is needed
         self.time_cmd = time_cmd
 
@@ -157,6 +153,13 @@ ReturnCode=%x"""
         else:
             raise gc3libs.exceptions.TransportError(
                 "Unknown transport '%s'" % transport)
+
+        # use `max_cores` as the max number of processes to allow
+        self.free_slots = int(max_cores)
+        self.user_run = 0
+        self.user_queued = 0
+        self.queued = 0
+        self._gather_machine_specs()
 
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
@@ -214,6 +217,60 @@ ReturnCode=%x"""
         except Exception, ex:
             log.warning("Failed removing folder '%s': %s: %s",
                         app.execution.lrms_execdir, ex.__class__.__name__, ex)
+
+    def _gather_machine_specs(self):
+        """
+        Gather information about this machine. Try to be compatible
+        with as many *nix OSs as possible.
+        """
+        self.transport.connect()
+        exit_code, stdout, stderr = self.transport.execute_command('uname -m')
+        arch = gc3libs.config._parse_architecture(stdout)
+        if arch != self.architecture:
+            raise gc3libs.exceptions.ConfigurationError(
+                "Invalid architecture: configuration file says `%s` but "
+                "it actually is `%s`" % (str.join(', ', self.architecture),
+                                         str.join(', ', arch)))
+
+        exit_code, stdout, stderr = self.transport.execute_command('uname -s')
+        self.running_kernel = stdout.strip()
+
+        if self.running_kernel == 'Linux':
+            exit_code, stdout, stderr = self.transport.execute_command('nproc')
+            max_cores = int(stdout)
+
+            fd = self.transport.open('/proc/meminfo', 'r')
+            # Get the amount of available memory from /proc/meminfo
+            for line in fd:
+                if line.startswith('MemTotal'):
+                    available_memory = int(line.split()[1]) * Memory.KiB
+                    mem_per_core = available_memory / max_cores
+                    break
+
+        elif self.running_kernel == 'Darwin':
+            exit_code, stdout, stderr = self.transport.execute_command(
+                'sysctl hw.ncpu')
+            max_cores = int(stdout.split(':')[-1])
+
+            exit_code, stdout, stderr = self.transport.execute_command(
+                'sysctl hw.memsize')
+            available_memory = int(stdout.split(':')[1]) * Memory.B
+            mem_per_core = available_memory / max_cores
+
+        if max_cores != self.max_cores:
+            log.warning(
+                "`max_cores` value on resource %s mismatch: configuration"
+                "file says `%d` while it's actually `%d`. Updating current "
+                "value.", self.name, self.max_cores, max_cores)
+            self.max_cores = max_cores
+
+        if mem_per_core != self.max_memory_per_core:
+            log.warning(
+                "`max_memory_per_core` value on resource %s mismatch: "
+                "configuration file says `%s` while it's actually `%s`. "
+                "Updating current value.", self.name, self.max_memory_per_core,
+                mem_per_core)
+            self.max_memory_per_core = mem_per_core
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
@@ -351,7 +408,8 @@ ReturnCode=%x"""
                     self.transport.makedirs(remote_parent)
                 log.debug("Transferring file '%s' to '%s'" % (local_path.path,
                                                               remote_path))
-                self.transport.put(local_path.path, remote_path, recursive=True)
+                self.transport.put(local_path.path, remote_path,
+                                   recursive=True)
                 # preserve execute permission on input files
                 if os.access(local_path.path, os.X_OK):
                     self.transport.chmod(remote_path, 0755)
@@ -442,7 +500,7 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
                 pidfile = self.transport.open(pidfilename, 'r')
                 break
             except gc3libs.exceptions.TransportError, ex:
-                if '[Errno 2]' in str(ex): # no such file or directory
+                if '[Errno 2]' in str(ex):  # no such file or directory
                     time.sleep(retry)
                     continue
                 else:
