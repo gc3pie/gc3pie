@@ -23,6 +23,7 @@ __version__ = '$Revision: 1165 $'
 
 
 # stdlib imports
+import cPickle as pickle
 from getpass import getuser
 import os
 import os.path
@@ -34,7 +35,7 @@ import gc3libs
 import gc3libs.exceptions
 from gc3libs import log, Run
 from gc3libs.utils import same_docstring_as, samefile, copy_recursively
-from gc3libs.utils import Struct, sh_quote_unsafe
+from gc3libs.utils import Struct, sh_quote_unsafe, defproperty
 from gc3libs.backends import LRMS
 from gc3libs.quantity import Memory
 
@@ -114,6 +115,8 @@ ReturnCode=%x"""
     WRAPPER_OUTPUT_FILENAME = 'resource_usage.txt'
     WRAPPER_PID = 'wrapper.pid'
 
+    RESOURCE_FILENAME = '$HOME/.gc3/shellcmd_jobs.pickle'
+
     def __init__(self, name,
                  # these parameters are inherited from the `LRMS` class
                  architecture, max_cores, max_cores_per_job,
@@ -155,11 +158,36 @@ ReturnCode=%x"""
                 "Unknown transport '%s'" % transport)
 
         # use `max_cores` as the max number of processes to allow
-        self.free_slots = int(max_cores)
-        self.user_run = 0
         self.user_queued = 0
         self.queued = 0
-        self._gather_machine_specs()
+        self.jobs = {}
+        self.total_memory = max_memory_per_core
+        self.available_memory = self.total_memory
+
+    @defproperty
+    def user_run():
+        def fget(self):
+            jobs = [job for job in self.jobs.values() if not job['terminated']]
+            return len(jobs)
+        return locals()
+
+    @defproperty
+    def free_slots():
+        """Returns the number of cores free"""
+        def fget(self):
+            """
+            Sums the number of corse requested by jobs not in TERM*
+            state and returns the difference from the number of cores
+            of the resource.
+            """
+            def filter_cores(job):
+                if job['terminated']:
+                    return 0
+                else:
+                    return job['requested_cores']
+
+            return self.max_cores - sum(map(filter_cores, self.jobs.values()))
+        return locals()
 
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
@@ -176,7 +204,6 @@ ReturnCode=%x"""
         exit_code, stdout, stderr = self.transport.execute_command(
             'kill %d' % pid)
         # XXX: should we check that the process actually died?
-        self.free_slots += app.requested_cores
         if exit_code != 0:
             # Error killing the process. It may not exists or we don't
             # have permission to kill it.
@@ -192,6 +219,7 @@ ReturnCode=%x"""
                 gc3libs.log.error(
                     "Failed while killing Job '%s'. It refers to non-existent"
                     " local process %s." % (app, app.execution.lrms_jobid))
+        self.update_job_resource_usage(pid, terminated=True)
 
     @same_docstring_as(LRMS.close)
     def close(self):
@@ -217,6 +245,11 @@ ReturnCode=%x"""
         except Exception, ex:
             log.warning("Failed removing folder '%s': %s: %s",
                         app.execution.lrms_execdir, ex.__class__.__name__, ex)
+        finally:
+            pid = app.execution.lrms_jobid
+            if pid in self.jobs:
+                del self.jobs[pid]
+                self._update_resource_usage_file()
 
     def _gather_machine_specs(self):
         """
@@ -240,11 +273,11 @@ ReturnCode=%x"""
             max_cores = int(stdout)
 
             fd = self.transport.open('/proc/meminfo', 'r')
-            # Get the amount of available memory from /proc/meminfo
+            # Get the amount of total memory from /proc/meminfo
+            self.total_memory = self.max_memory_per_core
             for line in fd:
                 if line.startswith('MemTotal'):
-                    available_memory = int(line.split()[1]) * Memory.KiB
-                    mem_per_core = available_memory / max_cores
+                    self.total_memory = int(line.split()[1]) * Memory.KiB
                     break
 
         elif self.running_kernel == 'Darwin':
@@ -254,8 +287,7 @@ ReturnCode=%x"""
 
             exit_code, stdout, stderr = self.transport.execute_command(
                 'sysctl hw.memsize')
-            available_memory = int(stdout.split(':')[1]) * Memory.B
-            mem_per_core = available_memory / max_cores
+            self.total_memory = int(stdout.split(':')[1]) * Memory.B
 
         if max_cores != self.max_cores:
             log.warning(
@@ -264,18 +296,77 @@ ReturnCode=%x"""
                 "value.", self.name, self.max_cores, max_cores)
             self.max_cores = max_cores
 
-        if mem_per_core != self.max_memory_per_core:
+        if self.total_memory != self.max_memory_per_core:
             log.warning(
                 "`max_memory_per_core` value on resource %s mismatch: "
                 "configuration file says `%s` while it's actually `%s`. "
                 "Updating current value.", self.name, self.max_memory_per_core,
-                mem_per_core)
-            self.max_memory_per_core = mem_per_core
+                self.total_memory)
+            self.max_memory_per_core = self.total_memory
+
+        self.available_memory = self.total_memory
+
+        exit_code, stdout, stderr = self.transport.execute_command(
+            "echo %s" % sh_quote_unsafe(ShellcmdLrms.RESOURCE_FILENAME))
+        self.resource_filename = stdout.strip()
+
+    def _get_resource_usage_from_file(self):
+        """
+        Get information on total resources from the
+        RESOURCE_FILENAME.
+        """
+        self.transport.connect()
+        try:
+            fp = self.transport.open(self.resource_filename, 'r')
+            self.jobs = pickle.load(fp)
+            # Remove job which are in terminated state.
+            for pid, job in self.jobs.items():
+                if job['terminated']:
+                    del self.jobs[job]
+            fp.close()
+        except:
+            self.jobs = {}
+
+    def _update_resource_usage_file(self):
+        """
+        Update resource usage information on the remote file.
+        """
+        self.transport.connect()
+        fp = self.transport.open(self.resource_filename, 'w')
+        pickle.dump(self.jobs, fp, -1)
+        fp.close()
+
+    def update_job_resource_usage(self, pid, **kwargs):
+        """
+        Update information on the resources requested by the job
+        identified by `pid` and write these information on the
+        resource file too.
+        """
+        self.jobs[pid].update(kwargs)
+        self._update_resource_usage_file()
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
         # if we have been doing our own book-keeping well, then
         # there's no resource status to update
+        if not self.updated:
+            self._gather_machine_specs()
+            self._get_resource_usage_from_file()
+            self.updated = True
+
+        def filter_memory(x):
+            if x['requested_memory'] is not None:
+                return x['requested_memory'].amount(unit=Memory.B)
+            else:
+                return 0
+
+        used_memory = Memory.B * sum(map(filter_memory, self.jobs.values()))
+        if not isinstance(used_memory, Memory):
+            used_memory = Memory.B * used_memory
+        self.available_memory = self.total_memory - used_memory
+        log.debug("Recovering resource information from file %s: "
+                  "Available memory: %s, used memory: %s",
+                  self.resource_filename, self.available_memory, used_memory)
         return self
 
     @same_docstring_as(LRMS.get_results)
@@ -347,16 +438,19 @@ ReturnCode=%x"""
         else:
             # pid does not exists in process table. Check wrapper file
             # contents
-            self.free_slots += app.requested_cores
-            self.user_run -= 1
             app.execution.state = Run.State.TERMINATING
+            if app.requested_memory:
+                self.available_memory += app.requested_memory
             wrapper_filename = posixpath.join(
                 app.execution.lrms_execdir,
                 ShellcmdLrms.WRAPPER_DIR,
                 ShellcmdLrms.WRAPPER_OUTPUT_FILENAME)
             try:
                 wrapper_file = self.transport.open(wrapper_filename, 'r')
+                self.update_job_resource_usage(pid, terminated=True)
             except:
+                del self.jobs[pid]
+                self._update_resource_usage_file()
                 raise gc3libs.exceptions.InvalidArgument(
                     "Job '%s' refers to process wrapper %s which"
                     " ended unexpectedly"
@@ -375,10 +469,18 @@ ReturnCode=%x"""
 
         :see: `LRMS.submit_job`
         """
+        if not self.updated:
+            self.get_resource_status()
         if self.free_slots == 0:
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Resource %s already running maximum allowed number of jobs"
                 " (increase 'max_cores' to raise)." % self.name)
+
+        if app.requested_memory and \
+                self.available_memory < app.requested_memory:
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "Resource %s does not have enough available memory: %s < %s."
+                % (self.name, self.available_memory, app.requested_memory))
 
         gc3libs.log.debug("Executing local command '%s' ..."
                           % (str.join(" ", app.arguments)))
@@ -521,8 +623,14 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
 
         # Update application and current resources
         app.execution.lrms_jobid = pid
-        self.free_slots -= app.requested_cores
-        self.user_run += 1
+        if app.requested_memory:
+            self.available_memory -= app.requested_memory
+        self.jobs[pid] = {
+            'requested_cores': app.requested_cores,
+            'requested_memory': app.requested_memory,
+            'execution_dir': execdir,
+            'terminated': False, }
+        self._update_resource_usage_file()
         return app
 
     @same_docstring_as(LRMS.peek)

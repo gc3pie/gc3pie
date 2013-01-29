@@ -34,17 +34,19 @@ from nose.tools import raises, assert_equal
 
 import gc3libs
 from gc3libs.authentication import Auth
-import gc3libs.core, gc3libs.config
+import gc3libs.config
+import gc3libs.core
+from gc3libs.quantity import Memory
 
 
 class TestBackendShellcmd(object):
-    CONF="""
+    CONF = """
 [resource/localhost_test]
 type=shellcmd
 transport=local
 time_cmd=/usr/bin/time
-max_cores=2
-max_cores_per_job=2
+max_cores=4
+max_cores_per_job=4
 max_memory_per_core=2
 max_walltime=2
 architecture=x64_64
@@ -61,12 +63,15 @@ type=none
         f.write(TestBackendShellcmd.CONF)
         f.close()
         self.files_to_remove = [cfgfile]
+        self.apps_to_kill = []
 
         self.cfg = gc3libs.config.Configuration()
         self.cfg.merge_file(cfgfile)
 
         self.core = gc3libs.core.Core(self.cfg)
         self.backend = self.core.get_backend('localhost_test')
+        # Update resource status
+        self.backend.get_resource_status()
 
     def cleanup_file(self, fname):
         self.files_to_remove.append(fname)
@@ -78,106 +83,84 @@ type=none
             elif os.path.exists(fname):
                 os.remove(fname)
 
-    def test_backend_creation(self):
-        """
-        Test that the initial resource parameters match those specified in the test config.
-        """
-        assert_equal(self.backend.free_slots, 2)
-        assert_equal(self.backend.user_run, 0)
-        assert_equal(self.backend.user_queued, 0)
+        for app in self.apps_to_kill:
+            try:
+                self.core.kill(app)
+            except:
+                pass
+            try:
+                self.core.free(app)
+            except:
+                pass
 
     def test_submission_ok(self):
         """
-        Test a successful submission cycle and the backends' resource book-keeping.
+        Test a successful submission cycle and the backends' resource
+        book-keeping.
         """
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
+        ncores = self.backend.max_cores
 
         app = gc3libs.Application(
-            arguments = ['/usr/bin/env'],
-            inputs = [],
-            outputs = [],
-            output_dir = tmpdir,
-            stdout = "stdout.txt",
-            stderr = "stderr.txt",
-            requested_cores = 1,
-            )
+            arguments=['/usr/bin/env'],
+            inputs=[],
+            outputs=[],
+            output_dir=tmpdir,
+            stdout="stdout.txt",
+            stderr="stderr.txt",
+            requested_cores=1, )
         self.core.submit(app)
+        self.apps_to_kill.append(app)
+
         self.cleanup_file(tmpdir)
         self.cleanup_file(app.execution.lrms_execdir)
 
-        # there's no SUBMITTED state here: jobs go immediately into RUNNING state
+        # there's no SUBMITTED state here: jobs go immediately into
+        # RUNNING state
         assert_equal(app.execution.state, gc3libs.Run.State.SUBMITTED)
-        assert_equal(self.backend.free_slots,  1)
+        assert_equal(self.backend.free_slots,  ncores - 1)
         assert_equal(self.backend.user_queued, 0)
         assert_equal(self.backend.user_run,    1)
 
         # wait until the test job is done, but timeout and raise an error
         # if it takes too much time...
-        MAX_WAIT = 10 # seconds
-        WAIT = 0.1 # seconds
+        MAX_WAIT = 10  # seconds
+        WAIT = 0.1  # seconds
         waited = 0
-        while app.execution.state != gc3libs.Run.State.TERMINATING and waited < MAX_WAIT:
+        while app.execution.state != gc3libs.Run.State.TERMINATING \
+                and waited < MAX_WAIT:
             time.sleep(WAIT)
             waited += WAIT
             self.core.update_job_state(app)
         assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
-        assert_equal(self.backend.free_slots,  2)
+        assert_equal(self.backend.free_slots,  ncores)
         assert_equal(self.backend.user_queued, 0)
         assert_equal(self.backend.user_run,    0)
 
         self.core.fetch_output(app)
         assert_equal(app.execution.state, gc3libs.Run.State.TERMINATED)
-        assert_equal(self.backend.free_slots,  2)
+        assert_equal(self.backend.free_slots,  ncores)
         assert_equal(self.backend.user_queued, 0)
         assert_equal(self.backend.user_run,    0)
 
-    @raises(gc3libs.exceptions.LRMSSubmitError)
-    def test_submission_too_many_jobs(self):
-
-        app1 = gc3libs.Application(
-            arguments = ['/usr/bin/env'],
-            inputs = [],
-            outputs = [],
-            output_dir = ".",
-            stdout = "stdout.txt",
-            stderr = "stderr.txt",
-            requested_cores = self.backend.free_slots,
-            )
-        self.core.submit(app1)
-        self.cleanup_file(app1.execution.lrms_execdir)
-        assert_equal(app1.execution.state, gc3libs.Run.State.SUBMITTED)
-
-        # this fails, as the number of cores exceeds the resource total
-        app2 = gc3libs.Application(
-            arguments = ['/usr/bin/env'],
-            inputs = [],
-            outputs = [],
-            output_dir = ".",
-            stdout = "stdout.txt",
-            stderr = "stderr.txt",
-            requested_cores = 1,
-            )
-        self.core.submit(app2)
-        self.cleanup_file(app2.execution.lrms_execdir)
-        assert False # should not happen
-
-
     def test_check_app_after_reloading_session(self):
-        """Check if we are able to check the status of a job after the script which started the job has died.
+        """Check if we are able to check the status of a job after the
+        script which started the job has died.
         """
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
 
         app = gc3libs.Application(
-            arguments = ['/usr/bin/env'],
-            inputs = [],
-            outputs = [],
-            output_dir = tmpdir,
-            stdout = "stdout.txt",
-            stderr = "stderr.txt",
-            requested_cores = 1,
-            )
+            arguments=['/usr/bin/env'],
+            inputs=[],
+            outputs=[],
+            output_dir=tmpdir,
+            stdout="stdout.txt",
+            stderr="stderr.txt",
+            requested_cores=1, )
         self.core.submit(app)
+        self.apps_to_kill.append(app)
+
         self.cleanup_file(app.execution.lrms_execdir)
         pid = app.execution.lrms_jobid
 
@@ -187,10 +170,11 @@ type=none
 
         # wait until the test job is done, but timeout and raise an error
         # if it takes too much time...
-        MAX_WAIT = 10 # seconds
-        WAIT = 0.1 # seconds
+        MAX_WAIT = 10  # seconds
+        WAIT = 0.1  # seconds
         waited = 0
-        while app.execution.state != gc3libs.Run.State.TERMINATING and waited < MAX_WAIT:
+        while app.execution.state != gc3libs.Run.State.TERMINATING \
+                and waited < MAX_WAIT:
             time.sleep(WAIT)
             waited += WAIT
             self.core.update_job_state(app)
@@ -205,20 +189,22 @@ type=none
         self.cleanup_file(tmpdir)
 
         app = gc3libs.Application(
-            arguments = ['/bin/ls', '-d', '/ /'],
-            inputs = [],
-            outputs = [],
-            output_dir = tmpdir,
-            stdout = "stdout.txt",
-            stderr = "stderr.txt",
-            requested_cores = 1,
-            )
+            arguments=['/bin/ls', '-d', '/ /'],
+            inputs=[],
+            outputs=[],
+            output_dir=tmpdir,
+            stdout="stdout.txt",
+            stderr="stderr.txt",
+            requested_cores=1, )
         self.core.submit(app)
+        self.apps_to_kill.append(app)
+
         self.cleanup_file(app.execution.lrms_execdir)
-        MAX_WAIT = 10 # seconds
-        WAIT = 0.1 # seconds
+        MAX_WAIT = 10  # seconds
+        WAIT = 0.1  # seconds
         waited = 0
-        while app.execution.state != gc3libs.Run.State.TERMINATING and waited < MAX_WAIT:
+        while app.execution.state != gc3libs.Run.State.TERMINATING \
+                and waited < MAX_WAIT:
             time.sleep(WAIT)
             waited += WAIT
             self.core.update_job_state(app)
@@ -226,8 +212,89 @@ type=none
         assert_equal(app.execution.returncode, 2)
 
     def test_time_cmd_args(self):
-        assert_equal( self.backend.time_cmd , '/usr/bin/time')
+        assert_equal(self.backend.time_cmd, '/usr/bin/time')
 
-if __name__ =="__main__":
+    def test_resource_usage(self):
+        tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
+        self.cleanup_file(tmpdir)
+
+        app = gc3libs.Application(
+            arguments=['/bin/echo', 'Hello', 'World'],
+            inputs=[],
+            outputs=[],
+            output_dir=tmpdir,
+            requested_cores=2,
+            requested_memory=10 * Memory.MiB, )
+        cores_before = self.backend.free_slots
+        mem_before = self.backend.available_memory
+        self.core.submit(app)
+        self.apps_to_kill.append(app)
+
+        cores_after = self.backend.free_slots
+        mem_after = self.backend.available_memory
+        assert_equal(cores_before, cores_after + 2)
+        assert_equal(mem_before, mem_after + app.requested_memory)
+        MAX_WAIT = 10  # seconds
+        WAIT = 0.1  # seconds
+        waited = 0
+        while app.execution.state != gc3libs.Run.State.TERMINATING \
+                and waited < MAX_WAIT:
+            time.sleep(WAIT)
+            waited += WAIT
+            self.core.update_job_state(app)
+        assert_equal(self.backend.free_slots, cores_before)
+        avail = self.backend.available_memory
+        assert_equal(self.backend.available_memory, mem_before)
+
+    @raises(gc3libs.exceptions.LRMSSubmitError)
+    def test_not_enough_cores_usage(self):
+        tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
+        self.cleanup_file(tmpdir)
+        bigapp = gc3libs.Application(
+            arguments=['/bin/echo', 'Hello', 'World'],
+            inputs=[],
+            outputs=[],
+            output_dir=tmpdir,
+            requested_cores=self.backend.free_slots,
+            requested_memory=10 * Memory.MiB, )
+        smallapp = gc3libs.Application(
+            arguments=['/bin/echo', 'Hello', 'World'],
+            inputs=[],
+            outputs=[],
+            output_dir=tmpdir,
+            requested_cores=1,
+            requested_memory=10 * Memory.MiB, )
+        self.core.submit(bigapp)
+        self.apps_to_kill.append(bigapp)
+
+        self.core.submit(smallapp)
+        self.apps_to_kill.append(smallapp)
+
+    @raises(gc3libs.exceptions.LRMSSubmitError)
+    def test_not_enough_memory_usage(self):
+        tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
+        self.cleanup_file(tmpdir)
+        bigapp = gc3libs.Application(
+            arguments=['/bin/echo', 'Hello', 'World'],
+            inputs=[],
+            outputs=[],
+            output_dir=tmpdir,
+            requested_cores=1,
+            requested_memory=self.backend.total_memory, )
+        smallapp = gc3libs.Application(
+            arguments=['/bin/echo', 'Hello', 'World'],
+            inputs=[],
+            outputs=[],
+            output_dir=tmpdir,
+            requested_cores=1,
+            requested_memory=10 * Memory.MiB, )
+        self.core.submit(bigapp)
+        self.apps_to_kill.append(bigapp)
+
+        self.core.submit(smallapp)
+        self.apps_to_kill.append(smallapp)
+
+
+if __name__ == "__main__":
     import nose
     nose.runmodule()
