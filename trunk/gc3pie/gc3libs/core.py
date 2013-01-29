@@ -610,6 +610,8 @@ specified in the configuration file.
         """
         for lrms in self._lrms.itervalues():
             try:
+                if not lrms.enabled:
+                    continue
                 auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
                 resource = lrms.get_resource_status()
                 resource.updated = True
