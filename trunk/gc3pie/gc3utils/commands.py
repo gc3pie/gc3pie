@@ -848,6 +848,8 @@ List status of computational resources.
             return cmp(x.name, y.name)
 
         for resource in sorted(resources, cmp=cmp_by_name):
+            if self.params.args and resource.name not in self.params.args:
+                continue
             table = PrettyTable(['', resource.name, ' '])
             table.align = 'l'
             table.align[''] = 'r'
