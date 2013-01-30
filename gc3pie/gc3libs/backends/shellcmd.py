@@ -115,7 +115,8 @@ ReturnCode=%x"""
     WRAPPER_OUTPUT_FILENAME = 'resource_usage.txt'
     WRAPPER_PID = 'wrapper.pid'
 
-    RESOURCE_FILENAME = '$HOME/.gc3/shellcmd_jobs.pickle'
+    RESOURCE_RCDIR = '/tmp/.gc3'
+    RESOURCE_FILENAME = RESOURCE_RCDIR + '/shellcmd_jobs.pickle'
 
     def __init__(self, name,
                  # these parameters are inherited from the `LRMS` class
@@ -305,9 +306,25 @@ ReturnCode=%x"""
 
         self.available_memory = self.total_memory
 
+        # XXX: Sergio: ?
+        # is this supposed to create the file ?
+        # or just spit out the ful path on the remote end ?
         exit_code, stdout, stderr = self.transport.execute_command(
             "echo %s" % sh_quote_unsafe(ShellcmdLrms.RESOURCE_FILENAME))
+
         self.resource_filename = stdout.strip()
+        
+        # XXX: it is actually necessary to create the folder 
+        # as a separate step
+        log.info('creating resource file folder: %s ...' % ShellcmdLrms.RESOURCE_RCDIR)
+        try:
+            self.transport.makedirs(ShellcmdLrms.RESOURCE_RCDIR)
+            # exit_code, stdout, stderr = self.transport.execute_command(
+            #     "touch %s" % sh_quote_unsafe(ShellcmdLrms.RESOURCE_FILENAME))
+        except Exception, ex:
+            gc3libs.log.error("Failed while creating resource file: %s. Error type: %s. Message: %s" % (ShellcmdLrms.RESOURCE_FILENAME, type(ex),str(ex)))
+            # cannot continue
+            raise
 
     def _get_resource_usage_from_file(self):
         """
@@ -331,7 +348,8 @@ ReturnCode=%x"""
         Update resource usage information on the remote file.
         """
         self.transport.connect()
-        fp = self.transport.open(self.resource_filename, 'w')
+        # XXX: should create file if necessaty ?
+        fp = self.transport.open(self.resource_filename, 'w+')
         pickle.dump(self.jobs, fp, -1)
         fp.close()
 
