@@ -300,11 +300,11 @@ class EC2Lrms(LRMS):
         # NOTE: since `vm_id` is supposed to be unique, we assume
         # reservations only contains one element.
         self._connect()
-        # reservations = self._conn.get_all_instances(instance_ids=[vm_id])
-        # instances = dict((i.id, i) for i in reservations[0].instances)
-        # if vm_id not in instances:
 
-        instances = self._get_vms()                     
+        reservations = self._conn.get_all_instances(instance_ids=[vm_id])
+        instances = dict((i.id, i) for i in reservations[0].instances)
+        # instances = self._get_vms()                     
+
         if vm_id not in instances:
             raise UnrecoverableError(
                 "Instance with id %s has not found in EC2 cloud %s"
@@ -529,6 +529,7 @@ class EC2Lrms(LRMS):
         # a VM for this job has already been created. If not, a new
         # instance is created.
         self._connect()
+
         # XXX: when this case will happen ?
         # if hasattr(job, 'ec2_instance_id'):
         #     vm = self._get_vm(job.ec2_instance_id)
@@ -540,17 +541,16 @@ class EC2Lrms(LRMS):
         #     job.changed = True
 
 
-        for instance in self._get_vms().values():
+        for vm_id, res in self.resources.items(): 
             try:
-                resource = self._get_remote_resource(instance)
-                resource.submit_job(job)
-                job.ec2_instance_id = instance.id
+                res.submit(app)
+                job.ec2_instance_id = vm_id
                 job.changed = True
                 return job
             except gc3libs.exceptions.LRMSSubmitError, ex:
                 # selected resource reported no free slots
                 # report in log and continue
-                gc3libs.log.debug("Submit to resource %s failed. No free slots" % resource.name)
+                gc3libs.log.debug("Submit to resource %s failed. No free slots" % res.name)
                 continue
 
         # We reach this state when there are not free slots on any
