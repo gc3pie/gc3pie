@@ -115,8 +115,8 @@ ReturnCode=%x"""
     WRAPPER_OUTPUT_FILENAME = 'resource_usage.txt'
     WRAPPER_PID = 'wrapper.pid'
 
-    RESOURCE_RCDIR = '/tmp/.gc3'
-    RESOURCE_FILENAME = RESOURCE_RCDIR + '/shellcmd_jobs.pickle'
+    RESOURCE_RCDIR = '$HOME/.gc3'
+    RESOURCE_FILENAME = 'shellcmd_jobs.pickle'
 
     def __init__(self, name,
                  # these parameters are inherited from the `LRMS` class
@@ -306,23 +306,20 @@ ReturnCode=%x"""
 
         self.available_memory = self.total_memory
 
-        # XXX: Sergio: ?
-        # is this supposed to create the file ?
-        # or just spit out the ful path on the remote end ?
+        # This is supposed to spit out the ful path on the remote end
         exit_code, stdout, stderr = self.transport.execute_command(
-            "echo %s" % sh_quote_unsafe(ShellcmdLrms.RESOURCE_FILENAME))
+            "echo %s" % sh_quote_unsafe(ShellcmdLrms.RESOURCE_RCDIR))
 
-        self.resource_filename = stdout.strip()
+        resource_home = stout.strip()
+        self.resource_filename = os.path.join(resource_home, ShellcmdLrms.RESOURCE_FILENAME)
         
         # XXX: it is actually necessary to create the folder 
         # as a separate step
-        log.info('creating resource file folder: %s ...' % ShellcmdLrms.RESOURCE_RCDIR)
+        log.info('creating resource file folder: %s ...' % self.resource_filename)
         try:
-            self.transport.makedirs(ShellcmdLrms.RESOURCE_RCDIR)
-            # exit_code, stdout, stderr = self.transport.execute_command(
-            #     "touch %s" % sh_quote_unsafe(ShellcmdLrms.RESOURCE_FILENAME))
+            self.transport.makedirs(resource_home)
         except Exception, ex:
-            gc3libs.log.error("Failed while creating resource file: %s. Error type: %s. Message: %s" % (ShellcmdLrms.RESOURCE_FILENAME, type(ex),str(ex)))
+            gc3libs.log.error("Failed while creating resource file: %s. Error type: %s. Message: %s" % (resource_home, type(ex),str(ex)))
             # cannot continue
             raise
 
