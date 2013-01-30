@@ -245,11 +245,10 @@ ReturnCode=%x"""
         except Exception, ex:
             log.warning("Failed removing folder '%s': %s: %s",
                         app.execution.lrms_execdir, ex.__class__.__name__, ex)
-        finally:
-            pid = app.execution.lrms_jobid
-            if pid in self.jobs:
-                del self.jobs[pid]
-                self._update_resource_usage_file()
+        pid = app.execution.lrms_jobid
+        if pid in self.jobs:
+            del self.jobs[pid]
+            self._update_resource_usage_file()
 
     def _gather_machine_specs(self):
         """
