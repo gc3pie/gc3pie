@@ -1,7 +1,53 @@
 #! /usr/bin/env python
 #
 """
-Support for running optimizations with the GC3Libs.
+Support for running optimizations with GC3Pie.
+
+GC3Pie can manage a large number of `Application`s to run in parallel. The idea
+of this optimization module is to use these core capabilities to perform
+optimization.
+
+The module implements one particular type of global optimization algorithm
+called Differential Evolution. The module is split up as follows:
+
+* :module:`drivers.py`: Set of drivers that interface with GC3Libs to
+  automatically drive the optimization process following a specified algorithm.
+  :class:`ParallelDriver` is the core of the optimization module, performing
+  optimization using an algorithm based on :class:`EvolutionaryAlgorithm`.
+
+* :module:`dif_evolution.py`: Implements the Differential Evolution algorithm,
+  based on :class:`EvolutionaryAlgorithm`. The evolution and selection step
+  particular to Differential Evolution are specified. See the module for details
+  on the algorithm.
+
+* :module:`extra.py`: Provides tools to printing, plotting etc. that can be
+  used to extend :class:`EvolutionaryAlgorithm`.
+
+Optimization drivers use GC3Pie in the following way: A
+:class:`SequentialTaskCollection` represents the main loop of the optimization
+algorithm, checking for convergence at each iteration. This allows for resuming
+paused or crashed optimizations. Each iteration, the optimiztion algorithm
+provides a new set of points to be evaluated. These points are each represented
+by an :class:`Application` and bundled into a :class:ParallelTaskCollection:
+that manages the single `Application`s until completion. The structure of
+GC3Libs objects employed can be summarized as follows:
+
+::
+
+  SequentialTaskCollection
+            |
+            v
+   ParallelTaskCollection
+            |
+            v
+       Application
+
+Other Evolutionary Algorithms can easily be incorporated by subclassing
+:class:`EvolutionaryAlgorithm`. Different optimization algorithms, for example
+gradient based mehtods such as quasi-newton methods, can be used but require
+adapting :class:`optimizer.ParallelDriver`. 
+
+
 """
 # Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
 #
