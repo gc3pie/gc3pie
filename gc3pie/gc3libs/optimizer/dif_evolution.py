@@ -1,14 +1,27 @@
 #! /usr/bin/env python
 #
 """
-Differential Evolution Algorithm. 
+This module implements a global optimization called Differential Evolution
+algorithm.
 
-Some information related to differential evolution can be found in the following papers: 
-1) Tvrdik 2008 www.proceedings2008.imcsit.org/pliks/95.pdf
+Consider the following optimization problem:
 
-`gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.evolve_fn`:func: is an adaptation of the following MATLAB code: 
-http://www.icsi.berkeley.edu/~storn/DeMat.zip
-Please refer to http://www.icsi.berkeley.edu/~storn/code.html#deb1. 
+:math:`min ~ f(\mathbf{x}) ~~ s.t. ~~ \mathbf{x} \\in D`, where :math:`D \\in
+\mathbb{R}^d` and :math:`f: D \mapsto \mathbb{R}`. The domain :math:`D` is
+specified with the function :func:`filtern_fn`.
+:class:`DifferentialEvolutionAlgorithm
+<gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm>` implements differential
+evolution to solve the optimization problem. No further assumptions on the
+function :math:`f` are needed. Thus it can be non-convex, noisy etc. 
+
+Some information related to Differential Evolution can be found in the following papers: 
+
+1) Tvrdik 2008: http://www.proceedings2008.imcsit.org/pliks/95.pdf
+2) Fleetwood: http://www.maths.uq.edu.au/MASCOS/Multi-Agent04/Fleetwood.pdf
+3) Piyasatian: http://www-personal.une.edu.au/~jvanderw/DE_1.pdf
+
+`~gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.evolve_fn`:func: is an adaptation of the following MATLAB code: 
+http://www.icsi.berkeley.edu/~storn/DeMat.zip hosted on http://www.icsi.berkeley.edu/~storn/code.html#deb1. 
 """
 # Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
 #

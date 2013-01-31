@@ -2,10 +2,10 @@
 #
 """
 Collection of tools to supplement optimization algorithm 
-:class:`gc3libs.optimizer.EvolutionaryAlgorithm`. 
+:class:`optimizer.EvolutionaryAlgorithm <gc3libs.optimizer.EvolutionaryAlgorithm>`. 
 
 Include a list of desired tools in param `after_update_opt_state` of
-:class:`gc3libs.optimizer.EvolutionaryAlgorithm`. 
+:class:`optimizer.EvolutionaryAlgorithm <gc3libs.optimizer.EvolutionaryAlgorithm>`. 
 """
 # Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
 #
