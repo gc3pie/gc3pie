@@ -56,7 +56,7 @@ def main_algo(A, b, sample_fn=np.random.random):
     # b is a column vector with n rows
     assert m == b.shape[0]
     # consistency checks
-    assert n**2/n>4, "n is not large enough. Increase eq. system to fulfill n**2>4n"
+    #assert n**2/n>4, "n is not large enough. Increase eq. system to fulfill n**2>4n"
     # DEBUG
     print "Given data:"
     print "  m = ", m
@@ -70,7 +70,7 @@ def main_algo(A, b, sample_fn=np.random.random):
     for l, v_l in enumerate(v):
         print "  v_%d = %s" % (l, v_l)
 
-    ij_pairs = [ (0,j) for j in range(1,n+1) ] + [ tuple(random.sample(range(1,n+1), 2)) ]
+    ij_pairs = [ (0,j) for j in range(1,n+1) ] + [ (n-1,n) ] #+ [ tuple(random.sample(range(1,n+1), 2)) ]
     print 'ij_pairs = ', ij_pairs
     assert len(ij_pairs) == len(v)
 
@@ -121,10 +121,16 @@ def rec(u, v, a, beta, q=0):
 def _check_distance(A, b, vs, k=None):
     if k is None:
         k = len(b)
-    print "Final values of v's:"
+    if k == len(b):
+        print ("Final values of v's:")
+    else:
+        print ("Values of v's after iteration %d:" % k)
     for l, v_l in enumerate(vs):
       print "  v_%d = %s" % (l, v_l)
-    print "Distances of solutions computed by Fliege's algorithm:"
+    if k == len(b):
+        print ("Distances of solutions computed by Fliege's algorithm:")
+    else:
+        print ("Accuracy of solutions of the first %d equations:" % (k+1))
     for l, v_l in enumerate(vs):
         dist = np.linalg.norm(np.dot(A[0:k,:],v_l) - b[0:k])
         print ("  |Av_%s - b| = %g" % (l, dist))
@@ -164,5 +170,5 @@ if __name__ == '__main__':
     # Fix random numbers for debugging
     #np.random.seed(100)
 
-    test_with_identity_matrix()
-    #test_with_random_matrix()
+    test_with_identity_matrix(15)
+    test_with_random_matrix(15)
