@@ -1,14 +1,36 @@
 #! /usr/bin/env python
 #
 """
-Support for running optimizations with GC3Pie.
+Support for finding minima of functions with GC3Pie.
 
-GC3Pie can manage a large number of :class:`~gc3libs.Application` s to run in parallel. The idea
-of this optimization module is to use these core capabilities to perform
-optimization.
+GC3Pie can run a large number of :class:`~gc3libs.Application` instances in
+parallel. The idea of this optimization module is to use these core
+capabilities to perform optimization, which is particularly effective for
+optimization using evolutionary algorithms, as they require several independent
+evaluations of the target function.
 
-The module implements one particular type of global optimization algorithm
-called Differential Evolution. The module is split up as follows:
+The optimization module has two main components, the driver and the algorithm.
+You need both an instance of a driver and an instance of an algorithm to
+perform optimization of a given function.
+
+Drivers perform optimization following a specific algorithm. Two drivers are
+currently implemented: :class:`drivers.SequentialDriver` that runs the entire
+algorithm on the local computer (hence, all the evaluations of the target
+function required by the algorithm are performed one after the other), and
+:class:`drivers.ParallelDriver` splits the evaluations into tasks that are
+executed in parallel using GC3Pie's remote execution facilities.
+
+This module implements a generic framework for evolutionary algorithms, and one
+particular type of global optimization algorithm called `Differential
+Evolution`_ is worked out in full. Other Evolutionary Algorithms can easily be
+incorporated by subclassing :class:`EvolutionaryAlgorithm`. (Different
+optimization algorithms, for example gradient based methods such as
+quasi-newton methods, could be implemented but likely require adaptations in
+the driver classes.)
+
+.. _`differential evolution`: http://stackoverflow.com/a/7519536
+
+The module is organized as follows:
 
 * :mod:`~gc3libs.optimizer.drivers`: Set of drivers that interface with GC3Libs 
   to automatically drive the optimization process following a specified
@@ -21,31 +43,7 @@ called Differential Evolution. The module is split up as follows:
   :class:`EvolutionaryAlgorithm`. See the module for details on the algorithm.
 
 * :mod:`~gc3libs.optimizer.extra`: Provides tools to printing, plotting etc. that can be
-  used to extend :class:`~gc3libs.optimizer.EvolutionaryAlgorithm`.
-
-Optimization drivers use GC3Pie in the following way: A
-:class:`~gc3libs.workflow.SequentialTaskCollection` represents the main loop of the optimization
-algorithm, checking for convergence at each iteration. This allows for resuming
-paused or crashed optimizations. Each iteration, the optimiztion algorithm
-provides a new set of points to be evaluated. These points are each represented
-by an :class:`~gc3libs.Application` and bundled into a :class:`~gc3libs.workflow.ParallelTaskCollection`
-that manages each single :class:`~gc3libs.Application` until completion. The structure of
-GC3Libs objects employed can be summarized as follows:
-
-  :class:`~gc3libs.workflow.SequentialTaskCollection`
-.             |
-.             v
-  :class:`~gc3libs.workflow.ParallelTaskCollection`
-.             |
-.             v
-  :class:`~gc3libs.Application`
-
-Other Evolutionary Algorithms can easily be incorporated by subclassing
-:class:`EvolutionaryAlgorithm`. Different optimization algorithms, for example
-gradient based mehtods such as quasi-newton methods, can be used but require
-adapting :class:`optimizer.ParallelDriver
-<gc3libs.optimizer.drivers.ParallelDriver>`.
-
+  used as addons to :class:`~gc3libs.optimizer.EvolutionaryAlgorithm`.
 
 """
 # Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
@@ -92,8 +90,8 @@ import gc3libs
 import gc3libs.debug
 import gc3libs.config
 import gc3libs.core
+from gc3libs import Application, Run, Task, utils
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
-from gc3libs import Application, Run, Task
 
 class EvolutionaryAlgorithm(object):
     '''
@@ -141,6 +139,8 @@ class EvolutionaryAlgorithm(object):
 
         1) Is the lowest target value in the population below `y_conv_crit`.
         2) Are all population members within `dx_conv_crit` from the first population member.
+
+        :rtype: bool
         '''
         converged = False
         # Check `y_conv_crit`
@@ -215,15 +215,16 @@ class EvolutionaryAlgorithm(object):
 
     def evolve(self):
         '''
-        Generates a new population fullfilling :func:`filter_fn`.
+        Generates a new population fullfilling :func:`in_domain`.
+        :rtype list of population members
         '''
         raise NotImplemented(
             "Method `EvolutionaryAlgorithm.evolve` should be implemented in subclasses!")
 
 
-def populate(create_fn, filter_fn=None, max_n_resample=100):
+def populate(create_fn, in_domain=None, max_n_resample=100):
     '''
-    Uses :func:`create_fn` to generate a new population. If :func:`filter_fn` is not
+    Uses :func:`create_fn` to generate a new population. If :func:`in_domain` is not
     fulfilled, :func:`create_fn` is called repeatedly. Invalid population members are
     replaced until reaching the desired valid population size or
     `max_n_resample` calls to :func:`create_fn`. If `max_n_resample` is reached, a
@@ -231,16 +232,18 @@ def populate(create_fn, filter_fn=None, max_n_resample=100):
     "invalid" members.
 
     :param fun create_fn: Generates a new population. Takes no arguments.
-    :param fun filter_fn: Determines population's validity.
+    :param fun in_domain: Determines population's validity.
                           Takes no arguments and returns a list of bools
                           indicating each members validity.
     :param int max_n_resample: Maximum number of resamples to be drawn to
-                               satisfy :func:`filter_fn`.
+                               satisfy :func:`in_domain
+                               
+    :rtype: list of population members
     '''
     pop = create_fn()
-    if filter_fn:
+    if in_domain:
         # re-evolve if some members do not fullfill fiter_fn
-        pop_valid_orig = np.array(filter_fn(pop))
+        pop_valid_orig = np.array(in_domain(pop))
         n_invalid_orig = (~pop_valid_orig).sum()
         fillin_pop = pop[~pop_valid_orig]
         n_to_fill = len(fillin_pop)
@@ -248,7 +251,7 @@ def populate(create_fn, filter_fn=None, max_n_resample=100):
         ctr = 0
         while total_filled < n_invalid_orig and ctr < max_n_resample:
             new_pop = create_fn()
-            new_pop_valid = np.array(filter_fn(new_pop))
+            new_pop_valid = np.array(in_domain(new_pop))
             n_pop_valid = new_pop_valid.sum()
             new_total_filled = min(total_filled + n_pop_valid, n_to_fill)
             n_new_recruits = new_total_filled - total_filled
@@ -264,7 +267,7 @@ def populate(create_fn, filter_fn=None, max_n_resample=100):
     return pop
 
 
-def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None, seed = None):
+def draw_population(lower_bds, upper_bds, dim, size, in_domain = None, seed = None):
     '''
     Draw a random population with the following criteria:
 
@@ -272,57 +275,13 @@ def draw_population(lower_bds, upper_bds, dim, size, filter_fn = None, seed = No
     :param list upper_bds: List of length `dim` indicating the upper bound in each dimension.
     :param int dim: Dimension of each population member.
     :param int size: Population size.
-    :param fun filter_fn: Determines population's validity.
+    :param fun in_domain: Determines population's validity.
                           Takes no arguments and returns a list of bools
                           indicating each members validity.
     :param float `seed`: Seed to initialize NumPy's random number generator.
+    :rtype: list of population members
     '''
     np.random.seed(seed)
     return populate(create_fn=lambda:(lower_bds + np.random.random_sample( (size, dim) ) * ( upper_bds - lower_bds )),
-                    filter_fn=filter_fn)
+                    in_domain=in_domain)
 
-@gc3libs.debug.trace
-def update_parameter_in_file(path, var_in, new_val, regex_in):
-    '''
-    Updates a parameter value in a parameter file using predefined regular
-    expressions in `_loop_regexps`.
-    
-    :param path: Full path to the parameter file. 
-    :param var_in: The variable to modify. 
-    :param new_val: The updated parameter value. 
-    :param regex: Name of the regular expression that describes the format of the parameter file. 
-    '''
-    _loop_regexps = {
-        'bar-separated':(r'([a-z]+[\s\|]+)'
-                         r'(\w+)' # variable name
-                         r'(\s*[\|]+\s*)' # bars and spaces
-                         r'([\w\s\.,;\[\]\-]+)' # value
-                         r'(\s*)'),
-        'space-separated':(r'(\s*)'
-                           r'(\w+)' # variable name
-                           r'(\s+)' # spaces (filler)
-                           r'([\w\s\.,;\[\]\-]+)' # values
-                           r'(\s*)'), # spaces (filler)
-    }
-    isfound = False
-    if regex_in in _loop_regexps.keys():
-        regex_in = _loop_regexps[regex_in]
-    para_file_in = open(path, 'r')
-    para_file_out = open(path + '.tmp', 'w')
-    for line in para_file_in:
-        #print "Read line '%s' " % line
-        if not line.rstrip(): continue
-        (a, var, b, old_val, c) = re.match(regex_in, line.rstrip()).groups()
-        gc3libs.log.debug("Read variable '%s' with value '%s' ...", var, old_val)
-        if var == var_in:
-            isfound = True
-            upd_val = new_val
-        else:
-            upd_val = old_val
-        para_file_out.write(a + var + b + upd_val + c + '\n')
-    para_file_out.close()
-    para_file_in.close()
-    # move new modified content over the old
-    os.rename(path + '.tmp', path)
-    if not isfound:
-        gc3libs.log.critical('update_parameter_in_file could not find parameter in sepcified file')

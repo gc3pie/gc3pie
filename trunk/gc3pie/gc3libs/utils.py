@@ -1390,6 +1390,51 @@ def unlock(lock):
     lock.release()
 
 
+def update_parameter_in_file(path, var_in, new_val, regex_in):
+    '''
+    Updates a parameter value in a parameter file using predefined regular
+    expressions in `_loop_regexps`.
+    
+    :param path: Full path to the parameter file. 
+    :param var_in: The variable to modify. 
+    :param new_val: The updated parameter value. 
+    :param regex: Name of the regular expression that describes the format of the parameter file. 
+    '''
+    _loop_regexps = {
+        'bar-separated':(r'([a-z]+[\s\|]+)'
+                         r'(\w+)' # variable name
+                         r'(\s*[\|]+\s*)' # bars and spaces
+                         r'([\w\s\.,;\[\]\-]+)' # value
+                         r'(\s*)'),
+        'space-separated':(r'(\s*)'
+                           r'(\w+)' # variable name
+                           r'(\s+)' # spaces (filler)
+                           r'([\w\s\.,;\[\]\-]+)' # values
+                           r'(\s*)'), # spaces (filler)
+    }
+    isfound = False
+    if regex_in in _loop_regexps.keys():
+        regex_in = _loop_regexps[regex_in]
+    para_file_in = open(path, 'r')
+    para_file_out = open(path + '.tmp', 'w')
+    for line in para_file_in:
+        if not line.rstrip(): continue
+        (a, var, b, old_val, c) = re.match(regex_in, line.rstrip()).groups()
+        gc3libs.log.debug("Read variable '%s' with value '%s' ...", var, old_val)
+        if var == var_in:
+            isfound = True
+            upd_val = new_val
+        else:
+            upd_val = old_val
+        para_file_out.write(a + var + b + upd_val + c + '\n')
+    para_file_out.close()
+    para_file_in.close()
+    # move new modified content over the old
+    os.rename(path + '.tmp', path)
+    if not isfound:
+        gc3libs.log.critical('update_parameter_in_file could not find parameter in sepcified file')
+
+
 def write_contents(path, data):
     """
     Overwrite the contents of the file at `path` with the given data.

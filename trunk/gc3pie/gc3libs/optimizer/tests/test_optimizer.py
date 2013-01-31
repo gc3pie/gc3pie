@@ -40,7 +40,8 @@ from gc3libs import Application, configure_logger
 from gc3libs.cmdline import SessionBasedScript
 
 # optimizer specific imports
-from gc3libs.optimizer import draw_population, update_parameter_in_file
+from gc3libs.optimizer import draw_population
+from gc3libs.utils import update_parameter_in_file
 from gc3libs.optimizer.drivers import ParallelDriver, SequentialDriver
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
 from gc3libs.optimizer.extra import print_stats, log_stats, plot_population
@@ -72,7 +73,7 @@ class TestSequentialDriver(object):
         log = logging.getLogger("gc3.gc3libs")        
         
         initial_pop = draw_population(lower_bds = lower_bounds, upper_bds = upper_bounds, dim = dim, size = pop_size,
-                                      filter_fn = self.rosenbrock_sample_filter, seed = magic_seed)
+                                      in_domain = self.rosenbrock_sample_filter, seed = magic_seed)
 
         algo = DifferentialEvolutionAlgorithm(
             initial_pop = initial_pop,
@@ -83,7 +84,7 @@ class TestSequentialDriver(object):
             y_conv_crit = 1e-5, # stop when ofunc < y_conv_crit
             de_strategy = 'DE_local_to_best',
             logger = log,
-            filter_fn=self.rosenbrock_sample_filter,
+            in_domain=self.rosenbrock_sample_filter,
             seed = magic_seed,
             after_update_opt_state=[print_stats, log_stats]
                                     #, plot_population(temp_stage_dir)]
