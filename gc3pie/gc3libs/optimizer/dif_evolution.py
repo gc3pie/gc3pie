@@ -1,18 +1,19 @@
 #! /usr/bin/env python
 #
 """
-This module implements a global optimization called Differential Evolution
-algorithm.
+This module implements a global optimization algorithm called Differential
+Evolution.
 
-Consider the following optimization problem:
+Consider the following optimization problem: :math:`min ~ f(\mathbf{x}) ~~ s.t.
+~~ \mathbf{x} \\in D`, where :math:`D \\in \mathbb{R}^d` and :math:`f: D
+\mapsto \mathbb{R}`. Class :class:`DifferentialEvolutionAlgorithm
+<gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm>` solves this
+optimization problem using the differential evolution algorithm. No further
+assumptions on the function :math:`f` are needed. Thus it can be non-convex,
+noisy etc.
 
-:math:`min ~ f(\mathbf{x}) ~~ s.t. ~~ \mathbf{x} \\in D`, where :math:`D \\in
-\mathbb{R}^d` and :math:`f: D \mapsto \mathbb{R}`. The domain :math:`D` is
-specified with the function :func:`filtern_fn`.
-:class:`DifferentialEvolutionAlgorithm
-<gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm>` implements differential
-evolution to solve the optimization problem. No further assumptions on the
-function :math:`f` are needed. Thus it can be non-convex, noisy etc. 
+The domain :math:`D` is implicitly specified by passing the function
+:func:`filtern_fn` to :class:`DifferentialEvolutionAlgorithm`.
 
 Some information related to Differential Evolution can be found in the following papers: 
 
@@ -81,7 +82,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     :param int `itermax`: Maximum # of iterations.
     :param float `dx_conv_crit`: Abort optimization if all population members are within a certain distance to each other.
     :param float `y_conv_crit`: Declare convergence when the target function is below a `y_conv_crit`.
-    :param fun `filter_fn`: Optional function that implements nonlinear constraints.
+    :param fun `in_domain`: Optional function that implements nonlinear constraints.
     :param float `seed`: Seed to initialize NumPy's random number generator.
     :param obj `logger`: Configured logger to use.
     :param list `after_update_opt_state`: Functions that are called at the end of 
@@ -111,7 +112,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
                  # converge-related parameters
                  itermax = 100, dx_conv_crit = None, y_conv_crit = None,
                  # misc
-                 filter_fn=None, seed=None, logger=None, after_update_opt_state=[]):
+                 in_domain=None, seed=None, logger=None, after_update_opt_state=[]):
 
         # Check input variables
         assert 0.0 <= prob_crossover <= 1.0, "prob_crossover should be from interval [0,1]"
@@ -130,16 +131,16 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         self.exp_cross = exp_cross
         self.de_strategy = de_strategy
 
-        if not filter_fn:
-            self.filter_fn = self._default_filter_fn
+        if not in_domain:
+            self.in_domain = self._default_in_domain
         else:
-            self.filter_fn = filter_fn
+            self.in_domain = in_domain
 
         # initialize NumPy's RNG
         np.random.seed(seed)
 
 
-    def _default_filter_fn(self, x):
+    def _default_in_domain(self, x):
         return np.array([ True ] * self.pop_size)
 
 
@@ -154,11 +155,13 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
 
     def evolve(self):
         '''
-        Generates a new population fullfilling `filter_fn`.
+        Generates a new population fullfilling `in_domain`.
+        
+        :rtype: list of population members
         '''
         return populate(
             create_fn=(lambda : DifferentialEvolutionAlgorithm.evolve_fn(self.pop, self.prob_crossover, self.de_step_size, self.dim, self.best_x, self.de_strategy, self.exp_cross)),
-            filter_fn=self.filter_fn
+            in_domain=self.in_domain
         )
 
     @staticmethod

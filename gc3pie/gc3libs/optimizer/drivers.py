@@ -123,10 +123,10 @@ class ParallelDriver(SequentialTaskCollection):
     """Drives an optimization using `opt_algorithm` on the grid.
 
     At each iteration an instance of :class:`ComputeTargetVals` uses
-    :func:`task_constructor` to generate :class:`gc3libs.Application` instances to be
-    executed in parallel. When all jobs are complete, the output is analyzed
-    with the user-supplied function :func:`extract_value_fn`. This function
-    returns the function value for all analyzed input vectors.
+    :func:`task_constructor` to generate :class:`gc3libs.Application` instances
+    to be executed in parallel. When all jobs are complete, the output is
+    analyzed with the user-supplied function :func:`extract_value_fn`. This
+    function returns the function value for all analyzed input vectors.
 
     :param str jobname:       string that labels this optimization case.
 
@@ -151,6 +151,27 @@ class ParallelDriver(SequentialTaskCollection):
                              in the current iteration dir. The
                              population is discarded if no file is
                              specified.
+
+
+    Optimization drivers use GC3Pie in the following way: A
+    :class:`~gc3libs.workflow.SequentialTaskCollection` represents the main
+    loop of the optimization algorithm, checking for convergence at each
+    iteration. This allows for resuming paused or crashed optimizations. Each
+    iteration, the optimization algorithm provides a new set of points to be
+    evaluated. These points are each represented by an
+    :class:`~gc3libs.Application` and bundled into a
+    :class:`~gc3libs.workflow.ParallelTaskCollection` that manages each single
+    :class:`~gc3libs.Application` until completion. The structure of GC3Libs
+    objects employed can be summarized as follows::
+    
+         SequentialTaskCollection
+                   |
+                   v
+           ParallelTaskCollection
+                  |
+                  v
+             Application
+
 
     """
 
