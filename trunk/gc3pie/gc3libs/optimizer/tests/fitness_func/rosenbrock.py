@@ -31,6 +31,11 @@ import logging
 
 print "Compute Rosenbrock function"
 
+log = open('/home/benjamin/.gc3/debug.log', 'a')
+log.write("Running in directory: '%s'\n" % os.getcwd())
+log.write("Contents of working directory: %s\n" % os.listdir(os.getcwd()))
+log.close()
+
 para_file = open("parameters.in")
 x = float(para_file.readline().split()[1])
 y = float(para_file.readline().split()[1])
