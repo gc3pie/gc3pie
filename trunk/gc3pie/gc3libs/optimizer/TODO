@@ -1,6 +1,6 @@
 -*- mode: org -*-
 
-* gc3libs.optimizer [21/24]
+* gc3libs.optimizer [22/24]
 ** DONE have `evolve_fn` compute the `dim` parameter from `population`
 ** DONE `has_converged` should not check for iteration numbers
 ** DONE rename `DifferntialEvolutionSequential` not to suggest it's a `SequentialTaskCollection`
@@ -92,6 +92,6 @@
 
    - `ParallelTaskDriver` -- suggests that computational work is done in parallel
    - `ParallelDriver` -- shorted version of the above, but then we would rename the `LocalDriver` to `SequentialDriver` which might lead to confusion with `SequentialTaskCollection`s?
-** TODO test_GridDriver: decide whether to mkdtemp in setUp() or keep it as it is
+** DONE test_GridDriver: decide whether to mkdtemp in setUp() or keep it as it is
 
    Maybe use `setUpModule()` and `tesrDownModule()`, see: https://gist.github.com/3796718
