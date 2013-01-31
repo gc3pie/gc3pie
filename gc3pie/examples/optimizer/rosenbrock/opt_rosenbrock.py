@@ -51,13 +51,6 @@ from gc3libs.optimizer import draw_population
 
 np.set_printoptions(linewidth = 300, precision = 8, suppress = True)
 
-# General settings
-float_fmt = '%25.15f'
-dim = 2
-pop_size = 100
-lower_bounds = -2 * np.ones(dim)
-upper_bounds = +2 * np.ones(dim)
-
 
 def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     """
@@ -65,7 +58,6 @@ def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     set up to produce the output :def:`target_fun` of :class:`ParallelDriver`
     analyzes to produce the corresponding function values.
     """
-    import shutil
 
     # Set some initial variables
     path_to_rosenbrock_example = os.getcwd()
@@ -85,6 +77,7 @@ def task_constructor_rosenbrock(x_vals, iteration_directory, **extra_args):
     inputs = { path_to_executable:executable }
     path_to_stage_base_dir = os.path.join(path_to_stage_dir, 'base')
     shutil.copytree(base_dir, path_to_stage_base_dir, ignore=shutil.ignore_patterns('.svn'))
+    float_fmt = '%25.15f'
     for var, val, para_file, para_file_format in zip(x_vars, x_vals, para_files, para_file_formats):
         val = (float_fmt % val).strip()
         update_parameter_in_file(os.path.join(path_to_stage_base_dir, para_file),
@@ -146,6 +139,12 @@ class RosenbrockScript(SessionBasedScript):
         
 
     def new_tasks(self, extra):
+        
+        # General settings
+        dim = 2
+        pop_size = 100
+        lower_bounds = -2 * np.ones(dim)
+        upper_bounds = +2 * np.ones(dim)        
 
         log = logging.getLogger('gc3.gc3libs.EvolutionaryAlgorithm')
         log.setLevel(logging.DEBUG)
@@ -166,7 +165,7 @@ class RosenbrockScript(SessionBasedScript):
             prob_crossover = 1, # crossover probabililty constant ex [0, 1]
             itermax = 200,      # maximum number of iterations (generations)
             dx_conv_crit = None, # stop when variation among x's is < this
-            y_conv_crit = 0.5, # stop when ofunc < y_conv_crit
+            y_conv_crit = self.params.y_conv_crit, # stop when ofunc < y_conv_crit
             de_strategy = 'DE_local_to_best',
             logger = log,
             )
@@ -192,6 +191,11 @@ class RosenbrockScript(SessionBasedScript):
 #        self.params.new_session = True
         self.params.wait = 10
 #        self.params.verbose = logging.DEBUG
+
+    def setup_options(self):
+        self.add_param("--y_conv_crit", metavar="ARCH", type = float,
+                       dest="y_conv_crit", default = '0.5',
+                       help="Convergence criteria for y variable. ")
 
 if __name__ == '__main__':
     path_to_stage_dir = os.getcwd()
