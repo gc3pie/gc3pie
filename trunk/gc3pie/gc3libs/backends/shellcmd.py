@@ -310,7 +310,7 @@ ReturnCode=%x"""
         exit_code, stdout, stderr = self.transport.execute_command(
             "echo %s" % sh_quote_unsafe(ShellcmdLrms.RESOURCE_RCDIR))
 
-        resource_home = stout.strip()
+        resource_home = stdout.strip()
         self.resource_filename = os.path.join(resource_home, ShellcmdLrms.RESOURCE_FILENAME)
         
         # XXX: it is actually necessary to create the folder 
