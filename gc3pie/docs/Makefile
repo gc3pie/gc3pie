@@ -57,12 +57,10 @@ clean:
 		.check-sphinxbuild-ok \
 		;
 
-html: .check-sphinxbuild-ok $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/gc3libs.UML.svg ../build/
+html: .check-sphinxbuild-ok $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/gc3libs.UML.svg
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	mv $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/html/_images/
 	mv $(BUILDDIR)/gc3libs.UML.svg $(BUILDDIR)/html/_images/
-	rm -rf ../build/docs
-	cp -a $(BUILDDIR)/html ../build/docs
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
@@ -72,9 +70,6 @@ dirhtml:  .check-sphinxbuild-ok $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/gc3libs.
 	mv $(BUILDDIR)/gc3libs.UML.svg $(BUILDDIR)/html/_images/
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/dirhtml."
-
-../build/:
-	mkdir -p ../build/
 
 classes_gc3pie.dot:
 	$(PYREVERSE) -p gc3pie ../gc3libs ../gc3utils
