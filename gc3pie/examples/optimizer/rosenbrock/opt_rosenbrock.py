@@ -40,6 +40,7 @@ import shutil
 
 import numpy as np
 
+import gc3libs
 from gc3libs import Application
 from gc3libs.cmdline import SessionBasedScript
 from gc3libs.optimizer import update_parameter_in_file

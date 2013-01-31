@@ -191,7 +191,7 @@ type=none
         shutil.rmtree(self.temp_stage_dir)
 
     def test_ParallelDriver(self):
-        """Test :class:`gc3libs.optimizer.drivers.SequentialDriver`
+        """Test :class:`gc3libs.optimizer.drivers.ParallelDriver`
 
         The script is found in ``examples/optimizer/rosenbrock/opt_rosenbrock.py``
         """
@@ -201,10 +201,11 @@ type=none
                                  '-C', '1',
                                  '-r', 'localhost',
                                  '--pop_size', 5,
-                                 '--y_conv_crit', 50.0,
+                                 '--y_conv_crit', 1000.0,
                                  '--path_to_stage_dir', self.temp_stage_dir, 
                                  '--path_to_base_dir', self.temp_base_dir,
-                                 '--path_to_executable', os.path.join(os.getcwd(), 'rosenbrock.py')
+                                 '--path_to_executable', os.path.join(os.path.dirname(__file__), 'fitness_func', 'rosenbrock.py')
+                               #  ,'-vvvv'
                                  )
         
         assert_true(result.stderr.find('Converged:'))
