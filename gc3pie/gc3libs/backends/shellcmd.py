@@ -85,6 +85,26 @@ class ShellcmdLrms(LRMS):
       temporary working directories for processes executed through
       this backend. The default value `None` means to use ``$TMPDIR``
       or `/tmp`:file: (see `tempfile.mkftemp` for details).
+
+    :param str transport:
+      Transport to use to connecet to the resource. Valid values are
+      `ssh` or `local`.
+
+    :param str frontend:
+
+      If `transport` is `ssh`, then `frontend` is the hostname of the
+      remote machine where the jobs will be executed.
+
+    :param bool override:
+
+      `ShellcmdLrms` by default will try to gather information on the
+      machine the resource is running on, including the number of
+      cores and the available memory. These values may be different
+      from the values stored in the configuration file. If `override`
+      is True, then the values automatically discovered will be used
+      instead of the ones in the configuration file. If `override` is
+      False, instead, the values in the configuration file will be
+      used.
     """
 
     # this matches what the ARC grid-manager does
@@ -115,8 +135,7 @@ ReturnCode=%x"""
     WRAPPER_OUTPUT_FILENAME = 'resource_usage.txt'
     WRAPPER_PID = 'wrapper.pid'
 
-    RESOURCE_RCDIR = '$HOME/.gc3'
-    RESOURCE_FILENAME = 'shellcmd_jobs.pickle'
+    RESOURCE_DIR = '$HOME/.gc3/shellcmd.d'
 
     def __init__(self, name,
                  # these parameters are inherited from the `LRMS` class
@@ -126,7 +145,7 @@ ReturnCode=%x"""
                  # these are specific to `ShellcmdLrms`
                  # ignored if `transport` is 'local'
                  frontend='localhost', transport='local',
-                 time_cmd='/usr/bin/time',
+                 time_cmd='/usr/bin/time', override='False',
                  spooldir=None,
                  **extra_args):
 
@@ -161,16 +180,60 @@ ReturnCode=%x"""
         # use `max_cores` as the max number of processes to allow
         self.user_queued = 0
         self.queued = 0
-        self.jobs = {}
+        self.job_infos = {}
         self.total_memory = max_memory_per_core
         self.available_memory = self.total_memory
+        self.override = gc3libs.utils.string_to_boolean(override)
+
+    @defproperty
+    def resource_dir():
+        def fget(self):
+            try:
+                return self._resource_dir
+            except:
+                # Since RESOURCE_DIR contains the `$HOME` variable, we
+                # have to expand it by connecting to the remote
+                # host. However, we don't want to do that during
+                # initialization, so we do it the first time this is
+                # actually needed.
+                self._gather_machine_specs()
+                return self._resource_dir
+
+        def fset(self, value):
+            self._resource_dir = value
+        return locals()
 
     @defproperty
     def user_run():
         def fget(self):
-            jobs = [job for job in self.jobs.values() if not job['terminated']]
-            return len(jobs)
+            return len(self.job_infos)
         return locals()
+
+    def _compute_used_cores(self, jobs):
+        """
+        Accepts a dictionary of job informations and returns the
+        sum of the `requested_cores` attributes.
+        """
+        def filter_cores(job):
+            return job['requested_cores']
+
+        return sum(map(filter_cores, jobs.values()))
+
+    def _compute_used_memory(self, jobs):
+        """
+        Accepts a dictionary of job informations and returns the
+        sum of the `requested_memory` attributes.
+        """
+        def filter_memory(x):
+            if x['requested_memory'] is not None:
+                return x['requested_memory'].amount(unit=Memory.B)
+            else:
+                return 0
+
+        used_memory = Memory.B * sum(map(filter_memory, jobs.values()))
+        if not isinstance(used_memory, Memory):
+            used_memory = Memory.B * used_memory
+        return used_memory
 
     @defproperty
     def free_slots():
@@ -181,13 +244,7 @@ ReturnCode=%x"""
             state and returns the difference from the number of cores
             of the resource.
             """
-            def filter_cores(job):
-                if job['terminated']:
-                    return 0
-                else:
-                    return job['requested_cores']
-
-            return self.max_cores - sum(map(filter_cores, self.jobs.values()))
+            return self.max_cores - self._compute_used_cores(self.job_infos)
         return locals()
 
     @same_docstring_as(LRMS.cancel_job)
@@ -213,14 +270,14 @@ ReturnCode=%x"""
             if exit_code == 0:
                 # The PID refers to an existing process, but we
                 # couldn't kill it.
-                gc3libs.log.error(
+                log.error(
                     "Failed while killing Job '%s': %s" % (pid, stderr))
             else:
                 # The PID refers to a non-existing process.
-                gc3libs.log.error(
+                log.error(
                     "Failed while killing Job '%s'. It refers to non-existent"
                     " local process %s." % (app, app.execution.lrms_jobid))
-        self.update_job_resource_usage(pid, terminated=True)
+        self._delete_job_resource_file()
 
     @same_docstring_as(LRMS.close)
     def close(self):
@@ -236,7 +293,6 @@ ReturnCode=%x"""
         If the deletion is successful, the `lrms_execdir` attribute in
         `app.execution` is reset to `None`; subsequent invocations of
         this method on the same applications do nothing.
-
         """
         try:
             if app.execution.lrms_execdir is not None:
@@ -247,16 +303,38 @@ ReturnCode=%x"""
             log.warning("Failed removing folder '%s': %s: %s",
                         app.execution.lrms_execdir, ex.__class__.__name__, ex)
         pid = app.execution.lrms_jobid
-        if pid in self.jobs:
-            del self.jobs[pid]
-            self._update_resource_usage_file()
+        self._delete_job_resource_file(pid)
 
     def _gather_machine_specs(self):
         """
-        Gather information about this machine. Try to be compatible
-        with as many *nix OSs as possible.
+        Gather information about this machine and, if `self.override`
+        is true, also update the value of `max_cores` and
+        `max_memory_per_jobs` attributes.
+
+        This method works with both Linux and MacOSX.
         """
         self.transport.connect()
+
+        # This is supposed to spit out the ful path on the remote end
+        exit_code, stdout, stderr = self.transport.execute_command(
+            "echo %s" % sh_quote_unsafe(ShellcmdLrms.RESOURCE_DIR))
+
+        self.resource_dir = stdout.strip()
+        # XXX: it is actually necessary to create the folder
+        # as a separate step
+        log.info('creating resource file folder: %s ...' % self.resource_dir)
+        try:
+            self.transport.makedirs(self.resource_dir)
+        except Exception, ex:
+            log.error("Failed while creating resource directory: %s. Error "
+                      "type: %s. Message: %s", resource_dir, type(ex), str(ex))
+            # cannot continue
+            raise
+
+        if not self.override:
+            # Ignore other values.
+            return
+
         exit_code, stdout, stderr = self.transport.execute_command('uname -m')
         arch = gc3libs.config._parse_architecture(stdout)
         if arch != self.architecture:
@@ -306,67 +384,80 @@ ReturnCode=%x"""
 
         self.available_memory = self.total_memory
 
-        # This is supposed to spit out the ful path on the remote end
+    def _get_persisted_resource_state(self):
+        """
+        Get information on total resources from the files stored in
+        `self.resource_dir`. It then returns a dictionary {PID: {key:
+        values}} with informations for each job which is associated to
+        a running process.
+        """
+        self.transport.connect()
+        pidfiles = self.transport.listdir(self.resource_dir)
+        log.debug("Checking status of the following PIDs: %s",
+                  str.join(", ", pidfiles))
+        job_infos = {}
+        for pid in pidfiles:
+            job = self._read_job_resource_file(pid)
+            if job:
+                job_infos[pid] = job
+            else:
+                # Process not found, ignore it
+                continue
+        return job_infos
+
+    def _read_job_resource_file(self, pid):
+        """
+        Get resource information on job with pid `pid`, if it
+        exists. Returns None if it does not exist.
+        """
+        self.transport.connect()
         exit_code, stdout, stderr = self.transport.execute_command(
-            "echo %s" % sh_quote_unsafe(ShellcmdLrms.RESOURCE_RCDIR))
-
-        resource_home = stdout.strip()
-        self.resource_filename = os.path.join(resource_home, ShellcmdLrms.RESOURCE_FILENAME)
-        
-        # XXX: it is actually necessary to create the folder 
-        # as a separate step
-        log.info('creating resource file folder: %s ...' % self.resource_filename)
-        try:
-            self.transport.makedirs(resource_home)
-        except Exception, ex:
-            gc3libs.log.error("Failed while creating resource file: %s. Error type: %s. Message: %s" % (resource_home, type(ex),str(ex)))
-            # cannot continue
-            raise
-
-    def _get_resource_usage_from_file(self):
-        """
-        Get information on total resources from the
-        RESOURCE_FILENAME.
-        """
-        self.transport.connect()
-        try:
-            fp = self.transport.open(self.resource_filename, 'r')
-            self.jobs = pickle.load(fp)
-            # Remove job which are in terminated state.
-            for pid, job in self.jobs.items():
-                if job['terminated']:
-                    del self.jobs[job]
+            "ps ax | grep -E '^ *%s '" % pid)
+        if exit_code == 0:
+            # XXX: We should check for exceptions!
+            log.debug("Reading resource file for pid %s", pid)
+            fp = self.transport.open(
+                posixpath.join(self.resource_dir, str(pid)), 'r')
+            jobinfo = pickle.load(fp)
             fp.close()
-        except:
-            self.jobs = {}
+            return jobinfo
+        else:
+            return None
 
-    def _update_resource_usage_file(self):
+    def _update_job_resource_file(self, pid, resources):
         """
-        Update resource usage information on the remote file.
+        Update file in `self.resource_dir/PID` with `resources`.
         """
         self.transport.connect()
-        # XXX: should create file if necessaty ?
-        fp = self.transport.open(self.resource_filename, 'w+')
-        pickle.dump(self.jobs, fp, -1)
+        # XXX: We should check for exceptions!
+        log.debug("Updating resource file for pid %s", pid)
+        fp = self.transport.open(
+            posixpath.join(self.resource_dir, str(pid)), 'w')
+        pickle.dump(resources, fp, -1)
         fp.close()
 
-    def update_job_resource_usage(self, pid, **kwargs):
+    def _delete_job_resource_file(self, pid):
         """
-        Update information on the resources requested by the job
-        identified by `pid` and write these information on the
-        resource file too.
+        Delete `self.resource_dir/PID` file
         """
-        self.jobs[pid].update(kwargs)
-        self._update_resource_usage_file()
+        self.transport.connect()
+        # XXX: We should check for exceptions!
+        log.debug("Deleting resource file for pid %s", pid)
+        pidfile = posixpath.join(self.resource_dir, str(pid))
+        try:
+            self.transport.remove(pidfile)
+        except Exception, ex:
+            log.error("Ignoring error while deleting file %s", pidfile)
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
         # if we have been doing our own book-keeping well, then
         # there's no resource status to update
-        if not self.updated:
+        if not hasattr(self, 'running_kernel'):
             self._gather_machine_specs()
-            self._get_resource_usage_from_file()
-            self.updated = True
+
+        self.job_infos = self._get_persisted_resource_state()
+        self.available_memory = self._compute_used_memory(self.job_infos)
 
         def filter_memory(x):
             if x['requested_memory'] is not None:
@@ -374,13 +465,16 @@ ReturnCode=%x"""
             else:
                 return 0
 
-        used_memory = Memory.B * sum(map(filter_memory, self.jobs.values()))
+        self.job_infos = self._get_persisted_resource_state()
+
+        used_memory = Memory.B * sum(map(filter_memory,
+                                         self.job_infos.values()))
         if not isinstance(used_memory, Memory):
             used_memory = Memory.B * used_memory
         self.available_memory = self.total_memory - used_memory
-        log.debug("Recovering resource information from file %s: "
+        log.debug("Recovered resource information from files in %s: "
                   "Available memory: %s, used memory: %s",
-                  self.resource_filename, self.available_memory, used_memory)
+                  self.resource_dir, self.available_memory, used_memory)
         return self
 
     @same_docstring_as(LRMS.get_results)
@@ -440,6 +534,7 @@ ReturnCode=%x"""
         exit_code, stdout, stderr = self.transport.execute_command(
             "ps ax | grep -E '^ *%d '" % pid)
         if exit_code == 0:
+            log.debug("Process with pid %s found. Checking its status", pid)
             # Process exists. Check the status
             status = stdout.split()[2]
             if status[0] == 'T':
@@ -450,9 +545,13 @@ ReturnCode=%x"""
                 # and BSD to know the meaning of these statuses.
                 app.execution.state = Run.State.RUNNING
         else:
+            log.debug(
+                "Process with PID %d not found. Checking wrapper file", pid)
             # pid does not exists in process table. Check wrapper file
             # contents
             app.execution.state = Run.State.TERMINATING
+            if pid in self.job_infos:
+                del self.job_infos[pid]
             if app.requested_memory:
                 self.available_memory += app.requested_memory
             wrapper_filename = posixpath.join(
@@ -461,10 +560,10 @@ ReturnCode=%x"""
                 ShellcmdLrms.WRAPPER_OUTPUT_FILENAME)
             try:
                 wrapper_file = self.transport.open(wrapper_filename, 'r')
-                self.update_job_resource_usage(pid, terminated=True)
-            except:
-                del self.jobs[pid]
-                self._update_resource_usage_file()
+            except Exception, ex:
+                self._delete_job_resource_file(pid)
+                log.error("Opening wrapper file %s raised an exception: %s",
+                          wrapper_filename, str(ex))
                 raise gc3libs.exceptions.InvalidArgument(
                     "Job '%s' refers to process wrapper %s which"
                     " ended unexpectedly"
@@ -472,9 +571,11 @@ ReturnCode=%x"""
             try:
                 outcoming = self._parse_wrapper_output(wrapper_file)
                 app.execution.returncode = int(outcoming.ReturnCode)
+                self._update_job_resource_usage(pid, terminated=True)
             except:
                 wrapper_file.close()
 
+        self._get_persisted_resource_state()
         return app.execution.state
 
     def submit_job(self, app):
@@ -483,21 +584,29 @@ ReturnCode=%x"""
 
         :see: `LRMS.submit_job`
         """
-        if not self.updated:
-            self.get_resource_status()
-        if self.free_slots == 0:
+        # Update current resource usage to check how many jobs are
+        # running in there.  Please note that for consistency with
+        # other backends, these updated information are not kept!
+        job_infos = self._get_persisted_resource_state()
+        free_slots = self.max_cores - self._compute_used_cores(job_infos)
+        available_memory = self.total_memory - \
+            self._compute_used_memory(job_infos)
+
+        if self.free_slots == 0 or free_slots == 0:
+            # XXX: We shouldn't check for self.free_slots !
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Resource %s already running maximum allowed number of jobs"
                 " (increase 'max_cores' to raise)." % self.name)
 
         if app.requested_memory and \
-                self.available_memory < app.requested_memory:
+                (available_memory < app.requested_memory or
+                 self.available_memory < app.requested_memory):
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Resource %s does not have enough available memory: %s < %s."
-                % (self.name, self.available_memory, app.requested_memory))
+                % (self.name, available_memory, app.requested_memory))
 
-        gc3libs.log.debug("Executing local command '%s' ..."
-                          % (str.join(" ", app.arguments)))
+        log.debug("Executing local command '%s' ...",
+                  str.join(" ", app.arguments))
 
         ## determine execution directory
         self.transport.connect()
@@ -505,7 +614,7 @@ ReturnCode=%x"""
             "mktemp -d %s " % posixpath.join(
                 self.spooldir, 'gc3libs.XXXXXX.tmp.d'))
         if exit_code != 0:
-            gc3libs.log.error(
+            log.error(
                 "Error creating temporary directory on host %s: %s"
                 % (self.frontend, stderr))
 
@@ -637,14 +746,15 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
 
         # Update application and current resources
         app.execution.lrms_jobid = pid
+        # We don't need to update free_slots since its value is
+        # checked at runtime.
         if app.requested_memory:
             self.available_memory -= app.requested_memory
-        self.jobs[pid] = {
+        self.job_infos[pid] = {
             'requested_cores': app.requested_cores,
             'requested_memory': app.requested_memory,
-            'execution_dir': execdir,
-            'terminated': False, }
-        self._update_resource_usage_file()
+            'execution_dir': execdir, }
+        self._update_job_resource_file(pid, self.job_infos[pid])
         return app
 
     @same_docstring_as(LRMS.peek)
