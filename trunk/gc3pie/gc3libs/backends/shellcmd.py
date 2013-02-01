@@ -206,7 +206,7 @@ ReturnCode=%x"""
     @defproperty
     def user_run():
         def fget(self):
-            return len(self.job_infos)
+            return len([i for i in self.job_infos.values() if not i['terminated']])
         return locals()
 
     def _compute_used_cores(self, jobs):
@@ -215,7 +215,10 @@ ReturnCode=%x"""
         sum of the `requested_cores` attributes.
         """
         def filter_cores(job):
-            return job['requested_cores']
+            if job['terminated']:
+                return 0
+            else:
+                return job['requested_cores']
 
         return sum(map(filter_cores, jobs.values()))
 
@@ -224,11 +227,11 @@ ReturnCode=%x"""
         Accepts a dictionary of job informations and returns the
         sum of the `requested_memory` attributes.
         """
-        def filter_memory(x):
-            if x['requested_memory'] is not None:
-                return x['requested_memory'].amount(unit=Memory.B)
-            else:
+        def filter_memory(job):
+            if job['requested_memory'] is None or job['terminated']:
                 return 0
+            else:
+                return job['requested_memory'].amount(unit=Memory.B)
 
         used_memory = Memory.B * sum(map(filter_memory, jobs.values()))
         if not isinstance(used_memory, Memory):
@@ -551,7 +554,7 @@ ReturnCode=%x"""
             # contents
             app.execution.state = Run.State.TERMINATING
             if pid in self.job_infos:
-                del self.job_infos[pid]
+                self.job_infos[pid]['terminated'] = True
             if app.requested_memory:
                 self.available_memory += app.requested_memory
             wrapper_filename = posixpath.join(
@@ -759,7 +762,8 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
         self.job_infos[pid] = {
             'requested_cores': app.requested_cores,
             'requested_memory': app.requested_memory,
-            'execution_dir': execdir, }
+            'execution_dir': execdir,
+            'terminated': False, }
         self._update_job_resource_file(pid, self.job_infos[pid])
         return app
 

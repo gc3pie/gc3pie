@@ -302,6 +302,8 @@ class EC2Lrms(LRMS):
         Create a resource associated to the instance with `remote_ip`
         ip using configuration file parameters.
         """
+        if remote_ip is None:
+            import pdb; pdb.set_trace()
         gc3libs.log.info("Creating remote ShellcmdLrms resource for ip %s",
                          remote_ip)
         args = self.subresource_args.copy()
@@ -426,6 +428,7 @@ class EC2Lrms(LRMS):
             vm = self._get_vm(app.ec2_instance_id)
             gc3libs.log.info("VM instance %s at %s is no longer needed."
                              " Terminating.", vm.id, vm.public_dns_name)
+            del self.resources[vm.id]
             vm.terminate()
 
     @same_docstring_as(LRMS.get_resource_status)
@@ -448,7 +451,11 @@ class EC2Lrms(LRMS):
                 vm = self._get_vm(vm_id)
                 vm.update()
                 self.resources[vm.id] = self._make_resource(vm.public_dns_name)
-                resource.get_resource_status()
+                try:
+                    resource.get_resource_status()
+                except:
+                    # Ignore any exception in here.
+                    pass
         return self
 
     @same_docstring_as(LRMS.get_results)
@@ -484,48 +491,57 @@ class EC2Lrms(LRMS):
         resource and returns its return value.
         """
         self._connect()
+        # Updating resource is needed to update the subresources. This
+        # is not always done before the submit_job because of issue
+        # nr.  386:
+        #     http://code.google.com/p/gc3pie/issues/detail?id=386
+        self.get_resource_status()
 
         # if the job has an `ec2_instance_id` attribute, it means that
         # a VM for this job has already been created. If not, a new
         # instance is created.
 
         pending_vms = []
-        try:
-            if hasattr(job, 'ec2_instance_id'):
-                # This job was previously submitted but we already raised
-                # an exception, probably because the VM was not ready
-                # yet. Let's try again!
-                gc3libs.log.info("Job already allocated to VM %s.",
-                                 job.ec2_instance_id)
+        vm = None
+        if hasattr(job, 'ec2_instance_id'):
+            # This job was previously submitted but we already raised
+            # an exception, probably because the VM was not ready
+            # yet. Let's try again!
+            gc3libs.log.info("Job already allocated to VM %s.",
+                             job.ec2_instance_id)
+            try:
                 vm = self._get_vm(job.ec2_instance_id)
-                try:
-                    resource = self._get_remote_resource(vm)
-                    resource.submit_job(job)
-                    gc3libs.log.info("Job successfully submitted to remote "
-                                     "resource %s.", resource.name)
-                    return job
-                except Exception, ex:
-                    if resource.free_slots >= job.requested_cores:
-                        pending_vms.append(vm.id)
-                    raise RecoverableError(
-                        "Remote VM `%s` not yet ready: %s" %
-                        (job.ec2_instance_id, str(ex)))
-        except UnrecoverableError:
-            # It is possible that the VM has been terminated before
-            # after this job was assigned to it, during a previous
-            # submission. No problem, let's continue and submit it to
-            # a new VM, if possible
-            gc3libs.log.error(
-                "The VM this job was assigned to is no longer available. "
-                "Trying to submit to a different VM.")
+            except UnrecoverableError:
+                # It is possible that the VM has been terminated before
+                # after this job was assigned to it, during a previous
+                # submission. No problem, let's continue and submit it to
+                # a new VM, if possible
+                gc3libs.log.error(
+                    "The VM this job was assigned to is no longer available. "
+                    "Trying to submit to a different VM.")
 
+        # XXX: There has to be a better way in order to exit from the
+        # `if hasattr()` statement and skip to the next block...
+        if vm:
+            try:
+                resource = self._get_remote_resource(vm)
+                resource.submit_job(job)
+                gc3libs.log.info("Job successfully submitted to remote "
+                                 "resource %s.", resource.name)
+                return job
+            except Exception, ex:
+                if resource.free_slots >= job.requested_cores:
+                    pending_vms.append(vm.id)
+                raise RecoverableError(
+                    "Remote VM `%s` not yet ready: %s" %
+                    (job.ec2_instance_id, str(ex)))
         # This is the first attempt to submit a job.  First of all,
         # let's try to submit it to one of the resource we already
         # created.
         gc3libs.log.debug("First submission of job %s. Looking for a free VM "
                           "to use", job)
         for vm_id, resource in self.resources.items():
-            try:
+            try:                
                 resource.submit_job(job)
                 job.ec2_instance_id = vm_id
                 job.changed = True
@@ -608,14 +624,16 @@ class EC2Lrms(LRMS):
     @same_docstring_as(LRMS.close)
     def close(self):
         for vm_id, resource in self.resources.items():
-            resource.get_resource_status()
-            if len(resource.job_infos) == 0:
-                # turn VM off
-                vm = self._get_vm(vm_id)
-                gc3libs.log.info(
-                    "VM instance %s at %s is no longer needed. Terminating.",
-                    vm.id, vm.public_dns_name)
-                vm.terminate()
+            try:
+                resource.get_resource_status()
+            except:
+                if len(resource.job_infos) == 0:
+                    # turn VM off
+                    vm = self._get_vm(vm_id)
+                    gc3libs.log.info(
+                        "VM instance %s at %s is no longer needed. Terminating.",
+                        vm.id, vm.public_dns_name)
+                    vm.terminate()
             resource.close()
 
 
