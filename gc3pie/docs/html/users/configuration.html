@@ -487,36 +487,28 @@ are used by the SLURM backend:</p>
 <p>The following optional configuration keys are available in a
 <tt class="docutils literal"><span class="pre">shellcmd</span></tt>-type resource section:</p>
 <blockquote>
-<div><ul>
-<li><p class="first"><tt class="docutils literal"><span class="pre">transport</span></tt>: Like any other resources, possible values are
-<tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>. Default value is <tt class="docutils literal"><span class="pre">local</span></tt>.</p>
-</li>
-<li><dl class="first docutils">
-<dt><tt class="docutils literal"><span class="pre">frontend</span></tt>: If <cite>transport</cite> is <cite>ssh</cite>, then <cite>frontend</cite> is the</dt>
-<dd><p class="first last"><abbr title="Fully-qualified domain name">FQDN</abbr> of the remote machine
-where the jobs will be executed.</p>
-</dd>
-</dl>
-</li>
-<li><p class="first"><tt class="docutils literal"><span class="pre">time_cmd</span></tt>: <tt class="xref py py-class docutils literal"><span class="pre">ShellcmdLrms</span></tt> needs the GNU implementation
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Like any other resources, possible values are
+<tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>. Default value is <tt class="docutils literal"><span class="pre">local</span></tt>.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: If <cite>transport</cite> is <cite>ssh</cite>, then <cite>frontend</cite> is the
+<abbr title="Fully-qualified domain name">FQDN</abbr> of the remote machine
+where the jobs will be executed.</li>
+<li><tt class="docutils literal"><span class="pre">time_cmd</span></tt>: <tt class="xref py py-class docutils literal"><span class="pre">ShellcmdLrms</span></tt> needs the GNU implementation
 of the command <cite>time</cite> in order to get resource usage of the
 submitted jobs. <tt class="docutils literal"><span class="pre">time_cmd</span></tt> must contains the path to the binary
-file if this is different from the standard (<tt class="docutils literal"><span class="pre">/usr/bin/time</span></tt>).</p>
-</li>
-<li><p class="first"><tt class="docutils literal"><span class="pre">override</span></tt>: <tt class="xref py py-class docutils literal"><span class="pre">ShellcmdLrms</span></tt> by default will try to gather
+file if this is different from the standard (<tt class="docutils literal"><span class="pre">/usr/bin/time</span></tt>).</li>
+<li><tt class="docutils literal"><span class="pre">override</span></tt>: <tt class="xref py py-class docutils literal"><span class="pre">ShellcmdLrms</span></tt> by default will try to gather
 information on the system the resource is running on, including
 the number of cores and the available memory. These values may be
 different from the values stored in the configuration file. If
 <tt class="docutils literal"><span class="pre">override</span></tt> is <cite>True</cite>, then the values automatically discovered
 will be used. If <tt class="docutils literal"><span class="pre">override</span></tt> is <cite>False</cite>, the values in the
 configuration file will be used regardless of the real values
-discovered by the resource.</p>
-</li>
-<li><p class="first"><tt class="docutils literal"><span class="pre">spooldir</span></tt>: Path to a filesystem location where to create
+discovered by the resource.</li>
+<li><tt class="docutils literal"><span class="pre">spooldir</span></tt>: Path to a filesystem location where to create
 temporary working directories for processes executed through this
 backend. The default value <cite>None</cite> means to use <tt class="docutils literal"><span class="pre">$TMPDIR</span></tt> or
-<tt class="file docutils literal"><span class="pre">/tmp</span></tt> (see <cite>tempfile.mkftemp</cite> for details).</p>
-</li>
+<tt class="file docutils literal"><span class="pre">/tmp</span></tt> (see <cite>tempfile.mkftemp</cite> for details).</li>
 </ul>
 </div></blockquote>
 </div>
