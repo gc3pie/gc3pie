@@ -295,6 +295,74 @@ type=none
         self.apps_to_kill.append(smallapp)
 
 
+class TestBackendShellcmdCFG(object):
+    CONF = """
+[resource/localhost_test]
+type=shellcmd
+transport=local
+time_cmd=/usr/bin/time
+max_cores=1000
+max_cores_per_job=4
+max_memory_per_core=2
+max_walltime=2
+architecture=x64_64
+auth=noauth
+enabled=True
+override=%s
+
+[auth/noauth]
+type=none
+"""
+
+    def setUp(self):
+        self.files_to_remove = []
+
+    def cleanup_file(self, fname):
+        self.files_to_remove.append(fname)
+
+    def tearDown(self):
+        for fname in self.files_to_remove:
+            if os.path.isdir(fname):
+                shutil.rmtree(fname)
+            elif os.path.exists(fname):
+                os.remove(fname)
+
+    def test_override_cfg_flag(self):
+        (fd, cfgfile) = tempfile.mkstemp()
+        f = os.fdopen(fd, 'w+')
+        f.write(TestBackendShellcmdCFG.CONF % "True")
+        f.close()
+        self.files_to_remove = [cfgfile]
+
+        self.cfg = gc3libs.config.Configuration()
+        self.cfg.merge_file(cfgfile)
+
+        self.core = gc3libs.core.Core(self.cfg)
+        self.backend = self.core.get_backend('localhost_test')
+        # Update resource status
+        self.backend.get_resource_status()
+
+        assert self.backend.max_cores < 1000
+
+
+    def test_do_not_override_cfg_flag(self):
+        (fd, cfgfile) = tempfile.mkstemp()
+        f = os.fdopen(fd, 'w+')
+        f.write(TestBackendShellcmdCFG.CONF % "False")
+        f.close()
+        self.files_to_remove = [cfgfile]
+
+        self.cfg = gc3libs.config.Configuration()
+        self.cfg.merge_file(cfgfile)
+
+        self.core = gc3libs.core.Core(self.cfg)
+        self.backend = self.core.get_backend('localhost_test')
+        # Update resource status
+        self.backend.get_resource_status()
+
+        assert_equal(self.backend.max_cores, 1000)
+
+
 if __name__ == "__main__":
     import nose
     nose.runmodule()
