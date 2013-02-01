@@ -437,8 +437,8 @@ The following optional configuration keys are available in a
     ``ssh`` or ``local``. Default value is ``local``.
 
   * ``frontend``: If `transport` is `ssh`, then `frontend` is the
-      `FQDN (Fully-qualified domain name)`:abbr: of the remote machine
-      where the jobs will be executed.
+    `FQDN (Fully-qualified domain name)`:abbr: of the remote machine
+    where the jobs will be executed.
 
   * ``time_cmd``: `ShellcmdLrms`:class: needs the GNU implementation
     of the command `time` in order to get resource usage of the
