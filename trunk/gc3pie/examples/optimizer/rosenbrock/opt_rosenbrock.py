@@ -196,7 +196,7 @@ class RosenbrockScript(SessionBasedScript):
 #        self.params.session = temp_stage_dir
 #        self.params.store_url = temp_stage_dir
 #        self.params.new_session = True
-        self.params.wait = 10
+        self.params.wait = 1
 #        self.params.verbose = logging.DEBUG
 
     def setup_options(self):
