@@ -193,28 +193,24 @@ specified in the configuration file.
             raise gc3libs.exceptions.NoResources(
                 "No available resource can accomodate the application requirements")
 
-        if len(_selected_lrms_list) <= 1:
-            # shortcut: no brokering to do, just use what we've got
-            updated_resources = _selected_lrms_list
-        else:
-            # update status of selected resources
-            updated_resources = []
-            for r in _selected_lrms_list:
-                try:
-                    # in-place update of resource status
-                    gc3libs.log.debug(
-                        "Trying to update status of resource '%s' ..."
-                        % r.name)
-                    r.get_resource_status()
-                    updated_resources.append(r)
-                except Exception, x:
-                    # ignore errors in update, assume resource has a problem
-                    # and just drop it
-                    gc3libs.log.error("Cannot update status of resource '%s', dropping it."
-                                      " See log file for details."
-                                      % r.name)
-                    gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
-                                      x.__class__.__name__, str(x), exc_info=True)
+        # update status of selected resources
+        updated_resources = []
+        for r in _selected_lrms_list:
+            try:
+                # in-place update of resource status
+                gc3libs.log.debug(
+                    "Trying to update status of resource '%s' ..."
+                    % r.name)
+                r.get_resource_status()
+                updated_resources.append(r)
+            except Exception, x:
+                # ignore errors in update, assume resource has a problem
+                # and just drop it
+                gc3libs.log.error("Cannot update status of resource '%s', dropping it."
+                                  " See log file for details."
+                                  % r.name)
+                gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
+                                  x.__class__.__name__, str(x), exc_info=True)
 
         # sort resources according to Application's preferences
         _selected_lrms_list = app.rank_resources(updated_resources)
