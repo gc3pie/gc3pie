@@ -587,6 +587,13 @@ ReturnCode=%x"""
         # Update current resource usage to check how many jobs are
         # running in there.  Please note that for consistency with
         # other backends, these updated information are not kept!
+        try:
+            self.transport.connect()
+        except Exception, ex:
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "Unable to access shellcmd resource at %s: %s" %
+                (self.frontend, str(ex)))
+
         job_infos = self._get_persisted_resource_state()
         free_slots = self.max_cores - self._compute_used_cores(job_infos)
         available_memory = self.total_memory - \
@@ -609,7 +616,6 @@ ReturnCode=%x"""
                   str.join(" ", app.arguments))
 
         ## determine execution directory
-        self.transport.connect()
         exit_code, stdout, stderr = self.transport.execute_command(
             "mktemp -d %s " % posixpath.join(
                 self.spooldir, 'gc3libs.XXXXXX.tmp.d'))
