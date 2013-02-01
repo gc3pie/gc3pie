@@ -262,8 +262,12 @@ class EC2Lrms(LRMS):
         # NOTE: since `vm_id` is supposed to be unique, we assume
         # reservations only contains one element.
         reservations = self._conn.get_all_instances(instance_ids=[vm_id])
-        instances = dict((i.id, i) for i in reservations[0].instances)
+        if not reservations:
+            raise UnrecoverableError(
+                "Instance with id %s has not found in EC2 cloud %s"
+                % (vm_id, self.ec2_url))
 
+        instances = dict((i.id, i) for i in reservations[0].instances if reservations)
         if vm_id not in instances:
             raise UnrecoverableError(
                 "Instance with id %s has not found in EC2 cloud %s"
@@ -486,25 +490,34 @@ class EC2Lrms(LRMS):
         # instance is created.
 
         pending_vms = []
-        if hasattr(job, 'ec2_instance_id'):
-            # This job was previously submitted but we already raised
-            # an exception, probably because the VM was not ready
-            # yet. Let's try again!
-            gc3libs.log.info("Job already allocated to VM %s.",
-                             job.ec2_instance_id)
-            vm = self._get_vm(job.ec2_instance_id)
-            try:
-                resource = self._get_remote_resource(vm)
-                resource.submit_job(job)
-                gc3libs.log.info("Job successfully submitted to remote "
-                                 "resource %s.", resource.name)
-                return job
-            except Exception, ex:
-                if resource.free_slots >= job.requested_cores:
-                    pending_vms.append(vm.id)
-                raise RecoverableError(
-                    "Remote VM `%s` not yet ready: %s" %
-                    (job.ec2_instance_id, str(ex)))
+        try:
+            if hasattr(job, 'ec2_instance_id'):
+                # This job was previously submitted but we already raised
+                # an exception, probably because the VM was not ready
+                # yet. Let's try again!
+                gc3libs.log.info("Job already allocated to VM %s.",
+                                 job.ec2_instance_id)
+                vm = self._get_vm(job.ec2_instance_id)
+                try:
+                    resource = self._get_remote_resource(vm)
+                    resource.submit_job(job)
+                    gc3libs.log.info("Job successfully submitted to remote "
+                                     "resource %s.", resource.name)
+                    return job
+                except Exception, ex:
+                    if resource.free_slots >= job.requested_cores:
+                        pending_vms.append(vm.id)
+                    raise RecoverableError(
+                        "Remote VM `%s` not yet ready: %s" %
+                        (job.ec2_instance_id, str(ex)))
+        except UnrecoverableError:
+            # It is possible that the VM has been terminated before
+            # after this job was assigned to it, during a previous
+            # submission. No problem, let's continue and submit it to
+            # a new VM, if possible
+            gc3libs.log.error(
+                "The VM this job was assigned to is no longer available. "
+                "Trying to submit to a different VM.")
 
         # This is the first attempt to submit a job.  First of all,
         # let's try to submit it to one of the resource we already
