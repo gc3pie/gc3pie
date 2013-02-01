@@ -45,13 +45,15 @@ class TestBackendShellcmd(object):
 type=shellcmd
 transport=local
 time_cmd=/usr/bin/time
-max_cores=4
-max_cores_per_job=4
-max_memory_per_core=2
+# Use unusual values so that we can easily spot if the `override` option works
+max_cores=123
+max_cores_per_job=123
+max_memory_per_core=999
 max_walltime=2
 architecture=x64_64
 auth=noauth
 enabled=True
+override=False
 
 [auth/noauth]
 type=none
@@ -99,7 +101,6 @@ type=none
         book-keeping.
         """
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
-        ncores = self.backend.max_cores
 
         app = gc3libs.Application(
             arguments=['/usr/bin/env'],
@@ -118,7 +119,7 @@ type=none
         # there's no SUBMITTED state here: jobs go immediately into
         # RUNNING state
         assert_equal(app.execution.state, gc3libs.Run.State.SUBMITTED)
-        assert_equal(self.backend.free_slots,  ncores - 1)
+        assert_equal(self.backend.free_slots,  122)
         assert_equal(self.backend.user_queued, 0)
         assert_equal(self.backend.user_run,    1)
 
@@ -132,16 +133,25 @@ type=none
             time.sleep(WAIT)
             waited += WAIT
             self.core.update_job_state(app)
-        assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
-        assert_equal(self.backend.free_slots,  ncores)
-        assert_equal(self.backend.user_queued, 0)
-        assert_equal(self.backend.user_run,    0)
+        try:
+            assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
+            assert_equal(self.backend.free_slots,  123)
+            assert_equal(self.backend.user_queued, 0)
+            assert_equal(self.backend.user_run,    0)
+        except:
+            self.core.fetch_output(app)
+            self.core.free(app)
+            raise
 
         self.core.fetch_output(app)
-        assert_equal(app.execution.state, gc3libs.Run.State.TERMINATED)
-        assert_equal(self.backend.free_slots,  ncores)
-        assert_equal(self.backend.user_queued, 0)
-        assert_equal(self.backend.user_run,    0)
+        try:
+            assert_equal(app.execution.state, gc3libs.Run.State.TERMINATED)
+            assert_equal(self.backend.free_slots,  123)
+            assert_equal(self.backend.user_queued, 0)
+            assert_equal(self.backend.user_run,    0)
+        except:
+            self.core.free(app)
+            raise
 
     def test_check_app_after_reloading_session(self):
         """Check if we are able to check the status of a job after the
@@ -246,7 +256,7 @@ type=none
         avail = self.backend.available_memory
         assert_equal(self.backend.available_memory, mem_before)
 
-    @raises(gc3libs.exceptions.LRMSSubmitError)
+    @raises(gc3libs.exceptions.NoResources)
     def test_not_enough_cores_usage(self):
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
@@ -255,22 +265,11 @@ type=none
             inputs=[],
             outputs=[],
             output_dir=tmpdir,
-            requested_cores=self.backend.free_slots,
-            requested_memory=10 * Memory.MiB, )
-        smallapp = gc3libs.Application(
-            arguments=['/bin/echo', 'Hello', 'World'],
-            inputs=[],
-            outputs=[],
-            output_dir=tmpdir,
-            requested_cores=1,
+            requested_cores=self.backend.free_slots + 1,
             requested_memory=10 * Memory.MiB, )
         self.core.submit(bigapp)
-        self.apps_to_kill.append(bigapp)
 
-        self.core.submit(smallapp)
-        self.apps_to_kill.append(smallapp)
-
-    @raises(gc3libs.exceptions.LRMSSubmitError)
+    @raises(gc3libs.exceptions.NoResources)
     def test_not_enough_memory_usage(self):
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
@@ -280,19 +279,8 @@ type=none
             outputs=[],
             output_dir=tmpdir,
             requested_cores=1,
-            requested_memory=self.backend.total_memory, )
-        smallapp = gc3libs.Application(
-            arguments=['/bin/echo', 'Hello', 'World'],
-            inputs=[],
-            outputs=[],
-            output_dir=tmpdir,
-            requested_cores=1,
-            requested_memory=10 * Memory.MiB, )
+            requested_memory=self.backend.total_memory + Memory.B, )
         self.core.submit(bigapp)
-        self.apps_to_kill.append(bigapp)
-
-        self.core.submit(smallapp)
-        self.apps_to_kill.append(smallapp)
 
 
 class TestBackendShellcmdCFG(object):
@@ -343,7 +331,6 @@ type=none
         self.backend.get_resource_status()
 
         assert self.backend.max_cores < 1000
-
 
     def test_do_not_override_cfg_flag(self):
         (fd, cfgfile) = tempfile.mkstemp()
