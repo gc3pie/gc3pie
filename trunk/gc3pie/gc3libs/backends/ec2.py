@@ -95,11 +95,9 @@ class EC2Lrms(LRMS):
         self.image_name = image_name
         self.instance_type = instance_type
 
-        # Filter to select running instances
-        self.filters = {'key_name' : self.keypair_name, 'image_id' : self.image_id}
-
         self._parse_security_group()
         self._conn = None
+        self._vms = {}
 
         # `self.subresource_args` is used to create subresources
         self.subresource_args = extra_args
@@ -158,7 +156,6 @@ class EC2Lrms(LRMS):
                     " Please specify an unique image id in configuration"
                     " file." % (self.image_name, [i.id for i in images]))
             self.image_id = images[0].id
-
 
     def _create_instance(self, image_id, instance_type=None):
         """
@@ -251,65 +248,29 @@ class EC2Lrms(LRMS):
             self.resources[vm.id] = self._make_resource(vm.public_dns_name)
         return self.resources[vm.id]
 
-
-
-    def _get_vms(self):
-        """
-        Updates the list of running VMs launched by the user account
-        the resource has been initializated with
-        """
-
-        def _check_filter(filters, instance):
-            """
-            return True/False based on whether the instance
-            matches all filters
-            """
-            if not set(filters.keys()).issubset(instance.__dict__.keys()):
-                return False
-
-            # all key filters are defined in the instance dictionar
-            for k in filters.keys():
-                if not filters[k] == instance.__dict__[k]:
-                    return False
-
-            # all filters have been matched
-            return True
-
-        self._connect()
-        # FIXME: as of today (29.01.2013) filters do not work on
-        # Openstack. let's filter on the client side
-        reservations = self._conn.get_all_instances()
-        
-        # XXX: filter by keypair name
-        # return only those running instances
-        # launched with the same keypair passed to the ec2 backend
-        instances = []
-        for r in reservations:
-            instances.extend([ instance for instance in r.instances if _check_filter(self.filters, instance) ])
-
-        # instances.append([ instance for instance in r.instances if instance.key_name == self.keypair_name ])
-            
-        return dict((i.id, i) for i in instances)
-
-
     def _get_vm(self, vm_id):
         """
         Return the instance with id `vm_id`, raises an error if there
         is no such instance with that id.
         """
-        # NOTE: since `vm_id` is supposed to be unique, we assume
-        # reservations only contains one element.
+        # Return cached value if we already have it
+        if vm_id in self._vms:
+            return self._vms[vm_id]
+
         self._connect()
 
+        # NOTE: since `vm_id` is supposed to be unique, we assume
+        # reservations only contains one element.
         reservations = self._conn.get_all_instances(instance_ids=[vm_id])
         instances = dict((i.id, i) for i in reservations[0].instances)
-        # instances = self._get_vms()                     
 
         if vm_id not in instances:
             raise UnrecoverableError(
                 "Instance with id %s has not found in EC2 cloud %s"
                 % (vm_id, self.ec2_url))
-        return instances[vm_id]
+        vm = instances[vm_id]
+        self._vms[vm_id] = vm
+        return vm
 
     def _import_keypair(self):
         """
@@ -337,6 +298,8 @@ class EC2Lrms(LRMS):
         Create a resource associated to the instance with `remote_ip`
         ip using configuration file parameters.
         """
+        gc3libs.log.info("Creating remote ShellcmdLrms resource for ip %s",
+                         remote_ip)
         args = self.subresource_args.copy()
         args['frontend'] = remote_ip
         args['transport'] = "ssh"
@@ -346,14 +309,6 @@ class EC2Lrms(LRMS):
             *gc3libs.Default.CONFIG_FILE_LOCATIONS,
             **{'auto_enable_auth': True})
         resource = cfg._make_resource(args)
-        try:
-            resource.transport.connect()
-        except Exception, ex:
-            gc3libs.log.debug(
-                "Ignoring error while trying to connect to the instance"
-                " %s: %s", remote_ip, ex)
-            raise RecoverableError(
-                "Remote VM at `%s` not ready yet. Retrying later" % remote_ip)
         return resource
 
     def _parse_security_group(self):
@@ -453,46 +408,43 @@ class EC2Lrms(LRMS):
         # FIXME: freeing the resource from the application is probably
         # not needed since instances are not persistent.
 
-        # freeing the resource from the application is now needed as the same instanc
-        # may run multiple applications
-        resource = self.resources[app.ec2_instance_id]
+        # freeing the resource from the application is now needed as
+        # the same instanc may run multiple applications
+        resource = self._get_remote_resource(self._get_vm(app.ec2_instance_id))
         resource.free(app)
-
-        # XXX: VMs are no longer terminated as soon as an application finishes
-        # gc3libs.log.debug("Terminating VM with id `%s`", app.ec2_instance_id)
-        # vm = self._get_vm(app.ec2_instance_id)
-        # vm.terminate()
 
         # FIXME: current approach in terminating running instances:
         # if no more applications are currently running, turn the instance off
         # check with the associated resource
         resource.get_resource_status()
-        if len(resource.jobs) == 0:
-            # turn VMs off
+        if len(resource.job_infos) == 0:
+            # turn VM off
             vm = self._get_vm(app.ec2_instance_id)
-            gc3libs.log.info('Terminating VM instances %s with public IP %s ...' % (vm.id, vm.public_ip))
+            gc3libs.log.info("VM instance %s at %s is no longer needed."
+                             " Terminating.", vm.id, vm.public_dns_name)
             vm.terminate()
-
-            # remove resource associated to the vm
-            if app.ec2_instance_id in self.resources:
-                self.resources[app.ec2_instance_id].close()
-                self.resources.pop(app.ec2_instance_id)
-            del app.ec2_instance_id
-
-
-        # Remove ec2_instance_id from app, so that, for instance, a
-        # RetryableTask will not try to access this VM again.
-        if 'ec2_used_instance_ids' not in app:
-            app.ec2_used_instance_ids = [app.ec2_instance_id]
-        else:
-            app.ec2_used_instance_ids.append(app.ec2_instance_id)
-
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
         self.updated = False
-        for resource in self.resources.values():
-            resource.get_resource_status()
+        # Since we create the resource *before* the VM is actually up
+        # & running, it's possible that the `frontend` value of the
+        # resources points to a non-existent hostname. Therefore, we
+        # have to update them with valid public_ip, if they are
+        # present.
+        for vm_id, resource in self.resources.items():
+            try:
+                resource.get_resource_status()
+            except Exception, ex:
+                gc3libs.log.error("Got error while updating resource %s:"
+                                  " %s", resource.name, ex)
+                gc3libs.log.debug(
+                    "Re-creating resource %s: it may be possible that it has "
+                    "been created too early", resource.name)
+                vm = self._get_vm(vm_id)
+                vm.update()
+                self.resources[vm.id] = self._make_resource(vm.public_dns_name)
+                resource.get_resource_status()
         return self
 
     @same_docstring_as(LRMS.get_results)
@@ -511,6 +463,8 @@ class EC2Lrms(LRMS):
     @same_docstring_as(LRMS.submit_job)
     def submit_job(self, job):
         """
+        XXX: update doc
+
         This method create an instance on the cloud, then will create
         a resource to use this instance.
 
@@ -525,43 +479,79 @@ class EC2Lrms(LRMS):
         created, this method will call the `submit_job` method of the
         resource and returns its return value.
         """
+        self._connect()
+
         # if the job has an `ec2_instance_id` attribute, it means that
         # a VM for this job has already been created. If not, a new
         # instance is created.
-        self._connect()
 
-        # XXX: when this case will happen ?
-        # if hasattr(job, 'ec2_instance_id'):
-        #     vm = self._get_vm(job.ec2_instance_id)
-        # else:
-        #     image_id = job.get('ec2_image_id', self.image_id)
-        #     instance_type = job.get('ec2_instance_type', self.instance_type)
-        #     vm = self._create_instance(image_id, instance_type=instance_type)
-        #     job.ec2_instance_id = vm.id
-        #     job.changed = True
-
-
-        for vm_id, res in self.resources.items(): 
+        pending_vms = []
+        if hasattr(job, 'ec2_instance_id'):
+            # This job was previously submitted but we already raised
+            # an exception, probably because the VM was not ready
+            # yet. Let's try again!
+            gc3libs.log.info("Job already allocated to VM %s.",
+                             job.ec2_instance_id)
+            vm = self._get_vm(job.ec2_instance_id)
             try:
-                res.submit(app)
+                resource = self._get_remote_resource(vm)
+                resource.submit_job(job)
+                gc3libs.log.info("Job successfully submitted to remote "
+                                 "resource %s.", resource.name)
+                return job
+            except Exception, ex:
+                if resource.free_slots >= job.requested_cores:
+                    pending_vms.append(vm.id)
+                raise RecoverableError(
+                    "Remote VM `%s` not yet ready: %s" %
+                    (job.ec2_instance_id, str(ex)))
+
+        # This is the first attempt to submit a job.  First of all,
+        # let's try to submit it to one of the resource we already
+        # created.
+        gc3libs.log.debug("First submission of job %s. Looking for a free VM "
+                          "to use", job)
+        for vm_id, resource in self.resources.items():
+            try:
+                resource.submit_job(job)
                 job.ec2_instance_id = vm_id
                 job.changed = True
+                gc3libs.log.info(
+                    "Job successfully submitted to remote resource %s.",
+                    resource.name)
                 return job
             except gc3libs.exceptions.LRMSSubmitError, ex:
-                # selected resource reported no free slots
-                # report in log and continue
-                gc3libs.log.debug("Submit to resource %s failed. No free slots" % res.name)
-                continue
+                # Selected resource was not able to submit.
+                # The associated VM could be not ready yet...
+                gc3libs.log.debug(
+                    "Ignoring error while submit to resource %s: %s. ",
+                    resource.name, str(ex))
+                if resource.free_slots >= job.requested_cores:
+                    pending_vms.append(vm_id)
 
-        # We reach this state when there are not free slots on any
-        # of the currently started VMs.
-        # try to start a new one
-            
+        if pending_vms:
+            # No available resource was found, but some remote
+            # resource with enough free slots was found, so let's wait
+            # until the next iteration.
+            gc3libs.log.info(
+                "No available resource was found, but some VM is still in "
+                "`pending` state. Waiting until the next iteration before "
+                "creating a new VM.")
+            raise RecoverableError(
+                "Delaying submission until some of the VMs currently pending "
+                "is ready.")
+
+        gc3libs.log.debug("No available resource was found. Creating a new VM")
+        # No available resource was found. Let's create a new VM.
         image_id = job.get('ec2_image_id', self.image_id)
         instance_type = job.get('ec2_instance_type', self.instance_type)
         vm = self._create_instance(image_id, instance_type=instance_type)
         job.ec2_instance_id = vm.id
         job.changed = True
+
+        # get the resource associated to it or create a new one if
+        # none has been created yet.
+        resource = self._get_remote_resource(vm)
 
         if vm.state == 'running':
             # The VM is created, but it may be not ready yet.
@@ -569,11 +559,6 @@ class EC2Lrms(LRMS):
                 "VM with id `%s` is now RUNNING and has `public_dns_name` `%s`"
                 " and `private_dns_name` `%s`",
                 vm.id, vm.public_dns_name, vm.private_dns_name)
-
-            # get the resource associated to it or create a new one if
-            # none has been created yet.
-            resource = self._get_remote_resource(vm)
-
             # Submit the job to the remote resource
             return resource.submit_job(job)
         elif vm.state == 'pending':
@@ -609,7 +594,15 @@ class EC2Lrms(LRMS):
 
     @same_docstring_as(LRMS.close)
     def close(self):
-        for resource in self.resources.values():
+        for vm_id, resource in self.resources.items():
+            resource.get_resource_status()
+            if len(resource.job_infos) == 0:
+                # turn VM off
+                vm = self._get_vm(vm_id)
+                gc3libs.log.info(
+                    "VM instance %s at %s is no longer needed. Terminating.",
+                    vm.id, vm.public_dns_name)
+                vm.terminate()
             resource.close()
 
 
