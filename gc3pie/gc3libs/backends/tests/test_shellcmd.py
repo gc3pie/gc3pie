@@ -345,9 +345,47 @@ type=none
         self.core = gc3libs.core.Core(self.cfg)
         self.backend = self.core.get_backend('localhost_test')
         # Update resource status
-        self.backend.get_resource_status()
 
         assert_equal(self.backend.max_cores, 1000)
+
+    def test_resource_sharing_w_multiple_backends(self):
+        tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
+        (fd, cfgfile) = tempfile.mkstemp()
+        f = os.fdopen(fd, 'w+')
+        f.write(TestBackendShellcmdCFG.CONF % "False")
+        f.close()
+        self.files_to_remove = [cfgfile]
+
+        cfg1 = gc3libs.config.Configuration()
+        cfg1.merge_file(cfgfile)
+
+        cfg2 = gc3libs.config.Configuration()
+        cfg2.merge_file(cfgfile)
+
+        core1 = gc3libs.core.Core(cfg1)
+        core2 = gc3libs.core.Core(cfg2)
+
+        backend1 = core1.get_backend('localhost_test')
+        backend2 = core2.get_backend('localhost_test')
+
+        app = gc3libs.Application(
+            arguments=['/bin/echo', 'Hello', 'World'],
+            inputs=[],
+            outputs=[],
+            output_dir=tmpdir,
+            requested_cores=1,
+            requested_memory=10 * Memory.MiB, )
+        
+        try:
+            core1.submit(app)
+            assert_equal(backend1.free_slots, backend1.max_cores - app.requested_cores)
+
+            assert_equal(backend2.free_slots, backend2.max_cores)
+            backend2.get_resource_status()
+            assert_equal(backend2.free_slots, backend2.max_cores - app.requested_cores)
+        except:
+            core1.kill(app)
+            core1.free(app)
 
 
 if __name__ == "__main__":
