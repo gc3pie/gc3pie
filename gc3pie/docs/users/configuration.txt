@@ -427,6 +427,38 @@ are used by the SLURM backend:
 
   * ``sacct``: get info on resources used by a job.
 
+``shellcmd`` resources
+~~~~~~~~~~~~~~~~~~~~~~
+
+The following optional configuration keys are available in a
+``shellcmd``-type resource section:
+
+  * ``transport``: Like any other resources, possible values are
+    ``ssh`` or ``local``. Default value is ``local``.
+
+  * ``frontend``: If `transport` is `ssh`, then `frontend` is the
+      `FQDN (Fully-qualified domain name)`:abbr: of the remote machine
+      where the jobs will be executed.
+
+  * ``time_cmd``: `ShellcmdLrms`:class: needs the GNU implementation
+    of the command `time` in order to get resource usage of the
+    submitted jobs. ``time_cmd`` must contains the path to the binary
+    file if this is different from the standard (``/usr/bin/time``).
+
+  * ``override``: `ShellcmdLrms`:class: by default will try to gather
+    information on the system the resource is running on, including
+    the number of cores and the available memory. These values may be
+    different from the values stored in the configuration file. If
+    ``override`` is `True`, then the values automatically discovered
+    will be used. If ``override`` is `False`, the values in the
+    configuration file will be used regardless of the real values
+    discovered by the resource.
+
+  * ``spooldir``: Path to a filesystem location where to create
+    temporary working directories for processes executed through this
+    backend. The default value `None` means to use ``$TMPDIR`` or
+    `/tmp`:file: (see `tempfile.mkftemp` for details).
+
 
 Example ``resource`` sections
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
