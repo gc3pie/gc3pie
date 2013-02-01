@@ -154,6 +154,11 @@ max_cores_per_job=2
 max_memory_per_core=2
 max_walltime=2
 architecture=x64_64
+# When True, the shellcmd backend will discover the actual
+# architecture, the number of cores and the total memory of the
+# machine and will ignore the values found on the configuration
+# file. Default is `False`
+# override = False
 
 # Examples:
 #
