@@ -277,7 +277,7 @@ ReturnCode=%x"""
                 log.error(
                     "Failed while killing Job '%s'. It refers to non-existent"
                     " local process %s." % (app, app.execution.lrms_jobid))
-        self._delete_job_resource_file()
+        self._delete_job_resource_file(pid)
 
     @same_docstring_as(LRMS.close)
     def close(self):
