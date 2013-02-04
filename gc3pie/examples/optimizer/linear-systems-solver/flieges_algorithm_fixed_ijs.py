@@ -70,7 +70,7 @@ def main_algo(A, b, sample_fn=np.random.random):
     for l, v_l in enumerate(v):
         print "  v_%d = %s" % (l, v_l)
 
-    ij_pairs = [ (0,j) for j in range(1,n+1) ] + [ (n-1,n) ] #+ [ tuple(random.sample(range(1,n+1), 2)) ]
+    ij_pairs = [ (j % (n+1), (j+1) % (n+1)) for j in range(0,n+1) ]
     print 'ij_pairs = ', ij_pairs
     assert len(ij_pairs) == len(v)
 
