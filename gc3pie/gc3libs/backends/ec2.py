@@ -451,7 +451,7 @@ class EC2Lrms(LRMS):
                 self.resources[vm.id] = self._make_resource(vm.public_dns_name)
                 try:
                     resource.get_resource_status()
-                except Excepetion, ex:
+                except Exception, ex:
                     gc3libs.log.warning(
                         "Ignoring ERROR while updating EC2 subresource %s: %s",
                         resource.name, ex)
