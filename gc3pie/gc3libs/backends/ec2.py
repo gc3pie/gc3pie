@@ -302,8 +302,6 @@ class EC2Lrms(LRMS):
         Create a resource associated to the instance with `remote_ip`
         ip using configuration file parameters.
         """
-        if remote_ip is None:
-            import pdb; pdb.set_trace()
         gc3libs.log.info("Creating remote ShellcmdLrms resource for ip %s",
                          remote_ip)
         args = self.subresource_args.copy()
