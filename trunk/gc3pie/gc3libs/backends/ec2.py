@@ -451,9 +451,10 @@ class EC2Lrms(LRMS):
                 self.resources[vm.id] = self._make_resource(vm.public_dns_name)
                 try:
                     resource.get_resource_status()
-                except:
-                    # Ignore any exception in here.
-                    pass
+                except Excepetion, ex:
+                    gc3libs.log.warning(
+                        "Ignoring ERROR while updating EC2 subresource %s: %s",
+                        resource.name, ex)
         return self
 
     @same_docstring_as(LRMS.get_results)
@@ -624,7 +625,10 @@ class EC2Lrms(LRMS):
         for vm_id, resource in self.resources.items():
             try:
                 resource.get_resource_status()
-            except:
+            except Exception, ex:
+                gc3libs.log.warning(
+                    "Error while updating EC2 subresource %s: %s. "
+                    "Turning off associated VM.", resource.name)
                 if len(resource.job_infos) == 0:
                     # turn VM off
                     vm = self._get_vm(vm_id)
