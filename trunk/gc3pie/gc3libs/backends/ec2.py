@@ -261,7 +261,13 @@ class EC2Lrms(LRMS):
 
         # NOTE: since `vm_id` is supposed to be unique, we assume
         # reservations only contains one element.
-        reservations = self._conn.get_all_instances(instance_ids=[vm_id])
+        try:
+            reservations = self._conn.get_all_instances(instance_ids=[vm_id])
+        except boto.exception.EC2ResponseError, ex:
+            gc3libs.log.error(
+                "Error getting VM %s from %s: %s", vm_id, self.ec2_url, ex)
+            raise UnrecoverableError(
+                "Error getting VM %s from %s: %s" % (vm_id, self.ec2_url, ex))
         if not reservations:
             raise UnrecoverableError(
                 "Instance with id %s has not found in EC2 cloud %s"
@@ -302,6 +308,9 @@ class EC2Lrms(LRMS):
         Create a resource associated to the instance with `remote_ip`
         ip using configuration file parameters.
         """
+        if not remote_ip:
+            raise ValueError(
+                "_make_resource: `remote_ip` must be a valid IP or hostname.")
         gc3libs.log.info("Creating remote ShellcmdLrms resource for ip %s",
                          remote_ip)
         args = self.subresource_args.copy()
@@ -524,11 +533,28 @@ class EC2Lrms(LRMS):
         if vm:
             try:
                 resource = self._get_remote_resource(vm)
+            except Exception, ex:
+                # XXX: It may be possible that the there is not vm
+                # with this id, because it has been terminated. We
+                # must be able to spot this, and run a
+                # del job.ec2_instance_id
+                gc3libs.log.error(
+                    "Error while creating resource for vm %s: %s",
+                    vm.id, ex)
+                # Check if the vm exists
+                raise RecoverableError(
+                    "Error while creating resource for vm %s: %s" % \
+                        (vm.id, ex))
+
+            try:
                 resource.submit_job(job)
                 gc3libs.log.info("Job successfully submitted to remote "
                                  "resource %s.", resource.name)
                 return job
             except Exception, ex:
+                gc3libs.log.warning(
+                    "Unable to submit job to resource %s: %s",
+                    resource.name, ex)
                 if resource.free_slots >= job.requested_cores:
                     pending_vms.append(vm.id)
                 raise RecoverableError(
@@ -636,6 +662,7 @@ class EC2Lrms(LRMS):
                         "VM instance %s at %s is no longer needed. Terminating.",
                         vm.id, vm.public_dns_name)
                     vm.terminate()
+                    del self._vms[vm.id]
             resource.close()
 
 
