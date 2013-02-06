@@ -30,7 +30,7 @@ import sys
 import tempfile
 import time
 
-from nose.tools import raises, assert_equal
+from nose.tools import raises, assert_equal, assert_not_equal
 
 import gc3libs
 from gc3libs.authentication import Auth
@@ -219,7 +219,7 @@ type=none
             waited += WAIT
             self.core.update_job_state(app)
         assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
-        assert_equal(app.execution.returncode, 2)
+        assert_not_equal(app.execution.returncode, 0)
 
     # def test_time_cmd_args(self):
     #     assert_equal(self.backend.time_cmd, '/usr/bin/time')
