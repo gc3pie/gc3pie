@@ -669,7 +669,7 @@ class EC2Lrms(LRMS):
             except Exception, ex:
                 gc3libs.log.warning(
                     "Error while updating EC2 subresource %s: %s. "
-                    "Turning off associated VM.", resource.name)
+                    "Turning off associated VM.", resource.name, ex)
                 if len(resource.job_infos) == 0:
                     # turn VM off
                     vm = self._get_vm(vm_id)
