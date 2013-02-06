@@ -421,7 +421,10 @@ ReturnCode=%x"""
             posixpath.join(self.resource_dir, str(pid)), 'r')
         try:
             jobinfo = pickle.load(fp)
+            fp.close()
         except:
+            # This has to become a `finally` statement as soon as we
+            # drop support for Python 2.4
             fp.close()
             raise
         return jobinfo
