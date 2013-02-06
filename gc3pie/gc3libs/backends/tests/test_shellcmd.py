@@ -44,7 +44,7 @@ class TestBackendShellcmd(object):
 [resource/localhost_test]
 type=shellcmd
 transport=local
-time_cmd=/usr/bin/time
+# time_cmd=/usr/bin/time
 # Use unusual values so that we can easily spot if the `override` option works
 max_cores=123
 max_cores_per_job=123
@@ -221,8 +221,8 @@ type=none
         assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
         assert_equal(app.execution.returncode, 2)
 
-    def test_time_cmd_args(self):
-        assert_equal(self.backend.time_cmd, '/usr/bin/time')
+    # def test_time_cmd_args(self):
+    #     assert_equal(self.backend.time_cmd, '/usr/bin/time')
 
     def test_resource_usage(self):
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
