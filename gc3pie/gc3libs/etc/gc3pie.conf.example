@@ -285,7 +285,7 @@ architecture=x64_64
 # is will be used, if any. If EC2_URL is empty too, the default url
 # for AWS will be used.
 # 
-# ec2_url=http://cloud.gc3.uzh.ch:8773/service/Cloud
+# ec2_url=http://cloud.gc3.uzh.ch:8773/services/Cloud
 
 # EC2 Region to use. It is usually needed only if AWS is not used.
 #
