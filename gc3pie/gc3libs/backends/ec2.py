@@ -59,8 +59,8 @@ class EC2Lrms(LRMS):
                  architecture, max_cores, max_cores_per_job,
                  max_memory_per_core, max_walltime,
                  # these are specific of the EC2Lrms class
-                 ec2_region, ec2_url,
-                 keypair_name, public_key, image_id=None, image_name=None,
+                 ec2_region, keypair_name, public_key,
+                 image_id=None, image_name=None, ec2_url=None,
                  instance_type=None, auth=None, **extra_args):
         LRMS.__init__(
             self, name,
@@ -87,7 +87,7 @@ class EC2Lrms(LRMS):
         if ec2_url:
             self.ec2_url = gc3libs.url.Url(ec2_url)
         else:
-            self.ec2_url = None
+            self.ec2_url = os.getenv('EC2_URL')
 
         self.keypair_name = keypair_name
         self.public_key = public_key
