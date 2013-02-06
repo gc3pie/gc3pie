@@ -206,7 +206,8 @@ ReturnCode=%x"""
     @defproperty
     def user_run():
         def fget(self):
-            return len([i for i in self.job_infos.values() if not i['terminated']])
+            return len([i for i in self.job_infos.values()
+                        if not i['terminated']])
         return locals()
 
     def _compute_used_cores(self, jobs):
