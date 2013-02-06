@@ -48,7 +48,7 @@ username = dummy
 [resource/localhost]
 enabled = true
 auth = dummy
-type = subprocess
+type = shellcmd
 frontend = localhost
 transport = local
 max_cores_per_job = 2

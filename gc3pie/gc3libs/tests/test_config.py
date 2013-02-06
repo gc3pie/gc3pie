@@ -70,6 +70,7 @@ max_memory_per_core = 2
 max_walltime = 8
 max_cores = 2
 architecture = x86_64
+override = True
     """)
     try:
         cfg = gc3libs.config.Configuration(tmpfile)
@@ -165,6 +166,7 @@ max_walltime = 8
 # `ncores` renamed to `max_cores`
 ncores = 77
 architecture = x86_64
+override = True
     """)
     try:
         cfg = gc3libs.config.Configuration(tmpfile)
@@ -324,6 +326,7 @@ max_memory_per_core = 2
 max_walltime = 8
 max_cores = 2
 architecture = x86_64
+override = True
 """
     lines = good_conf.split('\n')
     header_ends_at = lines.index("# omit one line below")
@@ -374,6 +377,7 @@ prologue = scripts/shellcmd_pre.sh
 epilogue = scripts/shellcmd_post.sh
 myapp_prologue = scripts/myapp_shellcmd_pre.sh
 myapp_epilogue = scripts/myapp_shellcmd_post.sh
+override = True
 
 [resource/testpbs]
 type = pbs
@@ -481,6 +485,7 @@ max_memory_per_core = 2
 max_walltime = 8
 max_cores = 2
 architecture = x86_64
+override = True
 """
         dir1, dir2 = tempfile.mkdtemp(), tempfile.mkdtemp()
         self.files_to_remove.extend([dir1, dir2])
