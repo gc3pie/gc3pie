@@ -256,9 +256,11 @@ architecture=x64_64
 # 
 # ec2_secret_key=
 
-# [auth/ami_01]
-# type=ssh
-# username=ubuntu
+# Images created by the GC3 team have a `gc3-user` account by default.
+#
+# [auth/gc3user_ssh]
+# type = ssh
+# username = gc3-user
 
 # [resource/hobbes]
 # enabled=yes
@@ -307,7 +309,7 @@ architecture=x64_64
 # file to use for remote VM. Basically, it contains only the username
 # to use when connecting to the VM.
 # 
-# vm_auth=ubuntu_ssh
+# vm_auth=gc3user_ssh
 
 # Default instance type to use. If `instance_type` is empty or not
 # defined, `m1.small` will be used instead. If an Application() has an
