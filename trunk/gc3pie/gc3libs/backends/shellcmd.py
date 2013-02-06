@@ -617,7 +617,7 @@ ReturnCode=%x"""
         # other backends, these updated information are not kept!
         try:
             self.transport.connect()
-        except Exception, ex:
+        except gc3libs.exceptions.TransportError, ex:
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Unable to access shellcmd resource at %s: %s" %
                 (self.frontend, str(ex)))
