@@ -37,7 +37,7 @@ from gc3libs.exceptions import TransportError
 class StubForTestTransport:
 
     def extraSetup(self):
-        (exitcode, tmpdir, stderror) = self.transport.execute_command('mktemp -d')
+        (exitcode, tmpdir, stderror) = self.transport.execute_command('mktemp -d /tmp/test_transport.XXXXXXXXX')
         self.tmpdir = tmpdir.strip()
 
     def tearDown(self):
