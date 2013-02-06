@@ -300,7 +300,7 @@ architecture=x64_64
 # keypair exists, the fingerprint will be checked and an error is
 # raised if it does not match `public_key`s fingerpring.
 #
-# keypair_name=anto1
+# keypair_name=keypair1
 # public_key=~/.ssh/id_dsa.pub
 
 # `vm_auth` refers to the auth stanza in the current configuration
