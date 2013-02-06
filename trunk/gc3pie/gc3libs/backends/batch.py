@@ -333,7 +333,7 @@ class BatchSystem(LRMS):
             self.transport.connect()
 
             cmd = "mkdir -p $HOME/.gc3pie_jobs;" \
-                " mktemp -p $HOME/.gc3pie_jobs -d lrms_job.XXXXXXXXXX"
+                " mktemp -d $HOME/.gc3pie_jobs/lrms_job.XXXXXXXXXX"
             log.info("Creating remote temporary folder: command '%s' " % cmd)
             exit_code, stdout, stderr = self.transport.execute_command(cmd)
             if exit_code == 0:
