@@ -158,10 +158,11 @@ ReturnCode=%x"""
         # GNU time is needed
         self.time_cmd = time_cmd
 
-        # default is to use $TMPDIR or '/tmp' (see `tempfile.mkftemp`)
+        # default is to use $TMPDIR or '/tmp' (see
+        # `tempfile.mkftemp`), but we delay the determination of the
+        # correct dir to the submit_job, so that we don't have to use
+        # `transport` right now.
         self.spooldir = spooldir
-        if not spooldir:
-            self.spooldir = os.getenv('TMPDIR', default='/tmp')
 
         # Configure transport
         self.frontend = frontend
@@ -620,6 +621,17 @@ ReturnCode=%x"""
 
         log.debug("Executing local command '%s' ...",
                   str.join(" ", app.arguments))
+
+        # Check if spooldir is a valid directory
+        if not self.spooldir:
+            ex, stdout, stderr = self.transport.execute_command(
+                "echo $TMPDIR")
+            if ex != 0 or not stdout:
+                log.debug(
+                    "Unable to recover a value for the spooldir. Using `/tmp`")
+                self.spooldir = '/tmp'
+            else:
+                self.spooldir = stdout.strip()
 
         ## determine execution directory
         exit_code, stdout, stderr = self.transport.execute_command(
