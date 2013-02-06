@@ -145,7 +145,7 @@ ReturnCode=%x"""
                  # these are specific to `ShellcmdLrms`
                  # ignored if `transport` is 'local'
                  frontend='localhost', transport='local',
-                 time_cmd='/usr/bin/time', override='False',
+                 time_cmd=None, override='False',
                  spooldir=None,
                  **extra_args):
 
@@ -336,10 +336,6 @@ ReturnCode=%x"""
             # cannot continue
             raise
 
-        if not self.override:
-            # Ignore other values.
-            return
-
         exit_code, stdout, stderr = self.transport.execute_command('uname -m')
         arch = gc3libs.config._parse_architecture(stdout)
         if arch != self.architecture:
@@ -350,6 +346,32 @@ ReturnCode=%x"""
 
         exit_code, stdout, stderr = self.transport.execute_command('uname -s')
         self.running_kernel = stdout.strip()
+
+        # Fix time_cmd variable
+        if not self.time_cmd:
+            # Check if gtime is installed
+            exit_code, stdout, stderr = self.transport.execute_command('which time')
+            time_cmd = stdout.strip()
+            exit_code, stdout, stderr = self.transport.execute_command(
+                '%s --version 2>&1 | grep GNU' % time_cmd)
+            if exit_code == 0:
+                # Default `time` command is GNU! Good!
+                self.time_cmd = time_cmd
+            else:
+                # This could be a MacOSX system. Check if GNU time is
+                # installed as `gtime` via homebrew or MacPorts.
+                exit_code, stdout, stderr = self.transport.execute_command('which gtime')
+                if exit_code == 0:
+                    self.time_cmd = stdout.strip()
+                else:
+                    raise gc3libs.exceptions.ConfigurationError(
+                        "Unable to fine GNU time installed on your system."
+                        " Please, install GNU time and set `time_cmd`"
+                        " configuration option in gc3pie.conf.")
+
+        if not self.override:
+            # Ignore other values.
+            return
 
         if self.running_kernel == 'Linux':
             exit_code, stdout, stderr = self.transport.execute_command('nproc')
