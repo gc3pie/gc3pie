@@ -326,7 +326,6 @@ max_memory_per_core = 2
 max_walltime = 8
 max_cores = 2
 architecture = x86_64
-override = True
 """
     lines = good_conf.split('\n')
     header_ends_at = lines.index("# omit one line below")
