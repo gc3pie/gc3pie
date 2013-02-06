@@ -415,18 +415,16 @@ ReturnCode=%x"""
         exists. Returns None if it does not exist.
         """
         self.transport.connect()
-        exit_code, stdout, stderr = self.transport.execute_command(
-            "ps ax | grep -E '^ *%s '" % pid)
-        if exit_code == 0:
-            # XXX: We should check for exceptions!
-            log.debug("Reading resource file for pid %s", pid)
-            fp = self.transport.open(
-                posixpath.join(self.resource_dir, str(pid)), 'r')
+        log.debug("Reading resource file for pid %s", pid)
+        jobinfo = None
+        fp = self.transport.open(
+            posixpath.join(self.resource_dir, str(pid)), 'r')
+        try:
             jobinfo = pickle.load(fp)
+        except:
             fp.close()
-            return jobinfo
-        else:
-            return None
+            raise
+        return jobinfo
 
     def _update_job_resource_file(self, pid, resources):
         """
