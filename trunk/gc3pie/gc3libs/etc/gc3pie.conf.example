@@ -249,12 +249,12 @@ architecture=x64_64
 # If `ec2_access_key` is empty, then the `EC2_ACCESS_KEY` environment
 # variable is will be used, if any.
 # 
-# ec2_access_key=''
+# ec2_access_key=
 #
 # If `ec2_secret_key` is empty, then the `EC2_SECRET_KEY` environment
 # variable is will be used, if any.
 # 
-# ec2_secret_key=''
+# ec2_secret_key=
 
 # [auth/ami_01]
 # type=ssh
