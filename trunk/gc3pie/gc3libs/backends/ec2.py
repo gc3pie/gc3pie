@@ -90,7 +90,7 @@ class EC2Lrms(LRMS):
             self.ec2_url = os.getenv('EC2_URL')
 
         self.keypair_name = keypair_name
-        self.public_key = public_key
+        self.public_key = public_key.strip()
         self.image_id = image_id
         self.image_name = image_name
         self.instance_type = instance_type
@@ -197,8 +197,16 @@ class EC2Lrms(LRMS):
                     self.public_key)
             try:
                 pkey = paramiko.DSSKey.from_private_key_file(keyfile)
-            except:
-                pkey = paramiko.RSAKey.from_private_key_file(keyfile)
+            except Exception, ex:
+                gc3libs.log.debug("File `%s` is not a valid DSS private key:"
+                                  " %s", keyfile, ex)
+                try:
+                    pkey = paramiko.RSAKey.from_private_key_file(keyfile)
+                except Exception, ex:
+                    gc3libs.log.debug("File `%s` is not a valid RSA private "
+                                      "key: %s", keyfile, ex)
+                    raise ValueError("Public key `%s` is neither a valid "
+                                     "RSA key nor a DSS key" % self.public_key)
 
             # Check key fingerprint
             localkey_fingerprint = str.join(
