@@ -320,7 +320,7 @@ architecture=x64_64
 # `ec2_image_id` attribute, it will be used instead of the default
 # one.
 # 
-# image_id=ami-0000001f
+# image_id=ami-00000035
 
 # Default image name to use. The value of `image_name` is ignored if
 # `image_id` is present. Moreover, an error is raised if more than one
