@@ -273,7 +273,8 @@ class EC2Lrms(LRMS):
                 "Instance with id %s has not found in EC2 cloud %s"
                 % (vm_id, self.ec2_url))
 
-        instances = dict((i.id, i) for i in reservations[0].instances if reservations)
+        instances = dict((i.id, i) for i in reservations[0].instances
+                         if reservations)
         if vm_id not in instances:
             raise UnrecoverableError(
                 "Instance with id %s has not found in EC2 cloud %s"
@@ -543,8 +544,8 @@ class EC2Lrms(LRMS):
                     vm.id, ex)
                 # Check if the vm exists
                 raise RecoverableError(
-                    "Error while creating resource for vm %s: %s" % \
-                        (vm.id, ex))
+                    "Error while creating resource for vm %s: %s" %
+                    (vm.id, ex))
 
             try:
                 resource.submit_job(job)
@@ -566,7 +567,7 @@ class EC2Lrms(LRMS):
         gc3libs.log.debug("First submission of job %s. Looking for a free VM "
                           "to use", job)
         for vm_id, resource in self.resources.items():
-            try:                
+            try:
                 resource.submit_job(job)
                 job.ec2_instance_id = vm_id
                 job.changed = True
@@ -665,8 +666,8 @@ class EC2Lrms(LRMS):
                     # turn VM off
                     vm = self._get_vm(vm_id)
                     gc3libs.log.info(
-                        "VM instance %s at %s is no longer needed. Terminating.",
-                        vm.id, vm.public_dns_name)
+                        "VM instance %s at %s is no longer needed. "
+                        "Terminating.", vm.id, vm.public_dns_name)
                     vm.terminate()
                     del self._vms[vm.id]
             resource.close()
