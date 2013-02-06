@@ -34,7 +34,7 @@ except ImportError:
     from gc3libs.exceptions import ConfigurationError
     raise ConfigurationError(
         "EC2 backend has been requested but no `boto` package"
-        " was found. Please, install `boto` with `pip boto`"
+        " was found. Please, install `boto` with `pip install boto`"
         " or `easy_install boto` and try again, or update your"
         " configuration file.")
 
@@ -600,7 +600,13 @@ class EC2Lrms(LRMS):
         image_id = job.get('ec2_image_id', self.image_id)
         instance_type = job.get('ec2_instance_type', self.instance_type)
         vm = self._create_instance(image_id, instance_type=instance_type)
+
+        # XXX: If we do this, we need to make sure the resource associated to the VM
+        # is aware of this 'reservation'
+        # otherwise in the next submit, another job could be launched on it
+        # thus preventing the current job to start.
         job.ec2_instance_id = vm.id
+
         job.changed = True
 
         # get the resource associated to it or create a new one if
