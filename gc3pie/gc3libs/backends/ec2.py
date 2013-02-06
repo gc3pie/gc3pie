@@ -197,11 +197,18 @@ class EC2Lrms(LRMS):
                     self.public_key)
             try:
                 pkey = paramiko.DSSKey.from_private_key_file(keyfile)
+            except paramiko.PasswordRequiredException:
+                raise RuntimeError("Key %s is encripted with a password. Please, use"
+                             " an unencrypted key or use ssh-agent" % keyfile)
             except paramiko.SSHException, ex:
                 gc3libs.log.debug("File `%s` is not a valid DSS private key:"
                                   " %s", keyfile, ex)
                 try:
                     pkey = paramiko.RSAKey.from_private_key_file(keyfile)
+                except paramiko.PasswordRequiredException:
+                    raise RuntimeError(
+                        "Key %s is encripted with a password. Please, use"
+                        " an unencrypted key or use ssh-agent" % keyfile)
                 except paramiko.SSHException, ex:
                     gc3libs.log.debug("File `%s` is not a valid RSA private "
                                       "key: %s", keyfile, ex)
