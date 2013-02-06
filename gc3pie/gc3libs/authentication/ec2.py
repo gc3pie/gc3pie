@@ -55,6 +55,11 @@ class EC2Auth(object):
         except AssertionError, x:
             raise gc3libs.exceptions.ConfigurationError(
                 'Erroneous configuration parameter: %s' % str(x))
+        
+        # Strip quotes from ec2_*_key in case someone put it in the
+        # configuration file
+        auth['ec2_secret_key'] = auth['ec2_secret_key'].strip('"').strip("'")
+        auth['ec2_access_key'] = auth['ec2_access_key'].strip('"').strip("'")
 
     def check(self):
         gc3libs.log.debug('Checking auth: EC2Auth')
