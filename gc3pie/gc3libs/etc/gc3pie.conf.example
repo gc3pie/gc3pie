@@ -243,7 +243,7 @@ architecture=x64_64
 # CLOUD BACKEND #
 #################
 
-# [auth/ec2cloud1]
+# [auth/ec2hobbes]
 # type=ec2
 #
 # If `ec2_access_key` is empty, then the `EC2_ACCESS_KEY` environment
@@ -260,9 +260,9 @@ architecture=x64_64
 # type=ssh
 # username=ubuntu
 
-# [resource/cloud1]
+# [resource/hobbes]
 # enabled=yes
-# auth=ec2cloud1
+# auth=ec2hobbes
 #
 # This resource will create a new VM for each submitted job, and a
 # resource associated to the VM. These subresources define the way we
@@ -283,7 +283,7 @@ architecture=x64_64
 # is will be used, if any. If EC2_URL is empty too, the default url
 # for AWS will be used.
 # 
-# ec2_url=
+# ec2_url=http://cloud.gc3.uzh.ch:8773/service/Cloud
 
 # EC2 Region to use. It is usually needed only if AWS is not used.
 #
