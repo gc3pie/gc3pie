@@ -626,9 +626,10 @@ ReturnCode=%x"""
         if not self.spooldir:
             ex, stdout, stderr = self.transport.execute_command(
                 "echo $TMPDIR")
-            if ex != 0 or not stdout:
+            if ex != 0 or not stdout.strip() or not stdout[0] == '/':
                 log.debug(
-                    "Unable to recover a value for the spooldir. Using `/tmp`")
+                    "Unable to recover a valid absolute path for spooldir. "
+                    "Using `/tmp`")
                 self.spooldir = '/tmp'
             else:
                 self.spooldir = stdout.strip()
