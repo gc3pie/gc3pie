@@ -65,7 +65,7 @@ max_memory_per_core = 2
 max_walltime = 8
 max_cores = 2
 architecture = x86_64
-override = True
+override = False
 """
         self.cfgfile = os.path.join(self.tmpdir, 'gc3pie.conf')
         fp = open(self.cfgfile, 'w')
