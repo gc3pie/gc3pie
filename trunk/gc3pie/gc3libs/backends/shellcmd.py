@@ -637,7 +637,7 @@ ReturnCode=%x"""
         ## determine execution directory
         exit_code, stdout, stderr = self.transport.execute_command(
             "mktemp -d %s " % posixpath.join(
-                self.spooldir, 'gc3libs.XXXXXX.tmp.d'))
+                self.spooldir, 'gc3libs.XXXXXX'))
         if exit_code != 0:
             log.error(
                 "Error creating temporary directory on host %s: %s"
