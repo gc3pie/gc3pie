@@ -37,24 +37,24 @@ class TestApplication(Application):
                              inputs = [],
                              outputs = [],
                              output_dir = None)
+        self.execution.state = 'TERMINATED'
+        self.execution.returncode = 0
+        self.changed = False
 
     def update_state(self):
-        self.changed = False
+        # self.changed = False
         pass
-
-class TestRetryableTask(RetryableTask):
-
-    def retry(self):
-        return False
 
 @raises(AssertionError)
 def test_persisted_change():
     app = TestApplication()
-    app.execution.state = 'TERMINATED'
-    task = TestRetryableTask(app)
-    task.execution.state = 'RUNNING'
-    # app.changed = False
+    task = RetryableTask(app)
+    # task.execution.state = 'RUNNING'
+
+    # This is supposed to alter the state of the task
+    # thus mark it as 'changed'
     task.update_state()
+
     # We expect task.changed to be true
     assert(task.changed == False)
 
