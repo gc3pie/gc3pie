@@ -187,7 +187,7 @@ class Configuration(gc3libs.utils.Struct):
         files_successfully_read = 0
 
         for filename in locations:
-            filename = os.path.expandvars(filename)
+            filename = os.path.expandvars(os.path.expanduser(filename))
             if os.path.exists(filename):
                 if not os.access(filename, os.R_OK):
                     gc3libs.log.debug("Configuration.load(): File '%s' cannot be read, ignoring." % filename)
