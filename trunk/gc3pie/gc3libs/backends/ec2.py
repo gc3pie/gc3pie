@@ -680,11 +680,10 @@ class EC2Lrms(LRMS):
                 if len(resource.job_infos) == 0:
                     # turn VM off
                     vm = self._get_vm(vm_id)
-                    gc3libs.log.info(
+                    gc3libs.log.warning(
                         "VM instance %s at %s is no longer needed. "
-                        "Terminating.", vm.id, vm.public_dns_name)
-                    vm.terminate()
-                    del self._vms[vm.id]
+                        "You may need to terminate it manually.",
+                        vm.id, vm.public_dns_name)
             resource.close()
 
 
