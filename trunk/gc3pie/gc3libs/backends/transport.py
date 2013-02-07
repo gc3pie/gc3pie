@@ -266,7 +266,14 @@ class SshTransport(Transport):
             if not self._is_open or self.transport_channel is None or \
                     not self.transport_channel.is_active():
                 gc3libs.log.debug("Opening SshTransport... ")
-                self.ssh.load_system_host_keys()
+                # WARNING: commenting out this line will fix issue 389
+                # but introduce a security issue, since we are not
+                # comparing the host key with our "known hosts"
+                # file. However, since VMs running on the cloud will
+                # often change the ssh key, we actually need to remove
+                # this check.
+                #
+                # self.ssh.load_system_host_keys()
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 gc3libs.log.debug(
                     "Connecting to host '%s' as user '%s' via SSH ...",
