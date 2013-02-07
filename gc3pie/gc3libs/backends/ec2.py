@@ -453,6 +453,7 @@ class EC2Lrms(LRMS):
                              " Terminating.", vm.id, vm.public_dns_name)
             del self.resources[vm.id]
             vm.terminate()
+            del self._vms[vm.id]
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
