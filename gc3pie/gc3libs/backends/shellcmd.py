@@ -349,9 +349,10 @@ ReturnCode=%x"""
 
         # Fix time_cmd variable
         if not self.time_cmd:
-            # Check if gtime is installed
-            exit_code, stdout, stderr = self.transport.execute_command('which time')
-            time_cmd = stdout.strip()
+            # Check if gnu time is installed. We use `command` in
+            # order to execute the binary and not the shell builtin,
+            # if present. Cfr. POSIX standard.
+            time_cmd = "command time"
             exit_code, stdout, stderr = self.transport.execute_command(
                 '%s --version 2>&1 | grep GNU' % time_cmd)
             if exit_code == 0:
@@ -360,12 +361,14 @@ ReturnCode=%x"""
             else:
                 # This could be a MacOSX system. Check if GNU time is
                 # installed as `gtime` via homebrew or MacPorts.
-                exit_code, stdout, stderr = self.transport.execute_command('which gtime')
+                time_cmd = "command gtime"
+                exit_code, stdout, stderr = self.transport.execute_command(
+                    "%s --version 2>&1 | grep GNU" % time_cmd)
                 if exit_code == 0:
-                    self.time_cmd = stdout.strip()
+                    self.time_cmd = time_cmd
                 else:
                     raise gc3libs.exceptions.ConfigurationError(
-                        "Unable to fine GNU time installed on your system."
+                        "Unable to find GNU `time` installed on your system."
                         " Please, install GNU time and set `time_cmd`"
                         " configuration option in gc3pie.conf.")
 
