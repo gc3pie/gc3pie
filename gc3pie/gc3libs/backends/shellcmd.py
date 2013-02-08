@@ -351,26 +351,30 @@ ReturnCode=%x"""
         if not self.time_cmd:
             # Check if gnu time is installed. We use `command` in
             # order to execute the binary and not the shell builtin,
-            # if present. Cfr. POSIX standard.
-            time_cmd = "command time"
+            # if present. Cfr. POSIX standard.  Please, also note that
+            # the wrapper script will execute `exec time_cmd` in order
+            # to replace the current shell, but `exec` will never run
+            # the builtin.
+            time_cmd = "time"
             exit_code, stdout, stderr = self.transport.execute_command(
-                '%s --version 2>&1 | grep GNU' % time_cmd)
+                'command %s --version 2>&1 | grep GNU' % time_cmd)
             if exit_code == 0:
                 # Default `time` command is GNU! Good!
                 self.time_cmd = time_cmd
             else:
                 # This could be a MacOSX system. Check if GNU time is
                 # installed as `gtime` via homebrew or MacPorts.
-                time_cmd = "command gtime"
+                time_cmd = "gtime"
                 exit_code, stdout, stderr = self.transport.execute_command(
-                    "%s --version 2>&1 | grep GNU" % time_cmd)
+                    "command %s --version 2>&1 | grep GNU" % time_cmd)
                 if exit_code == 0:
                     self.time_cmd = time_cmd
-                else:
-                    raise gc3libs.exceptions.ConfigurationError(
-                        "Unable to find GNU `time` installed on your system."
-                        " Please, install GNU time and set `time_cmd`"
-                        " configuration option in gc3pie.conf.")
+
+        if not self.time_cmd:
+            raise gc3libs.exceptions.ConfigurationError(
+                "Unable to find GNU `time` installed on your system."
+                " Please, install GNU time and set `time_cmd`"
+                " configuration option in gc3pie.conf.")
 
         if not self.override:
             # Ignore other values.
