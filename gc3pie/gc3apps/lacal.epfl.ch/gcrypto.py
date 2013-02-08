@@ -175,6 +175,7 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
                  input_files_archive, gnfs_location, output_folder, **extra_args):
 
         # remember for later
+        self.range_start = range_start
         self.range_end = range_end
         self.parameter_count_increment = slice * chunk_size
         self.input_files_archive = input_files_archive
