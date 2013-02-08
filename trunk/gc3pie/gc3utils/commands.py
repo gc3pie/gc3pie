@@ -47,8 +47,6 @@ from parsedatetime import parsedatetime
 
 ## local modules
 from gc3libs import Application, Run
-import gc3libs.application.gamess as gamess
-import gc3libs.application.rosetta as rosetta
 import gc3libs.exceptions
 import gc3libs.cmdline
 import gc3libs.core as core
