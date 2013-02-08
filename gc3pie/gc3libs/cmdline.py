@@ -875,6 +875,10 @@ class SessionBasedScript(_Script):
         except AttributeError:
             # no subtasks
             pass
+        if 'task' in task:
+            # RetryableTask
+            self._fix_output_dir(task.task, name)
+            
 
 
     def new_tasks(self, extra):
