@@ -24,12 +24,12 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 See the output of ``gc_gps.py --help`` for program usage instructions.
 
 Input parameters consists of:
-@string command_file: filename containing all the commands to be executed
+:param str command_file: Path to the file containing all the commands to be executed
    example:
           R CMD BATCH --no-save --no-restore '--args pos=27 realizations=700 snr=1 
           mast.h=0.5 sd.mast.o=0' ./src/processit.R ./out/screen.out
 
-@string src_dir: path to folder containing R scripts to be transferred to
+:param str src_dir: path to folder containing R scripts to be transferred to
 'src' folder on the remote execution node
 
 """
@@ -53,6 +53,7 @@ if __name__ == "__main__":
 import os
 import sys
 import time
+import tempfile
 
 import shutil
 
@@ -70,9 +71,10 @@ class GcgpsApplication(Application):
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
 
-    def __init__(self, command, src_dir, result_dir, **extra_args):
+    def __init__(self, command, src_dir, result_dir, input_dir, **extra_args):
 
 
+        # setup output references
         self.result_dir = result_dir
         self.output_dir = extra_args['output_dir']
 
@@ -91,14 +93,35 @@ class GcgpsApplication(Application):
             self.local_result_output_file = os.path.join(self.result_dir,self.output_file_name)
             outputs = ['./out/screen.out', './%s' % self.remote_output_file]
 
-        inputs = [ (os.path.join(src_dir,v),os.path.join("./src",v)) for v in os.listdir(src_dir) if not os.path.isdir(os.path.join(src_dir,v)) ]
+        # setup input references
+        inputs = [ (os.path.join(src_dir,v),os.path.join("./src",v)) 
+                   for v in os.listdir(src_dir) 
+                   if not os.path.isdir(os.path.join(src_dir,v)) ]
+
+        if input_dir:
+            # take everything from input_dir/
+            # XXX: N.B. NOT recursively
+            for elem in os.listdir(input_dir):
+                if os.path.isfile(os.path.join(input_dir,elem)):
+                    inputs.append((os.path.join(input_dir, elem), 
+                                   os.path.join('./in',elem)))
 
         # prepare execution script from command
         execution_script = """
 #!/bin/sh
 
 # create links from 'in' folder
-ln -s ~/in in
+echo -n "Setting Input folder... "
+if [ -d ./in ]; then
+   echo "[${PWD}/in]"
+elif [ -d ${HOME}/in ]; then
+   ln -s ${HOME}/in in
+   echo [${HOME}/in]
+else
+   echo [FAILED: no folder found]
+   exit 1
+fi
+
 mkdir out
 
 # execute command
@@ -113,8 +136,8 @@ exit $RET
 
         try:
             # create script file
-            self.tmp_filename = '/tmp/gc_gps.%s.sh' % extra_args['jobname']
-            fd = open(self.tmp_filename,'w+') # XXX: force overwrite
+            (handle, self.tmp_filename) = tempfile.mkstemp(prefix='gc3pie-gc_gps', suffix=extra_args['jobname'])
+            fd = open(self.tmp_filename,'w')
             fd.write(execution_script)
             fd.close()
             os.chmod(fd.name,0777)
@@ -158,17 +181,20 @@ exit $RET
 
         # copy output file `pos*` in result_dir
         if not os.path.isfile(self.local_output_file):
-            gc3libs.log.error("Output file %s not found" % self.local_output_file)
+            gc3libs.log.error("Output file %s not found" 
+                              % self.local_output_file)
             self.execution.returncode = (0, 100)
         else:
             try:
-                shutil.copy(self.local_output_file, self.local_result_output_file)
+                shutil.copy(self.local_output_file, 
+                            self.local_result_output_file)
                 os.remove(self.local_output_file)
             except Exception, ex:
                 gc3libs.log.error("Failed while transferring output file " +
                                   "%s " % self.local_output_file +
                                   "to result folder %s. " % self.result_dir +
-                                  "Error type %s. Message %s. " % (type(ex),str(ex)))
+                                  "Error type %s. Message %s. " 
+                                  % (type(ex),str(ex)))
                 
                 self.execution.returncode = (0, 100)
 
@@ -199,20 +225,21 @@ exit $RET
 
 class GcgpsTask(RetryableTask):
 
-    def __init__(self, command, src_dir, result_dir, **extra_args):
+    def __init__(self, command, src_dir, result_dir, input_dir, **extra_args):
         RetryableTask.__init__(
             self,
-            GcgpsApplication(command, src_dir, result_dir, **extra_args),
+            GcgpsApplication(command, src_dir, result_dir, input_dir, **extra_args),
             **extra_args)
 
     def retry(self):
         """
-        Resubmit a GEOtop application instance iff it exited with code 99.
+        Resubmit a GcgpsApplication application instance 
+        iff it exited with code 99.
 
         *Note:* There is currently no upper limit on the number of
         resubmissions!
         """
-        # XXX: for the time being we do not consider any retry strategy
+        # XXX: for the time being we do not retry
         return False
 
 
@@ -251,6 +278,11 @@ newly-created jobs so that this limit is never exceeded.
             stats_only_for = GcgpsTask,
             )
 
+    def setup_options(self):
+        self.add_param("-i", "--input", metavar="PATH", #type=executable_file,
+                       dest="input_dir", default=None,
+                       help="Path to the input data folder.")
+
     def setup_args(self):
 
         self.add_param('command_file', type=str,
@@ -275,18 +307,22 @@ newly-created jobs so that this limit is never exceeded.
 
         self.log.info("source dir: %s" % self.params.R_source_folder)
 
-        if self.params.command_file is None:
-            raise gc3libs.exceptions.InvalidUsage(
-                "Use the '-x' option to specify a valid command file")
         if not os.path.exists(self.params.command_file):
             raise gc3libs.exceptions.InvalidUsage(
                 "gc_gps command file '%s' does not exist;"
-                " use the '-x' option to specify a valid one."
                 % self.params.command_file)
         gc3libs.utils.test_file(self.params.command_file, os.R_OK,
                                 gc3libs.exceptions.InvalidUsage)
 
-        self.log.debug("Command file: %s" % self.params.command_file)
+        if self.params.input_dir and not os.path.isdir(self.params.input_dir):
+            raise gc3libs.exceptions.InvalidUsage(
+                "Input folder '%s' does not exists"
+                % self.params.input_dir)
+
+        self.log.info("Command file: %s" % self.params.command_file)
+        self.log.info("R source dir: %s" % self.params.R_source_folder)
+        if self.params.input_dir:
+            self.log.info("Input data dir: '%s'" % self.params.input_dir)
 
     def new_tasks(self, extra):
         """
@@ -334,11 +370,8 @@ newly-created jobs so that this limit is never exceeded.
                 command,
                 self.params.R_source_folder,
                 self.result_dir,
+                self.params.input_dir,
                 **extra_args
                 )
 
-    def terminated(self):
-        """
-        should probably clean-up output_dir ?
-        """
-        pass
+
