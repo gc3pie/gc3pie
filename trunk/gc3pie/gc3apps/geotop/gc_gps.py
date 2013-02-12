@@ -216,8 +216,8 @@ exit $RET
 
             # return a dictionary from "pos=5 realizations=700 snr=1 
             # mast.h=0.5 sd.mast.o=0"
-            return { k:v for k,v in [ v.split('=') for v in args ] }
-
+            # return { k:v for k,v in [ v.split('=') for v in args ] }
+            return dict( (k,v) for k,v in [ v.split('=') for v in args ])
         except Exception, ex:
             gc3libs.log.error("Failed while parsing command: %s. " % command +
                               "Type: %s. Message: %s" % (type(ex),str(ex)))
