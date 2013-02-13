@@ -105,6 +105,11 @@ class EC2Lrms(LRMS):
         for key in ['architecture', 'max_cores', 'max_cores_per_job',
                     'max_memory_per_core', 'max_walltime']:
             self.subresource_args[key] = self[key]
+        # ShellcmdLrms by default trusts the configuration, instead of
+        # checking the real amount of memory and number of cpus, but
+        # we need the real values instead.
+        if self.subresource_type == gc3libs.Default.SHELLCMDLRMS:
+            self.subresource_args['override'] = 'True'
 
         if not image_name and not image_id:
             raise ConfigurationError(
