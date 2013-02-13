@@ -108,7 +108,7 @@ class EC2Lrms(LRMS):
         # ShellcmdLrms by default trusts the configuration, instead of
         # checking the real amount of memory and number of cpus, but
         # we need the real values instead.
-        if self.subresource_type == gc3libs.Default.SHELLCMDLRMS:
+        if self.subresource_type == gc3libs.Default.SHELLCMD_LRMS:
             self.subresource_args['override'] = 'True'
 
         if not image_name and not image_id:
