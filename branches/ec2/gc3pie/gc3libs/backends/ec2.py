@@ -144,12 +144,23 @@ class VMPool(Persistable):
         del state['_vms']
         return state
 
-    def add(self, vm):
+    def add_vm(self, vm):
         """
         Add a vm object to the list of VMs.
         """
         self._vm_ids.append(vm.id)
         self._vms[vm.id] = vm
+        self.changed = True
+
+    def remove_vm(self, vm_id):
+        """
+        Remove VM with id `vm_id` from the list of known VMs. No
+        connection to the EC2 endpoint is performed.
+        """
+        if vm_id in self._vms:
+            del self._vms[vm_id]
+        if vm_id in self._vm_ids:
+            self._vm_ids.remove(vm_id)
         self.changed = True
 
     def get_vm(self, vm_id):
@@ -209,17 +220,6 @@ class VMPool(Persistable):
         x.__delitem__(self, vm_id) <==> x.remove_vm(vm_id)
         """
         return self.remove_vm(vm_id)
-
-    def remove_vm(self, vm_id):
-        """
-        Remove VM with id `vm_id` from the list of known VMs. No
-        connection to the EC2 endpoint is performed.
-        """
-        if vm_id in self._vms:
-            del self._vms[vm_id]
-        if vm_id in self._vm_ids:
-            self._vm_ids.remove(vm_id)
-        self.changed = True
 
 
 class EC2Lrms(LRMS):
@@ -770,7 +770,7 @@ class EC2Lrms(LRMS):
                         " Aborting submission of job %s"
                         % (vm.id, str(job)))
 
-                self._vms.add(vm)
+                self._vms.add_vm(vm)
                 self._save_session()
 
         # If we reached this point, we are waiting for a VM to be
@@ -781,7 +781,7 @@ class EC2Lrms(LRMS):
         gc3libs.log.info(
             "No available resource was found, but some VM is still in "
             "`pending` state. Waiting until the next iteration before "
-            "creating a new VM. Pending VM ids: %s", 
+            "creating a new VM. Pending VM ids: %s",
             str.join(', ', pending_vms))
         raise RecoverableError(
             "Delaying submission until some of the VMs currently pending "
