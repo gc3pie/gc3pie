@@ -472,7 +472,7 @@ class EC2Lrms(LRMS):
         """
         self._connect()
         vm = self._vms.get_vm(vm_id)
-        self._save_session()
+        self._session.save_all()()
 
     def _import_keypair(self):
         """
@@ -536,12 +536,6 @@ class EC2Lrms(LRMS):
                  'cidr_ip':     rulesplit[3],
                  })
 
-    def _save_session(self):
-        """
-        Save current list of VMs to disk.
-        """
-        self._session.save(self._vms)
-
     def _setup_security_groups(self):
         """
         Check the current configuration and set up the security group
@@ -601,42 +595,6 @@ class EC2Lrms(LRMS):
     def cancel_job(self, app):
         resource = self._get_remote_resource(self._get_vm(app.ec2_instance_id))
         return resource.cancel_job(app)
-
-    @same_docstring_as(LRMS.free)
-    def free(self, app):
-        """
-        Free up any remote resources used for the execution of `app`.
-        In particular, this should terminate any remote instance used
-        by the job.
-
-        Call this method when `app.execution.state` is anything other
-        than `TERMINATED` results in undefined behavior and will
-        likely be the cause of errors later on.  Be cautious.
-        """
-        # XXX: this should probably done only when no other VMs are
-        # using this resource.
-
-        # FIXME: freeing the resource from the application is probably
-        # not needed since instances are not persistent.
-
-        # freeing the resource from the application is now needed as
-        # the same instanc may run multiple applications
-        resource = self._get_remote_resource(self._get_vm(app.ec2_instance_id))
-        resource.free(app)
-
-        # FIXME: current approach in terminating running instances:
-        # if no more applications are currently running, turn the instance off
-        # check with the associated resource
-        resource.get_resource_status()
-        if len(resource.job_infos) == 0:
-            # turn VM off
-            vm = self._get_vm(app.ec2_instance_id)
-            gc3libs.log.info("VM instance %s at %s is no longer needed."
-                             " Terminating.", vm.id, vm.public_dns_name)
-            del self.resources[vm.id]
-            vm.terminate()
-            del self._vms[vm.id]
-            self._save_session()
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
@@ -771,7 +729,7 @@ class EC2Lrms(LRMS):
                         % (vm.id, str(job)))
 
                 self._vms.add_vm(vm)
-                self._save_session()
+                self._session.save_all()()
 
         # If we reached this point, we are waiting for a VM to be
         # ready, so delay the submission until we wither can submit to
@@ -793,7 +751,6 @@ class EC2Lrms(LRMS):
             self._get_vm(app.ec2_instance_id))
         return resource.peek(app, remote_filename, local_file, offset, size)
 
-    @same_docstring_as(LRMS.validate_data)
     def validate_data(self, data_file_list=None):
         """
         Supported protocols: file
@@ -802,6 +759,41 @@ class EC2Lrms(LRMS):
             if not url.scheme in ['file']:
                 return False
         return True
+
+    def free(self, app):
+        """
+        Free up any remote resources used for the execution of `app`.
+        In particular, this should terminate any remote instance used
+        by the job.
+
+        Call this method when `app.execution.state` is anything other
+        than `TERMINATED` results in undefined behavior and will
+        likely be the cause of errors later on.  Be cautious.
+        """
+        # XXX: this should probably done only when no other VMs are
+        # using this resource.
+
+        # FIXME: freeing the resource from the application is probably
+        # not needed since instances are not persistent.
+
+        # freeing the resource from the application is now needed as
+        # the same instanc may run multiple applications
+        resource = self._get_remote_resource(self._get_vm(app.ec2_instance_id))
+        resource.free(app)
+
+        # FIXME: current approach in terminating running instances:
+        # if no more applications are currently running, turn the instance off
+        # check with the associated resource
+        resource.get_resource_status()
+        if len(resource.job_infos) == 0:
+            # turn VM off
+            vm = self._get_vm(app.ec2_instance_id)
+            gc3libs.log.info("VM instance %s at %s is no longer needed."
+                             " Terminating.", vm.id, vm.public_dns_name)
+            del self.resources[vm.id]
+            vm.terminate()
+            del self._vms[vm.id]
+            self._session.save_all()()
 
     @same_docstring_as(LRMS.close)
     def close(self):
@@ -817,7 +809,7 @@ class EC2Lrms(LRMS):
                 vm.terminate()
                 del self._vms[vm.id]
             resource.close()
-        self._save_session()
+        self._session.save_all()()
 
 
 ## main: run tests
