@@ -49,28 +49,6 @@ class MySequentialCollection(SequentialTaskCollection):
 class test_issue_335(object):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        CONF_FILE="""
-[auth/dummy]
-type = ssh
-username = dummy
-
-[resource/localhost]
-enabled = true
-auth = dummy
-type = shellcmd
-frontend = localhost
-transport = local
-max_cores_per_job = 2
-max_memory_per_core = 2
-max_walltime = 8
-max_cores = 2
-architecture = x86_64
-override = False
-"""
-        self.cfgfile = os.path.join(self.tmpdir, 'gc3pie.conf')
-        fp = open(self.cfgfile, 'w')
-        fp.write(CONF_FILE)
-        fp.close()
 
     def test_issue(self):
         """Test that SequentialTasksCollection goes in terminated state when all of its tasks are in TERMINATED state."""
@@ -83,7 +61,8 @@ override = False
                     os.path.join(self.tmpdir, 'test.%d.d' % i)) for i in range(self.ptasks)
                 ]
             )
-        cfg = gc3libs.config.Configuration(self.cfgfile,
+        cfg = gc3libs.config.Configuration(
+            *gc3libs.Default.CONFIG_FILE_LOCATIONS,
             **{'auto_enable_auth': True})
         core = gc3libs.core.Core(cfg)
         engine = gc3libs.core.Engine(core)

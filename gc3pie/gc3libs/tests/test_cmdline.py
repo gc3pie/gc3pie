@@ -48,15 +48,14 @@ username = dummy
 [resource/localhost]
 enabled = true
 auth = dummy
-type = shellcmd
+type = subprocess
 frontend = localhost
 transport = local
 max_cores_per_job = 2
-max_memory_per_core = 8
+max_memory_per_core = 2
 max_walltime = 8
 max_cores = 2
 architecture = x86_64
-override = False
 """
         (fd, self.cfgfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w')

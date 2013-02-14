@@ -33,7 +33,7 @@ relevant aspects of the application being represented.
 """
 __docformat__ = 'reStructuredText'
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.3 version (SVN $Revision$)'
 
 
 import copy
@@ -85,7 +85,6 @@ class Default(object):
     SHELLCMD_LRMS = 'shellcmd'
     SLURM_LRMS = 'slurm'
     SUBPROCESS_LRMS = 'subprocess'
-    EC2_LRMS = 'ec2'
 
     # Transport information
     SSH_PORT = 22

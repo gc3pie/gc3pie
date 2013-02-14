@@ -19,7 +19,7 @@ Authentication support for the GC3Libs.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.3 version (SVN $Revision$)'
 
 import sys
 
@@ -173,7 +173,6 @@ Auth.register('none', NoneAuth)
 # FIXME: it would be nice to have some kind of auto-discovery instead
 import gc3libs.authentication.grid
 import gc3libs.authentication.ssh
-import gc3libs.authentication.ec2
 
 ## main: run tests
 

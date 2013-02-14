@@ -1,1 +1,1 @@
-docs/users/install.txt
+docs/install.txt

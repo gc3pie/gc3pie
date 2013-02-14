@@ -25,10 +25,6 @@ To install GC3Pie just type this at your terminal prompt::
 
     sh -c "$(wget -O- http://gc3pie.googlecode.com/svn/install.sh)"
 
-If `wget` is not installed in your computer, you should use `curl` instead::
-
-    sh -c "$(curl -s http://gc3pie.googlecode.com/svn/install.sh)"
-
 The above command creates a directory `$HOME/gc3pie`:file: and installs
 the latest release of GC3Pie and all its dependencies into it.
 
@@ -352,18 +348,12 @@ Installation on MacOSX machines is possible, however there are still a
 few issues.  Please let us know on the `GC3Pie users mailing-list
 <mailto:gc3pie@googlegroups.com>` if you need MacOSX support.
 
-1) Standard usage of the installation script (i.e., with no options)
-   works, but you have to use `curl` since `wget` is not installed by
-   default.
+1) Standard usage of the installation script (i.e., with no options) works.
 
-2) In order to install GC3Pie you will need to install `XCode`_ and,
-   in some of the MacOSX versions, also the *Command Line Tools for
-   XCode*
-
-3) Options can only be given in the abbreviated one-letter form (e.g.,
+2) Options can only be given in the abbreviated one-letter form (e.g.,
    ``-d``); the long form (e.g., ``--directory``) will not work.
 
-4) The `shellcmd` backend of GC3Pie depends on the GNU ``time``
+2) The `shellcmd` backend of GC3Pie depends on the GNU ``time``
    command, which is not installed on MacOSX by default. This means
    that with a standard MacOSX installation the `shellcmd` resource
    will **not** work. However:
@@ -371,12 +361,11 @@ few issues.  Please let us know on the `GC3Pie users mailing-list
    * other resources, like `pbs` via `ssh` transport, will work.
 
    * you can install the GNU time command either via `MacPorts`_,
-     `Fink`_, `Homebrew`_ or from the `this url`_. After installing it
-     you don't need to update your ``PATH`` environment variable, it's
-     enough to set the ``time_cmd`` option in your GC3Pie
-     configuration file.
+     `Fink`_ or from the `this url`_. After installing it you don't
+     need to update your ``PATH`` environment variable, it's enough to
+     set the ``time_cmd`` option in your GC3Pie configuration file.
 
-5) At the time of this writing, `the ARC client libraries are not
+4) At the time of this writing, `the ARC client libraries are not
    available on MacOSX`__, so ARC backends will not work.
 
 .. __:  http://www.nordugrid.org/documents/arc-client-install.html>
@@ -409,6 +398,4 @@ in order to build the documentation locally.
 
 .. _`MacPorts`: http://www.macports.org/
 .. _`Fink`: http://sourceforge.net/projects/fink/
-.. _`Homebrew`: http://mxcl.github.com/homebrew/
 .. _`this url`: http://mirror.switch.ch/ftp/mirror/gnu/time/
-.. _`XCode`: https://developer.apple.com/xcode/

@@ -20,7 +20,7 @@ Job control on SGE clusters (possibly connecting to the front-end via SSH).
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.3 version (SVN $Revision$)'
 
 
 # stdlib imports
@@ -41,8 +41,7 @@ from gc3libs.compat._collections import defaultdict
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
-from gc3libs.quantity import Memory, kB, MB, GB
-from gc3libs.quantity import Duration, hours, minutes, seconds
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 import gc3libs.utils
 from gc3libs.utils import same_docstring_as
 import transport
@@ -55,10 +54,8 @@ def _int_floor(val):
     """Return `val` rounded to nearest integer towards 0."""
     return int(math.floor(float(val)))
 
-
 def _to_duration(val):
-    """Convert a floating point number of seconds to a
-    `gc3libs.quantity.Duration` value."""
+    """Convert a floating point number of seconds to a `gc3libs.quantity.Duration` value."""
     try:
         return float(val)*seconds
     except Exception, err:
@@ -69,10 +66,8 @@ def _to_duration(val):
             err.__class__.__name__, str(err), val)
         return None
 
-
 def _to_memory(val):
-    """Convert a Grid Engine MEMORY value to a
-    `gc3libs.quantity.Memory` one."""
+    """Convert a Grid Engine MEMORY value to a `gc3libs.quantity.Memory` one."""
     try:
         unit = val[-1]
         if unit in ['G', 'g']:
@@ -85,39 +80,36 @@ def _to_memory(val):
             # SGE's default is bytes
             return float(val)*Memory.B
     except Exception, err:
-        gc3libs.log.warning("Grid Engine backend: Cannot interpret '%s' "
-                            "as a MEMORY value.", val)
+        gc3libs.log.warning(
+            "Grid Engine backend: Cannot interpret '%s' as a MEMORY value.", val)
         return None
 
 # `_convert` is a `dict` instance, mapping key names to functions
 # that parse a value from a string into a Python native type.
 _convert = {
-    'slots':          int,
-    'slots_used':     int,
-    'slots_resv':     int,
-    'slots_total':    int,
-    'load_avg':       float,
-    'load_short':     float,
-    'load_medium':    float,
-    'load_long':      float,
-    'np_load_avg':    float,
-    'np_load_short':  float,
-    'np_load_medium': float,
-    'np_load_long':   float,
-    'num_proc':       _int_floor,  # SGE considers `num_proc` a
-                                   # floating-point value...
-    'swap_free':      gc3libs.utils.to_bytes,
-    'swap_total':     gc3libs.utils.to_bytes,
-    'swap_used':      gc3libs.utils.to_bytes,
-    'mem_free':       gc3libs.utils.to_bytes,
-    'mem_used':       gc3libs.utils.to_bytes,
-    'mem_total':      gc3libs.utils.to_bytes,
-    'virtual_free':   gc3libs.utils.to_bytes,
-    'virtual_used':   gc3libs.utils.to_bytes,
-    'virtual_total':  gc3libs.utils.to_bytes,
+    'slots':         int,
+    'slots_used':    int,
+    'slots_resv':    int,
+    'slots_total':   int,
+    'load_avg':      float,
+    'load_short':    float,
+    'load_medium':   float,
+    'load_long':     float,
+    'np_load_avg':   float,
+    'np_load_short': float,
+    'np_load_medium':float,
+    'np_load_long':  float,
+    'num_proc':      _int_floor, # SGE considers `num_proc` a floating-point value...
+    'swap_free':     gc3libs.utils.to_bytes,
+    'swap_total':    gc3libs.utils.to_bytes,
+    'swap_used':     gc3libs.utils.to_bytes,
+    'mem_free':      gc3libs.utils.to_bytes,
+    'mem_used':      gc3libs.utils.to_bytes,
+    'mem_total':     gc3libs.utils.to_bytes,
+    'virtual_free':  gc3libs.utils.to_bytes,
+    'virtual_used':  gc3libs.utils.to_bytes,
+    'virtual_total': gc3libs.utils.to_bytes,
 }
-
-
 def _parse_value(key, value):
     try:
         return _convert[key](value)
@@ -128,8 +120,7 @@ def _parse_value(key, value):
 def _parse_asctime(val):
     try:
         # XXX: replace with datetime.strptime(...) in Python 2.5+
-        return datetime.datetime(
-            *(time.strptime(val, '%a %b %d %H:%M:%S %Y')[0:6]))
+        return datetime.datetime(*(time.strptime(val, '%a %b %d %H:%M:%S %Y')[0:6]))
     except Exception, err:
         gc3libs.log.error(
             "Cannot parse '%s' as a SGE-format time stamp: %s: %s",
@@ -145,13 +136,10 @@ def parse_qstat_f(qstat_output):
     # a job report line starts with a numeric job ID
     _job_line_re = re.compile(r'^[0-9]+ \s+', re.X)
     # queue report header line starts with queuename@hostname
-    _queue_header_re = re.compile(
-        r'^([a-z0-9\._-]+)@([a-z0-9\.-]+) \s+ ([BIPCTN]+) '
-        '\s+ ([0-9]+)?/?([0-9]+)/([0-9]+)',
-        re.I | re.X)
+    _queue_header_re = re.compile(r'^([a-z0-9\._-]+)@([a-z0-9\.-]+) \s+ ([BIPCTN]+) \s+ ([0-9]+)?/?([0-9]+)/([0-9]+)',
+                                  re.I|re.X)
     # property lines always have the form 'xx:propname=value'
-    _property_line_re = re.compile(r'^[a-z]{2}:([a-z_]+)=(.+)', re.I | re.X)
-
+    _property_line_re = re.compile(r'^[a-z]{2}:([a-z_]+)=(.+)', re.I|re.X)
     def dzdict():
         def zdict():
             return defaultdict(int)
@@ -164,23 +152,17 @@ def parse_qstat_f(qstat_output):
         # is this a queue header?
         match = _queue_header_re.match(line)
         if match:
-            qname, hostname, kind, slots_resv, slots_used, slots_total \
-                = match.groups()
+            qname, hostname, kind, slots_resv, slots_used, slots_total = match.groups()
             if 'B' not in kind:
-                continue  # ignore non-batch queues
-
-            # Some versions of SGE do not have a "reserved" digit in
-            # the slots column, so slots_resv will be set to None.
-            # For our purposes it is better that it is 0.
+                continue # ignore non-batch queues
+            # Some versions of SGE do not have a "reserved" digit in the slots column, so
+            # slots_resv will be set to None.  For our purposes it is better that it is 0.
             if slots_resv is None:
                 slots_resv = 0
             # key names are taken from 'qstat -xml' output
-            result[qname][hostname]['slots_resv'] = _parse_value(
-                'slots_resv', slots_resv)
-            result[qname][hostname]['slots_used'] = _parse_value(
-                'slots_used', slots_used)
-            result[qname][hostname]['slots_total'] = _parse_value(
-                'slots_total', slots_total)
+            result[qname][hostname]['slots_resv'] = _parse_value('slots_resv', slots_resv)
+            result[qname][hostname]['slots_used'] = _parse_value('slots_used', slots_used)
+            result[qname][hostname]['slots_total'] = _parse_value('slots_total', slots_total)
         # is this a property line?
         match = _property_line_re.match(line)
         if match:
@@ -214,10 +196,8 @@ def compute_nr_of_slots(qstat_output):
     on how local policies will map a job to the available queues.
     """
     qstat = parse_qstat_f(qstat_output)
-
     def zero_initializer():
         return 0
-
     def dict_with_zero_initializer():
         return defaultdict(zero_initializer)
     result = defaultdict(dict_with_zero_initializer)
@@ -228,8 +208,7 @@ def compute_nr_of_slots(qstat_output):
             r['total'] = max(s['slots_total'], r['total'])
             r['unavailable'] = max(s['slots_used'] + s['slots_resv'],
                                    r['unavailable'])
-    # compute available slots by subtracting the number of
-    # used+reserved from the total
+    # compute available slots by subtracting the number of used+reserved from the total
     g = result['global']
     for host in result.iterkeys():
         r = result[host]
@@ -269,14 +248,9 @@ def count_jobs(qstat_output, whoami):
     Parse SGE's ``qstat`` output (as contained in string `qstat_output`)
     and return a quadruple `(R, Q, r, q)` where:
 
-      * `R` is the total number of running jobs in the SGE cell (from
-        any user);
-
-      * `Q` is the total number of queued jobs in the SGE cell (from
-        any user);
-
+      * `R` is the total number of running jobs in the SGE cell (from any user);
+      * `Q` is the total number of queued jobs in the SGE cell (from any user);
       * `r` is the number of running jobs submitted by user `whoami`;
-
       * `q` is the number of queued jobs submitted by user `whoami`
     """
     total_running = 0
@@ -296,7 +270,7 @@ def count_jobs(qstat_output, whoami):
         jid, prio, name, user, state, rest = re.split(r'\s+', line, 5)
         # skip in error/hold/suspended/deleted state
         if (('E' in state) or ('h' in state) or ('T' in state)
-                or ('s' in state) or ('S' in state) or ('d' in state)):
+            or ('s' in state) or ('S' in state) or ('d' in state)):
             continue
         if 'q' in state:
             total_queued += 1
@@ -322,19 +296,19 @@ def _sge_filename_mapping(jobname, jobid, file_name):
     try:
         return {
             # XXX: SGE-specific?
-            ('%s.out' % jobname): ('%s.o%s' % (jobname, jobid)),
-            ('%s.err' % jobname): ('%s.e%s' % (jobname, jobid)),
+            ('%s.out' % jobname) : ('%s.o%s' % (jobname, jobid)),
+            ('%s.err' % jobname) : ('%s.e%s' % (jobname, jobid)),
             # FIXME: the following is definitely GAMESS-specific
-            ('%s.cosmo' % jobname): ('%s.o%s.cosmo' % (jobname, jobid)),
-            ('%s.dat' % jobname): ('%s.o%s.dat' % (jobname, jobid)),
-            ('%s.inp' % jobname): ('%s.o%s.inp' % (jobname, jobid)),
-            ('%s.irc' % jobname): ('%s.o%s.irc' % (jobname, jobid))}[file_name]
+            ('%s.cosmo' % jobname) : ('%s.o%s.cosmo' % (jobname, jobid)),
+            ('%s.dat'   % jobname) : ('%s.o%s.dat'   % (jobname, jobid)),
+            ('%s.inp'   % jobname) : ('%s.o%s.inp'   % (jobname, jobid)),
+            ('%s.irc'   % jobname) : ('%s.o%s.irc'   % (jobname, jobid)),
+            }[file_name]
     except KeyError:
         return file_name
 
 
-_qsub_jobid_re = re.compile(r'Your job (?P<jobid>\d+) '
-                            '\("(?P<jobname>.+)"\) has been submitted', re.I)
+_qsub_jobid_re = re.compile(r'Your job (?P<jobid>\d+) \("(?P<jobname>.+)"\) has been submitted', re.I)
 """
 Regex for extracting the job number and name from Grid Engine's `qsub` output.
 """
@@ -342,8 +316,7 @@ Regex for extracting the job number and name from Grid Engine's `qsub` output.
 
 class SgeLrms(batch.BatchSystem):
     """
-    Job control on SGE clusters (possibly by connecting via SSH to a
-    submit node).
+    Job control on SGE clusters (possibly by connecting via SSH to a submit node).
     """
 
     _batchsys_name = 'Grid Engine'
@@ -352,12 +325,12 @@ class SgeLrms(batch.BatchSystem):
                  # this are inherited from the base LRMS class
                  architecture, max_cores, max_cores_per_job,
                  max_memory_per_core, max_walltime,
-                 auth,  # ignored if `transport` is 'local'
+                 auth, # ignored if `transport` is 'local'
                  # these are inherited from the `BatchSystem` class
                  frontend, transport,
-                 accounting_delay=15,
+                 accounting_delay = 15,
                  # these are specific to the SGE class
-                 default_pe=None,
+                 default_pe = None,
                  **extra_args):
 
         # init base class
@@ -376,6 +349,7 @@ class SgeLrms(batch.BatchSystem):
         self._qdel = self._get_command('qdel')
         self._qstat = self._get_command('qstat')
 
+
     def _submit_command(self, app):
         sub_argv, app_argv = app.qsub_sge(self)
         return (str.join(' ', sub_argv), str.join(' ', app_argv))
@@ -389,8 +363,7 @@ class SgeLrms(batch.BatchSystem):
 
     def _parse_stat_output(self, stdout):
         job_status = stdout.split()[4]
-        log.debug("translating SGE's `qstat` code '%s' to gc3libs.Run.State",
-                  job_status)
+        log.debug("translating SGE's `qstat` code '%s' to gc3libs.Run.State" % job_status)
 
         jobstatus = dict()
         if job_status in ['s', 'S', 'T'] or job_status.startswith('h'):
@@ -399,11 +372,10 @@ class SgeLrms(batch.BatchSystem):
             jobstatus['state'] = Run.State.SUBMITTED
         elif 'r' in job_status or 'R' in job_status or 't' in job_status:
             jobstatus['state'] = Run.State.RUNNING
-        elif job_status == 'E':  # error condition
+        elif job_status == 'E': # error condition
             jobstatus['state'] = Run.State.TERMINATING
         else:
-            log.warning("unknown SGE job status '%s', returning `UNKNOWN`",
-                        job_status)
+            log.warning("unknown SGE job status '%s', returning `UNKNOWN`", job_status)
             jobstatus['state'] = Run.State.UNKNOWN
         return jobstatus
 
@@ -431,7 +403,8 @@ class SgeLrms(batch.BatchSystem):
         'jobname':       ('sge_jobname',         str),
         'qname':         ('sge_queue',           str),
         'qsub_time':     ('sge_submission_time', _parse_asctime),
-        'start_time':    ('sge_start_time',      _parse_asctime), }
+        'start_time':    ('sge_start_time',      _parse_asctime),
+        }
 
     def _parse_acct_output(self, stdout):
         jobstatus = dict()
@@ -470,8 +443,7 @@ class SgeLrms(batch.BatchSystem):
 
             _command = ("%s -U %s" % (self._qstat, self._username))
             log.debug("Running `%s`...", _command)
-            exit_code, qstat_stdout, stderr \
-                = self.transport.execute_command(_command)
+            exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0:
                 # cannot continue
                 raise gc3libs.exceptions.LRMSError(
@@ -481,8 +453,7 @@ class SgeLrms(batch.BatchSystem):
 
             _command = ("%s -F -U %s" % (self._qstat, self._username))
             log.debug("Running `%s`...", _command)
-            exit_code, qstat_F_stdout, stderr \
-                = self.transport.execute_command(_command)
+            exit_code, qstat_F_stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0:
                 # cannot continue
                 raise gc3libs.exceptions.LRMSError(
@@ -490,8 +461,8 @@ class SgeLrms(batch.BatchSystem):
                     "exit code: %d; stdout: '%s'; stderr: '%s'." %
                     (_command, exit_code, stdout, stderr))
 
-            (total_running, self.queued, self.user_run, self.user_queued) \
-                = count_jobs(qstat_stdout, self._username)
+            (total_running, self.queued,
+             self.user_run, self.user_queued) = count_jobs(qstat_stdout, self._username)
             slots = compute_nr_of_slots(qstat_F_stdout)
             self.free_slots = int(slots['global']['available'])
             self.used_quota = -1

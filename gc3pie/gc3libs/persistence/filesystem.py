@@ -198,8 +198,8 @@ class FilesystemStore(Store):
             except:
                 pass  # ignore errors
         except Exception, ex:
-            gc3libs.log.error("Error saving job '%s' to file '%s': %s: %s",
-                              obj, filename, ex.__class__.__name__, ex)
+            gc3libs.log.error("Error saving job '%s' to file '%s': %s: %s"
+                              % (obj, filename, ex.__class__.__name__, ex))
             if tgt is not None:
                 try:
                     tgt.close()

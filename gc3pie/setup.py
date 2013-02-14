@@ -4,6 +4,7 @@
 from distribute_setup import use_setuptools
 use_setuptools()
 
+
 def read_whole_file(path):
     stream = open(path, 'r')
     text = stream.read()
@@ -11,36 +12,17 @@ def read_whole_file(path):
     return text
 
 
-# See http://tox.readthedocs.org/en/latest/example/basic.html#integration-with-setuptools-distribute-test-commands
-# on how to run tox when python setup.py test is run
-from setuptools.command.test import test as TestCommand
-import sys
-
-class Tox(TestCommand):
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        #import here, cause outside the eggs aren't loaded
-        import tox
-        errno = tox.cmdline(self.test_args)
-        sys.exit(errno)
-
-
 # see http://peak.telecommunity.com/DevCenter/setuptools
 # for an explanation of the keywords and syntax of this file.
 #
 import setuptools
 import setuptools.dist
-# avoid setuptools including `.svn` directories into the PyPI package
 from setuptools.command import sdist
 del sdist.finders[:]
 
 setuptools.setup(
     name = "gc3pie",
-    version = "2.0.dev", # see: http://packages.python.org/distribute/setuptools.html
+    version = '2.0.3', # see: http://packages.python.org/distribute/setuptools.html
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
     # metadata for upload to PyPI
@@ -97,25 +79,20 @@ setuptools.setup(
         # paramiko and pycrypto are required for SSH operations
         # ("pycrypto" is actually a dependency of Paramiko, but
         # setuptools apparently does not process dependencies recursively)
-        'paramiko', 'pycrypto>=1.9',
-        # prettytable -- format tabular text output
-        'prettytable',
+        'paramiko==1.7.7.2', 'pycrypto==2.6',
+        # lockfile 0.9 dropped support for Python 2.4; let's stick with 0.8
+        'lockfile==0.8',
+        # texttable -- format tabular text output
+        'texttable==0.8.1',
         # pyCLI -- object-oriented command-line app programming
-        'pyCLI>=2.0.3',
-        # Needed by SqlStore
-        # 0.7.9 is the latest version with Python2.4 support
+        'pyCLI==2.0.3',
+        # Needed by SqlStore; 0.7.9 is the latest version with Python2.4 support
         'sqlalchemy==0.7.9',
+        # Needed by ShellCmd backend
+        'psutil==0.6.1',
         # Needed for parsing human-readable dates (gselect uses it).
-        'parsedatetime',
-        # needed by Benjamin's DE optimizer code
-        # To add as an *optional* dependency
-        # 'numpy',
-        # To add as an *optional* dependency
-        # 'boto',
+        'parsedatetime==0.8.7',
         ],
-    # Apparently, this list is read from right to left...
-    tests_require = ['tox'],
-    cmdclass = {'test': Tox},
     # additional non-Python files to be bundled in the package
     package_data = {
         'gc3libs': [

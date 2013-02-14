@@ -7,7 +7,7 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gcrypto --help`` for program usage instructions.
 """
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.3 version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2012-01-29:
@@ -175,7 +175,6 @@ class CryptoChunkedParameterSweep(ChunkedParameterSweep):
                  input_files_archive, gnfs_location, output_folder, **extra_args):
 
         # remember for later
-        self.range_start = range_start
         self.range_end = range_end
         self.parameter_count_increment = slice * chunk_size
         self.input_files_archive = input_files_archive
