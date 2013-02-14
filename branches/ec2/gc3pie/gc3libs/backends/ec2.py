@@ -58,7 +58,7 @@ class VMPool(Persistable):
 
        >>> vmpool = VMPool('pool', None)
        >>> vmpool._vm_ids
-       []
+       set([])
        >>> vmpool._vms
        {}
 
@@ -70,7 +70,7 @@ class VMPool(Persistable):
        >>> s.add(vmpool)
        'pool'
        >>> vmpool._vms['x'] = 'xxx'
-       >>> vmpool._vm_ids.append('x')
+       >>> vmpool._vm_ids.add('x')
        >>> s.save(vmpool)
        'pool'
 
@@ -100,7 +100,7 @@ class VMPool(Persistable):
    while the list of VM ids should be there.
 
        >>> vmpool2._vm_ids
-       ['x']
+       set(['x')
        >>> 'x' in vmpool2
        True
 
@@ -113,7 +113,7 @@ class VMPool(Persistable):
        >>> vmpool2._vms
        {}
        >>> vmpool2._vm_ids
-       []
+       set([])
 
     cleanup
 
@@ -125,7 +125,7 @@ class VMPool(Persistable):
         self.persistent_id = name
         self.conn = ec2_connection
         self._vms = {}
-        self._vm_ids = []
+        self._vm_ids = set()
         self.changed = False
 
     def __repr__(self):
@@ -141,14 +141,15 @@ class VMPool(Persistable):
         # Only save persistent_id and list of IDs, do not save VM
         # objects.
         state = self.__dict__.copy()
-        del state['_vms']
+        state['_vms'] = dict()
+        state['conn'] = None
         return state
 
     def add_vm(self, vm):
         """
         Add a vm object to the list of VMs.
         """
-        self._vm_ids.append(vm.id)
+        self._vm_ids.add(vm.id)
         self._vms[vm.id] = vm
         self.changed = True
 
@@ -172,6 +173,9 @@ class VMPool(Persistable):
         if vm_id in self._vms:
             return self._vms[vm_id]
 
+        if not self.conn:
+            raise UnrecoverableError(
+                "No connection object found in `VMPool`")
         try:
             reservations = self.conn.get_all_instances(instance_ids=[vm_id])
         except boto.exception.EC2ResponseError, ex:
@@ -191,7 +195,7 @@ class VMPool(Persistable):
         vm = instances[vm_id]
         self._vms[vm_id] = vm
         if vm_id not in self._vm_ids:
-            self._vm_ids.append(vm_id)
+            self._vm_ids.add(vm_id)
             self.changed = True
         return vm
 
@@ -298,20 +302,6 @@ class EC2Lrms(LRMS):
                 "No `image_id` or `image_name` has been specified in the"
                 " configuration file.")
 
-        # Set up the VMPool persistent class
-        self._session = Session(
-            os.path.expanduser(os.path.expandvars(EC2Lrms.RESOURCE_DIR)))
-        vmpoolid = 'vmpool:%s' % self.name
-        if vmpoolid in self._session.list_ids():
-            # Recover the list of available vm ids
-            self._vms = self._session.load(vmpoolid)
-            self._vms.conn = self._conn
-            # XXX: is the connection still valid???
-        else:
-            # Create a new VMPool object
-            self._vms = VMPool(vmpoolid, self._conn)
-            self._session.add(self._vms)
-
     def _connect(self):
         """
         Connect to the EC2 endpoint and check that the required
@@ -319,6 +309,7 @@ class EC2Lrms(LRMS):
         """
         if self._conn is not None:
             return
+
 
         args = {'aws_access_key_id': self.ec2_access_key,
                 'aws_secret_access_key': self.ec2_secret_key,
@@ -336,6 +327,20 @@ class EC2Lrms(LRMS):
                 args['is_secure'] = False
 
         self._conn = boto.connect_ec2(**args)
+
+        # Set up the VMPool persistent class This has been delied
+        # until here because otherwise self._conn is None
+        self._session = Session(
+            os.path.expanduser(os.path.expandvars(EC2Lrms.RESOURCE_DIR)))
+        vmpoolid = 'vmpool:%s' % self.name
+        if vmpoolid in self._session.list_ids():
+            # Recover the list of available vm ids
+            self._vms = self._session.load(vmpoolid)
+            self._vms.conn = self._conn
+        else:
+            # Create a new VMPool object
+            self._vms = VMPool(vmpoolid, self._conn)
+            self._session.add(self._vms)
 
         all_images = self._conn.get_all_images()
         if self.image_id:
@@ -447,7 +452,7 @@ class EC2Lrms(LRMS):
         except Exception, ex:
             raise UnrecoverableError("Error starting instance: %s" % str(ex))
         vm = reservation.instances[0]
-
+        self._vms.add_vm(vm)
         gc3libs.log.info(
             "VM with id `%s` has been created and is in %s state.",
             vm.id, vm.state)
@@ -472,7 +477,9 @@ class EC2Lrms(LRMS):
         """
         self._connect()
         vm = self._vms.get_vm(vm_id)
-        self._session.save_all()()
+        self._session.save(self._vms)
+        # self._session.save_all()
+        return vm
 
     def _import_keypair(self):
         """
@@ -605,9 +612,18 @@ class EC2Lrms(LRMS):
         # have to update them with valid public_ip, if they are
         # present.
 
+        self._connect()
         # Update status of known VMs
         for vm_id in self._vms:
-            vm = self._vms.get_vm(vm_id)
+            try:
+                vm = self._vms.get_vm(vm_id)
+            except UnrecoverableError, ex:
+                gc3libs.log.warning(
+                    "Removing stale information on VM `%s`. It has probably"
+                    " been deleted from outside GC3Pie.", vm_id)
+                self._vms.remove_vm(vm_id)
+                continue
+
             state = vm.update()
             if vm.state == 'pending':
                 # If VM is still in pending state, skip creation of
@@ -629,6 +645,9 @@ class EC2Lrms(LRMS):
                     "Ignoring error while updating resource %s. "
                     "The corresponding VM may not be ready yet. Error: %s",
                     resource.name, ex)
+        # Save the list of VMs, in case it has been updated.
+        self._session.save(self._vms)
+        # self._session.save_all()
         return self
 
     @same_docstring_as(LRMS.get_results)
@@ -693,7 +712,7 @@ class EC2Lrms(LRMS):
                 # next one and add it to the list of "pending" VMs.
                 pending_vms.add(vm_id)
             try:
-                ret = resource.submit_job()
+                ret = resource.submit_job(job)
                 job.ec2_instance_id = vm_id
                 job.changed = True
                 gc3libs.log.info(
@@ -708,13 +727,14 @@ class EC2Lrms(LRMS):
         # Couldn't submit to any resource.
         if not pending_vms:
             # No pending VM, and no resource available. Create a new VM
-            if vm_pool_max_size \
-                    and len(self._vms) >= self.vm_pool_max_size:
+            if not self.vm_pool_max_size \
+                    or len(self._vms) >= self.vm_pool_max_size:
                 image_id = job.get('ec2_image_id', self.image_id)
                 instance_type = job.get('ec2_instance_type',
                                         self.instance_type)
                 vm = self._create_instance(image_id,
                                            instance_type=instance_type)
+                pending_vms.add(vm.id)
                 if vm.state == 'error':
                     # The VM is in error state: exit.
                     raise UnrecoverableError(
@@ -729,13 +749,13 @@ class EC2Lrms(LRMS):
                         % (vm.id, str(job)))
 
                 self._vms.add_vm(vm)
-                self._session.save_all()()
+                self._session.save(self._vms)
+                # self._session.save_all()
 
         # If we reached this point, we are waiting for a VM to be
         # ready, so delay the submission until we wither can submit to
         # one of the available resources or untile all the VMs are
         # ready.
-
         gc3libs.log.info(
             "No available resource was found, but some VM is still in "
             "`pending` state. Waiting until the next iteration before "
@@ -793,7 +813,8 @@ class EC2Lrms(LRMS):
             del self.resources[vm.id]
             vm.terminate()
             del self._vms[vm.id]
-            self._session.save_all()()
+            self._session.save(self._vms)
+            # self._session.save_all()
 
     @same_docstring_as(LRMS.close)
     def close(self):
@@ -809,7 +830,8 @@ class EC2Lrms(LRMS):
                 vm.terminate()
                 del self._vms[vm.id]
             resource.close()
-        self._session.save_all()()
+        self._session.save(self._vms)
+        # self._session.save_all()
 
 
 ## main: run tests
