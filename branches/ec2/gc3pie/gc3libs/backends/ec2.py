@@ -209,7 +209,9 @@ class VMPool(Persistable):
         """
         Iterate over the list of known VM ids.
         """
-        return iter(self._vm_ids)
+        # We need to create a new list because the _vm_ids set may be
+        # updated during iteration.
+        return iter(list(self._vm_ids))
 
     def __getitem__(self, vm_id):
         """
