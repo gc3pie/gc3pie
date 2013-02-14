@@ -140,8 +140,9 @@ class VMPool(Persistable):
     def __getstate__(self):
         # Only save persistent_id and list of IDs, do not save VM
         # objects.
-        self._vms = {}
-        return self.__dict__.copy()
+        state = self.__dict__.copy()
+        del state['_vms']
+        return state
 
     def add(self, vm):
         """
