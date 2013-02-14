@@ -98,6 +98,8 @@ class VMPool(Persistable):
 
        >>> vmpool2._vm_ids
        ['x']
+       >>> 'x' in vmpool2
+       True
 
     Check if `del` works:
 
@@ -121,6 +123,7 @@ class VMPool(Persistable):
         self.conn = ec2_connection
         self._vms = {}
         self._vm_ids = []
+        self.changed = False
 
     def __repr__(self):
         return self._vm_ids.__repr__()
@@ -161,7 +164,9 @@ class VMPool(Persistable):
                 "Instance with id %s has not found." % vm_id)
         vm = instances[vm_id]
         self._vms[vm_id] = vm
-        self._vm_ids.append(vm_id)
+        if vm_id not in self._vm_ids:
+            self._vm_ids.append(vm_id)
+            self.changed = True
         return vm
 
     def __iter__(self):
@@ -193,6 +198,7 @@ class VMPool(Persistable):
             del self._vms[vm_id]
         if vm_id in self._vm_ids:
             self._vm_ids.remove(vm_id)
+        self.changed = True
             
 
 class EC2Lrms(LRMS):
@@ -434,7 +440,8 @@ class EC2Lrms(LRMS):
         is no such instance with that id.
         """
         self._connect()
-        return self._vms.get_vm(vm_id)
+        vm = self._vms.get_vm(vm_id)
+        self.session.save(self._vms)
 
     def _import_keypair(self):
         """
@@ -592,6 +599,7 @@ class EC2Lrms(LRMS):
             del self.resources[vm.id]
             vm.terminate()
             del self._vms[vm.id]
+            self.session.save(self._vms)
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
