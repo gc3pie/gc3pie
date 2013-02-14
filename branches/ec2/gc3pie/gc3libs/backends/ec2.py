@@ -301,7 +301,7 @@ class EC2Lrms(LRMS):
         # Set up the VMPool persistent class
         self._session = Session(
             os.path.expanduser(os.path.expandvars(EC2Lrms.RESOURCE_DIR)))
-        vmpoolid = 'vmpool:%s' % self.resource_name
+        vmpoolid = 'vmpool:%s' % self.name
         if vmpoolid in self._session.list_ids():
             # Recover the list of available vm ids
             self._vms = self._session.load(vmpoolid)
@@ -310,7 +310,7 @@ class EC2Lrms(LRMS):
         else:
             # Create a new VMPool object
             self._vms = VMPool(vmpoolid, self._conn)
-            self._session.add(vmpoolid)
+            self._session.add(self._vms)
 
     def _connect(self):
         """
