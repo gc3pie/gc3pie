@@ -75,6 +75,13 @@ class CodemlApplication(gc3libs.Application):
         # need to send the PERL driver script, and the binary only
         # if we're not using the RTE
         inputs = { codeml_pl:'codeml.pl' }
+
+        # include comdel in the list of executables
+        if extra_args.has_key('executables'):
+            extra_args['executables'].append('codeml.pl')
+        else:
+            extra_args['executables'] = ['codeml.pl']
+
         if codeml is None:
             # use the RTE
             rte = ('APPS/BIO/CODEML-%s' % version)
