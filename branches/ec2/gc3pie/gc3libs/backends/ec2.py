@@ -660,6 +660,12 @@ class EC2Lrms(LRMS):
             try:
                 resource.get_resource_status()
             except Exception, ex:
+                # XXX: Actually, we should try to identify the kind of
+                # error we are getting. For instance, if the
+                # configuration options `username` is wrong, we will
+                # create VMs but we will never be able to submit jobs
+                # to them, thus causing an increasing number of
+                # useless VMs created on the cloud.
                 gc3libs.log.info(
                     "Ignoring error while updating resource %s. "
                     "The corresponding VM may not be ready yet. Error: %s",
@@ -679,24 +685,38 @@ class EC2Lrms(LRMS):
 
         return self.resources[app.ec2_instance_id].update_job_state(app)
 
-    @same_docstring_as(LRMS.submit_job)
     def submit_job(self, job):
         """
-        XXX: update doc
+        Submission on an EC2 resource will usually happen in multiple
+        steps, since creating a VM and attaching a resource to it will
+        take some time.
 
-        This method create an instance on the cloud, then will create
-        a resource to use this instance.
+        In order to return as soon as possible, the backend will raise
+        a `RecoverableError` whenever submission is delayed.
 
-        Since the creation of VMs can take some time, instead of
-        waiting for the VM to be ready we will raise an
-        `RecoverableError`:class: every time we try to submit a job on
-        this resource but the associated VM is not yet ready and we
-        cannot yet connect to the it via ssh, which is not an issue
-        when you call `submit_job` from the `Engine`:class:.
+        In case a permanent error is found (for instance, we cannot
+        create VMs on the cloud), a `UnrecoverableError` is raised.
 
-        When the instance is up&running and the associated resource is
-        created, this method will call the `submit_job` method of the
-        resource and returns its return value.
+        More in detail, when during submission the following will
+        happen:
+
+        * First of all, the backend will try to submit the job to one
+          of the already available subresources.
+
+        * If none of them is able to sbmit the job, the backend will
+          check if there is a VM in pending state, and in case there
+          is one it will raise a `RecoverableError`, thus delaying
+          submission.
+
+        * If no VM in pending state is found, the `vm_pool_max_size`
+          configuration option is checked. If we already reached the
+          maximum number of VM, a `UnrecoverableError` is raised.
+
+        * If no VM in pending state is found but `vm_pool_max_size` is
+          still lesser than the number of VM currently created (or it
+          is None, which for us means no limit), then a new VM is
+          created, and `RecoverableError` is raised.
+
         """
         self._connect()
         # Updating resource is needed to update the subresources. This
@@ -705,8 +725,14 @@ class EC2Lrms(LRMS):
         #     http://code.google.com/p/gc3pie/issues/detail?id=386
         self.get_resource_status()
 
+        pending_vms = set(vm.id for vm in self._vms.get_all_vms()
+                          if vm.state == 'pending')
         # First of all, try to submit to one of the subresources.
         for vm_id, resource in self.resources.items():
+            if not resource.updated:
+                # The VM is probably still booting, let's skip to the
+                # next one and add it to the list of "pending" VMs.
+                pending_vms.add(vm_id)
             try:
                 ret = resource.submit_job()
                 job.ec2_instance_id = vm_id
@@ -721,8 +747,6 @@ class EC2Lrms(LRMS):
                     resource.name, str(ex))
 
         # Couldn't submit to any resource.
-        pending_vms = [vm for vm in self._vms.get_all_vms()
-                       if vm.state == 'pending']
         if not pending_vms:
             # No pending VM, and no resource available. Create a new VM
             if vm_pool_max_size \
@@ -756,10 +780,11 @@ class EC2Lrms(LRMS):
         gc3libs.log.info(
             "No available resource was found, but some VM is still in "
             "`pending` state. Waiting until the next iteration before "
-            "creating a new VM.")
+            "creating a new VM. Pending VM ids: %s", 
+            str.join(', ', pending_vms))
         raise RecoverableError(
             "Delaying submission until some of the VMs currently pending "
-            "is ready.")
+            "is ready. Pending VM ids: %s" % str.join(', ', pending_vms))
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
@@ -779,21 +804,19 @@ class EC2Lrms(LRMS):
 
     @same_docstring_as(LRMS.close)
     def close(self):
+        # Update status of VMs and remote resources
+        self.get_resource_status()
         for vm_id, resource in self.resources.items():
-            try:
-                resource.get_resource_status()
-            except Exception, ex:
+            if resource.updated and not resource.job_infos:
+                vm = self._get_vm(vm_id)
                 gc3libs.log.warning(
-                    "Error while updating EC2 subresource %s: %s. "
-                    "Turning off associated VM.", resource.name, ex)
-                if len(resource.job_infos) == 0:
-                    # turn VM off
-                    vm = self._get_vm(vm_id)
-                    gc3libs.log.warning(
-                        "VM instance %s at %s is no longer needed. "
-                        "You may need to terminate it manually.",
-                        vm.id, vm.public_dns_name)
+                    "VM instance %s at %s is no longer needed. "
+                    "You may need to terminate it manually.",
+                    vm.id, vm.public_dns_name)
+                vm.terminate()
+                del self._vms[vm.id]
             resource.close()
+        self._save_session()
 
 
 ## main: run tests
