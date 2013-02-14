@@ -46,14 +46,161 @@ import gc3libs.url
 from gc3libs import Run
 from gc3libs.utils import same_docstring_as
 from gc3libs.backends import LRMS
+from gc3libs.session import Session
+from gc3libs.persistence import Persistable
 
 available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
 
+
+class VMPool(Persistable):
+    """
+    Will hold a list of VMs. Will persiste a list of vm ids.
+
+       >>> vmpool = VMPool('pool', None)
+       >>> vmpool._vm_ids
+       []
+       >>> vmpool._vms
+       {}
+
+    save VMPool to disk
+
+       >>> from tempfile import mkdtemp
+       >>> tmpdir = mkdtemp()
+       >>> s = Session(tmpdir)
+       >>> s.add(vmpool)
+       'pool'
+       >>> vmpool._vms['x'] = 'xxx'
+       >>> vmpool._vm_ids.append('x')
+       >>> s.save(vmpool)
+       'pool'
+
+    Standard representation of a VMPool is its vm ids:
+
+       >>> vmpool
+       ['x']
+
+    while string representation is:
+
+       >>> str(vmpool)
+       "VMPool('pool') : ['x']"
+
+    load the saved VMPool object from disk
+
+       >>> s2 = Session(tmpdir)
+       >>> vmpool2 = s2.load('pool')
+
+    the internal dictionary msut be empty
+
+       >>> vmpool2._vms
+       {}
+
+   while the list of VM ids should be there.
+
+       >>> vmpool2._vm_ids
+       ['x']
+
+    Check if `del` works:
+
+       >>> vmpool2._vms['x'] = 'xxx'
+       >>> vmpool2._vms
+       {'x': 'xxx'}
+       >>> del vmpool2['x']
+       >>> vmpool2._vms
+       {}
+       >>> vmpool2._vm_ids
+       []
+
+    cleanup
+
+       >>> import shutil
+       >>> shutil.rmtree(tmpdir)
+    """
+
+    def __init__(self, name, ec2_connection):
+        self.persistent_id = name
+        self.conn = ec2_connection
+        self._vms = {}
+        self._vm_ids = []
+
+    def __repr__(self):
+        return self._vm_ids.__repr__()
+
+    def __str__(self):
+        return "VMPool('%s') : %s" % (self.persistent_id, self._vm_ids)
+
+    def __getstate__(self):
+        # Only save persistent_id and list of IDs, do not save VM
+        # objects.
+        self._vms = {}
+        return self.__dict__.copy()
+
+    def get_vm(self, vm_id):
+        """
+        Return the VM object with id `vm_id`. If it is found in the
+        local cache, that object is returned. Otherwise a new VM
+        object is searched from the EC2 endpoint.
+        """
+        if vm_id in self._vms:
+            return self._vms[vm_id]
+
+        try:
+            reservations = self.conn.get_all_instances(instance_ids=[vm_id])
+        except boto.exception.EC2ResponseError, ex:
+            gc3libs.log.error(
+                "Error getting VM %s: %s", vm_id, ex)
+            raise UnrecoverableError(
+                "Error getting VM %s: %s" % (vm_id, ex))
+        if not reservations:
+            raise UnrecoverableError(
+                "Instance with id %s has not found." % vm_id)
+
+        instances = dict((i.id, i) for i in reservations[0].instances
+                         if reservations)
+        if vm_id not in instances:
+            raise UnrecoverableError(
+                "Instance with id %s has not found." % vm_id)
+        vm = instances[vm_id]
+        self._vms[vm_id] = vm
+        self._vm_ids.append(vm_id)
+        return vm
+
+    def __iter__(self):
+        """
+        Iterate over the list of known VM ids.
+        """
+        return iter(self._vm_ids)
+
+    def __getitem__(self, vm_id):
+        """
+        Return the VM with id `vm_id`.
+
+        x.__getitem__(vm_id) <==> x.get_vm(vm_id)
+        """
+        return self.get_vm(vm_id)
+        
+    def __delitem__(self, vm_id):
+        """
+        x.__delitem__(self, vm_id) <==> x.remove_vm(vm_id)
+        """
+        return self.remove_vm(vm_id)
+
+    def remove_vm(self, vm_id):
+        """
+        Remove VM with id `vm_id` from the list of known VMs. No
+        connection to the EC2 endpoint is performed.
+        """
+        if vm_id in self._vms:
+            del self._vms[vm_id]
+        if vm_id in self._vm_ids:
+            self._vm_ids.remove(vm_id)
+            
 
 class EC2Lrms(LRMS):
     """
     EC2 resource.
     """
+    RESOURCE_DIR = '$HOME/.gc3/ec2.d'
+
     def __init__(self, name,
                  # these parameters are inherited from the `LRMS` class
                  architecture, max_cores, max_cores_per_job,
@@ -75,7 +222,7 @@ class EC2Lrms(LRMS):
         self.subresource_type = self.type.split('+', 1)[1]
         if self.subresource_type not in available_subresource_types:
             raise UnrecoverableError("Invalid resource type: %s" % self.type)
-
+        
         self.region = ec2_region
 
         # Mapping of job.ec2_instance_id => LRMS
@@ -97,8 +244,7 @@ class EC2Lrms(LRMS):
 
         self._parse_security_group()
         self._conn = None
-        self._vms = {}
-
+        
         # `self.subresource_args` is used to create subresources
         self.subresource_args = extra_args
         self.subresource_args['type'] = self.subresource_type
@@ -115,6 +261,20 @@ class EC2Lrms(LRMS):
             raise ConfigurationError(
                 "No `image_id` or `image_name` has been specified in the"
                 " configuration file.")
+
+        # Set up the VMPool persistent class
+        self.session = Session(
+            os.path.expanduser(os.path.expandvars(EC2Lrms.RESOURCE_DIR)))
+        vmpoolid = 'vmpool:%s' % self.resource_name
+        if vmpoolid in self.session.list_ids():
+            # Recover the list of available vm ids
+            self._vms = self.session.load(vmpoolid)
+            self._vms.conn = self._conn
+            # XXX: is the connection still valid???
+        else:
+            # Create a new VMPool object
+            self._vms = VMPool(vmpoolid, self._conn)
+            self.session.add(vmpoolid)
 
     def _connect(self):
         """
@@ -273,35 +433,8 @@ class EC2Lrms(LRMS):
         Return the instance with id `vm_id`, raises an error if there
         is no such instance with that id.
         """
-        # Return cached value if we already have it
-        if vm_id in self._vms:
-            return self._vms[vm_id]
-
         self._connect()
-
-        # NOTE: since `vm_id` is supposed to be unique, we assume
-        # reservations only contains one element.
-        try:
-            reservations = self._conn.get_all_instances(instance_ids=[vm_id])
-        except boto.exception.EC2ResponseError, ex:
-            gc3libs.log.error(
-                "Error getting VM %s from %s: %s", vm_id, self.ec2_url, ex)
-            raise UnrecoverableError(
-                "Error getting VM %s from %s: %s" % (vm_id, self.ec2_url, ex))
-        if not reservations:
-            raise UnrecoverableError(
-                "Instance with id %s has not found in EC2 cloud %s"
-                % (vm_id, self.ec2_url))
-
-        instances = dict((i.id, i) for i in reservations[0].instances
-                         if reservations)
-        if vm_id not in instances:
-            raise UnrecoverableError(
-                "Instance with id %s has not found in EC2 cloud %s"
-                % (vm_id, self.ec2_url))
-        vm = instances[vm_id]
-        self._vms[vm_id] = vm
-        return vm
+        return self._vms.get_vm(vm_id)
 
     def _import_keypair(self):
         """
