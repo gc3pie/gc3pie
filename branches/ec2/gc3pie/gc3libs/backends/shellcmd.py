@@ -449,14 +449,9 @@ ReturnCode=%x"""
         jobinfo = None
         fp = self.transport.open(
             posixpath.join(self.resource_dir, str(pid)), 'r')
-        try:
-            jobinfo = pickle.load(fp)
-            fp.close()
-        except:
-            # This has to become a `finally` statement as soon as we
-            # drop support for Python 2.4
-            fp.close()
-            raise
+        data = fp.read()
+        fp.close()
+        jobinfo = pickle.loads(data)
         return jobinfo
 
     def _update_job_resource_file(self, pid, resources):
@@ -499,8 +494,6 @@ ReturnCode=%x"""
                 return x['requested_memory'].amount(unit=Memory.B)
             else:
                 return 0
-
-        self.job_infos = self._get_persisted_resource_state()
 
         used_memory = Memory.B * sum(map(filter_memory,
                                          self.job_infos.values()))
