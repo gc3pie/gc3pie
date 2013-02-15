@@ -749,7 +749,7 @@ class EC2Lrms(LRMS):
         if not pending_vms:
             # No pending VM, and no resource available. Create a new VM
             if not self.vm_pool_max_size \
-                    or len(self._vms) >= self.vm_pool_max_size:
+                    or len(self._vms) < self.vm_pool_max_size:
                 image_id = job.get('ec2_image_id', self.image_id)
                 instance_type = job.get('ec2_instance_type',
                                         self.instance_type)
@@ -760,6 +760,10 @@ class EC2Lrms(LRMS):
                 self._vms.add_vm(vm)
                 self._session.save(self._vms)
                 # self._session.save_all()
+            else:
+                gc3libs.log.warning(
+                    "Already running the maximum number of VM on resource %s:"
+                    " %s.", self.name, len(self._vms))
 
         # If we reached this point, we are waiting for a VM to be
         # ready, so delay the submission until we wither can submit to
