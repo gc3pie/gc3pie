@@ -631,6 +631,25 @@ class EC2Lrms(LRMS):
                 # If VM is still in pending state, skip creation of
                 # the resource
                 continue
+            elif vm.state == 'error':
+                # The VM is in error state: exit.
+                gc3libs.log.error(
+                    "VM with id `%s` is in ERROR state."
+                    " Terminating it!", vm.id)
+                vm.terminate()
+                self._vms.remove_vm(vm.id)
+            elif vm.state == 'terminated':
+                gc3libs.log.info(
+                    "VM %s in TERMINATED state. It has probably been terminated"
+                    " from outside GC3Pie. Removing it from the list of VM.",
+                    vm.id)
+                self._vms.remove_vm(vm.id)
+            elif vm.state in ['shutting-down', 'stopped']:
+                # The VM has probably ben stopped or shut down from
+                # outside GC3Pie.
+                gc3libs.log.error(
+                    "VM with id `%s` is in terminal state.", vm.id)
+
             # Get or create a resource associated to the vm
             resource = self._get_remote_resource(vm)
 
@@ -737,18 +756,6 @@ class EC2Lrms(LRMS):
                 vm = self._create_instance(image_id,
                                            instance_type=instance_type)
                 pending_vms.add(vm.id)
-                if vm.state == 'error':
-                    # The VM is in error state: exit.
-                    raise UnrecoverableError(
-                        "VM with id `%s` is in ERROR state."
-                        " Aborting submission of job %s" % (vm.id, str(job)))
-                elif vm.state in ['shutting-down', 'terminated', 'stopped']:
-                    # The VM has been terminated, probably from
-                    # outside GC3Pie.
-                    raise UnrecoverableError(
-                        "VM with id `%s` is in terminal state."
-                        " Aborting submission of job %s"
-                        % (vm.id, str(job)))
 
                 self._vms.add_vm(vm)
                 self._session.save(self._vms)
