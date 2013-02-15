@@ -483,11 +483,13 @@ ReturnCode=%x"""
     def get_resource_status(self):
         # if we have been doing our own book-keeping well, then
         # there's no resource status to update
+        self.updated = False
         if not hasattr(self, 'running_kernel'):
             self._gather_machine_specs()
 
         self.job_infos = self._get_persisted_resource_state()
         self.available_memory = self._compute_used_memory(self.job_infos)
+        self.updated = True
 
         def filter_memory(x):
             if x['requested_memory'] is not None:
