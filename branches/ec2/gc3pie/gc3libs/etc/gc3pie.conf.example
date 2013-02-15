@@ -293,7 +293,7 @@ architecture=x64_64
 
 # Maximum number of VM running at the same time
 # 
-# vm_pool_max_size = -1
+# vm_pool_max_size = 
 
 #####################
 # VM AUTHENTICATION #
