@@ -95,6 +95,18 @@ class ShellcmdLrms(LRMS):
       If `transport` is `ssh`, then `frontend` is the hostname of the
       remote machine where the jobs will be executed.
 
+    :param bool ignore_ssh_host_key:
+
+      When connecting to a remote resource using `ssh` the server ssh
+      public key is usually checked against a database of known hosts,
+      and if the key is found but it does not match with the one saved
+      in the database the connection will fail. Setting
+      `ignore_ssh_host_key` to `True` will disable this check, thus
+      introducing a potential security issue, but allowing connection
+      even though the database contain old/invalid keys (the use case
+      is when connecting to VM on a cloud, since the IP is usually
+      reused and therefore the ssh key is recreated).
+
     :param bool override:
 
       `ShellcmdLrms` by default will try to gather information on the
@@ -145,7 +157,7 @@ ReturnCode=%x"""
                  # these are specific to `ShellcmdLrms`
                  # ignored if `transport` is 'local'
                  frontend='localhost', transport='local',
-                 time_cmd=None, override='False',
+                 time_cmd=None, override='False', ignore_ssh_host_keys=False,
                  spooldir=None,
                  **extra_args):
 
@@ -173,7 +185,7 @@ ReturnCode=%x"""
             auth = self._auth_fn()
             self._username = auth.username
             self.transport = gc3libs.backends.transport.SshTransport(
-                frontend, username=self._username)
+                frontend, username=self._username, ignore_ssh_host_keys=ignore_ssh_host_keys)
         else:
             raise gc3libs.exceptions.TransportError(
                 "Unknown transport '%s'" % transport)

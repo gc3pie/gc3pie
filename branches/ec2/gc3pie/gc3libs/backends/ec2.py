@@ -517,6 +517,7 @@ class EC2Lrms(LRMS):
         args = self.subresource_args.copy()
         args['frontend'] = remote_ip
         args['transport'] = "ssh"
+        args['ignore_ssh_host_keys'] = True
         args['name'] = "%s@%s" % (remote_ip, self.name)
         args['auth'] = args['vm_auth']
         cfg = gc3libs.config.Configuration(
@@ -578,9 +579,9 @@ class EC2Lrms(LRMS):
                         rule, self.security_group_name)
                     security_group.authorize(**rule)
                 except Exception, ex:
-                    gc3libs.log.error("Ignoring error adding rule %s to"
-                                      " security group %s: %s", str(rule),
-                                      self.security_group_name, str(ex))
+                    gc3libs.log.info("Ignoring error adding rule %s to"
+                                     " security group %s: %s", str(rule),
+                                     self.security_group_name, str(ex))
 
         else:
             # Check if the security group has all the rules we want
