@@ -46,14 +46,194 @@ import gc3libs.url
 from gc3libs import Run
 from gc3libs.utils import same_docstring_as
 from gc3libs.backends import LRMS
+from gc3libs.session import Session
+from gc3libs.persistence import Persistable
 
 available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
+
+
+class VMPool(Persistable):
+    """
+    Will hold a list of VMs. Will persiste a list of vm ids.
+
+       >>> vmpool = VMPool('pool', None)
+       >>> vmpool._vm_ids
+       set([])
+       >>> vmpool._vms
+       {}
+
+    save VMPool to disk
+
+       >>> from tempfile import mkdtemp
+       >>> tmpdir = mkdtemp()
+       >>> s = Session(tmpdir)
+       >>> s.add(vmpool)
+       'pool'
+       >>> vmpool._vms['x'] = 'xxx'
+       >>> vmpool._vm_ids.add('x')
+       >>> s.save(vmpool)
+       'pool'
+
+    Standard representation of a VMPool is its vm ids:
+
+       >>> vmpool
+       ['x']
+
+    while string representation is:
+
+       >>> str(vmpool)
+       "VMPool('pool') : ['x']"
+
+       >>> len(vmpool)
+       1
+
+    load the saved VMPool object from disk
+
+       >>> s2 = Session(tmpdir)
+       >>> vmpool2 = s2.load('pool')
+
+    the internal dictionary msut be empty
+
+       >>> vmpool2._vms
+       {}
+
+   while the list of VM ids should be there.
+
+       >>> vmpool2._vm_ids
+       set(['x')
+       >>> 'x' in vmpool2
+       True
+
+    Check if `del` works:
+
+       >>> vmpool2._vms['x'] = 'xxx'
+       >>> vmpool2._vms
+       {'x': 'xxx'}
+       >>> del vmpool2['x']
+       >>> vmpool2._vms
+       {}
+       >>> vmpool2._vm_ids
+       set([])
+
+    cleanup
+
+       >>> import shutil
+       >>> shutil.rmtree(tmpdir)
+    """
+
+    def __init__(self, name, ec2_connection):
+        self.persistent_id = name
+        self.conn = ec2_connection
+        self._vms = {}
+        self._vm_ids = set()
+        self.changed = False
+
+    def __repr__(self):
+        return self._vm_ids.__repr__()
+
+    def __str__(self):
+        return "VMPool('%s') : %s" % (self.persistent_id, self._vm_ids)
+
+    def __len__(self):
+        return len(self._vm_ids)
+
+    def __getstate__(self):
+        # Only save persistent_id and list of IDs, do not save VM
+        # objects.
+        state = self.__dict__.copy()
+        state['_vms'] = dict()
+        state['conn'] = None
+        return state
+
+    def add_vm(self, vm):
+        """
+        Add a vm object to the list of VMs.
+        """
+        self._vm_ids.add(vm.id)
+        self._vms[vm.id] = vm
+        self.changed = True
+
+    def remove_vm(self, vm_id):
+        """
+        Remove VM with id `vm_id` from the list of known VMs. No
+        connection to the EC2 endpoint is performed.
+        """
+        if vm_id in self._vms:
+            del self._vms[vm_id]
+        if vm_id in self._vm_ids:
+            self._vm_ids.remove(vm_id)
+        self.changed = True
+
+    def get_vm(self, vm_id):
+        """
+        Return the VM object with id `vm_id`. If it is found in the
+        local cache, that object is returned. Otherwise a new VM
+        object is searched from the EC2 endpoint.
+        """
+        if vm_id in self._vms:
+            return self._vms[vm_id]
+
+        if not self.conn:
+            raise UnrecoverableError(
+                "No connection object found in `VMPool`")
+        try:
+            reservations = self.conn.get_all_instances(instance_ids=[vm_id])
+        except boto.exception.EC2ResponseError, ex:
+            gc3libs.log.error(
+                "Error getting VM %s: %s", vm_id, ex)
+            raise UnrecoverableError(
+                "Error getting VM %s: %s" % (vm_id, ex))
+        if not reservations:
+            raise UnrecoverableError(
+                "Instance with id %s has not found." % vm_id)
+
+        instances = dict((i.id, i) for i in reservations[0].instances
+                         if reservations)
+        if vm_id not in instances:
+            raise UnrecoverableError(
+                "Instance with id %s has not found." % vm_id)
+        vm = instances[vm_id]
+        self._vms[vm_id] = vm
+        if vm_id not in self._vm_ids:
+            self._vm_ids.add(vm_id)
+            self.changed = True
+        return vm
+
+    def get_all_vms(self):
+        """
+        Get all known VMs.
+        """
+        return [self.get_vm(vm_id) for vm_id in self._vm_ids]
+
+    def __iter__(self):
+        """
+        Iterate over the list of known VM ids.
+        """
+        # We need to create a new list because the _vm_ids set may be
+        # updated during iteration.
+        return iter(list(self._vm_ids))
+
+    def __getitem__(self, vm_id):
+        """
+        Return the VM with id `vm_id`.
+
+        x.__getitem__(vm_id) <==> x.get_vm(vm_id)
+        """
+        return self.get_vm(vm_id)
+
+    def __delitem__(self, vm_id):
+        """
+        x.__delitem__(self, vm_id) <==> x.remove_vm(vm_id)
+        """
+        return self.remove_vm(vm_id)
 
 
 class EC2Lrms(LRMS):
     """
     EC2 resource.
     """
+    RESOURCE_DIR = '$HOME/.gc3/ec2.d'
+
     def __init__(self, name,
                  # these parameters are inherited from the `LRMS` class
                  architecture, max_cores, max_cores_per_job,
@@ -61,7 +241,8 @@ class EC2Lrms(LRMS):
                  # these are specific of the EC2Lrms class
                  ec2_region, keypair_name, public_key,
                  image_id=None, image_name=None, ec2_url=None,
-                 instance_type=None, auth=None, **extra_args):
+                 instance_type=None, auth=None, vm_pool_max_size=None,
+                 **extra_args):
         LRMS.__init__(
             self, name,
             architecture, max_cores, max_cores_per_job,
@@ -71,6 +252,14 @@ class EC2Lrms(LRMS):
         self.user_run = 0
         self.user_queued = 0
         self.queued = 0
+        self.vm_pool_max_size = vm_pool_max_size
+        if vm_pool_max_size is not None:
+            try:
+                self.vm_pool_max_size = int(self.vm_pool_max_size)
+            except ValueError:
+                raise ConfigurationError(
+                    "Value for `vm_pool_max_size` must be an integer,"
+                    " was %s instead." % vm_pool_max_size)
 
         self.subresource_type = self.type.split('+', 1)[1]
         if self.subresource_type not in available_subresource_types:
@@ -97,7 +286,6 @@ class EC2Lrms(LRMS):
 
         self._parse_security_group()
         self._conn = None
-        self._vms = {}
 
         # `self.subresource_args` is used to create subresources
         self.subresource_args = extra_args
@@ -124,6 +312,7 @@ class EC2Lrms(LRMS):
         if self._conn is not None:
             return
 
+
         args = {'aws_access_key_id': self.ec2_access_key,
                 'aws_secret_access_key': self.ec2_secret_key,
                 }
@@ -140,6 +329,20 @@ class EC2Lrms(LRMS):
                 args['is_secure'] = False
 
         self._conn = boto.connect_ec2(**args)
+
+        # Set up the VMPool persistent class This has been delied
+        # until here because otherwise self._conn is None
+        self._session = Session(
+            os.path.expanduser(os.path.expandvars(EC2Lrms.RESOURCE_DIR)))
+        vmpoolid = 'vmpool:%s' % self.name
+        if vmpoolid in self._session.list_ids():
+            # Recover the list of available vm ids
+            self._vms = self._session.load(vmpoolid)
+            self._vms.conn = self._conn
+        else:
+            # Create a new VMPool object
+            self._vms = VMPool(vmpoolid, self._conn)
+            self._session.add(self._vms)
 
         all_images = self._conn.get_all_images()
         if self.image_id:
@@ -203,8 +406,9 @@ class EC2Lrms(LRMS):
             try:
                 pkey = paramiko.DSSKey.from_private_key_file(keyfile)
             except paramiko.PasswordRequiredException:
-                raise RuntimeError("Key %s is encripted with a password. Please, use"
-                             " an unencrypted key or use ssh-agent" % keyfile)
+                raise RuntimeError(
+                    "Key %s is encripted with a password. Please, use"
+                    " an unencrypted key or use ssh-agent" % keyfile)
             except paramiko.SSHException, ex:
                 gc3libs.log.debug("File `%s` is not a valid DSS private key:"
                                   " %s", keyfile, ex)
@@ -250,7 +454,7 @@ class EC2Lrms(LRMS):
         except Exception, ex:
             raise UnrecoverableError("Error starting instance: %s" % str(ex))
         vm = reservation.instances[0]
-
+        self._vms.add_vm(vm)
         gc3libs.log.info(
             "VM with id `%s` has been created and is in %s state.",
             vm.id, vm.state)
@@ -273,34 +477,10 @@ class EC2Lrms(LRMS):
         Return the instance with id `vm_id`, raises an error if there
         is no such instance with that id.
         """
-        # Return cached value if we already have it
-        if vm_id in self._vms:
-            return self._vms[vm_id]
-
         self._connect()
-
-        # NOTE: since `vm_id` is supposed to be unique, we assume
-        # reservations only contains one element.
-        try:
-            reservations = self._conn.get_all_instances(instance_ids=[vm_id])
-        except boto.exception.EC2ResponseError, ex:
-            gc3libs.log.error(
-                "Error getting VM %s from %s: %s", vm_id, self.ec2_url, ex)
-            raise UnrecoverableError(
-                "Error getting VM %s from %s: %s" % (vm_id, self.ec2_url, ex))
-        if not reservations:
-            raise UnrecoverableError(
-                "Instance with id %s has not found in EC2 cloud %s"
-                % (vm_id, self.ec2_url))
-
-        instances = dict((i.id, i) for i in reservations[0].instances
-                         if reservations)
-        if vm_id not in instances:
-            raise UnrecoverableError(
-                "Instance with id %s has not found in EC2 cloud %s"
-                % (vm_id, self.ec2_url))
-        vm = instances[vm_id]
-        self._vms[vm_id] = vm
+        vm = self._vms.get_vm(vm_id)
+        self._session.save(self._vms)
+        # self._session.save_all()
         return vm
 
     def _import_keypair(self):
@@ -337,6 +517,7 @@ class EC2Lrms(LRMS):
         args = self.subresource_args.copy()
         args['frontend'] = remote_ip
         args['transport'] = "ssh"
+        args['ignore_ssh_host_keys'] = True
         args['name'] = "%s@%s" % (remote_ip, self.name)
         args['auth'] = args['vm_auth']
         cfg = gc3libs.config.Configuration(
@@ -398,9 +579,9 @@ class EC2Lrms(LRMS):
                         rule, self.security_group_name)
                     security_group.authorize(**rule)
                 except Exception, ex:
-                    gc3libs.log.error("Ignoring error adding rule %s to"
-                                      " security group %s: %s", str(rule),
-                                      self.security_group_name, str(ex))
+                    gc3libs.log.info("Ignoring error adding rule %s to"
+                                     " security group %s: %s", str(rule),
+                                     self.security_group_name, str(ex))
 
         else:
             # Check if the security group has all the rules we want
@@ -425,7 +606,195 @@ class EC2Lrms(LRMS):
         resource = self._get_remote_resource(self._get_vm(app.ec2_instance_id))
         return resource.cancel_job(app)
 
-    @same_docstring_as(LRMS.free)
+    @same_docstring_as(LRMS.get_resource_status)
+    def get_resource_status(self):
+        self.updated = False
+        # Since we create the resource *before* the VM is actually up
+        # & running, it's possible that the `frontend` value of the
+        # resources points to a non-existent hostname. Therefore, we
+        # have to update them with valid public_ip, if they are
+        # present.
+
+        self._connect()
+        # Update status of known VMs
+        for vm_id in self._vms:
+            try:
+                vm = self._vms.get_vm(vm_id)
+            except UnrecoverableError, ex:
+                gc3libs.log.warning(
+                    "Removing stale information on VM `%s`. It has probably"
+                    " been deleted from outside GC3Pie.", vm_id)
+                self._vms.remove_vm(vm_id)
+                continue
+
+            state = vm.update()
+            if vm.state == 'pending':
+                # If VM is still in pending state, skip creation of
+                # the resource
+                continue
+            elif vm.state == 'error':
+                # The VM is in error state: exit.
+                gc3libs.log.error(
+                    "VM with id `%s` is in ERROR state."
+                    " Terminating it!", vm.id)
+                vm.terminate()
+                self._vms.remove_vm(vm.id)
+            elif vm.state == 'terminated':
+                gc3libs.log.info(
+                    "VM %s in TERMINATED state. It has probably been terminated"
+                    " from outside GC3Pie. Removing it from the list of VM.",
+                    vm.id)
+                self._vms.remove_vm(vm.id)
+            elif vm.state in ['shutting-down', 'stopped']:
+                # The VM has probably ben stopped or shut down from
+                # outside GC3Pie.
+                gc3libs.log.error(
+                    "VM with id `%s` is in terminal state.", vm.id)
+
+            # Get or create a resource associated to the vm
+            resource = self._get_remote_resource(vm)
+
+            try:
+                resource.get_resource_status()
+            except Exception, ex:
+                # XXX: Actually, we should try to identify the kind of
+                # error we are getting. For instance, if the
+                # configuration options `username` is wrong, we will
+                # create VMs but we will never be able to submit jobs
+                # to them, thus causing an increasing number of
+                # useless VMs created on the cloud.
+                gc3libs.log.info(
+                    "Ignoring error while updating resource %s. "
+                    "The corresponding VM may not be ready yet. Error: %s",
+                    resource.name, ex)
+        # Save the list of VMs, in case it has been updated.
+        self._session.save(self._vms)
+        # self._session.save_all()
+        return self
+
+    @same_docstring_as(LRMS.get_results)
+    def get_results(self, job, download_dir, overwrite=False):
+        resource = self._get_remote_resource(self._get_vm(job.ec2_instance_id))
+        return resource.get_results(job, download_dir, overwrite=False)
+
+    @same_docstring_as(LRMS.update_job_state)
+    def update_job_state(self, app):
+        if app.ec2_instance_id not in self.resources:
+            self.resources[app.ec2_instance_id] = self._get_remote_resource(
+                self._get_vm(app.ec2_instance_id))
+
+        return self.resources[app.ec2_instance_id].update_job_state(app)
+
+    def submit_job(self, job):
+        """
+        Submission on an EC2 resource will usually happen in multiple
+        steps, since creating a VM and attaching a resource to it will
+        take some time.
+
+        In order to return as soon as possible, the backend will raise
+        a `RecoverableError` whenever submission is delayed.
+
+        In case a permanent error is found (for instance, we cannot
+        create VMs on the cloud), a `UnrecoverableError` is raised.
+
+        More in detail, when during submission the following will
+        happen:
+
+        * First of all, the backend will try to submit the job to one
+          of the already available subresources.
+
+        * If none of them is able to sbmit the job, the backend will
+          check if there is a VM in pending state, and in case there
+          is one it will raise a `RecoverableError`, thus delaying
+          submission.
+
+        * If no VM in pending state is found, the `vm_pool_max_size`
+          configuration option is checked. If we already reached the
+          maximum number of VM, a `UnrecoverableError` is raised.
+
+        * If no VM in pending state is found but `vm_pool_max_size` is
+          still lesser than the number of VM currently created (or it
+          is None, which for us means no limit), then a new VM is
+          created, and `RecoverableError` is raised.
+
+        """
+        self._connect()
+        # Updating resource is needed to update the subresources. This
+        # is not always done before the submit_job because of issue
+        # nr.  386:
+        #     http://code.google.com/p/gc3pie/issues/detail?id=386
+        self.get_resource_status()
+
+        pending_vms = set(vm.id for vm in self._vms.get_all_vms()
+                          if vm.state == 'pending')
+        # First of all, try to submit to one of the subresources.
+        for vm_id, resource in self.resources.items():
+            if not resource.updated:
+                # The VM is probably still booting, let's skip to the
+                # next one and add it to the list of "pending" VMs.
+                pending_vms.add(vm_id)
+            try:
+                ret = resource.submit_job(job)
+                job.ec2_instance_id = vm_id
+                job.changed = True
+                gc3libs.log.info(
+                    "Job successfully submitted to remote resource %s.",
+                    resource.name)
+                return job
+            except gc3libs.exceptions.LRMSSubmitError, ex:
+                gc3libs.log.debug(
+                    "Ignoring error while submit to resource %s: %s. ",
+                    resource.name, str(ex))
+
+        # Couldn't submit to any resource.
+        if not pending_vms:
+            # No pending VM, and no resource available. Create a new VM
+            if not self.vm_pool_max_size \
+                    or len(self._vms) < self.vm_pool_max_size:
+                image_id = job.get('ec2_image_id', self.image_id)
+                instance_type = job.get('ec2_instance_type',
+                                        self.instance_type)
+                vm = self._create_instance(image_id,
+                                           instance_type=instance_type)
+                pending_vms.add(vm.id)
+
+                self._vms.add_vm(vm)
+                self._session.save(self._vms)
+                # self._session.save_all()
+            else:
+                gc3libs.log.warning(
+                    "Already running the maximum number of VM on resource %s:"
+                    " %d >= %d.",
+                    self.name, len(self._vms), self.vm_pool_max_size)
+
+        # If we reached this point, we are waiting for a VM to be
+        # ready, so delay the submission until we wither can submit to
+        # one of the available resources or untile all the VMs are
+        # ready.
+        gc3libs.log.info(
+            "No available resource was found, but some VM is still in "
+            "`pending` state. Waiting until the next iteration before "
+            "creating a new VM. Pending VM ids: %s",
+            str.join(', ', pending_vms))
+        raise RecoverableError(
+            "Delaying submission until some of the VMs currently pending "
+            "is ready. Pending VM ids: %s" % str.join(', ', pending_vms))
+
+    @same_docstring_as(LRMS.peek)
+    def peek(self, app, remote_filename, local_file, offset=0, size=None):
+        resource = self._get_remote_resource(
+            self._get_vm(app.ec2_instance_id))
+        return resource.peek(app, remote_filename, local_file, offset, size)
+
+    def validate_data(self, data_file_list=None):
+        """
+        Supported protocols: file
+        """
+        for url in data_file_list:
+            if not url.scheme in ['file']:
+                return False
+        return True
+
     def free(self, app):
         """
         Free up any remote resources used for the execution of `app`.
@@ -459,238 +828,25 @@ class EC2Lrms(LRMS):
             del self.resources[vm.id]
             vm.terminate()
             del self._vms[vm.id]
-
-    @same_docstring_as(LRMS.get_resource_status)
-    def get_resource_status(self):
-        self.updated = False
-        # Since we create the resource *before* the VM is actually up
-        # & running, it's possible that the `frontend` value of the
-        # resources points to a non-existent hostname. Therefore, we
-        # have to update them with valid public_ip, if they are
-        # present.
-        for vm_id, resource in self.resources.items():
-            try:
-                resource.get_resource_status()
-            except Exception, ex:
-                gc3libs.log.error("Got error while updating resource %s:"
-                                  " %s", resource.name, ex)
-                gc3libs.log.debug(
-                    "Re-creating resource %s: it may be possible that it has "
-                    "been created too early", resource.name)
-                vm = self._get_vm(vm_id)
-                vm.update()
-                self.resources[vm.id] = self._make_resource(vm.public_dns_name)
-                try:
-                    resource.get_resource_status()
-                except Exception, ex:
-                    gc3libs.log.warning(
-                        "Ignoring ERROR while updating EC2 subresource %s: %s",
-                        resource.name, ex)
-        return self
-
-    @same_docstring_as(LRMS.get_results)
-    def get_results(self, job, download_dir, overwrite=False):
-        resource = self._get_remote_resource(self._get_vm(job.ec2_instance_id))
-        return resource.get_results(job, download_dir, overwrite=False)
-
-    @same_docstring_as(LRMS.update_job_state)
-    def update_job_state(self, app):
-        if app.ec2_instance_id not in self.resources:
-            self.resources[app.ec2_instance_id] = self._get_remote_resource(
-                self._get_vm(app.ec2_instance_id))
-
-        return self.resources[app.ec2_instance_id].update_job_state(app)
-
-    @same_docstring_as(LRMS.submit_job)
-    def submit_job(self, job):
-        """
-        XXX: update doc
-
-        This method create an instance on the cloud, then will create
-        a resource to use this instance.
-
-        Since the creation of VMs can take some time, instead of
-        waiting for the VM to be ready we will raise an
-        `RecoverableError`:class: every time we try to submit a job on
-        this resource but the associated VM is not yet ready and we
-        cannot yet connect to the it via ssh, which is not an issue
-        when you call `submit_job` from the `Engine`:class:.
-
-        When the instance is up&running and the associated resource is
-        created, this method will call the `submit_job` method of the
-        resource and returns its return value.
-        """
-        self._connect()
-        # Updating resource is needed to update the subresources. This
-        # is not always done before the submit_job because of issue
-        # nr.  386:
-        #     http://code.google.com/p/gc3pie/issues/detail?id=386
-        self.get_resource_status()
-
-        # if the job has an `ec2_instance_id` attribute, it means that
-        # a VM for this job has already been created. If not, a new
-        # instance is created.
-
-        pending_vms = []
-        vm = None
-        if hasattr(job, 'ec2_instance_id'):
-            # This job was previously submitted but we already raised
-            # an exception, probably because the VM was not ready
-            # yet. Let's try again!
-            gc3libs.log.info("Job already allocated to VM %s.",
-                             job.ec2_instance_id)
-            try:
-                vm = self._get_vm(job.ec2_instance_id)
-            except UnrecoverableError:
-                # It is possible that the VM has been terminated before
-                # after this job was assigned to it, during a previous
-                # submission. No problem, let's continue and submit it to
-                # a new VM, if possible
-                gc3libs.log.error(
-                    "The VM this job was assigned to is no longer available. "
-                    "Trying to submit to a different VM.")
-
-        # XXX: There has to be a better way in order to exit from the
-        # `if hasattr()` statement and skip to the next block...
-        if vm:
-            try:
-                resource = self._get_remote_resource(vm)
-            except Exception, ex:
-                # XXX: It may be possible that the there is not vm
-                # with this id, because it has been terminated. We
-                # must be able to spot this, and run a
-                # del job.ec2_instance_id
-                gc3libs.log.error(
-                    "Error while creating resource for vm %s: %s",
-                    vm.id, ex)
-                # Check if the vm exists
-                raise RecoverableError(
-                    "Error while creating resource for vm %s: %s" %
-                    (vm.id, ex))
-
-            try:
-                resource.submit_job(job)
-                gc3libs.log.info("Job successfully submitted to remote "
-                                 "resource %s.", resource.name)
-                return job
-            except Exception, ex:
-                gc3libs.log.warning(
-                    "Unable to submit job to resource %s: %s",
-                    resource.name, ex)
-                if resource.free_slots >= job.requested_cores:
-                    pending_vms.append(vm.id)
-                raise RecoverableError(
-                    "Remote VM `%s` not yet ready: %s" %
-                    (job.ec2_instance_id, str(ex)))
-        # This is the first attempt to submit a job.  First of all,
-        # let's try to submit it to one of the resource we already
-        # created.
-        gc3libs.log.debug("First submission of job %s. Looking for a free VM "
-                          "to use", job)
-        for vm_id, resource in self.resources.items():
-            try:
-                resource.submit_job(job)
-                job.ec2_instance_id = vm_id
-                job.changed = True
-                gc3libs.log.info(
-                    "Job successfully submitted to remote resource %s.",
-                    resource.name)
-                return job
-            except gc3libs.exceptions.LRMSSubmitError, ex:
-                # Selected resource was not able to submit.
-                # The associated VM could be not ready yet...
-                gc3libs.log.debug(
-                    "Ignoring error while submit to resource %s: %s. ",
-                    resource.name, str(ex))
-                if resource.free_slots >= job.requested_cores:
-                    pending_vms.append(vm_id)
-
-        if pending_vms:
-            # No available resource was found, but some remote
-            # resource with enough free slots was found, so let's wait
-            # until the next iteration.
-            gc3libs.log.info(
-                "No available resource was found, but some VM is still in "
-                "`pending` state. Waiting until the next iteration before "
-                "creating a new VM.")
-            raise RecoverableError(
-                "Delaying submission until some of the VMs currently pending "
-                "is ready.")
-
-        gc3libs.log.debug("No available resource was found. Creating a new VM")
-        # No available resource was found. Let's create a new VM.
-        image_id = job.get('ec2_image_id', self.image_id)
-        instance_type = job.get('ec2_instance_type', self.instance_type)
-        vm = self._create_instance(image_id, instance_type=instance_type)
-
-        # XXX: If we do this, we need to make sure the resource associated to the VM
-        # is aware of this 'reservation'
-        # otherwise in the next submit, another job could be launched on it
-        # thus preventing the current job to start.
-        job.ec2_instance_id = vm.id
-
-        job.changed = True
-
-        # get the resource associated to it or create a new one if
-        # none has been created yet.
-        resource = self._get_remote_resource(vm)
-
-        if vm.state == 'running':
-            # The VM is created, but it may be not ready yet.
-            gc3libs.log.info(
-                "VM with id `%s` is now RUNNING and has `public_dns_name` `%s`"
-                " and `private_dns_name` `%s`",
-                vm.id, vm.public_dns_name, vm.private_dns_name)
-            # Submit the job to the remote resource
-            return resource.submit_job(job)
-        elif vm.state == 'pending':
-            # The VM is not ready yet, retry later.
-            raise RecoverableError(
-                "VM with id `%s` still in PENDING state, waiting" % vm.id)
-        elif vm.state == 'error':
-            # The VM is in error state: exit.
-            raise UnrecoverableError(
-                "VM with id `%s` is in ERROR state."
-                " Aborting submission of job %s" % (vm.id, str(job)))
-        elif vm.state in ['shutting-down', 'terminated', 'stopped']:
-            # The VM has been terminated, probably from outside GC3Pie.
-            raise UnrecoverableError("VM with id `%s` is in terminal state."
-                                     " Aborting submission of job %s"
-                                     % (vm.id, str(job)))
-
-    @same_docstring_as(LRMS.peek)
-    def peek(self, app, remote_filename, local_file, offset=0, size=None):
-        resource = self._get_remote_resource(
-            self._get_vm(app.ec2_instance_id))
-        return resource.peek(app, remote_filename, local_file, offset, size)
-
-    @same_docstring_as(LRMS.validate_data)
-    def validate_data(self, data_file_list=None):
-        """
-        Supported protocols: file
-        """
-        for url in data_file_list:
-            if not url.scheme in ['file']:
-                return False
-        return True
+            self._session.save(self._vms)
+            # self._session.save_all()
 
     @same_docstring_as(LRMS.close)
     def close(self):
+        # Update status of VMs and remote resources
+        self.get_resource_status()
         for vm_id, resource in self.resources.items():
-            try:
-                resource.get_resource_status()
-            except Exception, ex:
+            if resource.updated and not resource.job_infos:
+                vm = self._get_vm(vm_id)
                 gc3libs.log.warning(
-                    "Error while updating EC2 subresource %s: %s. "
-                    "Turning off associated VM.", resource.name, ex)
-                if len(resource.job_infos) == 0:
-                    # turn VM off
-                    vm = self._get_vm(vm_id)
-                    gc3libs.log.warning(
-                        "VM instance %s at %s is no longer needed. "
-                        "You may need to terminate it manually.",
-                        vm.id, vm.public_dns_name)
+                    "VM instance %s at %s is no longer needed. "
+                    "You may need to terminate it manually.",
+                    vm.id, vm.public_dns_name)
+                vm.terminate()
+                del self._vms[vm.id]
             resource.close()
+        self._session.save(self._vms)
+        # self._session.save_all()
 
 
 ## main: run tests
