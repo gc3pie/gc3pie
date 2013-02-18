@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+ #! /usr/bin/env python
 #
 """
 The `Transport` class hierarchy provides an abstraction layer to
@@ -233,9 +233,8 @@ import gc3libs
 
 class SshTransport(Transport):
 
-    def __init__(self, remote_frontend,
-                 port=gc3libs.Default.SSH_PORT,
-                 username=None):
+    def __init__(self, remote_frontend, port=gc3libs.Default.SSH_PORT,
+                 username=None, ignore_ssh_host_keys=False):
         self.remote_frontend = remote_frontend
         self.port = port
         self.username = username
@@ -243,6 +242,7 @@ class SshTransport(Transport):
         self.ssh = paramiko.SSHClient()
         self.ssh_config = paramiko.SSHConfig()
         self.keyfile = None
+        self.ignore_ssh_host_keys = ignore_ssh_host_keys
         self.sftp = None
         self._is_open = False
         self.transport_channel = None
@@ -266,14 +266,16 @@ class SshTransport(Transport):
             if not self._is_open or self.transport_channel is None or \
                     not self.transport_channel.is_active():
                 gc3libs.log.debug("Opening SshTransport... ")
-                # WARNING: commenting out this line will fix issue 389
-                # but introduce a security issue, since we are not
-                # comparing the host key with our "known hosts"
-                # file. However, since VMs running on the cloud will
-                # often change the ssh key, we actually need to remove
-                # this check.
-                #
-                # self.ssh.load_system_host_keys()
+                if not self.ignore_ssh_host_keys:
+                    # Disabling check of the server key against "known
+                    # hosts" database file. This is needed for EC2
+                    # backends in order to fix issue 389, but
+                    # introduces a security risk in normal situations,
+                    # thus the check is enabled by default.
+                    self.ssh.load_system_host_keys()
+                else:
+                    gc3libs.log.info("Ignoring ssh host key file.")
+
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 gc3libs.log.debug(
                     "Connecting to host '%s' as user '%s' via SSH ...",
