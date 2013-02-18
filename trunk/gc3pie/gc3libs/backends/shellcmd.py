@@ -86,6 +86,13 @@ class ShellcmdLrms(LRMS):
       this backend. The default value `None` means to use ``$TMPDIR``
       or `/tmp`:file: (see `tempfile.mkftemp` for details).
 
+    :param str resourcedir:
+
+      Path to a filesystem location where to create a temporary
+      directory that will contain information on the jobs running on
+      the machine. The default value `None` means to use
+      ``$HOME/.gc3/shellcmd.d``.
+
     :param str transport:
       Transport to use to connecet to the resource. Valid values are
       `ssh` or `local`.
@@ -158,7 +165,7 @@ ReturnCode=%x"""
                  # ignored if `transport` is 'local'
                  frontend='localhost', transport='local',
                  time_cmd=None, override='False', ignore_ssh_host_keys=False,
-                 spooldir=None,
+                 spooldir=None, resourcedir=None,
                  **extra_args):
 
         # init base class
@@ -175,6 +182,13 @@ ReturnCode=%x"""
         # correct dir to the submit_job, so that we don't have to use
         # `transport` right now.
         self.spooldir = spooldir
+
+        # Resource dir is expanded in `_gether_machine_specs()` and
+        # only after that the `resource_dir` property will be
+        # set. This is done in order to delay a possible connection to
+        # a remote machine, and avoiding such a remote connection when
+        # it's not needed.
+        self.cfg_resourcedir = resourcedir or ShellcmdLrms.RESOURCE_DIR
 
         # Configure transport
         self.frontend = frontend
@@ -334,7 +348,7 @@ ReturnCode=%x"""
 
         # This is supposed to spit out the ful path on the remote end
         exit_code, stdout, stderr = self.transport.execute_command(
-            "echo %s" % sh_quote_unsafe(ShellcmdLrms.RESOURCE_DIR))
+            "echo %s" % sh_quote_unsafe(self.cfg_resourcedir))
 
         self.resource_dir = stdout.strip()
         # XXX: it is actually necessary to create the folder
