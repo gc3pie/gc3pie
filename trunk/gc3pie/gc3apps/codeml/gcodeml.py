@@ -204,10 +204,6 @@ of newly-created jobs so that this limit is never exceeded.
                     "The input directory '%s' must contain exactly two control files." % dirpath)
 
             self.log.debug("Gathered control files: '%s':" % str.join("', '", ctl_files))
-            # set optional arguments (path to 'codeml' binary, output URL, etc.)
-            kwargs = extra.copy()
-            if self.params.output_base_url != "":
-               kwargs['output_base_url'] = self.params.output_base_url
 
             ## create new CODEML application instance
 
@@ -224,7 +220,20 @@ of newly-created jobs so that this limit is never exceeded.
             # `SessionBasedScript`) to expand strings like
             # ``NAME``, etc. in the template.
             jobname = (os.path.basename(dirpath) or dirpath) + '.out'
-            kwargs['output_dir'] = self.make_directory_path(self.params.output, jobname)
+
+
+            # kwargs['output_dir'] = self.make_directory_path(self.params.output, jobname)
+
+            # Variant 1: results in same folder as inputs
+            kwargs['output_dir'] = os.path.join(dirpath,'.compute')
+            kwargs['result_dir'] = dirpath
+
+            # FIXME: should this reflect the same policy as 'output_dir' ?
+            # set optional arguments (path to 'codeml' binary, output URL, etc.)
+            kwargs = extra.copy()
+            if self.params.output_base_url != "":
+               kwargs['output_base_url'] = self.params.output_base_url
+
 
             app = CodemlApplication(*ctl_files, **kwargs)
 
