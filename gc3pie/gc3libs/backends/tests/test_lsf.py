@@ -23,6 +23,7 @@ __version__ = '$Revision$'
 
 import datetime
 import os
+import shutil
 import sys
 import tempfile
 
@@ -34,8 +35,9 @@ from gc3libs.quantity import Duration, hours, minutes, seconds, Memory, GB, MB, 
 
 from nose.tools import assert_equal
 
-
 _datetime_date = None
+
+files_to_remove = []
 
 def setUpModule():
     """Mock the `datetime.date.today()` outcome in order to make the LSF parsing independent from the testing date."""
@@ -64,10 +66,15 @@ def tearDownModule():
     global _datetime_date
     import datetime
     datetime.date = _datetime_date
-
+    for fname in files_to_remove:
+        if os.path.isdir(fname):
+            shutil.rmtree(fname)
+        else:
+            os.remove(fname)
 
 def test_get_command():
     (fd, tmpfile) = tempfile.mkstemp()
+    files_to_remove.append(tmpfile)
     f = os.fdopen(fd, 'w+')
     f.write("""
 [auth/ssh]

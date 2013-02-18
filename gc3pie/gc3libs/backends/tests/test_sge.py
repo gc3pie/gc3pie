@@ -36,8 +36,7 @@ State = gc3libs.Run.State
 
 from faketransport import FakeTransport
 
-
-
+files_to_remove = []
 
 def correct_submit(jobid=123):
     out = """Your job %s ("DemoSGEApp") has been submitted
@@ -300,9 +299,17 @@ username=NONEXISTENT
         assert_equal(app.execution.state, State.TERMINATED)
 
 
+def tearDownModule():
+    for fname in files_to_remove:
+        if os.path.isdir(fname):
+            shutil.rmtree(fname)
+        else:
+            os.remove(fname)
+
 
 def test_get_command():
     (fd, tmpfile) = tempfile.mkstemp()
+    files_to_remove.append(tmpfile)
     f = os.fdopen(fd, 'w+')
     f.write("""
 [auth/ssh]
