@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Configuration File &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>Configuration File &mdash; gc3pie 2.0.0 documentation</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.0.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,9 +25,9 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="top" title="gc3pie 2.0.0 documentation" href="../index.html" />
     <link rel="up" title="User Documentation" href="index.html" />
-    <link rel="next" title="Environment Variables" href="env-vars.html" />
+    <link rel="next" title="The GC3Apps software" href="gc3apps/index.html" />
     <link rel="prev" title="Installation of GC3Pie" href="install.html" />
  
 <script type="text/javascript">
@@ -48,12 +48,12 @@
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="env-vars.html" title="Environment Variables"
+          <a href="gc3apps/index.html" title="The GC3Apps software"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="install.html" title="Installation of GC3Pie"
              accesskey="P">previous</a> |</li>
-        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../index.html">gc3pie 2.0.0 documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">User Documentation</a> &raquo;</li> 
       </ul>
     </div>  
@@ -364,28 +364,14 @@ defined, then it will not be possible to submit parallel jobs.</em></p>
 immediately write its information into the accounting database.  This
 creates a time window during which no information is reported about
 the job by SGE, as if it never existed.  In order not to mistake this
-for a &#8220;job lost&#8221; error, GC3Libs allow a &#8220;grace time&#8221;: <strong class="command">qacct</strong>
-job information lookups are allowed to fail for a certain time span
-after the first time <strong class="command">qstat</strong> failed. The duration of this
-time span is set with the <tt class="docutils literal"><span class="pre">sge_accounting_delay</span></tt> parameter, whose
-default is 15 seconds (matches the default in SGE, as of release 6.2):</p>
+for a &#8220;job lost&#8221; error, GC3Libs allow a &#8220;grace time&#8221;: <strong class="command">qacct</strong> job
+information lookups are allowed to fail for a certain time span after
+the first time <strong class="command">qstat</strong> failed. The duration of this time span is set
+with the <tt class="docutils literal"><span class="pre">sge_accounting_delay</span></tt> parameter, whose default is 15 seconds
+(matches the default in SGE, as of release 6.2):</p>
 <blockquote>
 <div><ul class="simple">
 <li><tt class="docutils literal"><span class="pre">sge_accounting_delay</span></tt>: Time (in seconds) a failure in <strong class="command">qacct</strong> will <em>not</em> be considered critical.</li>
-</ul>
-</div></blockquote>
-<p>GC3Pie uses standard command line utilities to interact with the
-resource manager. By default these commands are searched using the
-<tt class="docutils literal"><span class="pre">PATH</span></tt> environment variable, but you can specify the full path of
-these commands and/or add some extra options. The following options
-are used by the SGE backend:</p>
-<blockquote>
-<div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">qsub</span></tt>: submit a job.</li>
-<li><tt class="docutils literal"><span class="pre">qacct</span></tt>: get info on resources used by a job.</li>
-<li><tt class="docutils literal"><span class="pre">qdel</span></tt>: cancel a job.</li>
-<li><tt class="docutils literal"><span class="pre">qstat</span></tt>: get the status of a job or the status of available
-resources.</li>
 </ul>
 </div></blockquote>
 </div>
@@ -394,31 +380,8 @@ resources.</li>
 <p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">pbs</span></tt>-type resource section:</p>
 <blockquote>
 <div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.  If
-<tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt>
-via SSH in order to execute Troque/PBS commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>,
-the Torque/PBS commands are run directly on the machine where
-GC3Pie is installed.</li>
-<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the Torque/PBS front-end node. This configuration
-item is only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH
-connection will be attempted to this node, in order to submit jobs
-and retrieve status info.</li>
-</ul>
-</div></blockquote>
-<p>GC3Pie uses standard command line utilities to interact with the
-resource manager. By default these commands are searched using the
-<tt class="docutils literal"><span class="pre">PATH</span></tt> environment variable, but you can specify the full path of
-these commands and/or add some extra options. The following options
-are used by the PBS backend:</p>
-<blockquote>
-<div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">queue</span></tt>: the name of the queue to which jobs are submitted. If
-empty (the default), no job will be specified during submission.</li>
-<li><tt class="docutils literal"><span class="pre">qsub</span></tt>: submit a job.</li>
-<li><tt class="docutils literal"><span class="pre">qdel</span></tt>: cancel a job.</li>
-<li><tt class="docutils literal"><span class="pre">qstat</span></tt>: get the status of a job or the status of available
-resources.</li>
-<li><tt class="docutils literal"><span class="pre">tracejob</span></tt>: get info on resources used by a job.</li>
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.   If <tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt> via SSH in order to execute Troque/PBS commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the Torque/PBS commands are run directly on the machine where GC3Pie is installed.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the Torque/PBS front-end node. This configuration item is only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.</li>
 </ul>
 </div></blockquote>
 </div>
@@ -427,28 +390,8 @@ resources.</li>
 <p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">lsf</span></tt>-type resource section:</p>
 <blockquote>
 <div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.  If
-<tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt>
-via SSH in order to execute LSF commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the LSF
-commands are run directly on the machine where GC3Pie is
-installed.</li>
-<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the LSF front-end node. This configuration item is
-only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH connection
-will be attempted to this node, in order to submit jobs and
-retrieve status info.</li>
-</ul>
-</div></blockquote>
-<p>GC3Pie uses standard command line utilities to interact with the
-resource manager. By default these commands are searched using the
-<tt class="docutils literal"><span class="pre">PATH</span></tt> environment variable, but you can specify the full path of
-these commands and/or add some extra options. The following options
-are used by the LSF backend:</p>
-<blockquote>
-<div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">bsub</span></tt>: submit a job.</li>
-<li><tt class="docutils literal"><span class="pre">bjobs</span></tt>: get the status and resource usage of a job.</li>
-<li><tt class="docutils literal"><span class="pre">bkill</span></tt>: cancel a job.</li>
-<li><tt class="docutils literal"><span class="pre">lshosts</span></tt>: get info on available resources.</li>
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.   If <tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt> via SSH in order to execute LSF commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the LSF commands are run directly on the machine where GC3Pie is installed.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the LSF front-end node. This configuration item is only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.</li>
 </ul>
 </div></blockquote>
 </div>
@@ -457,58 +400,8 @@ are used by the LSF backend:</p>
 <p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">slurm</span></tt>-type resource section:</p>
 <blockquote>
 <div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.  If
-<tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt>
-via SSH in order to execute SLURM commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the
-SLURM commands are run directly on the machine where GC3Pie is
-installed.</li>
-<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the SLURM front-end node. This configuration item
-is only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH connection
-will be attempted to this node, in order to submit jobs and
-retrieve status info.</li>
-</ul>
-</div></blockquote>
-<p>GC3Pie uses standard command line utilities to interact with the
-resource manager. By default these commands are searched using the
-<tt class="docutils literal"><span class="pre">PATH</span></tt> environment variable, but you can specify the full path of
-these commands and/or add some extra options. The following options
-are used by the SLURM backend:</p>
-<blockquote>
-<div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">sbatch</span></tt>: submit a job.</li>
-<li><tt class="docutils literal"><span class="pre">scancel</span></tt>: cancel a job.</li>
-<li><tt class="docutils literal"><span class="pre">squeue</span></tt>: get the status of a job or of the available resources.</li>
-<li><tt class="docutils literal"><span class="pre">sacct</span></tt>: get info on resources used by a job.</li>
-</ul>
-</div></blockquote>
-</div>
-<div class="section" id="shellcmd-resources">
-<h3><tt class="docutils literal"><span class="pre">shellcmd</span></tt> resources<a class="headerlink" href="#shellcmd-resources" title="Permalink to this headline">¶</a></h3>
-<p>The following optional configuration keys are available in a
-<tt class="docutils literal"><span class="pre">shellcmd</span></tt>-type resource section:</p>
-<blockquote>
-<div><ul class="simple">
-<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Like any other resources, possible values are
-<tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>. Default value is <tt class="docutils literal"><span class="pre">local</span></tt>.</li>
-<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: If <cite>transport</cite> is <cite>ssh</cite>, then <cite>frontend</cite> is the
-<abbr title="Fully-qualified domain name">FQDN</abbr> of the remote machine
-where the jobs will be executed.</li>
-<li><tt class="docutils literal"><span class="pre">time_cmd</span></tt>: <tt class="xref py py-class docutils literal"><span class="pre">ShellcmdLrms</span></tt> needs the GNU implementation
-of the command <cite>time</cite> in order to get resource usage of the
-submitted jobs. <tt class="docutils literal"><span class="pre">time_cmd</span></tt> must contains the path to the binary
-file if this is different from the standard (<tt class="docutils literal"><span class="pre">/usr/bin/time</span></tt>).</li>
-<li><tt class="docutils literal"><span class="pre">override</span></tt>: <tt class="xref py py-class docutils literal"><span class="pre">ShellcmdLrms</span></tt> by default will try to gather
-information on the system the resource is running on, including
-the number of cores and the available memory. These values may be
-different from the values stored in the configuration file. If
-<tt class="docutils literal"><span class="pre">override</span></tt> is <cite>True</cite>, then the values automatically discovered
-will be used. If <tt class="docutils literal"><span class="pre">override</span></tt> is <cite>False</cite>, the values in the
-configuration file will be used regardless of the real values
-discovered by the resource.</li>
-<li><tt class="docutils literal"><span class="pre">spooldir</span></tt>: Path to a filesystem location where to create
-temporary working directories for processes executed through this
-backend. The default value <cite>None</cite> means to use <tt class="docutils literal"><span class="pre">$TMPDIR</span></tt> or
-<tt class="file docutils literal"><span class="pre">/tmp</span></tt> (see <cite>tempfile.mkftemp</cite> for details).</li>
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.   If <tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt> via SSH in order to execute SLURM commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the SLURM commands are run directly on the machine where GC3Pie is installed.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the SLURM front-end node. This configuration item is only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.</li>
 </ul>
 </div></blockquote>
 </div>
@@ -606,7 +499,6 @@ file.</p>
 <li><a class="reference internal" href="#pbs-resources"><tt class="docutils literal"><span class="pre">pbs</span></tt> resources</a></li>
 <li><a class="reference internal" href="#lsf-resources"><tt class="docutils literal"><span class="pre">lsf</span></tt> resources</a></li>
 <li><a class="reference internal" href="#slurm-resources"><tt class="docutils literal"><span class="pre">slurm</span></tt> resources</a></li>
-<li><a class="reference internal" href="#shellcmd-resources"><tt class="docutils literal"><span class="pre">shellcmd</span></tt> resources</a></li>
 <li><a class="reference internal" href="#example-resource-sections">Example <tt class="docutils literal"><span class="pre">resource</span></tt> sections</a></li>
 </ul>
 </li>
@@ -619,8 +511,8 @@ file.</p>
   <p class="topless"><a href="install.html"
                         title="previous chapter">Installation of GC3Pie</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="env-vars.html"
-                        title="next chapter">Environment Variables</a></p>
+  <p class="topless"><a href="gc3apps/index.html"
+                        title="next chapter">The GC3Apps software</a></p>
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="../search.html" method="get">
@@ -648,12 +540,12 @@ file.</p>
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="env-vars.html" title="Environment Variables"
+          <a href="gc3apps/index.html" title="The GC3Apps software"
              >next</a> |</li>
         <li class="right" >
           <a href="install.html" title="Installation of GC3Pie"
              >previous</a> |</li>
-        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+        <li><a href="../index.html">gc3pie 2.0.0 documentation</a> &raquo;</li>
           <li><a href="index.html" >User Documentation</a> &raquo;</li> 
       </ul>
     </div>

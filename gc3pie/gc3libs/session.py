@@ -172,7 +172,7 @@ class Session(list):
         if os.path.isdir(self.path):
             # Session already exists?
             try:
-                self._load_session(**extra_args)
+                self._load_session()
             except IOError, err:
                 gc3libs.log.debug("Cannot load session '%s': %s", path, str(err))
                 if err.errno == 2:  # "No such file or directory"
@@ -331,7 +331,7 @@ class Session(list):
             store_fname = os.path.join(self.path, self.STORE_URL_FILENAME)
             self.store_url = gc3libs.utils.read_contents(store_fname)
         except IOError:
-            gc3libs.log.info(
+            gc3libs.log.error(
                 "Unable to load session: file %s is missing." % (store_fname))
             raise
         self.store = gc3libs.persistence.make_store(self.store_url, **extra_args)

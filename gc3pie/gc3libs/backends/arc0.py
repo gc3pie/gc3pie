@@ -3,7 +3,7 @@
 """
 Job control on ARC0 resources.
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -20,7 +20,7 @@ Job control on ARC0 resources.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.5 version (SVN $Revision$)'
 
 
 import sys
@@ -93,7 +93,7 @@ class ArcLrms(LRMS):
         LRMS.__init__(
             self, name,
             architecture, max_cores, max_cores_per_job,
-            max_memory_per_core, max_walltime, auth, **extra_args)
+            max_memory_per_core, max_walltime, auth)
 
         # ARC0-specific setup
         self.lost_job_timeout = lost_job_timeout
@@ -279,20 +279,9 @@ class ArcLrms(LRMS):
                 'INLRMS:Q':  Run.State.SUBMITTED,
                 'INLRMS:R':  Run.State.RUNNING,
                 'INLRMS:E':  Run.State.RUNNING,
+                'INLRMS:O':  Run.State.RUNNING,
                 'INLRMS:S':  Run.State.STOPPED,
                 'INLRMS:H':  Run.State.STOPPED,
-                # XXX: According to the documentation ARC's `INLRMS:O`
-                # is "INLRMS:O Any other native LRMS state which can
-                # not be mapped to the above general states".  For
-                # unclear reasons, this includes SGE's "Eqw" error
-                # code: jobs in "E" state will not progress until a
-                # batch operator clears the "E" flag with `qmod -cj`,
-                # so we have to map `INLRMS:O` to GC3Pie's
-                # `Run.State.STOPPED`.  However, this seems to be an
-                # unfortunate interaction of ARC with SGE (see ARC bug
-                # 2716), so the mapping is hardly correct in general.
-                # In short: this might have to be changed again sooner or later.
-                'INLRMS:O':  Run.State.STOPPED,
                 # the `-ING` states below are used by ARC to mean that
                 # the GM has received a request for action but the job
                 # has not yet terminated; in particular, the output is
@@ -549,10 +538,10 @@ class ArcLrms(LRMS):
     @LRMS.authenticated
     def free(self, app):
         job = app.execution
+        jftpc = arclib.JobFTPControl()
 
         # Clean remote job sessiondir
         try:
-            jftpc = arclib.JobFTPControl()
             retval = jftpc.Clean(job.lrms_jobid)
         except arclib.FTPControlError:
             log.warning("Failed removing remote folder '%s'" % job.lrms_jobid)

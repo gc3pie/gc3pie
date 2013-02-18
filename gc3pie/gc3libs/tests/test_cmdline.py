@@ -23,7 +23,6 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 import os
-import shutil
 import tempfile
 import re
 
@@ -49,26 +48,22 @@ username = dummy
 [resource/localhost]
 enabled = true
 auth = dummy
-type = shellcmd
+type = subprocess
 frontend = localhost
 transport = local
 max_cores_per_job = 2
-max_memory_per_core = 8
+max_memory_per_core = 2
 max_walltime = 8
 max_cores = 2
 architecture = x86_64
-override = False
-resourcedir = %s
 """
         (fd, self.cfgfile) = tempfile.mkstemp()
-        self.resourcedir = self.cfgfile + '.d'
         f = os.fdopen(fd, 'w')
-        f.write(CONF_FILE % self.resourcedir)
+        f.write(CONF_FILE)
         f.close()
 
     def tearDown(self):
         os.remove(self.cfgfile)
-        shutil.rmtree(self.resourcedir)
         cli.test.FunctionalTest.tearDown(self)
 
     def test_simplescript(self):

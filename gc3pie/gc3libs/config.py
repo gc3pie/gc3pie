@@ -187,7 +187,7 @@ class Configuration(gc3libs.utils.Struct):
         files_successfully_read = 0
 
         for filename in locations:
-            filename = os.path.expandvars(os.path.expanduser(filename))
+            filename = os.path.expandvars(filename)
             if os.path.exists(filename):
                 if not os.access(filename, os.R_OK):
                     gc3libs.log.debug("Configuration.load(): File '%s' cannot be read, ignoring." % filename)
@@ -451,7 +451,7 @@ class Configuration(gc3libs.utils.Struct):
                 except Exception, err:
                     gc3libs.log.critical(
                         "Failed initializing Auth module: %s: %s",
-                        err.__class__.__name__, str(err))
+                        ex.__class__.__name__, str(err))
                     raise
             return self._auth_factory
         return locals()
@@ -487,14 +487,11 @@ class Configuration(gc3libs.utils.Struct):
                     continue
                 assert name == backend.name
             except Exception, err:
-                # Print the backtrace only if loglevel is DEBUG or
-                # more.
-                exc_info = gc3libs.log.level <= gc3libs.logging.DEBUG
                 gc3libs.log.warning(
                     "Failed creating backend for resource '%s' of type '%s': %s: %s",
                     resdict.get('name', '(unknown name)'),
                     resdict.get('type', '(unknown type)'),
-                    err.__class__.__name__, str(err), exc_info=exc_info)
+                    err.__class__.__name__, str(err), exc_info=__debug__)
                 if ignore_errors:
                     continue
                 else:
@@ -567,9 +564,6 @@ class Configuration(gc3libs.utils.Struct):
             elif resdict['type'] == gc3libs.Default.SLURM_LRMS:
                 from gc3libs.backends.slurm import SlurmLrms
                 cls = SlurmLrms
-            elif resdict['type'].split('+')[0] == gc3libs.Default.EC2_LRMS:
-                from gc3libs.backends.ec2 import EC2Lrms
-                cls = EC2Lrms
             else:
                 raise gc3libs.exceptions.ConfigurationError(
                     "Unknown resource type '%s'" % resdict['type'])

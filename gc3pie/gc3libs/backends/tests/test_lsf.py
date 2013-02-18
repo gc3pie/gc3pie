@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011-2013, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -23,7 +23,6 @@ __version__ = '$Revision$'
 
 import datetime
 import os
-import shutil
 import sys
 import tempfile
 
@@ -35,46 +34,9 @@ from gc3libs.quantity import Duration, hours, minutes, seconds, Memory, GB, MB, 
 
 from nose.tools import assert_equal
 
-_datetime_date = None
-
-files_to_remove = []
-
-def setUpModule():
-    """Mock the `datetime.date.today()` outcome in order to make the LSF parsing independent from the testing date."""
-    # save the original `datetime.date` to restore it in `tearDownModule()`
-    import datetime
-    global _datetime_date
-    _datetime_date = datetime.date
-    # mock features of `datetime.date.today()` that are actually used
-    # in `LsfLrms._parse_date()`
-    class MockDate(object):
-        def __init__(self, real):
-            self.__date = real
-        def __getattr__(self, name):
-            return getattr(self.__date, name)
-        def __call__(self, *args, **kwargs):
-            return self.__date(*args, **kwargs)
-    datetime.date = MockDate(datetime.date)
-    class Today(object):
-        def __init__(self):
-            self.year = 2012
-            self.month = 12
-    datetime.date.today = Today
-
-def tearDownModule():
-    # restore the original `datetime.date`
-    global _datetime_date
-    import datetime
-    datetime.date = _datetime_date
-    for fname in files_to_remove:
-        if os.path.isdir(fname):
-            shutil.rmtree(fname)
-        else:
-            os.remove(fname)
 
 def test_get_command():
     (fd, tmpfile) = tempfile.mkstemp()
-    files_to_remove.append(tmpfile)
     f = os.fdopen(fd, 'w+')
     f.write("""
 [auth/ssh]
@@ -323,9 +285,9 @@ SUMMARY:      ( time unit: second )
     assert_equal(acct['max_used_memory'], Memory('227MB'))
     # timestamps
     year = datetime.date.today().year
-    assert_equal(acct['lsf_submission_time'], datetime.datetime(year, 10, 8, 17, 7, 54))
-    assert_equal(acct['lsf_start_time'],      datetime.datetime(year, 10, 8, 17, 8, 44))
-    assert_equal(acct['lsf_completion_time'], datetime.datetime(year, 10, 8, 17, 9, 51))
+    assert_equal(acct['lsf_submission_time'], datetime.datetime(2012, 10, 8, 17, 7, 54))
+    assert_equal(acct['lsf_start_time'],      datetime.datetime(2012, 10, 8, 17, 8, 44))
+    assert_equal(acct['lsf_completion_time'], datetime.datetime(2012, 10, 8, 17, 9, 51))
 
 
 def test_bacct_done1():
@@ -371,9 +333,9 @@ SUMMARY:      ( time unit: second )
     assert_equal(acct['max_used_memory'], Memory('37MB'))
     # timestamps
     year = datetime.date.today().year
-    assert_equal(acct['lsf_submission_time'], datetime.datetime(year, 10, 8, 17,  8, 54))
-    assert_equal(acct['lsf_start_time'],      datetime.datetime(year, 10, 8, 17, 10,  1))
-    assert_equal(acct['lsf_completion_time'], datetime.datetime(year, 10, 8, 17, 10,  7))
+    assert_equal(acct['lsf_submission_time'], datetime.datetime(2012, 10, 8, 17,  8, 54))
+    assert_equal(acct['lsf_start_time'],      datetime.datetime(2012, 10, 8, 17, 10,  1))
+    assert_equal(acct['lsf_completion_time'], datetime.datetime(2012, 10, 8, 17, 10,  7))
 
 
 def test_bacct_killed():
@@ -419,9 +381,9 @@ SUMMARY:      ( time unit: second )
     assert_equal(acct['max_used_memory'], Memory('35MB'))
     # timestamps
     year = datetime.date.today().year
-    assert_equal(acct['lsf_submission_time'], datetime.datetime(year, 10, 5, 17, 49, 35))
-    assert_equal(acct['lsf_start_time'],      datetime.datetime(year, 10, 5, 17, 50, 35))
-    assert_equal(acct['lsf_completion_time'], datetime.datetime(year, 10, 5, 17, 51, 30))
+    assert_equal(acct['lsf_submission_time'], datetime.datetime(2012, 10, 5, 17, 49, 35))
+    assert_equal(acct['lsf_start_time'],      datetime.datetime(2012, 10, 5, 17, 50, 35))
+    assert_equal(acct['lsf_completion_time'], datetime.datetime(2012, 10, 5, 17, 51, 30))
 
 
 

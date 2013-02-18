@@ -66,7 +66,7 @@ import numpy as np
 import re
 import sys
 import time
-import cli
+import lockfile, cli
 
 from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
 from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
@@ -85,7 +85,6 @@ from pymods.classes.tableDict import tableDict
 # gc3 library imports
 import gc3libs
 from gc3libs import Application, Run, Task
-from gc3libs.compat import lockfile
 from gc3libs.cmdline import SessionBasedScript, existing_file
 import gc3libs.utils
 import gc3libs.application.apppot
@@ -529,6 +528,7 @@ Read `.loop` files and execute the `housingOut` program accordingly.
         #"""
 
       ##  return cli.app.CommandLineApp.run(self)
+        #import lockfile
         #import cli
         #try:
             #return cli.app.CommandLineApp.run(self)

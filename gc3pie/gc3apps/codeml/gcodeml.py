@@ -23,9 +23,11 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gcodeml --help`` for program usage instructions.
 """
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.5 version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2013-02-18:
+    * Output files places in same folder as inputs.
   2012-12-05:
     * Allow requesting a specific version of CODEML/PAML
       via a command-line option.
@@ -205,6 +207,8 @@ of newly-created jobs so that this limit is never exceeded.
 
             self.log.debug("Gathered control files: '%s':" % str.join("', '", ctl_files))
 
+            kwargs = extra.copy()
+
             ## create new CODEML application instance
 
             # Python 2.4 does not allow named arguments after a
@@ -216,24 +220,25 @@ of newly-created jobs so that this limit is never exceeded.
             kwargs['requested_memory'] = self.params.memory_per_core
             kwargs['requested_cores'] = self.params.ncores
             kwargs['requested_walltime'] = self.params.walltime
-            # Use the `make_directory_path` method (from
-            # `SessionBasedScript`) to expand strings like
-            # ``NAME``, etc. in the template.
+
             jobname = (os.path.basename(dirpath) or dirpath) + '.out'
 
-
-            # kwargs['output_dir'] = self.make_directory_path(self.params.output, jobname)
-
-            # Variant 1: results in same folder as inputs
-            kwargs['output_dir'] = os.path.join(dirpath,'.compute')
-            kwargs['result_dir'] = dirpath
+            if self.params.output == 'NAME':
+                # This is the 'default' setting
+                # gcodeml overrides it
+                # Results in same folder as inputs
+                kwargs['output_dir'] = os.path.join(dirpath,'.compute')
+                kwargs['result_dir'] = dirpath
+            else:
+                # command line option takes precendence
+                # in this case, just set output_dir to what has been specified
+                # as '--output' option
+                kwargs['output_dir'] = self.make_directory_path(self.params.output, jobname)
 
             # FIXME: should this reflect the same policy as 'output_dir' ?
             # set optional arguments (path to 'codeml' binary, output URL, etc.)
-            kwargs = extra.copy()
             if self.params.output_base_url != "":
                kwargs['output_base_url'] = self.params.output_base_url
-
 
             app = CodemlApplication(*ctl_files, **kwargs)
 

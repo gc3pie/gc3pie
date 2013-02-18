@@ -8,7 +8,7 @@ function or class belongs in here is the following: place a function
 or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -25,14 +25,13 @@ sources of a different project and it would not stop working.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.5 version (SVN $Revision$)'
 
 
 import itertools
 import os
 import os.path
 import posix
-import random
 import re
 import shutil
 import sys
@@ -40,10 +39,10 @@ import time
 import cStringIO as StringIO
 import UserDict
 
+import lockfile
 
 from gc3libs.compat._collections import defaultdict, OrderedDict
 import gc3libs.compat.functools as functools
-import gc3libs.compat.lockfile as lockfile
 
 import gc3libs
 import gc3libs.exceptions
@@ -404,50 +403,6 @@ class Enum(frozenset):
             raise SyntaxError("Cannot assign enumeration values.")
     def __delattr__(self, name):
             raise SyntaxError("Cannot delete enumeration values.")
-
-
-class ExponentialBackoff(object):
-    """Generate waiting times with the `exponential backoff`_ algorithm.
-
-    Returned times are in seconds (or fractions thereof); they are
-    integral multiples of the basic time slot, which is set with the
-    `slot_duration` constructor parameter.
-
-    After `max_retries` have been attempted, any call to this iterator
-    will raise a `StopIteration` exception.
-
-    The `ExponentialBackoff` class implements the iterator protocol,
-    so you can just retrieve waiting times with the `.next()` method,
-    or by looping over it::
-
-      >>> random.seed(314) # not-so-random for testing purposes...
-      >>> for wt in ExponentialBackoff():
-      ...   print wt,
-      ...
-      0.0 0.0 0.0 0.25 0.15 0.3
-
-    .. _`exponential backoff`: http://en.wikipedia.org/wiki/Exponential_backoff#An_example_of_an_exponential_backoff_algorithm
-
-    """
-
-    def __init__(self, slot_duration=0.05, max_retries=5):
-        self.attempt = -1
-        self.slot_duration = slot_duration
-        self.max_retries = max_retries
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        """Return next waiting time."""
-        self.attempt += 1
-        if self.attempt > self.max_retries:
-            raise StopIteration
-        return self.slot_duration * random.randint(0, 2**self.attempt - 1)
-
-    def wait(self):
-        """Wait for another while."""
-        time.sleep(self.next())
 
 
 def first(seq):
@@ -965,48 +920,6 @@ def samefile(path1, path2):
         else:
             raise
 
-
-def sh_quote_safe(text):
-    """
-    Escape a string for safely passing as argument to a shell command.
-
-    Return a single-quoted string that expands to the exact literal
-    contents of `text` when used as an argument to a shell command.
-    Examples (note that backslashes are doubled because of Python's
-    string read syntax)::
-
-      >>> print(sh_quote_safe("arg"))
-      'arg'
-      >>> print(sh_quote_safe("'arg'"))
-      ''\\''arg'\\'''
-
-    """
-    return ("'%s'" % text.replace("'", r"'\''"))
-
-
-_DQUOTE_RE = re.compile(r'(\\*)"')
-"""Regular expression for escaping double quotes in strings."""
-
-def sh_quote_unsafe(text):
-    """
-    Double-quote a string for passing as argument to a shell command.
-
-    Return a double-quoted string that expands to the contents of
-    `text` but still allows variable expansion and ``\``-escapes
-    processing by the UNIX shell.  Examples (note that backslashes are
-    doubled because of Python's string read syntax)::
-
-      >>> print(sh_quote_unsafe("arg"))
-      "arg"
-      >>> print(sh_quote_unsafe('"arg"'))
-      "\\"arg\\""
-      >>> print(sh_quote_unsafe(r'"\\"arg\\""'))
-      "\\"\\\\\\"arg\\\\\\"\\""
-
-    """
-    return ('"%s"' % _DQUOTE_RE.sub(r'\1\1\"', text))
-
-
 # see http://stackoverflow.com/questions/31875/is-there-a-simple-elegant-way-to-define-singletons-in-python/1810391#1810391
 class Singleton(object):
     """
@@ -1388,51 +1301,6 @@ def unlock(lock):
     See also: `gc3libs.utils.lock`:func:
     """
     lock.release()
-
-
-def update_parameter_in_file(path, var_in, new_val, regex_in):
-    '''
-    Updates a parameter value in a parameter file using predefined regular
-    expressions in `_loop_regexps`.
-    
-    :param path: Full path to the parameter file. 
-    :param var_in: The variable to modify. 
-    :param new_val: The updated parameter value. 
-    :param regex: Name of the regular expression that describes the format of the parameter file. 
-    '''
-    _loop_regexps = {
-        'bar-separated':(r'([a-z]+[\s\|]+)'
-                         r'(\w+)' # variable name
-                         r'(\s*[\|]+\s*)' # bars and spaces
-                         r'([\w\s\.,;\[\]\-]+)' # value
-                         r'(\s*)'),
-        'space-separated':(r'(\s*)'
-                           r'(\w+)' # variable name
-                           r'(\s+)' # spaces (filler)
-                           r'([\w\s\.,;\[\]\-]+)' # values
-                           r'(\s*)'), # spaces (filler)
-    }
-    isfound = False
-    if regex_in in _loop_regexps.keys():
-        regex_in = _loop_regexps[regex_in]
-    para_file_in = open(path, 'r')
-    para_file_out = open(path + '.tmp', 'w')
-    for line in para_file_in:
-        if not line.rstrip(): continue
-        (a, var, b, old_val, c) = re.match(regex_in, line.rstrip()).groups()
-        gc3libs.log.debug("Read variable '%s' with value '%s' ...", var, old_val)
-        if var == var_in:
-            isfound = True
-            upd_val = new_val
-        else:
-            upd_val = old_val
-        para_file_out.write(a + var + b + upd_val + c + '\n')
-    para_file_out.close()
-    para_file_in.close()
-    # move new modified content over the old
-    os.rename(path + '.tmp', path)
-    if not isfound:
-        gc3libs.log.critical('update_parameter_in_file could not find parameter in sepcified file')
 
 
 def write_contents(path, data):

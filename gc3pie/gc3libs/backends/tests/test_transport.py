@@ -37,7 +37,7 @@ from gc3libs.exceptions import TransportError
 class StubForTestTransport:
 
     def extraSetup(self):
-        (exitcode, tmpdir, stderror) = self.transport.execute_command('mktemp -d /tmp/test_transport.XXXXXXXXX')
+        (exitcode, tmpdir, stderror) = self.transport.execute_command('mktemp -d')
         self.tmpdir = tmpdir.strip()
 
     def tearDown(self):
@@ -140,7 +140,7 @@ class TestLocalTransport(StubForTestTransport):
 
 class TestSshTransport(StubForTestTransport):
     def setUp(self):
-        self.transport = transport.SshTransport('localhost', ignore_ssh_host_keys=True)
+        self.transport = transport.SshTransport('localhost')
         try:
             self.transport.connect()
         except TransportError:

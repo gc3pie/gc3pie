@@ -34,7 +34,7 @@ GC3Pie library.
 
   overview
   tutorials/index
-  api/index
+  gc3libs/api
 
 
 .. _`tutorials`: tutorials/index.html
