@@ -134,6 +134,7 @@ class TestSession(object):
         tmpdir = tempfile.mktemp(dir='.')
         self.tmpdir = tmpdir
         self.sess = Session(tmpdir)
+        self.extra_args = {}
 
     def tearDown(self):
         self.sess.destroy()
@@ -174,7 +175,10 @@ class TestSession(object):
         fd_job_ids = open(os.path.join(self.sess.path,
                                        self.sess.INDEX_FILENAME), 'a')
         fd_job_ids.write('\n\n\n')
-        self.sess = Session(self.sess.path)
+        if hasattr(self, 'extra_args'):
+            self.sess = Session(self.sess.path, **self.extra_args)
+        else:
+            self.sess = Session(self.sess.path)
         ids = self.sess.list_ids()
         assert_equal(len(ids),  1)
         assert_equal(ids, [str(i) for i in self.sess.tasks])
@@ -216,7 +220,10 @@ class TestSession(object):
         self.sess.add(_PStruct(a=1, b='foo'))
         self.sess.add(_PStruct(a=2, b='bar'))
         self.sess.add(_PStruct(a=3, b='baz'))
-        sess2 = Session(self.sess.path)
+        if hasattr(self, 'extra_args'):
+            sess2 = Session(self.sess.path, **self.extra_args)
+        else:
+            sess2 = Session(self.sess.path)
         assert_equal(len(sess2), 3)
         for task_id in sess2.tasks.iterkeys():
             task = sess2.store.load(task_id)
@@ -280,7 +287,7 @@ class StubForSqlSession(TestSession):
         q = sql.select([self.sess.store.t_store.c.id]
                        ).where(self.sess.store.t_store.c.id == jobid
                                )
-        conn = self.sess.store._SqlStore__engine.connect()
+        conn = self.sess.store._engine.connect()
         results = conn.execute(q)
         rows = results.fetchall()
         assert_equal(len(rows), 1)
@@ -331,9 +338,11 @@ class TestMysqlSession(StubForSqlSession):
         tmpdir = tempfile.mktemp(dir='.')
         self.tmpdir = os.path.basename(tmpdir)
         try:
+            self.extra_args = {'table_name': self.tmpdir}
             self.sess = Session(
                 tmpdir,
-                store_url="mysql://gc3user:gc3pwd@localhost/%s" % self.tmpdir)
+                store_url="mysql://gc3user:gc3pwd@localhost/gc3",
+                **self.extra_args)
         except sqlalchemy.exc.OperationalError:
             if os.path.exists(tmpdir):
                 shutil.rmtree(tmpdir)
@@ -341,8 +350,8 @@ class TestMysqlSession(StubForSqlSession):
 
     def tearDown(self):
         self.sess.destroy()
-        conn = self.sess.store.__engine.connect()
-        conn.execute("drop database %s" % self.tmpdir)
+        conn = self.sess.store._engine.connect()
+        conn.execute("drop table %s" % self.tmpdir)
 
 ## main: run tests
 

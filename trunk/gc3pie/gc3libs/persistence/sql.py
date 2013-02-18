@@ -147,10 +147,10 @@ class SqlStore(Store):
         url. It will use the correct backend (MySQL, psql, sqlite3)
         based on the url.scheme value
         """
-        self.__engine = sqla.create_engine(str(url))
+        self._engine = sqla.create_engine(str(url))
         self.table_name = table_name
 
-        self.__meta = sqla.MetaData(bind=self.__engine)
+        self.__meta = sqla.MetaData(bind=self._engine)
 
         # create schema
         table = sqla.Table(
@@ -171,7 +171,7 @@ class SqlStore(Store):
             table.append_column(col.copy())
             self.extra_fields[col.name] = func
 
-        current_metadata = sqla.MetaData(bind=self.__engine)
+        current_metadata = sqla.MetaData(bind=self._engine)
         current_metadata.reflect()
         # check if the db exists and already has a 'store' table
         if create and self.table_name not in current_metadata.tables:
@@ -186,7 +186,7 @@ class SqlStore(Store):
     @same_docstring_as(Store.list)
     def list(self):
         q = sql.select([self.t_store.c.id])
-        conn = self.__engine.connect()
+        conn = self._engine.connect()
         rows = conn.execute(q)
         ids = [i[0] for i in rows.fetchall()]
         conn.close()
@@ -228,7 +228,7 @@ class SqlStore(Store):
                                     column, obj, ex.__class__.__name__, str(ex))
 
         q = sql.select([self.t_store.c.id]).where(self.t_store.c.id == id_)
-        conn = self.__engine.connect()
+        conn = self._engine.connect()
         r = conn.execute(q)
         if not r.fetchone():
             # It's an insert
@@ -249,7 +249,7 @@ class SqlStore(Store):
     @same_docstring_as(Store.load)
     def load(self, id_):
         q = sql.select([self.t_store.c.data]).where(self.t_store.c.id == id_)
-        conn = self.__engine.connect()
+        conn = self._engine.connect()
         r = conn.execute(q)
         rawdata = r.fetchone()
         if not rawdata:
@@ -263,7 +263,7 @@ class SqlStore(Store):
 
     @same_docstring_as(Store.remove)
     def remove(self, id_):
-        conn = self.__engine.connect()
+        conn = self._engine.connect()
         conn.execute(self.t_store.delete().where(self.t_store.c.id == id_))
         conn.close()
 
