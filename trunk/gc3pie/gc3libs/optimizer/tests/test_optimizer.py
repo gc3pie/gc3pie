@@ -141,6 +141,7 @@ max_walltime=2
 architecture=x64_64
 auth=noauth
 enabled=True
+resourcedir=%s
 
 [auth/noauth]
 type=none
@@ -157,11 +158,12 @@ type=none
         
         # Create a sample user config file. 
         (fd, cfgfile) = tempfile.mkstemp()
+        resourcedir = cfgfile + '.d'
         f = os.fdopen(fd, 'w+')
-        f.write(TestParallelDriver.CONF)
+        f.write(TestParallelDriver.CONF % resourcedir)
         f.close()
         sys.argv += ['--config-files', cfgfile, '-r', 'localhost_test']
-        self.files_to_remove = [cfgfile]
+        self.files_to_remove = [cfgfile, resourcedir]
 
         self.cfg = gc3libs.config.Configuration()
         self.cfg.merge_file(cfgfile)

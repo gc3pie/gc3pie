@@ -54,6 +54,7 @@ architecture=x64_64
 auth=noauth
 enabled=True
 override=False
+resourcedir=%s
 
 [auth/noauth]
 type=none
@@ -62,9 +63,10 @@ type=none
     def setUp(self):
         (fd, cfgfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
-        f.write(TestBackendShellcmd.CONF)
+        CONFIG = TestBackendShellcmd.CONF % (cfgfile + '.d')
+        f.write(CONFIG)
         f.close()
-        self.files_to_remove = [cfgfile]
+        self.files_to_remove = [cfgfile, cfgfile + '.d']
         self.apps_to_kill = []
 
         self.cfg = gc3libs.config.Configuration()
@@ -297,6 +299,7 @@ architecture=x64_64
 auth=noauth
 enabled=True
 override=%s
+resourcedir=%s
 
 [auth/noauth]
 type=none
@@ -318,9 +321,9 @@ type=none
     def test_override_cfg_flag(self):
         (fd, cfgfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
-        f.write(TestBackendShellcmdCFG.CONF % "True")
+        f.write(TestBackendShellcmdCFG.CONF % ("True", cfgfile + '.d'))
         f.close()
-        self.files_to_remove = [cfgfile]
+        self.files_to_remove = [cfgfile, cfgfile + '.d']
 
         self.cfg = gc3libs.config.Configuration()
         self.cfg.merge_file(cfgfile)
@@ -335,9 +338,9 @@ type=none
     def test_do_not_override_cfg_flag(self):
         (fd, cfgfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
-        f.write(TestBackendShellcmdCFG.CONF % "False")
+        f.write(TestBackendShellcmdCFG.CONF % ("False", cfgfile + '.d'))
         f.close()
-        self.files_to_remove = [cfgfile]
+        self.files_to_remove = [cfgfile, cfgfile + '.d']
 
         self.cfg = gc3libs.config.Configuration()
         self.cfg.merge_file(cfgfile)
@@ -352,9 +355,9 @@ type=none
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         (fd, cfgfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
-        f.write(TestBackendShellcmdCFG.CONF % "False")
+        f.write(TestBackendShellcmdCFG.CONF % ("False", cfgfile + '.d'))
         f.close()
-        self.files_to_remove = [cfgfile]
+        self.files_to_remove = [cfgfile, cfgfile + '.d', tmpdir]
 
         cfg1 = gc3libs.config.Configuration()
         cfg1.merge_file(cfgfile)
@@ -383,7 +386,7 @@ type=none
             assert_equal(backend2.free_slots, backend2.max_cores)
             backend2.get_resource_status()
             assert_equal(backend2.free_slots, backend2.max_cores - app.requested_cores)
-        except:
+        finally:
             core1.kill(app)
             core1.free(app)
 
