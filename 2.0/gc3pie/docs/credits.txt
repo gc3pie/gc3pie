@@ -1,0 +1,27 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: global.inc
+
+
+List of contributors to GC3Pie
+==============================
+
+This is a list of people that have contributed to GC3Pie, in any form:
+be it enhancements to the code or testing out releases and new features, or
+simply contributing suggestions and proposing enhancements.  To them
+all, our gratitude for trying to make GC3Pie a better tool.
+
+The list is sorted by last name.  Please send an email to
+`<gc3pie-dev@googlegroups.com>` for corrections.
+
+* Tyanko Aleksiev <tyanko.alexiev@gmail.com>
+* Benjamin Jonen <benjamin.jonen@gmail.com>
+* Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>
+* Antonio Messina <arcimboldo@gmail.com>
+* Mark Monroe <markjmonroe@yahoo.com>
+* Riccardo Murri <riccardo.murri@gmail.com>
+* Michael Packard <mrghort@gmail.com>
+* Xin Zhou <xin.zhou1983@gmail.com>

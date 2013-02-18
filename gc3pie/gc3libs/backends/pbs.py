@@ -1,8 +1,7 @@
 #! /usr/bin/env python
 #
 """
-Job control on PBS/Torque clusters (possibly connecting to the
-front-end via SSH).
+Job control on PBS/Torque clusters (possibly connecting to the front-end via SSH).
 """
 # Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
@@ -21,7 +20,7 @@ front-end via SSH).
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.4 version (SVN $Revision$)'
 
 
 import datetime
@@ -38,9 +37,8 @@ from gc3libs.compat._collections import defaultdict
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
-from gc3libs.quantity import Memory, kB, MB, GB
-from gc3libs.quantity import Duration, seconds, minutes, hours
-import gc3libs.utils as utils  # first, to_bytes
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, seconds, minutes, hours
+import gc3libs.utils as utils # first, to_bytes
 from gc3libs.utils import same_docstring_as
 
 import transport
@@ -71,21 +69,17 @@ _tracejob_run_re = re.compile(
     '(?P<running_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
     'Job Run at request of .*')
 
-_tracejob_last_re = re.compile(
-    '(?P<end_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.'
-    '\s+Exit_status=(?P<exit_status>\d+)\s+'
-    'resources_used.cput=(?P<used_cpu_time>[^ ]+)\s+'
-    'resources_used.mem=(?P<mem>[^ ]+)\s+'
-    'resources_used.vmem=(?P<used_memory>[^ ]+)\s+'
-    'resources_used.walltime=(?P<used_walltime>[^ ]+)')
+_tracejob_last_re = re.compile('(?P<end_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+Exit_status=(?P<exit_status>\d+)\s+'
+                                  'resources_used.cput=(?P<used_cpu_time>[^ ]+)\s+'
+                                  'resources_used.mem=(?P<mem>[^ ]+)\s+'
+                                  'resources_used.vmem=(?P<used_memory>[^ ]+)\s+'
+                                  'resources_used.walltime=(?P<used_walltime>[^ ]+)')
 
 # convert data to GC3Pie internal format
 
-
 def _to_memory(val):
     """
-    Convert a memory quantity as it appears in the PBS logs to GC3Pie
-    `Memory` value.
+    Convert a memory quantity as it appears in the PBS logs to GC3Pie `Memory` value.
 
     Examples::
 
@@ -123,8 +117,7 @@ def _to_memory(val):
 def _parse_asctime(val):
     try:
         # XXX: replace with datetime.strptime(...) in Python 2.5+
-        return datetime.datetime(
-            *(time.strptime(val, '%m/%d/%Y %H:%M:%S')[0:6]))
+        return datetime.datetime(*(time.strptime(val, '%m/%d/%Y %H:%M:%S')[0:6]))
     except Exception, err:
         gc3libs.log.error(
             "Cannot parse '%s' as a PBS-format time stamp: %s: %s",
@@ -140,17 +133,18 @@ _tracejob_keyval_mapping = {
     # |               |                       |
     # |               |                       |
     #   ... common backend attrs (see Issue 78) ...
-    'exit_status': ('exitcode', int),
-    'used_cpu_time': ('used_cpu_time', Duration),
-    'used_walltime': ('duration', Duration),
-    'used_memory': ('max_used_memory', _to_memory),
+    'exit_status':    ('exitcode',            int),
+    'used_cpu_time':  ('used_cpu_time',       Duration),
+    'used_walltime':  ('duration',            Duration),
+    'used_memory':    ('max_used_memory',     _to_memory),
     #   ... PBS-only attrs ...
-    'mem': ('pbs_max_used_ram', _to_memory),
-    'submission_time': ('pbs_submission_time', _parse_asctime),
-    'running_time': ('pbs_running_time', _parse_asctime),
-    'end_time': ('pbs_end_time', _parse_asctime),
-    'queue': ('pbs_queue', str),
-    'job_name': ('pbs_jobname', str), }
+    'mem':            ('pbs_max_used_ram',    _to_memory),
+    'submission_time':('pbs_submission_time', _parse_asctime),
+    'running_time':   ('pbs_running_time',    _parse_asctime),
+    'end_time':       ('pbs_end_time',        _parse_asctime),
+    'queue':          ('pbs_queue',           str),
+    'job_name':       ('pbs_jobname',         str),
+    }
 
 
 ## code
@@ -160,14 +154,9 @@ def count_jobs(qstat_output, whoami):
     Parse PBS/Torque's ``qstat`` output (as contained in string `qstat_output`)
     and return a quadruple `(R, Q, r, q)` where:
 
-      * `R` is the total number of running jobs in the PBS/Torque cell
-        (from any user);
-
-      * `Q` is the total number of queued jobs in the PBS/Torque cell
-        (from any user);
-
+      * `R` is the total number of running jobs in the PBS/Torque cell (from any user);
+      * `Q` is the total number of queued jobs in the PBS/Torque cell (from any user);
       * `r` is the number of running jobs submitted by user `whoami`;
-
       * `q` is the number of queued jobs submitted by user `whoami`
     """
     total_running = 0
@@ -177,10 +166,9 @@ def count_jobs(qstat_output, whoami):
     n = 0
     for line in qstat_output.split('\n'):
         # import pdb; pdb.set_trace()
-        log.info("Output line: %s" % line)
+        log.info("Output line: %s" %  line)
         m = _qstat_line_re.match(line)
-        if not m:
-            continue
+        if not m: continue
         if m.group('state') in ['R']:
             total_running += 1
             if m.group('username') == whoami:
@@ -196,8 +184,7 @@ def count_jobs(qstat_output, whoami):
 
 class PbsLrms(batch.BatchSystem):
     """
-    Job control on PBS/Torque clusters (possibly by connecting via SSH
-    to a submit node).
+    Job control on PBS/Torque clusters (possibly by connecting via SSH to a submit node).
     """
 
     _batchsys_name = 'PBS/TORQUE'
@@ -206,12 +193,12 @@ class PbsLrms(batch.BatchSystem):
                  # this are inherited from the base LRMS class
                  architecture, max_cores, max_cores_per_job,
                  max_memory_per_core, max_walltime,
-                 auth,  # ignored if `transport` is 'local'
+                 auth, # ignored if `transport` is 'local'
                  # these are inherited from `BatchSystem`
                  frontend, transport,
-                 accounting_delay=15,
+                 accounting_delay = 15,
                  # these are specific to this backend
-                 queue=None,
+                 queue = None,
                  **extra_args):
 
         # init base class
@@ -230,8 +217,9 @@ class PbsLrms(batch.BatchSystem):
         self._qstat = self._get_command('qstat')
         self._tracejob = self._get_command('tracejob')
 
+
     def _parse_submit_output(self, output):
-        return self.get_jobid_from_submit_output(output, _qsub_jobid_re)
+        return self.get_jobid_from_submit_output( output,_qsub_jobid_re)
 
     def _submit_command(self, app):
         qsub_argv, app_argv = app.qsub_pbs(self)
@@ -240,11 +228,10 @@ class PbsLrms(batch.BatchSystem):
         return (str.join(' ', qsub_argv), str.join(' ', app_argv))
 
     def _stat_command(self, job):
-        return "%s %s | grep ^%s" % (
-            self._qstat, job.lrms_jobid, job.lrms_jobid)
+        return "%s %s | grep ^%s" % (self._qstat, job.lrms_jobid,job.lrms_jobid)
 
     def _acct_command(self, job):
-        return "%s %s" % (self._tracejob, job.lrms_jobid)
+        return  '%s %s' % (self._tracejob, job.lrms_jobid)
 
     def _parse_stat_output(self, stdout):
         # check that passed object obeys contract
@@ -252,12 +239,11 @@ class PbsLrms(batch.BatchSystem):
         # parse `qstat` output
         job_status = stdout.split()[4]
         jobstatus = dict()
-        log.debug("translating PBS/Torque's `qstat` code "
-                  "'%s' to gc3libs.Run.State", job_status)
+        log.debug("translating PBS/Torque's `qstat` code '%s' to gc3libs.Run.State" % job_status)
         if job_status in ['Q', 'W']:
             jobstatus['state'] = Run.State.SUBMITTED
         elif job_status in ['R']:
-            jobstatus['state'] = Run.State.RUNNING
+            jobstatus['state'] =  Run.State.RUNNING
         elif job_status in ['S', 'H', 'T'] or 'qh' in job_status:
             jobstatus['state'] = Run.State.STOPPED
         elif job_status in ['C', 'E']:
@@ -294,6 +280,7 @@ class PbsLrms(batch.BatchSystem):
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._qdel, jobid))
 
+
     @same_docstring_as(LRMS.get_resource_status)
     @LRMS.authenticated
     def get_resource_status(self):
@@ -303,8 +290,7 @@ class PbsLrms(batch.BatchSystem):
 
             _command = ('%s -a' % self._qstat)
             log.debug("Running `%s`...", _command)
-            exit_code, qstat_stdout, stderr \
-                = self.transport.execute_command(_command)
+            exit_code, qstat_stdout, stderr = self.transport.execute_command(_command)
             if exit_code != 0:
                 # cannot continue
                 raise gc3libs.exceptions.LRMSError(
@@ -313,8 +299,8 @@ class PbsLrms(batch.BatchSystem):
                     % (_command, exit_code, stdout, stderr))
 
             log.debug("Computing updated values for total/available slots ...")
-            (total_running, self.queued, self.user_run, self.user_queued) \
-                = count_jobs(qstat_stdout, self._username)
+            (total_running, self.queued,
+             self.user_run, self.user_queued) = count_jobs(qstat_stdout, self._username)
             self.total_run = total_running
             self.free_slots = -1
             self.used_quota = -1

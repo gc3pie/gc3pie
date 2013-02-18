@@ -19,14 +19,13 @@ Interface to different resource management systems for the GC3Libs.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.4 version (SVN $Revision$)'
 
 
 import gc3libs
 from gc3libs.compat.functools import wraps
 import gc3libs.exceptions
-from gc3libs.quantity import Memory, kB, MB, GB
-from gc3libs.quantity import Duration, hours, minutes, seconds
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 import gc3libs.utils
 
 
@@ -120,12 +119,12 @@ class LRMS(gc3libs.utils.Struct):
         self.max_cores = int(max_cores)
         self.max_cores_per_job = int(max_cores_per_job)
         assert isinstance(max_memory_per_core, Memory), \
-            ("Expected `Memory` value for `max_memory_per_core`, "
-             "got %s instead." % (type(max_memory_per_core),))
+               ("Expected `Memory` value for `max_memory_per_core`, got %s instead."
+                % (type(max_memory_per_core),))
         self.max_memory_per_core = max_memory_per_core
         assert isinstance(max_walltime, Duration), \
-            ("Expected `Duration` value for `max_walltime`, got %s instead."
-             % (type(max_walltime),))
+               ("Expected `Duration` value for `max_walltime`, got %s instead."
+                % (type(max_walltime),))
         self.max_walltime = max_walltime
 
         # see `authenticated` below
@@ -133,6 +132,7 @@ class LRMS(gc3libs.utils.Struct):
 
         gc3libs.log.info(
             "Computational resource '%s' initialized successfully.", self.name)
+
 
     @staticmethod
     def authenticated(fn):
@@ -150,15 +150,14 @@ class LRMS(gc3libs.utils.Struct):
             return fn(self, *args, **kwargs)
         return wrapper
 
+
     def cancel_job(self, app):
         """
         Cancel a running job.  If `app` is associated to a queued or
         running remote job, tell the execution middleware to cancel
         it.
         """
-        raise NotImplementedError(
-            "Abstract method `LRMS.cancel_job()` called "
-            "- this should have been defined in a derived class.")
+        raise NotImplementedError("Abstract method `LRMS.cancel_job()` called - this should have been defined in a derived class.")
 
     def free(self, app):
         """
@@ -170,18 +169,14 @@ class LRMS(gc3libs.utils.Struct):
         than `TERMINATED` results in undefined behavior and will
         likely be the cause of errors later on.  Be cautious.
         """
-        raise NotImplementedError(
-            "Abstract method `LRMS.free()` called "
-            "- this should have been defined in a derived class.")
+        raise NotImplementedError("Abstract method `LRMS.free()` called - this should have been defined in a derived class.")
 
     def get_resource_status(self):
         """
         Update the status of the resource associated with this `LRMS`
         instance in-place.  Return updated `Resource` object.
         """
-        raise NotImplementedError(
-            "Abstract method `LRMS.get_resource_status()` called "
-            "- this should have been defined in a derived class.")
+        raise NotImplementedError("Abstract method `LRMS.get_resource_status()` called - this should have been defined in a derived class.")
 
     def get_results(self, job, download_dir, overwrite=False):
         """
@@ -189,9 +184,7 @@ class LRMS(gc3libs.utils.Struct):
         (which must already exists).  Will not overwrite existing
         files, unless the optional argument `overwrite` is `True`.
         """
-        raise NotImplementedError(
-            "Abstract method `LRMS.get_results()` called "
-            "- this should have been defined in a derived class.")
+        raise NotImplementedError("Abstract method `LRMS.get_results()` called - this should have been defined in a derived class.")
 
     def update_job_state(self, app):
         """
@@ -199,9 +192,7 @@ class LRMS(gc3libs.utils.Struct):
         update `app.execution.state` accordingly.  Return the
         corresponding `Run.State`; see `Run.State` for more details.
         """
-        raise NotImplementedError(
-            "Abstract method `LRMS.update_state()` called "
-            "- this should have been defined in a derived class.")
+        raise NotImplementedError("Abstract method `LRMS.update_state()` called - this should have been defined in a derived class.")
 
     def submit_job(self, application, job):
         """
@@ -220,9 +211,7 @@ class LRMS(gc3libs.utils.Struct):
           2. the `job` object may be updated with any information that
              is necessary for this LRMS to perform further operations on it.
         """
-        raise NotImplementedError(
-            "Abstract method `LRMS.submit_job()` called "
-            "- this should have been defined in a derived class.")
+        raise NotImplementedError("Abstract method `LRMS.submit_job()` called - this should have been defined in a derived class.")
 
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
         """
@@ -241,29 +230,21 @@ class LRMS(gc3libs.utils.Struct):
 
         Any exception raised by operations will be passed through.
         """
-        raise NotImplementedError(
-            "Abstract method `LRMS.peek()` called "
-            "- this should have been defined in a derived class.")
+        raise NotImplementedError("Abstract method `LRMS.peek()` called - this should have been defined in a derived class.")
 
     def validate_data(self, data_file_list=None):
         """
-        Return True if the list of files is expressed in one of the
-        file transfer protocols the LRMS supports.
-
-        Return False otherwise.
+        Return True if the list of files is expressed in one of the file transfer protocols the LRMS supports.
+        Return False otherwise
         """
-        raise NotImplementedError(
-            "Abstract method 'LRMS.validate_data()' called "
-            "- this should have been defined in a derived class.")
+        raise NotImplementedError("Abstract method 'LRMS.validate_data()' called - this should have been defined in a derived class.")
 
     def close(self):
         """
         Implement gracefully close on LRMS dependent resources
         e.g. transport
         """
-        raise NotImplementedError(
-            "Abstract method 'LRMS.close()' called "
-            "- this should have been defined in a derived class.")
+        raise NotImplementedError("Abstract method 'LRMS.close()' called - this should have been defined in a derived class.")
 
 
 ## main: run tests

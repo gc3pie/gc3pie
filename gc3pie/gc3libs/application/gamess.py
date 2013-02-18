@@ -20,7 +20,7 @@ Specialized support for computational jobs running GAMESS-US.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.0.4 version (SVN $Revision$)'
 
 
 import gc3libs
@@ -125,12 +125,9 @@ class GamessApplication(gc3libs.Application):
         """
         gc3libs.log.debug("Running GamessApplication post-processing hook...")
         output_dir = self.output_dir
-        if self.stdout:
-            output_filename = os.path.join(output_dir, self.stdout)
-        else:
-            output_filename = os.path.join(
-                output_dir,
-                os.path.splitext(os.path.basename(self.inp_file_path))[0] + '.out')
+        output_filename = os.path.join(
+            output_dir,
+            os.path.splitext(os.path.basename(self.inp_file_path))[0] + '.out')
         if not os.path.exists(output_filename):
             # no output file, override exit code if it indicates success
             if self.execution.exitcode == os.EX_OK:
