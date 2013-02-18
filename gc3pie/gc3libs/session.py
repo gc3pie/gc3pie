@@ -172,7 +172,7 @@ class Session(list):
         if os.path.isdir(self.path):
             # Session already exists?
             try:
-                self._load_session()
+                self._load_session(**extra_args)
             except IOError, err:
                 gc3libs.log.debug("Cannot load session '%s': %s", path, str(err))
                 if err.errno == 2:  # "No such file or directory"
