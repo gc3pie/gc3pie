@@ -351,7 +351,7 @@ class TestMysqlSession(StubForSqlSession):
     def tearDown(self):
         self.sess.destroy()
         conn = self.sess.store._engine.connect()
-        conn.execute("drop table %s" % self.tmpdir)
+        conn.execute("drop table `%s`" % self.tmpdir)
 
 ## main: run tests
 

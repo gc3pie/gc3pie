@@ -451,7 +451,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
         # Oops, apparently the store.save call will close our
         # connection too.
-        self.conn = self.store._SqlStore__engine.connect()
+        self.conn = self.store._engine.connect()
         results = self.conn.execute(q)
         rows = results.fetchall()
         assert_equal(len(rows), 1)
@@ -476,7 +476,7 @@ class ExtraSqlChecks(object):
     def _make_store(self, url, **kwargs):
         self.db_url = url
         self.store = make_store(url, **kwargs)
-        self.c = self.store.__engine.connect()
+        self.c = self.store._engine.connect()
 
     def test_sql_create_extra_fields(self):
         """
@@ -534,7 +534,7 @@ class TestSqliteStore(SqlStoreChecks):
         self.store = self._make_store()
 
         # create a connection to the database
-        self.conn = self.store._SqlStore__engine.connect()
+        self.conn = self.store._engine.connect()
 
     def tearDown(self):
         self.conn.close()
@@ -597,7 +597,7 @@ class TestMysqlStore(SqlStoreChecks):
             raise SkipTest("Cannot connect to MySQL database.")
 
         # create a connection to the database
-        self.conn = self.store._SqlStore__engine.connect()
+        self.conn = self.store._engine.connect()
 
     def tearDown(self):
         self.conn.execute('drop table `%s`' % self.table_name)
