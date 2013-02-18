@@ -110,15 +110,28 @@ class GcgpsApplication(Application):
         execution_script = """
 #!/bin/sh
 
-# create links from 'in' folder
-echo -n "Setting Input folder... "
+# Check environment:
+# check R
+RES=`command R --version 2>&1`
+if [ $? -ne 0 ]; then
+   echo "[failed]"
+   echo $RES
+   exit 1
+else
+   echo "[ok]"
+
+# Checking 'in' folder
+# Checks first if './in' has been created
+# otherwise try default in '$HOME/in'
+
+echo -n "Checking Input folder... "
 if [ -d ./in ]; then
    echo "[${PWD}/in]"
 elif [ -d ${HOME}/in ]; then
    ln -s ${HOME}/in in
    echo [${HOME}/in]
 else
-   echo [FAILED: no folder found]
+   echo [FAILED: no folder found in './in' nor in '${HOME}/in']
    exit 1
 fi
 
@@ -223,27 +236,6 @@ exit $RET
                               "Type: %s. Message: %s" % (type(ex),str(ex)))
             return None
 
-class GcgpsTask(RetryableTask):
-
-    def __init__(self, command, src_dir, result_dir, input_dir, **extra_args):
-        RetryableTask.__init__(
-            self,
-            GcgpsApplication(command, src_dir, result_dir, input_dir, **extra_args),
-            **extra_args)
-
-    def retry(self):
-        """
-        Resubmit a GcgpsApplication application instance 
-        iff it exited with code 99.
-
-        *Note:* There is currently no upper limit on the number of
-        resubmissions!
-        """
-        # XXX: for the time being we do not retry
-        return False
-
-
-
 class GcgpsScript(SessionBasedScript):
     """
 Scan the specified INPUT directories recursively for simulation
@@ -270,12 +262,12 @@ newly-created jobs so that this limit is never exceeded.
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GcgpsTask,
+            application = GcgpsApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
-            stats_only_for = GcgpsTask,
+            stats_only_for = GcgpsApplication,
             )
 
     def setup_options(self):
@@ -366,12 +358,9 @@ newly-created jobs so that this limit is never exceeded.
             command = command.strip()
             self.log.debug("Creating Task for command: %s" % command)
 
-            yield GcgpsTask(
-                command,
+            yield GcgpsApplication(
+                command, 
                 self.params.R_source_folder,
                 self.result_dir,
                 self.params.input_dir,
-                **extra_args
-                )
-
-
+                **extra_args)
