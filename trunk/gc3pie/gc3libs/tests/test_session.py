@@ -28,7 +28,7 @@ import shutil
 import tempfile
 
 from nose.tools import assert_true, assert_false, assert_equal, raises
-from nose.tools import assert_greater, set_trace
+from nose.tools import set_trace
 from nose.plugins.skip import SkipTest
 
 import sqlalchemy
@@ -126,7 +126,7 @@ class TestOldstyleConversion:
         assert_true(os.path.isdir(self.sess.path))
         assert_false(os.path.exists(self.index_csv))
         assert_false(os.path.exists(self.jobs_dir))
-        assert_greater(self.sess.created, 0)
+        assert_true(self.sess.created > 0)
 
 
 class TestSession(object):
