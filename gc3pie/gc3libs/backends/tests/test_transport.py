@@ -140,7 +140,7 @@ class TestLocalTransport(StubForTestTransport):
 
 class TestSshTransport(StubForTestTransport):
     def setUp(self):
-        self.transport = transport.SshTransport('localhost')
+        self.transport = transport.SshTransport('localhost', ignore_ssh_host_keys=True)
         try:
             self.transport.connect()
         except TransportError:
