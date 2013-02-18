@@ -32,8 +32,9 @@ import gc3libs.core
 import gc3libs.config
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, seconds, minutes, hours
 
-
 from faketransport import FakeTransport
+
+files_to_remove = []
 
 
 def correct_submit(jobid=123):
@@ -308,8 +309,17 @@ username=NONEXISTENT
                      datetime.datetime(year=2012, month=3, day=9, hour=9, minute=34, second=8))
 
 
+def tearDownModule():
+    for fname in files_to_remove:
+        if os.path.isdir(fname):
+            shutil.rmtree(fname)
+        else:
+            os.remove(fname)
+
+
 def test_get_command():
     (fd, tmpfile) = tempfile.mkstemp()
+    files_to_remove.append(tmpfile)
     f = os.fdopen(fd, 'w+')
     f.write("""
 [auth/ssh]
