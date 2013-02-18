@@ -93,6 +93,12 @@ class CodemlApplication(gc3libs.Application):
             # use provided binary
             inputs[codeml] = 'codeml'
 
+
+        # set result dir: where the expected output files
+        # will be copied as part of 'terminated' 
+        if 'result_dir' in extra_args:
+            self.result_dir = extra_args['result_dir']
+
         # output file paths are read from the '.ctl' file below
         outputs = [ ]
         # for each '.ctl' file, extract the referenced "seqfile" and
@@ -323,6 +329,27 @@ class CodemlApplication(gc3libs.Application):
                     self.exists[n] = True
                     self.valid[n] = True
                     self.time_used[n] = duration
+
+        # if output files parsed OK, then move them to 'result_dir'
+        if self.result_dir:
+            import shutil
+            for output_path in outputs:
+                try:
+                    shutil.copy(output_path, 
+                                os.path.join(self.result_dir,
+                                             os.path.basename(output_path)))
+                    os.remove(output_path)
+                except Exception, ex:
+                    gc3libs.log.error("Failed while transferring output file " +
+                                      "%s " % output_path +
+                                      "to result folder %s. " % self.result_dir +
+                                      "Error type %s. Message %s. " 
+                                      % (type(ex),str(ex)))
+                    failed += 1
+                    continue
+        else:
+            gc3libs.log.warning("No 'result_dir' set. Leaving results in original" +
+                                " output folder %s" % self.output_dir)
 
         # if output files parsed OK, then override the exit code and
         # mark the job as successful
