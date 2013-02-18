@@ -66,10 +66,12 @@ max_walltime = 8
 max_cores = 2
 architecture = x86_64
 override = False
+resourcedir = %s
 """
         self.cfgfile = os.path.join(self.tmpdir, 'gc3pie.conf')
+        self.resourcedir = os.path.join(self.tmpdir, 'shellcmd.d')
         fp = open(self.cfgfile, 'w')
-        fp.write(CONF_FILE)
+        fp.write(CONF_FILE % self.resourcedir)
         fp.close()
 
     def test_issue(self):

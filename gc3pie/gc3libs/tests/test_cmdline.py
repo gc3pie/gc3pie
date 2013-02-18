@@ -23,6 +23,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 import os
+import shutil
 import tempfile
 import re
 
@@ -57,14 +58,17 @@ max_walltime = 8
 max_cores = 2
 architecture = x86_64
 override = False
+resourcedir = %s
 """
         (fd, self.cfgfile) = tempfile.mkstemp()
+        self.resourcedir = self.cfgfile + '.d'
         f = os.fdopen(fd, 'w')
-        f.write(CONF_FILE)
+        f.write(CONF_FILE % self.resourcedir)
         f.close()
 
     def tearDown(self):
         os.remove(self.cfgfile)
+        shutil.rmtree(self.resourcedir)
         cli.test.FunctionalTest.tearDown(self)
 
     def test_simplescript(self):
