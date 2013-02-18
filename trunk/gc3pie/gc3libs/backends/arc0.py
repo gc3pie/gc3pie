@@ -93,7 +93,7 @@ class ArcLrms(LRMS):
         LRMS.__init__(
             self, name,
             architecture, max_cores, max_cores_per_job,
-            max_memory_per_core, max_walltime, auth)
+            max_memory_per_core, max_walltime, auth, **extra_args)
 
         # ARC0-specific setup
         self.lost_job_timeout = lost_job_timeout
