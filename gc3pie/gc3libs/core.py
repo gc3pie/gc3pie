@@ -19,7 +19,7 @@ Top-level interface to Grid functionality.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = 'development version (SVN $Revision: 3391 $)'
 __date__ = '$Date$'
 
 
@@ -526,6 +526,11 @@ specified in the configuration file.
         try:
             lrms = self.get_backend(job.resource_name)
             lrms.cancel_job(app)
+        except AttributeError:
+            # A job in state NEW does not have a `resource_name`
+            # attribute.
+            if job.state != Run.State.NEW:
+                raise
         except gc3libs.exceptions.InvalidResourceName, irn:
             gc3libs.log.warning("Failed while retrieving resource %s from core.Detailed Error message: %s" % (app.execution.resource_name, str(irn)))
         gc3libs.log.debug("Setting job '%s' status to TERMINATED"
