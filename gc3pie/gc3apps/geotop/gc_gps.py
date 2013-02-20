@@ -119,6 +119,7 @@ if [ $? -ne 0 ]; then
    exit 1
 else
    echo "[ok]"
+fi
 
 # Checking 'in' folder
 # Checks first if './in' has been created
