@@ -20,7 +20,7 @@ Implementation of the `core` command-line front-ends.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = 'development version (SVN $Revision: 3453 $)'
 __author__ = "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, "
 "Riccardo Murri <riccardo.murri@uzh.ch>"
 "Antonio Messina <arcimboldo@gmail.com>"
@@ -939,29 +939,32 @@ To get detaileid info on a specific command, run:
         """
         Called with subcommand `abort`.
 
-        This method will open
-        the desired session and will kill all the jobs which belongs
-        to that session and remove them from store.
+        This method will open the desired session and will kill all
+        the jobs which belongs to that session.
+
+        Thiw method will return the number of jobs that have not been
+        correctly aborted. If this number is greater than 125, then
+        125 will be returned instead, since numbers above 125 have a
+        special meaning for the shell.
         """
         try:
             self.session = Session(self.params.session, create=False)
         except gc3libs.exceptions.InvalidArgument, ex:
             raise RuntimeError('Session %s not found. Please specify a valid session directory as argument' % self.params.session)
 
-        rc = 0
+        rc = len(self.session.tasks)
         for task_id in self.session.tasks.keys():
             task = self.session.tasks[task_id]
             task.attach(self._core)
             if task.execution.state == Run.State.TERMINATED:
                 gc3libs.log.info("Not aborting '%s' which is already in TERMINATED state." % task)
-                rc += 1
+                rc -= 1
                 continue
             try:
                 task.kill()
             finally:
                 task.free()
-                rc += 1
-            self.session.remove(task_id)
+                rc -= 1
 
         if self.session.tasks:
             gc3libs.log.error("Not all tasks have been removed from the session.")
@@ -969,6 +972,7 @@ To get detaileid info on a specific command, run:
         if rc > 125:
             # 126 and 127 error codes have special meanings.
             rc = 125
+        self.session.save_all()
         return rc
 
     def delete_session(self):
@@ -978,9 +982,9 @@ To get detaileid info on a specific command, run:
         This method will first call `abort` and then remove the
         current session.
 
-        If the `abort` will fail or not all tasks have been removed
-        from the session, it will not delete the session and will exit
-        with exit value `1`.
+        If the `abort` will fail or not all tasks are in TERMINATED
+        state, it will not delete the session and will exit with the
+        exit status of the `abort`.
         """
         try:
             rc = self.abort_session()
@@ -989,9 +993,6 @@ To get detaileid info on a specific command, run:
         except gc3libs.exceptions.InvalidArgument, ex:
             raise RuntimeError('Session %s not found' % self.params.session)
 
-        # XXX: FIXME: self.session is created in abort_session()
-        if self.session.tasks:
-            raise RuntimeError("Session %s not empty: not deleting it" % self.params.session)
         self.session.destroy()
         return 0
 
