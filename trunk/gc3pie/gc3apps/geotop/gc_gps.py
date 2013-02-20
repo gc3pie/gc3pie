@@ -70,6 +70,7 @@ class GcgpsApplication(Application):
     """
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
+    application_name = 'gc_gps'
 
     def __init__(self, command, src_dir, result_dir, input_dir, **extra_args):
 
