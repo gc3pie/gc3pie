@@ -339,6 +339,7 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
     def __init__(self, input_image, grayscaled_image, output_dir, warhol_dir, resize=None):
         self.warhol_dir = warhol_dir
         self.grayscaled_image = grayscaled_image
+        self.application_name = 'warholize'
 
         arguments = [
             'convert',
@@ -505,6 +506,7 @@ class CreateLutApplication(ApplicationWithCachedResults):
     def __init__(self, input_image, output_file, output_dir, colors, working_dir):
         self.lutfile = os.path.basename(output_file)
         self.working_dir = working_dir
+        self.application_name = 'warholize'
         gc3libs.log.info("Creating lut file %s from %s using "
                          "colors: %s" % (
             self.lutfile, input_image, str.join(", ", colors)))
@@ -538,6 +540,7 @@ class ApplyLutApplication(ApplicationWithCachedResults):
         gc3libs.log.info("Applying lut file %s to %s" % (lutfile, input_image))
         self.working_dir = working_dir
         self.output_file = output_file
+        self.application_name = 'warholize'
 
         ApplicationWithCachedResults.__init__(
             self,
@@ -594,6 +597,7 @@ class MergeImagesApplication(ApplicationWithCachedResults):
         gc3libs.log.info("MergeImages initialized")
         self.input_dir = input_dir
         self.output_file = output_file
+        self.application_name = 'warholize'
 
         tile = math.sqrt(len(input_files))
         if tile != int(tile):
