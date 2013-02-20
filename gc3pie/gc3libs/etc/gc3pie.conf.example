@@ -80,13 +80,14 @@ debug = 0
 #
 # Resources are distinguished by the value of the `type` key:
 #
-#  type      meaning
-#  ========  ======================================================================
-#  arc0      resource is accessed using the ARC 0.8.x middleware
-#  sge       resource is a Grid Engine cluster, accessed via qsub/qstat over SSH
-#  lsf       resource is an LSF cluster, accessed via bsub/bjobs over SSH
-#  pbs       resource is a TORQUE/OpenPBS cluster, accessed via qsub/qstat over SSH
-#  shellcmd  run jobs on the local computer
+#  type           meaning
+#  =============  ======================================================================
+#  arc0           resource is accessed using the ARC 0.8.x middleware
+#  sge            resource is a Grid Engine cluster, accessed via qsub/qstat over SSH
+#  lsf            resource is an LSF cluster, accessed via bsub/bjobs over SSH
+#  pbs            resource is a TORQUE/OpenPBS cluster, accessed via qsub/qstat over SSH
+#  shellcmd       run jobs on the local computer
+#  ec2+<subtype>  run jobs on VMs created on a cloud with EC2-compatible APIs
 #
 # Every resource/*** section must reference a valid auth/*** section.
 # Resources of `arc0` type can only reference voms-proxy/grid-proxy
@@ -244,17 +245,17 @@ architecture=x64_64
 #################
 
 # [auth/ec2hobbes]
-# type=ec2
+# type = ec2
 #
 # If `ec2_access_key` is empty, then the `EC2_ACCESS_KEY` environment
 # variable is will be used, if any.
 # 
-# ec2_access_key=
+# ec2_access_key =
 #
 # If `ec2_secret_key` is empty, then the `EC2_SECRET_KEY` environment
 # variable is will be used, if any.
 # 
-# ec2_secret_key=
+# ec2_secret_key =
 
 # Images created by the GC3 team have a `gc3-user` account by default.
 #
@@ -263,8 +264,8 @@ architecture=x64_64
 # username = gc3-user
 
 # [resource/hobbes]
-# enabled=yes
-# auth=ec2hobbes
+# enabled = yes
+# auth = ec2hobbes
 #
 # This resource will create a new VM for each submitted job, and a
 # resource associated to the VM. These subresources define the way we
@@ -279,17 +280,17 @@ architecture=x64_64
 # where `subresourcetype` is any valid resource type. However, we
 # currently only support `shellcmd`.
 # 
-# type=ec2+shellcmd
+# type = ec2+shellcmd
 
 # If `ec2_url` is empty, then the `EC2_URL` environment variable
 # is will be used, if any. If EC2_URL is empty too, the default url
 # for AWS will be used.
 # 
-# ec2_url=http://cloud.gc3.uzh.ch:8773/services/Cloud
+# ec2_url = http://cloud.gc3.uzh.ch:8773/services/Cloud
 
 # EC2 Region to use. It is usually needed only if AWS is not used.
 #
-# ec2_region=nova
+# ec2_region = nova
 
 # Maximum number of VM running at the same time
 # 
@@ -306,38 +307,55 @@ architecture=x64_64
 # keypair exists, the fingerprint will be checked and an error is
 # raised if it does not match `public_key`s fingerpring.
 #
-# keypair_name=keypair1
-# public_key=~/.ssh/id_dsa.pub
+# keypair_name = keypair1
+# public_key = ~/.ssh/id_dsa.pub
 
 # `vm_auth` refers to the auth stanza in the current configuration
 # file to use for remote VM. Basically, it contains only the username
 # to use when connecting to the VM.
 # 
-# vm_auth=gc3user_ssh
+# vm_auth = gc3user_ssh
 
 # Default instance type to use. If `instance_type` is empty or not
 # defined, `m1.small` will be used instead. If an Application() has an
 # `ec2_instance_type` attribute, it will be used instead of the
 # default one.
 # 
-# instance_type=m1.small
+# instance_type = m1.small
+#
+# Instance type to use for applications with name `<application_name>`:
+#
+# <application_name>_instance_type
 
-# Default image id to use (in EC2 format). If an Application() has an
-# `ec2_image_id` attribute, it will be used instead of the default
-# one.
+# Default image id to use (in EC2 format).
 # 
-# image_id=ami-00000035
+# image_id = ami-00000035
+#
+# Image id to use for applications with name `<application_name>`:
+#
+# <application_name>_image_id = 
 
 # Default image name to use. The value of `image_name` is ignored if
 # `image_id` is present. Moreover, an error is raised if more than one
 # image with the same image name is available on the cloud.
 #
-# image_name
+# image_name =
 
 # `user_data` is a script passed to the virtual machine and executed
-# right after the startup procedure.
+# right after the startup procedure. Default value is set using:
 #
-# user_data=
+# user_data =
+#
+# `user_data` to use for application with name `<application_name>`:
+#
+# <application_name>_user_data = 
+#
+# Please note that if your script needs to span multiple lines they must be indented. For instance:
+# 
+# user_data = #!/bin/bash
+#     apt-get update
+#     apt-get install -y octave
+# apt-get install -y r-core # <= this line will NOT be included in the `user_data` script!
 
 ###################
 # SECURITY GROUPS #

@@ -365,7 +365,7 @@ class EC2Lrms(LRMS):
                     " file." % (self.image_name, [i.id for i in images]))
             self.image_id = images[0].id
 
-    def _create_instance(self, image_id, instance_type=None):
+    def _create_instance(self, image_id, instance_type=None, user_data=None):
         """
         Create an instance using the image `image_id` and instance
         type `instance_type`. If not `instance_type` is defined, use
@@ -382,8 +382,8 @@ class EC2Lrms(LRMS):
         if instance_type:
             args['instance_type'] = instance_type
 
-        if 'user_data' in self:
-            args['user_data'] = self.user_data
+        if user_data:
+            args['user_data'] = user_data
 
         # Check if the desired keypair is present
         keypairs = dict((k.name, k) for k in self._conn.get_all_key_pairs())
@@ -601,6 +601,39 @@ class EC2Lrms(LRMS):
 
     # Public methods
 
+    def get_image_id_for_job(self, job):
+        """
+        If a configuration option <application>_image_id is present,
+        returns its value, otherwise returns `self.image_id`
+        """
+        conf_option = job.application_name + '_image_id'
+        if conf_option in self:
+            return self[conf_option]
+        else:
+            return self.image_id
+
+    def get_instance_type_for_job(self, job):
+        """
+        If a configuration option <application>_instance_type is present,
+        returns its value, otherwise returns `self.instance_type`
+        """
+        conf_option = job.application_name + '_instance_type'
+        if conf_option in self:
+            return self[conf_option]
+        else:
+            return self.instance_type
+
+    def get_user_data_for_job(self, job):
+        """
+        If a configuration option <application>_user_data is present,
+        returns its value, otherwise returns `self.user_data`.
+        """
+        conf_option = job.application_name + '_user_data'
+        if conf_option in self:
+            return self[conf_option]
+        else:
+            return self.user_data
+
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
         resource = self._get_remote_resource(self._get_vm(app.ec2_instance_id))
@@ -751,11 +784,12 @@ class EC2Lrms(LRMS):
             # No pending VM, and no resource available. Create a new VM
             if not self.vm_pool_max_size \
                     or len(self._vms) < self.vm_pool_max_size:
-                image_id = job.get('ec2_image_id', self.image_id)
-                instance_type = job.get('ec2_instance_type',
-                                        self.instance_type)
+                image_id = self.get_image_id_for_job(job)
+                instance_type = self.get_instance_type_for_job(job)
+                user_data = self.get_user_data_for_job(job)
                 vm = self._create_instance(image_id,
-                                           instance_type=instance_type)
+                                           instance_type=instance_type,
+                                           user_data=user_data)
                 pending_vms.add(vm.id)
 
                 self._vms.add_vm(vm)
