@@ -539,7 +539,7 @@ if the command suceeds then the VM will never be used by the EC2
 backend. Please note also that after running `gec2 forget`, the VM
 will not be shown in the output of `gec2 list`::
 
-The following example will explain the behavior:
+The following example will explain the behavior::
 
     $ gec2 list -r hobbes
 
