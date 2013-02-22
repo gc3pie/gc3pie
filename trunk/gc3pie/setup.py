@@ -89,6 +89,7 @@ setuptools.setup(
             'gtail = gc3utils.frontend:main',
             'gsession = gc3utils.frontend:main',
             'gselect = gc3utils.frontend:main',
+            'gec2 = gc3utils.frontend:main',
             ],
        },
 

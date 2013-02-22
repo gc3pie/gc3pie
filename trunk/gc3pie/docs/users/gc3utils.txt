@@ -30,13 +30,97 @@ look it up in the :ref:`glossary`. (But feel free to ask on the
 .. contents::
 
 
+:command:`gsession`: manage sessions
+====================================
+
+All jobs managed by one of the GC3Pie scripts are grouped into
+sessions; informations related of a session is stored into a
+directory. The :command:`gsession` command allows you to show
+the jobs related to a specific session, to abort the session or to
+completely delete it.
+
+The :command:`gsession` accept two mandatory arguments: `command` and
+`session`. `command` must be one of:
+
+list
+    list jobs related to the session.
+
+log
+    show the session history.
+
+abort
+    kill all jobs related to the session.
+
+delete
+    abort the session and delete the session directory from disk.
+
+For instance, if you want to check the status of the main tasks of a
+session, just run::
+
+    $ gsession list SESSION_DIRECTORY
+    +--------------------------------+---------------------------+-------+---------------------------------+
+    | JobID                          | Job name                  | State | Info                            |
+    +--------------------------------+---------------------------+-------+---------------------------------+
+    | ParallelTaskCollection.1140527 | ParallelTaskCollection-N1 | NEW   | NEW at Fri Feb 22 16:39:34 2013 |
+    +--------------------------------+---------------------------+-------+---------------------------------+
+
+This command will only show the *top-level tasks*, e.g. the main tasks
+created by the GC3 script. If you want to see **all** the tasks
+related to the session run the command with the option ``-r``::
+
+    $ gsession list SESSION_DIRECTORY -r 
+    +-----------------------------------------+---------------------------+------------+----------------------------------------+
+    | JobID                                   | Job name                  | State      | Info                                   |
+    +-----------------------------------------+---------------------------+------------+----------------------------------------+
+    | ParallelTaskCollection.1140527          | ParallelTaskCollection-N1 | NEW        | NEW at Fri Feb 22 16:39:34 2013        |
+    |   WarholizeWorkflow.1140528             | WarholizedWorkflow        | RUNNING    | RUNNING at Fri Feb 22 16:39:34 2013    |
+    |     GrayScaleConvertApplication.1140529 |                           | TERMINATED | TERMINATED at Fri Feb 22 16:39:25 2013 |
+    |     TricolorizeMultipleImages.1140530   | Warholizer_Parallel       | NEW        |                                        |
+    |       TricolorizeImage.1140531          | TricolorizeImage          | NEW        |                                        |
+    |         CreateLutApplication.1140532    |                           | NEW        |                                        |
+    |       TricolorizeImage.1140533          | TricolorizeImage          | NEW        |                                        |
+    |         CreateLutApplication.1140534    |                           | NEW        |                                        |
+    |       TricolorizeImage.1140535          | TricolorizeImage          | NEW        |                                        |
+    |         CreateLutApplication.1140536    |                           | NEW        |                                        |
+    |       TricolorizeImage.1140537          | TricolorizeImage          | NEW        |                                        |
+    |         CreateLutApplication.1140538    |                           | NEW        |                                        |
+    +-----------------------------------------+---------------------------+------------+----------------------------------------+
+
+To have the full history of the session run `gsession log`::
+
+    $ gsession log SESSION_DIRECTORY
+    Feb 22 16:39:01 GrayScaleConvertApplication.1140529: Submitting to 'hobbes' at Fri Feb 22 16:39:01 2013
+    Feb 22 16:39:08 GrayScaleConvertApplication.1140529: RUNNING
+    Feb 22 16:39:08 GrayScaleConvertApplication.1140529: SUBMITTED
+    Feb 22 16:39:08 GrayScaleConvertApplication.1140529: Submitted to 'hobbes' at Fri Feb 22 16:39:08 2013
+    Feb 22 16:39:08 WarholizeWorkflow.1140528: SUBMITTED
+    Feb 22 16:39:24 GrayScaleConvertApplication.1140529: TERMINATING
+    Feb 22 16:39:25 WarholizeWorkflow.1140528: RUNNING
+    Feb 22 16:39:25 ParallelTaskCollection.1140527: RUNNING
+    Feb 22 16:39:25 GrayScaleConvertApplication.1140529: Final output downloaded to 'Warholized.lena.jpg'
+    Feb 22 16:39:25 GrayScaleConvertApplication.1140529: TERMINATED
+    Feb 22 16:39:34 WarholizeWorkflow.1140528: NEW
+    Feb 22 16:39:34 ParallelTaskCollection.1140527: NEW
+    Feb 22 16:39:34 WarholizeWorkflow.1140528: RUNNING
+
+To abort a session, run the `gsession abort` command::
+
+    $ gsession abort SESSION_DIRECTORY
+
+This will kill all the running jobs and retrieve the results of the
+terminated jobs, but will leave the session directory untouched. To
+also delete the session directory, run `gsession delete`::
+
+    $ gsession delete SESSION_DIRECTORY
+
+
 :command:`gstat`: monitor the status of submitted jobs
 ======================================================
 
 To see the status of all the jobs you have submitted, use the
 :command:`gstat` command.  Typing::
 
-    gstat
+    gstat -s SESSION
 
 will print to the screen a table like the following::
 
@@ -410,6 +494,94 @@ output files, plus some backend-specific information::
         tags: APPS/CHEM/GAMESS-2010
         verno: None
 
+
+:command:`gec2`: manage VMs created by the EC2 backend
+======================================================
+
+The :command:`gec2` command allows you to show and manage VMs created
+by the EC2 backend.
+
+To show a list of VMs currently running on the EC2 resources correctly
+configured run::
+
+    $ gec2 list
+    ====================================
+    VMs running on EC2 resource `hobbes`
+    ====================================
+
+    +------------+---------+---------------+-------------+--------------+---------+
+    |     id     |  state  |   public ip   | Nr. of jobs |   image id   | keypair |
+    +------------+---------+---------------+-------------+--------------+---------+
+    | i-0000053e | running | 130.60.193.45 |      1      | ami-00000035 | antonio |
+    +------------+---------+---------------+-------------+--------------+---------+
+
+This command will show various information, if available, including
+the number of jobs currently running (or in `TERMINATED` state) on
+those VM, so that you can easily identify if there is a VM which is
+not used by any of yours script and you can safetly terminate it.
+
+If you want to terminate a VM run the `gec2 terminate` command. In
+this case, however, you also have to specify the name of the resource
+with the option ``-r``, and the ID of the VM you want to terminate::
+
+    $ gec2 terminate -r hobbes i-0000053e
+
+An empty output is a signal that the VM has been terminated.
+
+The `EC2` backend keeps track of all the VM it created, so that if a
+VM is not needed anymore it is able to terminate it
+automatically. However, sometimes you may need to keep a VM up&running
+and thus you need to tell the EC2 backend to ignore that VM.
+
+This is possible with the `gec2 forget` command. You must supply the
+correct resource name with ``-r RESOURCE_NAME`` and a valid VM ID, and
+if the command suceeds then the VM will never be used by the EC2
+backend. Please note also that after running `gec2 forget`, the VM
+will not be shown in the output of `gec2 list`::
+
+The following example will explain the behavior:
+
+    $ gec2 list -r hobbes
+
+    ====================================
+    VMs running on EC2 resource `hobbes`
+    ====================================
+
+    +------------+---------+---------------+-------------+--------------+---------+
+    |     id     |  state  |   public ip   | Nr. of jobs |   image id   | keypair |
+    +------------+---------+---------------+-------------+--------------+---------+
+    | i-00000540 | pending | 130.60.193.45 |     N/A     | ami-00000035 | antonio |
+    +------------+---------+---------------+-------------+--------------+---------+
+
+then we run `gec2 forget`::
+
+    $ gec2 forget  -r hobbes i-00000540
+
+and we run again `gec2 list`::
+
+    $ gec2 list -r hobbes
+
+    ====================================
+    VMs running on EC2 resource `hobbes`
+    ====================================
+
+      no known VMs are currently running on this resources
+
+You can also create a new VM using the default settings using the
+`gec2 run` command. In this case too you have to specify the ``-r``
+command line option. The output of this command contains some basic
+informations about the created VM::
+
+    $ gec2 run -r hobbes
+    +------------+---------+---------------------------------------------+-------------+--------------+---------+
+    |     id     |  state  |                  public ip                  | Nr. of jobs |   image id   | keypair |
+    +------------+---------+---------------------------------------------+-------------+--------------+---------+
+    | i-00000541 | pending | server-4e68ebc4-ea52-45ff-82d0-79699300b323 |     N/A     | ami-00000035 | antonio |
+    +------------+---------+---------------------------------------------+-------------+--------------+---------+
+
+Please note that while the VM is still in `pending` state, the value
+of the `public ip` field may be meaningless. A successive run of `gec2
+list` should show you the correct `public ip`.
 
 .. References
 
