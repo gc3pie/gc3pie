@@ -1428,7 +1428,7 @@ To get detailed info on a specific command, run:
                 printed += len(vms)
 
             if not printed:
-                print "  no known VMs are currently running on this resources"
+                print "  no known VMs are currently running on this resource."
 
         return 0
 
