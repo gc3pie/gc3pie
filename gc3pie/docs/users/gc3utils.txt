@@ -34,7 +34,7 @@ look it up in the :ref:`glossary`. (But feel free to ask on the
 ====================================
 
 All jobs managed by one of the GC3Pie scripts are grouped into
-sessions; informations related of a session is stored into a
+sessions; information related of a session is stored into a
 directory. The :command:`gsession` command allows you to show
 the jobs related to a specific session, to abort the session or to
 completely delete it.
@@ -229,7 +229,7 @@ for example, to see the last 25 lines of the output, issue the command::
 
 The command :command:`gtail` is especially useful for long computations: you
 can see how far a job has gotten and, e.g., cancel it if it's gotten
-stuck into an endless/improductive loop.
+stuck into an endless/unproductive loop.
 
 To "keep an eye" over what a job is doing, you can add the ``-f`` option
 to :command:`gtail`: this will run :command:`gtail` in "follow" mode, i.e.,
@@ -266,7 +266,7 @@ This command will print out a message like::
 
   Job results successfully retrieved in '/path/to/some/directory'
 
-If you are not running the :command:`gget` command on your copmputer, but
+If you are not running the :command:`gget` command on your computer, but
 rather on a shared front-end like `ocikbgtw`, you can copy+paste the
 path within quotes to the sftp_ command to get the files to your
 usual workstation.  For example, you can run the following command in
@@ -357,7 +357,7 @@ The meaning of the printed fields is as follows:
   either with the state of your system, or with the resource itself.
   (The procedure on how to diagnose this is too complex to list here;
   consult your friendly systems administrator :-))
-* *Total nunber of cores*: the total number of cores present on the
+* *Total number of cores*: the total number of cores present on the
   resource.  Note this can vary over time as cluster nodes go in and
   out of service: computers break, then are repaired, then break
   again, etc.
@@ -367,7 +367,7 @@ The meaning of the printed fields is as follows:
   executed on the remote compute cluster.
 * *Own running jobs*: number of jobs (submitted by you) currently
   executing on the remote compute cluster.
-* *Max cores per job*: the maximum nunber of cores that you can
+* *Max cores per job*: the maximum number of cores that you can
   request for a single computational job on this resource.
 * *Max memory per core*: maximum amount of memory (per core) that you
   can request on this resource.  The amount shows the maximum
@@ -518,7 +518,7 @@ configured run::
 This command will show various information, if available, including
 the number of jobs currently running (or in `TERMINATED` state) on
 those VM, so that you can easily identify if there is a VM which is
-not used by any of yours script and you can safetly terminate it.
+not used by any of yours script and you can safely terminate it.
 
 If you want to terminate a VM run the `gec2 terminate` command. In
 this case, however, you also have to specify the name of the resource
@@ -535,7 +535,7 @@ and thus you need to tell the EC2 backend to ignore that VM.
 
 This is possible with the `gec2 forget` command. You must supply the
 correct resource name with ``-r RESOURCE_NAME`` and a valid VM ID, and
-if the command suceeds then the VM will never be used by the EC2
+if the command succeeds then the VM will never be used by the EC2
 backend. Please note also that after running `gec2 forget`, the VM
 will not be shown in the output of `gec2 list`::
 
@@ -565,12 +565,12 @@ and we run again `gec2 list`::
     VMs running on EC2 resource `hobbes`
     ====================================
 
-      no known VMs are currently running on this resources
+      no known VMs are currently running on this resource.
 
 You can also create a new VM using the default settings using the
 `gec2 run` command. In this case too you have to specify the ``-r``
 command line option. The output of this command contains some basic
-informations about the created VM::
+information about the created VM::
 
     $ gec2 run -r hobbes
     +------------+---------+---------------------------------------------+-------------+--------------+---------+
