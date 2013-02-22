@@ -883,7 +883,7 @@ Usage:
 
 commands are listed below, under `subcommands`.
 
-To get detaileid info on a specific command, run:
+To get detailed info on a specific command, run:
 
     gsession `command` --help
     """
@@ -902,7 +902,7 @@ To get detaileid info on a specific command, run:
 
         self.subparsers = self.argparser.add_subparsers(
             title="subcommands",
-            description="gsession accept the the following subcommands. "
+            description="gsession accept the following subcommands. "
             "Each subcommand requires a `SESSION` directory as argument.")
 
         self._add_subcmd(
@@ -1295,3 +1295,183 @@ Select job IDs based on specific criteria
         # Print remaining job IDs
         if current_jobs:
             print str.join(" ", [str(job.persistent_id) for job in current_jobs])
+
+class cmd_gec2(_BaseCmd):
+    """
+`gc3ec2` manage VMs created by the EC2 backend
+
+Usage:
+
+    gc3ec2 `command` [options]
+
+commands are listed below, under `subcommands`.
+
+To get detailed info on a specific command, run:
+
+    gc3ec2 `command` --help
+    """
+
+    def _add_subcmd(self, name, func, help=None):
+        subparser = self.subparsers.add_parser(name, help=help)
+        subparser.set_defaults(func=func)
+        subparser.add_argument('-v', '--verbose', action='count')
+        return subparser
+
+    def setup(self):
+        gc3libs.cmdline._Script.setup(self)
+
+        self.subparsers = self.argparser.add_subparsers(
+            title="subcommands",
+            description="gc3ec2 accept the following subcommands.")
+    
+        listparser = self._add_subcmd(
+            'list',
+            self.list_vms,
+            help='List VMs currently know to the EC2 backend.')
+        listparser.add_argument(
+            '-r', '--resource', metavar="NAME", dest="resource_name",
+            default=None, help="Select resource by name.")
+        listparser.add_argument(
+            '-n', '--no-update', action="store_false", dest="update",
+            help="Do not update job statuses; only print what's in the "
+            "local database.")
+        terminateparser = self._add_subcmd(
+            'terminate',
+            self.terminate_vm,
+            help='Terminate a VM.')
+        terminateparser.add_argument('ID', help='ID of the VM to terminate.')
+        terminateparser.add_argument(
+            '-r', '--resource', metavar="NAME", dest="resource_name",
+            default=None, help="Select resource by name.")
+
+        forgetparser = self._add_subcmd(
+            'forget',
+            self.forget_vm,
+            help="Remove the VM from the list of known VMs, so that the EC2 "
+            "backend will stop submitting jobs on it. Please note that if you "
+            "`forget` a VM, it will disappear from the output of `gec2 list`.")
+        forgetparser.add_argument('ID', help='ID of the VM to "forget".')
+        forgetparser.add_argument(
+            '-r', '--resource', metavar="NAME", dest="resource_name",
+            default=None, help="Select resource by name.")
+        
+        runparser = self._add_subcmd(
+            'run',
+            self.create_vm,
+            help='Run a VM.')
+        runparser.add_argument(
+            '-r', '--resource', metavar="NAME", dest="resource_name",
+            default=None, help="Select resource by name.")
+        runparser.add_argument(
+            '-i', '--image-id', metavar="ID", dest="image_id", default=None,
+            help="Select the image id to use, if different from the one "
+            "specified in the configuration file.")
+
+    def setup_args(self):
+        # prevent GC3UtilsScript.setup_args() to add the default JOBID
+        # non optional argument
+        pass
+
+
+    def main(self):
+        import gc3utils.commands
+
+        resources = [res for res in self._core.get_resources()
+                     if res.type.startswith('ec2')]
+        if self.params.resource_name:
+            resources = [res for res in resources 
+                         if res.name == self.params.resource_name]
+            if not resources:
+                raise RuntimeError('No EC2 resource found matching name `%s`.'
+                                   '' % self.params.resource_name)
+
+        if not resources:
+            raise RuntimeError('No EC2 resource found.')
+
+        self.resources = resources
+
+        return self.params.func()
+
+    def _print_vms(self, vms, res, header=True):
+            table = PrettyTable()
+            table.border=True
+            if header:
+                table.field_names = ["id", "state", "public ip", "Nr. of jobs", "image id", "keypair"]
+            for vm in vms:
+                remote_jobs = 'N/A'
+                if vm.id in res.resources:
+                    if res.resources[vm.id].updated:
+                        remote_jobs = str(len(res.resources[vm.id].job_infos))
+                table.add_row((vm.id, vm.state, vm.public_dns_name, remote_jobs, vm.image_id, vm.key_name))
+            print(table)
+    
+
+    # Subcommand methods
+
+    def list_vms(self):
+        for res in self.resources:
+            printed = 0
+            if self.params.update:
+                res.get_resource_status()
+            else:
+                res._connect()
+            resname = "VMs running on EC2 resource `%s`" % res.name
+            print ("""
+%s
+%s
+%s
+""" % ("="*len(resname), resname, "="*len(resname)))
+
+            vms = res._vms.get_all_vms()
+            if vms:
+                self._print_vms(vms, res)
+                printed += len(vms)
+
+            if not printed:
+                print "  no known VMs are currently running on this resources"
+
+        return 0
+
+    def terminate_vm(self):
+        if len(self.resources) > 1:
+            raise RuntimeError("Please specify the resource where you want to "
+                               "create the VM by supplying the `-r` option.")
+        resource = self.resources[0]
+        resource.get_resource_status()
+        if self.params.ID not in resource._vms:
+            raise RuntimeError(
+                "VM with id `%s` not found in resource `%s`." % \
+                    (self.params.ID, resource.name))
+        
+        vm = resource._vms.get_vm(self.params.ID)
+        vm.terminate()
+        resource._vms.remove_vm(self.params.ID)
+        resource._session.save(resource._vms)
+
+    def forget_vm(self):
+        if len(self.resources) > 1:
+            raise RuntimeError("Please specify the resource where you want to "
+                               "create the VM by supplying the `-r` option.")
+        resource = self.resources[0]
+        resource._connect()
+        if self.params.ID not in resource._vms:
+            raise RuntimeError(
+                "VM with id `%s` not found in resource `%s`." % \
+                    (self.params.ID, resource.name))
+        
+        resource._vms.remove_vm(self.params.ID)
+        resource._session.save(resource._vms)
+
+
+    def create_vm(self):
+        if len(self.resources) > 1:
+            raise RuntimeError("Please specify the resource where you want to "
+                               "create the VM by supplying the `-r` option.")
+
+        resource = self.resources[0]
+        resource._connect()
+        image_id = self.params.image_id or resource.image_id 
+        vm = resource._create_instance(image_id)
+        resource._vms.add_vm(vm)
+        resource._session.save(resource._vms)
+        self._print_vms([vm], resource)
