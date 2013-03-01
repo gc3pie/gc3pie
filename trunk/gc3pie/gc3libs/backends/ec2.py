@@ -632,7 +632,10 @@ class EC2Lrms(LRMS):
         if conf_option in self:
             return self[conf_option]
         else:
-            return self.user_data
+            if 'user_data' in self.__dict__:
+                return self.user_data
+            else:
+                return None
 
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):

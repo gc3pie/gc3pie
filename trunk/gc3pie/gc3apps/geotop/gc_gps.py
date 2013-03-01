@@ -175,6 +175,16 @@ exit $RET
             **extra_args)
 
 
+#         Application.__init__(self, arguments=['echo', 'hello', 'world'],)
+#         Application.__init__(self, script="""#!/bin/bash
+
+# echo hello world
+# """,)
+#         if script:
+#             open(tmpfile,'w').write(script)
+#             self.inputs.append((tmpfile, 'scriptname'))
+#             self.arguments = ['./scriptname' ]
+
     def terminated(self):
         """
         Extract output file from 'out' 
