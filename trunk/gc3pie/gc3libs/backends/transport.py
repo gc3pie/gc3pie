@@ -322,16 +322,11 @@ class SshTransport(Transport):
                 else:
                     # some of the standard keys are present, but not working.
                     a = paramiko.Agent()
-                    running_ssh_agent = True
                     try:
-                        # assert(a._conn)
-                        if not a._conn:
-                            running_ssh_agent = False
+                        running_ssh_agent = a._conn
                     except AttributeError, ax:
-                        # We're on MacOS
-                        gc3libs.log.warning('Running on MacOSX. Different version of paramiko library... ')
-                        if not a.conn:
-                            running_ssh_agent = False
+                        gc3libs.log.warning('Probably running paramiko version <= 1.7.7.2  ... ')
+                        running_ssh_agent = a.conn
 
                     if not running_ssh_agent:
                         # No ssh-agent is running
