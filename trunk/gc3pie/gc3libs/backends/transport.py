@@ -326,7 +326,7 @@ class SshTransport(Transport):
                         # assert(a._conn)
                         if not a._conn:
                             running_ssh_agent = False
-                    except AttributeErrror, ax:
+                    except AttributeError, ax:
                         # We're on MacOS
                         gc3libs.log.warning('Running on MacOSX. Different version of paramiko library... ')
                         if not a.conn:
