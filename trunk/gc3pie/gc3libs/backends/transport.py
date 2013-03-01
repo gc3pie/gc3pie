@@ -322,6 +322,7 @@ class SshTransport(Transport):
                 else:
                     # some of the standard keys are present, but not working.
                     a = paramiko.Agent()
+                    running_ssh_agent = True
                     try:
                         # assert(a._conn)
                         if not a._conn:
