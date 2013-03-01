@@ -322,7 +322,17 @@ class SshTransport(Transport):
                 else:
                     # some of the standard keys are present, but not working.
                     a = paramiko.Agent()
-                    if not a._conn:
+                    try:
+                        # assert(a._conn)
+                        if not a._conn:
+                            running_ssh_agent = False
+                    except AttributeErrror, ax:
+                        # We're on MacOS
+                        gc3libs.log.warning('Running on MacOSX. Different version of paramiko library... ')
+                        if not a.conn:
+                            running_ssh_agent = False
+
+                    if not running_ssh_agent:
                         # No ssh-agent is running
                         gc3libs.log.error(
                             "Remote host %s does not accept any of the "
