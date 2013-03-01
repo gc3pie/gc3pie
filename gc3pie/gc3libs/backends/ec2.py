@@ -242,7 +242,7 @@ class EC2Lrms(LRMS):
                  ec2_region, keypair_name, public_key,
                  image_id=None, image_name=None, ec2_url=None,
                  instance_type=None, auth=None, vm_pool_max_size=None,
-                 **extra_args):
+                 user_data=None, **extra_args):
         LRMS.__init__(
             self, name,
             architecture, max_cores, max_cores_per_job,
@@ -283,6 +283,7 @@ class EC2Lrms(LRMS):
         self.image_id = image_id
         self.image_name = image_name
         self.instance_type = instance_type
+        self.user_data = user_data
 
         self._parse_security_group()
         self._conn = None
@@ -632,10 +633,7 @@ class EC2Lrms(LRMS):
         if conf_option in self:
             return self[conf_option]
         else:
-            if 'user_data' in self.__dict__:
-                return self.user_data
-            else:
-                return None
+            return self.user_data
 
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
