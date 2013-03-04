@@ -495,16 +495,16 @@ output files, plus some backend-specific information::
         verno: None
 
 
-:command:`gec2`: manage VMs created by the EC2 backend
-======================================================
+:command:`gcloud`: manage VMs created by the EC2 backend
+========================================================
 
-The :command:`gec2` command allows you to show and manage VMs created
+The :command:`gcloud` command allows you to show and manage VMs created
 by the EC2 backend.
 
 To show a list of VMs currently running on the EC2 resources correctly
 configured run::
 
-    $ gec2 list
+    $ gcloud list
     ====================================
     VMs running on EC2 resource `hobbes`
     ====================================
@@ -520,11 +520,11 @@ the number of jobs currently running (or in `TERMINATED` state) on
 those VM, so that you can easily identify if there is a VM which is
 not used by any of yours script and you can safely terminate it.
 
-If you want to terminate a VM run the `gec2 terminate` command. In
+If you want to terminate a VM run the `gcloud terminate` command. In
 this case, however, you also have to specify the name of the resource
 with the option ``-r``, and the ID of the VM you want to terminate::
 
-    $ gec2 terminate -r hobbes i-0000053e
+    $ gcloud terminate -r hobbes i-0000053e
 
 An empty output is a signal that the VM has been terminated.
 
@@ -533,15 +533,15 @@ VM is not needed anymore it is able to terminate it
 automatically. However, sometimes you may need to keep a VM up&running
 and thus you need to tell the EC2 backend to ignore that VM.
 
-This is possible with the `gec2 forget` command. You must supply the
+This is possible with the `gcloud forget` command. You must supply the
 correct resource name with ``-r RESOURCE_NAME`` and a valid VM ID, and
 if the command succeeds then the VM will never be used by the EC2
-backend. Please note also that after running `gec2 forget`, the VM
-will not be shown in the output of `gec2 list`::
+backend. Please note also that after running `gcloud forget`, the VM
+will not be shown in the output of `gcloud list`::
 
 The following example will explain the behavior::
 
-    $ gec2 list -r hobbes
+    $ gcloud list -r hobbes
 
     ====================================
     VMs running on EC2 resource `hobbes`
@@ -553,13 +553,13 @@ The following example will explain the behavior::
     | i-00000540 | pending | 130.60.193.45 |     N/A     | ami-00000035 | antonio |
     +------------+---------+---------------+-------------+--------------+---------+
 
-then we run `gec2 forget`::
+then we run `gcloud forget`::
 
-    $ gec2 forget  -r hobbes i-00000540
+    $ gcloud forget  -r hobbes i-00000540
 
-and we run again `gec2 list`::
+and we run again `gcloud list`::
 
-    $ gec2 list -r hobbes
+    $ gcloud list -r hobbes
 
     ====================================
     VMs running on EC2 resource `hobbes`
@@ -568,11 +568,11 @@ and we run again `gec2 list`::
       no known VMs are currently running on this resource.
 
 You can also create a new VM using the default settings using the
-`gec2 run` command. In this case too you have to specify the ``-r``
+`gcloud run` command. In this case too you have to specify the ``-r``
 command line option. The output of this command contains some basic
 information about the created VM::
 
-    $ gec2 run -r hobbes
+    $ gcloud run -r hobbes
     +------------+---------+---------------------------------------------+-------------+--------------+---------+
     |     id     |  state  |                  public ip                  | Nr. of jobs |   image id   | keypair |
     +------------+---------+---------------------------------------------+-------------+--------------+---------+
@@ -580,7 +580,7 @@ information about the created VM::
     +------------+---------+---------------------------------------------+-------------+--------------+---------+
 
 Please note that while the VM is still in `pending` state, the value
-of the `public ip` field may be meaningless. A successive run of `gec2
+of the `public ip` field may be meaningless. A successive run of `gcloud
 list` should show you the correct `public ip`.
 
 .. References

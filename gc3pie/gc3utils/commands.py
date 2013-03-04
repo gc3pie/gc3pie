@@ -1296,19 +1296,19 @@ Select job IDs based on specific criteria
         if current_jobs:
             print str.join(" ", [str(job.persistent_id) for job in current_jobs])
 
-class cmd_gec2(_BaseCmd):
+class cmd_gcloud(_BaseCmd):
     """
-`gc3ec2` manage VMs created by the EC2 backend
+`gcloud` manage VMs created by the EC2 backend
 
 Usage:
 
-    gc3ec2 `command` [options]
+    gcloud `command` [options]
 
 commands are listed below, under `subcommands`.
 
 To get detailed info on a specific command, run:
 
-    gc3ec2 `command` --help
+    gcloud `command` --help
     """
 
     def _add_subcmd(self, name, func, help=None):
@@ -1322,7 +1322,7 @@ To get detailed info on a specific command, run:
 
         self.subparsers = self.argparser.add_subparsers(
             title="subcommands",
-            description="gc3ec2 accept the following subcommands.")
+            description="gcloud accept the following subcommands.")
     
         listparser = self._add_subcmd(
             'list',
@@ -1349,7 +1349,7 @@ To get detailed info on a specific command, run:
             self.forget_vm,
             help="Remove the VM from the list of known VMs, so that the EC2 "
             "backend will stop submitting jobs on it. Please note that if you "
-            "`forget` a VM, it will disappear from the output of `gec2 list`.")
+            "`forget` a VM, it will disappear from the output of `gcloud list`.")
         forgetparser.add_argument('ID', help='ID of the VM to "forget".')
         forgetparser.add_argument(
             '-r', '--resource', metavar="NAME", dest="resource_name",
