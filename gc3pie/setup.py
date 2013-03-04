@@ -107,7 +107,7 @@ setuptools.setup(
         # 0.7.9 is the latest version with Python2.4 support
         'sqlalchemy==0.7.9',
         # Needed for parsing human-readable dates (gselect uses it).
-        'parsedatetime==0.8.7',
+        'parsedatetime',
         # needed by Benjamin's DE optimizer code
         # To add as an *optional* dependency
         # 'numpy',

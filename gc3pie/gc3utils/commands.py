@@ -43,7 +43,7 @@ import re
 ## 3rd party modules
 import cli  # pyCLI
 import cli.app
-from parsedatetime import parsedatetime
+import parsedatetime
 
 ## local modules
 from gc3libs import Application, Run
