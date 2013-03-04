@@ -40,7 +40,7 @@ del sdist.finders[:]
 
 setuptools.setup(
     name = "gc3pie",
-    version = "2.0.dev", # see: http://packages.python.org/distribute/setuptools.html
+    version = "2.1.dev", # see: http://packages.python.org/distribute/setuptools.html
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
     # metadata for upload to PyPI
@@ -98,7 +98,7 @@ setuptools.setup(
         # paramiko and pycrypto are required for SSH operations
         # ("pycrypto" is actually a dependency of Paramiko, but
         # setuptools apparently does not process dependencies recursively)
-        'paramiko', 'pycrypto>=1.9',
+        'paramiko==1.7.7.2', 'pycrypto>=1.9',
         # prettytable -- format tabular text output
         'prettytable',
         # pyCLI -- object-oriented command-line app programming
