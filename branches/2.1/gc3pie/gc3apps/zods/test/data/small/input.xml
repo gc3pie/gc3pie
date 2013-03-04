@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<input xsi:noNamespaceSchemaLocation="simulator.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" print_level="2">
+  <reference_intensities file_format="xml" file_name="data.xml"></reference_intensities>
+  <average_structure>
+    <file name="californium_simple_3.cif" format="cif" />
+  </average_structure>
+  <disentanglement translational_symmetry_directions="a,b">
+    <user_defined>
+      <chemical_units_list>
+        <chemical_unit label="layer_1" probability="0.333334" atom_list="C1;C2" symmetry="(X,Y,Z);(-Y,X-Y,Z);(-X+Y,-X,Z)"></chemical_unit>
+      </chemical_units_list>
+      <sets_of_alternatives_list>
+        <set_of_alternatives label="soa" chemical_units_list="layer_1;layer_1,(X+2/3,Y+1/3,Z);layer_1,(X+1/3,Y+2/3,Z)"></set_of_alternatives>
+      </sets_of_alternatives_list>
+    </user_defined>
+  </disentanglement>
+  <independent_parameters>
+    <parameter label="p" value="-1" />
+  </independent_parameters>
+  <interactions>
+    <interaction>
+      <discrete parameters="p">
+        <chemical_units>layer_1;layer_1,(X+2/3,Y+1/3,Z+1)</chemical_units>
+      </discrete>
+    </interaction>
+  </interactions>
+  <disordered_crystal_simulation>
+    <default_crystal_builder crystal_dimensions="1,1,2400" n_MC_cycles="10" />
+  </disordered_crystal_simulation>
+  <intensity_calculation form_factor_type="x-ray" lot_dimensions="1,1,20" n_lots="120"></intensity_calculation>
+  <!--<analysis output="calif.an"><analyses_list><conditional_probability><conditions_list><chemical_unit_condition chemical_units_list="layer_1,(X,Y,Z+1)"></chemical_unit_condition></conditions_list></conditional_probability><conditional_probability><conditions_list><chemical_unit_condition chemical_units_list="layer_1,(X+2/3,Y+1/3,Z+1)" /></conditions_list></conditional_probability></analyses_list></analysis>-->
+  <run_type>
+    <calculate_intensities n_clones="1">
+      <output>
+        <crystals output_file_formats="xml,pdb,xyz" />
+        <intensities output_file_formats="xml,vtk" />
+      </output>
+    </calculate_intensities>
+  </run_type>
+</input>
