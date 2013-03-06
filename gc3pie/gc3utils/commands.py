@@ -966,8 +966,8 @@ To get detailed info on a specific command, run:
                 task.free()
                 rc -= 1
 
-        if self.session.tasks:
-            gc3libs.log.error("Not all tasks have been removed from the session.")
+        if rc:
+            gc3libs.log.error("Not all tasks of the session have been aborted.")
 
         if rc > 125:
             # 126 and 127 error codes have special meanings.
