@@ -23,6 +23,7 @@ __version__ = '$Revision$'
 
 
 import os
+import re
 import paramiko
 import time
 
@@ -278,6 +279,11 @@ class EC2Lrms(LRMS):
         else:
             self.ec2_url = os.getenv('EC2_URL')
 
+        # Keypair names can only contain alphanumeric chars!
+        if re.match('.*\W.*', keypair_name):
+            raise ConfigurationError(
+                "Keypair name `%s` is invalid: keypair names can only contain "
+                "alphanumeric chars: [a-zA-Z0-9_]" % keypair_name)
         self.keypair_name = keypair_name
         self.public_key = public_key.strip()
         self.image_id = image_id
