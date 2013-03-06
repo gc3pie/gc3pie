@@ -234,30 +234,31 @@ import gc3libs
 class SshTransport(Transport):
 
     def __init__(self, remote_frontend, port=gc3libs.Default.SSH_PORT,
-                 username=None, ignore_ssh_host_keys=False):
+                 username=None, ignore_ssh_host_keys=False, keyfile=None):
         self.remote_frontend = remote_frontend
         self.port = port
         self.username = username
 
         self.ssh = paramiko.SSHClient()
         self.ssh_config = paramiko.SSHConfig()
-        self.keyfile = None
+        self.keyfile = keyfile
         self.ignore_ssh_host_keys = ignore_ssh_host_keys
         self.sftp = None
         self._is_open = False
         self.transport_channel = None
 
-        try:
-            config_filename = os.path.expanduser('~/.ssh/config')
-            config_file = open(config_filename)
-            self.ssh_config.parse(config_file)
-            # Check if we have an ssh configuration stanza for this host
-            hostconfig = self.ssh_config.lookup(self.remote_frontend)
-            self.keyfile = hostconfig.get('identityfile', None)
-            config_file.close()
-        except IOError:
-            # File not found. Ignoring
-            pass
+        if not self.keyfile:
+            try:
+                config_filename = os.path.expanduser('~/.ssh/config')
+                config_file = open(config_filename)
+                self.ssh_config.parse(config_file)
+                # Check if we have an ssh configuration stanza for this host
+                hostconfig = self.ssh_config.lookup(self.remote_frontend)
+                self.keyfile = hostconfig.get('identityfile', None)
+                config_file.close()
+            except IOError:
+                # File not found. Ignoring
+                pass
 
     @same_docstring_as(Transport.connect)
     def connect(self):

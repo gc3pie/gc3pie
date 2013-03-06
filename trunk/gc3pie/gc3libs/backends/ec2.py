@@ -285,7 +285,7 @@ class EC2Lrms(LRMS):
                 "Keypair name `%s` is invalid: keypair names can only contain "
                 "alphanumeric chars: [a-zA-Z0-9_]" % keypair_name)
         self.keypair_name = keypair_name
-        self.public_key = public_key.strip()
+        self.public_key = os.path.expanduser(os.path.expandvars(public_key.strip()))
         self.image_id = image_id
         self.image_name = image_name
         self.instance_type = instance_type
@@ -402,7 +402,7 @@ class EC2Lrms(LRMS):
             # exists but have different fingerprint
             self._import_keypair()
         else:
-            keyfile = os.path.expanduser(self.public_key)
+            keyfile = self.public_key
             if keyfile.endswith('.pub'):
                 keyfile = keyfile[:-4]
             else:
@@ -524,6 +524,9 @@ class EC2Lrms(LRMS):
         args = self.subresource_args.copy()
         args['frontend'] = remote_ip
         args['transport'] = "ssh"
+        args['keyfile'] = self.public_key
+        if args['keyfile'].endswith('.pub'):
+            args['keyfile'] = args['keyfile'][:-4]
         args['ignore_ssh_host_keys'] = True
         args['name'] = "%s@%s" % (remote_ip, self.name)
         args['auth'] = args['vm_auth']

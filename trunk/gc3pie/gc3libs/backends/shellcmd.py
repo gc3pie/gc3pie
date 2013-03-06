@@ -163,8 +163,8 @@ ReturnCode=%x"""
                  auth=None,
                  # these are specific to `ShellcmdLrms`
                  # ignored if `transport` is 'local'
-                 frontend='localhost', transport='local',
-                 time_cmd=None, override='False', ignore_ssh_host_keys=False,
+                 frontend='localhost', transport='local', time_cmd=None, 
+                 override='False', keyfile=None, ignore_ssh_host_keys=False,
                  spooldir=None, resourcedir=None,
                  **extra_args):
 
@@ -199,7 +199,8 @@ ReturnCode=%x"""
             auth = self._auth_fn()
             self._username = auth.username
             self.transport = gc3libs.backends.transport.SshTransport(
-                frontend, username=self._username, ignore_ssh_host_keys=ignore_ssh_host_keys)
+                frontend, username=self._username, keyfile=keyfile,
+                ignore_ssh_host_keys=ignore_ssh_host_keys)
         else:
             raise gc3libs.exceptions.TransportError(
                 "Unknown transport '%s'" % transport)
