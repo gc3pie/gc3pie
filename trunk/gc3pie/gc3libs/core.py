@@ -134,8 +134,14 @@ specified in the configuration file.
 
         auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
 
-        lrms =  self.get_backend(app.execution.resource_name)
-        lrms.free(app)
+        if hasattr(app.execution, 'resource_name'):
+            lrms =  self.get_backend(app.execution.resource_name)
+            lrms.free(app)
+        else:
+            gc3libs.log.debug(
+                "Core.__free_application(): Application `%s` does not have an "
+                "`execution.resource_name` attribute. Assuming it has been "
+                "aborted before submission." % str(app))
 
     def __free_task(self, task, **extra_args):
         """Implementation of `free` on generic `Task` objects."""
