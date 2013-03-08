@@ -84,7 +84,7 @@ class GcgpsApplication(Application):
         if not command_args:
             outputs = gc3libs.ANY_OUTPUT
         else:
-            self.output_file_name = "pos-%s_rates_MC%s_snr%s_h%ssd_o%s.Rdata" % (command_args['pos'], 
+            self.output_file_name = "pos-%s_rates_MC%s_snr%s_h%s_sd_o%s.Rdata" % (command_args['pos'], 
                                                                                  command_args['realizations'], 
                                                                                  command_args['snr'], command_args['mast.h'], 
                                                                                  command_args['sd.mast.o'])
