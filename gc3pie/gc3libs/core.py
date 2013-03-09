@@ -1174,3 +1174,18 @@ class Engine(object):
         e.g. LRMS
         """
         self._core.close()
+
+    # Wrapper methods around `Core` to access the backends directly
+    # from the `Engine`.
+    
+    @utils.same_docstring_as(Core.select_resource)
+    def select_resource(self, match):
+        return self._core.select_resource(match)
+
+    @utils.same_docstring_as(Core.get_resources)
+    def get_resources(self):
+        return self._core.get_resources()
+
+    @utils.same_docstring_as(Core.get_backend)
+    def get_backend(self, name):
+        return self._core.get_backend(name)
