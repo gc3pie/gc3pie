@@ -75,26 +75,32 @@ Example scripts
 
 `gdemo_simple.py`_
 
-    Simple script that only uses `Application` and `Core` classes to
-    create an application, submit it, check its status and retrieve
-    its output.
+    Simplest script you can create. It only uses `Application` and
+    `Engine` classes to create an application, submit it, check its
+    status and retrieve its output.
 
-`gdemo_simple_engine.py`_
+`grun.py`_
 
-    Similar to the previous script, this one uses, instead of `Core`,
-    a more high-level class to manage jobs workflow: the `Engine`
-    class.
+    a `SessionBasedScript` that executes its argument as command. It
+    can also run it multiple times by wrapping it in a
+    ParallelTaskCollection or a SequentialTaskCollection, depending on
+    a command line option. Useful for testing a configured resource.
+
+`gdemo_session.py`_
+
+    a simple `SessionBasedScript` that sums two values by customizing
+    a `SequentialTaskCollection`.
 
 `warholize.py`_
 
     an enhanched version of the `warholize` script proposed in the
     :ref:`Warholize Tutorial`
 
-.. _`gdemo_simple.py`: http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/examples/gdemo_simple.py
+.. _`gdemo_simple.py`: http://gc3pie.googlecode.com/svn/trunk/gc3pie/examples/gdemo_simple.py
 
-.. _`gdemo_simple_engine.py`: http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/examples/gdemo_simple_engine.py
+.. _`grun.py`: http://gc3pie.googlecode.com/svn/trunk/gc3pie/examples/grun.py
 
-.. _`warholize.py`: http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/examples/warholize.py
+.. _`warholize.py`: http://gc3pie.googlecode.com/svn/trunk/gc3pie/examples/warholize.py
 
 
 

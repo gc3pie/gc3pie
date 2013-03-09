@@ -29,10 +29,8 @@ import tempfile
 
 from nose.tools import assert_equal
 
-from gc3libs import Application, Run, configure_logger
+from gc3libs import Application, Run, configure_logger, create_engine
 from gc3libs.workflow import SequentialTaskCollection
-import gc3libs.config
-import gc3libs.core
 
 loglevel = logging.ERROR
 configure_logger(loglevel, "test_isse_335")
@@ -85,10 +83,7 @@ resourcedir = %s
                     os.path.join(self.tmpdir, 'test.%d.d' % i)) for i in range(self.ptasks)
                 ]
             )
-        cfg = gc3libs.config.Configuration(self.cfgfile,
-            **{'auto_enable_auth': True})
-        core = gc3libs.core.Core(cfg)
-        engine = gc3libs.core.Engine(core)
+        engine = create_engine(self.cfgfile, auto_enable_auth=True)
         engine.add(task)
         while True:
             engine.progress()

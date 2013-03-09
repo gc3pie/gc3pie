@@ -50,7 +50,6 @@ import logging
 import logging.config
 log = logging.getLogger("gc3.gc3libs")
 
-import gc3libs.exceptions
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.compat._collections import OrderedDict
 
@@ -105,7 +104,7 @@ class Default(object):
 
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable
-import gc3libs.url
+from gc3libs.url import UrlKeyDict, UrlValueDict
 from gc3libs.utils import defproperty, deploy_configuration_file, Enum, History, Struct, safe_repr
 
 
@@ -787,8 +786,8 @@ class Application(Task):
 
         self.arguments = [ str(x) for x in arguments ]
 
-        self.inputs = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
-        self.outputs = Application._io_spec_to_dict(gc3libs.url.UrlValueDict, outputs, False)
+        self.inputs = Application._io_spec_to_dict(UrlKeyDict, inputs, True)
+        self.outputs = Application._io_spec_to_dict(UrlValueDict, outputs, False)
 
         # check that remote entries are all distinct
         # (can happen that two local paths are mapped to the same remote one)
@@ -1949,6 +1948,36 @@ class Run(Struct):
         else:
             # regular exit
             return (0, rc)
+
+# Factory method to create an Engine instance
+
+def create_engine(*conf_files, **extra_args):
+    """
+    Returns a `gc3libs.core.Engine`:class: class. 
+
+    It accepts an optional list of configuration filenames. If the
+    filenames contain a `~` or a variable name, it will be expanded
+    automatically.
+
+    Called without arguments, a configuration file will be searched in
+    ~/.gc3/gc3pie.conf and used, if found .
+    """
+    from gc3libs.config import Configuration
+    from gc3libs.core import Core, Engine
+    conf_files = [
+        os.path.expandvars(
+            os.path.expanduser(fname)) for fname in conf_files]
+    if not conf_files:
+        conf_files = Default.CONFIG_FILE_LOCATIONS[:]
+
+    if not 'auto_enable_auth' in extra_args:
+        extra_args['auto_enable_auth'] = True
+
+    cfg = Configuration(*conf_files, **extra_args)
+    core = Core(cfg)
+    engine = Engine(core)
+
+    return engine
 
 
 ## main: run tests
