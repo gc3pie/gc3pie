@@ -1433,17 +1433,24 @@ To get detailed info on a specific command, run:
         return 0
 
     def terminate_vm(self):
-        if len(self.resources) > 1:
-            raise RuntimeError("Please specify the resource where you want to "
-                               "create the VM by supplying the `-r` option.")
-        resource = self.resources[0]
-        resource.get_resource_status()
-        if self.params.ID not in resource._vms:
+        for resource in self.resources:
+            resource.get_resource_status()
+        matching_res = []
+        for res in self.resources:
+            if self.params.ID in res._vms:
+                matching_res.append(resource)
+        if len(matching_res) > 1:
+            raise RuntimeError("VM with ID `%s` have been found on multiple "
+                               "resources. Please specify the resource by "
+                               "running `grun` with the `-r` option.")
+        elif not matching_res:
             raise RuntimeError(
-                "VM with id `%s` not found in resource `%s`." % \
-                    (self.params.ID, resource.name))
-        
+                "VM with id `%s` not found." % (self.params.ID))
+
+        resource = matching_res[0]
         vm = resource._vms.get_vm(self.params.ID)
+        gc3libs.log.info("Terminating VM `%s` on resource `%s`" %
+                         (self.params.ID, resource.name))
         vm.terminate()
         resource._vms.remove_vm(self.params.ID)
         resource._session.save(resource._vms)
