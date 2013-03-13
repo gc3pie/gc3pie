@@ -1339,7 +1339,7 @@ To get detailed info on a specific command, run:
             'terminate',
             self.terminate_vm,
             help='Terminate a VM.')
-        terminateparser.add_argument('ID', help='ID of the VM to terminate.')
+        terminateparser.add_argument('ID', help='ID of the VM to terminate.', nargs='+')
         terminateparser.add_argument(
             '-r', '--resource', metavar="NAME", dest="resource_name",
             default=None, help="Select resource by name.")
@@ -1350,7 +1350,7 @@ To get detailed info on a specific command, run:
             help="Remove the VM from the list of known VMs, so that the EC2 "
             "backend will stop submitting jobs on it. Please note that if you "
             "`forget` a VM, it will disappear from the output of `gcloud list`.")
-        forgetparser.add_argument('ID', help='ID of the VM to "forget".')
+        forgetparser.add_argument('ID', help='ID of the VM to "forget".', nargs='+')
         forgetparser.add_argument(
             '-r', '--resource', metavar="NAME", dest="resource_name",
             default=None, help="Select resource by name.")
@@ -1432,43 +1432,74 @@ To get detailed info on a specific command, run:
 
         return 0
 
-    def terminate_vm(self):
-        for resource in self.resources:
-            resource.get_resource_status()
+    def _find_resources_running_vm(self, vmid):
+        """
+        Returns a list of resources that are currently running a VM
+        with id `vmid`
+        """
         matching_res = []
-        for res in self.resources:
-            if self.params.ID in res._vms:
+        for resource in self.resources:
+            if vmid in resource._vms:
                 matching_res.append(resource)
+        return matching_res
+
+    def _terminate_vm(self, vmid):
+        matching_res = self._find_resources_by_running_vm(vmid)
         if len(matching_res) > 1:
-            raise RuntimeError("VM with ID `%s` have been found on multiple "
+            raise LookupError("VM with ID `%s` have been found on multiple "
                                "resources. Please specify the resource by "
                                "running `grun` with the `-r` option.")
         elif not matching_res:
-            raise RuntimeError(
-                "VM with id `%s` not found." % (self.params.ID))
+            raise LookupError(
+                "VM with id `%s` not found." % (vmid))
 
         resource = matching_res[0]
-        vm = resource._vms.get_vm(self.params.ID)
+        vm = resource._vms.get_vm(vmid)
         gc3libs.log.info("Terminating VM `%s` on resource `%s`" %
-                         (self.params.ID, resource.name))
+                         (vmid, resource.name))
         vm.terminate()
-        resource._vms.remove_vm(self.params.ID)
+        resource._vms.remove_vm(vmid)
         resource._session.save(resource._vms)
+
+    def terminate_vm(self):
+        for resource in self.resources:
+            resource.get_resource_status()
+        errors = 0
+        for vmid in self.params.ID:
+            try:
+                self._terminate_vm(vmid)
+            except LookupError, ex:
+                gc3libs.log.warning(str(ex))
+                errors += 1
+        return errors
+
+    def _forget_vm(self, vmid):
+        matching_res = self._find_resources_running_vm(vmid)
+        if len(matching_res) > 1:
+            raise LookupError("VM with ID `%s` have been found on multiple "
+                               "resources. Please specify the resource by "
+                               "running `grun` with the `-r` option.")
+        elif not matching_res:
+            raise LookupError(
+                "VM with id `%s` not found." % (vmid))
+
+        resource = matching_res[0]
+        resource._vms.remove_vm(vmid)
+        resource._session.save(resource._vms)
+        
 
     def forget_vm(self):
-        if len(self.resources) > 1:
-            raise RuntimeError("Please specify the resource where you want to "
-                               "create the VM by supplying the `-r` option.")
-        resource = self.resources[0]
-        resource._connect()
-        if self.params.ID not in resource._vms:
-            raise RuntimeError(
-                "VM with id `%s` not found in resource `%s`." % \
-                    (self.params.ID, resource.name))
-        
-        resource._vms.remove_vm(self.params.ID)
-        resource._session.save(resource._vms)
-
+        for resource in self.resources:
+            # calling `_connect()` will load the list of available VMs
+            resource._connect()
+        errors = 0
+        for vmid in self.params.ID:
+            try:
+                self._forget_vm(vmid)
+            except LookupError, ex:
+                gc3libs.log.warning(str(ex))
+                errors += 1
+        return errors
 
     def create_vm(self):
         if len(self.resources) > 1:
