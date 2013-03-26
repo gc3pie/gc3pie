@@ -770,6 +770,9 @@ class EC2Lrms(LRMS):
 
         pending_vms = set(vm.id for vm in self._vms.get_all_vms()
                           if vm.state == 'pending')
+
+        image_id = self.get_image_id_for_job(job)
+        instance_type = self.get_instance_type_for_job(job)
         # First of all, try to submit to one of the subresources.
         for vm_id, resource in self.resources.items():
             if not resource.updated:
@@ -777,6 +780,11 @@ class EC2Lrms(LRMS):
                 # next one and add it to the list of "pending" VMs.
                 pending_vms.add(vm_id)
             try:
+                # Check that the required image id and instance type
+                # are correct
+                vm = self._get_vm(vm_id)
+                if vm.image_id != image_id or vm.instance_type != instance_type:
+                    continue
                 ret = resource.submit_job(job)
                 job.ec2_instance_id = vm_id
                 job.changed = True
@@ -794,8 +802,6 @@ class EC2Lrms(LRMS):
             # No pending VM, and no resource available. Create a new VM
             if not self.vm_pool_max_size \
                     or len(self._vms) < self.vm_pool_max_size:
-                image_id = self.get_image_id_for_job(job)
-                instance_type = self.get_instance_type_for_job(job)
                 user_data = self.get_user_data_for_job(job)
                 vm = self._create_instance(image_id,
                                            instance_type=instance_type,
