@@ -240,6 +240,10 @@ specified in the configuration file.
                         % (lrms.name,
                            time.ctime(job.timestamp[Run.State.NEW])))
                 lrms.submit_job(app)
+            except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration, ex:
+                gc3libs.log.info(
+                    "Submission of job %s delayed" % app)
+                break
             except Exception, ex:
                 gc3libs.log.info(
                     "Error in submitting job to resource '%s': %s: %s",

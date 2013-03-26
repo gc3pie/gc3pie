@@ -250,6 +250,12 @@ class LRMSError(Error):
 class LRMSSubmitError(Error):
     pass
 
+class LRMSSkipSubmissionToNextIteration(RecoverableError):
+    """
+    Tells the Engine to skip submission of a job until the next
+    iteration.
+    """
+    pass
 
 class NoConfigurationFile(FatalError):
     """
