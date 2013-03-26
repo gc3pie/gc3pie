@@ -20,7 +20,7 @@ Implementation of the `core` command-line front-ends.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision: 3453 $)'
+__version__ = 'development version (SVN $Revision$)'
 __author__ = "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, "
 "Riccardo Murri <riccardo.murri@uzh.ch>"
 "Antonio Messina <arcimboldo@gmail.com>"
@@ -498,8 +498,15 @@ Print job state.
                     jobname = app.jobname
                 else:
                     jobname = ''
-                rows.append([jobid, jobname, app.execution.state, app.execution.info] +
-                            [app.execution.get(name, "N/A") for name in keys])
+
+                key_values = []
+                for name in keys:
+                    if name in app.execution:
+                        key_values.append(app.execution.get(name))
+                    else:
+                        key_values.append(app.get(name, "N/A"))
+                rows.append([jobid, jobname, app.execution.state, app.execution.info] + key_values)
+
             stats[app.execution.state] += 1
             if app.execution.state == Run.State.TERMINATED:
                 if app.execution.returncode == 0:
