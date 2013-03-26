@@ -84,15 +84,15 @@ class GcgpsApplication(Application):
         if not command_args:
             outputs = gc3libs.ANY_OUTPUT
         else:
-            self.output_file_name = "pos-%s_rates_MC%s_snr%s_h%s_sd_o%s.Rdata" % (command_args['pos'], 
-                                                                                 command_args['realizations'], 
-                                                                                 command_args['snr'], command_args['mast.h'], 
-                                                                                 command_args['sd.mast.o'])
+            self.output_file_name = "pos-%s_rates_MC%s_snr%s_h%s_sd_o%s.Rdata" \
+                % (command_args['pos'], 
+                   command_args['realizations'], 
+                   command_args['snr'], command_args['mast.h'], 
+                   command_args['sd.mast.o'])
 
-            self.remote_output_file = os.path.join('out',self.output_file_name)
-            self.local_output_file = os.path.join(self.output_dir,self.output_file_name)
-            self.local_result_output_file = os.path.join(self.result_dir,self.output_file_name)
-            outputs = ['./out/screen.out', './%s' % self.remote_output_file]
+            self.local_output_file = os.path.join(self.output_dir, self.output_file_name)
+            self.local_result_output_file = os.path.join(self.result_dir, self.output_file_name)
+            outputs = ['./out/screen.out', ('./out/pos.output', self.output_file_name)]
 
         # setup input references
         inputs = [ (os.path.join(src_dir,v),os.path.join("./src",v)) 
@@ -146,6 +146,7 @@ RET=$?
 
 echo Program terminated with exit code $RET
 
+mv out/pos* out/pos.output
 exit $RET
         """ % (command, command)
 
@@ -211,9 +212,8 @@ exit $RET
             self.execution.returncode = (0, 100)
         else:
             try:
-                shutil.copy(self.local_output_file, 
+                shutil.move(self.local_output_file, 
                             self.local_result_output_file)
-                os.remove(self.local_output_file)
             except Exception, ex:
                 gc3libs.log.error("Failed while transferring output file " +
                                   "%s " % self.local_output_file +
