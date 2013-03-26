@@ -1432,7 +1432,7 @@ To get detailed info on a specific command, run:
 
         return 0
 
-    def _find_resources_running_vm(self, vmid):
+    def _find_resources_by_running_vm(self, vmid):
         """
         Returns a list of resources that are currently running a VM
         with id `vmid`
