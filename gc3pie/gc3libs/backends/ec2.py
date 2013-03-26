@@ -42,7 +42,7 @@ except ImportError:
 # GC3Pie imports
 import gc3libs
 from gc3libs.exceptions import RecoverableError, UnrecoverableError, \
-    ConfigurationError
+    ConfigurationError, LRMSSkipSubmissionToNextIteration
 import gc3libs.url
 from gc3libs import Run
 from gc3libs.utils import same_docstring_as
@@ -810,6 +810,9 @@ class EC2Lrms(LRMS):
                     "Already running the maximum number of VM on resource %s:"
                     " %d >= %d.",
                     self.name, len(self._vms), self.vm_pool_max_size)
+                raise RecoverableError(
+                    "Already running the maximum number of VM on resource %s:"
+                    " %d >= %d." % self.name, len(self._vms), self.vm_pool_max_size)
 
         # If we reached this point, we are waiting for a VM to be
         # ready, so delay the submission until we wither can submit to
@@ -820,7 +823,7 @@ class EC2Lrms(LRMS):
             "`pending` state. Waiting until the next iteration before "
             "creating a new VM. Pending VM ids: %s",
             str.join(', ', pending_vms))
-        raise RecoverableError(
+        raise LRMSSkipSubmissionToNextIteration(
             "Delaying submission until some of the VMs currently pending "
             "is ready. Pending VM ids: %s" % str.join(', ', pending_vms))
 
