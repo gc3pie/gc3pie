@@ -1,6 +1,7 @@
 #summary Wiki site map
 
 [http://gc3pie.googlecode.com/ GC3Pie home page]
+  * [GSoCIdeas Project Ideas for the Google Summer of Code]
   * [GC3Utils GC3Utils]
     ** Installation instructions:
        *** [http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/docs/html/users/install.html 2.0 release]
