@@ -315,6 +315,18 @@ class RecoverableTransportError(RecoverableError):
 class UnrecoverableTransportError(UnrecoverableError):
     pass
 
+class CopyError(TransportError):
+    """
+    Error copying a file from `source` to `destination.
+    """
+    def __init__(self, source, destination, ex):
+        self.source = source
+        self.destination = destination
+        TransportError.__init__(
+            self,
+            "Could not copy '%s' to '%s': %s: %s"
+            % (source, destination, ex.__class__.__name__, str(ex)))
+
 class UnknownJob(Error, ValueError):
     """
     Raised when an operation is attempted on a task, which is
