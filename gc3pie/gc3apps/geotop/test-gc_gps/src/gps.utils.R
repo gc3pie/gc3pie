@@ -4055,7 +4055,7 @@ xs.process.position<- function(pos, realizations, snr, snr.com=snr,
     mast.h=1, sd.mast.o=0,rm.outlier=FALSE){
     
     #load input.data
-    input.data<- get(load(file="~/in/input.data.Rdata"))
+    input.data<- get(load(file="in/input.data.Rdata"))
 
 	#get data from input file
 	dev.change	<- subset(as.data.frame(input.data$meta.changes),position==pos)
