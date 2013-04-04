@@ -58,6 +58,7 @@ import tempfile
 import shutil
 
 import gc3libs
+import gc3libs.exceptions
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, executable_file
 import gc3libs.utils
@@ -185,6 +186,14 @@ exit $RET
 #             open(tmpfile,'w').write(script)
 #             self.inputs.append((tmpfile, 'scriptname'))
 #             self.arguments = ['./scriptname' ]
+
+    def fetch_output_error(self, ex):
+        # Ignore errors if `pos.output` file has not been created by
+        # the application.
+        if isinstance(ex, gc3libs.exceptions.CopyError):
+            if os.path.basename(ex.source) == 'pos.output':
+                return None
+        return ex
 
     def terminated(self):
         """
