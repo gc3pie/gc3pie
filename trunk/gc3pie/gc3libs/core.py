@@ -481,14 +481,10 @@ specified in the configuration file.
             if isinstance(ex, Exception):
                 job.info = ("No output could be retrieved: %s" % str(ex))
                 raise ex
-            else:
-                return
         except Exception, ex:
             ex = app.fetch_output_error(ex)
             if isinstance(ex, Exception):
                 raise ex
-            else:
-                return
 
         # successfully downloaded results
         gc3libs.log.debug("Downloaded output of '%s' (which is in state %s)"
