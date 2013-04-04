@@ -736,9 +736,7 @@ class LocalTransport(Transport):
                                     " ('%s'). Ignoring." % source)
                 return True
         except Exception, ex:
-            raise gc3libs.exceptions.TransportError(
-                "Could not copy '%s' to '%s': %s: %s"
-                % (source, destination, ex.__class__.__name__, str(ex)))
+            raise gc3libs.exceptions.CopyError(source, destination, ex)
 
     @same_docstring_as(Transport.get)
     def get(self, source, destination, ignore_nonexisting=False):
