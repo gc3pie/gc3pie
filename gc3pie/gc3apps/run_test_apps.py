@@ -327,6 +327,24 @@ class GDockingTest(TestRunner, Application):
                 return
         self.passed = True
 
+class GGcGpsTest(TestRunner, Application):
+    def __str__(self):
+        return "GGcGps"
+
+    def __init__(self, appdir, **kw):
+        TestRunner.__init__(self, appdir, kw)
+        Application.__init__(
+            self,
+            arguments = ['./gc_gps.py']  + self.stdargs + ['small.txt', 'src', '-i', 'in', '-o', 'out'],
+            inputs = [
+                os.path.join(self.appdir, name) for name in
+                ('gc_gps.py', 'test-gc_gps/small.txt', 'test-gc_gps/src', 'test-gc_gps/in')],
+            outputs=['out'],
+            **kw)
+
+    def terminated(self):
+        self.passed = self.execution._exitcode == 0
+
 
 class GCryptoTest(TestRunner, Application):
     def __str__(self):
@@ -365,7 +383,7 @@ class GCryptoTest(TestRunner, Application):
 class RunTestsInParallel(ParallelTaskCollection):
     applicationdirs = {'codeml': (GCodemlTest,),
                        'gamess': (GGamessTest,),
-                       'geotop': (GGeotopTest, ),
+                       'geotop': (GGeotopTest, GGcGpsTest,),
                        'lacal.epfl.ch': (GCryptoTest, ),
                        'rosetta': (GRosettaTest, GDockingTest),
                        'zods': (GZodsTest, ),
@@ -396,6 +414,8 @@ class RunTestsInParallel(ParallelTaskCollection):
             tasks += [
                 cls(appdir, **extra) for cls in classes
                 if issubclass(cls, Task) and issubclass(cls, TestRunner)]
+        if not tasks:
+            raise RuntimeError("No tasks found")
         ParallelTaskCollection.__init__(self, tasks, **extra)
 
 
