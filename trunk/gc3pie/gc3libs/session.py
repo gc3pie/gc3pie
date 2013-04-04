@@ -329,7 +329,7 @@ class Session(list):
         """
         try:
             store_fname = os.path.join(self.path, self.STORE_URL_FILENAME)
-            self.store_url = gc3libs.utils.read_contents(store_fname)
+            self.store_url = gc3libs.utils.read_contents(store_fname).strip()
         except IOError:
             gc3libs.log.info(
                 "Unable to load session: file %s is missing." % (store_fname))
