@@ -1,9 +1,14 @@
 The ``in/`` directory contains the input data to be analysed. On a
 could infrastructure this folder is already available on a dedicated
-image so it should NOT be copied over. (on Hobbes the image is XXXXX).
+image so it should NOT be copied over. (on Hobbes the image is ami-0000002a).
 
 On a Grid infrastructure we will probably use RTEs to make the ``in/``
 folder available without having to transfer it.
+
+Note: if gc_gps will *not* be executed against a cloud or a grid infrastructure 
+where the 'in' folder has been already pre-deployed ('in' folder contains the 
+reference input data), you will need to specify the ``-i`` option to pass manually
+the location of the input data.
 
 The ``src/`` directory contains the R scripts to be executed:
  - processit.R is the driver script: sets the path and calls the main script
