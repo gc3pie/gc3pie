@@ -33,10 +33,7 @@ Plot images are then retrieved to the client side (optionally data could be also
 uploaded on an ftp or http server that would make data available for upload
 to the central GSN repository).
 Plot images are organized with the following schema:
-<output_folder>/<station_name>/<time_stamp>.
-
-XXX: to agree what timestamp should be used (e.g. submission time or something
-that could be extracted from the fetched data)
+<output_folder>/<station_name>/.
 
 Input parameters consists of:
 :param str filename: path to a .sno file that correspond to the selected
@@ -45,8 +42,6 @@ station.
 Options parameters:
 :param str GSN ini file: use an alternative GSN ini file
 
-:param str timespamp: fetch data with a specific timestamp (default: last 30')
-
 :param str destination URI: upload data to an accessible URI
 
 """
@@ -54,6 +49,9 @@ Options parameters:
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2013-04-09:
+  * Added postprocessing of result data
+
   2013-03-22:
   * Initial version
 """
@@ -71,6 +69,7 @@ import sys
 import time
 import tempfile
 
+import posix
 import shutil
 
 import gc3libs
@@ -89,15 +88,29 @@ class GsnowpackApplication(Application):
     """
     application_name = 'gsnowpack'
 
-    def __init__(self, sno_file, gsn_ini=None, time_stamp=None, **extra_args):
+    def __init__(self, sno_files, gsn_ini=None, **extra_args):
+
+        self.station_name = extra_args['station_name']
+        self.time_stamp = extra_args['time_stamp']
+
+        # sno_file_name = basename(sno_files[0])
+
 
         command = """#!/bin/bash
 echo [`date`] Start
 
-# verify consistency of data
+# XXX: debug
+echo ------- /DEBUG --------
+env
+echo ------- /DEBUG --------
+
+
+# Verify consistency of data
 GSN_INI='io_gsn.ini'
-SNO_FILE='./output/%s'
-SNO_NAME=`basename $SNO_FILE .sno`
+# SNO_NAME=`basename $SNO_FILE .sno`
+SNO_NAME="%s"
+SNO_FILE="./output/${SNO_NAME}.sno"
+
 
 echo -n "Checking GSN ini file [$GSN_INI]... "
 if [ ! -e $GSN_INI ]; then
@@ -119,37 +132,59 @@ fi
 mkdir output
 mkdir img
 
-echo "XXX: setting explicitly LD_LIBRARY_PATH. This should rather go"
-echo "in the image"
-
 export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH
 
 # run snowpack
-CMD=`snowpack -c $GSN_INI -e NOW -s $SNO_NAME -m operational`
+echo "Running snowpack... "
+CMD=`snowpack -c $GSN_INI -e NOW -s $SNO_NAME -m operational 2>&1`
 
-if [ $? -ne 0 ];then
+if [ $? -ne 0 ]; then
    echo "Failed running snowpack"
+   exit 1
+fi
+
+echo "Checking results"
+if [ ! -e output/${SNO_NAME}.pro ]; then
+   echo "Output file output/${SNO_NAME}.pro not produced"
    exit 1
 fi
 
 echo "Plotting results"
 # Do the plotting part
 # image files will be places in `img` folder
-echo "XXX: Missing plot part."
-echo "For the time being just move the .pro and .haz files"
 
-mv ./output/*.haz img/
-mv ./output/*.pro img/
+# Creating output folder
+# Execute: create_matrix.sh <file.pro> <output_folder>/
 
-create-matrix.sh img/${SNO_NAME}.pro img/
+echo "Running: create_matrix.sh output/${SNO_NAME}.pro img/"
+create_plots.sh output/${SNO_NAME}.pro img/
+
+# XXX: check this
+# listing produces images
+if [ `ls img/*.png | wc -l` -eq 0 ]; then
+   # there are not .png files in the output folder
+   echo "No images produced."
+   exit 1
+fi
+
+# Cleanup unnecessary files
+echo "Cleaning up image folder... "
+rm img/*.dat
+rm img/*.dat.gnu
 
 echo "[`date`] End"
-""" % (os.path.basename(sno_file))
+""" % (self.station_name)
 
-        outputs = ['./img/']
+        outputs = [('./img/','images/'),('./output/','output/')]
 
         # setup input references
-        inputs = [(sno_file,os.path.join('./output',os.path.basename(sno_file)))]
+        # inputs = [(sno_file,os.path.join('./output',os.path.basename(sno_file)))]
+
+        inputs = []
+
+        for _file in sno_files:
+            inputs.append((_file,os.path.join('./output',os.path.basename(_file))))
+
         if gsn_ini:
             inputs.append((gsn_ini,'io_gsn.ini'))
 
@@ -178,23 +213,28 @@ echo "[`date`] End"
             join=True,
             **extra_args)
 
-    def terminated(self):
+    def get_images(self):
         """
-        Extract output file from 'out' 
+        Return a list of image files
         """
+        return [os.path.join(self.output_dir,'images',img) for img in os.listdir(os.path.join(self.output_dir,'images')) if img.endswith('.png')]
+        
 
+    def get_snofiles(self):
+        """
+        Return a list of updated .sno files
+        with corresponding .pro .map .haz
+        """
+        return [os.path.join(self.output_dir,'output',station_file) for station_file in os.listdir(os.path.join(self.output_dir,'output')) if station_file.startswith(self.station_name)]
 
 class GsnowpackScript(SessionBasedScript):
     """
-Scan the specified INPUT directories recursively for simulation
-directories and submit a job for each one found; job progress is
+Scan the specified INPUT directories recursively for .sno files
+and submit a job for each one found; job progress is
 monitored and, when a job is done, its output files are retrieved back
 into the simulation directory itself.
 
-A simulation directory is defined as a directory containing a
-``geotop.inpts`` file.
-
-The ``ggeotop`` command keeps a record of jobs (submitted, executed
+The ``gsnowpack`` command keeps a record of jobs (submitted, executed
 and pending) in a session file (set name with the ``-s`` option); at
 each invocation of the command, the status of all recorded jobs is
 updated, output from finished jobs is collected, and a summary table
@@ -202,7 +242,7 @@ of all known jobs is printed.  New jobs are added to the session if
 new input files are added to the command line.
 
 Options can specify a maximum number of jobs that should be in
-'SUBMITTED' or 'RUNNING' state; ``ggeotop`` will delay submission of
+'SUBMITTED' or 'RUNNING' state; ``gsnowpack`` will delay submission of
 newly-created jobs so that this limit is never exceeded.
 
     """
@@ -216,44 +256,32 @@ newly-created jobs so that this limit is never exceeded.
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
             stats_only_for = GsnowpackApplication,
-            )
+            ) 
 
     def setup_options(self):
-        self.add_param("-g", "--gsn", metavar="PATH", #type=executable_file,
+        self.add_param("-g", "--gsn", metavar="PATH",
                        dest="gsn_ini", default=None,
                        help="Path to an alternative gsn_ini file.")
 
-        # self.add_param("-t", "--time-stamp", metavar="TIME", #type=executable_file,
-        #                dest="time_stamp", default=None,
-        #                help="Alternative timestamp for fetching GSN data. format: HH:MM:SS")
+        self.add_param("-p" "--publish", metavar="PATH",
+                       dest="www", default=None,
+                       help="""
+Location of http server's DocRoot.
+Results (plots) will be copied and organised there
+""")
 
+    def setup_args(self):
 
-    # def setup_args(self):
+        self.add_param('sno_files_location', type=str,
+                       help="Path to the folder containing the .sno files")
 
-    #     self.add_param('sno_dir', type=str,
-    #                    help="Path to folder containing .sno files")
-
-    # def parse_args(self):
-    #     """
-    #     Check presence of input folder (should contains R scripts).
-    #     path to command_file should also be valid.
-    #     """
         
-    #     # check args:
-    #     if not os.path.isdir(self.params.sno_dir):
-    #         raise gc3libs.exceptions.InvalidUsage(
-    #             "Invalid sno_dir argument: '%s'. Path not found"
-    #             % self.params.sno_file)
+    def process_args(self):
+        from time import localtime, strftime
+        # set timestamp
+        self.time_stamp = strftime("%Y-%m-%d-%H%M", localtime())
 
-    #     if not self.params.sno_file.endswith('.sno'):
-    #         raise gc3libs.exceptions.InvalidUsage(
-    #             "Unrecognised file extension for file '%s'. Required .sno"
-    #             % self.params.sno_file)
-
-    #     self.log.info("Using .sno file %s" % self.params.sno_file)
-
-    #     if self.params.gsn_ini:
-    #         self.log.info("Alternative GSN init file: %s" % self.params.gsn_ini)
+        SessionBasedScript.process_args(self)
 
     def new_tasks(self, extra):
         """
@@ -272,28 +300,110 @@ newly-created jobs so that this limit is never exceeded.
 
         inputfiles = []
 
-        extra_args = extra.copy()
-
-        for path in self.params.args:
-            self.log.debug("Now processing input argument '%s' ..." % path)
-            if not os.path.isdir(path):
-                gc3libs.log.error("Argument '%s' is not a directory path." % path)
-                continue
+        self.sno_files_list = {}
+            
+        if not os.path.isdir(self.params.sno_files_location):
+            gc3libs.log.error("Argument '%s' is not a directory path." % self.params.sno_files_location)
+        else:
+            input_list = []
 
             # recursively scan for input files
-            for dirpath, dirnames, filenames in os.walk(path):
+            for dirpath, dirnames, filenames in os.walk(self.params.sno_files_location):
                 for file in filenames:
                     if file.endswith('.sno'):
-                        # inputfiles.append(os.path.join(dirpath,file))
 
-                        jobname = 'snopack-%s' % os.path.basename(file).split('.sno')[0]
+                        extra_args = extra.copy()
+
+                        extra_args['station_name'] = os.path.basename(file).split('.sno')[0]
+                        self.sno_files_list[extra_args['station_name']] = dirpath
+
+                        input_list = []
+                        input_list.append(os.path.join(dirpath,file))
+
+                        # within 'dirpath' search for all files with
+                        # 'station_name' as prefix
+                        # they will be all inputs
+                        for _file in os.listdir(dirpath):
+                            if _file.startswith(extra_args['station_name']):
+                                input_list.append(os.path.join(dirpath,_file))
+                            
+
+                        extra_args['time_stamp'] = self.time_stamp
+
+                        jobname = 'snopack-%s-%s' % (extra_args['station_name'],extra_args['time_stamp'])
 
                         extra_args['jobname'] = jobname
-                        extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', os.path.join('.computation',jobname))
+                        extra_args['output_dir'] = extra_args['output_dir'].replace(
+                            'NAME',
+                            os.path.join(extra_args['station_name'],extra_args['time_stamp']))
 
+                        self.log.info("Creating new Task: '%s'" % jobname)
+                        
                         tasks.append(GsnowpackApplication(
-                                os.path.join(dirpath,file),
+                                input_list,
                                 gsn_ini = self.params.gsn_ini,
                                 **extra_args))
 
         return tasks
+
+    def after_main_loop(self):
+        """
+        After completion of the SessionBasedScript
+        publish the result images to www_location.
+        """
+        import glob
+
+        if self.params.www:
+
+            # create folder
+            if not os.path.exists(self.params.www):
+                os.makedirs(self.params.www)
+            
+
+            # Loop trhough the list of own tasks
+            # extract 'output_dir'
+            # get images from output_dir/img
+
+            for task in self.session:
+                if isinstance(task,GsnowpackApplication) and task.execution.returncode == 0:
+                    station_folder = os.path.join(self.params.www,task.station_name)
+                    time_stamp = task.time_stamp
+
+                    if not os.path.exists(station_folder):
+                        try:
+                            os.makedirs(station_folder)
+                        except OSError, osx:
+                            gc3libs.log.error("Failed while creating www folder '%s'" +
+                                              "Error: %s" % (station_folder, str(osx)))
+
+                    for image in task.get_images():
+                        shutil.copy(image,station_folder)
+
+                    # Update timestamp file
+                    time_stamp_file = os.path.join(station_folder,'.time_stamp')
+                    try:
+                        fh = open(time_stamp_file,'wb')
+                        fh.seek(0)
+                        fh.write(time_stamp)
+                        fh.close()
+                    except OSError, osx:
+                        gc3libs.log.error("Failed while updating timestamp file " +
+                                          "'%s'. Error '%s'" % (time_stamp_file, str(osx)))
+
+
+            # Update .sno files
+            # Replace original one with those from the last 
+            # successfull run
+            
+            for task in self.session:
+                if isinstance(task,GsnowpackApplication) and task.execution.returncode == 0:
+                    if task.station_name in self.sno_files_list.keys():
+                        gc3libs.log.info('Updating sno files for station %s' % task.station_name)
+                        for snofile in task.get_snofiles():
+                            shutil.copy(snofile,self.sno_files_list[task.station_name])
+
+
+                    
+                    
+
+
