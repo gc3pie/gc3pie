@@ -263,12 +263,10 @@ newly-created jobs so that this limit is never exceeded.
                        dest="gsn_ini", default=None,
                        help="Path to an alternative gsn_ini file.")
 
-        self.add_param("-p" "--publish", metavar="PATH",
+        self.add_param("-p", "--publish", metavar="PATH",
                        dest="www", default=None,
-                       help="""
-Location of http server's DocRoot.
-Results (plots) will be copied and organised there
-""")
+                       help="Location of http server's DocRoot." + 
+                       " Results (plots) will be copied and organised there")
 
     def setup_args(self):
 
@@ -369,12 +367,20 @@ Results (plots) will be copied and organised there
                     station_folder = os.path.join(self.params.www,task.station_name)
                     time_stamp = task.time_stamp
 
+                    
+                    # XXX: Aggressive approach
+                    # first clean the existing folder
+                    # then copy fresh data
+                    shutil.rmtree(station_folder)
+
                     if not os.path.exists(station_folder):
                         try:
                             os.makedirs(station_folder)
                         except OSError, osx:
                             gc3libs.log.error("Failed while creating www folder '%s'" +
                                               "Error: %s" % (station_folder, str(osx)))
+                            continue
+
 
                     for image in task.get_images():
                         # image needs to be renamed with the following schema
@@ -407,17 +413,22 @@ Results (plots) will be copied and organised there
                         gc3libs.log.error("Failed while updating timestamp file " +
                                           "'%s'. Error '%s'" % (time_stamp_file, str(osx)))
 
-
-            # Update .sno files
-            # Replace original one with those from the last 
-            # successfull run
-            
-            for task in self.session:
-                if isinstance(task,GsnowpackApplication) and task.execution.returncode == 0:
+                    # Update original .sno files with computed one
+                    # remove .sno files from output_dir
                     if task.station_name in self.sno_files_list.keys():
                         gc3libs.log.info('Updating sno files for station %s' % task.station_name)
                         for snofile in task.get_snofiles():
-                            shutil.copy(snofile,self.sno_files_list[task.station_name])
+                            # replace .sno files with new ones
+                            try:
+                                shutil.move(snofile,self.sno_files_list[task.station_name])
+                            except Exception, ex:
+                                gc3libs.log.error("Failed while updating .sno files %s" +
+                                                  "Error type '%s', message '%s'" % (sno_file, type(ex), str(ex)))
+                                continue
+
+
+                                
+                   
 
 
                     
