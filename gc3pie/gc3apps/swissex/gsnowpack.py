@@ -423,7 +423,7 @@ newly-created jobs so that this limit is never exceeded.
                                 shutil.move(snofile,self.sno_files_list[task.station_name])
                             except Exception, ex:
                                 gc3libs.log.error("Failed while updating .sno files %s" +
-                                                  "Error type '%s', message '%s'" % (sno_file, type(ex), str(ex)))
+                                                  "Error type '%s', message '%s'" % (snofile, type(ex), str(ex)))
                                 continue
 
 
