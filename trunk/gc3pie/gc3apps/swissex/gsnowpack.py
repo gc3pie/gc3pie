@@ -377,7 +377,24 @@ Results (plots) will be copied and organised there
                                               "Error: %s" % (station_folder, str(osx)))
 
                     for image in task.get_images():
-                        shutil.copy(image,station_folder)
+                        # image needs to be renamed with the following schema
+                        # [station_name]-[attribute-displayed]-[timestamp]
+                        # timestamp format: YYYYMMDD-hhmm
+                        
+                        try:
+                            img_attribute_displayed = os.path.basename(image).split('.')[0]
+                        except Exception, ex:
+                            # XXX: teoretically all the above statements are safe and should not trigger
+                            # any Error
+                            # but to be safe...
+                            # in case we fail, use default
+                            gc3libs.log.error("Exception while setting image attribute" +
+                                              "Error type: '%s', message: '%s'" % (type(ex),str(ex)))
+                            img_attribute_displayed = ""
+
+                        image_name = "%s-%s-%s.png" % (task.station_name,img_attribute_displayed,time_stamp)
+
+                        shutil.copy(image,os.path.join(station_folder,image_name))
 
                     # Update timestamp file
                     time_stamp_file = os.path.join(station_folder,'.time_stamp')
