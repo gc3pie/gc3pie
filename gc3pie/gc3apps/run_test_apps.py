@@ -465,10 +465,12 @@ class TestAppsScript(SessionBasedScript):
         # done during submission, but when the application is
         # submitted to, e.g., smscg, we don't have a prompt anymore,
         # so let's try now and check that the resource is available.
-        self._core.update_resources()
         lrms = self._core.get_backend(self.params.test_resource)
-        if not lrms.updated:
-            raise RuntimeError("Resource %s not updated. Exiting" % lrms)
+        if not lrms.enabled:
+            lrms.enabled = True
+        self._core.update_resources()
+        if not lrms.updated:            
+            raise RuntimeError("Resource '%s' not updated. Exiting" % lrms.name)
 
     def every_main_loop(self):
         print
