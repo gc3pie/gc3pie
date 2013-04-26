@@ -481,6 +481,27 @@ for each of them.
   (Think especially of people who have to bugfix a module they didn't
   write in the first place.)
 
+* When calling methods or functions that accept both positional and
+  optional arguments like::
+
+    def foo(a, b, key1=defvalue1, key2=defvalue2):
+
+  always specify the argument name for optional arguments, which means
+  **do not call**::
+
+    foo(1, 2, value1, value2)
+
+  but **call instead**::
+
+    foo(1, 2, key1=value1, key2=value2)
+
+  *Rationale:* calling the function with explicit argument names will
+  reduce the risk of hit some compatibility issues. It is perfectly
+  fine, from the point of view of the developer, to change the
+  signature of a function by swapping two different *optional*
+  arguments, so this change can happen any time, although changing
+  *positional* arguments will break backward compatibility, and thus
+  it's usually well advertised and tested.
 
 * Use double quotes ``"`` to enclose strings representing messages meant
   for human consumption (e.g., log messages, or strings that will be
