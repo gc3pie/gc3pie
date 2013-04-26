@@ -68,13 +68,13 @@
 <span id="gc3libs-optimizer-dif-evolution"></span><h1><cite>gc3libs.optimizer.dif_evolution</cite><a class="headerlink" href="#module-gc3libs.optimizer.dif_evolution" title="Permalink to this headline">¶</a></h1>
 <p>This module implements a global optimization algorithm called Differential
 Evolution.</p>
-<p>Consider the following optimization problem: <span class="math">min ~ f(\mathbf{x}) ~~ s.t.
-~~ \mathbf{x} \in D</span>, where <span class="math">D \in \mathbb{R}^d</span> and <span class="math">f: D
-\mapsto \mathbb{R}</span>. Class <a class="reference internal" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm" title="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm"><tt class="xref py py-class docutils literal"><span class="pre">DifferentialEvolutionAlgorithm</span></tt></a> solves this
+<p>Consider the following optimization problem: <img class="math" src="../../../../_images/math/1d105b53fd1fe314419bd401cf98b9493c1d1af5.png" alt="min ~ f(\mathbf{x}) ~~ s.t.
+~~ \mathbf{x} \in D"/>, where <img class="math" src="../../../../_images/math/0ece1efb48d6e73d0cd65b94891359ae94a6af82.png" alt="D \in \mathbb{R}^d"/> and <img class="math" src="../../../../_images/math/325fc4cc361915acaa8b06602f4ae14962e706c5.png" alt="f: D
+\mapsto \mathbb{R}"/>. Class <a class="reference internal" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm" title="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm"><tt class="xref py py-class docutils literal"><span class="pre">DifferentialEvolutionAlgorithm</span></tt></a> solves this
 optimization problem using the differential evolution algorithm. No further
-assumptions on the function <span class="math">f</span> are needed. Thus it can be non-convex,
+assumptions on the function <img class="math" src="../../../../_images/math/bb2c93730dbb48558bb3c4738c956c4e8f816437.png" alt="f"/> are needed. Thus it can be non-convex,
 noisy etc.</p>
-<p>The domain <span class="math">D</span> is implicitly specified by passing the function
+<p>The domain <img class="math" src="../../../../_images/math/9ffb448918db29f2a72f8f87f421b3b3cad18f95.png" alt="D"/> is implicitly specified by passing the function
 <tt class="xref py py-func docutils literal"><span class="pre">filtern_fn()</span></tt> to <a class="reference internal" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm" title="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm"><tt class="xref py py-class docutils literal"><span class="pre">DifferentialEvolutionAlgorithm</span></tt></a>.</p>
 <p>Some information related to Differential Evolution can be found in the following papers:</p>
 <ol class="arabic simple">

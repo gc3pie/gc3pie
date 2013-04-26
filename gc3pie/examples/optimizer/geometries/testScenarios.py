@@ -21,7 +21,7 @@ TestScenarios.py class extracts test execution within GAMESS.
 Tests are executed if INP files include their definition in an appropriate syntax (for more information about this syntax see testScenarios.py).
 
 """
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.0rc1 version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2012-09-05: * Initial release of GAMESS Test Suite 

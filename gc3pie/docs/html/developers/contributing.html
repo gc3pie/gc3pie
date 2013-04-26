@@ -243,6 +243,19 @@ configuration files. However, if you feel that the environments can be
 </li>
 </ol>
 </div>
+<div class="section" id="running-tests-on-python-2-5">
+<h4>Running tests on Python 2.5<a class="headerlink" href="#running-tests-on-python-2-5" title="Permalink to this headline">¶</a></h4>
+<p>Python 2.5 lacks SSL support, which is now activated by default in
+<tt class="docutils literal"><span class="pre">pip</span></tt> and <tt class="docutils literal"><span class="pre">distutils</span></tt>.  As a result, <tt class="docutils literal"><span class="pre">tox</span></tt> will not be able to
+download dependecies and fail.</p>
+<p>To work around this issue, use the following invocation of the test
+runner:</p>
+<blockquote>
+<div>env PIP_INSECURE=1 tox -e py25</div></blockquote>
+<p>The workaround comes -of course- at the expense of a security risk:
+you might be downloading and executing Python code from a rogue PyPI
+server...</p>
+</div>
 </div>
 <div class="section" id="organizing-tests">
 <h3>Organizing tests<a class="headerlink" href="#organizing-tests" title="Permalink to this headline">¶</a></h3>
@@ -456,6 +469,27 @@ it may be hard to know to which module the function <cite>count</cite> belongs.
 (Think especially of people who have to bugfix a module they didn&#8217;t
 write in the first place.)</p>
 </li>
+<li><p class="first">When calling methods or functions that accept both positional and
+optional arguments like:</p>
+<div class="highlight-python"><pre>def foo(a, b, key1=defvalue1, key2=defvalue2):</pre>
+</div>
+<p>always specify the argument name for optional arguments, which means
+<strong>do not call</strong>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">value1</span><span class="p">,</span> <span class="n">value2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>but <strong>call instead</strong>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">key1</span><span class="o">=</span><span class="n">value1</span><span class="p">,</span> <span class="n">key2</span><span class="o">=</span><span class="n">value2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><em>Rationale:</em> calling the function with explicit argument names will
+reduce the risk of hit some compatibility issues. It is perfectly
+fine, from the point of view of the developer, to change the
+signature of a function by swapping two different <em>optional</em>
+arguments, so this change can happen any time, although changing
+<em>positional</em> arguments will break backward compatibility, and thus
+it&#8217;s usually well advertised and tested.</p>
+</li>
 <li><p class="first">Use double quotes <tt class="docutils literal"><span class="pre">&quot;</span></tt> to enclose strings representing messages meant
 for human consumption (e.g., log messages, or strings that will be
 printed on the users&#8217; terminal screen).</p>
@@ -571,6 +605,7 @@ answer promptly.</p>
 <li><a class="reference internal" href="#running-the-tests">Running the tests</a><ul>
 <li><a class="reference internal" href="#running-tests-with-nosetests">Running tests with <cite>nosetests</cite></a></li>
 <li><a class="reference internal" href="#running-multiple-tests">Running multiple tests</a></li>
+<li><a class="reference internal" href="#running-tests-on-python-2-5">Running tests on Python 2.5</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#organizing-tests">Organizing tests</a></li>
