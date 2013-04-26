@@ -155,7 +155,8 @@ class SlurmLrms(batch.BatchSystem):
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
-            frontend, transport, accounting_delay, **extra_args)
+            frontend, transport, accounting_delay=accounting_delay,
+            **extra_args)
 
         # backend-specific setup
         self.sbatch = self._get_command_argv('sbatch')
