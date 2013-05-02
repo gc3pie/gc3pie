@@ -98,11 +98,25 @@ a resource. There are three supported authentication types:
   * ``ssh``; use this for resources that will be accessed by opening an SSH connection to the front-end node of a cluster.
   * ``voms-proxy``: uses ``voms-proxy-init`` to generate a proxy; use for resources that require a VOMS-enabled Grid proxy.
   * ``grid-proxy``: uses ``grid-proxy-init`` to generate a proxy; use for resources that require a Grid proxy (but no VOMS extensions).
+  * ``ec2``: use this for a EC2-compatible cloud resource.
 
 For the ``ssh``-type auth, the following keys must be provided:
 
   * ``type``: must be ``ssh``
   * ``username``: must be the username to log in as on the remote machine
+
+For the ``ec2``-type auth, the following keys *can* be provided. If
+they are not found, the value of the corresponding environment
+variable will be used instead, if found, otherwise an error will be
+raised.
+
+  * ``ec2_access_key``: Your personal access key to authenticate
+    against the specific cloud endpoint. If not found, the environment
+    variable ``EC2_ACCESS_KEY`` will be used.
+
+  * ``ec2_secret_key``: Your personal secret key associated with the
+    above ``ec2_access_key``. If not found, the environment
+    variable ``EC2_SECRET_KEY`` will be used.
 
 Any other key/value pair will be ignored.
 
@@ -178,9 +192,19 @@ should be used on which computational resource is defined in the
     type = ssh
     username = rmurri 
 
+*Example 3.* The following configuration section is used to access an
+EC2 resource (access and
+secret keys are of course invalid :))::
+
+    [auth/hobbes]
+    type=ec2
+    ec2_access_key=1234567890qwertyuiopasdfghjklzxc
+    ec2_secret_key=cxzlkjhgfdsapoiuytrewq0987654321
+
+
 .. _slcs: http://www.switch.ch/grid/slcs/index.html
 .. _voms: http://vdt.cs.wisc.edu/components/voms.html
-
+.. _boto: https://github.com/boto/boto
 
 ``resource`` sections
 ---------------------
@@ -203,7 +227,12 @@ value of the ``type`` key:
   * If ``type`` is ``pbs``, then the resource is a `Torque/PBS`_ batch system, to be accessed by an SSH connection to its front-end node.
   * If ``type`` is ``lsf``, then the resource is a `LSF`_ batch system, to be accessed by an SSH connection to its front-end node.
   * If ``type`` is ``slurm``, then the resource is a `SLURM`_ batch system, to be accessed by an SSH connection to its front-end node.
-  * If ``type`` is ``shellcmd``, then the resource is the computer where the GC3Pie script is running and applications are executed by just spawning a local UNIX process.
+  * If ``type`` is ``shellcmd``, then the resource is the computer
+    where the GC3Pie script is running and applications are executed
+    by just spawning a local UNIX process.
+  * If ``type`` is ``ec2+shellcmd``, then the resource is a cloud with
+    EC2-compatible APIs, and applications are run on Virtual Machines
+    spawned on the cloud.
 
 All `[resource/{name}]`:file: sections (except those of ``shellcmd``
 type) *must* reference a valid ``auth/***`` section. Resources of
@@ -215,7 +244,9 @@ type) *must* reference a valid ``auth/***`` section. Resources of
 Some configuration keys are commmon to all resource types:
 
   *  ``type``: Resource type, see above.
-  *  ``auth``: the name of a valid `[auth/{name}]`:file: section; only the authentication section name (after the ``/``) must be specified.
+  *  ``auth``: the name of a valid `[auth/{name}]`:file: section; only
+     the authentication section name (after the ``/``) must be
+     specified.
   *  ``max_cores_per_job``: Maximum number of CPU cores that a job can request; a resource will be dropped during the brokering process if a job requests more cores than this.
   *  ``max_memory_per_core``: Max amount of memory (expressed in GBs) that a job can request.
   *  ``max_walltime``: Maximum job running time (in hours).
@@ -459,6 +490,140 @@ The following optional configuration keys are available in a
     backend. The default value `None` means to use ``$TMPDIR`` or
     `/tmp`:file: (see `tempfile.mkftemp` for details).
 
+``ec2+shellcmd`` resource
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following configuration options are available for a resource of
+type ``ec2+shellcmd``. If these options are omitted, then the default
+of the `boto`_ python library will be used, which at the time of
+writing means use the default region on Amazon.
+
+  * ``ec2_url``: The URL of the EC2 frontend. On a typical OpenStack
+     installation this will look like:
+     ``https://cloud.gc3.uzh.ch:8773/services/Cloud``, while for
+     amazon it's something like
+     ``https://ec2.us-east-1.amazonaws.com`` (this is valid for the
+     zone ``us-east-1`` of course).
+     If no value is specified, the environment variable ``EC2_URL``
+     will be used, and if not found an error is raised.
+
+  * ``ec2_region``: the region you want to access to. Most OpenStack
+    installations only have one region called ``nova``.
+
+  * ``keypair_name``: the name of the keypair to use when creating a
+    new instance on the cloud. If it's not found, a new keypair with
+    this name and the key stored in ``public_key`` will be
+    used. Please note that if the keypair exists already on the cloud
+    but the associated public key is different from the one stored in
+    ``public_key``, then an error is raised and the resource will not
+    be used.
+
+  * ``public_key``: public key to use when creating the
+    keypair. Please note that GC3Pie will assume that the
+    corresponding private key is stored on a file with the same path
+    but without the ``.pub`` extension. This private key is necessary
+    in order to access the virtual machines created on the cloud.
+    **Amazon users**: Please note that Amazon does not accept **DSA**
+    keys; use RSA keys only for Amazon resources.
+
+  * ``vm_auth``: the name of a valid ``auth`` stanza used to connect
+    to the virtual machine.
+
+  * ``instance_type``: the instance type (aka *flavor*, aka *size*)
+    you want to use for your virtual machines by default.
+
+  * ``<application>_instance_type``: you can override the default
+    instance type for a specific application by defining an entry in
+    the configuration file for that application. For example::
+
+        instance_type=m1.tiny
+        gc_gps_instance_type=m1.large
+
+    will use instance type ``m1.large`` for the ``gc_gps`` GC3Pie
+    application, and ``m1.tiny`` for all the other applications.
+
+  * ``image_id``: the **ami-id** of the image you want to
+    use. OpenStack users: please note that the ID you will find on the
+    web interface **is not** the *ami-id*. To get the *ami-id* of an
+    image you have to use the command ``euca-describe-images`` from
+    the ``euca2ools`` package.
+
+    For `Hobbes`_ users: all virtual machines distributed by the GC3
+    team are in this `list of appliances`_ with the corresponding
+    ami-id.
+
+  * ``<application>_image_id``: you can override the default image id
+    for a specific application by defining an entry in the
+    configuration file for that specific application. For example::
+
+      image_id=ami-00000048
+      gc_gps_image_id=ami-0000002a
+
+    will use the image ``ami-0000002a`` for ``gc_gps`` and image
+    ``ami-00000048`` for all other applications.
+
+  * ``security_group_name``: the name of the security group to use. If
+    not found, it will be created using the rules found in
+    ``security_group_rules``. If the security group is found but some
+    of the rules in ``security_group_rules`` are not present, they
+    will be added to the security groups. Please note that if the
+    security group defines some rule which is not listed in
+    ``security_group_rules`` it will **not** be removed from the
+    security group.
+
+  * ``security_group_rules``: comma separated list of security rules
+    the ``security_group`` must have. Each rule is in the form::
+
+      PROTOCOL:PORT_RANGE_START:PORT_RANGE_END:IP_NETWORK
+
+    where:
+
+    -  ``PROTOCOL`` can be one of ``tcp``, ``udp``, ``icmp``
+    - ``PORT_RANGE_START`` and ``PORT_RANGE_END`` are integers and
+      define the range of ports to allow. If ``PROTOCOL`` is ``icmp``
+      please use ``-1`` for both values since in ``icmp`` there is no
+      concept of *port*.
+    - ``IP_NETWORK`` is a range of IP to allow in the form
+      ``A.B.C.D/N``. 
+
+    For instance, to allow access to the virtual machine from *any*
+    machine in the internet you can use::
+
+      tcp:22:22:0.0.0.0/0
+
+    Please note that in order to be able to access the created virtual
+    machines GC3Pie **needs** to be able to connect via ssh, so the
+    above rule is probably necessary in any gc3pie configuration. (of
+    course, you can allow only your IP address or the IPs of your
+    institution)
+
+  * ``vm_pool_max_size``: the maximum number of Virtual Machine GC3Pie
+    will start on this cloud. If `0`, there is no predefined limit to
+    the number of virtual machines GC3Pie will spawn.
+
+  * ``user_data``: the *content* of a script that will run after the
+    startup of the machine. For instance, to automatically upgrade a
+    ubuntu machine after startup you can use::
+
+      user_data=#!/bin/bash
+        aptitude -y update
+        aptitude -y safe-upgrade
+
+    Please note that if you need to span over multiple lines you have
+    to indent the lines after ``user_data``, as any indented line in a
+    configuration file is interpreted as a continuation of the
+    previous line.
+
+  * ``<application>_user_data``: you can override the default userdata
+    for a specific application by defining an entry in the
+    configuration file for that specific application. For example::
+
+      # user_data=
+      warholize_user_data = #!/bin/bash
+        aptitude update && aptitude -y install imagemagick
+
+    will install `imagemagick` only for the `warholize` application.
+
 
 Example ``resource`` sections
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -513,6 +678,43 @@ jobs to the `Grid Engine`_ cluster whose front-end host is
     max_walltime = 2
     ncores = 80
 
+*Example 4.* This configuration stanza defines a resource to submit
+jobs on virtual machines that will be automatically started by GC3Pie
+on `Hobbes`_, the private OpenStack cloud of the University of Zurich::
+
+
+    [resource/hobbes]
+    enabled=yes
+    type=ec2+shellcmd
+    ec2_url=http://hobbes.gc3.uzh.ch:8773/services/Cloud
+    ec2_region=nova
+
+    auth=ec2hobbes
+    # These values my be overwritten by the remote resource
+    max_cores_per_job = 8
+    max_memory_per_core = 2
+    max_walltime = 8
+    max_cores = 32
+    architecture = x86_64
+
+    keypair_name=my_name
+    # If keypair does not exists, a new one will be created starting from
+    # `public_key`. Note that if the desired keypair exists, a check is
+    # done on its fingerprint and a warning is issued if it does not match
+    # with the one in `public_key`
+    public_key=~/.ssh/id_dsa.pub
+    vm_auth=gc3user_ssh
+    instance_type=m1.tiny
+    warholize_instance_type = m1.small
+    image_id=ami-00000048
+    warholize_image_id=ami-00000035
+    security_group_name=gc3pie_ssh
+    security_group_rules=tcp:22:22:0.0.0.0/0, icmp:-1:-1:0.0.0.0/0
+    vm_pool_max_size = 8
+    user_data=
+    warholize_user_data = #!/bin/bash
+        aptitude update && aptitude install -u imagemagick
+
 
 Enabling/disabling selected resources
 -------------------------------------
@@ -534,3 +736,7 @@ private configuration file :file:``~/.gc3/gc3pie.conf``; or the system-wide
 configuration can list all available resources but keep them disabled,
 and users can enable those they prefer in the private configuration
 file.
+
+
+.. _`Hobbes`: http://www.gc3.uzh.ch/infrastructure/hobbes
+.. _`list of appliances`: http://www.gc3.uzh.ch/infrastructure/hobbes/appliances
