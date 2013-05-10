@@ -90,24 +90,15 @@ class GsnowpackApplication(Application):
 
     def __init__(self, sno_files, gsn_ini=None, **extra_args):
 
-        self.station_name = extra_args['station_name']
-        self.time_stamp = extra_args['time_stamp']
-
-        # sno_file_name = basename(sno_files[0])
-
+        self.station_name = extra_args.setdefault('station_name',"imis_noname")
+        self.time_stamp = extra_args.setdefault('time_stamp',"notime")
+        self.sno_files_dir = extra_args.setdefault('sno_files_folder',os.path.dirname(sno_files[0]))
 
         command = """#!/bin/bash
 echo [`date`] Start
 
-# XXX: debug
-echo ------- /DEBUG --------
-env
-echo ------- /DEBUG --------
-
-
 # Verify consistency of data
 GSN_INI='io_gsn.ini'
-# SNO_NAME=`basename $SNO_FILE .sno`
 SNO_NAME="%s"
 SNO_FILE="./output/${SNO_NAME}.sno"
 
@@ -132,14 +123,12 @@ fi
 mkdir output
 mkdir img
 
-export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH
-
 # run snowpack
 echo "Running snowpack... "
-CMD=`snowpack -c $GSN_INI -e NOW -s $SNO_NAME -m operational 2>&1`
+snowpack -c $GSN_INI -e NOW -s $SNO_NAME -m operational 2>&1
 
 if [ $? -ne 0 ]; then
-   echo "Failed running snowpack"
+   echo "[snowpack: failed]"
    exit 1
 fi
 
@@ -150,22 +139,20 @@ if [ ! -e output/${SNO_NAME}.pro ]; then
 fi
 
 echo "Plotting results"
-# Do the plotting part
 # image files will be places in `img` folder
 
-# Creating output folder
-# Execute: create_matrix.sh <file.pro> <output_folder>/
-
-echo "Running: create_matrix.sh output/${SNO_NAME}.pro img/"
+echo "Running: create_plots.sh output/${SNO_NAME}.pro img/"
 create_plots.sh output/${SNO_NAME}.pro img/
 
-# XXX: check this
-# listing produces images
-if [ `ls img/*.png | wc -l` -eq 0 ]; then
-   # there are not .png files in the output folder
-   echo "No images produced."
-   exit 1
-fi
+# Could be check whether images produced are of 0 size
+# in case remove them
+for image in `ls img/*.png` 
+do 
+   if [ -s img/$image ]; then
+      echo "Zero size image $i"
+      rm img/$image
+   fi
+done
 
 # Cleanup unnecessary files
 echo "Cleaning up image folder... "
@@ -176,9 +163,6 @@ echo "[`date`] End"
 """ % (self.station_name)
 
         outputs = [('./img/','images/'),('./output/','output/')]
-
-        # setup input references
-        # inputs = [(sno_file,os.path.join('./output',os.path.basename(sno_file)))]
 
         inputs = []
 
@@ -298,7 +282,7 @@ newly-created jobs so that this limit is never exceeded.
 
         inputfiles = []
 
-        self.sno_files_list = {}
+        # self.sno_files_list = {}
             
         if not os.path.isdir(self.params.sno_files_location):
             gc3libs.log.error("Argument '%s' is not a directory path." % self.params.sno_files_location)
@@ -313,10 +297,11 @@ newly-created jobs so that this limit is never exceeded.
                         extra_args = extra.copy()
 
                         extra_args['station_name'] = os.path.basename(file).split('.sno')[0]
-                        self.sno_files_list[extra_args['station_name']] = dirpath
+                        extra_args['sno_files_folder'] = dirpath
+                        # self.sno_files_list[extra_args['station_name']] = dirpath
 
                         input_list = []
-                        input_list.append(os.path.join(dirpath,file))
+                        # input_list.append(os.path.join(dirpath,file))
 
                         # within 'dirpath' search for all files with
                         # 'station_name' as prefix
@@ -347,91 +332,118 @@ newly-created jobs so that this limit is never exceeded.
     def after_main_loop(self):
         """
         After completion of the SessionBasedScript
-        publish the result images to www_location.
+        publish the result images to self.params.www.
+        
+        The agreed schema is the following:
+        [self.params.www]/[station_name]/[images].png
+        an additional 'time_stamp' file will be placed 
+        in [self.params.www]/[station_name]
+        to alow the web server to publish also the actual
+        time stamp of the displayed images.
         """
-        import glob
+        for task in self.session:
+            if isinstance(task,GsnowpackApplication) and task.execution.returncode == 0:
+                # Only consider successfully terminated tasks
+                _update_original_sno_files(task)
+        
+                if self.params.www:
+                    try:
+                        _publish_data(task, self.params.www)
+                    except OSError, osx:
+                        continue
 
-        if self.params.www:
 
-            # create folder
-            if not os.path.exists(self.params.www):
-                os.makedirs(self.params.www)
+
+def _publish_data(task, www_location):
+    # create folder
+    if not os.path.exists(www_location):
+        os.makedirs(www_location)
             
 
-            # Loop trhough the list of own tasks
-            # extract 'output_dir'
-            # get images from output_dir/img
+    # 1. Loop trhough the list of own tasks
+    # 2. Extract 'output_dir'
+    # 3. Get images from output_dir/img
+    # 4. Update folder in www_location
 
-            for task in self.session:
-                if isinstance(task,GsnowpackApplication) and task.execution.returncode == 0:
-                    station_folder = os.path.join(self.params.www,task.station_name)
-                    time_stamp = task.time_stamp
+    station_folder = os.path.join(www_location,task.station_name)
+    time_stamp = task.time_stamp
+    
+    # gc3libs.log.info("Publishing data for station location %s on timestamp %s" % (station_folder, time_stamp))
 
-                    
-                    # XXX: Aggressive approach
-                    # first clean the existing folder
-                    # then copy fresh data
-                    shutil.rmtree(station_folder)
+    # check if current task has actual images
+    # and if they are not empty file
+    # This extra check is necessary as the plotting routine
+    # can generate emtpy images in case of data corruption
+    if task.get_images() and os.path.exists(station_folder):
+        # if there are images, then clean up the previous
+        # folder (to avoid mixed results)
+        # XXX: is there a better way ? a safer one ?
+        # something like rm 'station_folder/*.png'
+        # gc3libs.log.info("Cleaning up previous folder")
+        try:
+            shutil.rmtree(station_folder)
+        except OSError, osx:
+            gc3libs.log.error("Failed while removing folder %s. Message %s" % (station_folder, str(osx)))
+            return
 
-                    if not os.path.exists(station_folder):
-                        try:
-                            os.makedirs(station_folder)
-                        except OSError, osx:
-                            gc3libs.log.error("Failed while creating www folder '%s'" +
-                                              "Error: %s" % (station_folder, str(osx)))
-                            continue
+    if not os.path.exists(station_folder):
+        try:
+            os.makedirs(station_folder)
+        except OSError, osx:
+            gc3libs.log.error("Failed while creating www folder '%s'" +
+                              "Error: %s" % (station_folder, str(osx)))
+            raise
 
+    for image in task.get_images():
+        # image needs to be renamed with the following schema
+        # [station_name]-[attribute-displayed]-[timestamp]
+        # timestamp format: YYYYMMDD-hhmm
+        
+        try:
+            img_attribute_displayed = os.path.basename(image).split('.')[0]
+        except Exception, ex:
+            # XXX: teoretically all the above statements are safe and should not trigger
+            # any Error
+            # but to be safe...
+            # in case we fail, use default
+            gc3libs.log.error("Exception while setting image attribute" +
+                              "Error type: '%s', message: '%s'" % (type(ex),str(ex)))
+            img_attribute_displayed = ""
 
-                    for image in task.get_images():
-                        # image needs to be renamed with the following schema
-                        # [station_name]-[attribute-displayed]-[timestamp]
-                        # timestamp format: YYYYMMDD-hhmm
-                        
-                        try:
-                            img_attribute_displayed = os.path.basename(image).split('.')[0]
-                        except Exception, ex:
-                            # XXX: teoretically all the above statements are safe and should not trigger
-                            # any Error
-                            # but to be safe...
-                            # in case we fail, use default
-                            gc3libs.log.error("Exception while setting image attribute" +
-                                              "Error type: '%s', message: '%s'" % (type(ex),str(ex)))
-                            img_attribute_displayed = ""
+        image_name = "%s-%s-%s.png" % (task.station_name,img_attribute_displayed,time_stamp)
 
-                        image_name = "%s-%s-%s.png" % (task.station_name,img_attribute_displayed,time_stamp)
+        # gc3libs.log.info("Copying %s in %s" % (image, image_name))
+        # shutil.copy(image,os.path.join(station_folder,image_name))
+        shutil.move(image,os.path.join(station_folder,image_name))
 
-                        shutil.copy(image,os.path.join(station_folder,image_name))
-
-                    # Update timestamp file
-                    time_stamp_file = os.path.join(station_folder,'.time_stamp')
-                    try:
-                        fh = open(time_stamp_file,'wb')
-                        fh.seek(0)
-                        fh.write(time_stamp)
-                        fh.close()
-                    except OSError, osx:
-                        gc3libs.log.error("Failed while updating timestamp file " +
-                                          "'%s'. Error '%s'" % (time_stamp_file, str(osx)))
-
-                    # Update original .sno files with computed one
-                    # remove .sno files from output_dir
-                    if task.station_name in self.sno_files_list.keys():
-                        gc3libs.log.info('Updating sno files for station %s' % task.station_name)
-                        for snofile in task.get_snofiles():
-                            # replace .sno files with new ones
-                            try:
-                                shutil.move(snofile,self.sno_files_list[task.station_name])
-                            except Exception, ex:
-                                gc3libs.log.error("Failed while updating .sno files %s" +
-                                                  "Error type '%s', message '%s'" % (snofile, type(ex), str(ex)))
-                                continue
-
-
-                                
-                   
+        # gc3libs.log.info("Updating timestamp")
+        # Write timestamp file
+        time_stamp_file = os.path.join(station_folder,'.time_stamp')
+        try:
+            fh = open(time_stamp_file,'wb')
+            fh.seek(0)
+            fh.write(time_stamp)
+            fh.close()
+        except OSError, osx:
+            gc3libs.log.error("Failed while updating timestamp file " +
+                              "'%s'. Error '%s'" % (time_stamp_file, str(osx)))
 
 
-                    
-                    
+def _update_original_sno_files(task):
+    # Update original .sno files with computed one
+    # remove .sno files from output_dir
 
+    # XXX: needs to be like an atomic operation
+    # backup original files first
+    # then replace
+    # if failure, then rollback
+
+    gc3libs.log.info('Updating sno files for station %s' % task.station_name)
+    for snofile in task.get_snofiles():
+        # replace .sno files with new ones
+        try:
+            shutil.move(snofile,os.path.join(task.sno_files_folder,os.path.basename(snofile)))
+        except Exception, ex:
+            gc3libs.log.error("Failed while updating .sno files %s. Error type '%s', message '%s'" % (snofile, type(ex), str(ex)))
+            continue
 
