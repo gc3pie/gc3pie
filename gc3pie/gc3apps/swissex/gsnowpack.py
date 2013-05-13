@@ -144,6 +144,10 @@ echo "Plotting results"
 echo "Running: create_plots.sh output/${SNO_NAME}.pro img/"
 create_plots.sh output/${SNO_NAME}.pro img/
 
+# XXX: is it safe ?
+# There could be cases when some images are supposed
+# to be of 0 size ?
+
 # Could be check whether images produced are of 0 size
 # in case remove them
 for image in `ls img/*.png` 
@@ -157,7 +161,7 @@ done
 # Cleanup unnecessary files
 echo "Cleaning up image folder... "
 rm img/*.dat
-rm img/*.dat.gnu
+rm img/*.gnu
 
 echo "[`date`] End"
 """ % (self.station_name)
@@ -346,7 +350,7 @@ newly-created jobs so that this limit is never exceeded.
                 # Only consider successfully terminated tasks
                 _update_original_sno_files(task)
         
-                if self.params.www:
+                if self.params.www and task.get_images():
                     try:
                         _publish_data(task, self.params.www)
                     except OSError, osx:
@@ -355,10 +359,13 @@ newly-created jobs so that this limit is never exceeded.
 
 
 def _publish_data(task, www_location):
+    """
+    Publish images on www_location
+    Removes www_location if new images to be updated
+    """
     # create folder
     if not os.path.exists(www_location):
         os.makedirs(www_location)
-            
 
     # 1. Loop trhough the list of own tasks
     # 2. Extract 'output_dir'
@@ -368,13 +375,11 @@ def _publish_data(task, www_location):
     station_folder = os.path.join(www_location,task.station_name)
     time_stamp = task.time_stamp
     
-    # gc3libs.log.info("Publishing data for station location %s on timestamp %s" % (station_folder, time_stamp))
-
     # check if current task has actual images
     # and if they are not empty file
     # This extra check is necessary as the plotting routine
     # can generate emtpy images in case of data corruption
-    if task.get_images() and os.path.exists(station_folder):
+    if os.path.exists(station_folder):
         # if there are images, then clean up the previous
         # folder (to avoid mixed results)
         # XXX: is there a better way ? a safer one ?
@@ -403,40 +408,43 @@ def _publish_data(task, www_location):
             img_attribute_displayed = os.path.basename(image).split('.')[0]
         except Exception, ex:
             # XXX: teoretically all the above statements are safe and should not trigger
-            # any Error
-            # but to be safe...
-            # in case we fail, use default
+            # any Error. But to be safe...
+            # In case of failure, use default
             gc3libs.log.error("Exception while setting image attribute" +
                               "Error type: '%s', message: '%s'" % (type(ex),str(ex)))
             img_attribute_displayed = ""
 
         image_name = "%s-%s-%s.png" % (task.station_name,img_attribute_displayed,time_stamp)
 
-        # gc3libs.log.info("Copying %s in %s" % (image, image_name))
-        # shutil.copy(image,os.path.join(station_folder,image_name))
-        shutil.move(image,os.path.join(station_folder,image_name))
-
-        # gc3libs.log.info("Updating timestamp")
-        # Write timestamp file
-        time_stamp_file = os.path.join(station_folder,'.time_stamp')
         try:
-            fh = open(time_stamp_file,'wb')
-            fh.seek(0)
-            fh.write(time_stamp)
-            fh.close()
+            shutil.move(image,os.path.join(station_folder,image_name))
         except OSError, osx:
-            gc3libs.log.error("Failed while updating timestamp file " +
-                              "'%s'. Error '%s'" % (time_stamp_file, str(osx)))
-
+            gc3libs.log.error("Failed while moving image file '%s' to '%s'." +
+                              "Error message '%"  % (image, station_folder, str(osx)))
+            continue
+            
+            
+    # Write time_stamp file
+    time_stamp_file = os.path.join(station_folder,'.time_stamp')
+    try:
+        fh = open(time_stamp_file,'wb')
+        fh.seek(0)
+        fh.write(time_stamp)
+        fh.close()
+    except OSError, osx:
+        gc3libs.log.error("Failed while updating timestamp file " +
+                          "'%s'. Error '%s'" % (time_stamp_file, str(osx)))
 
 def _update_original_sno_files(task):
-    # Update original .sno files with computed one
-    # remove .sno files from output_dir
+    """
+    . Update original .sno files with computed one
+    . Remove .sno files from output_dir
 
-    # XXX: needs to be like an atomic operation
-    # backup original files first
-    # then replace
-    # if failure, then rollback
+    XXX: needs to be like an atomic operation
+    backup original files first
+    then replace
+    if failure, then rollback
+    """
 
     gc3libs.log.info('Updating sno files for station %s' % task.station_name)
     for snofile in task.get_snofiles():
