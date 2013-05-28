@@ -1022,7 +1022,7 @@ To get detailed info on a specific command, run:
             except AttributeError:
                 jobname = ''
             
-            rows.append([indent + app.persistent_id,
+            rows.append([indent + str(app.persistent_id),
                          jobname,
                          app.execution.state,
                          app.execution.info])
