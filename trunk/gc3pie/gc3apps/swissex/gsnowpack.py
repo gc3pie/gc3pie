@@ -150,18 +150,20 @@ create_plots.sh output/${SNO_NAME}.pro img/
 
 # Could be check whether images produced are of 0 size
 # in case remove them
-for image in `ls img/*.png` 
+for image in `ls img/*.` 
 do 
-   if [ -s img/$image ]; then
-      echo "Zero size image $i"
-      rm img/$image
-   fi
+  if [ -s img/$image ]; then
+     echo "Zero size image $i" 
+     rm img/$image
+  fi
 done
 
 # Cleanup unnecessary files
 echo "Cleaning up image folder... "
+
 rm img/*.dat
 rm img/*.gnu
+rm img/*.csv
 
 echo "[`date`] End"
 """ % (self.station_name)
