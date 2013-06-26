@@ -243,6 +243,7 @@ specified in the configuration file.
             except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration, ex:
                 gc3libs.log.info(
                     "Submission of job %s delayed" % app)
+                exs.append(ex)
                 break
             except Exception, ex:
                 gc3libs.log.info(
@@ -1177,7 +1178,7 @@ class Engine(object):
 
     # Wrapper methods around `Core` to access the backends directly
     # from the `Engine`.
-    
+
     @utils.same_docstring_as(Core.select_resource)
     def select_resource(self, match):
         return self._core.select_resource(match)
