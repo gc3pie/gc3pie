@@ -338,6 +338,12 @@ e.g. LRMS</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="gc3libs.core.Engine.get_resources">
+<tt class="descname">get_resources</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.get_resources" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return list of resources configured into this <cite>Core</cite> instance.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.core.Engine.kill">
 <tt class="descname">kill</tt><big>(</big><em>task</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.kill" title="Permalink to this definition">¶</a></dt>
 <dd><p>Schedule a task for killing on the next <cite>progress</cite> run.</p>
@@ -370,6 +376,24 @@ taken into account when attempting submission of tasks.</p>
 <dt id="gc3libs.core.Engine.remove">
 <tt class="descname">remove</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.remove" title="Permalink to this definition">¶</a></dt>
 <dd><p>Remove a <cite>task</cite> from the list of tasks managed by this Engine.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.core.Engine.select_resource">
+<tt class="descname">select_resource</tt><big>(</big><em>match</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.select_resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alter the configured list of resources, and retain only those
+that satisfy predicate <cite>match</cite>.</p>
+<p>Argument <cite>match</cite> can be:</p>
+<blockquote>
+<div><ul class="simple">
+<li>either a function (or a generic callable) that is passed
+each <cite>Resource</cite> object in turn, and should return a
+boolean indicating whether the resources should be kept
+(<cite>True</cite>) or not (<cite>False</cite>);</li>
+<li>or it can be a string: only resources whose name matches
+(wildcards <tt class="docutils literal"><span class="pre">*</span></tt> and <tt class="docutils literal"><span class="pre">?</span></tt> are allowed) are retained.</li>
+</ul>
+</div></blockquote>
 </dd></dl>
 
 <dl class="method">
