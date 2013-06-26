@@ -106,6 +106,12 @@ missing or has an unknown/invalid value.</p>
 </dd></dl>
 
 <dl class="exception">
+<dt id="gc3libs.exceptions.CopyError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">CopyError</tt><big>(</big><em>source</em>, <em>destination</em>, <em>ex</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.CopyError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Error copying a file from <cite>source</cite> to <a href="#id1"><span class="problematic" id="id2">`</span></a>destination.</p>
+</dd></dl>
+
+<dl class="exception">
 <dt id="gc3libs.exceptions.DataStagingError">
 <em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">DataStagingError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.DataStagingError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for data staging and movement errors.</p>
@@ -211,6 +217,13 @@ try to be specific about what is wrong on the command line.</p>
 <em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">InvalidValue</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.InvalidValue" title="Permalink to this definition">¶</a></dt>
 <dd><p>A specialization of`InvalidArgument` for cases when the type of
 the passed argument does not match expectations.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.LRMSSkipSubmissionToNextIteration">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">LRMSSkipSubmissionToNextIteration</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.LRMSSkipSubmissionToNextIteration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tells the Engine to skip submission of a job until the next
+iteration.</p>
 </dd></dl>
 
 <dl class="exception">

@@ -71,60 +71,67 @@
 that has been held in Zurich on 1st and 2nd  of October 2012. The
 slides and tutorials are an introduction to the GC3Pie python
 package.</p>
-<p><a class="reference external" href="part01.pdf">Introduction ot GC3Pie</a></p>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part01.pdf">Introduction to GC3Pie</a></p>
 <blockquote>
-<div>Introduction to the software.</div></blockquote>
-<p><a class="reference external" href="part03.pdf">Basic GC3Pie programming</a></p>
+<div>Introduction to the software: what is GC3Pie, what is it for, and
+an overview of its features for writing high-throughput computing
+scripts.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part03.pdf">Basic GC3Pie programming</a></p>
 <blockquote>
 <div>The <cite>Application</cite> class, the smallest building block of
 GC3Pie. Introduction to the concept of Job, states of an
 application and to the <cite>Core</cite> class.</div></blockquote>
-<p><a class="reference external" href="part04.pdf">Application requirements</a></p>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part04.pdf">Application requirements</a></p>
 <blockquote>
 <div>How to define extra requirements for an application, such as the
 minimum amount of memory it will use, the number of cores needed
 or the architecture of the CPUs.</div></blockquote>
-<p><a class="reference external" href="part05.pdf">Managint applications: the SessionBasedScript class</a></p>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part05.pdf">Managing applications: the SessionBasedScript class</a></p>
 <blockquote>
-<div>Introduction to the higest level interface to build applications
-with GC3Pie, the <cite>SessionBasedScript</cite>. Info on how to create
-simple scripts which will take care of the execution of your
-applications, from submission to getting back the results.</div></blockquote>
-<p><a class="reference external" href="part06.pdf">GC3Pie utils</a></p>
+<div>Introduction to the highest-level interface to build applications
+with GC3Pie, the <cite>SessionBasedScript</cite>. Information on how to
+create simple scripts that take care of the execution of your
+applications, from submission to getting back the final results.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part06.pdf">The GC3Utils commands</a></p>
 <blockquote>
-<div>Low level tools to debug your scripts.</div></blockquote>
-<p><a class="reference external" href="part08.pdf">Introduction to Workflows with GC3Pie</a></p>
+<div>Low-level tools to aid debugging the scripts.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part08.pdf">Introduction to Workflows with GC3Pie</a></p>
 <blockquote>
 <div>Using a practical example (the <a class="reference internal" href="#warholize-tutorial"><em>Warholize Tutorial</em></a>) we show
 how workflows are implemented with GC3Pie. The following slides
 will cover in more details the single steps needed to produce a
 complex workflow.</div></blockquote>
-<p><a class="reference external" href="part09.pdf">ParallelTaskCollection</a></p>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part09.pdf">ParallelTaskCollection</a></p>
 <blockquote>
 <div>Description of the <cite>ParallelTaskCollection</cite> class, used to run
 tasks in parallel.</div></blockquote>
-<p><a class="reference external" href="part10.pdf">StagedTaskCollection</a></p>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part10.pdf">StagedTaskCollection</a></p>
 <blockquote>
 <div>Description of the <cite>StagedTaskCollection</cite> class, used to run a
 sequence of a fixed number of jobs.</div></blockquote>
-<p><a class="reference external" href="part11.pdf">SequentialTaskCollection</a></p>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part11.pdf">SequentialTaskCollection</a></p>
 <blockquote>
 <div>Description of the <cite>SequentialTaskCollection</cite> class, used to run a
 sequence of jobs that can be altered during runtime.</div></blockquote>
 </div>
 <div class="section" id="example-scripts">
 <h2>Example scripts<a class="headerlink" href="#example-scripts" title="Permalink to this headline">¶</a></h2>
-<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/examples/gdemo_simple.py">gdemo_simple.py</a></p>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/examples/gdemo_simple.py">gdemo_simple.py</a></p>
 <blockquote>
-<div>Simple script that only uses <cite>Application</cite> and <cite>Core</cite> classes to
-create an application, submit it, check its status and retrieve
-its output.</div></blockquote>
-<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/examples/gdemo_simple_engine.py">gdemo_simple_engine.py</a></p>
+<div>Simplest script you can create. It only uses <cite>Application</cite> and
+<cite>Engine</cite> classes to create an application, submit it, check its
+status and retrieve its output.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/examples/grun.py">grun.py</a></p>
 <blockquote>
-<div>Similar to the previous script, this one uses, instead of <cite>Core</cite>,
-a more high-level class to manage jobs workflow: the <cite>Engine</cite>
-class.</div></blockquote>
-<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/examples/warholize.py">warholize.py</a></p>
+<div>a <cite>SessionBasedScript</cite> that executes its argument as command. It
+can also run it multiple times by wrapping it in a
+ParallelTaskCollection or a SequentialTaskCollection, depending on
+a command line option. Useful for testing a configured resource.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/examples/gdemo_session.py">gdemo_session.py</a></p>
+<blockquote>
+<div>a simple <cite>SessionBasedScript</cite> that sums two values by customizing
+a <cite>SequentialTaskCollection</cite>.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/examples/warholize.py">warholize.py</a></p>
 <blockquote>
 <div>an enhanched version of the <cite>warholize</cite> script proposed in the
 <a class="reference internal" href="#warholize-tutorial"><em>Warholize Tutorial</em></a></div></blockquote>
