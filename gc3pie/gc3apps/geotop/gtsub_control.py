@@ -44,7 +44,7 @@ class GTSubControllApplication(Application):
     # This part starts the different Applications for the
     # specified simulations boxes.
         
-    def __init__(self, jobname, root, sim_box, **extra_args):
+    def __init__(self, root, sim_box, **extra_args):
 
         inputs = dict(self._scan_and_tar(root))
 
@@ -59,7 +59,7 @@ if [ $? -ne 0 ]; then
      echo $RES
      exit 1
 else
-     echo "[ok]"
+     echo "[OK, tar command is present, continue...]"
 fi
 
 # Untar the input files in the 
@@ -67,15 +67,38 @@ tar -xzvf input.tgz -C .
 if [ $? -ne 0 ]; then
      echo "[untar failed]"
      exit 1
+else
+    echo "[OK, untar of the inpit archive command finished successfully, continue...]"
 fi
 # Remove input.tgz 
 rm input.tgz
 
+# create the sym link to the topo directory 
+
+ln -s /home/gc3-user/sim/_master/topo/topo ./sim/_master/topo/topo
+if [ $? -ne 0 ]; then
+     echo "[creating sim link to the available topo directory has failed]"
+     exit 1
+else 
+     echo "[OK, sym link to the available topo data has been created, continue...]"
+fi
+
+# sed the root dir be used
+sed -i -e "s|root=|root='"$PWD"\/'|g" ./src/TopoAPP/topoApp_complete.r
+if [ $? -ne 0 ]; then
+     echo "[sed the ROOT directory in parfile.r failed]"
+     exit 1
+else 
+    echo "[OK, changing the root directory in the parfile.r, continue...]"
+fi
+
 # sed the box sequence to be used
 sed -i -e 's/nboxSeq=/nboxSeq=%s/g' ./src/TopoAPP/parfile.r
 if [ $? -ne 0 ]; then
-     echo "[sed the box sequence failed]"
+     echo "[sed the nboxSeq sequence failed]"
      exit 1
+else 
+    echo "[OK, changing the nboxSeq has been done correctly, continue...]"
 fi
 
 # check R
@@ -85,9 +108,9 @@ if [ $? -ne 0 ]; then
      echo $RES
      exit 1
 else
-     echo "[ok]"
+     echo "[OK, R command is present, starting R script]"
 fi
-R CMD BATCH --no-save --no-restore ./src/TopoAPP/topoApp_complete.r         
+R CMD BATCH --no-save --no-restore ./src/TopoAPP/topoApp_complete.r 
         """ % (sim_box)
 
         # create script file
@@ -98,12 +121,12 @@ R CMD BATCH --no-save --no-restore ./src/TopoAPP/topoApp_complete.r
         os.chmod(fd.name,0777)
 
         inputs[fd.name] = 'gtsub_control.sh'
+        outputs = [('./sim/result/','sim/result')]
 
-        print inputs[GEOTOP_INPUT_ARCHIVE] 
         Application.__init__(self,
                 arguments = ['./gtsub_control.sh'],
                 inputs = inputs,
-                outputs = gc3libs.ANY_OUTPUT,
+                outputs = outputs,
                 stdout = 'gt_sub.log',
                 join=True,
                 **extra_args)
@@ -115,20 +138,23 @@ R CMD BATCH --no-save --no-restore ./src/TopoAPP/topoApp_complete.r
 
     def _scan_and_tar(self, simulation_dir):
         try:
-            gc3libs.log.debug("Compressing input folder '%s'", simulation_dir)
+            gc3libs.log.debug("Compressing input folder in'%s'", simulation_dir)
             cwd = os.getcwd()
             os.chdir(simulation_dir)
-            # check if input archive already present. If so, do not and reuse it
-            if not os.path.isfile(GEOTOP_INPUT_ARCHIVE):
-                tar = tarfile.open(GEOTOP_INPUT_ARCHIVE, "w:gz", dereference=True)
-                tar.add('./src')
-                tar.add('./sim/_master')
-                tar.close()
-                os.chdir(cwd)
-                yield (tar.name, GEOTOP_INPUT_ARCHIVE)
-            else: 
-                yield (GEOTOP_INPUT_ARCHIVE, GEOTOP_INPUT_ARCHIVE)
-    
+            # check if input archive already present. If yes delete and reuse it
+            if os.path.isfile(GEOTOP_INPUT_ARCHIVE):
+                try:
+                    os.remove(GEOTOP_INPUT_ARCHIVE)
+                except OSError, x:
+                    gc3libs.log.error("Failed removing '%s': %s: %s",
+                                  GEOTOP_INPUT_ARCHIVE, x.__class__, x.message)
+                    pass
+            tar = tarfile.open(GEOTOP_INPUT_ARCHIVE, "w:gz", dereference=True)
+            tar.add('./src')
+            tar.add('./sim/_master')
+            tar.close()
+            os.chdir(cwd)
+            yield (tar.name, GEOTOP_INPUT_ARCHIVE)
         except Exception, x:
              gc3libs.log.error("Failed creating input archive '%s': %s: %s",
                                 os.path.join(simulation_dir, GEOTOP_INPUT_ARCHIVE),
@@ -145,7 +171,7 @@ class GTSubControlScript(SessionBasedScript):
     version = '1.0'
     def setup_args(self):
         self.add_param("root", type=existing_directory, help='The root directory where to script is looking for input data')
-        self.add_param("nseq", type=str, help='The sequence number of simulations to be executed')
+        self.add_param("nseq", type=str, help='The sequence number of sim boxes to be executed. Formats: INT:INT | INT,INT,INT,..,INT | INT')
  
     def parse_args(self):
 
@@ -153,7 +179,7 @@ class GTSubControlScript(SessionBasedScript):
         try:
             if self.params.nseq.count(':') == 1:
                 start, end = self.params.nseq.split(':')
-                self.sim_boxes =    range(int(start), int(end))
+                self.sim_boxes = range(int(start), int(end)+1)
             elif self.params.nseq.count(',') >= 1:
                 simulations = self.params.nseq.split(',');
                 self.sim_boxes = [ int(s) for s in simulations ]
@@ -161,22 +187,29 @@ class GTSubControlScript(SessionBasedScript):
                 self.sim_boxes = [ int(self.params.nseq) ];         
         except ValueError:
             raise gc3libs.exceptions.InvalidUsage(
-                "Invalid argument '%s'" 
-                "Parameter substitutions must have one of the following forms:"
-                "a) INT:INT range"
-                "b) INT,INT,INT,..,INT list"
-                "c) INT integer"
-                % (nseq,))
-    
+                "Invalid argument '%s', use on of the following formats: INT:INT | INT,INT,INT,..,INT | INT " % (nseq,))
+     
     def new_tasks(self, extra):
         # create tasks for the specified sumulation boxes
+        
         for sim_box in self.sim_boxes:
+            extra_args = extra.copy()
+            jobname = 'GTSubControl' + '_nboxSeq_' + str(sim_box) ## spcify the jobname by root and number of box seq
+            extra_args['jobname'] = jobname
             yield GTSubControllApplication(
-                'GTSubControl.%s.%d' % (self.params.root, sim_box), # specify the jobname based on the root and sim box number 
-                 os.path.abspath(self.params.root), # pass the simulation box root dir
+                 self.params.root, # pass the simulation box root dir
                  sim_box, # pass the simulation box number 
-                 **extra.copy())
-   
+                 **extra_args)
+
+    #    def terminated(self):
+    #    """ 
+    #    This method is used to print out some statistics 
+    #    at the end of each sumulation
+    #    """
+    #    for task in self.session 
+      
+
+
 ## main: run tests
 
 if "__main__" == __name__:
