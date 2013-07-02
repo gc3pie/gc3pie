@@ -33,6 +33,7 @@ import tarfile
 import gc3libs
 import gc3libs.exceptions
 from gc3libs import Application, Run
+from gc3libs.quantity import Memory, GB
 from gc3libs.cmdline import SessionBasedScript, existing_directory
 from gc3libs.workflow import TaskCollection
 from gc3libs.workflow import ParallelTaskCollection, SequentialTaskCollection
@@ -74,13 +75,21 @@ fi
 rm input.tgz
 
 # create the sym link to the topo directory 
-
-ln -s /home/gc3-user/sim/_master/topo/topo ./sim/_master/topo/topo
-if [ $? -ne 0 ]; then
-     echo "[creating sim link to the available topo directory has failed]"
-     exit 1
+echo -n "Checking Input folder..."
+if [ -d ./sim/_master/topo/topo ]; then
+    echo "[${PWD}/sim/_master/topo/topo]"
+elif [ -d ${HOME}/sim/_master/topo/topo ]; then
+    ln -s ${HOME}/sim/_master/topo/topo ./sim/_master/topo/topo
+    if [ $? -ne 0 ]; then
+        echo "[creating sim link to the available topo directory has failed]"
+        exit 1
+    else 
+        echo "[${HOME}/sim_master/topo/topo]"
+        echo "[OK, sym link to the available topo data has been created, continue...]"
+    fi
 else 
-     echo "[OK, sym link to the available topo data has been created, continue...]"
+    echo "[FAILED: no folder found in './sim/_master/topo/topo' nor in '${HOME}/sim/_master/topo/topo']"
+    exit 1
 fi
 
 # sed the root dir be used
@@ -144,17 +153,22 @@ R CMD BATCH --no-save --no-restore ./src/TopoAPP/topoApp_complete.r
             # check if input archive already present. If yes delete and reuse it
             if os.path.isfile(GEOTOP_INPUT_ARCHIVE):
                 try:
-                    os.remove(GEOTOP_INPUT_ARCHIVE)
+                    gc3libs.log.debug("Tar file is already preset in '%s', reusing it...", simulation_dir)
+                    os.chdir(cwd);
+                    tar_file = simulation_dir + "/" + GEOTOP_INPUT_ARCHIVE
+                    yield (tar_file, GEOTOP_INPUT_ARCHIVE)
+                    # os.remove(GEOTOP_INPUT_ARCHIVE)
                 except OSError, x:
                     gc3libs.log.error("Failed removing '%s': %s: %s",
                                   GEOTOP_INPUT_ARCHIVE, x.__class__, x.message)
                     pass
-            tar = tarfile.open(GEOTOP_INPUT_ARCHIVE, "w:gz", dereference=True)
-            tar.add('./src')
-            tar.add('./sim/_master')
-            tar.close()
-            os.chdir(cwd)
-            yield (tar.name, GEOTOP_INPUT_ARCHIVE)
+            else: 
+                tar = tarfile.open(GEOTOP_INPUT_ARCHIVE, "w:gz", dereference=True)
+                tar.add('./src')
+                tar.add('./sim/_master')
+                tar.close()
+                os.chdir(cwd)
+                yield (tar.name, GEOTOP_INPUT_ARCHIVE)
         except Exception, x:
              gc3libs.log.error("Failed creating input archive '%s': %s: %s",
                                 os.path.join(simulation_dir, GEOTOP_INPUT_ARCHIVE),
@@ -169,6 +183,16 @@ class GTSubControlScript(SessionBasedScript):
     corrisponding to a single simulation box    
     """
     version = '1.0'
+
+    def setup_options(self):
+
+        self.add_param("-m", "--memory-per-core", dest="memory_per_core",
+                       type=Memory, default=7*GB,  # 2 GB
+                       metavar="GIGABYTES",
+                       help="Set the amount of memory required per execution core; default: %(default)s."
+                       " Specify this as an integral number followed by a unit, e.g.,"
+                       " '512MB' or '4GB'.")
+
     def setup_args(self):
         self.add_param("root", type=existing_directory, help='The root directory where to script is looking for input data')
         self.add_param("nseq", type=str, help='The sequence number of sim boxes to be executed. Formats: INT:INT | INT,INT,INT,..,INT | INT')
@@ -197,17 +221,18 @@ class GTSubControlScript(SessionBasedScript):
             jobname = 'GTSubControl' + '_nboxSeq_' + str(sim_box) ## spcify the jobname by root and number of box seq
             extra_args['jobname'] = jobname
             yield GTSubControllApplication(
-                 self.params.root, # pass the simulation box root dir
-                 sim_box, # pass the simulation box number 
+                self.params.root, # pass the simulation box root dir
+                sim_box, # pass the simulation box number 
                  **extra_args)
 
-    #    def terminated(self):
-    #    """ 
-    #    This method is used to print out some statistics 
-    #    at the end of each sumulation
-    #    """
-    #    for task in self.session 
-      
+    def after_main_loop(self):
+
+        """ 
+        This method is used to print out some info 
+        At the end of each sumulation
+        """
+        for task in self.session:
+           sys.stdout.write('Application %s terminated with execution exicode %d \n' % (task.jobname, task.execution.returncode))   
 
 
 ## main: run tests
