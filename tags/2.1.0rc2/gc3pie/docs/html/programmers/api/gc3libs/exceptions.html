@@ -1,0 +1,390 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.exceptions &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../index.html" />
+    <link rel="next" title="gc3libs.optimizer" href="optimizer.html" />
+    <link rel="prev" title="gc3libs.debug" href="debug.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="optimizer.html" title="gc3libs.optimizer"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="debug.html" title="gc3libs.debug"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.exceptions">
+<span id="gc3libs-exceptions"></span><h1><cite>gc3libs.exceptions</cite><a class="headerlink" href="#module-gc3libs.exceptions" title="Permalink to this headline">¶</a></h1>
+<p>Exceptions specific to the <cite>gc3libs</cite> package.</p>
+<p>In addition to the exceptions listed here, <a class="reference internal" href="../gc3libs.html#module-gc3libs" title="gc3libs"><tt class="xref py py-mod docutils literal"><span class="pre">gc3libs</span></tt></a> functions
+try to use Python builtin exceptions with the same meaning they have
+in core Python, namely:</p>
+<ul class="simple">
+<li><cite>TypeError</cite> is raised when an argument to a function or method has an
+incompatible type or does not implement the required protocol (e.g.,
+a number is given where a sequence is expected).</li>
+<li><cite>ValueError`is  raised when an argument to a function or method has
+the correct type, but fails to satisfy other constraints in the
+function contract (e.g., a positive number is required, and `-1</cite> is
+passed instead).</li>
+<li><cite>AssertionError</cite> is raised when some internal assumption regarding
+state or function/method calling contract is violated.  Informally,
+this indicates a bug in the software.</li>
+</ul>
+<dl class="exception">
+<dt id="gc3libs.exceptions.ApplicationDescriptionError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">ApplicationDescriptionError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.ApplicationDescriptionError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when the dumped description on a given Application produces something that the LRMS backend cannot process.
+As an example, for arc backends, this error is raised when the parsing of the Application&#8217;s XRSL fails</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.AuthError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">AuthError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.AuthError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for Auth-related errors.</p>
+<p>Should <em>never</em> be instanciated: create a specific error class
+describing the actual error condition.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.ConfigurationError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">ConfigurationError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.ConfigurationError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when the configuration file (or parts of it) could not be
+read/parsed.  Also used to signal that a required parameter is
+missing or has an unknown/invalid value.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.CopyError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">CopyError</tt><big>(</big><em>source</em>, <em>destination</em>, <em>ex</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.CopyError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Error copying a file from <cite>source</cite> to <a href="#id1"><span class="problematic" id="id2">`</span></a>destination.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.DataStagingError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">DataStagingError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.DataStagingError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for data staging and movement errors.</p>
+<p>Should <em>never</em> be instanciated: create a specific error class
+describing the actual error condition.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.DetachedFromGridError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">DetachedFromGridError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.DetachedFromGridError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when a method (other than <tt class="xref py py-meth docutils literal"><span class="pre">attach()</span></tt>) is called on
+a detached <cite>Task</cite> instance.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.DuplicateEntryError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">DuplicateEntryError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.DuplicateEntryError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised by <cite>Application.__init__</cite> if not all (local or remote)
+entries in the input or output files are distinct.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.Error">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">Error</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.Error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for all error-level exceptions in GC3Pie.</p>
+<p>Generally, this indicates a non-fatal error: depending on the
+nature of the task, steps could be taken to continue, but users
+<em>must</em> be aware that an error condition occurred, so the message
+is sent to the logs at the ERROR level.</p>
+<p>Exceptions indicating an error condition after which the program
+cannot continue and should immediately stop, should use the
+<a class="reference internal" href="#gc3libs.exceptions.FatalError" title="gc3libs.exceptions.FatalError"><tt class="xref py py-class docutils literal"><span class="pre">FatalError</span></tt></a> base class.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.FatalError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">FatalError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.FatalError" title="Permalink to this definition">¶</a></dt>
+<dd><p>A fatal error: execution cannot continue and program should report
+to user and then stop.</p>
+<p>The message is sent to the logs at CRITICAL level
+when the exception is first constructed.</p>
+<p>This is the base class for all fatal exceptions.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.InputFileError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">InputFileError</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.InputFileError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when an input file is specified, which does not exist or
+cannot be read.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.InternalError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">InternalError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.InternalError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when some function cannot fulfill its duties, for reasons
+that do not depend on the library client code.  For instance, when
+a response string gotten from an external command cannot be parsed
+as expected.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.InvalidArgument">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">InvalidArgument</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.InvalidArgument" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when the arguments passed to a function do not honor some
+required contract.  For instance, either one of two optional
+arguments must be provided, but none of them was.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.InvalidOperation">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">InvalidOperation</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.InvalidOperation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when an operation is attempted, that is not considered
+valid according to the system state.  For instance, trying to
+retrieve the output of a job that has not yet been submitted.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.InvalidResourceName">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">InvalidResourceName</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.InvalidResourceName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised to signal that no computational resource with the given
+name is defined in the configuration file.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.InvalidType">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">InvalidType</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.InvalidType" title="Permalink to this definition">¶</a></dt>
+<dd><p>A specialization of`InvalidArgument` for cases when the type of
+the passed argument does not match expectations.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.InvalidUsage">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">InvalidUsage</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.InvalidUsage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when a command is not provided all required arguments on
+the command line, or the arguments do not match the expected
+syntax.</p>
+<p>Since the exception message is the last thing a user will see,
+try to be specific about what is wrong on the command line.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.InvalidValue">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">InvalidValue</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.InvalidValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>A specialization of`InvalidArgument` for cases when the type of
+the passed argument does not match expectations.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.LRMSSkipSubmissionToNextIteration">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">LRMSSkipSubmissionToNextIteration</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.LRMSSkipSubmissionToNextIteration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tells the Engine to skip submission of a job until the next
+iteration.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.LoadError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">LoadError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.LoadError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised upon errors loading a job from the persistent storage.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.NoConfigurationFile">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">NoConfigurationFile</tt><big>(</big><em>msg</em>, <em>do_log=True</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.NoConfigurationFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when the configuration file cannot be read (e.g., does not
+exist or has wrong permissions), or cannot be parsed (e.g., is
+malformed).</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.NoResources">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">NoResources</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.NoResources" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised to signal that no resources are defined, or that none are
+compatible with the request.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.OutputNotAvailableError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">OutputNotAvailableError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.OutputNotAvailableError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised upon attempts to retrieve the output for jobs that are
+still in <cite>NEW</cite> or <cite>SUBMITTED</cite> state.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.RecoverableDataStagingError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">RecoverableDataStagingError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.RecoverableDataStagingError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when transient problems with copying data to or from the
+remote execution site occurred.</p>
+<p>This error is considered to be transient (e.g., network
+connectivity interruption), so trying again at a later time could
+solve the problem.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.RecoverableError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">RecoverableError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.RecoverableError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to mark transient errors: retrying the same action at a later
+time could succeed.</p>
+<p>This exception should <em>never</em> be instanciated: it is only to be used
+in <cite>except</cite> clauses to catch &#8220;try again&#8221; situations.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.TaskError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">TaskError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.TaskError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic error condition in a <cite>Task</cite> object.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.UnexpectedStateError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">UnexpectedStateError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.UnexpectedStateError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised by <tt class="xref py py-meth docutils literal"><span class="pre">Task.progress()</span></tt> when a job lands in <cite>STOPPED</cite>
+or <cite>TERMINATED</cite> state.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.UnknownJob">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">UnknownJob</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.UnknownJob" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when an operation is attempted on a task, which is
+unknown to the remote server or backend.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.UnknownJobState">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">UnknownJobState</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.UnknownJobState" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when a job state is gotten from the Grid middleware, that
+is not handled by the GC3Libs code.  Might actually mean that
+there is a version mismatch between GC3Libs and the Grid
+middleware used.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.UnrecoverableDataStagingError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">UnrecoverableDataStagingError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.UnrecoverableDataStagingError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when problems with copying data to or from the remote
+execution site occurred.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.UnrecoverableError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">UnrecoverableError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.UnrecoverableError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to mark permanent errors: there&#8217;s no point in retrying the same
+action at a later time, because it will yield the same error again.</p>
+<p>This exception should <em>never</em> be instanciated: it is only to be used
+in <cite>except</cite> clauses to exclude &#8220;try again&#8221; situations.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="debug.html"
+                        title="previous chapter"><cite>gc3libs.debug</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="optimizer.html"
+                        title="next chapter"><cite>gc3libs.optimizer</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="optimizer.html" title="gc3libs.optimizer"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="debug.html" title="gc3libs.debug"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

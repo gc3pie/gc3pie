@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.application.apppot &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../../index.html" />
+    <link rel="next" title="gc3libs.application.codeml" href="codeml.html" />
+    <link rel="prev" title="gc3libs.application" href="../application.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="codeml.html" title="gc3libs.application.codeml"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../application.html" title="gc3libs.application"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.application.apppot">
+<span id="gc3libs-application-apppot"></span><h1><cite>gc3libs.application.apppot</cite><a class="headerlink" href="#module-gc3libs.application.apppot" title="Permalink to this headline">¶</a></h1>
+<p>Support for AppPot-hosted applications.</p>
+<p>For more details about AppPot, visit:
+&lt;<a class="reference external" href="http://apppot.googlecode.com">http://apppot.googlecode.com</a>&gt;</p>
+<dl class="class">
+<dt id="gc3libs.application.apppot.AppPotApplication">
+<em class="property">class </em><tt class="descclassname">gc3libs.application.apppot.</tt><tt class="descname">AppPotApplication</tt><big>(</big><em>arguments</em>, <em>inputs</em>, <em>outputs</em>, <em>output_dir</em>, <em>apppot_img=None</em>, <em>apppot_changes=None</em>, <em>apppot_tag='ENV/APPPOT-0.21'</em>, <em>apppot_extra=</em><span class="optional">[</span><span class="optional">]</span>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.application.apppot.AppPotApplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for AppPot-hosted applications.
+Provides the same interface as the base <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt>
+and runs the specified command in an AppPot instance.</p>
+<p>In addition to the standard <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> keyword
+arguments, the following ones can be given to steer the AppPot
+execution:</p>
+<ul class="simple">
+<li><cite>apppot_img</cite>: Path or URL to the AppPot system image to use.
+If <tt class="docutils literal"><span class="pre">None</span></tt> (default), then the default AppPot system image
+on the remote system is used.</li>
+<li><cite>apppot_changes</cite>: Path or URL to an AppPot changes file to be merged
+at system startup.</li>
+<li><cite>apppot_tag</cite>: ARC RTE to use for submission of this AppPot job.</li>
+<li><cite>apppot_extra</cite>: List of additional UML boot command-line arguments.
+(Passed to the AppPot instance via <tt class="docutils literal"><span class="pre">apppot-start</span></tt>&#8216;s <tt class="docutils literal"><span class="pre">--extra</span></tt> option.)</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../application.html"
+                        title="previous chapter"><cite>gc3libs.application</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="codeml.html"
+                        title="next chapter"><cite>gc3libs.application.codeml</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="codeml.html" title="gc3libs.application.codeml"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../application.html" title="gc3libs.application"
+             >previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

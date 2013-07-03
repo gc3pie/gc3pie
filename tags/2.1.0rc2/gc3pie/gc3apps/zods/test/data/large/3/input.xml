@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<input xsi:noNamespaceSchemaLocation="simulator.xsd" print_level="5" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" job_name="cuau">
+  <reference_intensities file_name="ref_int.xml" file_format="xml"></reference_intensities>
+  <average_structure>
+    <file format="cif" name="hb2966.cif" />
+    <!--<refinable_parameters><parameter parameters="zF1"><coordinate coordinate="c" atom="F1" /></parameter></refinable_parameters>-->
+    <!--<atomic_displacement><adp atom="F1" /></atomic_displacement>-->
+    <!--<split_positions xmlns="http://www.w3schools.com"><split atom="" /></split_positions>-->
+  </average_structure>
+  <disentanglement translational_symmetry_directions="">
+    <user_defined>
+      <chemical_units_list>
+        <chemical_unit atom_list="$CIF_A_-1" label="Br_1" probability="0.5" />
+        <chemical_unit atom_list="$CIF_B_-2" label="big_1" probability="0.5" />
+      </chemical_units_list>
+      <sets_of_alternatives_list>
+        <set_of_alternatives label="soa_br" chemical_units_list="Br_1;Br_1,(1-X,Y,-Z+1/2)"></set_of_alternatives>
+        <set_of_alternatives label="soa_big" chemical_units_list="big_1;big_1,(2-X,Y,-Z-1/2)"></set_of_alternatives>
+      </sets_of_alternatives_list>
+    </user_defined>
+  </disentanglement>
+  <disordered_crystal_simulation>
+    <default_crystal_builder n_MC_cycles="1" crystal_dimensions="4,4,1" />
+  </disordered_crystal_simulation>
+  <interactions></interactions>
+  <independent_parameters>
+    <parameter label="p1" value="0.25" />
+  </independent_parameters>
+  <dependent_parameters>
+    <parameter label="p2">
+      <formula>-${p1}</formula>
+    </parameter>
+  </dependent_parameters>
+  <intensity_calculation lot_dimensions="1,1,1" n_lots="1" form_factor_type="x-ray" extract_average="false" />
+  <run_type>
+    <calculate_intensities n_clones="4">
+      <output>
+        <crystals output_file_formats="xml,pdb,xyz" />
+        <intensities output_file_formats="xml,vtk" print_clone_intensities="false" />
+      </output>
+    </calculate_intensities>
+  </run_type>
+</input>

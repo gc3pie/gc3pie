@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.persistence.idfactory &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../../index.html" />
+    <link rel="next" title="gc3libs.persistence.serialization" href="serialization.html" />
+    <link rel="prev" title="gc3libs.persistence.filesystem" href="filesystem.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="serialization.html" title="gc3libs.persistence.serialization"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="filesystem.html" title="gc3libs.persistence.filesystem"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.persistence.idfactory">
+<span id="gc3libs-persistence-idfactory"></span><h1><cite>gc3libs.persistence.idfactory</cite><a class="headerlink" href="#module-gc3libs.persistence.idfactory" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="gc3libs.persistence.idfactory.Id">
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.idfactory.</tt><tt class="descname">Id</tt><a class="headerlink" href="#gc3libs.persistence.idfactory.Id" title="Permalink to this definition">¶</a></dt>
+<dd><p>An automatically-generated &#8220;unique identifier&#8221; (a string-like object).
+The unique object identifier has the form &#8220;PREFIX.NNN&#8221;
+where &#8220;NNN&#8221; is a decimal number, and &#8220;PREFIX&#8221; defaults to the
+object class name but can be overridden in the <cite>Id</cite>
+constructor.</p>
+<p>Two object IDs can be compared iff they have the same prefix; in
+which case, the result of the comparison is the same as comparing
+the two sequence numbers.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.persistence.idfactory.IdFactory">
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.idfactory.</tt><tt class="descname">IdFactory</tt><big>(</big><em>prefix=None</em>, <em>next_id_fn=None</em>, <em>id_class=&lt;class 'gc3libs.persistence.idfactory.Id'&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.idfactory.IdFactory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Automatically generate a &#8220;unique identifier&#8221; (of class <cite>Id</cite>).
+Object identifiers are temporally unique: no identifier will
+(ever) be re-used, even in different invocations of the program.</p>
+<dl class="method">
+<dt id="gc3libs.persistence.idfactory.IdFactory.new">
+<tt class="descname">new</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.idfactory.IdFactory.new" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new &#8220;unique identifier&#8221; instance (a string).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.persistence.idfactory.IdFactory.reserve">
+<tt class="descname">reserve</tt><big>(</big><em>n</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.idfactory.IdFactory.reserve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pre-allocate <cite>n</cite> IDs.  Successive invocations of the <cite>Id</cite>
+constructor will return one of the pre-allocated, with a
+potential speed gain if many <cite>Id</cite> objects are constructed in a
+loop.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.persistence.idfactory.JobIdFactory">
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.idfactory.</tt><tt class="descname">JobIdFactory</tt><big>(</big><em>next_id_fn=None</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.idfactory.JobIdFactory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override <a class="reference internal" href="#gc3libs.persistence.idfactory.IdFactory" title="gc3libs.persistence.idfactory.IdFactory"><tt class="xref py py-class docutils literal"><span class="pre">IdFactory</span></tt></a> behavior and generate IDs starting with a
+lowercase <tt class="docutils literal"><span class="pre">job</span></tt> prefix.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="filesystem.html"
+                        title="previous chapter"><cite>gc3libs.persistence.filesystem</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="serialization.html"
+                        title="next chapter"><cite>gc3libs.persistence.serialization</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="serialization.html" title="gc3libs.persistence.serialization"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="filesystem.html" title="gc3libs.persistence.filesystem"
+             >previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

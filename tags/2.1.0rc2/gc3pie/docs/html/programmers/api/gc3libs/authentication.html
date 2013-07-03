@@ -1,0 +1,213 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.authentication &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../index.html" />
+    <link rel="next" title="gc3libs.authentication.grid" href="authentication/grid.html" />
+    <link rel="prev" title="gc3libs.application.turbomole" href="application/turbomole.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="authentication/grid.html" title="gc3libs.authentication.grid"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="application/turbomole.html" title="gc3libs.application.turbomole"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.authentication">
+<span id="gc3libs-authentication"></span><h1><cite>gc3libs.authentication</cite><a class="headerlink" href="#module-gc3libs.authentication" title="Permalink to this headline">¶</a></h1>
+<p>Authentication support for the GC3Libs.</p>
+<dl class="class">
+<dt id="gc3libs.authentication.Auth">
+<em class="property">class </em><tt class="descclassname">gc3libs.authentication.</tt><tt class="descname">Auth</tt><big>(</big><em>config</em>, <em>auto_enable</em><big>)</big><a class="headerlink" href="#gc3libs.authentication.Auth" title="Permalink to this definition">¶</a></dt>
+<dd><p>A mish-mash of authorization functions.</p>
+<p>This class actually serves the purposes of:</p>
+<ul class="simple">
+<li>a registry of authorization &#8216;types&#8217;, mapping internally-assigned
+names to Python classes;</li>
+<li>storage for the configuration information (which can be
+arbitrary, but should probably be read off a configuration
+file);</li>
+<li>a factory, returning a &#8216;SomeAuth&#8217; object through which clients
+can deal with actual authorization issues (like checking if the
+authorization credentials are valid and getting/renewing them).</li>
+<li>a cache, that tries to avoid expensive re-initializations of
+<cite>Auth</cite> objects by allowing only one live instance per type, and
+returning it when requested.</li>
+</ul>
+<div class="admonition-fixme admonition">
+<p class="first admonition-title">FIXME</p>
+<p>There are several problems with this approach:</p>
+<ul class="last simple">
+<li>the configuration is assumed <em>static</em> and cannot be changed after
+the <cite>Auth</cite> instance is constructed.</li>
+<li>there is no communication between the client class and the
+<cite>Auth</cite> classes.</li>
+<li>there is no control over the lifetime of the cache; at a
+minimum, it should be settable per-auth-type.</li>
+<li>I&#8217;m unsure whether the mapping of &#8216;type names&#8217; (as in the
+<cite>type=...</cite> keyword in the config file) to Python classes
+belongs in a generic factory method or in the configuration
+file reader.  (Probably the former, so the code here would
+actually be right.)</li>
+<li>The whole <cite>auto_enable</cite> stuff really belongs to the user-interface
+part, which is also hard-coded in the auth classes, and should not be.</li>
+</ul>
+</div>
+<dl class="method">
+<dt id="gc3libs.authentication.Auth.add_params">
+<tt class="descname">add_params</tt><big>(</big><em>**params</em><big>)</big><a class="headerlink" href="#gc3libs.authentication.Auth.add_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the specified keyword arguments as initialization
+parameters to all the configured auth classes.</p>
+<p>Parameters that have already been specified are silently
+overwritten.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.authentication.Auth.get">
+<tt class="descname">get</tt><big>(</big><em>auth_name</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.authentication.Auth.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an instance of the <cite>Auth</cite> class corresponding to the
+given <cite>auth_name</cite>, or raise an exception if instanciating the
+same class has given an unrecoverable exception in past calls.</p>
+<p>Additional keyword arguments are passed unchanged to the class
+constructor and can override values specified at configuration time.</p>
+<p>Instances are remembered for the lifetime of the program; if
+an instance of the given class is already present in the
+cache, that one is returned; otherwise, an instance is
+contructed with the given parameters.</p>
+<div class="admonition caution">
+<p class="first admonition-title">Caution</p>
+<p class="last">The <cite>params</cite> keyword arguments are only used if a new
+instance is constructed and are silently ignored if the
+cached instance is returned.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.authentication.NoneAuth">
+<em class="property">class </em><tt class="descclassname">gc3libs.authentication.</tt><tt class="descname">NoneAuth</tt><big>(</big><em>**auth</em><big>)</big><a class="headerlink" href="#gc3libs.authentication.NoneAuth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auth proxy to use when no auth is needed.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="application/turbomole.html"
+                        title="previous chapter"><cite>gc3libs.application.turbomole</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="authentication/grid.html"
+                        title="next chapter"><cite>gc3libs.authentication.grid</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="authentication/grid.html" title="gc3libs.authentication.grid"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="application/turbomole.html" title="gc3libs.application.turbomole"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>
