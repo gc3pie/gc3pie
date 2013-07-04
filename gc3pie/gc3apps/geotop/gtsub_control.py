@@ -32,9 +32,10 @@ import tarfile
 
 import gc3libs
 import gc3libs.exceptions
-from gc3libs import Application, Run
+from gc3libs.utils import fgrep
+from gc3libs import Application, Run, Task
 from gc3libs.quantity import Memory, GB
-from gc3libs.cmdline import SessionBasedScript, existing_directory
+from gc3libs.cmdline import SessionBasedScript, existing_directory, existing_file
 from gc3libs.workflow import TaskCollection
 from gc3libs.workflow import ParallelTaskCollection, SequentialTaskCollection
 
@@ -44,10 +45,8 @@ class GTSubControllApplication(Application):
         
     # This part starts the different Applications for the
     # specified simulations boxes.
-        
-    def __init__(self, root, sim_box, **extra_args):
 
-        inputs = dict(self._scan_and_tar(root))
+    def __init__(self, sim_box, inputs, **extra_args):
 
         # prepare execution script from command
         execution_script = """
@@ -95,11 +94,23 @@ fi
 # sed the root dir be used
 sed -i -e "s|root=|root='"$PWD"\/'|g" ./src/TopoAPP/topoApp_complete.r
 if [ $? -ne 0 ]; then
-     echo "[sed the ROOT directory in parfile.r failed]"
+     echo "[sed the ROOT directory in topoApp_complete.r failed]"
      exit 1
 else 
-    echo "[OK, changing the root directory in the parfile.r, continue...]"
+    echo "[OK, changing the root directory in the topoApp_complete.r, continue...]"
 fi
+
+# copy parfile if it is present in the root directory 
+if [ -f ./parfile.r ]; then
+        echo "[It seems that a different parfile has been passed to the application, replacing the current one...]" 
+        cp ./parfile.r ./src/TopoAPP/ 
+        if [ $? -ne 0 ]; then
+            echo "[Some problems copying the specified parfile.r occured, please check...]"
+            exit 1
+        fi
+else
+    echo "[No paramter file has been specified, using the one passed through the input.tgz file]"
+fi 
 
 # sed the box sequence to be used
 sed -i -e 's/nboxSeq=/nboxSeq=%s/g' ./src/TopoAPP/parfile.r
@@ -130,7 +141,11 @@ R CMD BATCH --no-save --no-restore ./src/TopoAPP/topoApp_complete.r
         os.chmod(fd.name,0777)
 
         inputs[fd.name] = 'gtsub_control.sh'
-        outputs = [('./sim/result/','sim/result')]
+
+        outputs = {}
+        outputs['./sim/result/'] = 'sim/result'
+        outputs['./topoApp_complete.r.Rout'] = 'topoApp_complete.r.Rout'
+        outputs ['./src/TopoAPP/parfile.r'] = 'parfile.r'
 
         Application.__init__(self,
                 arguments = ['./gtsub_control.sh'],
@@ -140,40 +155,6 @@ R CMD BATCH --no-save --no-restore ./src/TopoAPP/topoApp_complete.r
                 join=True,
                 **extra_args)
 
-        """
-        Prepare the input directory making an archive
-        and sending it as a input to the virtual machine
-        """
-
-    def _scan_and_tar(self, simulation_dir):
-        try:
-            gc3libs.log.debug("Compressing input folder in'%s'", simulation_dir)
-            cwd = os.getcwd()
-            os.chdir(simulation_dir)
-            # check if input archive already present. If yes delete and reuse it
-            if os.path.isfile(GEOTOP_INPUT_ARCHIVE):
-                try:
-                    gc3libs.log.debug("Tar file is already preset in '%s', reusing it...", simulation_dir)
-                    os.chdir(cwd);
-                    tar_file = simulation_dir + "/" + GEOTOP_INPUT_ARCHIVE
-                    yield (tar_file, GEOTOP_INPUT_ARCHIVE)
-                    # os.remove(GEOTOP_INPUT_ARCHIVE)
-                except OSError, x:
-                    gc3libs.log.error("Failed removing '%s': %s: %s",
-                                  GEOTOP_INPUT_ARCHIVE, x.__class__, x.message)
-                    pass
-            else: 
-                tar = tarfile.open(GEOTOP_INPUT_ARCHIVE, "w:gz", dereference=True)
-                tar.add('./src')
-                tar.add('./sim/_master')
-                tar.close()
-                os.chdir(cwd)
-                yield (tar.name, GEOTOP_INPUT_ARCHIVE)
-        except Exception, x:
-             gc3libs.log.error("Failed creating input archive '%s': %s: %s",
-                                os.path.join(simulation_dir, GEOTOP_INPUT_ARCHIVE),
-                                x.__class__,x.message)
-             raise
 
 class GTSubControlScript(SessionBasedScript):
     """
@@ -187,11 +168,16 @@ class GTSubControlScript(SessionBasedScript):
     def setup_options(self):
 
         self.add_param("-m", "--memory-per-core", dest="memory_per_core",
-                       type=Memory, default=7*GB,  # 2 GB
-                       metavar="GIGABYTES",
-                       help="Set the amount of memory required per execution core; default: %(default)s."
-                       " Specify this as an integral number followed by a unit, e.g.,"
-                       " '512MB' or '4GB'.")
+                        type=Memory, default=7*GB,  # 2 GB
+                        metavar="GIGABYTES",
+                        help="Set the amount of memory required per execution core; default: %(default)s."
+                        " Specify this as an integral number followed by a unit, e.g.,"
+                        " '512MB' or '4GB'.")
+
+        self.add_param("-p", "--parameter-file", dest="par_file", 
+                        type=existing_file,
+                        default=None, 
+                        help="Indicate the parameter file to be used")
 
     def setup_args(self):
         self.add_param("root", type=existing_directory, help='The root directory where to script is looking for input data')
@@ -212,28 +198,122 @@ class GTSubControlScript(SessionBasedScript):
         except ValueError:
             raise gc3libs.exceptions.InvalidUsage(
                 "Invalid argument '%s', use on of the following formats: INT:INT | INT,INT,INT,..,INT | INT " % (nseq,))
-     
-    def new_tasks(self, extra):
-        # create tasks for the specified sumulation boxes
+
         
+    "Prepare the input tarball"
+    def _scan_and_tar(self, simulation_dir):
+        try:
+            gc3libs.log.debug("Compressing input folder in'%s' ", simulation_dir)
+            cwd = os.getcwd()
+            os.chdir(simulation_dir)
+            # check if input archive already present. If yes delete and reuse it
+            if os.path.isfile(GEOTOP_INPUT_ARCHIVE):
+                try:
+                    os.remove(GEOTOP_INPUT_ARCHIVE)
+                except OSError, x:
+                    gc3libs.log.error("Failed removing '%s': %s: %s",
+                                      GEOTOP_INPUT_ARCHIVE, x.__class__, x.message)
+                    pass
+            tar = tarfile.open(GEOTOP_INPUT_ARCHIVE, "w:gz", dereference=True)
+            tar.add('./src')
+            tar.add('./sim/_master')
+            tar.close()
+            os.chdir(cwd)
+            yield (tar.name, GEOTOP_INPUT_ARCHIVE)
+        except Exception, x:
+             gc3libs.log.error("Failed creating input archive '%s': %s: %s",
+                                os.path.join(simulation_dir, GEOTOP_INPUT_ARCHIVE),
+                                x.__class__,x.message)
+             raise 
+
+
+    """
+    Get the strings needed for the naming of the output directory.
+    """
+    def _get_output_dir_naming(self, paramfile):
+
+        # parse the parfile and take "Nclust", "col", "beg"
+        # and "end" values needed for output directory naming.
+
+        output_dir_naming_strings = []
+
+        # Get the nclust value from the parfile.r
+        for line in gc3libs.utils.fgrep("Nclust=", paramfile):
+            line = line.strip()
+            start, end = line.split('=')
+            if (end == "" or start == ""):
+                raise ValueError("Nclust option in the parfile.r is not properly set." 
+                                 " It is set like %s, must be Nclust=Value." % ( line ))
+            nclust = "Nc"+end
+            output_dir_naming_strings.append(nclust)
+            break
+         
+        # Get the col vaule from the parfile.r
+        for line in gc3libs.utils.fgrep("col=", paramfile):
+            line = line.strip()
+            start, end = line.split('=')
+            if (end == "" or start == ""):
+                raise ValueError("col option in the parfile.r is not properly set."
+                                " It is set like %s, must be col=Value." % ( line ))
+            col = end
+            col = col.replace('"','')
+            output_dir_naming_strings.append(col)
+            break
+
+        # Get the beginig vaule out of the "beg" line  
+        for i in gc3libs.utils.fgrep("beg <-", paramfile):
+            line_elements = i.split(' ')
+            beg = line_elements[2].replace('"','')
+            beg = beg.replace('/','')
+            output_dir_naming_strings.append(beg)
+            break
+
+        # Get the ending value out of the "end" line
+        for i in gc3libs.utils.fgrep("end <-", paramfile):
+            line_elements = i.split(' ')
+            end = line_elements[2].replace('"','')
+            end = end.replace('/','')
+            output_dir_naming_strings.append(end)
+            break 
+
+        return output_dir_naming_strings
+
+    def new_tasks(self, extra):
+
+        # Call the _scan_and_tar method which recreates
+        # the tarball each time. 
+        inputs = dict(self._scan_and_tar(self.params.root))
+
+        # Manage the parfile.r and call the _get_output_dir_formatting
+        # method which gives back the strings needed for the output dir
+        # naming.
+        paramfile = self.params.root + '/src/TopoAPP/parfile.r'
+        if self.params.par_file:
+                inputs[self.params.par_file] = 'parfile.r'
+                paramfile = self.params.par_file
+
+        out_dir_nm = self._get_output_dir_naming(paramfile)
+
+        # create tasks for the specified sumulation boxes
         for sim_box in self.sim_boxes:
             extra_args = extra.copy()
-            jobname = 'GTSubControl' + '_nboxSeq_' + str(sim_box) ## spcify the jobname by root and number of box seq
+            jobname = 'GTSC' + '_nS' + str(sim_box)+'_'+out_dir_nm[0]+'_'+out_dir_nm[1]+'_'+out_dir_nm[2]+'_'+out_dir_nm[3] ## specifiedcify the jobname by root and number of box seq
             extra_args['jobname'] = jobname
             yield GTSubControllApplication(
-                self.params.root, # pass the simulation box root dir
-                sim_box, # pass the simulation box number 
-                 **extra_args)
+                sim_box, # pass the simulation box number
+                inputs, 
+                **extra_args)
+
 
     def after_main_loop(self):
 
         """ 
-        This method is used to print out some info 
-        At the end of each sumulation
+        This method prints information about the status of
+        the execution at the end of each sumulation.
         """
         for task in self.session:
-           sys.stdout.write('Application %s terminated with execution exicode %d \n' % (task.jobname, task.execution.returncode))   
-
+            gc3libs.log.info("Task %s: %s terminated with exit code: %s"
+                             % (task.jobname, task.execution.state, task.execution.returncode))
 
 ## main: run tests
 
