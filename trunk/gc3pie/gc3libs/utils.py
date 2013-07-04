@@ -476,6 +476,14 @@ def first(seq):
         pass
     raise TypeError("Argument to `first()` method needs to be iterator or sequence.")
 
+def fgrep(literal, filename):
+    """
+    Iterate over all lines in a file that contain the `literal` string.
+    """
+    with open(filename, 'r') as file:
+        for line in file:
+            if literal in line:
+                yield line
 
 def from_template(template, **extra_args):
     """
