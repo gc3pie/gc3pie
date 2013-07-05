@@ -98,7 +98,10 @@ class GBiointeractApplication(Application):
         "%f_pgdiff:%f_dur:%f_deathrate:%f" % (cell_diffusion,
                                               public_good_diffusion,
                                               durability, death_rate)
-        extra_args['output_dir'] = extra_args['jobname']
+        if 'output_dir' in extra_args:
+            extra_args['output_dir'] = os.path.join(
+                os.path.dirname(extra_args['output_dir']),
+                extra_args['jobname'])
 
         Application.__init__(self,
                              arguments,
@@ -116,34 +119,30 @@ class GBiointeractTaskCollection(ChunkedParameterSweep):
                  public_good_diffusion_range,
                  durability_range,
                  death_rate_range,
-                 chunk_size=100,
-                 step=10,
+                 chunk_size,
                  **extra_args):
-
+        if not chunk_size:
+            chunk_size = step
         self.executable = executable
         self.extra_args = extra_args
 
-        self.combinations = itertools.product(
+        self.combinations = list(itertools.product(
                  cell_diffusion_range,
                  durability_range,
                  public_good_diffusion_range,
-                 death_rate_range)
-        self.next = self.combinations.next()
+                 death_rate_range))
+        self.curr = 0
 
         ChunkedParameterSweep.__init__(self,
                                        1,
-                                       2*(chunk_size+step) , # fake value
+                                       len(self.combinations)+1, # it has to be at least 2
+                                       1,
                                        chunk_size,
-                                       step,
                                        **extra_args)
 
     def new_task(self, param, **extra):
-        (cd, d, pg, dr) = self.next
-        try:
-            self.next = self.combinations.next()
-            self.max_value += self.step*self.chunk_size
-        except StopIteration:
-            self.max_value = -1
+        (cd, d, pg, dr) = self.combinations[self.curr]
+        self.curr += 1
 
         return GBiointeractApplication(
             self.executable,
@@ -178,22 +177,25 @@ class GBiointeractScript(SessionBasedScript):
                        help="In the form N[:END:STEP]. If only `N` is "
                        "supplied, will use only that value, otherwise "
                        "will use all the values in the range from `N` "
-                       "to `END` (inclusive) using `STEP` increments")
+                       "to `END` (exclusive) using `STEP` increments")
         self.add_param("-p", "--public-good-diffusion", required=True,
                        help="In the form N[:END:STEP]. If only `N` is "
                        "supplied, will use only that value, otherwise "
                        "will use all the values in the range from `N` "
-                       "to `END` (inclusive) using `STEP` increments")
+                       "to `END` (exclusive) using `STEP` increments")
         self.add_param("-d", "--durability", required=True,
                        help="In the form N[:END:STEP]. If only `N` is "
                        "supplied, will use only that value, otherwise "
                        "will use all the values in the range from `N` "
-                       "to `END` (inclusive) using `STEP` increments")
+                       "to `END` (exclusive) using `STEP` increments")
         self.add_param("-x", "--death-rate", required=True,
                        help="In the form N[:END:STEP]. If only `N` is "
                        "supplied, will use only that value, otherwise "
                        "will use all the values in the range from `N` "
-                       "to `END` (inclusive) using `STEP` increments")
+                       "to `END` (exclusive) using `STEP` increments")
+        self.add_param('--chunk-size', default=10, type=int,
+                       help="How many jobs to submit at the "
+                       "same time. Default: %(default)s")
 
     def setup_args(self):
         self.add_param("executable", nargs="?", default='biointeract',
@@ -220,6 +222,7 @@ class GBiointeractScript(SessionBasedScript):
             self.params.public_good_diffusion_range,
             self.params.durability_range,
             self.params.death_rate_range,
+            self.params.chunk_size,
             **extra.copy()
             )]
 
