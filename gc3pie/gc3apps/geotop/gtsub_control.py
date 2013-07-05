@@ -301,7 +301,7 @@ class GTSubControlScript(SessionBasedScript):
             extra_args['jobname'] = jobname
             yield GTSubControllApplication(
                 sim_box, # pass the simulation box number
-                inputs, 
+                inputs.copy(), 
                 **extra_args)
 
 
