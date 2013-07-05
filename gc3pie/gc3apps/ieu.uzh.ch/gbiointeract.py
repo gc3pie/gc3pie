@@ -30,6 +30,7 @@ __author__ = 'Antonio Messina <antonio.s.messina@gmail.com>'
 __docformat__ = 'reStructuredText'
 
 import decimal
+import os
 
 import gc3libs
 from gc3libs import Application, Run
@@ -78,6 +79,7 @@ class GBiointeractApplication(Application):
     application_name = "biointeract"
 
     def __init__(self,
+                 executable,
                  cell_diffusion,
                  public_good_diffusion,
                  durability,
@@ -85,10 +87,18 @@ class GBiointeractApplication(Application):
                  **extra_args):
         extra_args.setdefault('requested_cores', 1)
 
+        arguments = [executable,
+                     '-c', cell_diffusion,
+                     '-p', public_good_diffusion,
+                     '-d', durability,
+                     '-x', death_rate]
+
         Application.__init__(self,
                              arguments,
-                             inputs,
-                             outputs,
+                             [executable],        # inputs
+                             gc3libs.ANY_OUTPUT,  # outputs
+                             stdout="gbiointeract.out",
+                             stderr="gbiointeract.err",
                              **extra_args)
 
 
@@ -136,6 +146,11 @@ class GBiointeractScript(SessionBasedScript):
                        "will use all the values in the range from `N` "
                        "to `END` (inclusive) using `STEP` increments")
 
+    def setup_args(self):
+        self.add_param("executable", nargs="?", default='biointeract',
+                       metavar='EXECUTABLE',
+                       help="Path to the biointeract executable.")
+
     def parse_args(self):
         self.params.cell_diffusion_range = self._parse_range(
             self.params.cell_diffusion)
@@ -146,12 +161,16 @@ class GBiointeractScript(SessionBasedScript):
         self.params.death_rate_range = self._parse_range(
             self.params.death_rate)
 
+        if not os.path.isfile(self.params.executable):
+            raise ValueError("Invalid executable file `%s`" % self.params.executable)
+
     def new_tasks(self, extra):
         for cell_diffusion in self.params.cell_diffusion_range:
             for pgood_diffusion in self.params.public_good_diffusion_range:
                 for durability in self.params.durability_range:
                     for death_rate in self.params.death_rate_range:
                         yield GBiointeractApplication(
+                            self.params.executable,
                             cell_diffusion,
                             pgood_diffusion,
                             durability,
