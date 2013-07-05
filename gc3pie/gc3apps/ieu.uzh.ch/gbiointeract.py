@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 #
-#   gbiointeract.py -- Front-end script for submitting multiple `biointeract` jobs.
+#   gbiointeract.py -- Front-end script for submitting multiple
+#   `biointeract` jobs.
 #
 #   Copyright (C) 2013 GC3, University of Zurich
 #
@@ -28,43 +29,45 @@ __version__ = 'development version (SVN $Revision$)'
 __author__ = 'Antonio Messina <antonio.s.messina@gmail.com>'
 __docformat__ = 'reStructuredText'
 
+import decimal
+
 import gc3libs
 from gc3libs import Application, Run
 from gc3libs.cmdline import SessionBasedScript
 from gc3libs.workflow import ParallelTaskCollection
 
-try:
-    from numpy import arange
-except ImportError:
-    # Use a customized version of arange...
-    import decimal
-    def arange(start, stop = None, step = 1, precision = None):
-        """drange generates a set of Decimal values over the
-        range [start, stop) with step size step
 
-        drange([start,] stop, [step [,precision]])"""
+def arange(start, stop=None, step=1, precision=None):
+    """arange generates a set of Decimal values over the
+    range [start, stop) with step size step
 
-        if stop is None:
-            for x in xrange(int(ceil(start))):
-                yield x
-        else:
-            # find precision
-            if precision is not None:
-                decimal.getcontext().prec = precision
-            # convert values to decimals
-            start = decimal.Decimal(start)
-            stop = decimal.Decimal(stop)
-            step = decimal.Decimal(step)
-            # create a generator expression for the index values
-            indices = (
-                i for i in xrange(
-                    0,
-                    ((stop-start)/step).to_integral_value()
-                )
+    drange([start,] stop, [step [,precision]])
+
+    Courtesy of Nisan Haramati:
+    http://code.activestate.com/recipes/66472-frange-a-range-function-with-float-increments/#c14
+    """
+
+    if stop is None:
+        for x in xrange(int(ceil(start))):
+            yield x
+    else:
+        # find precision
+        if precision is not None:
+            decimal.getcontext().prec = precision
+        # convert values to decimals
+        start = decimal.Decimal(start)
+        stop = decimal.Decimal(stop)
+        step = decimal.Decimal(step)
+        # create a generator expression for the index values
+        indices = (
+            i for i in xrange(
+                0,
+                ((stop-start)/step).to_integral_value()
             )
-            # yield results
-            for i in indices:
-                yield float(start + step*i)
+        )
+        # yield results
+        for i in indices:
+            yield float(start + step*i)
 
 
 class GBiointeractApplication(Application):
@@ -87,6 +90,7 @@ class GBiointeractApplication(Application):
                              inputs,
                              outputs,
                              **extra_args)
+
 
 class GBiointeractScript(SessionBasedScript):
     """
@@ -112,20 +116,35 @@ class GBiointeractScript(SessionBasedScript):
 
     def setup_options(self):
         self.add_param("-c", "--cell-diffusion", required=True,
-                       help="In the form N[:END:STEP]. If only `N` is supplied, will use only that value, otherwise will use all the values in the range from `N` to `END` (inclusive) using `STEP` increments")
+                       help="In the form N[:END:STEP]. If only `N` is "
+                       "supplied, will use only that value, otherwise "
+                       "will use all the values in the range from `N` "
+                       "to `END` (inclusive) using `STEP` increments")
         self.add_param("-p", "--public-good-diffusion", required=True,
-                       help="In the form N[:END:STEP]. If only `N` is supplied, will use only that value, otherwise will use all the values in the range from `N` to `END` (inclusive) using `STEP` increments")
+                       help="In the form N[:END:STEP]. If only `N` is "
+                       "supplied, will use only that value, otherwise "
+                       "will use all the values in the range from `N` "
+                       "to `END` (inclusive) using `STEP` increments")
         self.add_param("-d", "--durability", required=True,
-                       help="In the form N[:END:STEP]. If only `N` is supplied, will use only that value, otherwise will use all the values in the range from `N` to `END` (inclusive) using `STEP` increments")
+                       help="In the form N[:END:STEP]. If only `N` is "
+                       "supplied, will use only that value, otherwise "
+                       "will use all the values in the range from `N` "
+                       "to `END` (inclusive) using `STEP` increments")
         self.add_param("-x", "--death-rate", required=True,
-                       help="In the form N[:END:STEP]. If only `N` is supplied, will use only that value, otherwise will use all the values in the range from `N` to `END` (inclusive) using `STEP` increments")
-
+                       help="In the form N[:END:STEP]. If only `N` is "
+                       "supplied, will use only that value, otherwise "
+                       "will use all the values in the range from `N` "
+                       "to `END` (inclusive) using `STEP` increments")
 
     def parse_args(self):
-        self.params.cell_diffusion_range = self._parse_range(self.params.cell_diffusion)
-        self.params.public_good_diffusion_range = self._parse_range(self.params.public_good_diffusion)
-        self.params.durability_range = self._parse_range(self.params.durability)
-        self.params.death_rate_range = self._parse_range(self.params.death_rate)
+        self.params.cell_diffusion_range = self._parse_range(
+            self.params.cell_diffusion)
+        self.params.public_good_diffusion_range = self._parse_range(
+            self.params.public_good_diffusion)
+        self.params.durability_range = self._parse_range(
+            self.params.durability)
+        self.params.death_rate_range = self._parse_range(
+            self.params.death_rate)
 
     def new_tasks(self, extra):
         for cell_diffusion in self.params.cell_diffusion_range:
