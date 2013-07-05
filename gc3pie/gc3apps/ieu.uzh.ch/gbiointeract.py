@@ -83,7 +83,7 @@ class GBiointeractApplication(Application):
                  executable,
                  cell_diffusion,
                  public_good_diffusion,
-                 durability,
+                 public_good_durability,
                  death_rate,
                  **extra_args):
         extra_args.setdefault('requested_cores', 1)
@@ -91,13 +91,13 @@ class GBiointeractApplication(Application):
         arguments = [executable,
                      '-c', cell_diffusion,
                      '-p', public_good_diffusion,
-                     '-d', durability,
+                     '-d', public_good_durability,
                      '-x', death_rate]
 
         extra_args['jobname'] = "GBiointeract_cdiff:" + \
         "%f_pgdiff:%f_dur:%f_deathrate:%f" % (cell_diffusion,
                                               public_good_diffusion,
-                                              durability, death_rate)
+                                              public_good_durability, death_rate)
         if 'output_dir' in extra_args:
             extra_args['output_dir'] = os.path.join(
                 os.path.dirname(extra_args['output_dir']),
@@ -117,7 +117,7 @@ class GBiointeractTaskCollection(ChunkedParameterSweep):
                  executable,
                  cell_diffusion_range,
                  public_good_diffusion_range,
-                 durability_range,
+                 public_good_durability_range,
                  death_rate_range,
                  chunk_size,
                  **extra_args):
@@ -128,7 +128,7 @@ class GBiointeractTaskCollection(ChunkedParameterSweep):
 
         self.combinations = list(itertools.product(
                  cell_diffusion_range,
-                 durability_range,
+                 public_good_durability_range,
                  public_good_diffusion_range,
                  death_rate_range))
         self.curr = 0
@@ -183,7 +183,7 @@ class GBiointeractScript(SessionBasedScript):
                        "supplied, will use only that value, otherwise "
                        "will use all the values in the range from `N` "
                        "to `END` (exclusive) using `STEP` increments")
-        self.add_param("-d", "--durability", required=True,
+        self.add_param("-d", "--public-good-durability", required=True,
                        help="In the form N[:END:STEP]. If only `N` is "
                        "supplied, will use only that value, otherwise "
                        "will use all the values in the range from `N` "
@@ -207,8 +207,8 @@ class GBiointeractScript(SessionBasedScript):
             self.params.cell_diffusion)
         self.params.public_good_diffusion_range = self._parse_range(
             self.params.public_good_diffusion)
-        self.params.durability_range = self._parse_range(
-            self.params.durability)
+        self.params.public_good_durability_range = self._parse_range(
+            self.params.public_good_durability)
         self.params.death_rate_range = self._parse_range(
             self.params.death_rate)
 
@@ -220,7 +220,7 @@ class GBiointeractScript(SessionBasedScript):
             self.params.executable,
             self.params.cell_diffusion_range,
             self.params.public_good_diffusion_range,
-            self.params.durability_range,
+            self.params.public_good_durability_range,
             self.params.death_rate_range,
             self.params.chunk_size,
             **extra.copy()
