@@ -30,19 +30,20 @@ __author__ = 'Antonio Messina <antonio.s.messina@gmail.com>'
 __docformat__ = 'reStructuredText'
 
 import decimal
+import itertools
 import os
 
 import gc3libs
 from gc3libs import Application, Run
 from gc3libs.cmdline import SessionBasedScript
-from gc3libs.workflow import ParallelTaskCollection
+from gc3libs.workflow import ChunkedParameterSweep
 
 
 def arange(start, stop=None, step=1, precision=None):
     """arange generates a set of Decimal values over the
     range [start, stop) with step size step
 
-    drange([start,] stop, [step [,precision]])
+    arange([start,] stop, [step [,precision]])
 
     Courtesy of Nisan Haramati:
     http://code.activestate.com/recipes/66472-frange-a-range-function-with-float-increments/#c14
@@ -93,6 +94,12 @@ class GBiointeractApplication(Application):
                      '-d', durability,
                      '-x', death_rate]
 
+        extra_args['jobname'] = "GBiointeract_cdiff:" + \
+        "%f_pgdiff:%f_dur:%f_deathrate:%f" % (cell_diffusion,
+                                              public_good_diffusion,
+                                              durability, death_rate)
+        extra_args['output_dir'] = extra_args['jobname']
+
         Application.__init__(self,
                              arguments,
                              [executable],        # inputs
@@ -100,6 +107,48 @@ class GBiointeractApplication(Application):
                              stdout="gbiointeract.out",
                              stderr="gbiointeract.err",
                              **extra_args)
+
+
+class GBiointeractTaskCollection(ChunkedParameterSweep):
+    def __init__(self,
+                 executable,
+                 cell_diffusion_range,
+                 public_good_diffusion_range,
+                 durability_range,
+                 death_rate_range,
+                 chunk_size=100,
+                 step=10,
+                 **extra_args):
+
+        self.executable = executable
+        self.extra_args = extra_args
+
+        self.combinations = itertools.product(
+                 cell_diffusion_range,
+                 durability_range,
+                 public_good_diffusion_range,
+                 death_rate_range)
+        self.next = self.combinations.next()
+
+        ChunkedParameterSweep.__init__(self,
+                                       1,
+                                       2*(chunk_size+step) , # fake value
+                                       chunk_size,
+                                       step,
+                                       **extra_args)
+
+    def new_task(self, param, **extra):
+        (cd, d, pg, dr) = self.next
+        try:
+            self.next = self.combinations.next()
+            self.max_value += self.step*self.chunk_size
+        except StopIteration:
+            self.max_value = -1
+
+        return GBiointeractApplication(
+            self.executable,
+            cd, d, pg, dr,
+            **self.extra_args)
 
 
 class GBiointeractScript(SessionBasedScript):
@@ -165,17 +214,14 @@ class GBiointeractScript(SessionBasedScript):
             raise ValueError("Invalid executable file `%s`" % self.params.executable)
 
     def new_tasks(self, extra):
-        for cell_diffusion in self.params.cell_diffusion_range:
-            for pgood_diffusion in self.params.public_good_diffusion_range:
-                for durability in self.params.durability_range:
-                    for death_rate in self.params.death_rate_range:
-                        yield GBiointeractApplication(
-                            self.params.executable,
-                            cell_diffusion,
-                            pgood_diffusion,
-                            durability,
-                            death_rate,
-                            **extra.copy())
+        return [GBiointeractTaskCollection(
+            self.params.executable,
+            self.params.cell_diffusion_range,
+            self.params.public_good_diffusion_range,
+            self.params.durability_range,
+            self.params.death_rate_range,
+            **extra.copy()
+            )]
 
 
 if __name__ == '__main__':
