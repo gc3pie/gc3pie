@@ -134,8 +134,8 @@ an overlay Grid on the resources specified in the configuration file.
         self.auto_enable_auth = cfg.auto_enable_auth
 
         # init backends
-        self._lrms = cfg.make_resources()
-        if len(self._lrms) == 0:
+        self.resources = cfg.make_resources()
+        if len(self.resources) == 0:
             raise gc3libs.exceptions.NoResources(
                 "No resources given to initialize `gc3libs.core.Core` object!")
 
@@ -145,7 +145,7 @@ an overlay Grid on the resources specified in the configuration file.
 
     def get_backend(self, name):
         try:
-            return self._lrms[name]
+            return self.resources[name]
         except KeyError:
             raise gc3libs.exceptions.InvalidResourceName(
                 "Cannot find computational resource '%s'" %
@@ -167,14 +167,14 @@ an overlay Grid on the resources specified in the configuration file.
           - or it can be a string: only resources whose name matches
             (wildcards ``*`` and ``?`` are allowed) are retained.
         """
-        for lrms in self._lrms.itervalues():
+        for lrms in self.resources.itervalues():
             try:
                 if not match(lrms):
                     lrms.enabled = False
             except:
                 if not fnmatch(lrms.name, match):
                     lrms.enabled = False
-        return len(self._lrms)
+        return len(self.resources)
 
 
     def free(self, app, **extra_args):
@@ -275,7 +275,7 @@ an overlay Grid on the resources specified in the configuration file.
         if targets is not None:
             assert len(targets) > 0
         else: # targets is None
-            enabled_resources = [ r for r in self._lrms.itervalues() if r.enabled ]
+            enabled_resources = [ r for r in self.resources.itervalues() if r.enabled ]
             if len(enabled_resources) == 0:
                 raise gc3libs.exceptions.NoResources(
                     "Could not initialize any computational resource"
@@ -599,7 +599,7 @@ an overlay Grid on the resources specified in the configuration file.
         """
         Return list of resources configured into this `Core` instance.
         """
-        return [ lrms for lrms in self._lrms.itervalues() ]
+        return [ lrms for lrms in self.resources.itervalues() ]
 
 
     def kill(self, app, **extra_args):
@@ -711,7 +711,7 @@ an overlay Grid on the resources specified in the configuration file.
         Each resource object in the returned list will have its `updated` attribute
         set to `True` if the update operation succeeded, or `False` if it failed.
         """
-        for lrms in self._lrms.itervalues():
+        for lrms in self.resources.itervalues():
             try:
                 if not lrms.enabled:
                     continue
@@ -729,7 +729,7 @@ an overlay Grid on the resources specified in the configuration file.
         Used to invoke explicitly the destructor on objects
         e.g. LRMS
         """
-        for lrms in self._lrms.itervalues():
+        for lrms in self.resources.itervalues():
             lrms.close()
 
 
@@ -1232,7 +1232,7 @@ class Engine(object):
                 sched = YieldAtNext(_sched)
                 for task_index, resource_index in sched:
                     task = self._new[task_index]
-                    resource = self._core._lrms[resource_index]
+                    resource = self._core.resources[resource_index]
                     # try to submit; go to SUBMITTED if successful, FAILED if not
                     try:
                         self._core.submit(task, targets=[resource])
