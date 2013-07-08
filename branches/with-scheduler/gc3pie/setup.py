@@ -132,6 +132,7 @@ setuptools.setup(
             'gc3apps/zods/gzods.py',
             'gc3apps/geotop/ggeotop.py',
             'gc3apps/geotop/ggeotop_utils.py',
+            'gc3apps/geotop/gtsub_control.py',
             'gc3apps/ieu.uzh.ch/gmhc_coev.py',
             'gc3apps/turbomole/gricomp.py',
             'gc3apps/rosetta/gdocking.py',

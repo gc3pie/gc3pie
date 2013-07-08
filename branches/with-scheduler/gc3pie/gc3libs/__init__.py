@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -230,14 +230,14 @@ class Task(Persistable, Struct):
 
     # grid-level actions on this Task object are re-routed to the
     # grid/engine/core instance
-    def submit(self, resubmit=False, **extra_args):
+    def submit(self, resubmit=False, targets=None, **extra_args):
         """
         Start the computational job associated with this `Task` instance.
         """
         assert self._attached, ("Task.submit() called on detached task %s." % self)
         assert hasattr(self._controller, 'submit'), \
                ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
-        self._controller.submit(self, resubmit, **extra_args)
+        self._controller.submit(self, resubmit, targets, **extra_args)
 
 
     def update_state(self, **extra_args):
@@ -1051,7 +1051,7 @@ class Application(Task):
         Sort the given resources in order of preference.
 
         By default, less-loaded resources come first;
-        see `_cmp_resources`.
+        see `_cmp_resources`:meth:.
         """
         # shift lrms that are already in application.execution_targets
         # to the bottom of the list
@@ -1953,7 +1953,7 @@ class Run(Struct):
 
 def create_engine(*conf_files, **extra_args):
     """
-    Returns a `gc3libs.core.Engine`:class: class. 
+    Returns a `gc3libs.core.Engine`:class: class.
 
     It accepts an optional list of configuration filenames. If the
     filenames contain a `~` or a variable name, it will be expanded
