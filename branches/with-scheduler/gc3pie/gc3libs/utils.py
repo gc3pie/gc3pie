@@ -1483,6 +1483,9 @@ class YieldAtNext(object):
         self._has_saved = False
         self._stop_iteration = False
 
+    def __iter__(self):
+        return self
+
     def next(self):
         if self._stop_iteration:
             raise StopIteration
@@ -1496,7 +1499,7 @@ class YieldAtNext(object):
 
     def send(self, value):
         try:
-            self._saved = self._generator.next()
+            self._saved = self._generator.send(value)
             self._has_saved = True
         except StopIteration:
             self._stop_iteration = True

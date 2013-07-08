@@ -25,6 +25,7 @@ __version__ = '$Revision$'
 # stdlib imports
 import os
 import sys
+import unittest
 
 # 3rd party imports
 from nose.tools import assert_true, assert_false, assert_equal, raises
@@ -38,27 +39,44 @@ import gc3libs.utils
 
 ## test definitions
 
-def test_YieldAtNext():
+class TestYieldAtNext(object):
 
-    # create a generator that performs all steps in sequence
-    def yield_send_throw_seq():
-        # yield a value and get one back from `send`
-        val = (yield 0)
-        # yield that back and get an exception
-        try:
+    def test_YieldAtNext_yield(self):
+        def generator_yield():
+            yield 0
+        g = gc3libs.utils.YieldAtNext(generator_yield())
+        assert_equal(g.next(), 0)
+
+    def test_YieldAtNext_send(self):
+        def generator_yield_send():
+            val = (yield 1)
             yield val
-        except RuntimeError:
-            yield 2
+        g = gc3libs.utils.YieldAtNext(generator_yield_send())
+        assert_equal(g.next(), 1)
+        result = g.send('a sent value')
+        assert_equal(result, None)
+        assert_equal(g.next(), 'a sent value')
 
-    seq = gc3libs.utils.YieldAtNext(yield_send_throw_seq)
-    for i, val in enumerate(seq):
-        assert_equal(i, val)
-        if i == 0:
-            seq.send(1)
-        if i == 1:
-            seq.throw(RuntimeError)
-    assert_equal(i, 2)
-    assert_equal(val, 2)
+    def test_YieldAtNext_throw(self):
+        def generator_yield_throw():
+            try:
+                val = (yield 2)
+            except RuntimeError:
+                yield 'exception caught'
+        g = gc3libs.utils.YieldAtNext(generator_yield_throw())
+        assert_equal(g.next(), 2)
+        result = g.throw(RuntimeError)
+        assert_equal(result, None)
+        assert_equal(g.next(), 'exception caught')
+
+    @raises(StopIteration)
+    def test_YieldAtNext_StopIteration(self):
+        def generator_yield():
+            yield 3
+        g = gc3libs.utils.YieldAtNext(generator_yield())
+        assert_equal(g.next(), 3)
+        # raises `StopIteration`
+        g.next()
 
 
 ## main: run tests
