@@ -2,7 +2,7 @@
 """
 Top-level interface to Grid functionality.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -48,6 +48,76 @@ import gc3libs.exceptions
 import gc3libs.utils as utils
 
 
+class MatchMaker(object):
+    """Select and sort resources for attempting submission of a `Task`.
+
+    A match-making algorithm must implement two methods:
+
+    - `match`: given a task and a list of resources, return the list
+      of resources that the given task could be submitted to.
+
+    - `rank`: given a task and a list of resources, return a list of
+      resources sorted in preference order, i.e., submission of the
+      given task will be attempted to the first returned resource,
+      then the next one, etc.
+
+    This class implements the default match-making algorithm in
+    GC3Pie, which operates as follows:
+
+    - *match phase:* if `task` has a `compatible_resources` method (as
+      instances of `Application`:class: do), retain only those
+      resources where it evaluates to ``True``.  Otherwise, return the
+      resources list unchanged.
+
+    - *rank phase:* sort resources according to the task's
+      `rank_resources` method, or retain the given order if task does
+      not define such method.
+
+    """
+
+    def match(self, task, resources):
+        """Return the subset of resources to which `task` could be submitted to.
+
+        Note that the result subset could be empty (no resource can
+        accomodate task's requirements).
+
+        The default implementation uses the task's
+        `compatible_resources` method to retain only the resources
+        that satisfy the task's requirements.  If `task` does not
+        provide such a method, the resource list is returned
+        unchanged.
+
+        """
+        gc3libs.log.debug(
+            "Performing matching of resources %s to task '%s' ...",
+            resources, task)
+        # keep only compatible resources
+        try:
+            compatible_resources = task.compatible_resources(resources)
+            gc3libs.log.debug('Task compatiblity check returned %d matching resources',
+                              len(compatible_resources))
+        except AttributeError:
+            # XXX: should we require that len(resources) > 0?
+            compatible_resources = resources
+        return compatible_resources
+
+    def rank(self, task, resources):
+        """Sort the list of `resources` in the preferred order for submitting `task`.
+
+        Unless overridden in a derived class, this calls the task's
+        `rank_resources` method to sort the list.  If the task does
+        not provide such a method, the resources list is returned
+        unchanged.
+
+        """
+        # sort resources according to the Task's preference, if stated
+        try:
+            targets = task.rank_resources(resources)
+        except AttributeError:
+            targets = resources
+        return targets
+
+
 class Core:
     """Core operations: submit, update state, retrieve (a
 snapshot of) output, cancel job.
@@ -55,11 +125,11 @@ snapshot of) output, cancel job.
 Core operations are *blocking*, i.e., they return only after the
 operation has successfully completed, or an error has been detected.
 
-Operations are always performed by a `Core` object.
-`Core` implements an overlay Grid on the resources
-specified in the configuration file.
+Operations are always performed by a `Core` object.  `Core` implements
+an overlay Grid on the resources specified in the configuration file.
+
     """
-    def __init__(self, cfg):
+    def __init__(self, cfg, matchmaker=MatchMaker()):
         # init auths
         self.auto_enable_auth = cfg.auto_enable_auth
 
@@ -68,6 +138,9 @@ specified in the configuration file.
         if len(self._lrms) == 0:
             raise gc3libs.exceptions.NoResources(
                 "No resources given to initialize `gc3libs.core.Core` object!")
+
+        # init matchmaker
+        self.matchmaker = matchmaker
 
 
     def get_backend(self, name):
@@ -148,29 +221,45 @@ specified in the configuration file.
         return task.free(**extra_args)
 
 
-    def submit(self, app, resubmit=False, **extra_args):
-        """
-        Submit a job running an instance of the given `app`.  Upon
-        successful submission, call the `submitted` method on the
-        `app` object.
+    def submit(self, app, resubmit=False, targets=None, **extra_args):
+        """Submit a job running an instance of the given task `app`.
+
+        Upon successful submission, call the `submitted` method on the
+        `app` object.  If `targets` are given, submission of the task
+        is attempted to the resources in the order given; the `submit`
+        method returns after the first successful attempt.  If
+        `targets` is ``None`` (default), a brokering procedure is run
+        to determine the best resource among the configured ones.
 
         At the beginning of the submission process, the
         `app.execution` state is reset to ``NEW``; if submission is
-        successfull, the task will be in ``SUBMITTED`` or ``RUNNING``
+        successful, the task will be in ``SUBMITTED`` or ``RUNNING``
         state when this call returns.
 
         :raise: `gc3libs.exceptions.InputFileError` if an input file
                 does not exist or cannot otherwise be read.
+
+        :param Task app:
+          A GC3Pie `Task`:class: instance to be submitted.
+        :param resubmit:
+          If ``True``, submit task regardless of its execution state;
+          if ``False`` (default), submission is a no-op if task is not
+          in ``NEW`` state.
+        :param list targets:
+          A list of `Resource`s to submit the task to; resources are
+          tried in the order given.  If ``None`` (default), perform
+          brokering among all the configured resources.
+
         """
         assert isinstance(app, Task), \
             "Core.submit: passed an `app` argument which is not a `Task` instance."
         if isinstance(app, Application):
-            return self.__submit_application(app, resubmit, **extra_args)
+            return self.__submit_application(app, resubmit, targets, **extra_args)
         else:
             # must be a `Task` instance
-            return self.__submit_task(app, resubmit, **extra_args)
+            return self.__submit_task(app, resubmit, targets, **extra_args)
 
-    def __submit_application(self, app, resubmit, **extra_args):
+    def __submit_application(self, app, resubmit, targets, **extra_args):
         """Implementation of `submit` on `Application` objects."""
 
         gc3libs.log.debug("Submitting %s ..." % str(app))
@@ -183,63 +272,65 @@ specified in the configuration file.
         elif job.state != Run.State.NEW:
             return
 
-        lrms_list = filter(lambda x: x.enabled, self._lrms.itervalues())
-        if len(lrms_list) == 0:
-            raise gc3libs.exceptions.NoResources(
-                "Could not initialize any computational resource"
-                " - please check log and configuration file.")
+        if targets is not None:
+            assert len(targets) > 0
+        else: # targets is None
+            enabled_resources = [ r for r in self._lrms.itervalues() if r.enabled ]
+            if len(enabled_resources) == 0:
+                raise gc3libs.exceptions.NoResources(
+                    "Could not initialize any computational resource"
+                    " - please check log and configuration file.")
 
-        gc3libs.log.debug('Performing brokering ...')
-        # decide which resource to use
-        # (Resource)[] = (Scheduler).PerformBrokering((Resource)[],(Application))
-        _selected_lrms_list = app.compatible_resources(lrms_list)
-        gc3libs.log.debug('Application scheduler returned %d matching resources',
-                           len(_selected_lrms_list))
-        if 0 == len(_selected_lrms_list):
-            raise gc3libs.exceptions.NoResources(
-                "No available resource can accomodate the application requirements")
+            # decide which resource to use
+            compatible_resources = self.matchmaker.match(app, enabled_resources)
+            if 0 == len(compatible_resources):
+                raise gc3libs.exceptions.NoResources(
+                    "No available resource can accomodate the application requirements")
+            gc3libs.log.debug('Application compatiblity check returned %d matching resources',
+                               len(compatible_resources))
 
-        if len(_selected_lrms_list) <= 1:
-            # shortcut: no brokering to do, just use what we've got
-            updated_resources = _selected_lrms_list
-        else:
-            # update status of selected resources
-            updated_resources = []
-            for r in _selected_lrms_list:
-                try:
-                    # in-place update of resource status
-                    gc3libs.log.debug(
-                        "Trying to update status of resource '%s' ..."
-                        % r.name)
-                    r.get_resource_status()
-                    updated_resources.append(r)
-                except Exception, x:
-                    # ignore errors in update, assume resource has a problem
-                    # and just drop it
-                    gc3libs.log.error("Cannot update status of resource '%s', dropping it."
-                                      " See log file for details."
-                                      % r.name)
-                    gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
-                                      x.__class__.__name__, str(x), exc_info=True)
+            if len(compatible_resources) <= 1:
+                # shortcut: no brokering to do, just use what we've got
+                targets = compatible_resources
+            else:
+                # update status of selected resources
+                updated_resources = []
+                for r in compatible_resources:
+                    try:
+                        # in-place update of resource status
+                        gc3libs.log.debug(
+                            "Trying to update status of resource '%s' ..."
+                            % r.name)
+                        r.get_resource_status()
+                        updated_resources.append(r)
+                    except Exception, err:
+                        # ignore errors in update, assume resource has a problem
+                        # and just drop it
+                        gc3libs.log.error("Cannot update status of resource '%s', dropping it."
+                                          " See log file for details."
+                                          % r.name)
+                        gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
+                                          err.__class__.__name__, str(err), exc_info=True)
 
-        # sort resources according to Application's preferences
-        _selected_lrms_list = app.rank_resources(updated_resources)
-        if len(_selected_lrms_list) == 0:
-            raise gc3libs.exceptions.LRMSSubmitError(
-                "No computational resources left after brokering."
-                " Aborting submission of job '%s'" % app)
+            if len(updated_resources) == 0:
+                raise gc3libs.exceptions.LRMSSubmitError(
+                    "No computational resource found reachable during update!"
+                    " Aborting submission of task '%s'" % app)
+
+            # sort resources according to Application's preferences
+            targets = self.matchmaker.rank(app, updated_resources)
 
         exs = [ ]
-        # Scheduler.do_brokering returns a sorted list of valid lrms
-        for lrms in _selected_lrms_list:
+        # after brokering we have a sorted list of valid resource
+        for resource in targets:
             gc3libs.log.debug("Attempting submission to resource '%s'..."
-                              % lrms.name)
+                              % resource.name)
             try:
                 job.timestamp[Run.State.NEW] = time.time()
                 job.info = ("Submitting to '%s' at %s"
-                        % (lrms.name,
+                        % (resource.name,
                            time.ctime(job.timestamp[Run.State.NEW])))
-                lrms.submit_job(app)
+                resource.submit_job(app)
             except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration, ex:
                 gc3libs.log.info(
                     "Submission of job %s delayed" % app)
@@ -248,14 +339,14 @@ specified in the configuration file.
             except Exception, ex:
                 gc3libs.log.info(
                     "Error in submitting job to resource '%s': %s: %s",
-                    lrms.name, ex.__class__.__name__, str(ex),
+                    resource.name, ex.__class__.__name__, str(ex),
                     exc_info=True)
                 exs.append(ex)
                 continue
             gc3libs.log.info("Successfully submitted %s to: %s",
-                             str(app), lrms.name)
+                             str(app), resource.name)
             job.state = Run.State.SUBMITTED
-            job.resource_name = lrms.name
+            job.resource_name = resource.name
             job.info = ("Submitted to '%s' at %s"
                         % (job.resource_name,
                            time.ctime(job.timestamp[Run.State.SUBMITTED])))
@@ -272,7 +363,7 @@ specified in the configuration file.
         else:
             return
 
-    def __submit_task(self, task, resubmit, **extra_args):
+    def __submit_task(self, task, resubmit, targets, **extra_args):
         """Implementation of `submit` on generic `Task` objects."""
         extra_args.setdefault('auto_enable_auth', self.auto_enable_auth)
         task.submit(resubmit, **extra_args)
@@ -662,6 +753,171 @@ specified in the configuration file.
         pass
 
 
+class Scheduler(object):
+    """Instances of the `Scheduler` class are used in
+    `Engine.progress`:meth: to determine what tasks (among those in
+    `Run.State.NEW` state) are to be submitted.
+
+    A `Scheduler` object must implement *both* the context_ protocol
+    *and* the iterator_ protocol.
+
+    .. _context:  http://fix.me/
+    .. _iterator: http://fix.me/
+
+    The way a `Scheduler` instance is actually used within `Engine` is
+    as follows:
+
+    0. A `Scheduler` instance is created, passing it two arguments: a
+       list of tasks in ``NEW`` state, and a list of configured
+       resources.
+
+    1. When a new submission cycle starts, the `__enter__`:meth:
+       method is called.
+
+    2. The `Engine` iterates by repeatedly calling the `next`:meth:
+       method to receive tasks to be submitted.  The `send`:meth: and
+       `throw`:meth: methods are used to notify the scheduler of the
+       outcome of the submission attempt.
+
+    3. When the submission cycle ends, the `__exit__`:meth: method is called.
+
+    The `Scheduler.schedule` generator is the heart of the submission
+    process and has basically complete control over it.  It is
+    initialized with the list of tasks in ``NEW`` state, and the list
+    of configured resources.  The `next`:meth: method should yield
+    pairs *(task index, resource index)*, where the *task index* is the
+    position of the task to be submitted next in the given list, and
+    --similarly-- the *resource index* is the position of the resource
+    to which the task should be submitted.
+
+    For each pair yielded, submission of that task to the selected
+    resource is attempted; the state of the task object after
+    submission is sent back (via the `send`:meth: method) to the
+    `Scheduler` instance; if an exception is raised, that exception is
+    thrown (via the `throw`:meth: method) into the scheduler object
+    instead.  Submission stops when the `next` raises a
+    `StopIteration` exception.
+
+    """
+
+    def __init__(self, tasks, resources):
+        self.tasks = tasks
+        self.resources = resources
+
+    def __enter__(self):
+        """Called at the start of a scheduling cycle.
+
+        Implementation of this method should follow Python's context_
+        protocol; in particular, this method must return a reference
+        to a valid context object.
+
+        By default, just returns a reference to ``self``.
+
+        """
+        return self
+
+    def next(self):
+        raise NotImplemented(
+            "Method `next` of class `%s` has not been implemented."
+            % self.__class__.name)
+
+    def send(self, result):
+        raise NotImplemented(
+            "Method `send` of class `%s` has not been implemented."
+            % self.__class__.name)
+
+    def throw(self, *excinfo):
+        raise NotImplemented(
+            "Method `throw` of class `%s` has not been implemented."
+            % self.__class__.name)
+
+    def __exit__(self, *excinfo):
+        """Called at the end of a scheduling cycle, when no more submissions
+        will be performed by the `Engine`.
+
+        Implementation of this method should follow Python's context_ protocol.
+
+        By default, does nothing.
+
+        :param tuple excinfo:
+          This is either:
+
+            - a triple *(exception class, exception value, traceback)*
+              like the one returned from the standard `sys.exc_info`
+              function, when an unhandled error occurred during the
+              submission cycle, or
+            - the empty tuple if execution of the submission cycle
+              terminated normally without exceptions.
+
+        """
+        pass
+
+
+class scheduler(object):
+    """
+    Decorate a generator function for use as a `Scheduler`:class: object.
+    """
+    __slots__ = [ '_fn' ]
+
+    def __init__(self, fn):
+        self._fn = fn
+
+    ## proxy generator protocol methods
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        return self._fn.next()
+
+    def send(self, value):
+        return self._fn.send(value)
+
+    def throw(self, *excinfo):
+        return self._fn.throw(*excinfo)
+
+    def close(self):
+        self._fn.close()
+
+    ## add context protocol methods
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self):
+        self.close()
+
+
+@scheduler
+def first_come_first_serve(tasks, resources, matchmaker=MatchMaker()):
+    """First-come first-serve scheduling policy.
+
+    Tasks are submitted to resources in the order they appear in the
+    `tasks` list.  Each task is submitted to resources according to
+    the order they are sorted by `Application.rank_resources` (if that
+    method exists).
+
+    This is the default scheduling policy in GC3Pie's `Engine`:class.
+
+    """
+    for task in tasks:
+        # keep only compatible resources
+        compatible_resources = matchmaker.match(task, resources)
+        if not compatible_resources:
+            gc3pie.log.warning(
+                "No compatible resources for task '%s'"
+                " - cannot submit it" % task)
+            continue
+        # sort them according to the Task's preference
+        targets = matchmaker.rank(task, compatible_resources)
+        # now try submission of the task to each resource until one succeeds
+        for target in targets:
+            result = yield (task, target)
+            if result != Run.State.NEW:
+                # task accepted by resource, continue with next task
+                break
+
+
 # Work around infinite recursion error when trying to compare
 # `UserDict` instances which can contain each other.  We know
 # that two identical tasks are the same object by
@@ -675,8 +931,7 @@ def _contained(elt, lst):
 
 
 class Engine(object):
-    """
-    Submit tasks in a collection, and update their state until a
+    """Submit tasks in a collection, and update their state until a
     terminal state is reached. Specifically:
 
       * tasks in `NEW` state are submitted;
@@ -716,19 +971,27 @@ class Engine(object):
         :meth:`Core.fetch_output` when retrieving results of a
         terminated task.
 
+      `scheduler`
+        A factory function for creating objects that conform to the
+        `Scheduler` interface to control task submission; see the
+        `Scheduler`:class: documentation for details.  The default
+        value implements a first-come first-serve algorithm: tasks are
+        submitted in the order they have been added to the `Engine`.
+
     Any of the above can also be set by passing a keyword argument to
     the constructor (assume ``g`` is a `Core`:class: instance)::
 
       | >>> e = Engine(g, can_submit=False)
       | >>> e.can_submit
       | False
-    """
 
+    """
 
     def __init__(self, controller, tasks=list(), store=None,
                  can_submit=True, can_retrieve=True,
                  max_in_flight=0, max_submitted=0,
-                 output_dir=None, fetch_output_overwrites=False):
+                 output_dir=None, fetch_output_overwrites=False,
+                 scheduler=first_come_first_serve):
         """
         Create a new `Engine` instance.  Arguments are as follows:
 
@@ -751,7 +1014,10 @@ class Engine(object):
         :param can_retrieve:
         :param max_in_flight:
         :param max_submitted:
-          Optional keyword arguments; see `Engine` for a description.
+        :param output_dir:
+        :param fetch_output_overwrites:
+        :param scheduler:
+          Optional keyword arguments; see `Engine`:class: for a description.
         """
         # internal-use attributes
         self._new = []
@@ -957,16 +1223,19 @@ class Engine(object):
         #gc3libs.log.debug("Engine.progress: submitting new tasks [%s]"
         #                  % str.join(', ', [str(task) for task in self._new]))
         transitioned = []
-        if self.can_submit:
-            index = 0
-            while (currently_submitted < limit_submitted
-                   and currently_in_flight < limit_in_flight
-                   and index < len(self._new)):
-                task = self._new[index]
-                # try to submit; go to SUBMITTED if successful, FAILED if not
-                if currently_submitted < limit_submitted and currently_in_flight < limit_in_flight:
+        if self.can_submit and currently_submitted < limit_submitted and currently_in_flight < limit_in_flight:
+            with self.scheduler(self._new, self._core.resources) as _sched:
+                # wrap the original generator object so that `send`
+                # and `throw` do not yield a value -- we only get new
+                # stuff from the call to the `next` method in the `for
+                # ... in schedule` line.
+                sched = YieldAtNext(_sched)
+                for task_index, resource_index in sched:
+                    task = self._new[task_index]
+                    resource = self._core._lrms[resource_index]
+                    # try to submit; go to SUBMITTED if successful, FAILED if not
                     try:
-                        self._core.submit(task)
+                        self._core.submit(task, targets=[resource])
                         if self._store:
                             self._store.save(task)
                         self._in_flight.append(task)
@@ -974,23 +1243,30 @@ class Engine(object):
                         if isinstance(task, Application):
                             currently_submitted += 1
                             currently_in_flight += 1
-                    except Exception, x:
-                        if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
-                            # propagate generic exceptions for debugging purposes
-                            raise
-                        else:
-                            gc3libs.log.error(
-                                "Ignored error in submitting task '%s': %s: %s",
-                                task, x.__class__.__name__, str(x))
+                        sched.send(task.execution.state)
+                    except Exception, err1:
+                        # record the error in the task's history
+                        task.execution.history(
+                            "Submission to resource '%s' failed: %s: %s"
+                            % (resource.name, err1.__class__.__name__, str(err1)))
+                        gc3libs.log.error(
+                            "Got error in submitting task '%s', informing scheduler: %s: %s",
+                            task, err1.__class__.__name__, str(err1))
+                        # inform scheduler and let it handle it
+                        try:
+                            sched.trow(* sys.exc_info())
+                        except Exception, err2:
+                            if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
+                                # propagate generic exceptions for debugging purposes
+                                raise
+                            else:
                             # print again with traceback at a higher log level
                             gc3libs.log.debug(
                                 "Ignored error in submitting task '%s': %s: %s",
-                                task, x.__class__.__name__, str(x), exc_info=True)
-                            # record the fact in the task's history
-                            task.execution.history(
-                                "Submission failed: %s: %s"
-                                % (x.__class__.__name__, str(x)))
-                index += 1
+                                task, err2.__class__.__name__, str(err2), exc_info=True)
+                    # enforce Engine limits
+                    if currently_submitted >= limit_submitted or currently_in_flight >= limit_in_flight:
+                        break
         # remove tasks that transitioned to SUBMITTED state
         for index in reversed(transitioned):
             del self._new[index]
@@ -1121,12 +1397,16 @@ class Engine(object):
         self._core.free(task)
 
 
-    def submit(self, task, resubmit=False, **extra_args):
-        """
-        Submit `task` at the next invocation of `perform`.
+    def submit(self, task, resubmit=False, targets=None, **extra_args):
+        """Submit `task` at the next invocation of `progress`.
 
         The `task` state is reset to ``NEW`` and then added to the
         collection of managed tasks.
+
+        The `targets` argument is only present for interface
+        compatiblity with `Core.submit`:meth: but is otherwise
+        ignored.
+
         """
         if resubmit:
             task.execution.state = Run.State.NEW
