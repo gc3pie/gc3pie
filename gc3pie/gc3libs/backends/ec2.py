@@ -408,7 +408,7 @@ class EC2Lrms(LRMS):
             else:
                 gc3libs.log.warning(
                     "`public_key` option in configuration file should contains"
-                    " path to a public key. Found %s instead: %s",
+                    " path to a public key. Found %s instead",
                     self.public_key)
             try:
                 pkey = paramiko.DSSKey.from_private_key_file(keyfile)
