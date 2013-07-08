@@ -1,0 +1,392 @@
+# ~/.gc3/gc3utils.conf
+#
+#  THIS IS JUST AN EXAMPLE CONFIGURATION FILE.  If you do not change
+#  this file from its default, jobs will only run on your computer and
+#  nowhere else.  In order to harness the full power of GC3Pie, edit
+#  the file and define resources available into your environment,
+#  using the supplied ones as guides.
+#
+#  Please see:
+#    http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/configuration.html
+#  for details on this file format and contents.
+
+
+[DEFAULT]
+# The `DEFAULT` section is entirely optional; if present, its values can
+# be used to interpolate values in other sections, using the `%(name)s` syntax.
+# See documentation of the `SafeConfigParser` object at:
+#   http://docs.python.org/library/configparser.html
+debug = 0
+
+
+# Auth sections: [auth/name]
+#
+# You can have as many `auth/name` sections as you want;
+# this allows you to define different auths for different resources.
+# Each `resource/***` section can reference one (and one only) auth
+# section.
+#
+# Examples:
+#
+# 1) The following section can be used to define an `smscg` auth that
+# is used to access the resources of the distributed computing
+# infrastructure SMSCG (http://www.smscg.ch/).
+#
+# You need to insert three values here, for which we can provide no
+# default: "aai_username", "idp", and "vo".
+#
+# aai_username: This is the "username" you are asked for when accessing 
+#   any SWITCHaai/Shibboleth web page, e.g., https://gc3-aai01.uzh.ch/secure/
+#
+# idp: Find this out with the command "slcs-info": it prints a list of IdP
+#   (Identity Provider IDs) followed by the human-readable name of the associated
+#   institution. Pick the one that corresponds to you University.
+#   It is always the last two components of the University's Internet domain name 
+#   (e.g., "uzh.ch" or "ethz.ch").
+# 
+# vo: In order to use SMSCG, you must sign up to a VO (Virtual Organisation).
+#   One the words "life", "earth", "atlas" or "crypto" should be here.
+#   Find out more at: http://www.smscg.ch/www/user/
+
+#
+# [auth/smscg]
+# type = voms-proxy
+# cert_renewal_method = slcs
+# aai_username = PLEASE-SET-aai_username-IN-gc3pie.conf
+# idp =  PLEASE-SET-idp-IN-gc3pie.conf
+# vo = smscg
+#
+# 2) The following section shows how to define an auth section for
+# accessing computers via SSH.  The same section can be re-used on all
+# computers where your username and/or identity file (public/private
+# key) is the same:
+# 
+# [auth/ssh_alice]
+# type = ssh
+# username = your_ssh_user_name_on_computer_alice
+#
+# 3) If you have a different account name on some resources, you can create
+# another auth section with, e.g.
+#
+# [auth/ssh_on_bob]
+# type = ssh
+# username = your_ssh_user_name_on_computer_bob
+
+
+# Resource sections: [resource/<resource_name>]
+#
+# You can have as many `resource/name` sections as you want; this
+# allows you to define many different resources.
+#
+# Resources are distinguished by the value of the `type` key:
+#
+#  type           meaning
+#  =============  ======================================================================
+#  arc0           resource is accessed using the ARC 0.8.x middleware
+#  sge            resource is a Grid Engine cluster, accessed via qsub/qstat over SSH
+#  lsf            resource is an LSF cluster, accessed via bsub/bjobs over SSH
+#  pbs            resource is a TORQUE/OpenPBS cluster, accessed via qsub/qstat over SSH
+#  shellcmd       run jobs on the local computer
+#  ec2+<subtype>  run jobs on VMs created on a cloud with EC2-compatible APIs
+#
+# Every resource/*** section must reference a valid auth/*** section.
+# Resources of `arc0` type can only reference voms-proxy/grid-proxy
+# type auth sections; resources of lsf/pbs/sge type can only reference
+# ssh type sections; the `shellcmd`/localhost resources currently
+# ignore whatever auth info is passed.
+#
+# Some keys are commmon to all resource types:
+#
+#    * type: Resource type, see above
+#    * auth: the name of a valid auth/*** section; only the authentication 
+#      	     section name (after the `/` must be specified).
+#    * max_cores: Total number of cores provided by the resource
+#    * max_cores_per_job: Maximum number of CPU cores that a job can request; 
+#            a resource will be dropped during the brokering process if a job 
+#            requests more cores than this.
+#    * max_memory_per_core: Max amount of memory (expressed in GBs) 
+#      	     that a job can request
+#    * max_walltime: Maximum job running time (in hours)
+#
+#    * ``prologue``: Used only when ``type`` is ``pbs``, ``lsf``,
+#       ``slurm`` or ``sge``. The content of the `prologue` script will
+#       be *inserted* into the submission script and it's executed before
+#       the real application.  It is intended to execute some shell
+#       commands needed to setup the execution environment before running
+#       the application (e.g. running a `module load ...` command). The
+#       script **must** be a valid, plain `/bin/sh` script.
+#
+#    * ``epilogue``: Used only when ``type`` is ``pbs``, ``lsf``,
+#       ``slurm`` or ``sge``. The content of the `epilogue` script will
+#       be *inserted* into the submission script and it's executed after
+#       the real application. The script **must** be a valid, plain
+#       `/bin/sh` script.
+#
+#    * ``<application_name>_prologue``: Same as ``prologue``, but it is
+#      used only when ``<application_name>``  matches the name of the
+#      application. Valid application names are: `zods`, `gamess`,
+#      `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`
+#
+#    * ``<application_name>_epilogue``: Same as ``epilogue``, but it is
+#      used only when ``<application_name>``  matches the name of the
+#      application. Valid application names are: `zods`, `gamess`,
+#      `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`
+#
+# The following two sections should be enough to run on the local
+# machine only; adjust the `max_cores` parameter to set the number of
+# jobs that you would like to spawn concurrently
+
+[auth/noauth]
+type=none
+
+[resource/localhost]
+# change the following to `enabled=no` to quickly disable
+enabled=yes
+type=shellcmd
+auth=noauth
+transport=local
+# where the GNU `time` command is located; 
+# the default is fine on almost any Linux distribution.
+time_cmd=/usr/bin/time
+# max_cores sets a limit on the number of cuncurrently-running jobs
+max_cores=2
+max_cores_per_job=2
+# adjust the following to match the features of your local computer
+max_memory_per_core=2
+max_walltime=2
+architecture=x64_64
+# When True, the shellcmd backend will discover the actual
+# architecture, the number of cores and the total memory of the
+# machine and will ignore the values found on the configuration
+# file. Default is `False`
+# override = False
+
+# Examples:
+#
+# 1) A single cluster, accessed through the ARC middleware:
+#
+# [resource/idgc3grid01]
+# enabled = no
+# type = arc0
+# auth = smscg
+# frontend = idgc3grid01.uzh.ch
+# name = gc3
+# arc_ldap = ldap://idgc3grid01.uzh.ch:2135/o=grid/mds-vo-name=local
+# max_cores_per_job = 256
+# max_memory_per_core = 2
+# max_walltime = 99999
+# max_cores = 320
+# architecture = x86_64
+
+# 2) Access to the whole SMSCG distributed infrastructure, seen as a
+# single compute resource:
+# 
+# [resource/smscg]
+# enabled = false
+# name = smscg
+# type = arc0
+# auth = smscg
+# arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
+# max_cores_per_job = 256
+# max_memory_per_core = 2
+# max_walltime = 24
+# ncores = 8000
+# architecture = i686, x86_64
+
+# 3) A single Sun Grid Engine cluster, accessed by SSH'ing to the
+# front-end node to control jobs via qsub/qstat:
+#
+# [resource/schroedinger]
+# enabled = no
+# type = sge
+# auth = ssh
+# transport = ssh
+# frontend = idesl1.uzh.ch
+# architecture = x86_64
+# max_cores = 4096
+# max_cores_per_job = 1024
+# max_memory_per_core = 3
+# max_walltime = 72
+# # see http://gridengine.info/2005/11/04/immediate-accounting-data-flushing
+# # if you need to lower this
+# accounting_delay = 15
+# # you can specify alternate paths to the SGE commands, e.g., to use
+# # wrapper scripts or to specify addtional options; GC3Pie will *append*
+# # the standard arguments to what you specify here
+# #qsub = /usr/local/bin/qsub -q whatever.q
+# #qstat = /usr/local/bin/qstat
+# #qacct = /usr/local/sbin/qacct.sh
+# #qdel = /usr/local/bin/qdel
+
+# 4) A single LSF cluster, accessed directly (i.e., GC3Pie must be
+# running on the cluster front-end node):
+#
+# [resource/brutus]
+# enabled = no
+# type = lsf
+# auth = none
+# transport = local
+# frontend = brutus.ethz.ch
+# architecture = x86_64
+# max_cores = 8192
+# max_cores_per_job = 1024
+# max_memory_per_core = 3
+# max_walltime = 72
+# # you can specify alternate paths to the LSF commands, e.g., to use
+# # wrapper scripts or to specify addtional options; GC3Pie will *append*
+# # the standard arguments to what you specify here
+# #bsub = bsub -R lustre
+# #bjobs = bjobs
+# #bkill = /path/to/my/bkill.sh
+# #lshosts = lshosts
+
+#################
+# CLOUD BACKEND #
+#################
+
+# [auth/ec2hobbes]
+# type = ec2
+#
+# If `ec2_access_key` is empty, then the `EC2_ACCESS_KEY` environment
+# variable is will be used, if any.
+# 
+# ec2_access_key =
+#
+# If `ec2_secret_key` is empty, then the `EC2_SECRET_KEY` environment
+# variable is will be used, if any.
+# 
+# ec2_secret_key =
+
+# Images created by the GC3 team have a `gc3-user` account by default.
+#
+# [auth/gc3user_ssh]
+# type = ssh
+# username = gc3-user
+
+# [resource/hobbes]
+# enabled = yes
+# auth = ec2hobbes
+#
+# This resource will create a new VM for each submitted job, and a
+# resource associated to the VM. These subresources define the way we
+# access the VM. It is usually a `shellcmd` backend with `ssh`
+# transport, but in the future this may change.
+#
+# The `type` option defines which backend we want to use for the
+# subresource. The syntax is:
+#
+# ec2+`subresourcetype`
+#
+# where `subresourcetype` is any valid resource type. However, we
+# currently only support `shellcmd`.
+# 
+# type = ec2+shellcmd
+
+# If `ec2_url` is empty, then the `EC2_URL` environment variable
+# is will be used, if any. If EC2_URL is empty too, the default url
+# for AWS will be used.
+# 
+# ec2_url = http://cloud.gc3.uzh.ch:8773/services/Cloud
+
+# EC2 Region to use. It is usually needed only if AWS is not used.
+#
+# ec2_region = nova
+
+# Maximum number of VM running at the same time
+# 
+# vm_pool_max_size = 
+
+#####################
+# VM AUTHENTICATION #
+#####################
+# In order to access the VM, a keypair is usually used. GC3Pie is able
+# to configure a new keypair if needed.
+# 
+# If the keypair `keypair_name` does not exists, a new one will be
+# created and the public key in `public_key` will be imported. If the
+# keypair exists, the fingerprint will be checked and an error is
+# raised if it does not match `public_key`s fingerpring.
+#
+# keypair_name = keypair1
+# public_key = ~/.ssh/id_dsa.pub
+
+# `vm_auth` refers to the auth stanza in the current configuration
+# file to use for remote VM. Basically, it contains only the username
+# to use when connecting to the VM.
+# 
+# vm_auth = gc3user_ssh
+
+# Default instance type to use. If `instance_type` is empty or not
+# defined, `m1.small` will be used instead. If an Application() has an
+# `ec2_instance_type` attribute, it will be used instead of the
+# default one.
+# 
+# instance_type = m1.small
+#
+# Instance type to use for applications with name `<application_name>`:
+#
+# <application_name>_instance_type
+
+# Default image id to use (in EC2 format).
+# 
+# image_id = ami-00000035
+#
+# Image id to use for applications with name `<application_name>`:
+#
+# <application_name>_image_id = 
+
+# Default image name to use. The value of `image_name` is ignored if
+# `image_id` is present. Moreover, an error is raised if more than one
+# image with the same image name is available on the cloud.
+#
+# image_name =
+
+# `user_data` is a script passed to the virtual machine and executed
+# right after the startup procedure. Default value is set using:
+#
+# user_data =
+#
+# `user_data` to use for application with name `<application_name>`:
+#
+# <application_name>_user_data = 
+#
+# Please note that if your script needs to span multiple lines they must be indented. For instance:
+# 
+# user_data = #!/bin/bash
+#     apt-get update
+#     apt-get install -y octave
+# apt-get install -y r-core # <= this line will NOT be included in the `user_data` script!
+
+###################
+# SECURITY GROUPS #
+###################
+# GC3Pie is able to configure security groups associated to the VM.
+#
+# If a security group with this name is not found, a new one will be
+# created.  If it does exist but not all rules defined in
+# `security_group_rules` are present, missing rules will be added to
+# the security group.
+#
+# security_group_name=gc3pie_ssh
+# security_group_rules=tcp:22:22:0.0.0.0/0,icmp:-1:-1:0.0.0.0/0
+#
+# `security_group_rules` is a comma separated list of security
+# rules. Each rule is basically an entry in the firewall to allow some
+# internet traffic.  A rule specification is the form:
+#
+#   <rule>    : protocol:from_port:to_port:ipnetwork
+#
+# where:
+#
+#   `protocol` is one of "icmp", "udp", "tcp"
+#   from_port  is an integer (use -1 for icmp)
+#   to_port    is an integer (use -1 for icmp)
+#   ipnetwork  is a network specification in the form `IP/netmask` (0.0.0.0/0 for any ip)
+
+# Values currently used by the resource broker of GC3Pie.
+#
+# max_cores_per_job = 8
+# max_memory_per_core = 2
+# max_walltime = 8
+# max_cores = 32
+# architecture = x86_64
