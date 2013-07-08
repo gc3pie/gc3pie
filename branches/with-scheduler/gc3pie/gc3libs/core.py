@@ -312,13 +312,13 @@ an overlay Grid on the resources specified in the configuration file.
                         gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
                                           err.__class__.__name__, str(err), exc_info=True)
 
-            if len(updated_resources) == 0:
-                raise gc3libs.exceptions.LRMSSubmitError(
-                    "No computational resource found reachable during update!"
-                    " Aborting submission of task '%s'" % app)
+                if len(updated_resources) == 0:
+                    raise gc3libs.exceptions.LRMSSubmitError(
+                        "No computational resource found reachable during update!"
+                        " Aborting submission of task '%s'" % app)
 
-            # sort resources according to Application's preferences
-            targets = self.matchmaker.rank(app, updated_resources)
+                # sort resources according to Application's preferences
+                targets = self.matchmaker.rank(app, updated_resources)
 
         exs = [ ]
         # after brokering we have a sorted list of valid resource
@@ -768,8 +768,9 @@ class Scheduler(object):
     as follows:
 
     0. A `Scheduler` instance is created, passing it two arguments: a
-       list of tasks in ``NEW`` state, and a list of configured
-       resources.
+       list of tasks in ``NEW`` state, and a dictionary of configured
+       resources (keys are resource names, values are actual resource
+       objects).
 
     1. When a new submission cycle starts, the `__enter__`:meth:
        method is called.
@@ -785,17 +786,17 @@ class Scheduler(object):
     process and has basically complete control over it.  It is
     initialized with the list of tasks in ``NEW`` state, and the list
     of configured resources.  The `next`:meth: method should yield
-    pairs *(task index, resource index)*, where the *task index* is the
+    pairs *(task index, resource name)*, where the *task index* is the
     position of the task to be submitted next in the given list, and
-    --similarly-- the *resource index* is the position of the resource
-    to which the task should be submitted.
+    --similarly-- the *resource name* is the name of the resource to
+    which the task should be submitted.
 
     For each pair yielded, submission of that task to the selected
     resource is attempted; the state of the task object after
     submission is sent back (via the `send`:meth: method) to the
     `Scheduler` instance; if an exception is raised, that exception is
     thrown (via the `throw`:meth: method) into the scheduler object
-    instead.  Submission stops when the `next` raises a
+    instead.  Submission stops when the `next()` call raises a
     `StopIteration` exception.
 
     """
@@ -857,10 +858,14 @@ class scheduler(object):
     """
     Decorate a generator function for use as a `Scheduler`:class: object.
     """
-    __slots__ = [ '_fn' ]
+    __slots__ = [ '_fn', '_gen' ]
 
     def __init__(self, fn):
         self._fn = fn
+
+    def __call__(self, *args, **kwargs):
+        self._gen = self._fn(*args, **kwargs)
+        return self
 
     ## proxy generator protocol methods
 
@@ -868,23 +873,23 @@ class scheduler(object):
         return self
 
     def next(self):
-        return self._fn.next()
+        return self._gen.next()
 
     def send(self, value):
-        return self._fn.send(value)
+        return self._gen.send(value)
 
     def throw(self, *excinfo):
-        return self._fn.throw(*excinfo)
+        return self._gen.throw(*excinfo)
 
     def close(self):
-        self._fn.close()
+        self._gen.close()
 
     ## add context protocol methods
 
     def __enter__(self):
         return self
 
-    def __exit__(self):
+    def __exit__(self, *excinfo):
         self.close()
 
 
@@ -900,7 +905,7 @@ def first_come_first_serve(tasks, resources, matchmaker=MatchMaker()):
     This is the default scheduling policy in GC3Pie's `Engine`:class.
 
     """
-    for task in tasks:
+    for task_idx, task in enumerate(tasks):
         # keep only compatible resources
         compatible_resources = matchmaker.match(task, resources)
         if not compatible_resources:
@@ -911,8 +916,8 @@ def first_come_first_serve(tasks, resources, matchmaker=MatchMaker()):
         # sort them according to the Task's preference
         targets = matchmaker.rank(task, compatible_resources)
         # now try submission of the task to each resource until one succeeds
-        for target in targets:
-            result = yield (task, target)
+        for target_name in targets:
+            result = yield (task_idx, target_name)
             if result != Run.State.NEW:
                 # task accepted by resource, continue with next task
                 break
@@ -1037,6 +1042,7 @@ class Engine(object):
         self.max_submitted = max_submitted
         self.output_dir = output_dir
         self.fetch_output_overwrites = fetch_output_overwrites
+        self.scheduler = scheduler
 
 
     def add(self, task):
@@ -1229,17 +1235,17 @@ class Engine(object):
                 # and `throw` do not yield a value -- we only get new
                 # stuff from the call to the `next` method in the `for
                 # ... in schedule` line.
-                sched = YieldAtNext(_sched)
-                for task_index, resource_index in sched:
+                sched = gc3libs.utils.YieldAtNext(_sched)
+                for task_index, resource_name in sched:
                     task = self._new[task_index]
-                    resource = self._core.resources[resource_index]
+                    resource = self._core.resources[resource_name]
                     # try to submit; go to SUBMITTED if successful, FAILED if not
                     try:
                         self._core.submit(task, targets=[resource])
                         if self._store:
                             self._store.save(task)
                         self._in_flight.append(task)
-                        transitioned.append(index)
+                        transitioned.append(task_index)
                         if isinstance(task, Application):
                             currently_submitted += 1
                             currently_in_flight += 1
@@ -1254,16 +1260,16 @@ class Engine(object):
                             task, err1.__class__.__name__, str(err1))
                         # inform scheduler and let it handle it
                         try:
-                            sched.trow(* sys.exc_info())
+                            sched.throw(* sys.exc_info())
                         except Exception, err2:
                             if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
                                 # propagate generic exceptions for debugging purposes
                                 raise
                             else:
-                            # print again with traceback at a higher log level
-                            gc3libs.log.debug(
-                                "Ignored error in submitting task '%s': %s: %s",
-                                task, err2.__class__.__name__, str(err2), exc_info=True)
+                                # print again with traceback at a higher log level
+                                gc3libs.log.debug(
+                                    "Ignored error in submitting task '%s': %s: %s",
+                                    task, err2.__class__.__name__, str(err2), exc_info=True)
                     # enforce Engine limits
                     if currently_submitted >= limit_submitted or currently_in_flight >= limit_in_flight:
                         break
