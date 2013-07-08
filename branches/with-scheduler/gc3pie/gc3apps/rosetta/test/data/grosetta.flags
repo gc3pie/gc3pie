@@ -1,0 +1,42 @@
+-run:protocol threading
+-run:shuffle
+-database ./minirosetta_database
+
+-in:file:alignment alignment.filt
+-cm:aln_format grishin
+
+-frag3 boinc_aaquery03_05.200_v1_3.gz
+-frag9 boinc_aaquery09_05.200_v1_3.gz
+
+-in:file:fasta query.fasta
+-in:file:fullatom
+
+-loops::frag_sizes 9 3 1
+-loops::frag_files boinc_aaquery09_05.200_v1_3.gz boinc_aaquery03_05.200_v1_3.gz none
+
+
+
+-in:file:psipred_ss2 query.psipred_ss2
+-in:file:fullatom
+
+-idealize_after_loop_close
+-out:file:silent_struct_type binary
+
+-loops::extended
+-loops::build_initial
+-loops::remodel quick_ccd
+-loops::relax fastrelax
+
+-silent_decoytime
+
+-random_grow_loops_by 4
+-select_best_loop_from 1
+
+-in:detect_disulf false
+-fail_on_bad_hbond false
+
+-bGDT
+-evaluation::gdtmm
+-in:file:template_pdb 1bjpA.pdb 1ca7A.pdb 1cgqA.pdb 1dptA.pdb 1fimA.pdb 1gczA.pdb 1gifA.pdb 1gyjA.pdb 1hfoA.pdb 1mffA.pdb 1mfiA.pdb 1mifA.pdb 1mwwA.pdb 1otfA.pdb 1otgA.pdb 1p1gA.pdb 1s0yA.pdb 1u9dA.pdb 1uizA.pdb 2aagA.pdb 2aajA.pdb 2aalA.pdb 2fltA.pdb 2fm7A.pdb 2op8A.pdb 2ormA.pdb 2os5A.pdb 3c6vA.pdb
+
+-nstruct 1

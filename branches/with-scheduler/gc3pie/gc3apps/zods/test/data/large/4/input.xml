@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<input xsi:noNamespaceSchemaLocation="simulator.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" print_level="1" job_name="cu">
+  <reference_intensities file_name="data.xml" file_format="xml"></reference_intensities>
+  <average_structure>
+    <file format="cif" name="cu.cif" />
+    <atomic_displacement>
+      <adp atom="Cu1" />
+    </atomic_displacement>
+  </average_structure>
+  <disentanglement translational_symmetry_directions="c">
+    <user_defined>
+      <chemical_units_list>
+        <chemical_unit label="CU" probability="1.0" atom_list="Cu1"></chemical_unit>
+      </chemical_units_list>
+      <sets_of_alternatives_list>
+        <set_of_alternatives label="soa" chemical_units_list="CU"></set_of_alternatives>
+      </sets_of_alternatives_list>
+    </user_defined>
+  </disentanglement>
+  <disordered_crystal_simulation>
+    <default_crystal_builder crystal_dimensions="200,200,1" n_MC_cycles="200" />
+  </disordered_crystal_simulation>
+  <interactions>
+    <interaction>
+      <spring parameters="k;r0">
+        <atoms>Cu1;Cu1,(1,0,0)</atoms>
+      </spring>
+    </interaction>
+  </interactions>
+  <independent_parameters>
+    <parameter label="k" value="100" />
+    <parameter label="r0" value="2.5" />
+  </independent_parameters>
+  <intensity_calculation lot_dimensions="20,20,1" n_lots="50" form_factor_type="x-ray" />
+  <run_type>
+    <calculate_intensities n_clones="1">
+      <output>
+        <crystals output_file_formats="xml,discus,xyz,pdb" />
+        <intensities output_file_formats="xml,vtk" print_clone_intensities="false" />
+      </output>
+    </calculate_intensities>
+  </run_type>
+  <analysis output="cu.an">
+    <analyses_list>
+      <composition />
+      <conditional_probability>
+        <conditions_list>
+          <property_condition>
+            <property>
+              <distance>
+                <atom_position atom="Cu1" />
+                <atom_position atom="Cu1,(1,0,0)" />
+              </distance>
+            </property>
+            <condition>
+              <greater_than>2.5</greater_than>
+            </condition>
+          </property_condition>
+        </conditions_list>
+      </conditional_probability>
+      <print_data output="analysis">
+        <properties_list>
+          <displacement>
+            <chemical_unit>CU</chemical_unit>
+          </displacement>
+          <distance>
+            <atom_position atom="Cu1" />
+            <atom_position atom="Cu1,(X+1,Y,Z)" />
+          </distance>
+        </properties_list>
+        <conditions_list>
+          <combined_condition operator="and">
+            <property_condition>
+              <condition>
+                <less_than>12.4</less_than>
+              </condition>
+              <property>
+                <distance>
+                  <atom_position atom="Cu1" />
+                  <atom_position atom="Cu1" />
+                </distance>
+              </property>
+            </property_condition>
+            <chemical_unit_condition chemical_units_list="CU,(1,0,0)" />
+          </combined_condition>
+        </conditions_list>
+      </print_data>
+      <histogram>
+        <binning>
+          <n_bins>15,15,15</n_bins>
+        </binning>
+        <properties_list>
+          <atom_position atom="Cu1"></atom_position>
+        </properties_list>
+        <output>
+          <vtk file_name="cu_displacement.vtk"></vtk>
+        </output>
+      </histogram>
+      <histogram>
+        <binning>
+          <n_bins>20</n_bins>
+        </binning>
+        <properties_list>
+          <dot_product>
+            <atom_position atom="Cu1" />
+            <const_vector>1,0,0</const_vector>
+          </dot_product>
+        </properties_list>
+        <output>
+          <gnuplot file_name="cu_origin_distance" />
+        </output>
+      </histogram>
+      <statistic>
+        <properties_list>
+          <atom_position atom="Cu1" />
+          <atom_position atom="Cu1,(1,0,0)" />
+        </properties_list>
+        <pca scale_variables="true" />
+      </statistic>
+      <structure_scatterplot chemical_units_list="CU">
+        <unit_cell_output>unit_cell.vtk</unit_cell_output>
+        <conditions_list>
+          <chemical_unit_condition chemical_units_list="CU" />
+        </conditions_list>
+        <output />
+      </structure_scatterplot>
+      <export_to_vtk>
+        <vector_field output_file_name="displacement_field.vtk">
+          <vector_list>
+            <vector>
+              <arrow>
+                <atom_position atom="Cu1" />
+              </arrow>
+              <position>
+                <const_vector>0,0,0</const_vector>
+              </position>
+            </vector>
+          </vector_list>
+        </vector_field>
+      </export_to_vtk>
+    </analyses_list>
+  </analysis>
+</input>
