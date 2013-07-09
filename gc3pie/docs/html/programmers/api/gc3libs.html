@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -970,12 +968,30 @@ sample one is created.</p>
 <dl class="function">
 <dt id="gc3libs.create_engine">
 <tt class="descclassname">gc3libs.</tt><tt class="descname">create_engine</tt><big>(</big><em>*conf_files</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.create_engine" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a <a class="reference internal" href="gc3libs/core.html#gc3libs.core.Engine" title="gc3libs.core.Engine"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.core.Engine</span></tt></a> class.</p>
+<dd><p>Create and return a <a class="reference internal" href="gc3libs/core.html#gc3libs.core.Engine" title="gc3libs.core.Engine"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.core.Engine</span></tt></a> class.</p>
 <p>It accepts an optional list of configuration filenames. If the
 filenames contain a <cite>~</cite> or a variable name, it will be expanded
 automatically.</p>
 <p>Called without arguments, a configuration file will be searched in
-~/.gc3/gc3pie.conf and used, if found .</p>
+~/.gc3/gc3pie.conf (and used if found).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>conf_files</strong> &#8211; List of configuration files to read.</li>
+<li><strong>store</strong> &#8211; See the like-named argument to the <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> constructor.</li>
+<li><strong>can_submit</strong> &#8211; See the like-named argument to the <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> constructor.</li>
+<li><strong>can_retrieve</strong> &#8211; See the like-named argument to the <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> constructor.</li>
+<li><strong>max_in_flight</strong> &#8211; See the like-named argument to the <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> constructor.</li>
+<li><strong>max_submitted</strong> &#8211; See the like-named argument to the <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> constructor.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Any extra keyword argument is passed unchanged to the
+<tt class="xref py py-class docutils literal"><span class="pre">Configuration</span></tt> constructor.</p>
 </dd></dl>
 
 </div>
@@ -1032,7 +1048,7 @@ automatically.</p>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

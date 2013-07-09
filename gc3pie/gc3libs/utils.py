@@ -25,7 +25,7 @@ sources of a different project and it would not stop working.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.0rc3 version (SVN $Revision$)'
 
 
 import itertools
@@ -476,14 +476,6 @@ def first(seq):
         pass
     raise TypeError("Argument to `first()` method needs to be iterator or sequence.")
 
-def fgrep(literal, filename):
-    """
-    Iterate over all lines in a file that contain the `literal` string.
-    """
-    with open(filename, 'r') as file:
-        for line in file:
-            if literal in line:
-                yield line
 
 def from_template(template, **extra_args):
     """

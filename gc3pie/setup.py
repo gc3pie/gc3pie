@@ -40,7 +40,7 @@ del sdist.finders[:]
 
 setuptools.setup(
     name = "gc3pie",
-    version = "2.0.dev", # see: http://packages.python.org/distribute/setuptools.html
+    version = '2.1.0rc3', # see: http://packages.python.org/distribute/setuptools.html
 
     packages = setuptools.find_packages(exclude=['ez_setup']),
     # metadata for upload to PyPI
@@ -63,7 +63,6 @@ setuptools.setup(
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.4",
         "Programming Language :: Python :: 2.5",
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
@@ -95,24 +94,28 @@ setuptools.setup(
 
     # run-time dependencies
     install_requires = [
+        # Needed for the EC2 backend.  This would be an optional
+        # dependency, but we're showcasing the new cloud support in
+        # 2.1, so...
+        'boto',
         # paramiko and pycrypto are required for SSH operations
         # ("pycrypto" is actually a dependency of Paramiko, but
         # setuptools apparently does not process dependencies recursively)
-        'paramiko', 'pycrypto>=1.9',
+        'paramiko==1.7.7.2', 'pycrypto==2.6',
+        # lockfile dropped support for Python 2.4 in 0.9
+        'lockfile',
         # prettytable -- format tabular text output
         'prettytable',
         # pyCLI -- object-oriented command-line app programming
-        'pyCLI>=2.0.3',
-        # Needed by SqlStore
-        # 0.7.9 is the latest version with Python2.4 support
-        'sqlalchemy==0.7.9',
+        'pyCLI==2.0.3',
+        # Needed by SqlStore; 0.8.0 is compatible with all Pythons
+        # >=2.5 according to http://docs.sqlalchemy.org/en/rel_0_8/intro.html#installation
+        'sqlalchemy==0.8.0',
         # Needed for parsing human-readable dates (gselect uses it).
-        'parsedatetime',
+        'parsedatetime==0.8.7',
         # needed by Benjamin's DE optimizer code
         # To add as an *optional* dependency
         # 'numpy',
-        # To add as an *optional* dependency
-        # 'boto',
         ],
     # Apparently, this list is read from right to left...
     tests_require = ['tox'],
@@ -132,7 +135,6 @@ setuptools.setup(
             'gc3apps/zods/gzods.py',
             'gc3apps/geotop/ggeotop.py',
             'gc3apps/geotop/ggeotop_utils.py',
-            'gc3apps/geotop/gtsub_control.py',
             'gc3apps/ieu.uzh.ch/gmhc_coev.py',
             'gc3apps/turbomole/gricomp.py',
             'gc3apps/rosetta/gdocking.py',
