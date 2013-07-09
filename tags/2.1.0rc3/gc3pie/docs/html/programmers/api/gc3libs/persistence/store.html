@@ -1,0 +1,249 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.persistence.store &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../../index.html" />
+    <link rel="next" title="gc3libs.quantity" href="../quantity.html" />
+    <link rel="prev" title="gc3libs.persistence.sql" href="sql.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../quantity.html" title="gc3libs.quantity"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="sql.html" title="gc3libs.persistence.sql"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.persistence.store">
+<span id="gc3libs-persistence-store"></span><h1><cite>gc3libs.persistence.store</cite><a class="headerlink" href="#module-gc3libs.persistence.store" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="gc3libs.persistence.store.Persistable">
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.store.</tt><tt class="descname">Persistable</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.store.Persistable" title="Permalink to this definition">¶</a></dt>
+<dd><p>A mix-in class to mark that an object should be persisted by its ID.</p>
+<p>Any instance of this class is saved as an &#8216;external reference&#8217;
+when a container holding a reference to it is saved.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.persistence.store.Store">
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.store.</tt><tt class="descname">Store</tt><a class="headerlink" href="#gc3libs.persistence.store.Store" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interface for storing and retrieving objects on permanent storage.</p>
+<p>Each <cite>save</cite> operation returns a unique &#8220;ID&#8221;; each ID is a Python
+string value, which is guaranteed to be temporally unique, i.e.,
+no two <cite>save</cite> operations in the same persistent store can result
+in the same IDs being assigned to different objects.  The &#8220;ID&#8221; is
+also stored in the instance attribute <cite>_id</cite>.</p>
+<p>Any Python object can stored, provided it meets the following
+conditions:</p>
+<blockquote>
+<div><ul class="simple">
+<li>it can be pickled with Python&#8217;s standard module <cite>pickle</cite>.</li>
+<li>the instance attribute <cite>persistent_id</cite> is reserved for use by
+the <cite>Store</cite> class: it should not be set or altered by other
+parts of the code.</li>
+</ul>
+</div></blockquote>
+<dl class="method">
+<dt id="gc3libs.persistence.store.Store.list">
+<tt class="descname">list</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.store.Store.list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return list of IDs of saved <cite>Job</cite> objects.</p>
+<p>This is an optional method; classes that do not implement it
+should raise a <cite>NotImplementedError</cite> exception.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.persistence.store.Store.load">
+<tt class="descname">load</tt><big>(</big><em>id_</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.store.Store.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a saved object given its ID, and return it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.persistence.store.Store.remove">
+<tt class="descname">remove</tt><big>(</big><em>id_</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.store.Store.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a given object from persistent storage, given its ID.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.persistence.store.Store.replace">
+<tt class="descname">replace</tt><big>(</big><em>id_</em>, <em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.store.Store.replace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replace the object already saved with the given ID with a copy
+of <cite>obj</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.persistence.store.Store.save">
+<tt class="descname">save</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.store.Store.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save an object, and return an ID.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.persistence.store.make_store">
+<tt class="descclassname">gc3libs.persistence.store.</tt><tt class="descname">make_store</tt><big>(</big><em>uri</em>, <em>*args</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.store.make_store" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory producing concrete <a class="reference internal" href="#gc3libs.persistence.store.Store" title="gc3libs.persistence.store.Store"><tt class="xref py py-class docutils literal"><span class="pre">Store</span></tt></a> instances.</p>
+<p>Given a URL and (optionally) initialization arguments, return a
+fully-constructed <a class="reference internal" href="#gc3libs.persistence.store.Store" title="gc3libs.persistence.store.Store"><tt class="xref py py-class docutils literal"><span class="pre">Store</span></tt></a> instance.</p>
+<p>The only required argument is <cite>uri</cite>; if any other arguments are
+present in the function invocation, they are passed verbatim to
+the constructor associated with the scheme of the given <cite>uri</cite>.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fs1</span> <span class="o">=</span> <span class="n">make_store</span><span class="p">(</span><span class="s">&#39;file:///tmp&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fs1</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span>
+<span class="go">&#39;FilesystemStore&#39;</span>
+</pre></div>
+</div>
+<p>Argument <cite>uri</cite> can also consist of a path name, in which case a
+URL scheme &#8216;<a class="reference external" href="file:///">file:///</a>&#8216; is assumed:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fs2</span> <span class="o">=</span> <span class="n">make_store</span><span class="p">(</span><span class="s">&#39;/tmp&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fs2</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span>
+<span class="go">&#39;FilesystemStore&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.persistence.store.register">
+<tt class="descclassname">gc3libs.persistence.store.</tt><tt class="descname">register</tt><big>(</big><em>scheme</em>, <em>constructor</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.store.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register <cite>constructor</cite> as the factory corresponding to an URL scheme.</p>
+<p>If a different constructor is already registered for the same
+scheme, it is silently overwritten.</p>
+<p>The registry mapping schemes to constructors is used in the
+<a class="reference internal" href="#gc3libs.persistence.store.make_store" title="gc3libs.persistence.store.make_store"><tt class="xref py py-func docutils literal"><span class="pre">make_store()</span></tt></a> to create concrete instances of
+<cite>gc3libs.persistence.Store</cite>, given a URI that identifies the kind
+and location of the storage.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>scheme</strong> (<em>str</em>) &#8211; URL scheme to associate with the given constructor.</li>
+<li><strong>constructor</strong> (<em>callable</em>) &#8211; A callable returning a <a class="reference internal" href="#gc3libs.persistence.store.Store" title="gc3libs.persistence.store.Store"><tt class="xref py py-class docutils literal"><span class="pre">Store</span></tt></a></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>instance. Typically, a class constructor.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="sql.html"
+                        title="previous chapter"><cite>gc3libs.persistence.sql</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../quantity.html"
+                        title="next chapter"><cite>gc3libs.quantity</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../quantity.html" title="gc3libs.quantity"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="sql.html" title="gc3libs.persistence.sql"
+             >previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

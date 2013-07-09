@@ -1,0 +1,570 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The gcrypto script &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="up" title="The GC3Apps software" href="index.html" />
+    <link rel="next" title="The GC3Utils software" href="../gc3utils.html" />
+    <link rel="prev" title="The grosetta and gdocking scripts" href="grosetta.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../gc3utils.html" title="The GC3Utils software"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="grosetta.html" title="The grosetta and gdocking scripts"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >User Documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">The GC3Apps software</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-gcrypto-script">
+<span id="gcrypto"></span><h1>The <strong class="command">gcrypto</strong> script<a class="headerlink" href="#the-gcrypto-script" title="Permalink to this headline">¶</a></h1>
+<p>GC3Apps provide a script drive execution of multiple <tt class="docutils literal"><span class="pre">gnfs-cmd</span></tt> jobs
+each of them with a different parameter set. Allotogehter they form a
+single crypto simulation of a large parameter space.
+It uses the generic <cite>gc3libs.cmdline.SessionBasedScript</cite> framework.</p>
+<p>The purpose of <strong class="command">gcrypto</strong> is to execute <em>several concurrent
+runs</em> of <tt class="docutils literal"><span class="pre">gnfs-cmd</span></tt> on a parameter set. These runs are performed in
+parallel using every available GC3Pie <a class="reference internal" href="../../glossary.html#term-resource"><em class="xref std std-term">resource</em></a>; you can of
+course control how many runs should be executed and select what output
+files you want from each one.</p>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>Like in a <cite>for</cite>-loop, the <strong class="command">gcrypto</strong> driver script takes as input
+three mandatory arguments:</p>
+<ol class="arabic simple">
+<li>RANGE_START: initial value of the range (e.g., 800000000)</li>
+<li>RANGE_END: final value of the range (e.g., 1200000000)</li>
+<li>SLICE: extent of the range that will be examined by a single job (e.g., 1000)</li>
+</ol>
+<p>For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># gcrypto 800000000 1200000000 1000</span>
+</pre></div>
+</div>
+<p>will produce 400000 jobs; the first job will perform calculations
+on the range 800000000 to 800000000+1000, the 2nd one will do the
+range 800001000 to 800002000, and so on.</p>
+<p>Inputfile archive location (e.g. <em>lfc://lfc.smscg.ch/crypto/lacal/input.tgz</em>)
+can be specified with the &#8216;-i&#8217; option. Otherwise a default filename
+&#8216;input.tgz&#8217; will be searched in current directory.</p>
+<p>Job progress is monitored and, when a job is done,
+output is retrieved back to submitting host in folders named:
+<tt class="docutils literal"><span class="pre">RANGE_START</span> <span class="pre">+</span> <span class="pre">(SLICE</span> <span class="pre">*</span> <span class="pre">ACTUAL_STEP)</span></tt>
+Where <tt class="docutils literal"><span class="pre">ACTUAL_STEP</span></tt> correspond to the position of the job in the
+overall execution.</p>
+<p>The <strong class="command">gcrypto</strong> command keeps a record of jobs (submitted, executed and
+pending) in a session file (set name with the &#8216;-s&#8217; option); at each
+invocation of the command, the status of all recorded jobs is updated,
+output from finished jobs is collected, and a summary table of all
+known jobs is printed.  New jobs are added to the session if new input
+files are added to the command line.</p>
+<p>Options can specify a maximum number of jobs that should be in
+&#8216;SUBMITTED&#8217; or &#8216;RUNNING&#8217; state; <strong class="command">gcrypto</strong> will delay submission
+of newly-created jobs so that this limit is never exceeded.</p>
+<p>The <strong class="command">gcrypto</strong> execute <em>several runs</em> of <tt class="docutils literal"><span class="pre">gnfs-cmd</span></tt> on a
+parameter set, and collect the generated output.  These runs are
+performed in parallel, up to a limit that can be configured with the
+<tt class="docutils literal"><span class="pre">-J</span></tt> <a class="reference internal" href="../../glossary.html#term-command-line-option"><em class="xref std std-term">command-line option</em></a>.  You can of course control how
+many runs should be executed and select what output files you want
+from each one.</p>
+<p>In more detail, <strong class="command">gcrypto</strong> does the following:</p>
+<ol class="arabic">
+<li><p class="first">Reads the <a class="reference internal" href="../../glossary.html#term-session"><em class="xref std std-term">session</em></a> (specified on the command line with the
+<tt class="docutils literal"><span class="pre">--session</span></tt> option) and loads all stored jobs into memory.
+If the session directory does not exist, one will be created with
+empty contents.</p>
+</li>
+<li><p class="first">Divide the initial parameter range, given in the command-line,
+into chunks taking the <tt class="docutils literal"><span class="pre">-J</span></tt> value as a reference. So
+from a coomand line argument like the following:</p>
+<div class="highlight-python"><pre>$ gcrypto  800000000 1200000000 1000 -J 200</pre>
+</div>
+<p><strong class="command">gcrypto</strong> will generate an initial chunks of 200 jobs
+starting from the initial range 800000000 incrementing of 1000.
+All jobs will run <tt class="docutils literal"><span class="pre">gnfs-cmd</span></tt> on a specific parameter set
+(e.g. 800000000, 800001000, 800002000, ...). <strong class="command">gcrypto</strong> will keep
+constant the number of simulatenous jobs running retrieving
+those terminated and submitting new ones untill the whole
+parameter range has been computed.</p>
+</li>
+<li><p class="first">Updates the state of all existing jobs, collects output from
+finished jobs, and submits new jobs generated in step 2.</p>
+<p>Finally, a summary table of all known jobs is printed.  (To control
+the amount of printed information, see the <tt class="docutils literal"><span class="pre">-l</span></tt> command-line
+option in the <a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a> section.)</p>
+</li>
+<li><p class="first">If the <tt class="docutils literal"><span class="pre">-C</span></tt> command-line option was given (see below), waits
+the specified amount of seconds, and then goes back to step 3.</p>
+<p>The program <strong class="command">gcrypto</strong> exits when all jobs have run to
+completion, i.e., when the whole paramenter range has been
+computed.</p>
+</li>
+</ol>
+<p>Execution can be interrupted at any time by pressing <tt class="kbd docutils literal"><span class="pre">Ctrl+C</span></tt>.
+If the execution has been interrupted, it can be resumed at a later
+stage by calling <strong class="command">gcrypto</strong> with exactly the same
+command-line options.</p>
+<p><strong class="command">gcrypto</strong> requires a number of default input files common to every
+submited job. This list of input files is automatically fetched by
+<strong class="command">gcrypto</strong> from a default storage repository.
+Those files are:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">gnfs</span><span class="o">-</span><span class="n">lasieve6</span>
+<span class="n">M1019</span>
+<span class="n">M1019</span><span class="o">.</span><span class="n">st</span>
+<span class="n">M1037</span>
+<span class="n">M1037</span><span class="o">.</span><span class="n">st</span>
+<span class="n">M1051</span>
+<span class="n">M1051</span><span class="o">.</span><span class="n">st</span>
+<span class="n">M1067</span>
+<span class="n">M1067</span><span class="o">.</span><span class="n">st</span>
+<span class="n">M1069</span>
+<span class="n">M1069</span><span class="o">.</span><span class="n">st</span>
+<span class="n">M1093</span>
+<span class="n">M1093</span><span class="o">.</span><span class="n">st</span>
+<span class="n">M1109</span>
+<span class="n">M1109</span><span class="o">.</span><span class="n">st</span>
+<span class="n">M1117</span>
+<span class="n">M1117</span><span class="o">.</span><span class="n">st</span>
+<span class="n">M1123</span>
+<span class="n">M1123</span><span class="o">.</span><span class="n">st</span>
+<span class="n">M1147</span>
+<span class="n">M1147</span><span class="o">.</span><span class="n">st</span>
+<span class="n">M1171</span>
+<span class="n">M1171</span><span class="o">.</span><span class="n">st</span>
+<span class="n">M8e_1200</span>
+<span class="n">M8e_1500</span>
+<span class="n">M8e_200</span>
+<span class="n">M8e_2000</span>
+<span class="n">M8e_2500</span>
+<span class="n">M8e_300</span>
+<span class="n">M8e_3000</span>
+<span class="n">M8e_400</span>
+<span class="n">M8e_4200</span>
+<span class="n">M8e_600</span>
+<span class="n">M8e_800</span>
+<span class="n">tdsievemt</span>
+</pre></div>
+</div>
+<p>When <strong class="command">gcrypto</strong> has to be executed with a different set of input
+files, an additional command line argument <tt class="docutils literal"><span class="pre">--input-files</span></tt> could be
+used to specify the locatin of a <tt class="docutils literal"><span class="pre">tar.gz</span></tt> archive containing the
+input files that <tt class="docutils literal"><span class="pre">gnfs-cmd</span></tt> will expect. Similarly, when a different
+version of gnfs-cmd command needs to be used, the command line
+argument <tt class="docutils literal"><span class="pre">--gnfs-cmd</span></tt> could be used to specify the location of the
+<tt class="docutils literal"><span class="pre">gnfs-cmd</span></tt> to be used.</p>
+</div>
+<div class="section" id="command-line-invocation-of-gcrypto">
+<h2>Command-line invocation of <strong class="command">gcrypto</strong><a class="headerlink" href="#command-line-invocation-of-gcrypto" title="Permalink to this headline">¶</a></h2>
+<p>The <strong class="command">gcrypto</strong> script is based on GC3Pie&#8217;s <a class="reference internal" href="intro.html#session-based-script"><em>session-based
+script</em></a> model; please read also the
+<a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a> section for an introduction to sessions
+and generic command-line options.</p>
+<p>A <strong class="command">gcrypto</strong> command-line is constructed as follows:
+Like a <cite>for</cite>-loop, the <strong class="command">gcrypto</strong> driver script takes as input
+three mandatory arguments:</p>
+<ol class="arabic simple">
+<li><em>RANGE_START</em>: initial value of the range (e.g., 800000000)</li>
+<li><em>RANGE_END</em>: final value of the range (e.g., 1200000000)</li>
+<li><em>SLICE</em>: extent of the range that will be examined by a single job (e.g., 1000)</li>
+</ol>
+<p><strong>Example 1.</strong> The following command-line invocation uses
+<strong class="command">gcrypto</strong> to run <tt class="docutils literal"><span class="pre">gnfs-cmd</span></tt> on the parameter set ranging from
+800000000 to 1200000000 with an increment of 1000.</p>
+<div class="highlight-python"><pre>$ gcrypto 800000000 1200000000 1000</pre>
+</div>
+<p>In this case <strong class="command">gcrypto</strong> will use the default values for
+determine the chunks size from the default value of the <tt class="docutils literal"><span class="pre">-J</span></tt>
+option (default value is 50 simulatenous jobs).</p>
+<p><strong>Example 2.</strong></p>
+<div class="highlight-python"><pre>$ gcrypto --session SAMPLE_SESSION -c 4 -w 4 -m 8 800000000 1200000000 1000</pre>
+</div>
+<p>In this example, job information is stored into session
+<tt class="docutils literal"><span class="pre">SAMPLE_SESSION</span></tt> (see the documentation of the <tt class="docutils literal"><span class="pre">--session</span></tt> option
+in <a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a>).  The command above creates the jobs,
+submits them, and finally prints the following status report:</p>
+<div class="highlight-python"><pre>Status of jobs in the 'SAMPLE_SESSION' session: (at 10:53:46, 02/28/12)
+NEW   0/50    (0.0%)
+RUNNING   0/50    (0.0%)
+STOPPED   0/50    (0.0%)
+SUBMITTED   50/50   (100.0%)
+TERMINATED   0/50    (0.0%)
+TERMINATING   0/50    (0.0%)
+total   50/50   (100.0%)</pre>
+</div>
+<p>Note that the status report counts the number of <em>jobs in the
+session</em>, not the total number of jobs that would correspond to the
+whole parameter range. (Feel free to report this as a bug.)</p>
+<p>Calling <strong class="command">gcrypto</strong> over and over again will result in the same jobs
+being monitored;</p>
+<p>The <tt class="docutils literal"><span class="pre">-C</span></tt> option tells <strong class="command">gcrypto</strong> to continue running until
+all jobs have finished running and the output files have been
+correctly retrieved.  On successful completion, the command given in
+<em>example 2.</em> above, would print:</p>
+<div class="highlight-python"><pre>Status of jobs in the 'SAMPLE_SESSION' session: (at 11:05:50, 02/28/12)
+NEW   0/400k    (0.0%)
+RUNNING   0/400k    (0.0%)
+STOPPED   0/400k    (0.0%)
+SUBMITTED   0/400k    (0.0%)
+TERMINATED   50/400k   (100.0%)
+TERMINATING   0/400k    (0.0%)
+ok   400k/400k   (100.0%)
+total   400k/400k   (100.0%)</pre>
+</div>
+<p>Each job will be named after the parameter range it has computed (e.g.
+800001000, 800002000, ... ) (you could see this by passing
+the <tt class="docutils literal"><span class="pre">-l</span></tt> option to <strong class="command">gcrypto</strong>); each of these jobs will
+create an output directory named after the job.</p>
+<p>For each job, the set of output files is automatically retrieved and
+placed in the locations described below.</p>
+</div>
+<div class="section" id="output-files-for-gcrypto">
+<h2>Output files for <strong class="command">gcrypto</strong><a class="headerlink" href="#output-files-for-gcrypto" title="Permalink to this headline">¶</a></h2>
+<p>Upon successful completion, the output directory of each
+<strong class="command">gcrypto</strong> job contains:</p>
+<ul class="simple">
+<li>a number of <tt class="docutils literal"><span class="pre">.tgz</span></tt> files each of them correspondin to a step
+within the execution of the <tt class="docutils literal"><span class="pre">gnfs-cmd</span></tt> command.</li>
+<li>A log file named <tt class="file docutils literal"><span class="pre">gcrypto.log</span></tt> containing both the
+<a class="reference internal" href="../../glossary.html#term-stdout"><em class="xref std std-term">stdout</em></a> and the <a class="reference internal" href="../../glossary.html#term-stderr"><em class="xref std std-term">stderr</em></a> of the <tt class="docutils literal"><span class="pre">gnfs-cmd</span></tt>
+execution.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The number of <tt class="docutils literal"><span class="pre">.tgz</span></tt> files may depend on whether the
+execution of the <tt class="docutils literal"><span class="pre">gnfs-cmd</span></tt> command has completed or not
+(e.g. jobs may be killed by the batch system when exausting
+requested resources)</p>
+</div>
+</div>
+<div class="section" id="example-usage">
+<h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
+<p>This section contains commented example sessions with
+<strong class="command">gcrypto</strong>.</p>
+<div class="section" id="manage-a-set-of-jobs-from-start-to-end">
+<h3>Manage a set of jobs from start to end<a class="headerlink" href="#manage-a-set-of-jobs-from-start-to-end" title="Permalink to this headline">¶</a></h3>
+<p><em>In typical operation,</em> one calls <strong class="command">gcrypto</strong> with the <tt class="docutils literal"><span class="pre">-C</span></tt>
+option and lets it manage a set of jobs until completion.</p>
+<p>So, to compute a whole parameter range from 800000000 to 1200000000
+with an increment of 1000, submitting 200 jobs simultaneously each of
+them requesting 4 computing cores, 8GB of memory and 4 hours of
+<a class="reference internal" href="../../glossary.html#term-walltime"><em class="xref std std-term">wall-clock time</em></a>, one can use the following
+command-line invocation:</p>
+<div class="highlight-python"><pre>$ gcrypto -s example -C 120 -J 200 -c 4 -w 4 -m 8 800000000 1200000000 1000</pre>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">-s</span> <span class="pre">example</span></tt> option tells <strong class="command">gcrypto</strong> to store
+information about the computational jobs in the <tt class="docutils literal"><span class="pre">example.jobs</span></tt>
+directory.</p>
+<p>The <tt class="docutils literal"><span class="pre">-C</span> <span class="pre">120</span></tt> option tells <strong class="command">gcrypto</strong> to update job state
+every 120 seconds; output from finished jobs is retrieved and new jobs
+are submitted at the same interval.</p>
+<p>The above command will start by printing a status report like the
+following:</p>
+<div class="highlight-python"><pre>Status of jobs in the 'example.csv' session:
+SUBMITTED   1/1 (100.0%)</pre>
+</div>
+<p>It will continue printing an updated status report every 120 seconds
+until the requested parameter range has been computed.</p>
+<p>In GC3Pie terminology when a job is finished and its output has been
+successfully retrieved, the job is marked as <tt class="docutils literal"><span class="pre">TERMINATED</span></tt>:</p>
+<div class="highlight-python"><pre>Status of jobs in the 'example.csv' session:
+TERMINATED   1/1 (100.0%)</pre>
+</div>
+</div>
+</div>
+<div class="section" id="using-gc3pie-utilities">
+<h2>Using GC3Pie utilities<a class="headerlink" href="#using-gc3pie-utilities" title="Permalink to this headline">¶</a></h2>
+<p>GC3Pie comes with a set of generic utilities that could be used as a
+complemet to the <strong class="command">gcrypto</strong> command to better manage a entire
+session execution.</p>
+<div class="section" id="gkill-cancel-a-running-job">
+<h3><strong class="command">gkill</strong>: cancel a running job<a class="headerlink" href="#gkill-cancel-a-running-job" title="Permalink to this headline">¶</a></h3>
+<p>To cancel a running job, you can use the command <strong class="command">gkill</strong>.  For
+instance, to cancel <em>job.16</em>, you would type the following command
+into the terminal:</p>
+<div class="highlight-python"><pre>gkill job.16</pre>
+</div>
+<p>or:</p>
+<div class="highlight-python"><pre>gkill -s example job.16</pre>
+</div>
+<p>gkill could also be used to cancel jobs in  a given state</p>
+<div class="highlight-python"><pre>gkill -s example -l UNKNOWN</pre>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last"><em>There&#8217;s no way to undo a cancel operation!</em> Once you have issued a
+<strong class="command">gkill</strong> command, the job is deleted and it cannot be resumed.
+(You can still re-submit it with <strong class="command">gresub</strong>, though.)</p>
+</div>
+</div>
+<div class="section" id="ginfo-accessing-low-level-details-of-a-job">
+<h3><strong class="command">ginfo</strong>: accessing low-level details of a job<a class="headerlink" href="#ginfo-accessing-low-level-details-of-a-job" title="Permalink to this headline">¶</a></h3>
+<p>It is sometimes necessary, for debugging purposes, to print out all
+the details about a job; the <strong class="command">ginfo</strong> command does just that: prints
+all the details that GC3Utils know about a single job.</p>
+<p>For instance, to print out detailed information about <cite>job.13</cite> in
+session <cite>example</cite>, you would type</p>
+<div class="highlight-python"><pre>ginfo -s example job.13</pre>
+</div>
+<p>For a job in <tt class="docutils literal"><span class="pre">RUNNING</span></tt> or <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> state, only little
+information is known: basically, where the job is running, and when it
+was started:</p>
+<div class="highlight-python"><pre>$ ginfo -s example job.13
+job.13
+    cores: 2
+    execution_targets: hera.wsl.ch
+    log:
+        SUBMITTED at Tue May 15 09:52:05 2012
+        Submitted to 'wsl' at Tue May 15 09:52:05 2012
+        RUNNING at Tue May 15 10:07:39 2012
+    lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/116613370683251353308673
+    lrms_jobname: LACAL_800001000
+    original_exitcode: -1
+    queue: smscg.q
+    resource_name: wsl
+    state_last_changed: 1337069259.18
+    stderr_filename: gcrypto.log
+    stdout_filename: gcrypto.log
+    timestamp:
+        RUNNING: 1337069259.18
+        SUBMITTED: 1337068325.26
+    unknown_iteration: 0
+    used_cputime: 1380
+    used_memory: 3382706</pre>
+</div>
+<p>If you omit the job number, information about <em>all</em> jobs in the
+session will be printed.</p>
+<p>Most of the output is only useful if you are familiar with GC3Utils
+inner working. Nonetheless, <strong class="command">ginfo</strong> output is definitely something
+you should include in any report about a misbehaving job!</p>
+<p>For a finished job, the information is more complete and can include
+error messages in case the job has failed:</p>
+<div class="highlight-python"><pre>$ ginfo -c -s example job.13
+job.13
+    _arc0_state_last_checked: 1337069259.18
+    _exitcode: 0
+    _signal: None
+    _state: TERMINATED
+    cores: 2
+    download_dir: /data/crypto/results/example.out/8000001000
+    execution_targets: hera.wsl.ch
+    log:
+        SUBMITTED at Tue May 15 09:52:04 2012
+        Submitted to 'wsl' at Tue May 15 09:52:04 2012
+        TERMINATING at Tue May 15 10:07:39 2012
+        Final output downloaded to '/data/crypto/results/example.out/8000001000'
+        TERMINATED at Tue May 15 10:07:43 2012
+    lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/11441337068324584585032
+    lrms_jobname: LACAL_800001000
+    original_exitcode: 0
+    queue: smscg.q
+    resource_name: wsl
+    state_last_changed: 1337069263.13
+    stderr_filename: gcrypto.log
+    stdout_filename: gcrypto.log
+    timestamp:
+        SUBMITTED: 1337068324.87
+        TERMINATED: 1337069263.13
+        TERMINATING: 1337069259.18
+    unknown_iteration: 0
+    used_cputime: 360
+    used_memory: 3366977
+    used_walltime: 300</pre>
+</div>
+<p>With option <tt class="docutils literal"><span class="pre">-v</span></tt>, <strong class="command">ginfo</strong> output is even more verbose and complete,
+and includes information about the application itself, the input and
+output files, plus some backend-specific information:</p>
+<div class="highlight-python"><pre>$ ginfo -c -s example job.13
+job.13
+  arguments: 800000800, 100, 2, input.tgz
+  changed: False
+  environment:
+  executable: gnfs-cmd
+  executables: gnfs-cmd
+  execution:
+      _arc0_state_last_checked: 1337069259.18
+      _exitcode: 0
+      _signal: None
+      _state: TERMINATED
+      cores: 2
+      download_dir: /data/crypto/results/example.out/8000001000
+      execution_targets: hera.wsl.ch
+      log:
+          SUBMITTED at Tue May 15 09:52:04 2012
+          Submitted to 'wsl' at Tue May 15 09:52:04 2012
+          TERMINATING at Tue May 15 10:07:39 2012
+          Final output downloaded to '/data/crypto/results/example.out/8000001000'
+          TERMINATED at Tue May 15 10:07:43 2012
+      lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/11441337068324584585032
+      lrms_jobname: LACAL_800001000
+      original_exitcode: 0
+      queue: smscg.q
+      resource_name: wsl
+      state_last_changed: 1337069263.13
+      stderr_filename: gcrypto.log
+      stdout_filename: gcrypto.log
+      timestamp:
+          SUBMITTED: 1337068324.87
+          TERMINATED: 1337069263.13
+          TERMINATING: 1337069259.18
+      unknown_iteration: 0
+      used_cputime: 360
+      used_memory: 3366977
+      used_walltime: 300
+  inputs:
+      srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/crypto/gnfs-cmd_20120406: gnfs-cmd
+      srm://dpm.lhep.unibe.ch/dpm/lhep.unibe.ch/home/crypto/lacal_input_files.tgz: input.tgz
+  jobname: LACAL_800000900
+  join: True
+  output_base_url: None
+  output_dir: /data/crypto/results/example.out/8000001000
+  outputs:
+      @output.list: file, , @output.list, None, None, None, None
+      gcrypto.log: file, , gcrypto.log, None, None, None, None
+  persistent_id: job.1698503
+  requested_architecture: x86_64
+  requested_cores: 2
+  requested_memory: 4
+  requested_walltime: 4
+  stderr: None
+  stdin: None
+  stdout: gcrypto.log
+  tags: APPS/CRYPTO/LACAL-1.0</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The <strong class="command">gcrypto</strong> script</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#command-line-invocation-of-gcrypto">Command-line invocation of <strong class="command">gcrypto</strong></a></li>
+<li><a class="reference internal" href="#output-files-for-gcrypto">Output files for <strong class="command">gcrypto</strong></a></li>
+<li><a class="reference internal" href="#example-usage">Example usage</a><ul>
+<li><a class="reference internal" href="#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-gc3pie-utilities">Using GC3Pie utilities</a><ul>
+<li><a class="reference internal" href="#gkill-cancel-a-running-job"><strong class="command">gkill</strong>: cancel a running job</a></li>
+<li><a class="reference internal" href="#ginfo-accessing-low-level-details-of-a-job"><strong class="command">ginfo</strong>: accessing low-level details of a job</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="grosetta.html"
+                        title="previous chapter">The <strong class="command">grosetta</strong> and <strong class="command">gdocking</strong> scripts</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../gc3utils.html"
+                        title="next chapter">The GC3Utils software</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../gc3utils.html" title="The GC3Utils software"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="grosetta.html" title="The grosetta and gdocking scripts"
+             >previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >User Documentation</a> &raquo;</li>
+          <li><a href="index.html" >The GC3Apps software</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

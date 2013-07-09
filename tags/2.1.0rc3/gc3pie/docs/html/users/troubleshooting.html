@@ -1,0 +1,374 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Troubleshooting GC3Pie &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="up" title="User Documentation" href="index.html" />
+    <link rel="next" title="Programmer Documentation" href="../programmers/index.html" />
+    <link rel="prev" title="The GC3Utils software" href="gc3utils.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../programmers/index.html" title="Programmer Documentation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gc3utils.html" title="The GC3Utils software"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="troubleshooting-gc3pie">
+<span id="troubleshooting"></span><h1><a class="toc-backref" href="#id2">Troubleshooting GC3Pie</a><a class="headerlink" href="#troubleshooting-gc3pie" title="Permalink to this headline">¶</a></h1>
+<p>This page lists a number of errors and issues that you might run into,
+together with their solution.  Please use the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing list</a>
+for further help and for any problem not reported here!</p>
+<p>Each section covers a different Python error; the section is named
+after the error name appearing in the <em>last line</em> of the Python
+traceback.  (See section <a class="reference internal" href="#what-is-a-python-traceback">What is a Python traceback?</a> below)</p>
+<div class="contents topic" id="contents">
+<p class="topic-title first">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#troubleshooting-gc3pie" id="id2">Troubleshooting GC3Pie</a><ul>
+<li><a class="reference internal" href="#what-is-a-python-traceback" id="id3">What is a Python traceback?</a></li>
+<li><a class="reference internal" href="#common-errors-using-gc3pie" id="id4">Common errors using GC3Pie</a><ul>
+<li><a class="reference internal" href="#attributeerror-args" id="id5">AttributeError: args</a></li>
+<li><a class="reference internal" href="#attributeerror-module-object-has-no-attribute-stringio" id="id6">AttributeError: <cite>module</cite> object has no attribute <cite>StringIO</cite></a></li>
+<li><a class="reference internal" href="#distributionnotfound" id="id7">DistributionNotFound</a></li>
+<li><a class="reference internal" href="#ftpcontrolerror-server-responded-file-unavailable" id="id8">FTPControlError: Server responded: File unavailable.</a></li>
+<li><a class="reference internal" href="#importerror-site-packages-arclib-so-undefined-symbol-py-initmodule4" id="id9">ImportError: <tt class="docutils literal"><span class="pre">.../site-packages/_arclib.so</span></tt>: undefined symbol: <tt class="docutils literal"><span class="pre">Py_InitModule4</span></tt></a></li>
+<li><a class="reference internal" href="#importerror-no-module-named-pstats" id="id10">ImportError: No module named <tt class="docutils literal"><span class="pre">pstats</span></tt></a></li>
+<li><a class="reference internal" href="#noresources-could-not-initialize-any-computational-resource-please-check-log-and-configuration-file" id="id11">NoResources: Could not initialize any computational resource - please check log and configuration file.</a></li>
+<li><a class="reference internal" href="#terminate-called-after-throwing-an-instance-of-ldapqueryerror" id="id12">Terminate called after throwing an instance of <tt class="docutils literal"><span class="pre">LdapQueryError</span></tt></a></li>
+<li><a class="reference internal" href="#valueerror-i-o-operation-on-closed-file" id="id13">ValueError: I/O operation on closed file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="what-is-a-python-traceback">
+<h2><a class="toc-backref" href="#id3">What is a Python traceback?</a><a class="headerlink" href="#what-is-a-python-traceback" title="Permalink to this headline">¶</a></h2>
+<p>A <em>traceback</em> is a long Python error message, detailing the call stack
+in the code that lead to a specific error condition.</p>
+<p>Tracebacks always look like this one (the number of lines printed, the
+files involved and the actual error message will, of course, vary):</p>
+<div class="highlight-python"><pre>Traceback (most recent call last):
+ File "/home/mpackard/gc3pie/bin/gsub", line 9, in &lt;module&gt;
+   load_entry_point('gc3pie==1.0rc7', 'console_scripts', 'gsub')()
+ File "/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/frontend.py", line 137, in main
+   import gc3utils.commands
+ File "/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/commands.py", line 31, in &lt;module&gt;
+   import cli.app
+ File "/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/app.py", line 37, in &lt;module&gt;
+   from cli.util import ifelse, ismethodof
+ File "/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/util.py", line 28, in &lt;module&gt;
+   BaseStringIO = StringIO.StringIO
+AttributeError: 'module' object has no attribute 'StringIO'</pre>
+</div>
+<p>Let&#8217;s analyize how a traceback is formed, top to bottom.</p>
+<p>A traceback is <em>always</em> started by the line:</p>
+<div class="highlight-python"><pre>Traceback (most recent call last):</pre>
+</div>
+<p>Then follow a number of line pairs like this one:</p>
+<div class="highlight-python"><pre>File "/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/frontend.py", line 137, in main
+  import gc3utils.commands</pre>
+</div>
+<p>The first line shows the file name and the line number where the
+program stopped; the second line displays the instruction that Python
+was executing when the error occurred.  <em>We shall always omit this
+part of the traceback in the listings below.</em></p>
+<p>Finally, the traceback ends with the error message on the <em>last</em> line:</p>
+<div class="highlight-python"><pre>AttributeError: 'module' object has no attribute 'StringIO'</pre>
+</div>
+<p>Just look up this error message in the section headers below; if you
+cannot find any relevant section, please write to the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing
+list</a> for help.</p>
+</div>
+<div class="section" id="common-errors-using-gc3pie">
+<h2><a class="toc-backref" href="#id4">Common errors using GC3Pie</a><a class="headerlink" href="#common-errors-using-gc3pie" title="Permalink to this headline">¶</a></h2>
+<p>This section section lists Python errors that may happen when using
+GC3Pie; each section is named after the error name appearing in the
+<em>last line</em> of the Python traceback.  (See section <a class="reference internal" href="#what-is-a-python-traceback">What is a Python
+traceback?</a> above.)</p>
+<p>If you get an error that is not listed here, please get in touch via
+the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing list</a>.</p>
+<div class="section" id="attributeerror-args">
+<h3><a class="toc-backref" href="#id5">AttributeError: args</a><a class="headerlink" href="#attributeerror-args" title="Permalink to this headline">¶</a></h3>
+<p>This error is signaled by a traceback like the following:</p>
+<div class="highlight-python"><pre>   Traceback (most recent call last):
+     ...
+     File "/opt/nordugrid/lib/python2.4/site-packages/arclib.py",
+line 1146, in &lt;lambda&gt;
+       __getattr__ = lambda self, name: _swig_getattr(self,
+CertificateError, name)
+     File "/opt/nordugrid/lib/python2.4/site-packages/arclib.py",
+line 54, in _swig_getattr
+       raise AttributeError(name)
+   AttributeError: args</pre>
+</div>
+<p>This is due to a version mismatch between the Python interpreter and
+the NorduGrid ARClib; it&#8217;s really the same issue as in <a class="reference internal" href="#importerror-site-packages-arclib-so-undefined-symbol-py-initmodule4">ImportError:
+.../site-packages/_arclib.so: undefined symbol: Py_InitModule4</a>,
+which see for a discussion and remedies.</p>
+</div>
+<div class="section" id="attributeerror-module-object-has-no-attribute-stringio">
+<h3><a class="toc-backref" href="#id6">AttributeError: <cite>module</cite> object has no attribute <cite>StringIO</cite></a><a class="headerlink" href="#attributeerror-module-object-has-no-attribute-stringio" title="Permalink to this headline">¶</a></h3>
+<p>This error:</p>
+<div class="highlight-python"><pre>Traceback (most recent call last):
+ ...
+ File "/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/util.py",
+line 28, in &lt;module&gt;
+   BaseStringIO = StringIO.StringIO
+AttributeError: 'module' object has no attribute 'StringIO'</pre>
+</div>
+<p>is due to a conflicts of the <a class="reference external" href="pycli">pyCLI library</a> (prior to version 2.0.3) and the
+<a class="reference external" href="python-stats">Debian/Ubuntu package *python-stats*</a></p>
+<p>There are three ways to get rid of the error:</p>
+<ol class="arabic simple">
+<li>Uninstall the <cite>*python-stats* package &lt;python-stats&gt;</cite> (run the command <tt class="docutils literal"><span class="pre">apt-get</span> <span class="pre">remove</span> <span class="pre">python-stats</span></tt> as user <tt class="docutils literal"><span class="pre">root</span></tt>)</li>
+<li>Upgrade <a class="reference external" href="http://pypi.python.org/pypi/pyCLI">pyCLI</a> to version 2.0.3 at least.</li>
+<li><a class="reference internal" href="install.html#upgrade"><em>Upgrade</em></a> GC3Pie, which will force an upgrade of pyCLI.</li>
+</ol>
+</div>
+<div class="section" id="distributionnotfound">
+<h3><a class="toc-backref" href="#id7">DistributionNotFound</a><a class="headerlink" href="#distributionnotfound" title="Permalink to this headline">¶</a></h3>
+<p>If you get this error:</p>
+<div class="highlight-python"><pre>Traceback (most recent call last):
+    ...
+pkg_resources.DistributionNotFound: gc3pie==1.0rc2</pre>
+</div>
+<p>It usually means that you didn&#8217;t run <tt class="docutils literal"><span class="pre">source</span> <span class="pre">../bin/activate;</span>
+<span class="pre">./setup.py</span> <span class="pre">develop</span></tt> when upgrading GC3Pie.</p>
+<p>Please re-do the steps in the <a class="reference internal" href="install.html#upgrade"><em>GC3Pie Upgrade instructions</em></a> to fix the error.</p>
+</div>
+<div class="section" id="ftpcontrolerror-server-responded-file-unavailable">
+<h3><a class="toc-backref" href="#id8">FTPControlError: Server responded: File unavailable.</a><a class="headerlink" href="#ftpcontrolerror-server-responded-file-unavailable" title="Permalink to this headline">¶</a></h3>
+<p>Sample error traceback:</p>
+<div class="highlight-python"><pre>Traceback (most recent call last):
+  ...
+  File "/opt/nordugrid/lib/python2.5/site-packages/arclib.py", line 1405, in Download
+    def Download(self, *args): return _arclib.FTPControl_Download(self, *args)
+arclib.FTPControlError: Server responded: File unavailable.</pre>
+</div>
+<p>This error happens when trying to view a non-existent file with the
+<strong class="command">gtail</strong> command; see <a class="reference external" href="http://code.google.com/p/gc3pie/issues/detail?id=111">Issue 111</a> for details.</p>
+<p>Once a job goes into <tt class="docutils literal"><span class="pre">RUNNING</span></tt> state, its standard output log is not
+made immediately available to the batch system.  The only solution is
+to try again later; if the error persists, there might be some problem
+with the application that is not creating its output file as expected.
+This would needs further investigation and you are encouraged to
+report to the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing list</a> about it.</p>
+</div>
+<div class="section" id="importerror-site-packages-arclib-so-undefined-symbol-py-initmodule4">
+<h3><a class="toc-backref" href="#id9">ImportError: <tt class="docutils literal"><span class="pre">.../site-packages/_arclib.so</span></tt>: undefined symbol: <tt class="docutils literal"><span class="pre">Py_InitModule4</span></tt></a><a class="headerlink" href="#importerror-site-packages-arclib-so-undefined-symbol-py-initmodule4" title="Permalink to this headline">¶</a></h3>
+<p>This error:</p>
+<div class="highlight-python"><pre>Traceback (most recent call last):
+  ...
+  File ".../site-packages/arclib.py", line 17, in swig_import_helper
+    import _arclib
+ImportError: .../site-packages/_arclib.so: undefined symbol: Py_InitModule4</pre>
+</div>
+<p>Is due to a mismatch of the Python version and the NorduGrid ARClib
+library: it occurs when the <tt class="file docutils literal"><span class="pre">arclib</span></tt> library has been compiled
+for a different Python version than the one you&#8217;re using.</p>
+<p><a class="reference external" href="http://www.nordugrid.org/">NorduGrid</a> compiles their ARC/Python library with the default Python
+that comes with the Linux distribution; thus, if you are using a
+Python version different from the default, there&#8217;s a good chance that
+the ARC library will not work with that Python.</p>
+<p>A rule of thumb to determine if you are using the default Python is to
+run the command <tt class="docutils literal"><span class="pre">which</span> <span class="pre">python</span></tt>.  If this outputs anything different
+from <tt class="file docutils literal"><span class="pre">/usr/bin/python</span></tt> or <tt class="file docutils literal"><span class="pre">/bin/python</span></tt>, then you are
+using a custom Python version.  You might want to ask your systems
+administrator to install the version of <tt class="file docutils literal"><span class="pre">arclib</span></tt> appropriate for
+your Python, or to revert to the default Python.</p>
+<p>Failing that, please ask on the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing list</a>: each case is
+subtly different and it&#8217;s impossible to give universally-valid
+instructions.</p>
+</div>
+<div class="section" id="importerror-no-module-named-pstats">
+<h3><a class="toc-backref" href="#id10">ImportError: No module named <tt class="docutils literal"><span class="pre">pstats</span></tt></a><a class="headerlink" href="#importerror-no-module-named-pstats" title="Permalink to this headline">¶</a></h3>
+<p>This error only occurs on Debian and Ubuntu GNU/Linux:</p>
+<div class="highlight-python"><pre>Traceback (most recent call last):
+File ".../pyCLI-2.0.2-py2.6.egg/cli/util.py", line 19, in &lt;module&gt;
+   import pstats
+ImportError: No module named pstats</pre>
+</div>
+<p>To solve the issue: install the <cite>*python-profiler* package &lt;python-profiler&gt;</cite>:</p>
+<div class="highlight-python"><pre>apt-get install python-profiler # as `root` user</pre>
+</div>
+</div>
+<div class="section" id="noresources-could-not-initialize-any-computational-resource-please-check-log-and-configuration-file">
+<h3><a class="toc-backref" href="#id11">NoResources: Could not initialize any computational resource - please check log and configuration file.</a><a class="headerlink" href="#noresources-could-not-initialize-any-computational-resource-please-check-log-and-configuration-file" title="Permalink to this headline">¶</a></h3>
+<p>This error:</p>
+<div class="highlight-python"><pre>Traceback (most recent call last):
+  ...
+  File ".../src/gc3libs/core.py", line 150, in submit
+    raise gc3libs.exceptions.NoResources("Could not initialize any computational resource"
+gc3libs.exceptions.NoResources: Could not initialize any computational resource - please check log and configuration file.</pre>
+</div>
+<p>can have two different causes:</p>
+<ol class="arabic simple">
+<li>You didn&#8217;t create a configuration file, or you did not list any resource in it.</li>
+<li>Some other error prevented the resources from being initialized, or the configuration file from being properly read.</li>
+</ol>
+</div>
+<div class="section" id="terminate-called-after-throwing-an-instance-of-ldapqueryerror">
+<h3><a class="toc-backref" href="#id12">Terminate called after throwing an instance of <tt class="docutils literal"><span class="pre">LdapQueryError</span></tt></a><a class="headerlink" href="#terminate-called-after-throwing-an-instance-of-ldapqueryerror" title="Permalink to this headline">¶</a></h3>
+<p>This error has been reported after some days of running the
+<strong class="command">gcodeml</strong> script with the ARC backend:</p>
+<div class="highlight-python"><pre>terminate called after throwing an instance of 'LdapQueryError'
+ what():  Thread creation in ParallelLdapQueries failed
+Aborted</pre>
+</div>
+<p>We believe this is a <a class="reference external" href="http://bugzilla.nordugrid.org/show_bug.cgi?id=2830">bug in the ARC libraries</a>, but not much
+information is known at the moment.  So, if you see an instance of
+this, please get in touch via the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing list</a>.</p>
+</div>
+<div class="section" id="valueerror-i-o-operation-on-closed-file">
+<h3><a class="toc-backref" href="#id13">ValueError: I/O operation on closed file</a><a class="headerlink" href="#valueerror-i-o-operation-on-closed-file" title="Permalink to this headline">¶</a></h3>
+<p>Sample error traceback (may be repeated multiple times over):</p>
+<div class="highlight-python"><pre>Traceback (most recent call last):
+  File "/usr/lib/python2.5/logging/__init__.py", line 750, in emit
+    self.stream.write(fs % msg)
+ValueError: I/O operation on closed file</pre>
+</div>
+<p>This is discussed in <a class="reference external" href="http://code.google.com/p/gc3pie/issues/detail?id=182">Issue 182</a>; a fix have been committed to
+release 1.0, so if you are seeing this error, you are running a
+pre-release version of GC3Pie and should <a class="reference internal" href="install.html#upgrade"><em>Upgrade</em></a>.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Troubleshooting GC3Pie</a><ul>
+<li><a class="reference internal" href="#what-is-a-python-traceback">What is a Python traceback?</a></li>
+<li><a class="reference internal" href="#common-errors-using-gc3pie">Common errors using GC3Pie</a><ul>
+<li><a class="reference internal" href="#attributeerror-args">AttributeError: args</a></li>
+<li><a class="reference internal" href="#attributeerror-module-object-has-no-attribute-stringio">AttributeError: <cite>module</cite> object has no attribute <cite>StringIO</cite></a></li>
+<li><a class="reference internal" href="#distributionnotfound">DistributionNotFound</a></li>
+<li><a class="reference internal" href="#ftpcontrolerror-server-responded-file-unavailable">FTPControlError: Server responded: File unavailable.</a></li>
+<li><a class="reference internal" href="#importerror-site-packages-arclib-so-undefined-symbol-py-initmodule4">ImportError: <tt class="docutils literal"><span class="pre">.../site-packages/_arclib.so</span></tt>: undefined symbol: <tt class="docutils literal"><span class="pre">Py_InitModule4</span></tt></a></li>
+<li><a class="reference internal" href="#importerror-no-module-named-pstats">ImportError: No module named <tt class="docutils literal"><span class="pre">pstats</span></tt></a></li>
+<li><a class="reference internal" href="#noresources-could-not-initialize-any-computational-resource-please-check-log-and-configuration-file">NoResources: Could not initialize any computational resource - please check log and configuration file.</a></li>
+<li><a class="reference internal" href="#terminate-called-after-throwing-an-instance-of-ldapqueryerror">Terminate called after throwing an instance of <tt class="docutils literal"><span class="pre">LdapQueryError</span></tt></a></li>
+<li><a class="reference internal" href="#valueerror-i-o-operation-on-closed-file">ValueError: I/O operation on closed file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gc3utils.html"
+                        title="previous chapter">The GC3Utils software</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../programmers/index.html"
+                        title="next chapter">Programmer Documentation</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../programmers/index.html" title="Programmer Documentation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gc3utils.html" title="The GC3Utils software"
+             >previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" >User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

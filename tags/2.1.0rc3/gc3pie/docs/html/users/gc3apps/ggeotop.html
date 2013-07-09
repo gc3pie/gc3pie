@@ -1,0 +1,522 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The ggeotop script &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="up" title="The GC3Apps software" href="index.html" />
+    <link rel="next" title="The grosetta and gdocking scripts" href="grosetta.html" />
+    <link rel="prev" title="The ggamess script" href="ggamess.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="grosetta.html" title="The grosetta and gdocking scripts"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ggamess.html" title="The ggamess script"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >User Documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">The GC3Apps software</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-ggeotop-script">
+<span id="ggeotop"></span><h1>The <strong class="command">ggeotop</strong> script<a class="headerlink" href="#the-ggeotop-script" title="Permalink to this headline">¶</a></h1>
+<p>GC3Apps provide a script drive execution of multiple <tt class="docutils literal"><span class="pre">GEOtop</span></tt>
+jobs. It uses the generic <cite>gc3libs.cmdline.SessionBasedScript</cite>
+framework.</p>
+<p>From GEOtop&#8217;s &#8220;read me&#8221; file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#</span>
+<span class="c"># RUNNING</span>
+<span class="c"># Run this simulation by calling the executable (GEOtop_1.223_static)</span>
+<span class="c"># and giving the simulation directory as an argument.</span>
+<span class="c">#</span>
+<span class="c"># EXAMPLE</span>
+<span class="c"># ls2:/group/geotop/sim/tmp/000001&gt;./GEOtop_1.223_static ./</span>
+<span class="c">#</span>
+<span class="c"># TERMINATION OF SIMULATION BY GEOTOP</span>
+<span class="c"># When GEOtop terminates due to an internal error, it mostly reports this</span>
+<span class="c"># by writing a corresponding file (_FAILED_RUN or _FAILED_RUN.old) in the</span>
+<span class="c"># simulation directory. When is terminates sucessfully this file is</span>
+<span class="c"># named (_SUCCESSFUL_RUN or _SUCCESSFUL_RUN.old).</span>
+<span class="c">#</span>
+<span class="c"># RESTARTING SIMULATIONS THAT WERE TERMINATED BY THE SERVER</span>
+<span class="c"># When a simulation is started again with the same arguments as described</span>
+<span class="c"># above (RUNNING), then it continues from the last saving point. If</span>
+<span class="c"># GEOtop finds a file indicating a successful/failed run, it terminates.</span>
+</pre></div>
+</div>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p><strong class="command">ggeotop</strong> driver script acan the specified INPUT directories
+recursively for simulation directories and submit a job for each one
+found; job progress is monitored and, when a job is done, its output
+files are retrieved back into the simulation directory itself.</p>
+<p>A simulation directory is defined as a directory containing a
+<tt class="docutils literal"><span class="pre">geotop.inpts</span></tt> file, an <tt class="docutils literal"><span class="pre">in</span></tt> and an <tt class="docutils literal"><span class="pre">out</span></tt> folders.</p>
+<p>The <tt class="docutils literal"><span class="pre">ggeotop</span></tt> command keeps a record of jobs (submitted, executed
+and pending) in a session file (set name with the <tt class="docutils literal"><span class="pre">-s</span></tt> option); at
+each invocation of the command, the status of all recorded jobs is
+updated, output from finished jobs is collected, and a summary table
+of all known jobs is printed.  New jobs are added to the session if
+new input files are added to the command line.</p>
+<p>Options can specify a maximum number of jobs that should be in
+&#8216;SUBMITTED&#8217; or &#8216;RUNNING&#8217; state; <tt class="docutils literal"><span class="pre">ggeotop</span></tt> will delay submission of
+newly-created jobs so that this limit is never exceeded.</p>
+<p>Options can specify a maximum number of jobs that should be in
+&#8216;SUBMITTED&#8217; or &#8216;RUNNING&#8217; state; <strong class="command">ggeotop</strong> will delay submission
+of newly-created jobs so that this limit is never exceeded.</p>
+<p>In more detail, <strong class="command">ggeotop</strong> does the following:</p>
+<ol class="arabic">
+<li><p class="first">Reads the <a class="reference internal" href="../../glossary.html#term-session"><em class="xref std std-term">session</em></a> (specified on the command line with the
+<tt class="docutils literal"><span class="pre">--session</span></tt> option) and loads all stored jobs into memory.
+If the session directory does not exist, one will be created with
+empty contents.</p>
+</li>
+<li><p class="first">Recursively scans trough <tt class="docutils literal"><span class="pre">input</span></tt> folder searching for any valid
+folder.</p>
+<p><strong class="command">ggeotop</strong> will generate a collection of jobs one for each
+valid input folder. Each job will transfer the input folder to the
+remote execution node and run <tt class="docutils literal"><span class="pre">GEOTop</span></tt>.
+<tt class="docutils literal"><span class="pre">GEOTop</span></tt> reads geotop.inpts files for getting instructions on how
+to find the input data, what and how to process and where to place
+generated output results. Extracted from a generic geotop.inpts
+file:</p>
+</li>
+</ol>
+<div class="highlight-python"><pre>DemFile = "in/dem"
+MeteoFile = "in/meteo"
+SkyViewFactorMapFile = "in/svf"
+SlopeMapFile = "in/slp"
+AspectMapFile = "in/asp"
+
+!==============================================
+!   DIST OUTPUT
+!==============================================
+SoilAveragedTempTensorFile = "out/maps/T"
+NetShortwaveRadiationMapFile="out/maps/SWnet"
+InShortwaveRadiationMapFile="out/maps/SWin"
+InLongwaveRadiationMapFile="out/maps/LWin"
+SWEMapFile= "out/maps/SWE"
+AirTempMapFile = "out/maps/Ta"</pre>
+</div>
+<ol class="arabic" start="3">
+<li><p class="first">Updates the state of all existing jobs, collects output from
+finished jobs, and submits new jobs generated in step 2.</p>
+</li>
+<li><p class="first">For each of the terminated jobs, a post-process routine is executed
+to check and validate the consistency of the generated output. If
+no <tt class="docutils literal"><span class="pre">_SUCCESSFUL_RUN</span></tt> or <tt class="docutils literal"><span class="pre">_FAILED_RUN</span></tt> file is found, the
+related job will be resubmitted together with the current input and
+output folders. GEOTop is capable of restarting an interrupted
+claculation by inspecting the intermediate results generated in
+<tt class="docutils literal"><span class="pre">out</span></tt> folder.</p>
+<p>Finally, a summary table of all known jobs is printed.  (To control
+the amount of printed information, see the <tt class="docutils literal"><span class="pre">-l</span></tt> command-line
+option in the <a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a> section.)</p>
+</li>
+</ol>
+<ol class="arabic" start="4">
+<li><p class="first">If the <tt class="docutils literal"><span class="pre">-C</span></tt> command-line option was given (see below), waits
+the specified amount of seconds, and then goes back to step 3.</p>
+<p>The program <strong class="command">ggeotop</strong> exits when all jobs have run to
+completion, i.e., when all valid input folders have been computed.</p>
+</li>
+</ol>
+<p>Execution can be interrupted at any time by pressing <tt class="kbd docutils literal"><span class="pre">Ctrl+C</span></tt>.
+If the execution has been interrupted, it can be resumed at a later
+stage by calling <strong class="command">ggeotop</strong> with exactly the same
+command-line options.</p>
+</div>
+<div class="section" id="command-line-invocation-of-ggeotop">
+<h2>Command-line invocation of <strong class="command">ggeotop</strong><a class="headerlink" href="#command-line-invocation-of-ggeotop" title="Permalink to this headline">¶</a></h2>
+<p>The <strong class="command">ggeotop</strong> script is based on GC3Pie&#8217;s <a class="reference internal" href="intro.html#session-based-script"><em>session-based
+script</em></a> model; please read also the
+<a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a> section for an introduction to sessions
+and generic command-line options.</p>
+<p>A <strong class="command">ggeotop</strong> command-line is constructed as follows:</p>
+<ol class="arabic simple">
+<li>Each argument (at least one should be specified) is considered as a
+folder reference.</li>
+<li><tt class="docutils literal"><span class="pre">-x</span></tt> option is used to specify the path to the GEOtop executable
+file.</li>
+</ol>
+<p><strong>Example 1.</strong> The following command-line invocation uses
+<strong class="command">ggeotop</strong> to run <tt class="docutils literal"><span class="pre">GEOTop</span></tt> on all valid input folder found
+in the recursive check of <tt class="docutils literal"><span class="pre">input_folder</span></tt>:</p>
+<div class="highlight-python"><pre>$ ggeotop -x /apps/geotop/bin/geotop_1_224_20120227_static ./input_folder</pre>
+</div>
+<p><strong>Example 2.</strong></p>
+<div class="highlight-python"><pre>$ ggeotop --session SAMPLE_SESSION -w 24 -x /apps/geotop/bin/geotop_1_224_20120227_static ./input_folder</pre>
+</div>
+<p>In this example, job information is stored into session
+<tt class="docutils literal"><span class="pre">SAMPLE_SESSION</span></tt> (see the documentation of the <tt class="docutils literal"><span class="pre">--session</span></tt> option
+in <a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a>).  The command above creates the jobs,
+submits them, and finally prints the following status report:</p>
+<div class="highlight-python"><pre>Status of jobs in the 'SAMPLE_SESSION' session: (at 10:53:46, 02/28/12)
+NEW   0/50    (0.0%)
+RUNNING   0/50    (0.0%)
+STOPPED   0/50    (0.0%)
+SUBMITTED   50/50   (100.0%)
+TERMINATED   0/50    (0.0%)
+TERMINATING   0/50    (0.0%)
+total   50/50   (100.0%)</pre>
+</div>
+<p>Calling <strong class="command">ggeotop</strong> over and over again will result in the same jobs
+being monitored;</p>
+<p>The <tt class="docutils literal"><span class="pre">-C</span></tt> option tells <strong class="command">ggeotop</strong> to continue running until
+all jobs have finished running and the output files have been
+correctly retrieved.  On successful completion, the command given in
+<em>example 2.</em> above, would print:</p>
+<div class="highlight-python"><pre>Status of jobs in the 'SAMPLE_SESSION' session: (at 11:05:50, 02/28/12)
+NEW   0/50    (0.0%)
+RUNNING   0/50    (0.0%)
+STOPPED   0/540    (0.0%)
+SUBMITTED   0/50    (0.0%)
+TERMINATED   50/50   (100.0%)
+TERMINATING   0/50    (0.0%)
+ok   50/50   (100.0%)
+total   50/50   (100.0%)</pre>
+</div>
+<p>Each job will be named after the folder name (e.g. 000002) (you could
+see this by passing the <tt class="docutils literal"><span class="pre">-l</span></tt> option to <strong class="command">ggeotop</strong>).; each of
+these jobs will fill the related input folder with the produced
+outputs.</p>
+<p>For each job, the set of output files is automatically retrieved and
+placed in the locations described below.</p>
+</div>
+<div class="section" id="output-files-for-ggeotop">
+<h2>Output files for <strong class="command">ggeotop</strong><a class="headerlink" href="#output-files-for-ggeotop" title="Permalink to this headline">¶</a></h2>
+<p>Upon successful completion, the output directory of each
+<strong class="command">ggeotop</strong> job contains:</p>
+<ul class="simple">
+<li>the <tt class="docutils literal"><span class="pre">out</span></tt> folder will contains what has been produced during the
+computation of the related job.</li>
+</ul>
+</div>
+<div class="section" id="example-usage">
+<h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
+<p>This section contains commented example sessions with
+<strong class="command">ggeotop</strong>.</p>
+<div class="section" id="manage-a-set-of-jobs-from-start-to-end">
+<h3>Manage a set of jobs from start to end<a class="headerlink" href="#manage-a-set-of-jobs-from-start-to-end" title="Permalink to this headline">¶</a></h3>
+<p><em>In typical operation,</em> one calls <strong class="command">ggeotop</strong> with the <tt class="docutils literal"><span class="pre">-C</span></tt>
+option and lets it manage a set of jobs until completion.</p>
+<p>So, to analyse all valid folders under <tt class="docutils literal"><span class="pre">input_folder</span></tt>, submitting
+200 jobs simultaneously each of them requesting 2GB of memory and 8
+hours of <a class="reference internal" href="../../glossary.html#term-walltime"><em class="xref std std-term">wall-clock time</em></a>, one can use the following
+command-line invocation:</p>
+<div class="highlight-python"><pre>$ ggeotop -s example -C 120 -x
+/apps/geotop/bin/geotop_1_224_20120227_static -w 8 input_folder</pre>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">-s</span> <span class="pre">example</span></tt> option tells <strong class="command">ggeotop</strong> to store
+information about the computational jobs in the <tt class="docutils literal"><span class="pre">example.jobs</span></tt>
+directory.</p>
+<p>The <tt class="docutils literal"><span class="pre">-C</span> <span class="pre">120</span></tt> option tells <strong class="command">ggeotop</strong> to update job state
+every 120 seconds; output from finished jobs is retrieved and new jobs
+are submitted at the same interval.</p>
+<p>The above command will start by printing a status report like the
+following:</p>
+<div class="highlight-python"><pre>Status of jobs in the 'example.csv' session:
+SUBMITTED   1/1 (100.0%)</pre>
+</div>
+<p>It will continue printing an updated status report every 120 seconds
+until the requested parameter range has been computed.</p>
+<p>In GC3Pie terminology when a job is finished and its output has been
+successfully retrieved, the job is marked as <tt class="docutils literal"><span class="pre">TERMINATED</span></tt>:</p>
+<div class="highlight-python"><pre>Status of jobs in the 'example.csv' session:
+TERMINATED   1/1 (100.0%)</pre>
+</div>
+</div>
+</div>
+<div class="section" id="using-gc3pie-utilities">
+<h2>Using GC3Pie utilities<a class="headerlink" href="#using-gc3pie-utilities" title="Permalink to this headline">¶</a></h2>
+<p>GC3Pie comes with a set of generic utilities that could be used as a
+complemet to the <strong class="command">ggeotop</strong> command to better manage a entire
+session execution.</p>
+<div class="section" id="gkill-cancel-a-running-job">
+<h3><strong class="command">gkill</strong>: cancel a running job<a class="headerlink" href="#gkill-cancel-a-running-job" title="Permalink to this headline">¶</a></h3>
+<p>To cancel a running job, you can use the command <strong class="command">gkill</strong>.  For
+instance, to cancel <em>job.16</em>, you would type the following command
+into the terminal:</p>
+<div class="highlight-python"><pre>gkill job.16</pre>
+</div>
+<p>or:</p>
+<div class="highlight-python"><pre>gkill -s example job.16</pre>
+</div>
+<p>gkill could also be used to cancel jobs in  a given state</p>
+<div class="highlight-python"><pre>gkill -s example -l UNKNOWN</pre>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last"><em>There&#8217;s no way to undo a cancel operation!</em> Once you have issued a
+<strong class="command">gkill</strong> command, the job is deleted and it cannot be resumed.
+(You can still re-submit it with <strong class="command">gresub</strong>, though.)</p>
+</div>
+</div>
+<div class="section" id="ginfo-accessing-low-level-details-of-a-job">
+<h3><strong class="command">ginfo</strong>: accessing low-level details of a job<a class="headerlink" href="#ginfo-accessing-low-level-details-of-a-job" title="Permalink to this headline">¶</a></h3>
+<p>It is sometimes necessary, for debugging purposes, to print out all
+the details about a job; the <strong class="command">ginfo</strong> command does just that: prints
+all the details that GC3Utils know about a single job.</p>
+<p>For instance, to print out detailed information about <cite>job.13</cite> in
+session <cite>example</cite>, you would type</p>
+<div class="highlight-python"><pre>ginfo -s example job.13</pre>
+</div>
+<p>For a job in <tt class="docutils literal"><span class="pre">RUNNING</span></tt> or <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> state, only little
+information is known: basically, where the job is running, and when it
+was started:</p>
+<div class="highlight-python"><pre>$ ginfo -s example job.13
+job.13
+    cores: 2
+    execution_targets: hera.wsl.ch
+    log:
+        SUBMITTED at Tue May 15 09:52:05 2012
+        Submitted to 'wsl' at Tue May 15 09:52:05 2012
+        RUNNING at Tue May 15 10:07:39 2012
+    lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/116613370683251353308673
+    lrms_jobname: GC3Pie_00002
+    original_exitcode: -1
+    queue: smscg.q
+    resource_name: wsl
+    state_last_changed: 1337069259.18
+    stderr_filename: ggeotop.log
+    stdout_filename: ggeotop.log
+    timestamp:
+        RUNNING: 1337069259.18
+        SUBMITTED: 1337068325.26
+    unknown_iteration: 0
+    used_cputime: 1380
+    used_memory: 3382706</pre>
+</div>
+<p>If you omit the job number, information about <em>all</em> jobs in the
+session will be printed.</p>
+<p>Most of the output is only useful if you are familiar with GC3Utils
+inner working. Nonetheless, <strong class="command">ginfo</strong> output is definitely something
+you should include in any report about a misbehaving job!</p>
+<p>For a finished job, the information is more complete and can include
+error messages in case the job has failed:</p>
+<div class="highlight-python"><pre>$ ginfo -c -s example job.13
+job.13
+    _arc0_state_last_checked: 1337069259.18
+    _exitcode: 0
+    _signal: None
+    _state: TERMINATED
+    cores: 2
+    download_dir: /data/geotop/results/00002
+    execution_targets: hera.wsl.ch
+    log:
+        SUBMITTED at Tue May 15 09:52:04 2012
+        Submitted to 'wsl' at Tue May 15 09:52:04 2012
+        TERMINATING at Tue May 15 10:07:39 2012
+        Final output downloaded to '/data/geotop/results/00002'
+        TERMINATED at Tue May 15 10:07:43 2012
+    lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/11441337068324584585032
+    lrms_jobname: GC3Pie_00002
+    original_exitcode: 0
+    queue: smscg.q
+    resource_name: wsl
+    state_last_changed: 1337069263.13
+    stderr_filename: ggeotop.log
+    stdout_filename: ggeotop.log
+    timestamp:
+        SUBMITTED: 1337068324.87
+        TERMINATED: 1337069263.13
+        TERMINATING: 1337069259.18
+    unknown_iteration: 0
+    used_cputime: 360
+    used_memory: 3366977
+    used_walltime: 300</pre>
+</div>
+<p>With option <tt class="docutils literal"><span class="pre">-v</span></tt>, <strong class="command">ginfo</strong> output is even more verbose and complete,
+and includes information about the application itself, the input and
+output files, plus some backend-specific information</p>
+<div class="highlight-python"><pre>$ ginfo -c -s example job.13
+job.13
+  arguments: 00002
+  changed: False
+  environment:
+  executable: geotop_static
+  executables: geotop_static
+  execution:
+      _arc0_state_last_checked: 1337069259.18
+      _exitcode: 0
+      _signal: None
+      _state: TERMINATED
+      cores: 2
+      download_dir: /data/geotop/results/00002
+      execution_targets: hera.wsl.ch
+      log:
+          SUBMITTED at Tue May 15 09:52:04 2012
+          Submitted to 'wsl' at Tue May 15 09:52:04 2012
+          TERMINATING at Tue May 15 10:07:39 2012
+          Final output downloaded to '/data/geotop/results/00002'
+          TERMINATED at Tue May 15 10:07:43 2012
+      lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/11441337068324584585032
+      lrms_jobname: GC3Pie_00002
+      original_exitcode: 0
+      queue: smscg.q
+      resource_name: wsl
+      state_last_changed: 1337069263.13
+      stderr_filename: ggeotop.log
+      stdout_filename: ggeotop.log
+      timestamp:
+          SUBMITTED: 1337068324.87
+          TERMINATED: 1337069263.13
+          TERMINATING: 1337069259.18
+      unknown_iteration: 0
+      used_cputime: 360
+      used_memory: 3366977
+      used_walltime: 300
+  jobname: GC3Pie_00002
+  join: True
+  output_base_url: None
+  output_dir: /data/geotop/results/00002
+  outputs:
+      @output.list: file, , @output.list, None, None, None, None
+      ggeotop.log: file, , ggeotop.log, None, None, None, None
+  persistent_id: job.1698503
+  requested_architecture: x86_64
+  requested_cores: 2
+  requested_memory: 4
+  requested_walltime: 4
+  stderr: None
+  stdin: None
+  stdout: ggeotop.log
+  tags: APPS/EARTH/GEOTOP</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The <strong class="command">ggeotop</strong> script</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#command-line-invocation-of-ggeotop">Command-line invocation of <strong class="command">ggeotop</strong></a></li>
+<li><a class="reference internal" href="#output-files-for-ggeotop">Output files for <strong class="command">ggeotop</strong></a></li>
+<li><a class="reference internal" href="#example-usage">Example usage</a><ul>
+<li><a class="reference internal" href="#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-gc3pie-utilities">Using GC3Pie utilities</a><ul>
+<li><a class="reference internal" href="#gkill-cancel-a-running-job"><strong class="command">gkill</strong>: cancel a running job</a></li>
+<li><a class="reference internal" href="#ginfo-accessing-low-level-details-of-a-job"><strong class="command">ginfo</strong>: accessing low-level details of a job</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ggamess.html"
+                        title="previous chapter">The <strong>ggamess</strong> script</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="grosetta.html"
+                        title="next chapter">The <strong class="command">grosetta</strong> and <strong class="command">gdocking</strong> scripts</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="grosetta.html" title="The grosetta and gdocking scripts"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ggamess.html" title="The ggamess script"
+             >previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >User Documentation</a> &raquo;</li>
+          <li><a href="index.html" >The GC3Apps software</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

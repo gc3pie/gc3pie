@@ -1,0 +1,252 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GC3Pie programming tutorials &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="up" title="Programmer Documentation" href="../index.html" />
+    <link rel="next" title="Introduction" href="warholize/warholize.html" />
+    <link rel="prev" title="Programming overview" href="../overview.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="warholize/warholize.html" title="Introduction"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../overview.html" title="Programming overview"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Programmer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="gc3pie-programming-tutorials">
+<h1>GC3Pie programming tutorials<a class="headerlink" href="#gc3pie-programming-tutorials" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="slides-on-specific-topics">
+<h2>Slides on specific topics<a class="headerlink" href="#slides-on-specific-topics" title="Permalink to this headline">¶</a></h2>
+<p>This is a list of tutorials made for the <a class="reference external" href="https://ocikbapps.uzh.ch/gc3wiki/teaching/gc3pie2012/">GC3Pie 2012 Training event</a>
+that has been held in Zurich on 1st and 2nd  of October 2012. The
+slides and tutorials are an introduction to the GC3Pie python
+package.</p>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part01.pdf">Introduction to GC3Pie</a></p>
+<blockquote>
+<div>Introduction to the software: what is GC3Pie, what is it for, and
+an overview of its features for writing high-throughput computing
+scripts.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part03.pdf">Basic GC3Pie programming</a></p>
+<blockquote>
+<div>The <cite>Application</cite> class, the smallest building block of
+GC3Pie. Introduction to the concept of Job, states of an
+application and to the <cite>Core</cite> class.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part04.pdf">Application requirements</a></p>
+<blockquote>
+<div>How to define extra requirements for an application, such as the
+minimum amount of memory it will use, the number of cores needed
+or the architecture of the CPUs.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part05.pdf">Managing applications: the SessionBasedScript class</a></p>
+<blockquote>
+<div>Introduction to the highest-level interface to build applications
+with GC3Pie, the <cite>SessionBasedScript</cite>. Information on how to
+create simple scripts that take care of the execution of your
+applications, from submission to getting back the final results.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part06.pdf">The GC3Utils commands</a></p>
+<blockquote>
+<div>Low-level tools to aid debugging the scripts.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part08.pdf">Introduction to Workflows with GC3Pie</a></p>
+<blockquote>
+<div>Using a practical example (the <a class="reference internal" href="#warholize-tutorial"><em>Warholize Tutorial</em></a>) we show
+how workflows are implemented with GC3Pie. The following slides
+will cover in more details the single steps needed to produce a
+complex workflow.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part09.pdf">ParallelTaskCollection</a></p>
+<blockquote>
+<div>Description of the <cite>ParallelTaskCollection</cite> class, used to run
+tasks in parallel.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part10.pdf">StagedTaskCollection</a></p>
+<blockquote>
+<div>Description of the <cite>StagedTaskCollection</cite> class, used to run a
+sequence of a fixed number of jobs.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part11.pdf">SequentialTaskCollection</a></p>
+<blockquote>
+<div>Description of the <cite>SequentialTaskCollection</cite> class, used to run a
+sequence of jobs that can be altered during runtime.</div></blockquote>
+</div>
+<div class="section" id="example-scripts">
+<h2>Example scripts<a class="headerlink" href="#example-scripts" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/examples/gdemo_simple.py">gdemo_simple.py</a></p>
+<blockquote>
+<div>Simplest script you can create. It only uses <cite>Application</cite> and
+<cite>Engine</cite> classes to create an application, submit it, check its
+status and retrieve its output.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/examples/grun.py">grun.py</a></p>
+<blockquote>
+<div>a <cite>SessionBasedScript</cite> that executes its argument as command. It
+can also run it multiple times by wrapping it in a
+ParallelTaskCollection or a SequentialTaskCollection, depending on
+a command line option. Useful for testing a configured resource.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/examples/gdemo_session.py">gdemo_session.py</a></p>
+<blockquote>
+<div>a simple <cite>SessionBasedScript</cite> that sums two values by customizing
+a <cite>SequentialTaskCollection</cite>.</div></blockquote>
+<p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/examples/warholize.py">warholize.py</a></p>
+<blockquote>
+<div>an enhanched version of the <cite>warholize</cite> script proposed in the
+<a class="reference internal" href="#warholize-tutorial"><em>Warholize Tutorial</em></a></div></blockquote>
+</div>
+<div class="section" id="warholize-tutorial">
+<span id="id1"></span><h2>Warholize Tutorial<a class="headerlink" href="#warholize-tutorial" title="Permalink to this headline">¶</a></h2>
+<p>In this tutorial we will show you how to use GC3Pie libraries in order
+to build a command line script which will run a complex workflow with
+both parallel and sequential tasks.</p>
+<p>The tutorial itself contains the complete source code of the
+application (cfr. <a class="reference external" href="http://en.wikipedia.org/wiki/Literate_programming">Literate Programming</a> on Wikipedia), so that you
+will be able to test/modify it and produce a working <tt class="docutils literal"><span class="pre">warholize.py</span></tt>
+script by downloading <strong>pylit</strong> from the <a class="reference external" href="http://pylit.berlios.de/index.html">PyLit Homepage</a> and running
+the following command on the
+<tt class="docutils literal"><span class="pre">gc3pie/docs/gc3libs/tutorial/warholize.txt</span></tt> file, from whitin the
+svn tree of GC3Pie:</p>
+<div class="highlight-python"><pre>$    ./pylit warholize.txt warholize.py</pre>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="warholize/warholize.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="warholize/warholize.html#from-top-to-bottom">From top to bottom</a></li>
+<li class="toctree-l1"><a class="reference internal" href="warholize/warholize.html#the-script">The script</a></li>
+<li class="toctree-l1"><a class="reference internal" href="warholize/warholize.html#the-workflows">The workflows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="warholize/warholize.html#main-sequential-workflow">Main sequential workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="warholize/warholize.html#step-one-convert-to-grayscale">Step one: convert to grayscale</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="warholize/warholize.html#step-two-parallel-workflow-to-create-colorized-images">Step two: parallel workflow to create colorized images</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="warholize/warholize.html#step-three-merge-all-them-together">Step three: merge all them together</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="warholize/warholize.html#making-the-script-executable">Making the script executable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="warholize/warholize.html#testing">Testing</a></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">GC3Pie programming tutorials</a><ul>
+<li><a class="reference internal" href="#slides-on-specific-topics">Slides on specific topics</a></li>
+<li><a class="reference internal" href="#example-scripts">Example scripts</a></li>
+<li><a class="reference internal" href="#warholize-tutorial">Warholize Tutorial</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../overview.html"
+                        title="previous chapter">Programming overview</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="warholize/warholize.html"
+                        title="next chapter">Introduction</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="warholize/warholize.html" title="Introduction"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../overview.html" title="Programming overview"
+             >previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Programmer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

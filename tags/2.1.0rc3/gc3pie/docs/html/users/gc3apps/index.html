@@ -1,0 +1,217 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The GC3Apps software &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="up" title="User Documentation" href="../index.html" />
+    <link rel="next" title="Introduction to session-based scripts" href="intro.html" />
+    <link rel="prev" title="Environment Variables" href="../env-vars.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction to session-based scripts"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../env-vars.html" title="Environment Variables"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-gc3apps-software">
+<span id="gc3apps"></span><h1>The GC3Apps software<a class="headerlink" href="#the-gc3apps-software" title="Permalink to this headline">¶</a></h1>
+<p>GC3Apps is a collection command line front-end to manage submission of
+a (potentially) large number of computational <a class="reference internal" href="../../glossary.html#term-job"><em class="xref std std-term">job</em></a> to different
+batch processing systems.  For example, the GC3Apps commands
+<strong class="command">ggamess</strong> can run <a class="reference external" href="http://www.msg.ameslab.gov/gamess/">GAMESS</a> jobs on the <a class="reference external" href="http://www.smscg.ch/">SMSCG</a> infrastructure
+and on any computational cluster you can <tt class="docutils literal"><span class="pre">ssh</span></tt>:command: into.</p>
+<p>This chapter is a tutorial for the GC3Apps command-line scripts: it
+explains the common concepts and features, then goes on to describe
+the specifics of each command in larger detail.</p>
+<p>All GC3Apps scripts share a common set of functionalities, which are
+derive from a common blueprint, named a <em>session-based script</em>,
+described in Section <a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a> below.  Script-specific
+sections detail the scope and options that are unique to a given
+script.</p>
+<p>If you find a technical term whose meaning is not clear to you, please
+look it up in the <a class="reference internal" href="../../glossary.html#glossary"><em>Glossary</em></a>. (But feel free to ask on the
+<a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing list</a> if it&#8217;s still unclear!)</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction to <em>session-based</em> scripts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#basic-command-line-usage-and-options">Basic command-line usage and options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#continuous-execution">Continuous execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#verbose-listing-of-jobs">Verbose listing of jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#maximum-number-of-concurrent-jobs">Maximum number of concurrent jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#location-of-output-files">Location of output files</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#job-control-options">Job control options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#session-control-options">Session control options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#exit-code">Exit code</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ggamess.html">The <strong>ggamess</strong> script</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ggamess.html#how-to-run-gamess-on-the-grid">How to run GAMESS on the Grid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ggamess.html#tweaking-execution">Tweaking execution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ggamess.html#updating-the-gamess-code">Updating the GAMESS code</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ggeotop.html">The <strong class="command">ggeotop</strong> script</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ggeotop.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ggeotop.html#command-line-invocation-of-ggeotop">Command-line invocation of <strong class="command">ggeotop</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ggeotop.html#output-files-for-ggeotop">Output files for <strong class="command">ggeotop</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ggeotop.html#example-usage">Example usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ggeotop.html#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ggeotop.html#using-gc3pie-utilities">Using GC3Pie utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ggeotop.html#gkill-cancel-a-running-job"><strong class="command">gkill</strong>: cancel a running job</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ggeotop.html#ginfo-accessing-low-level-details-of-a-job"><strong class="command">ginfo</strong>: accessing low-level details of a job</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="grosetta.html">The <strong class="command">grosetta</strong> and <strong class="command">gdocking</strong> scripts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="grosetta.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="grosetta.html#command-line-invocation-of-grosetta">Command-line invocation of <strong class="command">grosetta</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="grosetta.html#output-files-for-grosetta">Output files for <strong class="command">grosetta</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="grosetta.html#output-files-for-gdocking">Output files for <strong class="command">gdocking</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="grosetta.html#example-usage">Example usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="grosetta.html#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a></li>
+<li class="toctree-l3"><a class="reference internal" href="grosetta.html#managing-a-session-by-repeated-grosetta-invocation">Managing a session by repeated <strong class="command">grosetta</strong> invocation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gcrypto.html">The <strong class="command">gcrypto</strong> script</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gcrypto.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcrypto.html#command-line-invocation-of-gcrypto">Command-line invocation of <strong class="command">gcrypto</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcrypto.html#output-files-for-gcrypto">Output files for <strong class="command">gcrypto</strong></a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcrypto.html#example-usage">Example usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gcrypto.html#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gcrypto.html#using-gc3pie-utilities">Using GC3Pie utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gcrypto.html#gkill-cancel-a-running-job"><strong class="command">gkill</strong>: cancel a running job</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gcrypto.html#ginfo-accessing-low-level-details-of-a-job"><strong class="command">ginfo</strong>: accessing low-level details of a job</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../env-vars.html"
+                        title="previous chapter">Environment Variables</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="intro.html"
+                        title="next chapter">Introduction to <em>session-based</em> scripts</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction to session-based scripts"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../env-vars.html" title="Environment Variables"
+             >previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

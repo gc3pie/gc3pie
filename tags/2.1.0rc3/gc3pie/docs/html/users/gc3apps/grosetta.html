@@ -1,0 +1,566 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The grosetta and gdocking scripts &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="up" title="The GC3Apps software" href="index.html" />
+    <link rel="next" title="The gcrypto script" href="gcrypto.html" />
+    <link rel="prev" title="The ggeotop script" href="ggeotop.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gcrypto.html" title="The gcrypto script"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ggeotop.html" title="The ggeotop script"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >User Documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">The GC3Apps software</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-grosetta-and-gdocking-scripts">
+<span id="grosetta"></span><h1>The <strong class="command">grosetta</strong> and <strong class="command">gdocking</strong> scripts<a class="headerlink" href="#the-grosetta-and-gdocking-scripts" title="Permalink to this headline">¶</a></h1>
+<p>GC3Apps provide two scripts to drive execution of applications
+(<em>protocols</em>, in <a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a> terminology) from the <a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a>
+bioinformatics suite.</p>
+<p>The purpose of <strong class="command">grosetta</strong> and <strong class="command">gdocking</strong> is to
+execute <em>several concurrent runs</em> of <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> or <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/d0/de4/docking_protocol.html">docking_protocol</a>
+on a set of input files, and collect the generated output.  These runs
+are performed in parallel using every available GC3Pie <a class="reference internal" href="../../glossary.html#term-resource"><em class="xref std std-term">resource</em></a>;
+you can of course control how many runs should be executed and select
+what output files you want from each one.</p>
+<p>The script <strong class="command">grosetta</strong> is a relatively generic front-end that
+executes the <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> program by default (but a different
+application can be chosen with the <tt class="docutils literal"><span class="pre">-x</span></tt> <a class="reference internal" href="../../glossary.html#term-command-line-option"><em class="xref std std-term">command-line
+option</em></a>).  The <strong class="command">gdocking</strong> script is specialized for
+running <a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a>&#8216;s <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/d0/de4/docking_protocol.html">docking_protocol</a> program.</p>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The <strong class="command">grosetta</strong> and <strong class="command">gdocking</strong> execute <em>several runs</em>
+of <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> or <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/d0/de4/docking_protocol.html">docking_protocol</a> on a set of input files, and
+collect the generated output.  These runs are performed in parallel,
+up to a limit that can be configured with the <tt class="docutils literal"><span class="pre">-J</span></tt> <a class="reference internal" href="../../glossary.html#term-command-line-option"><em class="xref std std-term">command-line
+option</em></a>.  You can of course control how many runs should be
+executed and select what output files you want from each one.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The <strong class="command">grosetta</strong> and <strong class="command">gdocking</strong> scripts are very
+similar in usage.  In the following, whatever is written about
+<strong class="command">grosetta</strong> applies to <strong class="command">gdocking</strong> as well; the
+differences will be pointed out on a case-by-case basis.</p>
+</div>
+<p>In more detail, <strong class="command">grosetta</strong> does the following:</p>
+<ol class="arabic">
+<li><p class="first">Reads the <a class="reference internal" href="../../glossary.html#term-session"><em class="xref std std-term">session</em></a> (specified on the command line with the
+<tt class="docutils literal"><span class="pre">--session</span></tt> option) and loads all stored jobs into memory.
+If the session directory does not exist, one will be created with
+empty contents.</p>
+</li>
+<li><p class="first">Scans the input file names given on the command-line, and generates
+a number of identical computational jobs, all running the same
+<a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a> program on the same set of input files.  The objective is
+to compute a specified number <em>P</em> of decoys of any given PDB file.</p>
+<p>The number <em>P</em> of wanted decoys can be set with the
+<tt class="docutils literal"><span class="pre">--total-decoys</span></tt> option (see below).  The option
+<tt class="docutils literal"><span class="pre">--decoys-per-job</span></tt> can set the number of decoys that each
+computational job can compute; this should be a guessed based on
+the maximum allowed run time of each job and the time taken by the
+<a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a> protocol to compute a single decoy.</p>
+</li>
+<li><p class="first">Updates the state of all existing jobs, collects output from
+finished jobs, and submits new jobs generated in step 2.</p>
+<p>Finally, a summary table of all known jobs is printed.  (To control
+the amount of printed information, see the <tt class="docutils literal"><span class="pre">-l</span></tt> command-line
+option in the <a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a> section.)</p>
+</li>
+<li><p class="first">If the <tt class="docutils literal"><span class="pre">-C</span></tt> command-line option was given (see below), waits
+the specified amount of seconds, and then goes back to step 3.</p>
+<p>The program <strong class="command">grosetta</strong> exits when all jobs have run to
+completion, i.e., when the wanted number of decoys have been
+computed.</p>
+<p>Execution can be interrupted at any time by pressing <tt class="kbd docutils literal"><span class="pre">Ctrl+C</span></tt>.
+If the execution has been interrupted, it can be resumed at a later
+stage by calling <strong class="command">grosetta</strong> with exactly the same
+command-line options.</p>
+</li>
+</ol>
+<p>The <strong class="command">gdocking</strong> program works in exactly the same way, with
+the important exception that <strong class="command">gdocking</strong> uses a separate
+<a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a> <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/d0/de4/docking_protocol.html">docking_protocol</a> program invocation <em>per input file</em>.</p>
+</div>
+<div class="section" id="command-line-invocation-of-grosetta">
+<h2>Command-line invocation of <strong class="command">grosetta</strong><a class="headerlink" href="#command-line-invocation-of-grosetta" title="Permalink to this headline">¶</a></h2>
+<p>The <strong class="command">grosetta</strong> script is based on GC3Pie&#8217;s <a class="reference internal" href="intro.html#session-based-script"><em>session-based
+script</em></a> model; please read also the
+<a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a> section for an introduction to sessions
+and generic command-line options.</p>
+<p>A <strong class="command">grosetta</strong> command-line is constructed as follows:</p>
+<ol class="arabic simple">
+<li>The 1st argument is the <em>flags</em> file, containing options to pass to
+every executed <a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a> program;</li>
+<li>then follows any number of input files (copied from your PC to the execution site);</li>
+<li>then a literal colon character <tt class="docutils literal"><span class="pre">:</span></tt>;</li>
+<li>finally, you can list any number of output file patterns (copied
+back from the execution site to your PC); wildcards (e.g., <tt class="docutils literal"><span class="pre">*.pdb</span></tt>)
+are allowed, but you must enclose them in quotes.  Note that:<ul>
+<li>you can omit the output files: the default is <tt class="docutils literal"><span class="pre">&quot;*.pdb&quot;</span> <span class="pre">&quot;*.sc&quot;</span> <span class="pre">&quot;*.fasc&quot;</span></tt></li>
+<li>if you omit the output files patterns, omit the colon as well</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<div><p><strong>Example 1.</strong> The following command-line invocation uses
+<strong class="command">grosetta</strong> to run <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> on the molecule files
+<tt class="docutils literal"><span class="pre">1bjpA.pdb</span></tt>, <tt class="docutils literal"><span class="pre">1ca7A.pdb</span></tt>, and <tt class="docutils literal"><span class="pre">1cgqA.pdb</span></tt>.  The <tt class="docutils literal"><span class="pre">flags</span></tt> file
+(1st command-line argument) is a text file containing options to pass
+to the actual <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> program.  Additional input files are
+specified on the command line between the <tt class="docutils literal"><span class="pre">flags</span></tt> file and the PDB
+input files.</p>
+<div class="highlight-python"><pre>   $ grosetta flags alignment.filt query.fasta query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb 1cgqA.pdb
+
+You can see that the listing of output patterns has been omitted,
+so `grosetta`:command: will use the default and retrieve all
+`*.pdb`:file:, `*.sc`:file: and `*.fasc`:file: files.</pre>
+</div>
+</div></blockquote>
+<p>There will be a number of <em>identical</em> jobs being executed as a result
+of a <strong class="command">grosetta</strong> or <strong class="command">gdocking</strong> invocation; this
+number depends on the ratio of the values given to options <tt class="docutils literal"><span class="pre">-P</span></tt>
+and <tt class="docutils literal"><span class="pre">-p</span></tt>:</p>
+<blockquote>
+<div><table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-P <var>NUM</var></span>, <span class="option">--total-decoys <var>NUM</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Compute <em>NUM</em> decoys per input file.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-p <var>NUM</var></span>, <span class="option">--decoys-per-job <var>NUM</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Compute <em>NUM</em> decoys in a single job (default: 1). This
+parameter should be tuned so that the running time of
+a single job does not exceed the maximum wall-clock
+time (see the <tt class="docutils literal"><span class="pre">--wall-clock-time</span></tt> command-line option in
+<a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a>).</td></tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>If you omit <tt class="docutils literal"><span class="pre">-P</span></tt> and <tt class="docutils literal"><span class="pre">-p</span></tt>, they both default to 1, i.e.,
+one job will be created (as in the <em>example 1.</em> above).</p>
+<blockquote>
+<div><p><strong>Example 2.</strong> The following command-line invocation will run 3 parallel
+instances of <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a>, each of which generates 2 decoys (save the
+last one, which only generates 1 decoy) of the molecule described in
+file <tt class="docutils literal"><span class="pre">1bjpA.pdb</span></tt>:</p>
+<div class="highlight-python"><pre>$ grosetta --session SAMPLE_SESSION --total-decoys 5 --decoys-per-job 2 flags alignment.filt query.fasta query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb</pre>
+</div>
+<p>In this example, job information is stored into session
+<tt class="docutils literal"><span class="pre">SAMPLE_SESSION</span></tt> (see the documentation of the <tt class="docutils literal"><span class="pre">--session</span></tt> option
+in <a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a>).  The command above creates the jobs,
+submits them, and finally prints the following status report:</p>
+<div class="highlight-python"><pre>Status of jobs in the 'SAMPLE_SESSION' session: (at 10:53:46, 02/28/12)
+        NEW   0/3    (0.0%)
+    RUNNING   0/3    (0.0%)
+    STOPPED   0/3    (0.0%)
+  SUBMITTED   3/3   (100.0%)
+ TERMINATED   0/3    (0.0%)
+TERMINATING   0/3    (0.0%)
+      total   3/3   (100.0%)</pre>
+</div>
+<p>Note that the status report counts the number of <em>jobs in the
+session</em>, not the total number of decoys being generated.  (Feel
+free to report this as a bug.)</p>
+</div></blockquote>
+<p>Calling <tt class="docutils literal"><span class="pre">grosetta</span></tt> over and over again will result in the same jobs
+being monitored; to create new jobs, change the command line and raise
+the value for <tt class="docutils literal"><span class="pre">-P</span></tt> or <tt class="docutils literal"><span class="pre">-p</span></tt>.  (To completely erase an existing
+session and start over, use the <tt class="docutils literal"><span class="pre">--new-session</span></tt> option, as per
+<a class="reference internal" href="intro.html#session-based-script"><em>session-based script</em></a> documentation.)</p>
+<p>The <tt class="docutils literal"><span class="pre">-C</span></tt> option tells <strong class="command">grosetta</strong> to continue running until
+all jobs have finished running and the output files have been
+correctly retrieved.  On successful completion, the command given in
+<em>example 2.</em> above, would print:</p>
+<div class="highlight-python"><pre>Status of jobs in the 'SAMPLE_SESSION' session: (at 11:05:50, 02/28/12)
+        NEW   0/3    (0.0%)
+    RUNNING   0/3    (0.0%)
+    STOPPED   0/3    (0.0%)
+  SUBMITTED   0/3    (0.0%)
+ TERMINATED   3/3   (100.0%)
+TERMINATING   0/3    (0.0%)
+         ok   3/3   (100.0%)
+      total   3/3   (100.0%)</pre>
+</div>
+<p>The three jobs are named <tt class="docutils literal"><span class="pre">0--1</span></tt>, <tt class="docutils literal"><span class="pre">2--3</span></tt> and <tt class="docutils literal"><span class="pre">4--5</span></tt> (you could
+see this by passing the <tt class="docutils literal"><span class="pre">-l</span></tt> option to <strong class="command">grosetta</strong>); each of
+these jobs will create an output directory named after the job.</p>
+<p>In general, <strong class="command">grosetta</strong> jobs are named <tt class="file docutils literal"><em><span class="pre">N</span></em><span class="pre">--</span><em><span class="pre">M</span></em></tt> with
+<em>N</em> and <em>M</em> being two integers from 0 up to the value specified with
+option <tt class="docutils literal"><span class="pre">--total-decoys</span></tt>.  Jobs generated by <strong class="command">gdocking</strong> are
+instead named after the input file, with a <tt class="file docutils literal"><span class="pre">.</span><em><span class="pre">N</span></em><span class="pre">--</span><em><span class="pre">M</span></em></tt> suffix
+added.</p>
+<p>For each job, the set of output files is automatically retrieved and
+placed in the locations described below.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The naming and contents of output files differ between
+<strong class="command">grosetta</strong> and <strong class="command">gdocking</strong>.  Refer to the
+appropriate section below!</p>
+</div>
+</div>
+<div class="section" id="output-files-for-grosetta">
+<h2>Output files for <strong class="command">grosetta</strong><a class="headerlink" href="#output-files-for-grosetta" title="Permalink to this headline">¶</a></h2>
+<p>Upon successful completion, the output directory of each
+<strong class="command">grosetta</strong> job contains:</p>
+<ul class="simple">
+<li>A copy of the <em>input</em> PDB files;</li>
+<li>Additional <tt class="docutils literal"><span class="pre">.pdb</span></tt> files named <tt class="file docutils literal"><span class="pre">S_</span><em><span class="pre">random</span> <span class="pre">string</span></em><span class="pre">.pdb</span></tt>,
+generated by <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> during its run;</li>
+<li>A file <tt class="file docutils literal"><span class="pre">score.sc</span></tt>;</li>
+<li>Files <tt class="file docutils literal"><span class="pre">minirosetta.static.log</span></tt>, <tt class="file docutils literal"><span class="pre">minirosetta.static.stdout.txt</span></tt>
+and <tt class="file docutils literal"><span class="pre">minirosetta.static.stderr.txt</span></tt>.</li>
+</ul>
+<p>The <tt class="file docutils literal"><span class="pre">minirosetta.static.log</span></tt> file contains the output log of the
+<a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> execution.  For each of the <tt class="docutils literal"><span class="pre">S_*.pdb</span></tt> files above, a
+line like the following should be present in the log file (the file
+name and number of elapsed seconds will of course vary!):</p>
+<div class="highlight-python"><pre>protocols.jd2.JobDistributor: S_1CA7A_1_0001 reported success in 124 seconds</pre>
+</div>
+<p>The <tt class="file docutils literal"><span class="pre">minirosetta.static.stdout.txt</span></tt> contains a copy of the
+<a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> output log, plus the output of the wrapper script.
+In case of successful <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> run, the last line of this file
+will read:</p>
+<div class="highlight-python"><pre>minirosetta.static: All done, exitcode: 0</pre>
+</div>
+</div>
+<div class="section" id="output-files-for-gdocking">
+<h2>Output files for <strong class="command">gdocking</strong><a class="headerlink" href="#output-files-for-gdocking" title="Permalink to this headline">¶</a></h2>
+<p>Execution of <tt class="docutils literal"><span class="pre">gdocking</span></tt> yields the following output:</p>
+<ul class="simple">
+<li>For each <tt class="docutils literal"><span class="pre">.pdb</span></tt> input file, a <tt class="docutils literal"><span class="pre">.decoys.tar</span></tt> file (e.g., for
+<tt class="docutils literal"><span class="pre">1bjpa.pdb</span></tt> input, a <tt class="docutils literal"><span class="pre">1bjpa.decoys.tar</span></tt> output is produced),
+which contains the <tt class="docutils literal"><span class="pre">.pdb</span></tt> files of the decoys produced by
+<strong class="command">gdocking</strong>.</li>
+<li>For each successful job, a <cite>.N&#8211;M</cite> directory: e.g., for the
+<tt class="docutils literal"><span class="pre">1bjpa.1--2</span></tt> job, a <tt class="docutils literal"><span class="pre">1bjpa.1--2/</span></tt> directory is created, with the
+following content:<ul>
+<li><tt class="docutils literal"><span class="pre">docking_protocol.log</span></tt>: output of Rosetta&#8217;s <tt class="docutils literal"><span class="pre">docking_protocol</span></tt> program;</li>
+<li><tt class="docutils literal"><span class="pre">docking_protocol.stderr.txt</span></tt>, <tt class="docutils literal"><span class="pre">docking_protocol.stdout.txt</span></tt>: obvoius meaning.  The &#8220;stdout&#8221; file contains a copy of the <tt class="docutils literal"><span class="pre">docking_protocol.log</span></tt> contents, plus the output from the wrapper script.</li>
+<li><tt class="docutils literal"><span class="pre">docking_protocol.tar.gz</span></tt>: the <tt class="docutils literal"><span class="pre">.pdb</span></tt> decoy files produced by the job.</li>
+</ul>
+</li>
+</ul>
+<p>The following scheme summarizes the location of <strong class="command">gdocking</strong>
+output files:</p>
+<div class="highlight-python"><pre>(directory where gdocking is run)/
+  |
+  +- file1.pdb      Original input file
+  |
+  +- file1.N--M/    Directory collecting job outputs from job file1.N--M
+  |    |
+  |    +- docking_protocol.tar.gz
+  |    +- docking_protocol.log
+  |    +- docking_protocol.stderr.txt
+  |    ... etc
+  |
+  +- file1.N--M.fasc   FASC file for decoys N to M [1]
+  |
+  +- file1.decoys.tar  tar archive of PDB file of all decoys
+  |                    generated corresponding to 'file1.pdb' [2]
+  |
+  ...</pre>
+</div>
+<p>Let <em>P</em> be the total number of decoys (the argument to the <tt class="docutils literal"><span class="pre">-P</span></tt> option),
+and <em>p</em> be the number of decoys per job (argument to the <tt class="docutils literal"><span class="pre">-p</span></tt> option).
+Then you would get in a single directory:</p>
+<ol class="arabic simple">
+<li><em>(P/p)</em> different <tt class="docutils literal"><span class="pre">.fasc</span></tt> files, corresponding to the <em>(P/p)</em>
+jobs;</li>
+<li><em>P</em> different <tt class="docutils literal"><span class="pre">.pdb</span></tt> files, named <tt class="file docutils literal"><span class="pre">a_file.0.pdb</span></tt> to
+<tt class="file docutils literal"><span class="pre">a_file.</span><em><span class="pre">(P-1)</span></em><span class="pre">.pdb</span></tt></li>
+</ol>
+</div>
+<div class="section" id="example-usage">
+<h2>Example usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
+<p>This section contains commented example sessions with
+<strong class="command">grosetta</strong>.  All the files used in this example are available
+in the <a class="reference external" href="http://code.google.com/p/gc3pie/source/browse/#svn%2Ftrunk%2Fgc3pie%2Fgc3apps%2Frosetta%2Ftest">GC3Pie Rosetta test</a> directory (courtesy of <a class="reference external" href="http://www.imsb.ethz.ch/researchgroup/malars">Lars
+Malmstroem</a>).</p>
+<div class="section" id="manage-a-set-of-jobs-from-start-to-end">
+<h3>Manage a set of jobs from start to end<a class="headerlink" href="#manage-a-set-of-jobs-from-start-to-end" title="Permalink to this headline">¶</a></h3>
+<p><em>In typical operation,</em> one calls <strong class="command">grosetta</strong> with the <tt class="docutils literal"><span class="pre">-C</span></tt>
+option and lets it manage a set of jobs until completion.</p>
+<p>So, to generate one decoy from a set of given input files, one can use
+the following command-line invocation:</p>
+<div class="highlight-python"><pre>$ grosetta -s example -C 120 -P 1 -p 1 \
+    flags alignment.filt query.fasta \
+    query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz \
+    boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb \
+    2fltA.pdb 2fm7A.pdb 2op8A.pdb 2ormA.pdb 2os5A.pdb \
+    3c6vA.pdb</pre>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">-s</span> <span class="pre">example</span></tt> option tells <strong class="command">grosetta</strong> to store
+information about the computational jobs in the <tt class="docutils literal"><span class="pre">example.jobs</span></tt>
+directory.</p>
+<p>The <tt class="docutils literal"><span class="pre">-C</span> <span class="pre">120</span></tt> option tells <strong class="command">grosetta</strong> to update job state
+every 120 seconds; output from finished jobs is retrieved and new jobs
+are submitted at the same interval.</p>
+<p>The <tt class="docutils literal"><span class="pre">-P</span> <span class="pre">1</span></tt> and <tt class="docutils literal"><span class="pre">-p</span> <span class="pre">1</span></tt> options set the total number of decoys to
+compute and the maximum number of decoys that a single computational
+job can handle.  These values can be arbitrarily high (however the <em>p</em>
+value should be such that the computational job can actually compute
+that many decoys in the allotted <a class="reference internal" href="../../glossary.html#term-walltime"><em class="xref std std-term">wall-clock time</em></a>).</p>
+<p>The above command will start by printing a status report like the
+following:</p>
+<div class="highlight-python"><pre>Status of jobs in the 'example.csv' session:
+ SUBMITTED   1/1 (100.0%)</pre>
+</div>
+<p>It will continue printing an updated status report every 120 seconds
+until the requested number of decoys (set by the <tt class="docutils literal"><span class="pre">-P</span></tt> option) has
+been computed.</p>
+<p>In GC3Pie terminology when a job is finished and its output has been
+successfully retrieved, the job is marked as <tt class="docutils literal"><span class="pre">TERMINATED</span></tt>:</p>
+<div class="highlight-python"><pre>Status of jobs in the 'example.csv' session:
+ TERMINATED   1/1 (100.0%)</pre>
+</div>
+</div>
+<div class="section" id="managing-a-session-by-repeated-grosetta-invocation">
+<h3>Managing a session by repeated <strong class="command">grosetta</strong> invocation<a class="headerlink" href="#managing-a-session-by-repeated-grosetta-invocation" title="Permalink to this headline">¶</a></h3>
+<p>We now show how one can obtain the same result by calling
+<strong class="command">grosetta</strong> multiple times (there could be hours of
+interruption between one invocation and the next one).</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This is not the typical mode of operating with <strong class="command">grosetta</strong>,
+but may still be useful in certain settings.</p>
+</div>
+<ol class="arabic">
+<li><p class="first">Create a session (1 job only, since no <tt class="docutils literal"><span class="pre">-P</span></tt> option is given); the
+session name is chosen with the <tt class="docutils literal"><span class="pre">-s</span></tt> (short for <tt class="docutils literal"><span class="pre">--session</span></tt>)
+option.  You should take care of re-using the same session name
+with subsequent commands.</p>
+<div class="highlight-python"><pre>$ grosetta -s example flags alignment.filt query.fasta \
+    query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz \
+    boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb \
+    2fltA.pdb 2fm7A.pdb 2op8A.pdb 2ormA.pdb 2os5A.pdb
+Status of jobs in the 'example.csv' session:
+ SUBMITTED   1/1 (100.0%)</pre>
+</div>
+</li>
+<li><p class="first">Now we call <strong class="command">grosetta</strong> again, and request that 3 decoys be
+computed starting from a single PDB file (<tt class="docutils literal"><span class="pre">--total-decoys</span> <span class="pre">3</span></tt> on
+the command line).  Since we are submitting a single PDB file, the
+3 decoys will be computed all in a single run, so the
+<tt class="docutils literal"><span class="pre">--decoys-per-job</span></tt> option will have value <tt class="docutils literal"><span class="pre">3</span></tt>.</p>
+<div class="highlight-python"><pre>$ grosetta -s example --total-decoys 3 --decoys-per-job 3 \
+    flags alignment.filt query.fasta \
+    query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz \
+    boinc_aaquery09_05.200_v1_3.gz 3c6vA.pdb
+Status of jobs in the 'example.csv' session:
+ SUBMITTED   3/3 (100.0%)</pre>
+</div>
+<p>Note that 3 jobs were submitted: <strong class="command">grosetta</strong> interprets the
+<tt class="docutils literal"><span class="pre">--total-decoys</span></tt> option globally, and adds one job to compute the
+2 missing decoys from the file set from step 1.  (This is currently
+a limitation of <strong class="command">grosetta</strong>)</p>
+<p>From here on, one could simply run <tt class="docutils literal"><span class="pre">grosetta</span> <span class="pre">-C</span> <span class="pre">120</span></tt> and let it
+manage the session until completion of all jobs, as in the example
+<a class="reference internal" href="#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a> above.  For the sake of
+showing how the use of several command-line options of
+<strong class="command">grosetta</strong>, we shall further show how manage the session
+by repeated separate invocations.</p>
+</li>
+<li><p class="first">Next step is to monitor the session, so we add the command-line
+option <tt class="docutils literal"><span class="pre">-l</span></tt> which tells <strong class="command">grosetta</strong> to list all the jobs
+with their status.  Also note that we keep the <tt class="docutils literal"><span class="pre">-s</span> <span class="pre">example</span></tt>
+option to tell <strong class="command">grosetta</strong> that we would like to operate on
+the session named <em>example</em>.</p>
+<p>All non-option arguments can be omitted: as long
+as the total number of decoys is unchanged, they&#8217;re not needed.</p>
+<div class="highlight-python"><pre>$ grosetta -s example -l
+Decoys Nr.       State (JobID)       Info
+================================================================================
+0--1             RUNNING (job.766)   Running at Mon Dec 20 19:32:08 2010
+2--3             RUNNING (job.767)   Running at Mon Dec 20 19:33:23 2010
+0--2             RUNNING (job.768)   Running at Mon Dec 20 19:33:43 2010</pre>
+</div>
+<p>Without the <tt class="docutils literal"><span class="pre">-l</span></tt> option only a summary of job statuses is presented:</p>
+<div class="highlight-python"><pre>$ grosetta -s example
+Status of jobs in the 'grosetta.csv' session:
+ RUNNING     3/3 (100.0%)</pre>
+</div>
+<p>Alternatively, we can keep the command line arguments used in the
+previous invocation: they will be ignored since they do not add any
+new job (the number of decoys to compute is always 1):</p>
+<div class="highlight-python"><pre>$ grosetta -s example -l flags alignment.filt query.fasta \
+    query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz \
+    boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb \
+    2fltA.pdb 2fm7A.pdb 2op8A.pdb 2ormA.pdb 2os5A.pdb \
+    3c6vA.pdb
+Decoys Nr.       State (JobID)       Info
+================================================================================
+0--1             RUNNING (job.766)
+2--3             RUNNING (job.767)   Running at Mon Dec 20 19:33:23 2010
+0--2             RUNNING (job.768)   Running at Mon Dec 20 19:33:43 2010</pre>
+</div>
+<p>Note that the <tt class="docutils literal"><span class="pre">-l</span></tt> option is available also in combination with
+the <tt class="docutils literal"><span class="pre">-C</span></tt> option (see <a class="reference internal" href="#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a>).</p>
+</li>
+<li><p class="first">Calling <tt class="docutils literal"><span class="pre">grosetta</span></tt> again when jobs are done triggers automated
+download of the results:</p>
+<div class="highlight-python"><pre>$ ../grosetta.py
+File downloaded:
+gsiftp://idgc3grid01.uzh.ch:2811/jobs/214661292869757468202765/minirosetta.static.stdout.txt
+File downloaded:
+gsiftp://idgc3grid01.uzh.ch:2811/jobs/214661292869757468202765/minirosetta.static.log
+ ...
+File downloaded:
+gsiftp://idgc3grid01.uzh.ch:2811/jobs/214661292869757468202765/.arc/input
+Status of jobs in the 'grosetta.csv' session:
+ TERMINATED  1/1 (100.0%)
+ ok          1/1 (100.0%)</pre>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">-l</span></tt> option comes handy to see what directory contains the
+job output:</p>
+<div class="highlight-python"><pre>$ grosetta -l
+Decoys Nr.       State (JobID)         Info
+==================================================================================
+0--1             TERMINATED (job.766)  Output retrieved into directory '/tmp/0--1'</pre>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The <strong class="command">grosetta</strong> and <strong class="command">gdocking</strong> scripts</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#command-line-invocation-of-grosetta">Command-line invocation of <strong class="command">grosetta</strong></a></li>
+<li><a class="reference internal" href="#output-files-for-grosetta">Output files for <strong class="command">grosetta</strong></a></li>
+<li><a class="reference internal" href="#output-files-for-gdocking">Output files for <strong class="command">gdocking</strong></a></li>
+<li><a class="reference internal" href="#example-usage">Example usage</a><ul>
+<li><a class="reference internal" href="#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a></li>
+<li><a class="reference internal" href="#managing-a-session-by-repeated-grosetta-invocation">Managing a session by repeated <strong class="command">grosetta</strong> invocation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ggeotop.html"
+                        title="previous chapter">The <strong class="command">ggeotop</strong> script</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gcrypto.html"
+                        title="next chapter">The <strong class="command">gcrypto</strong> script</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gcrypto.html" title="The gcrypto script"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ggeotop.html" title="The ggeotop script"
+             >previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >User Documentation</a> &raquo;</li>
+          <li><a href="index.html" >The GC3Apps software</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

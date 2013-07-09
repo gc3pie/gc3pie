@@ -1,0 +1,287 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.backends.shellcmd &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../../index.html" />
+    <link rel="next" title="gc3libs.backends.slurm" href="slurm.html" />
+    <link rel="prev" title="gc3libs.backends.sge" href="sge.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="slurm.html" title="gc3libs.backends.slurm"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="sge.html" title="gc3libs.backends.sge"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.backends.shellcmd">
+<span id="gc3libs-backends-shellcmd"></span><h1><cite>gc3libs.backends.shellcmd</cite><a class="headerlink" href="#module-gc3libs.backends.shellcmd" title="Permalink to this headline">¶</a></h1>
+<p>Run applications as local processes.</p>
+<dl class="class">
+<dt id="gc3libs.backends.shellcmd.ShellcmdLrms">
+<em class="property">class </em><tt class="descclassname">gc3libs.backends.shellcmd.</tt><tt class="descname">ShellcmdLrms</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth=None</em>, <em>frontend='localhost'</em>, <em>transport='local'</em>, <em>time_cmd=None</em>, <em>override='False'</em>, <em>keyfile=None</em>, <em>ignore_ssh_host_keys=False</em>, <em>spooldir=None</em>, <em>resourcedir=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.backends.shellcmd.ShellcmdLrms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute an <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> instance as a local process.</p>
+<p>Construction of an instance of <cite>ShellcmdLrms</cite> takes the following
+optional parameters (in addition to any parameters taken by the
+base class <tt class="xref py py-class docutils literal"><span class="pre">LRMS</span></tt>):</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>time_cmd</strong> (<em>str</em>) &#8211; <p>Path to the GNU <tt class="docutils literal"><span class="pre">time</span></tt> command.  Default is
+<tt class="file docutils literal"><span class="pre">/usr/bin/time</span></tt> which is correct on all known Linux
+distributions.</p>
+<p>This backend uses many of the
+extended features of GNU <tt class="docutils literal"><span class="pre">time</span></tt>, so the shell-builtins or the
+BSD <tt class="docutils literal"><span class="pre">time</span></tt> will not work.</p>
+</li>
+<li><strong>spooldir</strong> (<em>str</em>) &#8211; Path to a filesystem location where to create
+temporary working directories for processes executed through
+this backend. The default value <cite>None</cite> means to use <tt class="docutils literal"><span class="pre">$TMPDIR</span></tt>
+or <tt class="file docutils literal"><span class="pre">/tmp</span></tt> (see <cite>tempfile.mkftemp</cite> for details).</li>
+<li><strong>resourcedir</strong> (<em>str</em>) &#8211; Path to a filesystem location where to create a temporary
+directory that will contain information on the jobs running on
+the machine. The default value <cite>None</cite> means to use
+<tt class="docutils literal"><span class="pre">$HOME/.gc3/shellcmd.d</span></tt>.</li>
+<li><strong>transport</strong> (<em>str</em>) &#8211; Transport to use to connecet to the resource. Valid values are
+<cite>ssh</cite> or <cite>local</cite>.</li>
+<li><strong>frontend</strong> (<em>str</em>) &#8211; If <cite>transport</cite> is <cite>ssh</cite>, then <cite>frontend</cite> is the hostname of the
+remote machine where the jobs will be executed.</li>
+<li><strong>ignore_ssh_host_key</strong> (<em>bool</em>) &#8211; When connecting to a remote resource using <cite>ssh</cite> the server ssh
+public key is usually checked against a database of known hosts,
+and if the key is found but it does not match with the one saved
+in the database the connection will fail. Setting
+<cite>ignore_ssh_host_key</cite> to <cite>True</cite> will disable this check, thus
+introducing a potential security issue, but allowing connection
+even though the database contain old/invalid keys (the use case
+is when connecting to VM on a cloud, since the IP is usually
+reused and therefore the ssh key is recreated).</li>
+<li><strong>override</strong> (<em>bool</em>) &#8211; <cite>ShellcmdLrms</cite> by default will try to gather information on the
+machine the resource is running on, including the number of
+cores and the available memory. These values may be different
+from the values stored in the configuration file. If <cite>override</cite>
+is True, then the values automatically discovered will be used
+instead of the ones in the configuration file. If <cite>override</cite> is
+False, instead, the values in the configuration file will be
+used.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="gc3libs.backends.shellcmd.ShellcmdLrms.cancel_job">
+<tt class="descname">cancel_job</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.shellcmd.ShellcmdLrms.cancel_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cancel a running job.  If <cite>app</cite> is associated to a queued or
+running remote job, tell the execution middleware to cancel
+it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.shellcmd.ShellcmdLrms.close">
+<tt class="descname">close</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.backends.shellcmd.ShellcmdLrms.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implement gracefully close on LRMS dependent resources
+e.g. transport</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.shellcmd.ShellcmdLrms.free">
+<tt class="descname">free</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.shellcmd.ShellcmdLrms.free" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete the temporary directory where a child process has run.
+The temporary directory is removed with all its content,
+recursively.</p>
+<p>If the deletion is successful, the <cite>lrms_execdir</cite> attribute in
+<cite>app.execution</cite> is reset to <cite>None</cite>; subsequent invocations of
+this method on the same applications do nothing.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gc3libs.backends.shellcmd.ShellcmdLrms.free_slots">
+<tt class="descname">free_slots</tt><a class="headerlink" href="#gc3libs.backends.shellcmd.ShellcmdLrms.free_slots" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of cores free</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.shellcmd.ShellcmdLrms.get_resource_status">
+<tt class="descname">get_resource_status</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.backends.shellcmd.ShellcmdLrms.get_resource_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the status of the resource associated with this <cite>LRMS</cite>
+instance in-place.  Return updated <cite>Resource</cite> object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.shellcmd.ShellcmdLrms.get_results">
+<tt class="descname">get_results</tt><big>(</big><em>app</em>, <em>download_dir</em>, <em>overwrite=False</em><big>)</big><a class="headerlink" href="#gc3libs.backends.shellcmd.ShellcmdLrms.get_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve job output files into local directory <cite>download_dir</cite>
+(which must already exists).  Will not overwrite existing
+files, unless the optional argument <cite>overwrite</cite> is <cite>True</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.shellcmd.ShellcmdLrms.peek">
+<tt class="descname">peek</tt><big>(</big><em>app</em>, <em>remote_filename</em>, <em>local_file</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.backends.shellcmd.ShellcmdLrms.peek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
+remote file <cite>remote_filename</cite> and write them into
+<cite>local_file</cite>.  If <cite>size</cite> is <cite>None</cite> (default), then snarf
+contents of remote file from <cite>offset</cite> unto the end.</p>
+<p>Argument <cite>local_file</cite> is either a local path name (string), or
+a file-like object supporting a <cite>.write()</cite> method.  If
+<cite>local_file</cite> is a path name, it is created if not existent,
+otherwise overwritten.</p>
+<p>Argument <cite>remote_filename</cite> is the name of a file in the remote job
+&#8220;sandbox&#8221;.</p>
+<p>Any exception raised by operations will be passed through.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.shellcmd.ShellcmdLrms.submit_job">
+<tt class="descname">submit_job</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.shellcmd.ShellcmdLrms.submit_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run an <cite>Application</cite> instance as a local process.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">See :</th><td class="field-body"><cite>LRMS.submit_job</cite></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.shellcmd.ShellcmdLrms.update_job_state">
+<tt class="descname">update_job_state</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.shellcmd.ShellcmdLrms.update_job_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Query the running status of the local process whose PID is
+stored into <cite>app.execution.lrms_jobid</cite>, and map the POSIX
+process status to GC3Libs <cite>Run.State</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.shellcmd.ShellcmdLrms.validate_data">
+<tt class="descname">validate_data</tt><big>(</big><em>data_file_list=</em><span class="optional">[</span><span class="optional">]</span><big>)</big><a class="headerlink" href="#gc3libs.backends.shellcmd.ShellcmdLrms.validate_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return <cite>False</cite> if any of the URLs in <cite>data_file_list</cite> cannot
+be handled by this backend.</p>
+<p>The <tt class="xref py py-mod docutils literal"><span class="pre">shellcmd</span></tt> backend can only handle <tt class="docutils literal"><span class="pre">file</span></tt> URLs.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="sge.html"
+                        title="previous chapter"><cite>gc3libs.backends.sge</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="slurm.html"
+                        title="next chapter"><cite>gc3libs.backends.slurm</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="slurm.html" title="gc3libs.backends.slurm"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="sge.html" title="gc3libs.backends.sge"
+             >previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>
