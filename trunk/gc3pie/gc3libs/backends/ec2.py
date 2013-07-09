@@ -407,15 +407,17 @@ class EC2Lrms(LRMS):
                 keyfile = keyfile[:-4]
             else:
                 gc3libs.log.warning(
-                    "`public_key` option in configuration file should contains"
-                    " path to a public key. Found %s instead",
+                    "Option `public_key` in configuration file should contain"
+                    " the path to a public key file (with `.pub` ending),"
+                    " but '%s' was found instead. Continuing anyway.",
                     self.public_key)
             try:
                 pkey = paramiko.DSSKey.from_private_key_file(keyfile)
             except paramiko.PasswordRequiredException:
                 raise RuntimeError(
                     "Key %s is encripted with a password. Please, use"
-                    " an unencrypted key or use ssh-agent" % keyfile)
+                    " an unencrypted key or --prefereably-- use `ssh-agent`"
+                    % keyfile)
             except paramiko.SSHException, ex:
                 gc3libs.log.debug("File `%s` is not a valid DSS private key:"
                                   " %s", keyfile, ex)
@@ -424,7 +426,8 @@ class EC2Lrms(LRMS):
                 except paramiko.PasswordRequiredException:
                     raise RuntimeError(
                         "Key %s is encripted with a password. Please, use"
-                        " an unencrypted key or use ssh-agent" % keyfile)
+                        " an unencrypted key or --preferably-- use `ssh-agent`"
+                        % keyfile)
                 except paramiko.SSHException, ex:
                     gc3libs.log.debug("File `%s` is not a valid RSA private "
                                       "key: %s", keyfile, ex)
