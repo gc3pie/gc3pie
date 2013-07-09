@@ -55,17 +55,19 @@ import gc3libs
 
 class GdemoSimpleApp(gc3libs.Application):
     """
-    This simple application will run /bin/hostname on the remove host,
-    and retrive the output in a file named `stdout.txt` into a
-    directory `GdemoSimpleApp_output` inside the current directory.
+    This simple application will run `/bin/hostname`:file: on the remote host,
+    and retrieve the output in a file named `stdout.txt`:file: into a
+    directory `GdemoSimpleApp_output`:file: inside the current directory.
     """
     def __init__(self):
         gc3libs.Application.__init__(
             self,
-            arguments = ["/bin/hostname"], # mandatory
-            inputs = [],                   # mandatory
-            outputs = [],                  # mandatory
-            output_dir = "./GdemoSimpleApp_output",  # mandatory
+            # the following arguments are mandatory:
+            arguments = ["/bin/hostname"],
+            inputs = [],
+            outputs = [],
+            output_dir = "./GdemoSimpleApp_output",
+            # the rest is optional and has reasonable defaults:
             stdout = "stdout.txt",)
 
 # Create an instance of GdemoSimpleApp
@@ -76,7 +78,7 @@ app = GdemoSimpleApp()
 engine = gc3libs.create_engine()
 
 # Add your application to the engine. This will NOT submit your
-# application yet, but will make the engine awere *awere* of the
+# application yet, but will make the engine awere *aware* of the
 # application.
 engine.add(app)
 
@@ -88,7 +90,7 @@ if len(sys.argv)>1:
 # Periodically check the status of your application.
 while app.execution.state != gc3libs.Run.State.TERMINATED:
     print "Job in status %s " % app.execution.state
-    # `Engine.progress()` will do the GC3Pie magic: 
+    # `Engine.progress()` will do the GC3Pie magic:
     # submit new jobs, update status of submitted jobs, get
     # results of terminating jobs etc...
     engine.progress()
