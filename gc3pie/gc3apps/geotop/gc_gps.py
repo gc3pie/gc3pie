@@ -81,7 +81,7 @@ class GcgpsApplication(Application):
         self.output_dir = extra_args['output_dir']
 
         # extract from command relevant parameters to build output filename
-        command_args = self._parse_command(command)
+        command_args = _parse_command(command)
         if not command_args:
             outputs = gc3libs.ANY_OUTPUT
         else:
@@ -154,6 +154,9 @@ exit $RET
         try:
             # create script file
             (handle, self.tmp_filename) = tempfile.mkstemp(prefix='gc3pie-gc_gps', suffix=extra_args['jobname'])
+
+            # XXX: use NamedTemporaryFile instead with 'delete' = False
+
             fd = open(self.tmp_filename,'w')
             fd.write(execution_script)
             fd.close()
@@ -175,17 +178,6 @@ exit $RET
             stdout = 'gc_gps.log',
             join=True,
             **extra_args)
-
-
-#         Application.__init__(self, arguments=['echo', 'hello', 'world'],)
-#         Application.__init__(self, script="""#!/bin/bash
-
-# echo hello world
-# """,)
-#         if script:
-#             open(tmpfile,'w').write(script)
-#             self.inputs.append((tmpfile, 'scriptname'))
-#             self.arguments = ['./scriptname' ]
 
     def fetch_output_error(self, ex):
         # Ignore errors if `pos.output` file has not been created by
@@ -232,7 +224,7 @@ exit $RET
                 
                 self.execution.returncode = (0, 100)
 
-    def _parse_command(self, command):
+def _parse_command(command):
         """
         Parse a command like the following:
         "R CMD BATCH --no-save --no-restore '--args pos=5 realizations=700 
@@ -256,6 +248,31 @@ exit $RET
             gc3libs.log.error("Failed while parsing command: %s. " % command +
                               "Type: %s. Message: %s" % (type(ex),str(ex)))
             return None
+
+class GcgpsTask(RetryableTask):
+    def __init__(self, command, src_dir, result_dir, input_dir, **extra_args):
+        RetryableTask.__init__(
+            self,
+            # actual computational job
+            GcgpsApplication(
+                command, 
+                src_dir,
+                result_dir,
+                input_dir,
+                **extra_args),
+            **extra_args
+            )
+
+    def retry(self):
+        """ 
+        Task will be retried iif the application crashed
+        due to an error within the exeuction environment
+        (e.g. VM crash or LRMS kill)
+        """
+        # XXX: check whether it is possible to distingish 
+        # between the error conditions and set meaningfull exitcode
+        return False
+
 
 class GcgpsScript(SessionBasedScript):
     """
@@ -343,45 +360,57 @@ newly-created jobs so that this limit is never exceeded.
         For each command line, generate a new GcgpsTask
         """
 
-        data = []
+        tasks = []
 
         try:
             fd = open(self.params.command_file)
-            data = fd.readlines()
-            fd.close()
-        except Exception, ex:
+            
+            self.result_dir = os.path.dirname(self.params.output)
+            
+            for line in fd:
+                command = line.strip()
+
+                if not command:
+                    # ignore black lines
+                    continue
+
+                cmd_args = _parse_command(command)
+                
+                # setting jobname
+                jobname = "gc_gps-%s%s%s%s%s" % (cmd_args['pos'],
+                                                 cmd_args['realizations'],
+                                                 cmd_args['snr'],
+                                                 cmd_args['mast.h'],
+                                                 cmd_args['sd.mast.o'])
+
+                extra_args = extra.copy()
+                extra_args['jobname'] = jobname
+                # FIXME: ignore SessionBasedScript feature of customizing 
+                # output folder
+                extra_args['output_dir'] = self.params.output
+
+                extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', os.path.join('.computation',jobname))
+                extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', os.path.join('.computation',jobname))
+                extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', os.path.join('.computation',jobname))
+                extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', os.path.join('.computation',jobname))
+
+                self.log.debug("Creating Task for command: %s" % command)
+
+                tasks.append(GcgpsTask(
+                        command,
+                        self.params.R_source_folder,
+                        self.result_dir,
+                        self.params.input_dir,
+                        **extra_args))
+
+        except IOError, ioe:
             self.log.error("Error while reading command file " +
                            "%s." % self.params.command_file +
-                           " Error type %s." % type(ex) +
-                           "Message: %s" % ex.message)
-            raise ex
+                           "Message: %s" % ioe.message)
+        except Exception, ex:
+            self.log.error("Unexpected error. Error type: %s, Message: %s" % (type(ex),str(ex)))
 
-        for command in data:
+        finally:
+            fd.close()
 
-            # extract jobname
-            jobname = "gc_gps-"
-            for elem in command.split("'")[1].split()[1:] :
-                jobname = jobname + elem.split("=")[1]
-                
-            extra_args = extra.copy()
-            extra_args['jobname'] = jobname
-            # FIXME: ignore SessionBasedScript feature of customizing 
-            # output folder
-            extra_args['output_dir'] = self.params.output
-
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', os.path.join('.computation',jobname))
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', os.path.join('.computation',jobname))
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', os.path.join('.computation',jobname))
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', os.path.join('.computation',jobname))
-
-            self.result_dir = os.path.dirname(self.params.output)
-
-            command = command.strip()
-            self.log.debug("Creating Task for command: %s" % command)
-
-            yield GcgpsApplication(
-                command, 
-                self.params.R_source_folder,
-                self.result_dir,
-                self.params.input_dir,
-                **extra_args)
+        return tasks
