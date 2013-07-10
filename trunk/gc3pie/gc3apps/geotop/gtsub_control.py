@@ -75,19 +75,19 @@ rm input.tgz
 
 # create the sym link to the topo directory 
 echo -n "Checking Input folder..."
-if [ -d ./sim/_master/topo/topo ]; then
-    echo "[${PWD}/sim/_master/topo/topo]"
-elif [ -d ${HOME}/sim/_master/topo/topo ]; then
-    ln -s ${HOME}/sim/_master/topo/topo ./sim/_master/topo/topo
+if [ -d ./sim/_master/topo ]; then
+    echo "[${PWD}/sim/_master/topo]"
+elif [ -d ${HOME}/sim/_master/topo ]; then
+    ln -s ${HOME}/sim/_master/topo ./sim/_master/topo
     if [ $? -ne 0 ]; then
         echo "[creating sim link to the available topo directory has failed]"
         exit 1
     else 
-        echo "[${HOME}/sim_master/topo/topo]"
+        echo "[${HOME}/sim_master/topo]"
         echo "[OK, sym link to the available topo data has been created, continue...]"
     fi
 else 
-    echo "[FAILED: no folder found in './sim/_master/topo/topo' nor in '${HOME}/sim/_master/topo/topo']"
+    echo "[FAILED: no folder found in './sim/_master/topo' nor in '${HOME}/sim/_master/topo']"
     exit 1
 fi
 
