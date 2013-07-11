@@ -1021,7 +1021,7 @@ To get detailed info on a specific command, run:
                 jobname = app.jobname
             except AttributeError:
                 jobname = ''
-            
+
             rows.append([indent + str(app.persistent_id),
                          jobname,
                          app.execution.state,
@@ -1330,7 +1330,7 @@ To get detailed info on a specific command, run:
         self.subparsers = self.argparser.add_subparsers(
             title="subcommands",
             description="gcloud accept the following subcommands.")
-    
+
         listparser = self._add_subcmd(
             'list',
             self.list_vms,
@@ -1361,7 +1361,7 @@ To get detailed info on a specific command, run:
         forgetparser.add_argument(
             '-r', '--resource', metavar="NAME", dest="resource_name",
             default=None, help="Select resource by name.")
-        
+
         runparser = self._add_subcmd(
             'run',
             self.create_vm,
@@ -1386,7 +1386,7 @@ To get detailed info on a specific command, run:
         resources = [res for res in self._core.get_resources()
                      if res.type.startswith('ec2')]
         if self.params.resource_name:
-            resources = [res for res in resources 
+            resources = [res for res in resources
                          if res.name == self.params.resource_name]
             if not resources:
                 raise RuntimeError('No EC2 resource found matching name `%s`.'
@@ -1403,15 +1403,17 @@ To get detailed info on a specific command, run:
             table = PrettyTable()
             table.border=True
             if header:
-                table.field_names = ["id", "state", "public ip", "Nr. of jobs", "image id", "keypair"]
+                table.field_names = ["id", "state", "public ip", "Nr. of jobs", "Nr. of cores","image id", "keypair"]
             for vm in vms:
                 remote_jobs = 'N/A'
+                ncores = 'N/A'
                 if vm.id in res.resources:
                     if res.resources[vm.id].updated:
                         remote_jobs = str(len(res.resources[vm.id].job_infos))
-                table.add_row((vm.id, vm.state, vm.public_dns_name, remote_jobs, vm.image_id, vm.key_name))
+                        ncores = str(res.resources[vm.id].max_cores)
+                table.add_row((vm.id, vm.state, vm.public_dns_name, remote_jobs, ncores, vm.image_id, vm.key_name))
             print(table)
-    
+
 
     # Subcommand methods
 
@@ -1493,7 +1495,7 @@ To get detailed info on a specific command, run:
         resource = matching_res[0]
         resource._vms.remove_vm(vmid)
         resource._session.save(resource._vms)
-        
+
 
     def forget_vm(self):
         for resource in self.resources:
@@ -1515,7 +1517,7 @@ To get detailed info on a specific command, run:
 
         resource = self.resources[0]
         resource._connect()
-        image_id = self.params.image_id or resource.image_id 
+        image_id = self.params.image_id or resource.image_id
         vm = resource._create_instance(image_id)
         resource._vms.add_vm(vm)
         resource._session.save(resource._vms)
