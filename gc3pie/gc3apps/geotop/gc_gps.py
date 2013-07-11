@@ -162,7 +162,7 @@ exit $RET
             fd.close()
             os.chmod(fd.name,0777)
         except Exception, ex:
-            gc3libs.log.debug("Error creating execution script %s." % filename +
+            gc3libs.log.debug("Error creating execution script" +
                               "Error type: %s." % type(ex) +
                               "Message: %s"  %ex.message)
             raise
