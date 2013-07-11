@@ -144,7 +144,7 @@ gzip data/*.txt
         Application.__init__(self,
                              ['./gbiointeract.sh'],
                              [executable, (self.tmp_filename, 'gbiointeract.sh')],        # inputs
-                             data_files,  # outputs
+                             data_files + ["gbiointeract.sh"],  # outputs
                              stdout="gbiointeract.out",
                              stderr="gbiointeract.err",
                              **extra_args)
