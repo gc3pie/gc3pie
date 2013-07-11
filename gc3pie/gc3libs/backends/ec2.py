@@ -821,7 +821,7 @@ class EC2Lrms(LRMS):
                     self.name, len(self._vms), self.vm_pool_max_size)
                 raise RecoverableError(
                     "Already running the maximum number of VM on resource %s:"
-                    " %d >= %d." % self.name, len(self._vms), self.vm_pool_max_size)
+                    " %d >= %d." % (self.name, len(self._vms), self.vm_pool_max_size))
 
         # If we reached this point, we are waiting for a VM to be
         # ready, so delay the submission until we wither can submit to
