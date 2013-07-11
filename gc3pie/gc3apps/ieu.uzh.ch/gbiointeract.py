@@ -89,6 +89,12 @@ class GBiointeractApplication(Application):
                  **extra_args):
         extra_args.setdefault('requested_cores', 1)
 
+        self.executable = executable
+        self.cell_diffusion = cell_diffusion
+        self.public_good_diffusion = public_good_diffusion
+        self.public_good_durability = public_good_durability
+        self.death_rate = death_rate
+
         arguments = ['./'+os.path.basename(executable),
                      '-c', str(float(cell_diffusion)),
                      '-p', str(float(public_good_diffusion)),
