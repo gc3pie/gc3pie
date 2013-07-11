@@ -60,6 +60,7 @@ import time
 import tempfile
 
 import shutil
+import csv
 
 from pkg_resources import Requirement, resource_filename
 
@@ -71,7 +72,6 @@ import gc3libs.utils
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
-
 ## custom application class
 class GWeightApplication(Application):
     """
@@ -80,7 +80,7 @@ class GWeightApplication(Application):
     application_name = 'gweight'
     
     def __init__(self, edges_data_filename, **extra_args):
-        
+
         # setup output references
         # self.result_dir = result_dir
         self.output_dir = extra_args['output_dir']
@@ -94,18 +94,37 @@ class GWeightApplication(Application):
 
         inputs[edges_data_filename] = "./input.csv"
 
-        # gweight_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
-        #                                       "gc3libs/etc/gweight_wrap.sh")
+        argument ="./wrapper.sh ./input.csv "
 
-        # inputs[gweight_wrapper_sh] = os.path.basename(gweight_wrapper_sh)
+        # check the optional inputs
+
+        if extra_args.has_key('weight_function'):
+            inputs[extra_args['weight_function']] = "./bin/f_get_weight.r"
+            arguments = arguments + "-w ./bin/f_get_weight.r "
+            
+        if extra_args.has_key('data'):
+            inputs[extra_args['data']] = "./data/two_mode_network.rda"
+            arguments += "-d ./data/two_mode_network.rda "
+
+        if extra_args.has_key('driver script'):
+            inputs[extra_args['driver script']] = "./bin/run.R"
+            arguments +=  "-m ./bin/run.R "
+
+        # adding wrapper main script
+        gweight_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
+                                              "gc3libs/etc/gweight_wrap.sh")
+
+        inputs[gweight_wrapper_sh] = 'wrapper.sh'
 
         Application.__init__(
             self,
-            arguments = ['${HOME}/bin/wrapper.sh'],
+            # arguments = ['./wrapper.sh'],
+            arguments = argument,
             inputs = inputs,
             outputs = outputs,
             stdout = 'gweight.log',
             join=True,
+            executables = ['wrapper.sh'],
             **extra_args)
 
     def terminated(self):
@@ -258,8 +277,29 @@ class GWeightScript(SessionBasedScript):
     def after_main_loop(self):
         """
         Merge all result files together
+        Then clean up tmp files
         """
-        pass
+        # init result .csv file
+        merged_csv = "result-%s" % os.path.basename(self.params.edges_data)
+        try:
+            fd = open(merged_csv, "w+")
+            writer = csv.writer(fd)
+        except OSError, osx:
+            gc3libs.log.critical("Failed while creating result file %s. " % merged_csv +
+                                 "Error %s" % str(osx))
+            raise
+
+        for task in self.session:
+            if isinstance(task,GWeightTask) and task.execution.returncode == 0:
+                # Only consider successfully terminated tasks
+                try:
+                    _merge_csv(writer,task.output_file)
+                except OSError, osx:
+                    gc3libs.log.error("Failed while merging file %s. " % task.output_file +
+                                      "Error %s" % str(osx))
+                    continue
+        
+        fd.close()
 
     def _generate_chunked_files_and_list(self, file_to_chunk, chunk_size=1000):
         """
@@ -273,6 +313,16 @@ class GWeightScript(SessionBasedScript):
         index = 0
         chunk = []
         failure = False
+        chunk_files_dir = os.path.join(self.session.path,"tmp")
+
+        # creating 'chunk_files_dir'
+        try:
+            os.mkdir(chunk_files_dir)
+        except OSError, osx:
+            gc3libs.log.erorrs("Failed while creating tmp folder %s. " % chunk_files_dir +
+                               "Error %s." % str(osx) +
+                               "Using default '/tmp'")
+            chunk_files_dir = "/tmp"
 
         try:
             fd = open(file_to_chunk,'rb')
@@ -283,7 +333,8 @@ class GWeightScript(SessionBasedScript):
                 if i % chunk_size == 0:
                     if fout: 
                         fout.close()
-                    (handle, self.tmp_filename) = tempfile.mkstemp(prefix=
+                    (handle, self.tmp_filename) = tempfile.mkstemp(dir=chunk_files_dir,
+                                                                    prefix=
                                                                    'gweight-', 
                                                                    suffix=
                                                                    "%d.csv" % i)
@@ -294,7 +345,7 @@ class GWeightScript(SessionBasedScript):
             fout.close()
         except OSError, osx:
             gc3libs.log.critical("Failed while creating chunk files." +
-                                 "Error %s", (osx.message))
+                                 "Error %s", (str(osx)))
             failure = True
         finally:
             if failure:
@@ -312,3 +363,14 @@ class GWeightScript(SessionBasedScript):
         return chunk
             
 
+def _merge_csv(writer,csv_tomerge):
+    try:
+        ff = open(csv_tomerge,'rb')
+        reader = csv.reader(ff)
+        for row in reader:
+            writer.writerows(row)
+    except OSError, osx:
+        raise
+    finally:
+        ff.close()
+        
