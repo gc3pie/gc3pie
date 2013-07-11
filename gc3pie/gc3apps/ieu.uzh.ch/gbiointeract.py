@@ -32,12 +32,13 @@ __docformat__ = 'reStructuredText'
 import decimal
 import itertools
 import os
+import tempfile
 
 import gc3libs
 from gc3libs import Application, Run
 from gc3libs.cmdline import SessionBasedScript
 from gc3libs.workflow import ChunkedParameterSweep
-
+from gc3libs.utils import write_contents
 
 def arange(start, stop=None, step=1, precision=None):
     """arange generates a set of Decimal values over the
@@ -77,7 +78,7 @@ class GBiointeractApplication(Application):
     Class to wrap execution of a single `biointeract` program.
     """
 
-    application_name = "biointeract"
+    application_name = "gbiointeract"
 
     def __init__(self,
                  executable,
@@ -88,11 +89,12 @@ class GBiointeractApplication(Application):
                  **extra_args):
         extra_args.setdefault('requested_cores', 1)
 
-        arguments = [executable,
-                     '-c', cell_diffusion,
-                     '-p', public_good_diffusion,
-                     '-d', public_good_durability,
-                     '-x', death_rate]
+        arguments = ['./'+os.path.basename(executable),
+                     '-c', str(float(cell_diffusion)),
+                     '-p', str(float(public_good_diffusion)),
+                     '-d', str(int(public_good_durability)),
+                     '-x', str(float(death_rate)),
+                     '-D', 'data']
 
         extra_args['jobname'] = "GBiointeract_cdiff:" + \
         "%f_pgdiff:%f_dur:%f_deathrate:%f" % (cell_diffusion,
@@ -103,14 +105,59 @@ class GBiointeractApplication(Application):
                 os.path.dirname(extra_args['output_dir']),
                 extra_args['jobname'])
 
+        executable_script = """#!/bin/sh
+
+# Create data directory
+mkdir data
+
+# Run the script
+
+%s
+
+# Compress all output files
+gzip data/*.txt
+""" % str.join(' ', arguments)
+        try:
+            (fd, self.tmp_filename) = tempfile.mkstemp(prefix='c3pie-gbiointeract')
+            write_contents(self.tmp_filename, executable_script)
+            os.chmod(self.tmp_filename, 0755)
+        except Exception, ex:
+            gc3libs.log.debug("Error creating execution script."
+                              "Error type: %s. Message: %s" % (type(ex), ex.message))
+            raise
+
+        data_files = [
+            'data/allele_nonproducer.txt.gz',
+            'data/allele_producer.txt.gz',
+            'data/doubling_size_time.txt.gz',
+            'data/draw.txt.gz',
+            'data/final_numbers.txt.gz',
+            'data/final_values.txt.gz',
+            'data/initial_values.txt.gz',
+            'data/log.txt.gz',
+            'data/plot_values.txt.gz',
+            'data/public_goods.txt.gz',
+            'data/statistics.txt.gz',
+            'data/warnings.txt.gz',
+            ]
+
         Application.__init__(self,
-                             arguments,
-                             [executable],        # inputs
-                             gc3libs.ANY_OUTPUT,  # outputs
+                             ['./gbiointeract.sh'],
+                             [executable, (self.tmp_filename, 'gbiointeract.sh')],        # inputs
+                             data_files,  # outputs
                              stdout="gbiointeract.out",
                              stderr="gbiointeract.err",
                              **extra_args)
 
+        def terminated(self):
+            """
+            Remove temporary script file
+            """
+            try:
+                os.remove(self.tmp_filename)
+            except Exception, ex:
+                gc3libs.log.error("Failed removing temporary file %s. " % self.tmp_filename +
+                              "Error type %s. Message %s" % (type(ex), str(ex)))
 
 class GBiointeractTaskCollection(ChunkedParameterSweep):
     def __init__(self,
@@ -156,6 +203,7 @@ class GBiointeractScript(SessionBasedScript):
     supplied parameters.
     """
     version = __version__
+    application_name = 'gbiointeract'
 
     def _parse_range(self, string):
         """
@@ -173,22 +221,22 @@ class GBiointeractScript(SessionBasedScript):
             return iter((float(params[0]),))
 
     def setup_options(self):
-        self.add_param("-c", "--cell-diffusion", required=True,
+        self.add_param("-c", "--cell-diffusion",
                        help="In the form N[:END:STEP]. If only `N` is "
                        "supplied, will use only that value, otherwise "
                        "will use all the values in the range from `N` "
                        "to `END` (exclusive) using `STEP` increments")
-        self.add_param("-p", "--public-good-diffusion", required=True,
+        self.add_param("-p", "--public-good-diffusion",
                        help="In the form N[:END:STEP]. If only `N` is "
                        "supplied, will use only that value, otherwise "
                        "will use all the values in the range from `N` "
                        "to `END` (exclusive) using `STEP` increments")
-        self.add_param("-d", "--public-good-durability", required=True,
+        self.add_param("-d", "--public-good-durability",
                        help="In the form N[:END:STEP]. If only `N` is "
                        "supplied, will use only that value, otherwise "
                        "will use all the values in the range from `N` "
                        "to `END` (exclusive) using `STEP` increments")
-        self.add_param("-x", "--death-rate", required=True,
+        self.add_param("-x", "--death-rate",
                        help="In the form N[:END:STEP]. If only `N` is "
                        "supplied, will use only that value, otherwise "
                        "will use all the values in the range from `N` "
@@ -203,19 +251,44 @@ class GBiointeractScript(SessionBasedScript):
                        help="Path to the biointeract executable.")
 
     def parse_args(self):
-        self.params.cell_diffusion_range = self._parse_range(
-            self.params.cell_diffusion)
-        self.params.public_good_diffusion_range = self._parse_range(
-            self.params.public_good_diffusion)
-        self.params.public_good_durability_range = self._parse_range(
-            self.params.public_good_durability)
-        self.params.death_rate_range = self._parse_range(
-            self.params.death_rate)
+        if self.params.cell_diffusion:
+            self.params.cell_diffusion_range = self._parse_range(
+                self.params.cell_diffusion)
 
-        if not os.path.isfile(self.params.executable):
-            raise ValueError("Invalid executable file `%s`" % self.params.executable)
+        if self.params.public_good_diffusion:
+            self.params.public_good_diffusion_range = self._parse_range(
+                self.params.public_good_diffusion)
+
+        if self.params.public_good_durability:
+            self.params.public_good_durability_range = self._parse_range(
+                self.params.public_good_durability)
+
+        if self.params.death_rate:
+            self.params.death_rate_range = self._parse_range(
+                self.params.death_rate)
+
+        self.params.executable = os.path.abspath(self.params.executable)
 
     def new_tasks(self, extra):
+        # Check that the required parameters have been passed to the script
+        if not self.params.cell_diffusion:
+            raise gc3libs.exceptions.InvalidUsage("-c, --cell-diffusion argument is required")
+
+        if not self.params.public_good_diffusion:
+            raise gc3libs.exceptions.InvalidUsage("-p, --public-good-diffusion argument is required")
+
+        if not self.params.public_good_durability:
+            raise gc3libs.exceptions.InvalidUsage("-d, --public-good-durability argument is required")
+
+        if not self.params.death_rate:
+            raise gc3libs.exceptions.InvalidUsage("-x, --death-rate argument is required")
+
+        # Check that the `biointeract` executable exists.
+        if not os.path.exists(self.params.executable):
+            raise gc3libs.exceptions.InvalidUsage("Biointeract binary file `%s` does not exists. Please, re-run specifying a valid path to the biointeract program." % self.params.executable)
+        elif not os.path.isfile(self.params.executable):
+            raise gc3libs.exceptions.InvalidUsage("Invalid biointeract binary `%s`. Please, re-run specifying a valid path to the biointeract program." % self.params.executable)
+
         return [GBiointeractTaskCollection(
             self.params.executable,
             self.params.cell_diffusion_range,
