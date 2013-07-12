@@ -586,6 +586,7 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         but also creates new tasks if less than
         `chunk_size` are running.
         """
+        ParallelTaskCollection.update_state(self, **extra_args)
         # XXX: proposal, reset chuck_size from self._controller.max_in_flight
         # this is the way to pass new 'max-running' value to the class
         # this creates though, a tigh coupling with 'controller' and maybe
@@ -611,9 +612,9 @@ class ChunkedParameterSweep(ParallelTaskCollection):
             for param in range(self._floor, top, self.step):
                 self.add(self.new_task(param, **extra_args))
             self._floor = top
+            self.execution.state = self._state()
             self.changed = True
-        return ParallelTaskCollection.update_state(self, **extra_args)
-
+        return self.execution.state
 
 class RetryableTask(Task):
     """
