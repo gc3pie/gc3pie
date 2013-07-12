@@ -247,9 +247,6 @@ class GBiointeractScript(SessionBasedScript):
                        "supplied, will use only that value, otherwise "
                        "will use all the values in the range from `N` "
                        "to `END` (exclusive) using `STEP` increments")
-        self.add_param('--chunk-size', default=10, type=int,
-                       help="How many jobs to submit at the "
-                       "same time. Default: %(default)s")
 
     def setup_args(self):
         self.add_param("executable", nargs="?", default='biointeract',
@@ -301,7 +298,7 @@ class GBiointeractScript(SessionBasedScript):
             self.params.public_good_diffusion_range,
             self.params.public_good_durability_range,
             self.params.death_rate_range,
-            self.params.chunk_size,
+            self.params.max_running,
             **extra.copy()
             )]
 
