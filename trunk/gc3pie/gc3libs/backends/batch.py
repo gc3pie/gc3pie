@@ -420,9 +420,10 @@ class BatchSystem(LRMS):
 
             if exit_code != 0:
                 raise gc3libs.exceptions.LRMSError(
-                    "Failed executing command '%s' on resource '%s';"
+                    "Failed executing command 'cd %s && %s %s' on resource '%s';"
                     " exit code: %d, stderr: '%s'."
-                    % (cmd, self.name, exit_code, stderr))
+                    % (ssh_remote_folder, sub_cmd, script_filename,
+                       self.name, exit_code, stderr))
 
             jobid = self._parse_submit_output(stdout)
             log.debug('Job submitted with jobid: %s', jobid)
