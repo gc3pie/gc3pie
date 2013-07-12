@@ -429,14 +429,14 @@ ReturnCode=%x"""
             self.total_memory = int(stdout.split(':')[1]) * Memory.B
 
         if max_cores != self.max_cores:
-            log.warning(
+            log.info(
                 "`max_cores` value on resource %s mismatch: configuration"
                 "file says `%d` while it's actually `%d`. Updating current "
                 "value.", self.name, self.max_cores, max_cores)
             self.max_cores = max_cores
 
         if self.total_memory != self.max_memory_per_core:
-            log.warning(
+            log.info(
                 "`max_memory_per_core` value on resource %s mismatch: "
                 "configuration file says `%s` while it's actually `%s`. "
                 "Updating current value.", self.name, self.max_memory_per_core,
