@@ -815,6 +815,7 @@ class EC2Lrms(LRMS):
                 # The VM is probably still booting, let's skip to the
                 # next one and add it to the list of "pending" VMs.
                 pending_vms.add(vm_id)
+                continue
             try:
                 # Check that the required image id and instance type
                 # are correct
