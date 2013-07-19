@@ -91,8 +91,8 @@ else
     exit 1
 fi
 
-# sed the root dir be used
-sed -i -e "s|root=|root='"$PWD"\/'|g" ./src/TopoAPP/topoApp_complete.r
+# change the root dir be used
+sed -i -e "s|root=|root='$(pwd)/'|g" ./src/TopoAPP/topoApp_complete.r
 if [ $? -ne 0 ]; then
      echo "[sed the ROOT directory in topoApp_complete.r failed]"
      exit 1
@@ -109,10 +109,10 @@ if [ -f ./parfile.r ]; then
             exit 1
         fi
 else
-    echo "[No paramter file has been specified, using the one passed through the input.tgz file]"
+    echo "[No parameter file has been specified, using the one passed through the input.tgz file]"
 fi
 
-# sed the box sequence to be used
+# change the box sequence to be used
 sed -i -e 's/nboxSeq=/nboxSeq=%s/g' ./src/TopoAPP/parfile.r
 if [ $? -ne 0 ]; then
      echo "[sed the nboxSeq sequence failed]"
@@ -142,10 +142,11 @@ R CMD BATCH --no-save --no-restore ./src/TopoAPP/topoApp_complete.r
 
         inputs[fd.name] = 'gtsub_control.sh'
 
-        outputs = {}
-        outputs['./sim/result/'] = 'sim/result'
-        outputs['./topoApp_complete.r.Rout'] = 'topoApp_complete.r.Rout'
-        outputs ['./src/TopoAPP/parfile.r'] = 'parfile.r'
+        outputs = {
+            './sim/result/':             'sim/result',
+            './topoApp_complete.r.Rout': 'topoApp_complete.r.Rout',
+            './src/TopoAPP/parfile.r':   'parfile.r',
+        }
 
         Application.__init__(self,
                 arguments = ['./gtsub_control.sh'],
