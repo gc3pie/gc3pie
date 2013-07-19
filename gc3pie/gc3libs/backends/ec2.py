@@ -311,6 +311,12 @@ class EC2Lrms(LRMS):
                 "No `image_id` or `image_name` has been specified in the"
                 " configuration file.")
 
+        # helper for creating sub-resources
+        self._cfgobj = gc3libs.config.Configuration(
+            *gc3libs.Default.CONFIG_FILE_LOCATIONS,
+            auto_enable_auth=True)
+
+
     def _connect(self):
         """
         Connect to the EC2 endpoint and check that the required
@@ -564,10 +570,7 @@ class EC2Lrms(LRMS):
         args['ignore_ssh_host_keys'] = True
         args['name'] = "%s@%s" % (remote_ip, self.name)
         args['auth'] = args['vm_auth']
-        cfg = gc3libs.config.Configuration(
-            *gc3libs.Default.CONFIG_FILE_LOCATIONS,
-            **{'auto_enable_auth': True})
-        resource = cfg._make_resource(args)
+        resource = self._cfgobj._make_resource(args)
         return resource
 
     def _parse_security_group(self):
