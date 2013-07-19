@@ -1431,7 +1431,7 @@ To get detailed info on a specific command, run:
 %s
 """ % ("="*len(resname), resname, "="*len(resname)))
 
-            vms = res._vms.get_all_vms()
+            vms = res._vmpool.get_all_vms()
             if vms:
                 self._print_vms(vms, res)
                 printed += len(vms)
@@ -1448,7 +1448,7 @@ To get detailed info on a specific command, run:
         """
         matching_res = []
         for resource in self.resources:
-            if vmid in resource._vms:
+            if vmid in resource._vmpool:
                 matching_res.append(resource)
         return matching_res
 
@@ -1463,12 +1463,11 @@ To get detailed info on a specific command, run:
                 "VM with id `%s` not found." % (vmid))
 
         resource = matching_res[0]
-        vm = resource._vms.get_vm(vmid)
+        vm = resource._vmpool.get_vm(vmid)
         gc3libs.log.info("Terminating VM `%s` on resource `%s`" %
                          (vmid, resource.name))
         vm.terminate()
-        resource._vms.remove_vm(vmid)
-        resource._session.save(resource._vms)
+        resource._vmpool.remove_vm(vmid)
 
     def terminate_vm(self):
         for resource in self.resources:
@@ -1493,8 +1492,7 @@ To get detailed info on a specific command, run:
                 "VM with id `%s` not found." % (vmid))
 
         resource = matching_res[0]
-        resource._vms.remove_vm(vmid)
-        resource._session.save(resource._vms)
+        resource._vmpool.remove_vm(vmid)
 
 
     def forget_vm(self):
@@ -1519,6 +1517,5 @@ To get detailed info on a specific command, run:
         resource._connect()
         image_id = self.params.image_id or resource.image_id
         vm = resource._create_instance(image_id)
-        resource._vms.add_vm(vm)
-        resource._session.save(resource._vms)
+        resource._vmpool.add_vm(vm)
         self._print_vms([vm], resource)
