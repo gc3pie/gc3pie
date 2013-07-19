@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2012, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2013, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -325,7 +325,6 @@ class EC2Lrms(LRMS):
         if self._conn is not None:
             return
 
-
         args = {'aws_access_key_id': self.ec2_access_key,
                 'aws_secret_access_key': self.ec2_secret_key,
                 }
@@ -343,7 +342,7 @@ class EC2Lrms(LRMS):
 
         self._conn = boto.connect_ec2(**args)
 
-        # Set up the VMPool persistent class This has been delied
+        # Set up the VMPool persistent class. This has been delayed
         # until here because otherwise self._conn is None
         self._session = Session(
             os.path.expanduser(os.path.expandvars(EC2Lrms.RESOURCE_DIR)))
@@ -707,7 +706,7 @@ class EC2Lrms(LRMS):
                 self._vms.remove_vm(vm_id)
                 continue
 
-            state = vm.update()
+            vm.update()
             if vm.state == 'pending':
                 # If VM is still in pending state, skip creation of
                 # the resource
@@ -721,7 +720,7 @@ class EC2Lrms(LRMS):
                 self._vms.remove_vm(vm.id)
             elif vm.state == 'terminated':
                 gc3libs.log.info(
-                    "VM %s in TERMINATED state. It has probably been terminated"
+                    "VM `%s` in TERMINATED state. It has probably been terminated"
                     " from outside GC3Pie. Removing it from the list of VM.",
                     vm.id)
                 self._vms.remove_vm(vm.id)
@@ -729,7 +728,7 @@ class EC2Lrms(LRMS):
                 # The VM has probably ben stopped or shut down from
                 # outside GC3Pie.
                 gc3libs.log.error(
-                    "VM with id `%s` is in terminal state.", vm.id)
+                    "VM with id `%s` is in terminal state `%s`.", vm.id, vm.state)
 
             # Get or create a resource associated to the vm
             resource = self._get_remote_resource(vm)
