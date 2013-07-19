@@ -1381,9 +1381,29 @@ def uniq(seq):
     Iterate over all unique elements in sequence `seq`.
 
     Distinct values are returned in a sorted fashion.
+
+    Examples:
+
+      >>> for value in uniq([4,1,1,2,3,1,2]): print value
+      ...
+      1
+      2
+      3
+      4
+
+      >>> for value in uniq([1,2,3,4]): print value
+      ...
+      1
+      2
+      3
+      4
+
+      >>> for value in uniq([1,1,1,1]): print value
+      ...
+      1
+
     """
-    for value, grouper in itertools.groupby(sorted(seq)):
-        yield value
+    return sorted(set(seq))
 
 
 def unlock(lock):
