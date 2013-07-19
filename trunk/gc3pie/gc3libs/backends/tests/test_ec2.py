@@ -29,11 +29,11 @@ import sys
 import tempfile
 
 # 3rd party imports
-from nose.tools import assert_equal, assert_false, assert_true
+from nose.tools import assert_equal, assert_false, assert_true, raises
 
 # local imports
 from gc3libs.backends.ec2 import VMPool, EC2Lrms
-from gc3libs.session import Session
+import gc3libs.exceptions
 
 
 class _MockVM(object):
@@ -49,21 +49,20 @@ class TestVMPool(object):
     # require mocking the `boto` library!
 
     def setup(self):
+        # for persistence tests
+        self.tmpdir = tempfile.mkdtemp()
+
         # an empty VMPool
-        self.pool0 = VMPool('pool0', None)
+        self.pool0 = VMPool(self.tmpdir + '/pool0', None)
         # VMpool with 1 VM
-        self.pool1 = VMPool('pool1', None)
+        self.pool1 = VMPool(self.tmpdir + '/pool1', None)
         self.vm1 = _MockVM('a')
         self.pool1.add_vm(self.vm1)
         # VMpool with 2 VM
-        self.pool2 = VMPool('pool2', None)
+        self.pool2 = VMPool(self.tmpdir + '/pool2', None)
         self.vm2 = _MockVM('b')
         self.pool2.add_vm(self.vm1)
         self.pool2.add_vm(self.vm2)
-
-        # for persistence tests
-        self.tmpdir = tempfile.mkdtemp()
-        self.sess = Session(self.tmpdir)
 
     def teardown(self):
         shutil.rmtree(self.tmpdir)
@@ -89,26 +88,6 @@ class TestVMPool(object):
         assert_equal(str(self.pool0), "VMPool('pool0') : set([])")
         assert_equal(str(self.pool1), "VMPool('pool1') : set(['a'])")
         assert_equal(str(self.pool2), "VMPool('pool2') : set(['a', 'b'])")
-
-    def test_save_then_load_empty_vmpool(self):
-        saved_id = self.sess.add(self.pool0)
-        loaded = self.sess.load(saved_id)
-        assert_equal(loaded.persistent_id, self.pool0.persistent_id)
-        assert_equal(loaded.conn,          None)
-        assert_equal(loaded._vm_cache,     {})
-        assert_equal(loaded._vm_ids,       self.pool0._vm_ids)
-
-    def test_save_then_load_nonempty_vmpool(self):
-        saved_id = self.sess.add(self.pool2)
-        loaded = self.sess.load(saved_id)
-
-        assert_equal(loaded.persistent_id, self.pool2.persistent_id)
-        # the list of VM ids should have been persisted ...
-        assert_equal(loaded._vm_ids,       self.pool2._vm_ids)
-        # ... but the VM cache is now empty
-        assert_equal(loaded._vm_cache,     {})
-        # ...and so is the connection
-        assert_equal(loaded.conn,          None)
 
     def test_add_remove(self):
         VM_ID = 'x'
@@ -146,6 +125,83 @@ class TestVMPool(object):
         """Check that `VMPool.__iter__` iterates over VM IDs."""
         for n, pool in enumerate([self.pool0, self.pool1, self.pool2]):
             assert_equal(list(iter(pool)), list('ab'[:n]))
+
+    def test_get_vm_in_cache(self):
+        assert_equal(self.vm1, self.pool1['a'])
+
+        assert_equal(self.vm1, self.pool2['a'])
+        assert_equal(self.vm2, self.pool2['b'])
+
+    @raises(gc3libs.exceptions.UnrecoverableError)
+    def test_get_vm_not_in_cache_and_no_connection(self):
+        # clone pool2 from disk copy
+        pool = VMPool(self.pool2.path, None)
+        assert_equal(self.vm1, pool['a'])
+        assert_equal(self.vm2, pool['b'])
+
+    def test_get_all_vms(self):
+        all_vms1 = self.pool1.get_all_vms()
+        assert self.vm1 in all_vms1
+
+        all_vms2 = self.pool2.get_all_vms()
+        assert self.vm1 in all_vms2
+        assert self.vm2 in all_vms2
+
+    def test_lookup_is_get_vm(self):
+        assert_equal(self.pool1.get_vm('a'), self.pool1['a'])
+
+        assert_equal(self.pool2.get_vm('a'), self.pool2['a'])
+        assert_equal(self.pool2.get_vm('b'), self.pool2['b'])
+
+    def test_reload(self):
+        # simulate stopping program by deleting object and cloning a
+        # copy from disk
+        for pool in self.pool0, self.pool1, self.pool2:
+            ids = pool._vm_ids
+            path = pool.path
+            del pool
+            pool = VMPool(path, None)
+            assert_equal(pool._vm_ids, ids)
+            assert pool._vm_ids is not ids
+
+    def test_save_then_load_empty_vmpool(self):
+        self.pool0.save()
+
+        pool = VMPool(self.pool0.path, None)
+        assert_equal(pool.name,      self.pool0.name)
+        assert_equal(pool.conn,      None)
+        assert_equal(pool._vm_cache, {})
+        assert_equal(pool._vm_ids,   self.pool0._vm_ids)
+
+    def test_save_then_load_nonempty_vmpool(self):
+        self.pool2.save()
+
+        pool = VMPool(self.pool2.path, None)
+        assert_equal(pool.name,      self.pool2.name)
+        # the list of VM ids should have been persisted ...
+        assert_equal(pool._vm_ids,   self.pool2._vm_ids)
+        # ... but the VM cache is now empty
+        assert_equal(pool._vm_cache, {})
+        # ...and so is the connection
+        assert_equal(pool.conn,      None)
+
+    def test_update(self):
+        # clone pool2
+        pool = VMPool(self.pool2.path, None)
+        vm3 = _MockVM('c')
+        pool.add_vm(vm3)
+        self.pool2.update()
+        assert 'c' in self.pool2
+        # cannot test the following without a connection:
+        #assert_equal(self.pool2['c'], vm3)
+
+    def test_update_remove(self):
+        # clone pool2
+        pool = VMPool(self.pool2.path, None)
+        pool.remove_vm('b')
+        self.pool2.update(remove=True)
+        assert 'b' not in self.pool2
+        assert 'a' in self.pool2
 
 
 if "__main__" == __name__:

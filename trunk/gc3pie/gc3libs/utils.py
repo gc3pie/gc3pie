@@ -1376,6 +1376,20 @@ def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
     smtp.close()
 
 
+def touch(path):
+    """
+    Ensure a regular file exists at `path`.
+
+    If the file already exists, its access and modification time are
+    updated.
+
+    (This is a very limited and stripped down version of the ``touch``
+    POSIX utility.)
+    """
+    fd = open(path, 'a')
+    fd.close()
+
+
 def uniq(seq):
     """
     Iterate over all unique elements in sequence `seq`.
@@ -1422,11 +1436,11 @@ def update_parameter_in_file(path, var_in, new_val, regex_in):
     '''
     Updates a parameter value in a parameter file using predefined regular
     expressions in `_loop_regexps`.
-    
-    :param path: Full path to the parameter file. 
-    :param var_in: The variable to modify. 
-    :param new_val: The updated parameter value. 
-    :param regex: Name of the regular expression that describes the format of the parameter file. 
+
+    :param path: Full path to the parameter file.
+    :param var_in: The variable to modify.
+    :param new_val: The updated parameter value.
+    :param regex: Name of the regular expression that describes the format of the parameter file.
     '''
     _loop_regexps = {
         'bar-separated':(r'([a-z]+[\s\|]+)'
