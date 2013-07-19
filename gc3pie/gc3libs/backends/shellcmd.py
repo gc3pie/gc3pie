@@ -238,31 +238,33 @@ ReturnCode=%x"""
                         if not i['terminated']])
         return locals()
 
+    @staticmethod
+    def _filter_cores(job):
+        if job['terminated']:
+            return 0
+        else:
+            return job['requested_cores']
+
     def _compute_used_cores(self, jobs):
         """
         Accepts a dictionary of job informations and returns the
         sum of the `requested_cores` attributes.
         """
-        def filter_cores(job):
-            if job['terminated']:
-                return 0
-            else:
-                return job['requested_cores']
+        return sum(map(self._filter_cores, jobs.values()))
 
-        return sum(map(filter_cores, jobs.values()))
+    @staticmethod
+    def _filter_memory(job):
+        if job['requested_memory'] is None or job['terminated']:
+            return 0
+        else:
+            return job['requested_memory'].amount(unit=Memory.B)
 
     def _compute_used_memory(self, jobs):
         """
         Accepts a dictionary of job informations and returns the
         sum of the `requested_memory` attributes.
         """
-        def filter_memory(job):
-            if job['requested_memory'] is None or job['terminated']:
-                return 0
-            else:
-                return job['requested_memory'].amount(unit=Memory.B)
-
-        used_memory = Memory.B * sum(map(filter_memory, jobs.values()))
+        used_memory = Memory.B * sum(map(self._filter_memory, jobs.values()))
         if not isinstance(used_memory, Memory):
             used_memory = Memory.B * used_memory
         return used_memory
