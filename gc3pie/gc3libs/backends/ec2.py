@@ -55,71 +55,35 @@ available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
 
 class VMPool(Persistable):
     """
-    Will hold a list of VMs. Will persiste a list of vm ids.
+    Persistable container for a list of VM objects.
 
-       >>> vmpool = VMPool('pool', None)
-       >>> vmpool._vm_ids
-       set([])
-       >>> vmpool._vms
-       {}
+    Holds a list of all VM IDs of inserted VMs, and a cache of the
+    actual VM objects. If information about a VM is requested, which
+    is not currently in the cache, a request is made to the cloud
+    provider API (through the `conn` object passed to the constructor)
+    to get that information.
 
-    save VMPool to disk
+    The `VMPool`:class: look like a mixture of the `set` and `dict`
+    interfaces:
 
-       >>> from tempfile import mkdtemp
-       >>> tmpdir = mkdtemp()
-       >>> s = Session(tmpdir)
-       >>> s.add(vmpool)
-       'pool'
-       >>> vmpool._vms['x'] = 'xxx'
-       >>> vmpool._vm_ids.add('x')
-       >>> s.save(vmpool)
-       'pool'
+    * VMs are added to the container using the `add_vm` method::
 
-    Standard representation of a VMPool is its vm ids:
+        | >>> vmpool.add_vm(vm1)
 
-       >>> vmpool
-       ['x']
+      (There is no dictionary-like ``D[x]=y`` setter syntax, though,
+      as that would require spelling out the VM ID.)
 
-    while string representation is:
+    * VMs can be removed via the `remove_vm` method or the `del`
+      syntax; in both cases it's the VM *ID* that must be passed::
 
-       >>> str(vmpool)
-       "VMPool('pool') : ['x']"
+       | >>> vmpool.remove_vm(vm1)
 
-       >>> len(vmpool)
-       1
+       | >>> del vmpool[vm1]
 
-    load the saved VMPool object from disk
-
-       >>> s2 = Session(tmpdir)
-       >>> vmpool2 = s2.load('pool')
-
-    the internal dictionary msut be empty
-
-       >>> vmpool2._vms
-       {}
-
-   while the list of VM ids should be there.
-
-       >>> vmpool2._vm_ids
-       set(['x')
-       >>> 'x' in vmpool2
-       True
-
-    Check if `del` works:
-
-       >>> vmpool2._vms['x'] = 'xxx'
-       >>> vmpool2._vms
-       {'x': 'xxx'}
-       >>> del vmpool2['x']
-       >>> vmpool2._vms
-       {}
-       >>> vmpool2._vm_ids
-       set([])
-
-    cleanup
-
-       >>> import shutil
-       >>> shutil.rmtree(tmpdir)
+    `VMPool`:class: objects can be persisted using the
+    `gc3libs.persistence`:module: framework.  Note however that the VM
+    cache will be empty upon loading a `VMPool` instance from
+    persistent storage.
     """
 
     def __init__(self, name, ec2_connection):
