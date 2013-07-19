@@ -93,14 +93,19 @@ class VMPool(Persistable):
         self._vm_ids = set()
         self.changed = False
 
-    def __repr__(self):
-        return self._vm_ids.__repr__()
+    def __delitem__(self, vm_id):
+        """
+        x.__delitem__(self, vm_id) <==> x.remove_vm(vm_id)
+        """
+        return self.remove_vm(vm_id)
 
-    def __str__(self):
-        return "VMPool('%s') : %s" % (self.persistent_id, self._vm_ids)
+    def __getitem__(self, vm_id):
+        """
+        Return the VM with id `vm_id`.
 
-    def __len__(self):
-        return len(self._vm_ids)
+        x.__getitem__(vm_id) <==> x.get_vm(vm_id)
+        """
+        return self.get_vm(vm_id)
 
     def __getstate__(self):
         # Only save persistent_id and list of IDs, do not save VM
@@ -110,9 +115,26 @@ class VMPool(Persistable):
         state['conn'] = None
         return state
 
+    def __iter__(self):
+        """
+        Iterate over the list of known VM ids.
+        """
+        # We need to create a new list because the _vm_ids set may be
+        # updated during iteration.
+        return iter(list(self._vm_ids))
+
+    def __len__(self):
+        return len(self._vm_ids)
+
+    def __repr__(self):
+        return self._vm_ids.__repr__()
+
+    def __str__(self):
+        return "VMPool('%s') : %s" % (self.persistent_id, self._vm_ids)
+
     def add_vm(self, vm):
         """
-        Add a vm object to the list of VMs.
+        Add a VM object to the list of VMs.
         """
         self._vm_ids.add(vm.id)
         self._vms[vm.id] = vm
@@ -131,9 +153,11 @@ class VMPool(Persistable):
 
     def get_vm(self, vm_id):
         """
-        Return the VM object with id `vm_id`. If it is found in the
-        local cache, that object is returned. Otherwise a new VM
-        object is searched from the EC2 endpoint.
+        Return the VM object with id `vm_id`.
+
+        If it is found in the local cache, that object is
+        returned. Otherwise a new VM object is searched for in the EC2
+        endpoint.
         """
         if vm_id in self._vms:
             return self._vms[vm_id]
@@ -144,13 +168,12 @@ class VMPool(Persistable):
         try:
             reservations = self.conn.get_all_instances(instance_ids=[vm_id])
         except boto.exception.EC2ResponseError, ex:
-            gc3libs.log.error(
-                "Error getting VM %s: %s", vm_id, ex)
             raise UnrecoverableError(
-                "Error getting VM %s: %s" % (vm_id, ex))
+                "Error getting VM %s: %s" % (vm_id, ex),
+                do_log=True)
         if not reservations:
             raise UnrecoverableError(
-                "Instance with id %s has not found." % vm_id)
+                "Instance with id %s has not been found." % vm_id)
 
         instances = dict((i.id, i) for i in reservations[0].instances
                          if reservations)
@@ -166,31 +189,9 @@ class VMPool(Persistable):
 
     def get_all_vms(self):
         """
-        Get all known VMs.
+        Return list of all known VMs.
         """
         return [self.get_vm(vm_id) for vm_id in self._vm_ids]
-
-    def __iter__(self):
-        """
-        Iterate over the list of known VM ids.
-        """
-        # We need to create a new list because the _vm_ids set may be
-        # updated during iteration.
-        return iter(list(self._vm_ids))
-
-    def __getitem__(self, vm_id):
-        """
-        Return the VM with id `vm_id`.
-
-        x.__getitem__(vm_id) <==> x.get_vm(vm_id)
-        """
-        return self.get_vm(vm_id)
-
-    def __delitem__(self, vm_id):
-        """
-        x.__delitem__(self, vm_id) <==> x.remove_vm(vm_id)
-        """
-        return self.remove_vm(vm_id)
 
 
 class EC2Lrms(LRMS):
@@ -289,14 +290,16 @@ class EC2Lrms(LRMS):
         if self._conn is not None:
             return
 
-        args = {'aws_access_key_id': self.ec2_access_key,
-                'aws_secret_access_key': self.ec2_secret_key,
-                }
+        args = {
+            'aws_access_key_id':     self.ec2_access_key,
+            'aws_secret_access_key': self.ec2_secret_key,
+        }
 
         if self.ec2_url:
             region = boto.ec2.regioninfo.RegionInfo(
                 name=self.region,
-                endpoint=self.ec2_url.hostname)
+                endpoint=self.ec2_url.hostname,
+            )
             args['region'] = region
             args['port'] = self.ec2_url.port
             args['host'] = self.ec2_url.hostname
