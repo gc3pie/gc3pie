@@ -92,7 +92,7 @@ else
 fi
 
 # change the root dir be used
-sed -i -e "s|root=|root='$(pwd)/'|g" ./src/TopoAPP/topoApp_complete.r
+sed -i -e "s|root=|root='${PWD}/'|g" ./src/TopoAPP/topoApp_complete.r
 if [ $? -ne 0 ]; then
      echo "[sed the ROOT directory in topoApp_complete.r failed]"
      exit 1
