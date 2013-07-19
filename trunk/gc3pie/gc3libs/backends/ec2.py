@@ -402,54 +402,7 @@ class EC2Lrms(LRMS):
             # exists but have different fingerprint
             self._import_keypair()
         else:
-            keyfile = self.public_key
-            if keyfile.endswith('.pub'):
-                keyfile = keyfile[:-4]
-            else:
-                gc3libs.log.warning(
-                    "Option `public_key` in configuration file should contain"
-                    " the path to a public key file (with `.pub` ending),"
-                    " but '%s' was found instead. Continuing anyway.",
-                    self.public_key)
-            try:
-                pkey = paramiko.DSSKey.from_private_key_file(keyfile)
-            except paramiko.PasswordRequiredException:
-                raise RuntimeError(
-                    "Key %s is encripted with a password. Please, use"
-                    " an unencrypted key or --prefereably-- use `ssh-agent`"
-                    % keyfile)
-            except paramiko.SSHException, ex:
-                gc3libs.log.debug("File `%s` is not a valid DSS private key:"
-                                  " %s", keyfile, ex)
-                try:
-                    pkey = paramiko.RSAKey.from_private_key_file(keyfile)
-                except paramiko.PasswordRequiredException:
-                    raise RuntimeError(
-                        "Key %s is encripted with a password. Please, use"
-                        " an unencrypted key or --preferably-- use `ssh-agent`"
-                        % keyfile)
-                except paramiko.SSHException, ex:
-                    gc3libs.log.debug("File `%s` is not a valid RSA private "
-                                      "key: %s", keyfile, ex)
-                    raise ValueError("Public key `%s` is neither a valid "
-                                     "RSA key nor a DSS key" % self.public_key)
-
-            # Check key fingerprint
-            localkey_fingerprint = str.join(
-                ':', (i.encode('hex') for i in pkey.get_fingerprint()))
-            if localkey_fingerprint != keypairs[self.keypair_name].fingerprint:
-                gc3libs.log.error(
-                    "Keypair `%s` is present but has different fingerprint: "
-                    "%s != %s. Aborting!" % (
-                        self.keypair_name,
-                        localkey_fingerprint,
-                        keypairs[self.keypair_name].fingerprint))
-                raise UnrecoverableError(
-                    "Keypair `%s` is present but has different fingerprint: "
-                    "%s != %s. Aborting!" % (
-                        self.keypair_name,
-                        localkey_fingerprint,
-                        keypairs[self.keypair_name].fingerprint))
+            self._have_keypair(keypairs[self.keypair_name])
 
         # Setup security groups
         if 'security_group_name' in self:
@@ -490,8 +443,86 @@ class EC2Lrms(LRMS):
         self._connect()
         vm = self._vms.get_vm(vm_id)
         self._session.save(self._vms)
-        # self._session.save_all()
         return vm
+
+    @staticmethod
+    def __str_fingerprint(pkey):
+        """
+        Print key fingerprint like SSH commands do.
+
+        We need to convert the key fingerprint from Paramiko's
+        internal representation to this colon-separated hex format
+        because that's the way the fingerprint is returned from the
+        EC2 API.
+        """
+        return str.join(':', (i.encode('hex') for i in pkey.get_fingerprint()))
+
+    def _have_keypair(self, ec2_key):
+        """
+        Check if the given SSH key is available locally.
+
+        Try to locate the given SSH key first among the keys loaded
+        into a running ``ssh-agent`` (if any), then in the key file
+        given in the ``public_key`` configuration key.
+        """
+        # try with SSH agent first
+        gc3libs.log.debug("Checking if keypair is registered in SSH agent...")
+        agent = paramiko.Agent()
+        fingerprints_from_agent = [ self.__str_fingerprint(k) for k in agent.get_keys() ]
+        if ec2_key.fingerprint in fingerprints_from_agent:
+            gc3libs.log.debug("Found remote key fingerprint in SSH agent.")
+            return True
+
+        # else, try to load from file
+        keyfile = self.public_key
+        if keyfile.endswith('.pub'):
+            keyfile = keyfile[:-4]
+        else:
+            gc3libs.log.warning(
+                "Option `public_key` in configuration file should contain"
+                " the path to a public key file (with `.pub` ending),"
+                " but '%s' was found instead. Continuing anyway.",
+                self.public_key)
+
+        pkey = None
+        for format, reader in [
+                ('DSS', paramiko.DSSKey.from_private_key_file),
+                ('RSA', paramiko.RSAKey.from_private_key_file),
+                ]:
+            try:
+                gc3libs.log.debug(
+                    "Trying to load key file `%s` as %s key...",
+                    keyfile, format)
+                pkey = reader(keyfile)
+                ## PasswordRequiredException < SSHException so we must check this first
+            except paramiko.PasswordRequiredException:
+                gc3libs.log.warning(
+                    "Key %s is encripted with a password, so we cannot check if it"
+                    " matches the remote keypair (maybe you should start `ssh-agent`?)."
+                    " Continuing without check.",
+                    keyfile)
+                return False
+            except paramiko.SSHException, ex:
+                gc3libs.log.debug(
+                    "File `%s` is not a valid %s private key: ",
+                    keyfile, format, ex)
+                # try with next format
+                continue
+        if pkey is None:
+            raise ValueError("Public key `%s` is neither a valid"
+                             " RSA key nor a DSS key" % self.public_key)
+
+        # check key fingerprint
+        localkey_fingerprint = self.__str_fingerprint(pkey)
+        if localkey_fingerprint != ec2_key.fingerprint:
+            raise UnrecoverableAuthError(
+                "Keypair `%s` is present but has different fingerprint: "
+                "%s != %s. Aborting!" % (
+                    self.keypair_name,
+                    localkey_fingerprint,
+                    ec2_key.fingerprint,
+                ),
+                do_log=True)
 
     def _import_keypair(self):
         """
