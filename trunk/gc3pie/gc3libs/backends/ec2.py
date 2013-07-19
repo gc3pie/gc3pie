@@ -89,7 +89,7 @@ class VMPool(Persistable):
     def __init__(self, name, ec2_connection):
         self.persistent_id = name
         self.conn = ec2_connection
-        self._vms = {}
+        self._vm_cache = {}
         self._vm_ids = set()
         self.changed = False
 
@@ -110,10 +110,10 @@ class VMPool(Persistable):
     def __getstate__(self):
         # Only save persistent_id and list of IDs, do not save VM
         # objects.
-        state = self.__dict__.copy()
-        state['_vms'] = dict()
-        state['conn'] = None
-        return state
+        return dict(
+            persistent_id=self.persistent_id,
+            _vm_ids=self._vm_ids,
+        )
 
     def __iter__(self):
         """
@@ -129,6 +129,12 @@ class VMPool(Persistable):
     def __repr__(self):
         return self._vm_ids.__repr__()
 
+    def __setstate__(self, state):
+        self.persistent_id = state['persistent_id']
+        self.conn = None
+        self._vm_cache = {}
+        self._vm_ids = state['_vm_ids']
+
     def __str__(self):
         return "VMPool('%s') : %s" % (self.persistent_id, self._vm_ids)
 
@@ -137,7 +143,7 @@ class VMPool(Persistable):
         Add a VM object to the list of VMs.
         """
         self._vm_ids.add(vm.id)
-        self._vms[vm.id] = vm
+        self._vm_cache[vm.id] = vm
         self.changed = True
 
     def remove_vm(self, vm_id):
@@ -145,8 +151,8 @@ class VMPool(Persistable):
         Remove VM with id `vm_id` from the list of known VMs. No
         connection to the EC2 endpoint is performed.
         """
-        if vm_id in self._vms:
-            del self._vms[vm_id]
+        if vm_id in self._vm_cache:
+            del self._vm_cache[vm_id]
         if vm_id in self._vm_ids:
             self._vm_ids.remove(vm_id)
         self.changed = True
@@ -159,8 +165,8 @@ class VMPool(Persistable):
         returned. Otherwise a new VM object is searched for in the EC2
         endpoint.
         """
-        if vm_id in self._vms:
-            return self._vms[vm_id]
+        if vm_id in self._vm_cache:
+            return self._vm_cache[vm_id]
 
         if not self.conn:
             raise UnrecoverableError(
@@ -181,7 +187,7 @@ class VMPool(Persistable):
             raise UnrecoverableError(
                 "Instance with id %s has not found." % vm_id)
         vm = instances[vm_id]
-        self._vms[vm_id] = vm
+        self._vm_cache[vm_id] = vm
         if vm_id not in self._vm_ids:
             self._vm_ids.add(vm_id)
             self.changed = True

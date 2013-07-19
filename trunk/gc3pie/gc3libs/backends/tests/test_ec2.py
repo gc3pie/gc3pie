@@ -68,18 +68,17 @@ class TestVMPool(object):
     def teardown(self):
         shutil.rmtree(self.tmpdir)
 
-
     def test_empty_vmpool(self):
         assert_equal(self.pool0._vm_ids, set([]))
-        assert_equal(self.pool0._vms, {})
+        assert_equal(self.pool0._vm_cache, {})
 
     def test_vmpool_one_vm(self):
         assert_equal(self.pool1._vm_ids, set(['a']))
-        assert_equal(self.pool1._vms, {'a': self.vm1})
+        assert_equal(self.pool1._vm_cache, {'a': self.vm1})
 
     def test_vmpool_two_vms(self):
         assert_equal(self.pool2._vm_ids, set(['a', 'b']))
-        assert_equal(self.pool2._vms, {'a': self.vm1, 'b': self.vm2})
+        assert_equal(self.pool2._vm_cache, {'a': self.vm1, 'b': self.vm2})
 
     def test_repr(self):
         assert_equal(repr(self.pool0), "set([])")
@@ -95,18 +94,21 @@ class TestVMPool(object):
         saved_id = self.sess.add(self.pool0)
         loaded = self.sess.load(saved_id)
         assert_equal(loaded.persistent_id, self.pool0.persistent_id)
-        assert_equal(loaded.conn,          self.pool0.conn)
-        assert_equal(loaded._vms,          self.pool0._vms)
+        assert_equal(loaded.conn,          None)
+        assert_equal(loaded._vm_cache,     {})
         assert_equal(loaded._vm_ids,       self.pool0._vm_ids)
 
     def test_save_then_load_nonempty_vmpool(self):
         saved_id = self.sess.add(self.pool2)
         loaded = self.sess.load(saved_id)
 
+        assert_equal(loaded.persistent_id, self.pool2.persistent_id)
         # the list of VM ids should have been persisted ...
-        assert_equal(loaded._vm_ids, self.pool2._vm_ids)
+        assert_equal(loaded._vm_ids,       self.pool2._vm_ids)
         # ... but the VM cache is now empty
-        assert_equal(loaded._vms, {})
+        assert_equal(loaded._vm_cache,     {})
+        # ...and so is the connection
+        assert_equal(loaded.conn,          None)
 
     def test_add_remove(self):
         VM_ID = 'x'
