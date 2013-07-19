@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2012, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2012, 2013, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -23,7 +23,7 @@ __version__ = '$Revision$'
 import os
 import os.path
 import shlex
-import time 
+import time
 import sys
 import tempfile
 import shutil
@@ -42,7 +42,7 @@ from gc3libs.workflow import ParallelTaskCollection, SequentialTaskCollection
 GEOTOP_INPUT_ARCHIVE = "input.tgz"
 
 class GTSubControllApplication(Application):
-        
+
     # This part starts the different Applications for the
     # specified simulations boxes.
 
@@ -52,7 +52,7 @@ class GTSubControllApplication(Application):
         execution_script = """
 #!/bin/sh
 
-# check tar 
+# check tar
 RES=`command tar --version 2>&1`
 if [ $? -ne 0 ]; then
      echo "[tar command is not present]"
@@ -62,18 +62,18 @@ else
      echo "[OK, tar command is present, continue...]"
 fi
 
-# Untar the input files in the 
+# Untar the input files in the
 tar -xzvf input.tgz -C .
 if [ $? -ne 0 ]; then
      echo "[untar failed]"
      exit 1
 else
-    echo "[OK, untar of the inpit archive command finished successfully, continue...]"
+    echo "[OK, untar of the input archive command finished successfully, continue...]"
 fi
-# Remove input.tgz 
+# Remove input.tgz
 rm input.tgz
 
-# create the sym link to the topo directory 
+# create the sym link to the topo directory
 echo -n "Checking Input folder..."
 if [ -d ./sim/_master/topo ]; then
     echo "[${PWD}/sim/_master/topo]"
@@ -82,11 +82,11 @@ elif [ -d ${HOME}/sim/_master/topo ]; then
     if [ $? -ne 0 ]; then
         echo "[creating sim link to the available topo directory has failed]"
         exit 1
-    else 
+    else
         echo "[${HOME}/sim_master/topo]"
         echo "[OK, sym link to the available topo data has been created, continue...]"
     fi
-else 
+else
     echo "[FAILED: no folder found in './sim/_master/topo' nor in '${HOME}/sim/_master/topo']"
     exit 1
 fi
@@ -96,28 +96,28 @@ sed -i -e "s|root=|root='"$PWD"\/'|g" ./src/TopoAPP/topoApp_complete.r
 if [ $? -ne 0 ]; then
      echo "[sed the ROOT directory in topoApp_complete.r failed]"
      exit 1
-else 
+else
     echo "[OK, changing the root directory in the topoApp_complete.r, continue...]"
 fi
 
-# copy parfile if it is present in the root directory 
+# copy parfile if it is present in the root directory
 if [ -f ./parfile.r ]; then
-        echo "[It seems that a different parfile has been passed to the application, replacing the current one...]" 
-        cp ./parfile.r ./src/TopoAPP/ 
+        echo "[It seems that a different parfile has been passed to the application, replacing the current one...]"
+        cp ./parfile.r ./src/TopoAPP/
         if [ $? -ne 0 ]; then
             echo "[Some problems copying the specified parfile.r occured, please check...]"
             exit 1
         fi
 else
     echo "[No paramter file has been specified, using the one passed through the input.tgz file]"
-fi 
+fi
 
 # sed the box sequence to be used
 sed -i -e 's/nboxSeq=/nboxSeq=%s/g' ./src/TopoAPP/parfile.r
 if [ $? -ne 0 ]; then
      echo "[sed the nboxSeq sequence failed]"
      exit 1
-else 
+else
     echo "[OK, changing the nboxSeq has been done correctly, continue...]"
 fi
 
@@ -130,7 +130,7 @@ if [ $? -ne 0 ]; then
 else
      echo "[OK, R command is present, starting R script]"
 fi
-R CMD BATCH --no-save --no-restore ./src/TopoAPP/topoApp_complete.r 
+R CMD BATCH --no-save --no-restore ./src/TopoAPP/topoApp_complete.r
         """ % (sim_box)
 
         # create script file
@@ -159,33 +159,28 @@ R CMD BATCH --no-save --no-restore ./src/TopoAPP/topoApp_complete.r
 class GTSubControlScript(SessionBasedScript):
     """
     GTSubControl Script is used for submiting the GeoTop Application
-    on parametric basics. It takes as arguments the [root] location of the 
-    all the input files and the [nseq] containing the sequence of elements 
-    corrisponding to a single simulation box    
+    on parametric basics. It takes as arguments the [root] location of the
+    all the input files and the [nseq] containing the sequence of elements
+    corrisponding to a single simulation box
     """
     version = '1.0'
 
     def setup_options(self):
 
-        self.add_param("-m", "--memory-per-core", dest="memory_per_core",
-                        type=Memory, default=7*GB,  # 2 GB
-                        metavar="GIGABYTES",
-                        help="Set the amount of memory required per execution core; default: %(default)s."
-                        " Specify this as an integral number followed by a unit, e.g.,"
-                        " '512MB' or '4GB'.")
-
-        self.add_param("-p", "--parameter-file", dest="par_file", 
+        self.add_param("-p", "--parameter-file", dest="par_file",
                         type=existing_file,
-                        default=None, 
+                        default=None,
                         help="Indicate the parameter file to be used")
+
+        # change default for the "-m"/"--memory-per-core" option
+        self.actions['memory_per_core'].default = 7*GB
 
     def setup_args(self):
         self.add_param("root", type=existing_directory, help='The root directory where to script is looking for input data')
         self.add_param("nseq", type=str, help='The sequence number of sim boxes to be executed. Formats: INT:INT | INT,INT,INT,..,INT | INT')
- 
-    def parse_args(self):
 
-    ## Split the nseq argument and set sim_boxes parameters. 
+    def parse_args(self):
+        "Split the nseq argument and set sim_boxes parameters."
         try:
             if self.params.nseq.count(':') == 1:
                 start, end = self.params.nseq.split(':')
@@ -194,14 +189,13 @@ class GTSubControlScript(SessionBasedScript):
                 simulations = self.params.nseq.split(',');
                 self.sim_boxes = [ int(s) for s in simulations ]
             else:
-                self.sim_boxes = [ int(self.params.nseq) ];         
+                self.sim_boxes = [ int(self.params.nseq) ];
         except ValueError:
             raise gc3libs.exceptions.InvalidUsage(
                 "Invalid argument '%s', use on of the following formats: INT:INT | INT,INT,INT,..,INT | INT " % (nseq,))
 
-        
-    "Prepare the input tarball"
     def _scan_and_tar(self, simulation_dir):
+        """Prepare the input tarball."""
         try:
             gc3libs.log.debug("Compressing input folder in'%s' ", simulation_dir)
             cwd = os.getcwd()
@@ -224,14 +218,12 @@ class GTSubControlScript(SessionBasedScript):
              gc3libs.log.error("Failed creating input archive '%s': %s: %s",
                                 os.path.join(simulation_dir, GEOTOP_INPUT_ARCHIVE),
                                 x.__class__,x.message)
-             raise 
+             raise
 
-
-    """
-    Get the strings needed for the naming of the output directory.
-    """
     def _get_output_dir_naming(self, paramfile):
-
+        """
+        Get the strings needed for the naming of the output directory.
+        """
         # parse the parfile and take "Nclust", "col", "beg"
         # and "end" values needed for output directory naming.
 
@@ -242,13 +234,13 @@ class GTSubControlScript(SessionBasedScript):
             line = line.strip()
             start, end = line.split('=')
             if (end == "" or start == ""):
-                raise ValueError("Nclust option in the parfile.r is not properly set." 
+                raise ValueError("Nclust option in the parfile.r is not properly set."
                                  " It is set like %s, must be Nclust=Value." % ( line ))
             nclust = "Nc"+end
             output_dir_naming_strings.append(nclust)
             break
-         
-        # Get the col vaule from the parfile.r
+
+        # Get the col value from the parfile.r
         for line in gc3libs.utils.fgrep("col=", paramfile):
             line = line.strip()
             start, end = line.split('=')
@@ -260,7 +252,7 @@ class GTSubControlScript(SessionBasedScript):
             output_dir_naming_strings.append(col)
             break
 
-        # Get the beginig vaule out of the "beg" line  
+        # Get the beginning value out of the "beg" line
         for i in gc3libs.utils.fgrep("beg <-", paramfile):
             line_elements = i.split(' ')
             beg = line_elements[2].replace('"','')
@@ -274,14 +266,14 @@ class GTSubControlScript(SessionBasedScript):
             end = line_elements[2].replace('"','')
             end = end.replace('/','')
             output_dir_naming_strings.append(end)
-            break 
+            break
 
         return output_dir_naming_strings
 
     def new_tasks(self, extra):
 
         # Call the _scan_and_tar method which recreates
-        # the tarball each time. 
+        # the tarball each time.
         inputs = dict(self._scan_and_tar(self.params.root))
 
         # Manage the parfile.r and call the _get_output_dir_formatting
@@ -301,13 +293,11 @@ class GTSubControlScript(SessionBasedScript):
             extra_args['jobname'] = jobname
             yield GTSubControllApplication(
                 sim_box, # pass the simulation box number
-                inputs.copy(), 
+                inputs.copy(),
                 **extra_args)
 
-
     def after_main_loop(self):
-
-        """ 
+        """
         This method prints information about the status of
         the execution at the end of each sumulation.
         """
@@ -320,4 +310,3 @@ class GTSubControlScript(SessionBasedScript):
 if "__main__" == __name__:
         import gtsub_control
         gtsub_control.GTSubControlScript().run()
-
