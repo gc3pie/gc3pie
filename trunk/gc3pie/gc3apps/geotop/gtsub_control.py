@@ -255,6 +255,7 @@ class GTSubControlScript(SessionBasedScript):
 
         # Get the beginning value out of the "beg" line
         for i in gc3libs.utils.fgrep("beg <-", paramfile):
+            i = i.strip()
             line_elements = i.split(' ')
             beg = line_elements[2].replace('"','')
             beg = beg.replace('/','')
@@ -263,6 +264,7 @@ class GTSubControlScript(SessionBasedScript):
 
         # Get the ending value out of the "end" line
         for i in gc3libs.utils.fgrep("end <-", paramfile):
+            i = i.strip()
             line_elements = i.split(' ')
             end = line_elements[2].replace('"','')
             end = end.replace('/','')
