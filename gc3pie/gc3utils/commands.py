@@ -21,9 +21,7 @@ Implementation of the `core` command-line front-ends.
 #
 __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
-__author__ = "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, "
-"Riccardo Murri <riccardo.murri@uzh.ch>"
-"Antonio Messina <arcimboldo@gmail.com>"
+__author__ = "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, Riccardo Murri <riccardo.murri@uzh.ch>, Antonio Messina <arcimboldo@gmail.com>"
 __date__ = '$Date$'
 __copyright__ = "Copyright (c) 2009-2012 Grid Computing Competence Center, University of Zurich"
 
