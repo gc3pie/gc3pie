@@ -2,7 +2,7 @@
 """
 Top-level interface to Grid functionality.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -974,6 +974,11 @@ class Engine(object):
                         if isinstance(task, Application):
                             currently_submitted += 1
                             currently_in_flight += 1
+                    except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration, warn:
+                        # this is not a real error, rather a notice
+                        # that submission has been delayed; just echo
+                        # exception message to user and continue
+                        gc3libs.log.info("%s", warn)
                     except Exception, x:
                         if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
                             # propagate generic exceptions for debugging purposes
