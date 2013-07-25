@@ -442,6 +442,21 @@ class _Quantity(object):
         # the quotient of two (homogeneous) quantities is a ratio (pure number)
         return (self.amount(self.base, conv=int) / other.amount(self.base, conv=int))
 
+    def __radd__(self, other):
+        """
+        Allow summing with a null value, even if non-quantity.
+        Summing with any other value raises a `TypeError`.
+
+        This is provided only to support built-in reducers like `sum`,
+        which start with a zero value and then sum all the arguments
+        to it.
+        """
+        if other == 0 or other == 0.0:
+            return self
+        else:
+            raise TypeError(
+                "Unsupported operands for +: %s (type '%s') and %s (type '%s')"
+                % (other, type(other), self, type(self)))
 
     ## rich comparison operators, to ensure only homogeneous quantities are compared
     @_make_comparison_function(operator.gt, int)
