@@ -37,7 +37,7 @@ from gc3libs import log, Run
 from gc3libs.utils import same_docstring_as, samefile, copy_recursively
 from gc3libs.utils import Struct, sh_quote_unsafe, defproperty
 from gc3libs.backends import LRMS
-from gc3libs.quantity import Memory
+from gc3libs.quantity import Memory, kB, MB, GB
 
 
 def _make_remote_and_local_path_pair(transport, job, remote_relpath,
@@ -251,23 +251,6 @@ ReturnCode=%x"""
         sum of the `requested_cores` attributes.
         """
         return sum(map(self._filter_cores, jobs.values()))
-
-    @staticmethod
-    def _filter_memory(job):
-        if job['requested_memory'] is None or job['terminated']:
-            return 0
-        else:
-            return job['requested_memory'].amount(unit=Memory.B)
-
-    def _compute_used_memory(self, jobs):
-        """
-        Accepts a dictionary of job informations and returns the
-        sum of the `requested_memory` attributes.
-        """
-        used_memory = Memory.B * sum(map(self._filter_memory, jobs.values()))
-        if not isinstance(used_memory, Memory):
-            used_memory = Memory.B * used_memory
-        return used_memory
 
     @defproperty
     def free_slots():
@@ -510,6 +493,27 @@ ReturnCode=%x"""
         except Exception, ex:
             log.error("Ignoring error while deleting file %s", pidfile)
 
+    @staticmethod
+    def _filter_memory(job):
+        if job['requested_memory'] is None or job['terminated']:
+            return 0*MB
+        else:
+            return job['requested_memory']
+
+    def _compute_used_memory(self, jobs):
+        """
+        Accepts a dictionary of job informations and returns the
+        sum of the `requested_memory` attributes.
+        """
+        used_memory = sum(map(self._filter_memory, jobs.values()))
+        # in case `jobs.values()` is the empty list, the `sum()`
+        # built-in returns (built-in) integer `0`, which is why we can
+        # use the `is`operator for this comparison ;-)
+        if used_memory is 0:
+            return 0*MB
+        else:
+            return used_memory
+
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
         # if we have been doing our own book-keeping well, then
@@ -519,20 +523,9 @@ ReturnCode=%x"""
             self._gather_machine_specs()
 
         self.job_infos = self._get_persisted_resource_state()
-        self.available_memory = self._compute_used_memory(self.job_infos)
-        self.updated = True
-
-        def filter_memory(x):
-            if x['requested_memory'] is not None:
-                return x['requested_memory'].amount(unit=Memory.B)
-            else:
-                return 0
-
-        used_memory = Memory.B * sum(map(filter_memory,
-                                         self.job_infos.values()))
-        if not isinstance(used_memory, Memory):
-            used_memory = Memory.B * used_memory
+        used_memory = self._compute_used_memory(self.job_infos)
         self.available_memory = self.total_memory - used_memory
+        self.updated = True
         log.debug("Recovered resource information from files in %s: "
                   "available memory: %s, used memory: %s",
                   self.resource_dir,
