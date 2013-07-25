@@ -31,6 +31,7 @@ import time
 try:
     import boto
     import boto.ec2.regioninfo
+    import boto.exception
 except ImportError:
     from gc3libs.exceptions import ConfigurationError
     raise ConfigurationError(
@@ -51,6 +52,11 @@ from gc3libs.session import Session
 from gc3libs.persistence import Persistable
 
 available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
+
+# example Boto error message:
+#     <Response><Errors><Error><Code>TooManyInstances</Code><Message>Quota exceeded for ram: Requested 8000, but already used 16000 of 16384 ram</Message></Error></Errors><RequestID>req-c219213b-88d2-42dc-a3ab-10ac80aa7df7</RequestID></Response>
+#
+_BOTO_ERRMSG_RE = re.compile(r'<Code>(?P<code>[A-Za-z0-9]+)</Code><Message>(?P<message>.*)</Message>', re.X)
 
 
 class VMPool(object):
@@ -205,10 +211,24 @@ class VMPool(object):
         # contact EC2 API to get VM info
         try:
             reservations = self.conn.get_all_instances(instance_ids=[vm_id])
-        except boto.exception.EC2ResponseError, ex:
-            raise UnrecoverableError(
-                "Error getting VM %s: %s" % (vm_id, ex),
-                do_log=True)
+        except boto.exception.EC2ResponseError, err:
+            # scrape actual error kind and message out of the
+            # exception; we do this mostly for sensible logging, but
+            # could be an actual improvement to Boto to provide
+            # different exception classes based on the <Code>
+            # element...
+            # XXX: is there a more robust way of doing this?
+            match = _BOTO_ERRMSG_RE.search(str(err))
+            if match:
+                raise UnrecoverableError(
+                    "Error getting info on VM %s: EC2ResponseError/%s: %s"
+                    % (vm_id, match.group('code'), match.group('message')),
+                    do_log=True)
+            else:
+                # fall back to normal reporting...
+                raise UnrecoverableError(
+                    "Error getting VM %s: %s" % (vm_id, err),
+                    do_log=True)
         if not reservations:
             raise UnrecoverableError(
                 "Instance with id %s has not been found." % vm_id)
@@ -448,8 +468,23 @@ class EC2Lrms(LRMS):
         gc3libs.log.debug("Create new VM using image id `%s`", image_id)
         try:
             reservation = self._conn.run_instances(image_id, **args)
+        except boto.exception.EC2ResponseError, err:
+            # scrape actual error kind and message out of the
+            # exception; we do this mostly for sensible logging, but
+            # could be an actual improvement to Boto to provide
+            # different exception classes based on the <Code>
+            # element...
+            # XXX: is there a more robust way of doing this?
+            match = _BOTO_ERRMSG_RE.search(str(err))
+            if match:
+                raise UnrecoverableError(
+                    "Error starting instance: EC2ResponseError/%s: %s"
+                    % (match.group('code'), match.group('message')))
+            else:
+                # fall back to normal reporting...
+                raise UnrecoverableError("Error starting instance: %s" % err)
         except Exception, ex:
-            raise UnrecoverableError("Error starting instance: %s" % str(ex))
+            raise UnrecoverableError("Error starting instance: %s" % ex)
         vm = reservation.instances[0]
         self._vmpool.add_vm(vm)
         gc3libs.log.info(
