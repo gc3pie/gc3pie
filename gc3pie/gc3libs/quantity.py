@@ -8,7 +8,7 @@ For details and the discussion leading up to this,
 see: `<http://code.google.com/p/gc3pie/issues/detail?id=47>`
 
 """
-# Copyright (C) 2011, 2012, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2013, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -654,7 +654,7 @@ class Memory(object):
 
     """
     __metaclass__ = Quantity(
-        # base unit is "bytes"; se the symbol 'B', although this is not the SI usage.
+        # base unit is "bytes"; use the symbol 'B', although this is not the SI usage.
         'B',
         # 10-base units
         kB=1000,
