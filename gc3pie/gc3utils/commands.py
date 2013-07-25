@@ -1340,6 +1340,20 @@ To get detailed info on a specific command, run:
             '-n', '--no-update', action="store_false", dest="update",
             help="Do not update job and flavor information;"
             " only print what is in the local database.")
+
+        cleanparser = self._add_subcmd(
+            'cleanup',
+            self.cleanup_vms,
+            help='Terminate VMs not currently running any job.')
+        cleanparser.add_argument(
+            '-r', '--resource', metavar="NAME", dest="resource_name",
+            default=None, help="Limit to VMs running on this resource.")
+        cleanparser.add_argument(
+            '-n', '--dry-run',
+            action="store_true", dest="dry_run", default=False,
+            help="Do not perform any actual killing;"
+            " just print what VMs would be terminated.")
+
         terminateparser = self._add_subcmd(
             'terminate',
             self.terminate_vm,
@@ -1439,6 +1453,29 @@ To get detailed info on a specific command, run:
 
         return 0
 
+
+    def cleanup_vms(self):
+        for res in self.resources:
+            res.get_resource_status()
+
+            # walk list of VMs and kill the unused ones
+            vms = res._vmpool.get_all_vms()
+            if vms:
+                for vm in vms:
+                    remote_jobs = len(res.resources[vm.id].job_infos)
+                    if remote_jobs == 0:
+                        if self.params.dry_run:
+                            print("No job running on VM `%s` of resource `%s`;"
+                                  " would terminate it." % (vm.id, res.name))
+                        else:
+                            # no dry run -- the real thing!
+                            gc3libs.log.info(
+                                "No job running on VM `%s` of resource `%s`;"
+                                " terminating it ...", vm.id, res.name)
+                            self._terminate_vm(vm.id, res)
+
+        return 0
+
     def _find_resources_by_running_vm(self, vmid):
         """
         Returns a list of resources that are currently running a VM
@@ -1450,9 +1487,11 @@ To get detailed info on a specific command, run:
                 matching_res.append(resource)
         return matching_res
 
-
-    def _terminate_vm(self, vmid):
-        matching_res = self._find_resources_by_running_vm(vmid)
+    def _terminate_vm(self, vmid, res=None):
+        if res is None:
+            matching_res = self._find_resources_by_running_vm(vmid)
+        else:
+            matching_res = [res]
         if len(matching_res) > 1:
             raise LookupError("VM with ID `%s` have been found on multiple "
                                "resources. Please specify the resource by "
