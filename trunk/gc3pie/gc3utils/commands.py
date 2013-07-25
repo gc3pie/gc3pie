@@ -1455,7 +1455,7 @@ To get detailed info on a specific command, run:
         if len(matching_res) > 1:
             raise LookupError("VM with ID `%s` have been found on multiple "
                                "resources. Please specify the resource by "
-                               "running `grun` with the `-r` option.")
+                               "running `gcloud terminate` with the `-r` option.")
         elif not matching_res:
             raise LookupError(
                 "VM with id `%s` not found." % (vmid))
