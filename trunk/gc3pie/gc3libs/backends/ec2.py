@@ -621,8 +621,8 @@ class EC2Lrms(LRMS):
         if not remote_ip:
             raise ValueError(
                 "_make_resource: `remote_ip` must be a valid IP or hostname.")
-        gc3libs.log.info("Creating remote ShellcmdLrms resource for ip %s",
-                         remote_ip)
+        gc3libs.log.debug(
+            "Creating remote ShellcmdLrms resource for ip %s", remote_ip)
         args = self.subresource_args.copy()
         args['frontend'] = remote_ip
         args['transport'] = "ssh"
