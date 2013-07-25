@@ -163,7 +163,7 @@ ReturnCode=%x"""
                  auth=None,
                  # these are specific to `ShellcmdLrms`
                  # ignored if `transport` is 'local'
-                 frontend='localhost', transport='local', time_cmd=None, 
+                 frontend='localhost', transport='local', time_cmd=None,
                  override='False', keyfile=None, ignore_ssh_host_keys=False,
                  spooldir=None, resourcedir=None,
                  **extra_args):
@@ -439,10 +439,12 @@ ReturnCode=%x"""
 
         if self.total_memory != self.max_memory_per_core:
             log.info(
-                "`max_memory_per_core` value on resource %s mismatch: "
-                "configuration file says `%s` while it's actually `%s`. "
-                "Updating current value.", self.name, self.max_memory_per_core,
-                self.total_memory)
+                "mismatch of value `max_memory_per_core` on resource %s:"
+                " configuration file says `%s` while it's actually `%s`."
+                " Updating current value.",
+                self.name,
+                self.max_memory_per_core,
+                self.total_memory.to_str('%g%s', unit=Memory.MB))
             self.max_memory_per_core = self.total_memory
 
         self.available_memory = self.total_memory
@@ -532,8 +534,10 @@ ReturnCode=%x"""
             used_memory = Memory.B * used_memory
         self.available_memory = self.total_memory - used_memory
         log.debug("Recovered resource information from files in %s: "
-                  "Available memory: %s, used memory: %s",
-                  self.resource_dir, self.available_memory, used_memory)
+                  "available memory: %s, used memory: %s",
+                  self.resource_dir,
+                  self.available_memory.to_str('%g%s', unit=Memory.MB, conv=float),
+                  used_memory.to_str('%g%s', unit=Memory.MB, conv=float))
         return self
 
     @same_docstring_as(LRMS.get_results)
@@ -669,8 +673,12 @@ ReturnCode=%x"""
                 (available_memory < app.requested_memory or
                  self.available_memory < app.requested_memory):
             raise gc3libs.exceptions.LRMSSubmitError(
-                "Resource %s does not have enough available memory: %s < %s."
-                % (self.name, available_memory, app.requested_memory))
+                "Resource %s does not have enough available memory:"
+                " %s requested, but only %s available."
+                % (self.name,
+                   app.requested_memory.to_str('%g%s', unit=Memory.MB),
+                   available_memory.to_str('%g%s', unit=Memory.MB),
+               ))
 
         log.debug("Executing local command '%s' ...",
                   str.join(" ", app.arguments))
