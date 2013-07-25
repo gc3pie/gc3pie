@@ -1436,13 +1436,17 @@ To get detailed info on a specific command, run:
                 res.get_resource_status()
             else:
                 res._connect()
-            resname = "VMs running on EC2 resource `%s`" % res.name
-            print ("""
-%s
-%s
-%s
-""" % ("="*len(resname), resname, "="*len(resname)))
 
+            # draw title to separate output from different resources
+            title = "VMs running on EC2 resource `%s`" % res.name
+            separator = ('=' * len(title))
+            print('')
+            print(separator)
+            print(title)
+            print(separator)
+            print('')
+
+            # draw table of VMs running on resource `res`
             vms = res._vmpool.get_all_vms()
             if vms:
                 self._print_vms(vms, res)
