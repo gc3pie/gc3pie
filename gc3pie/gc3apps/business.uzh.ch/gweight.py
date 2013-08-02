@@ -28,7 +28,7 @@ instructions.
 
 Input parameters consists of:
 :param str edges file: Path to an .csv file containing input data in
-the for of:
+the for of: 
     X1   X2
 1  id1  id2
 2  id1  id3
@@ -36,6 +36,14 @@ the for of:
 
 ...
 
+XXX: To be clarified:
+. When input files should be removed ?
+. What happen if an error happen at merging time ?
+. Should be possible to re-run a subset of the initial chunk list
+without re-creating a new session ?
+e.g. adding a new argument accepting chunk ranges (-R 3000:7500)
+This would trigger the re-run of the whole workflow only 
+for lines between 3000 and 7500
 """
 
 __version__ = 'development version (SVN $Revision$)'
@@ -60,7 +68,7 @@ import time
 import tempfile
 
 import shutil
-import csv
+# import csv
 
 from pkg_resources import Requirement, resource_filename
 
@@ -89,7 +97,6 @@ class GWeightApplication(Application):
         outputs = [("./result.csv",self.output_filename)]
         
         # setup input references
-        # inputs = [ (edges_data_filename, "./input.csv") ]
         inputs = dict()
 
         inputs[edges_data_filename] = "./input.csv"
@@ -106,8 +113,8 @@ class GWeightApplication(Application):
             inputs[extra_args['data']] = "./data/two_mode_network.rda"
             arguments += "-d ./data/two_mode_network.rda "
 
-        if extra_args.has_key('driver script'):
-            inputs[extra_args['driver script']] = "./bin/run.R"
+        if extra_args.has_key('driver_script'):
+            inputs[extra_args['driver_script']] = "./bin/run.R"
             arguments +=  "-m ./bin/run.R "
 
         # adding wrapper main script
@@ -118,7 +125,6 @@ class GWeightApplication(Application):
 
         Application.__init__(
             self,
-            # arguments = ['./wrapper.sh'],
             arguments = argument,
             inputs = inputs,
             outputs = outputs,
@@ -168,8 +174,6 @@ class GWeightTask(RetryableTask):
                 return True
         return False
 
-
-
 class GWeightScript(SessionBasedScript):
     """
     Splits input .csv file into smaller chunks, each of them of size 
@@ -204,9 +208,21 @@ class GWeightScript(SessionBasedScript):
             )
 
     def setup_options(self):
-        self.add_param("-k", "--chunk", metavar="INT", #type=executable_file,
+        self.add_param("-k", "--chunk", metavar="[NUM]", #type=executable_file,
                        dest="chunk_size", default="1000",
                        help="How to split the edges input data set.")
+        
+        self.add_param("-M", "--master", metavar="[PATH]",
+                       dest="driver_script", default=None,
+                       help="Location of master driver R script.")
+
+        self.add_param("-D", "--data", metavar="[PATH]",
+                       dest="data", default=None,
+                       help="Location of the reference data in .rda format.")
+
+        self.add_param("-F", "--weight", metavar="[PATH]",
+                       dest="weight_function", default=None,
+                       help="Location of the weight function R script.")
 
     def setup_args(self):
 
@@ -237,15 +253,10 @@ class GWeightScript(SessionBasedScript):
         Read content of 'command_file'
         For each command line, generate a new GcgpsTask
         """
-
-        # XXX: how to avoid redo the whole chunking everytime 
-        # SessionbasedScript is relaunched ?
-
         tasks = []
 
         for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.edges_data, 
-                                                                              self.params.chunk_size):
-            
+                                                                              self.params.chunk_size):            
             jobname = "gweight-%s" % (str(index_chunk))
 
             extra_args = extra.copy()
@@ -264,7 +275,15 @@ class GWeightScript(SessionBasedScript):
             extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
                                                                         os.path.join('.computation',
                                                                                      jobname))
-                
+            
+
+            if self.params.driver_script:
+                extra_args['driver_script'] = self.params.driver_script
+            if self.params.data:
+                extra_args['data'] = self.params.data
+            if self.params.weight_function:
+                extra_args['weight_function'] = self.params.weight_function
+
             self.log.debug("Creating Task for index : %d - %d" %
                            (index_chunk, (index_chunk + self.params.chunk_size)))
 
@@ -281,25 +300,26 @@ class GWeightScript(SessionBasedScript):
         """
         # init result .csv file
         merged_csv = "result-%s" % os.path.basename(self.params.edges_data)
+
         try:
-            fd = open(merged_csv, "w+")
-            writer = csv.writer(fd)
+            fout=open(merged_csv,"a")
+            for task in self.session:
+                if isinstance(task,GWeightTask) and task.execution.returncode == 0:
+                    try:
+                        for line in open(task.output_file):
+                            fout.write(line)    
+                    except OSError, osx:
+                        # Report failure and continue
+                        # XXX: Check what would be the correct behaviour
+                        gc3libs.log.error("Failed while merging result file %s." % task.output_file)
+                        continue
+            fout.close()
         except OSError, osx:
-            gc3libs.log.critical("Failed while creating result file %s. " % merged_csv +
+            gc3libs.log.critical("Failed while merging result files. " +
                                  "Error %s" % str(osx))
             raise
-
-        for task in self.session:
-            if isinstance(task,GWeightTask) and task.execution.returncode == 0:
-                # Only consider successfully terminated tasks
-                try:
-                    _merge_csv(writer,task.output_file)
-                except OSError, osx:
-                    gc3libs.log.error("Failed while merging file %s. " % task.output_file +
-                                      "Error %s" % str(osx))
-                    continue
-        
-        fd.close()
+        finally:
+            fout.close()
 
     def _generate_chunked_files_and_list(self, file_to_chunk, chunk_size=1000):
         """
@@ -316,13 +336,14 @@ class GWeightScript(SessionBasedScript):
         chunk_files_dir = os.path.join(self.session.path,"tmp")
 
         # creating 'chunk_files_dir'
-        try:
-            os.mkdir(chunk_files_dir)
-        except OSError, osx:
-            gc3libs.log.erorrs("Failed while creating tmp folder %s. " % chunk_files_dir +
-                               "Error %s." % str(osx) +
-                               "Using default '/tmp'")
-            chunk_files_dir = "/tmp"
+        if not(os.path.isdir(chunk_files_dir)):
+            try:
+                os.mkdir(chunk_files_dir)
+            except OSError, osx:
+                gc3libs.log.error("Failed while creating tmp folder %s. " % chunk_files_dir +
+                                  "Error %s." % str(osx) +
+                                  "Using default '/tmp'")
+                chunk_files_dir = "/tmp"
 
         try:
             fd = open(file_to_chunk,'rb')
@@ -338,7 +359,6 @@ class GWeightScript(SessionBasedScript):
                                                                    'gweight-', 
                                                                    suffix=
                                                                    "%d.csv" % i)
-                    # XXX: use NamedTemporaryFile instead with 'delete' = False
                     fout = open(self.tmp_filename,'w')
                     chunk.append((fout.name,i))
                 fout.write(line)
@@ -361,16 +381,3 @@ class GWeightScript(SessionBasedScript):
                                           "Message %s" % osx.message)
 
         return chunk
-            
-
-def _merge_csv(writer,csv_tomerge):
-    try:
-        ff = open(csv_tomerge,'rb')
-        reader = csv.reader(ff)
-        for row in reader:
-            writer.writerows(row)
-    except OSError, osx:
-        raise
-    finally:
-        ff.close()
-        
