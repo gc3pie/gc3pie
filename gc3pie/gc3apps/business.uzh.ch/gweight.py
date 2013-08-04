@@ -92,16 +92,17 @@ class GWeightApplication(Application):
         # setup output references
         # self.result_dir = result_dir
         self.output_dir = extra_args['output_dir']
-        self.output_filename = os.path.basename(edges_data_filename)
+        # self.output_filename = os.path.basename(edges_data_filename)
+        self.output_filename = 'result-%s.csv' % extra_args['index_chunk']
         self.output_file = os.path.join(self.output_dir,self.output_filename)
+        # outputs = [("./result.csv",self.output_filename)]
         outputs = [("./result.csv",self.output_filename)]
-        
         # setup input references
         inputs = dict()
 
         inputs[edges_data_filename] = "./input.csv"
 
-        argument ="./wrapper.sh ./input.csv "
+        arguments ="./wrapper.sh ./input.csv "
 
         # check the optional inputs
 
@@ -125,7 +126,7 @@ class GWeightApplication(Application):
 
         Application.__init__(
             self,
-            arguments = argument,
+            arguments = arguments,
             inputs = inputs,
             outputs = outputs,
             stdout = 'gweight.log',
@@ -138,6 +139,7 @@ class GWeightApplication(Application):
         Check whether output file has been properly created
         """
         # XXX: TBD, work on a more precise checking of the output file
+        gc3libs.log.info("Application terminated with exit code %s" % self.execution.exitcode)
         if (not os.path.isfile(self.output_file)):
             gc3libs.log.error("Failed while checking outputfile %s." % self.output_file)
             # Retry
@@ -163,16 +165,20 @@ class GWeightTask(RetryableTask):
         """
         # XXX: check whether it is possible to distingish 
         # between the error conditions and set meaningfull exitcode
-        if self.task.execution.exitcode != 100 or self.task.execution.exitcode != 0:
-            # Candidate for retry
-            # Let's check how many times it has been restarted yet without producing
-            # any output
-            if self.retried > self.max_retries:
-                gc3libs.log.error("Maximum number of retries '%d' reached."
-                                  "Cloud not continue." % self.retried)
-            else:
-                return True
-        return False
+        to_retry = RetryableTask.retry(self)
+        gc3libs.log.debug("GWeightTask called with retry [%s]" % str(to_retry))
+        return to_retry
+
+        # if self.task.execution.exitcode != 0:
+        #     # Candidate for retry
+        #     # Let's check how many times it has been restarted yet without producing
+        #     # any output
+        #     if self.retried > self.max_retries:
+        #         gc3libs.log.error("Maximum number of retries '%d' reached."
+        #                           "Cloud not continue." % self.retried)
+        #     else:
+        #         return True
+        # return False
 
 class GWeightScript(SessionBasedScript):
     """
@@ -199,12 +205,12 @@ class GWeightScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GWeightApplication,
+            application = GWeightTask, 
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
-            stats_only_for = GWeightApplication,
+            stats_only_for = GWeightTask,
             )
 
     def setup_options(self):
@@ -260,6 +266,9 @@ class GWeightScript(SessionBasedScript):
             jobname = "gweight-%s" % (str(index_chunk))
 
             extra_args = extra.copy()
+
+            extra_args['index_chunk'] = str(index_chunk)
+
             extra_args['jobname'] = jobname
             
             extra_args['output_dir'] = self.params.output
