@@ -330,10 +330,14 @@ class EC2Lrms(LRMS):
         auth = self._auth_fn()
         self.ec2_access_key = auth.ec2_access_key
         self.ec2_secret_key = auth.ec2_secret_key
-        if ec2_url:
-            self.ec2_url = gc3libs.url.Url(ec2_url)
-        else:
-            self.ec2_url = os.getenv('EC2_URL')
+        if ec2_url is None:
+            ec2_url = os.getenv('EC2_URL')
+        if ec2_url is None:
+            raise gc3libs.exceptions.InvalidArgument(
+                "Cannot connect to the EC2 API:"
+                " No 'EC2_URL' environment variable defined,"
+                " and no 'ec2_url' argument passed to the EC2 backend.")
+        self.ec2_url = gc3libs.url.Url(ec2_url)
 
         # Keypair names can only contain alphanumeric chars!
         if re.match(r'.*\W.*', keypair_name):
