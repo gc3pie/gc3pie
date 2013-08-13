@@ -287,13 +287,12 @@ ReturnCode=%x"""
             if exit_code == 0:
                 # The PID refers to an existing process, but we
                 # couldn't kill it.
-                log.error(
-                    "Failed while killing Job '%s': %s" % (pid, stderr))
+                log.error("Could not kill job '%s': %s", pid, stderr)
             else:
                 # The PID refers to a non-existing process.
                 log.error(
-                    "Failed while killing Job '%s'. It refers to non-existent"
-                    " local process %s." % (app, app.execution.lrms_jobid))
+                    "Could not kill job '%s'. It refers to non-existent"
+                    " local process %s.", app, app.execution.lrms_jobid)
         self._delete_job_resource_file(pid)
 
     @same_docstring_as(LRMS.close)
@@ -317,7 +316,7 @@ ReturnCode=%x"""
                 self.transport.remove_tree(app.execution.lrms_execdir)
                 app.execution.lrms_execdir = None
         except Exception, ex:
-            log.warning("Failed removing folder '%s': %s: %s",
+            log.warning("Could not remove directory '%s': %s: %s",
                         app.execution.lrms_execdir, ex.__class__.__name__, ex)
         pid = app.execution.lrms_jobid
         self._delete_job_resource_file(pid)
@@ -339,11 +338,11 @@ ReturnCode=%x"""
         self.resource_dir = stdout.strip()
         # XXX: it is actually necessary to create the folder
         # as a separate step
-        log.info('creating resource file folder: %s ...' % self.resource_dir)
+        log.info('Creating resource file directory: %s ...', self.resource_dir)
         try:
             self.transport.makedirs(self.resource_dir)
         except Exception, ex:
-            log.error("Failed while creating resource directory: %s. Error "
+            log.error("Failed creating resource directory: %s. Error "
                       "type: %s. Message: %s", resource_dir, type(ex), str(ex))
             # cannot continue
             raise
@@ -539,45 +538,41 @@ ReturnCode=%x"""
             raise gc3libs.exceptions.DataStagingError(
                 "Retrieval of output files to non-local destinations"
                 " is not supported in the Shellcmd backend.")
-        try:
-            self.transport.connect()
-            # Make list of files to copy, in the form of (remote_path,
-            # local_path) pairs.  This entails walking the
-            # `Application.outputs` list to expand wildcards and
-            # directory references.
-            stageout = list()
-            for remote_relpath, local_url in app.outputs.iteritems():
-                local_relpath = local_url.path
-                if remote_relpath == gc3libs.ANY_OUTPUT:
-                    remote_relpath = ''
-                    local_relpath = ''
-                stageout += _make_remote_and_local_path_pair(
-                    self.transport, app, remote_relpath,
-                    download_dir, local_relpath)
 
-            # copy back all files, renaming them to adhere to the
-            # ArcLRMS convention
-            log.debug("Downloading job output into '%s' ...", download_dir)
-            for remote_path, local_path in stageout:
-                log.debug("Downloading remote file '%s' to local file '%s'",
-                          remote_path, local_path)
-                if (overwrite
-                        or not os.path.exists(local_path)
-                        or os.path.isdir(local_path)):
-                    log.debug("Copying remote '%s' to local '%s'"
-                              % (remote_path, local_path))
-                    # ignore missing files (this is what ARC does too)
-                    self.transport.get(remote_path, local_path,
-                                       ignore_nonexisting=True)
-                else:
-                    log.info("Local file '%s' already exists;"
-                             " will not be overwritten!",
-                             local_path)
+        self.transport.connect()
+        # Make list of files to copy, in the form of (remote_path,
+        # local_path) pairs.  This entails walking the
+        # `Application.outputs` list to expand wildcards and
+        # directory references.
+        stageout = list()
+        for remote_relpath, local_url in app.outputs.iteritems():
+            local_relpath = local_url.path
+            if remote_relpath == gc3libs.ANY_OUTPUT:
+                remote_relpath = ''
+                local_relpath = ''
+            stageout += _make_remote_and_local_path_pair(
+                self.transport, app, remote_relpath,
+                download_dir, local_relpath)
 
-            return  # XXX: should we return list of downloaded files?
-
-        except:
-            raise
+        # copy back all files, renaming them to adhere to the
+        # ArcLRMS convention
+        log.debug("Downloading job output into '%s' ...", download_dir)
+        for remote_path, local_path in stageout:
+            log.debug("Downloading remote file '%s' to local file '%s'",
+                      remote_path, local_path)
+            if (overwrite
+                    or not os.path.exists(local_path)
+                    or os.path.isdir(local_path)):
+                log.debug("Copying remote '%s' to local '%s'"
+                          % (remote_path, local_path))
+                # ignore missing files (this is what ARC does too)
+                self.transport.get(remote_path, local_path,
+                                   ignore_nonexisting=True)
+            else:
+                log.info("Local file '%s' already exists;"
+                         " will not be overwritten!",
+                         local_path)
+        return  # XXX: should we return list of downloaded files?
 
     def update_job_state(self, app):
         """
@@ -625,8 +620,8 @@ ReturnCode=%x"""
                     " ended unexpectedly"
                     % (app, app.execution.lrms_jobid))
             try:
-                outcoming = self._parse_wrapper_output(wrapper_file)
-                app.execution.returncode = int(outcoming.ReturnCode)
+                outcome = self._parse_wrapper_output(wrapper_file)
+                app.execution.returncode = int(outcome.ReturnCode)
                 self._update_job_resource_usage(pid, terminated=True)
             except:
                 wrapper_file.close()
@@ -833,7 +828,8 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
             'requested_cores': app.requested_cores,
             'requested_memory': app.requested_memory,
             'execution_dir': execdir,
-            'terminated': False, }
+            'terminated': False,
+        }
         self._update_job_resource_file(pid, self.job_infos[pid])
         return app
 
