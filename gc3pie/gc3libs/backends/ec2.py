@@ -910,11 +910,14 @@ class EC2Lrms(LRMS):
             else:
                 gc3libs.log.warning(
                     "Already running the maximum number of VM on resource %s:"
-                    " %d >= %d.",
+                    " %d VMs running, and maximum %d allowed"
+                    " (see parameter `vm_pool_max_size` in the configuration file).",
                     self.name, len(self._vmpool), self.vm_pool_max_size)
                 raise RecoverableError(
                     "Already running the maximum number of VM on resource %s:"
-                    " %d >= %d." % (self.name, len(self._vmpool), self.vm_pool_max_size))
+                    " %d VMs running, and maximum %d allowed"
+                    " (see parameter `vm_pool_max_size` in the configuration file).",
+                    % (self.name, len(self._vmpool), self.vm_pool_max_size))
 
         # If we reached this point, we are waiting for a VM to be
         # ready, so delay the submission until we wither can submit to
