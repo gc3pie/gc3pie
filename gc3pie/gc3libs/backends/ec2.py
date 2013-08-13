@@ -231,13 +231,13 @@ class VMPool(object):
                     do_log=True)
         if not reservations:
             raise UnrecoverableError(
-                "Instance with id %s has not been found." % vm_id)
+                "No instance with id %s has been found." % vm_id)
 
         instances = dict((i.id, i) for i in reservations[0].instances
                          if reservations)
         if vm_id not in instances:
             raise UnrecoverableError(
-                "Instance with id %s has not found." % vm_id)
+                "No instance with id %s has been found." % vm_id)
         vm = instances[vm_id]
         self._vm_cache[vm_id] = vm
         if vm_id not in self._vm_ids:
@@ -357,9 +357,11 @@ class EC2Lrms(LRMS):
         # `self.subresource_args` is used to create subresources
         self.subresource_args = extra_args
         self.subresource_args['type'] = self.subresource_type
-        for key in ['architecture', 'max_cores', 'max_cores_per_job',
-                    'max_memory_per_core', 'max_walltime']:
-            self.subresource_args[key] = self[key]
+        self.subresource_args['architecture'] = self['architecture']
+        self.subresource_args['max_cores'] = self['max_cores']
+        self.subresource_args['max_cores_per_job'] = self['max_cores_per_job']
+        self.subresource_args['max_memory_per_core'] = self['max_memory_per_core']
+        self.subresource_args['max_walltime'] = self['max_walltime']
         # ShellcmdLrms by default trusts the configuration, instead of
         # checking the real amount of memory and number of cpus, but
         # we need the real values instead.
@@ -406,7 +408,8 @@ class EC2Lrms(LRMS):
 
         # Set up the VMPool persistent class. This has been delayed
         # until here because otherwise self._conn is None
-        pooldir = os.path.join(os.path.expandvars(EC2Lrms.RESOURCE_DIR), 'vmpool', self.name)
+        pooldir = os.path.join(os.path.expandvars(EC2Lrms.RESOURCE_DIR),
+                               'vmpool', self.name)
         self._vmpool = VMPool(pooldir, self._conn)
 
         all_images = self._conn.get_all_images()
@@ -441,9 +444,11 @@ class EC2Lrms(LRMS):
         """
         self._connect()
 
-        args = {'key_name':  self.keypair_name,
-                'min_count': 1,
-                'max_count': 1}
+        args = {
+            'key_name':  self.keypair_name,
+            'min_count': 1,
+            'max_count': 1
+        }
         if instance_type:
             args['instance_type'] = instance_type
 
@@ -494,7 +499,6 @@ class EC2Lrms(LRMS):
         gc3libs.log.info(
             "VM with id `%s` has been created and is in %s state.",
             vm.id, vm.state)
-
         return vm
 
     def _get_remote_resource(self, vm):
@@ -652,12 +656,12 @@ class EC2Lrms(LRMS):
                 gc3libs.log.warning("Invalid rule specification in"
                                     " `security_group_rules`: %s" % rule)
                 continue
-            self.security_group_rules.append(
-                {'ip_protocol': rulesplit[0],
-                 'from_port':   int(rulesplit[1]),
-                 'to_port':     int(rulesplit[2]),
-                 'cidr_ip':     rulesplit[3],
-                 })
+            self.security_group_rules.append({
+                'ip_protocol': rulesplit[0],
+                'from_port':   int(rulesplit[1]),
+                'to_port':     int(rulesplit[2]),
+                'cidr_ip':     rulesplit[3],
+            })
 
     def _setup_security_groups(self):
         """
@@ -701,11 +705,12 @@ class EC2Lrms(LRMS):
             security_group = groups[self.security_group_name]
             current_rules = []
             for rule in security_group.rules:
-                rule_dict = {'ip_protocol':  rule.ip_protocol,
-                             'from_port':    int(rule.from_port),
-                             'to_port':      int(rule.to_port),
-                             'cidr_ip':      str(rule.grants[0]),
-                             }
+                rule_dict = {
+                    'ip_protocol':  rule.ip_protocol,
+                    'from_port':    int(rule.from_port),
+                    'to_port':      int(rule.to_port),
+                    'cidr_ip':      str(rule.grants[0]),
+                }
                 current_rules.append(rule_dict)
 
             for new_rule in self.security_group_rules:
@@ -799,7 +804,6 @@ class EC2Lrms(LRMS):
 
             # Get or create a resource associated to the vm
             resource = self._get_remote_resource(vm)
-
             try:
                 resource.get_resource_status()
             except Exception, ex:
@@ -886,7 +890,7 @@ class EC2Lrms(LRMS):
                 vm = self._get_vm(vm_id)
                 if vm.image_id != image_id or vm.instance_type != instance_type:
                     continue
-                ret = resource.submit_job(job)
+                resource.submit_job(job)
                 job.ec2_instance_id = vm_id
                 job.changed = True
                 gc3libs.log.info(
@@ -910,31 +914,25 @@ class EC2Lrms(LRMS):
                 pending_vms.add(vm.id)
 
                 self._vmpool.add_vm(vm)
-                # self._session.save_all()
             else:
-                gc3libs.log.warning(
-                    "Already running the maximum number of VM on resource %s:"
-                    " %d VMs running, and maximum %d allowed"
-                    " (see parameter `vm_pool_max_size` in the configuration file).",
-                    self.name, len(self._vmpool), self.vm_pool_max_size)
                 raise RecoverableError(
                     "Already running the maximum number of VM on resource %s:"
-                    " %d VMs running, and maximum %d allowed"
-                    " (see parameter `vm_pool_max_size` in the configuration file).",
-                    % (self.name, len(self._vmpool), self.vm_pool_max_size))
+                    " %d VMs started, but max %d allowed by configuration."
+                    % (self.name, len(self._vmpool), self.vm_pool_max_size),
+                    do_log=True)
 
         # If we reached this point, we are waiting for a VM to be
         # ready, so delay the submission until we wither can submit to
         # one of the available resources or until all the VMs are
         # ready.
         gc3libs.log.debug(
-            "No available resource was found, but some VM is still in "
-            "`pending` state. Waiting until the next iteration before "
-            "creating a new VM. Pending VM ids: %s",
-            str.join(', ', pending_vms))
+            "No available resource was found, but some VM is still in"
+            " `pending` state. Waiting until the next iteration before"
+            " creating a new VM. Pending VM ids: %s", pending_vms)
         raise LRMSSkipSubmissionToNextIteration(
-            "Delaying submission until some of the VMs currently pending "
-            "is ready. Pending VM ids: %s" % str.join(', ', pending_vms))
+            "Delaying submission until some of the VMs currently pending"
+            " is ready. Pending VM ids: %s"
+            % str.join(', ', pending_vms))
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
