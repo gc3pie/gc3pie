@@ -918,9 +918,9 @@ class EC2Lrms(LRMS):
 
         # If we reached this point, we are waiting for a VM to be
         # ready, so delay the submission until we wither can submit to
-        # one of the available resources or untile all the VMs are
+        # one of the available resources or until all the VMs are
         # ready.
-        gc3libs.log.info(
+        gc3libs.log.debug(
             "No available resource was found, but some VM is still in "
             "`pending` state. Waiting until the next iteration before "
             "creating a new VM. Pending VM ids: %s",
