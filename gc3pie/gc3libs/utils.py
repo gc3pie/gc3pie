@@ -1500,6 +1500,52 @@ def write_contents(path, data):
         return stream.write(data)
 
 
+class YieldAtNext(object):
+    """
+    Provide an alternate protocol for generators.
+
+    Wrap a Python generator object, and buffer the return values from
+    `send` and `throw` calls, returning `None` instead. Return the
+    yielded value --or raise the `StopIteration` exception-- upon the
+    subsequent call to the `next` method.
+    """
+
+    __slots__ = [ '_generator', '_has_saved', '_saved', '_stop_iteration' ]
+
+    def __init__(self, generator):
+        self._generator = generator
+        self._has_saved = False
+        self._stop_iteration = False
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self._stop_iteration:
+            raise StopIteration
+        elif self._has_saved:
+            self._has_saved = False
+            # XXX: This keeps a reference to the returned object into
+            # `self._saved` until that attribute is overwritten.
+            return self._saved
+        else:
+            return self._generator.next()
+
+    def send(self, value):
+        try:
+            self._saved = self._generator.send(value)
+            self._has_saved = True
+        except StopIteration:
+            self._stop_iteration = True
+
+    def throw(self, *excinfo):
+        try:
+            self._saved = self._generator.throw(*excinfo)
+            self._has_saved = True
+        except StopIteration:
+            self._stop_iteration = True
+
+
 ##
 ## Main
 ##
