@@ -1239,7 +1239,7 @@ class Engine(object):
                 sched = gc3libs.utils.YieldAtNext(_sched)
                 for task_index, resource_name in sched:
                     task = self._new[task_index]
-                    resource = self._core._lrms[resource_name]
+                    resource = self._core.resources[resource_name]
                     # try to submit; go to SUBMITTED if successful, FAILED if not
                     try:
                         self._core.submit(task, targets=[resource])
