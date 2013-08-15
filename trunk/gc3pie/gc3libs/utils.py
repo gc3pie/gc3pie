@@ -1496,12 +1496,8 @@ def write_contents(path, data):
       >>> os.remove(tmpfile)
 
     """
-    # XXX: this really calls for the `with:` statement...
-    try:
-        stream = open(path, 'wb')
+    with open(path, 'wb') as stream:
         return stream.write(data)
-    finally:
-        stream.close()
 
 
 ##
