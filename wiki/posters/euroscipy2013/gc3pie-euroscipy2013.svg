@@ -26,15 +26,15 @@
      inkscape:pageshadow="2"
      inkscape:zoom="0.23593683"
      inkscape:cx="911.98331"
-     inkscape:cy="2809.0979"
+     inkscape:cy="2978.6348"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:snap-center="true"
-     inkscape:window-width="1918"
-     inkscape:window-height="1154"
+     inkscape:window-width="1438"
+     inkscape:window-height="823"
      inkscape:window-x="0"
-     inkscape:window-y="20"
+     inkscape:window-y="24"
      inkscape:window-maximized="0"
      inkscape:snap-grids="true"
      inkscape:snap-to-guides="false"
@@ -5730,7 +5730,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -6675,52 +6675,50 @@
            style="font-style:normal;-inkscape-font-specification:URW Palladio L Medium" /></flowRegion><flowPara
          id="flowPara4946"
          style="font-size:48px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">Differential Evolution Optimizer: how does it work?</flowPara><flowPara
-         style="font-size:20px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4535"> </flowPara><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara4679">The differential evolution optimizer is used to find the global minimum of a generic function. The GC3Pie implementation works as follows:</flowPara><flowPara
          style="font-size:20px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4534"> </flowPara><flowPara
+         id="flowPara4534" /><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara4681"><flowSpan
-   style="font-weight:bold;-inkscape-font-specification:URW Palladio L Bold;text-anchor:start;text-align:justify"
+   style="font-weight:bold;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Bold"
    id="flowSpan4524">1</flowSpan>- A 'population' of initial <flowSpan
-   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic;text-anchor:start;text-align:justify"
+   style="font-style:italic;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Italic"
    id="flowSpan4512">x</flowSpan>-points is supplied by the user (the <flowSpan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:justify;text-anchor:start;font-family:Latin Modern Mono Light Cond;-inkscape-font-specification:URW Palladio L Medium"
    id="flowSpan4645">draw_population</flowSpan> convenience function is provided to generate a random one).</flowPara><flowPara
          style="font-size:20px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4613"> </flowPara><flowPara
+         id="flowPara4613" /><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara4685"><flowSpan
-   style="font-weight:bold;-inkscape-font-specification:URW Palladio L Bold;text-anchor:start;text-align:justify"
+   style="font-weight:bold;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Bold"
    id="flowSpan4526">2</flowSpan>- The function to minimize is then evaluated for each member of the population (./compute). Evaluation at distinct points happens in parallel: GC3Pie manages the task distribution to the available compute resources, supervises execution and retrieves results.</flowPara><flowPara
          style="font-size:20px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4615"> </flowPara><flowPara
+         id="flowPara4615" /><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara4688"><flowSpan
-   style="font-weight:bold;-inkscape-font-specification:URW Palladio L Bold;text-anchor:start;text-align:justify"
+   style="font-weight:bold;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Bold"
    id="flowSpan4528">3</flowSpan>- Once all computations have finished, the user-supplied function <flowSpan
-   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono Light Cond;-inkscape-font-specification:Latin Modern Mono Light Cond;text-anchor:start;text-align:justify"
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:justify;text-anchor:start;font-family:Latin Modern Mono Light Cond;-inkscape-font-specification:Latin Modern Mono Light Cond"
    id="flowSpan4508">extract_value_fn</flowSpan> is applied to each application's output file to get the computed <flowSpan
-   style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic;text-anchor:start;text-align:justify"
+   style="font-style:italic;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Italic"
    id="flowSpan4510">y</flowSpan>-value.</flowPara><flowPara
          style="font-size:20px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4729"> </flowPara><flowPara
+         id="flowPara4729" /><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara4725"><flowSpan
-   style="font-weight:bold;-inkscape-font-specification:URW Palladio L Bold;text-anchor:start;text-align:justify"
+   style="font-weight:bold;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Bold"
    id="flowSpan4530">4</flowSpan>- The optimizer (<flowSpan
-   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono Light Cond;-inkscape-font-specification:Latin Modern Mono Light Cond;text-anchor:start;text-align:justify"
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:justify;text-anchor:start;font-family:Latin Modern Mono Light Cond;-inkscape-font-specification:Latin Modern Mono Light Cond"
    id="flowSpan4514">de_solver</flowSpan>) then  evaluates the convergence conditions. In the example, either all x-points are within a radius of 0.001 (<flowSpan
-   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono Light Cond;-inkscape-font-specification:Latin Modern Mono Light Cond;text-anchor:start;text-align:justify"
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:justify;text-anchor:start;font-family:Latin Modern Mono Light Cond;-inkscape-font-specification:Latin Modern Mono Light Cond"
    id="flowSpan4522">dx_conv_crit</flowSpan>), or the maximum number of iterations is reached.</flowPara><flowPara
          style="font-size:20px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4617"> </flowPara><flowPara
+         id="flowPara4617" /><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara4693"><flowSpan
-   style="font-weight:bold;-inkscape-font-specification:URW Palladio L Bold;text-anchor:start;text-align:justify"
-   id="flowSpan4532">5</flowSpan>- If convergence is not reached, a new population is generated and evaluatd starting from the current one.</flowPara><flowPara
+   style="font-weight:bold;text-align:justify;text-anchor:start;-inkscape-font-specification:URW Palladio L Bold"
+   id="flowSpan4532">5</flowSpan>- If convergence is not reached, a new population is generated and evaluated starting from the current one.</flowPara><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara4627" /><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
