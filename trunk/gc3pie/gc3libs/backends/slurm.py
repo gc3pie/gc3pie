@@ -24,7 +24,7 @@ __version__ = 'development version (SVN $Revision$)'
 
 
 import datetime
-import oselapsed,totalcpu,submit,start,end,maxrss,maxvmsize -j
+import os
 import posixpath
 import random
 import re
@@ -200,7 +200,7 @@ class SlurmLrms(batch.BatchSystem):
     #   %U: numeric UID of the submitting user
     #
     def _stat_command(self, job):
-        return "%s --noheader -o %%i:%%T:%%r -j %s" % \
+        return "%s --noheader -o %%i|%%T|%%r -j %s" % \
             (self._squeue, job.lrms_jobid)
 
     def _parse_stat_output(self, stdout):
@@ -217,7 +217,7 @@ class SlurmLrms(batch.BatchSystem):
             jobstatus['state'] = Run.State.TERMINATING
         else:
             # parse stdout
-            jobid, state, reason = stdout.split(':')
+            jobid, state, reason = stdout.split('|')
             log.debug("translating SLURM's state '%s' to gc3libs.Run.State",
                       state)
             if state in ['PENDING', 'CONFIGURING']:
