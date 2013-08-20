@@ -24,7 +24,7 @@ __version__ = 'development version (SVN $Revision$)'
 
 
 import datetime
-import os
+import oselapsed,totalcpu,submit,start,end,maxrss,maxvmsize -j
 import posixpath
 import random
 import re
@@ -105,7 +105,7 @@ def count_jobs(squeue_output, whoami):
       * `q` is the number of queued jobs submitted by user `whoami`
 
     The `squeue_output` must contain the results of an invocation of
-    ``squeue --noheader --format='%i:%T:%u:%U:%r:%R'``.
+    ``squeue --noheader --format='%i|%T|%u|%U|%r|%R'``.
     """
     total_running = 0
     total_queued = 0
@@ -115,7 +115,7 @@ def count_jobs(squeue_output, whoami):
         if line == '':
             continue
         # the choice of format string makes it easy to parse squeue output
-        jobid, state, username, uid, reason, nodelist = line.split(':')
+        jobid, state, username, uid, reason, nodelist = line.split('|')
         if state in ['RUNNING', 'COMPLETING']:
             total_running += 1
             if username == whoami:
