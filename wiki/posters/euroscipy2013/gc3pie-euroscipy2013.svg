@@ -24,18 +24,18 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.66733012"
-     inkscape:cx="1560.9582"
-     inkscape:cy="3918.907"
+     inkscape:zoom="0.33366506"
+     inkscape:cx="1524.7259"
+     inkscape:cy="3860.234"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:snap-center="true"
-     inkscape:window-width="1278"
-     inkscape:window-height="754"
+     inkscape:window-width="1440"
+     inkscape:window-height="824"
      inkscape:window-x="0"
-     inkscape:window-y="20"
-     inkscape:window-maximized="0"
+     inkscape:window-y="24"
+     inkscape:window-maximized="1"
      inkscape:snap-grids="true"
      inkscape:snap-to-guides="false"
      inkscape:snap-global="true">
@@ -6022,7 +6022,7 @@
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:center;text-anchor:middle;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Bold"
          y="991.60229"
          x="2199.0535"
-         sodipodi:role="line">http://www.ibf.uzh.ch/</tspan></text>
+         sodipodi:role="line">http://www.gc3.uzh.ch/</tspan></text>
     <text
        transform="translate(0,-3160.6299)"
        sodipodi:linespacing="125%"
@@ -6193,13 +6193,21 @@
          id="flowPara4946"
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /><flowPara
          id="flowPara4948"
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">This workflow shows how a differential evolution optimizer is implemented with the GC3Pie library to support the analysis of a computationally intense economic model. The paper <flowSpan
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">This workflow shows how a differential evolution optimizer, implemented with the GC3Pie library, optimises the Rosenbrok function. The model works as follow:</flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4534"> . A 'population' of input parameters is generated from the initial conditions</flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4613"> . The Rosenbrok function is then evaluated for each member of the population and the corresponding 'y-value' is extracted from the output file.</flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4615"> . Once all members have been evaluated, the optimizer (de_solver) evaluates whether a member of the population has produces an y_value close to 'y_conv_crit'.</flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:start;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4617"> . If none of the evaluated population members has produces an y_value close to 'y_conv_crit', a new population is generated starting from the current population.</flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4627">  </flowPara><flowPara
+         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
+         id="flowPara4531">The GC3Pie optimization livbrary has been used in a real-world example to analize a computationally intense economic model. The paper <flowSpan
    style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic"
    id="flowSpan4960">Time-Varying International Diversification and the Forward Premium</flowSpan> seeks to understand the comovement of interest rates and exchange rates. The economic model is calibrated with data for five countries with major currencies.</flowPara><flowPara
-         id="flowPara4950"
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium" /><flowPara
-         id="flowPara4952"
-         style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium">To illustrate the explanatory power of the model, the countries' preference parameters are chosen to bring the simulated economies close to the real world. The resulting 10-dimensional optimization problem of a nonconvex function is undertaken with the help of the GC3Pie library. </flowPara><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara4656" /><flowPara
          style="font-size:28px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Bold"
@@ -6217,7 +6225,7 @@
    style="font-style:italic;-inkscape-font-specification:URW Palladio L Italic"
    id="flowSpan4660">Differential evolution: a practical approach to global optimization.</flowSpan> Springer, 2005. </flowPara><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
-         id="flowPara4608"> </flowPara><flowPara
+         id="flowPara4608" /><flowPara
          style="font-size:36px;font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;text-align:justify;text-anchor:start;font-family:URW Palladio L;-inkscape-font-specification:URW Palladio L Medium"
          id="flowPara4602" /><flowPara
          id="flowPara4956"
@@ -6233,7 +6241,7 @@
            height="601.85602"
            x="1519.4745"
            y="3119.479" /></flowRegion><flowPara
-         id="flowPara4622"></flowPara></flowRoot>    <text
+         id="flowPara4622" /></flowRoot>    <text
        xml:space="preserve"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
        x="2043.9659"
@@ -6267,9 +6275,9 @@
          id="flowPara4698"
          style="font-size:56px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono;-inkscape-font-specification:Latin Modern Mono">    itermax = 200,      </flowPara><flowPara
          id="flowPara4700"
-         style="font-size:56px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono;-inkscape-font-specification:Latin Modern Mono">    dx_conv_crit = 0.001,</flowPara><flowPara
+         style="font-size:56px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono;-inkscape-font-specification:Latin Modern Mono">    dx_conv_crit = None,</flowPara><flowPara
          id="flowPara4702"
-         style="font-size:56px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono;-inkscape-font-specification:Latin Modern Mono">    y_conv_crit = None,</flowPara><flowPara
+         style="font-size:56px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono;-inkscape-font-specification:Latin Modern Mono">    y_conv_crit = params.y_conv_crit, # default 0.5</flowPara><flowPara
          id="flowPara4706"
          style="font-size:56px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono;-inkscape-font-specification:Latin Modern Mono">    de_strategy = 'DE_local_to_best')</flowPara><flowPara
          style="font-size:56px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono;-inkscape-font-specification:Latin Modern Mono"
@@ -6281,7 +6289,7 @@
          style="font-size:56px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono;-inkscape-font-specification:Latin Modern Mono"
          id="flowPara8126">        # command-line</flowPara><flowPara
          style="font-size:56px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono;-inkscape-font-specification:Latin Modern Mono"
-         id="flowPara8128">        ['./compute', '--x1', x_vals[1], '--x2', x_vals[2]], </flowPara><flowPara
+         id="flowPara8128">        ['./rosenbrok', 'x_vals'], </flowPara><flowPara
          style="font-size:56px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono;-inkscape-font-specification:Latin Modern Mono"
          id="flowPara8130">        # I/O files</flowPara><flowPara
          style="font-size:56px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Latin Modern Mono;-inkscape-font-specification:Latin Modern Mono"
@@ -6358,8 +6366,8 @@
        transform="translate(224.77628,-3208.5822)"><flowRegion
          id="flowRegion8195"><rect
            id="rect8197"
-           width="449.55264"
-           height="224.77634"
+           width="497.50491"
+           height="230.7704"
            x="-161.83894"
            y="1533.6586" /></flowRegion><flowPara
          id="flowPara8199"
@@ -6370,8 +6378,8 @@
        transform="translate(61.457134,-3121.4244)"><flowRegion
          id="flowRegion8213"><rect
            id="rect8215"
-           width="384.63693"
-           height="420.66339"
+           width="387.63397"
+           height="468.6156"
            x="38.145805"
            y="2083.1848" /></flowRegion><flowPara
          id="flowPara8217"
@@ -6450,11 +6458,11 @@
        xml:space="preserve"
        id="flowRoot8301"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       transform="translate(-381.45805,-3272.9481)"><flowRegion
+       transform="translate(-252.5863,-3224.9958)"><flowRegion
          id="flowRegion8303"><rect
            id="rect8305"
-           width="777.75049"
-           height="112.31825"
+           width="963.56555"
+           height="109.32122"
            x="1951.7937"
            y="1087.1554" /></flowRegion><flowPara
          id="flowPara8307"
@@ -6620,5 +6628,61 @@
          id="path8410"
          style="color:#000000;fill:#ffaaaa;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:3;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new" />
     </g>
-  </g>
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot8301-8"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;display:inline;enable-background:new;font-family:Sans"
+       transform="translate(-326.40034,-2648.0817)"><flowRegion
+         id="flowRegion8303-7"><rect
+           id="rect8305-3"
+           width="648.87872"
+           height="109.32122"
+           x="1951.7937"
+           y="1087.1554" /></flowRegion><flowPara
+         id="flowPara8307-1"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Comic Sans MS;-inkscape-font-specification:Comic Sans MS">This is the binary that computes </flowPara><flowPara
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Comic Sans MS;-inkscape-font-specification:Comic Sans MS"
+         id="flowPara4529">the rosenbrok function.</flowPara></flowRoot>    <g
+       style="display:inline;enable-background:new"
+       id="g8351-5"
+       transform="matrix(-0.77417386,-0.33380936,-0.63297301,0.40827409,2412.9924,-420.15231)">
+      <path
+         inkscape:connector-curvature="0"
+         d="m 2124.8367,-925.0169 c -5.3607,-0.1596 -10.7253,-0.1412 -16.0878,-0.1449 -7.665,-0.021 -15.33,-0.048 -22.9951,-0.072 -9.7838,-0.043 -19.5676,-0.028 -29.3514,-0.05 -7.625,0.2425 -15.2082,-0.4568 -22.5889,-2.4216 -4.0217,-1.0706 -8.0811,-2.5463 -12.0103,-3.8974 -12.6636,-4.6081 -24.5559,-11.004 -36.3582,-17.4427 -10.6444,-6.0095 -21.2709,-12.05025 -31.863,-18.15145 -8.1448,-4.3155 -15.8873,-9.2644 -23.3478,-14.6618 -4.0825,-3.1294 -7.7228,-6.7756 -11.593,-10.1521 -3.1146,-3.2444 -5.6599,-7.0212 -8.2614,-10.68285 -2.1114,-2.9704 -4.2891,-5.895 -6.6395,-8.6811 -1.3048,-1.3995 -2.5268,-2.846 -3.5713,-4.4519 -0.7543,-1.1955 -1.6047,-2.3268 -2.3872,-3.5072 -3.1703,-4.8446 -0.3071,-1.0712 13.5842,-7.6957 0.1675,-0.08 -0.07,0.3652 -0.087,0.55 -0.037,0.401 -0.049,0.8039 -0.074,1.2059 -0.206,7.0885 -0.2971,14.1759 -0.5832,21.2624 -0.4832,8.70945 -1.4535,17.37915 -2.0972,26.07655 -0.2335,3.5293 -0.3967,7.0656 -0.4195,10.6031 0,0.6951 0.02,1.3901 0.014,2.0852 -0.055,2.3526 -0.4686,4.6806 -0.7096,7.02 -0.1001,1.2987 -0.217,2.59915 -0.2589,3.90175 -14.2397,6.8661 -13.7403,12.0533 -14.1837,6.5749 0,0 14.0932,-7.2365 14.0932,-7.2365 l 0,0 c -0.1278,5.5545 0.063,0.1964 -14.1374,7.6714 0.3174,-1.3032 0.3843,-2.6621 0.5541,-3.9869 0.2182,-2.2425 0.5846,-4.4946 0.5473,-6.74565 -0.02,-0.7313 -0.018,-1.4637 0.04,-2.1933 0.2321,-3.6553 0.6478,-7.2959 0.9396,-10.9467 0.8099,-8.6927 1.8215,-17.3683 2.277,-26.0906 0.2514,-6.96895 0.3471,-13.93645 -0.017,-20.90485 -0.019,-0.3961 -0.035,-0.7924 -0.057,-1.1885 -0.012,-0.2226 -0.2352,-0.5522 -0.044,-0.6673 16.0493,-9.6718 11.5029,-12.3755 14.2866,-7.2377 0.6915,1.2185 1.5387,2.3292 2.2435,3.5374 1.0391,1.5653 2.3266,2.8995 3.5351,4.3293 2.1188,2.9713 4.2285,5.9484 6.3221,8.9374 2.5824,3.5643 5.2135,7.1433 8.3087,10.2831 3.6305,3.50065 7.1613,7.12275 11.1334,10.24735 7.2768,5.4848 14.9434,10.3621 22.9504,14.7229 10.4946,6.1618 21.0071,12.2952 31.6096,18.2696 11.7484,6.42265 23.6334,12.70605 36.2858,17.18815 4.2161,1.4008 7.6813,2.6469 11.993,3.7099 7.3881,1.8214 14.9555,2.3178 22.544,2.0684 9.8292,-0.022 19.6584,-0.01 29.4876,-0.049 7.7311,-0.024 15.4621,-0.051 23.1933,-0.072 5.4955,0 10.9929,0.011 16.4867,-0.1449 0,0 -12.7065,9.2318 -12.7065,9.2318 z"
+         id="path8261-3"
+         style="color:#000000;fill:#ffaaaa;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:3;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new" />
+      <path
+         inkscape:connector-curvature="0"
+         d="m 1916.1785,-1027.7628 c 4.5102,3.5643 9.0964,7.0164 13.9507,10.0988 4.5276,2.8982 9.2449,5.2883 14.5248,6.3661 3.96,0.6013 7.9086,1.1862 11.9079,1.4457 5.1332,0.2004 10.2731,0.4203 15.3948,-0.022 6.9594,-0.863 13.5851,-3.3005 20.2697,-5.3085 2.6658,-0.8005 5.3539,-1.5696 8.093,-2.082 0.3923,-0.084 0.7945,-0.01 1.1895,0.03 0,0 -12.8301,9.3043 -12.8301,9.3043 l 0,0 c -0.3294,0.03 -0.6368,0.1135 -0.9586,0.1848 -2.559,0.4918 -5.08,1.1573 -7.5805,1.888 -6.7204,1.9652 -13.3994,4.3266 -20.4091,5.008 -5.249,0.3441 -10.5167,0.2801 -15.7701,0.012 -4.0226,-0.3276 -7.9983,-0.9738 -11.9695,-1.6871 -5.3191,-1.3313 -10.0426,-3.9701 -14.6372,-6.9267 -4.8984,-3.1608 -9.5233,-6.7083 -14.3933,-9.9088 0,0 13.218,-8.4034 13.218,-8.4034 z"
+         id="path8263-1"
+         style="color:#000000;fill:#ffaaaa;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:3;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new" />
+    </g>
+    <g
+       style="display:inline;enable-background:new"
+       id="g8347-5"
+       transform="matrix(1.5883869,0.06181699,-0.09837745,0.9980875,-1891.1,-524.42479)">
+      <path
+         transform="translate(0,-3160.6299)"
+         inkscape:connector-curvature="0"
+         d="m 1609.1209,1974.5462 c -0.2657,5.4179 -0.2335,10.8443 -0.1728,16.2666 -0.097,4.326 0.1983,8.6007 0.7483,12.8864 0.423,4.1933 1.3282,8.3109 2.1084,12.4454 0.4481,4.1651 1.0416,8.3115 1.5483,12.4696 0.4571,4.5791 1.1435,9.1317 1.4993,13.7201 0.3004,5.6956 0.7983,11.3787 1.2196,17.0662 0.3437,3.414 0.3701,6.8353 0.3867,10.2616 0.3312,1.7387 -0.532,5.1273 0.3529,6.6525 1.8925,0.3123 3.8904,0.2397 5.8149,0.2545 4.0278,0 8.0556,-0.013 12.0835,-0.018 5.7957,0.2797 11.3888,-1.0781 16.8864,-2.7374 6.7032,-2.0312 13.004,-5.1267 19.4018,-7.9314 5.2885,-2.6349 10.899,-4.2849 16.5995,-5.7152 4.0081,-1.0666 8.1648,-0.9163 12.2692,-0.8151 4.7615,0.6192 9.4813,1.5533 14.2323,2.2699 5.7108,0.7946 11.4771,1.0027 17.2344,1.1201 5.4762,0.088 10.9534,0.074 16.4301,0.055 4.9488,-0.1061 9.79,-1.0832 14.6435,-1.9394 4.9599,-0.7761 9.8141,-1.9976 14.7927,-2.6743 5.4657,-0.3763 10.9017,-0.9855 16.3316,-1.7087 5.3438,-0.7532 10.7394,-0.9254 16.1266,-1.0494 5.5326,-0.073 11.0658,-0.072 16.5988,-0.066 5.5362,0.019 11.0724,0.013 16.6086,0.01 5.5758,0.012 11.1516,0.01 16.7274,0.016 5.5657,-0.075 11.1358,0.1346 16.6957,-0.1509 6.0223,-0.4047 12.0518,-0.6635 18.0857,-0.7978 6.6172,-0.1487 13.2369,0.043 19.8506,-0.2227 7.0682,-0.3812 14.1038,-1.1782 21.17,-1.6129 6.127,-0.2908 12.2854,-0.4626 18.3594,-1.3519 6.2205,-0.9103 12.4044,-2.0065 18.6574,-2.6772 6.315,-0.5512 12.6272,-1.1325 18.9419,-1.6933 6.7262,-0.6839 13.4906,-0.7009 20.2322,-1.1034 6.7946,-0.4981 13.6026,-0.7393 20.4132,-0.8513 7.1914,-0.4557 14.3858,-0.8026 21.5896,-0.9729 8.9274,-0.1479 17.8567,-0.096 26.785,-0.1079 6.5171,0.068 12.9366,-0.965 19.3266,-2.1063 0,0 -12.2213,9.1888 -12.2213,9.1888 l 0,0 c -6.3385,0.9602 -12.71,1.755 -19.1374,1.6614 -8.982,0.01 -17.9646,0.044 -26.9443,0.2719 -7.2174,0.2191 -14.4238,0.6247 -21.6346,0.9932 -6.8113,0.1639 -13.6189,0.4281 -20.4155,0.9203 -6.7203,0.3527 -13.4583,0.4265 -20.1587,1.1179 -6.3423,0.614 -12.6868,1.1993 -19.0311,1.7922 -6.2235,0.7047 -12.3878,1.8094 -18.5905,2.6716 -6.1132,0.7434 -12.2655,1.017 -18.4164,1.2593 -7.0526,0.4396 -14.079,1.2107 -21.1375,1.5406 -6.6523,0.2137 -13.3098,0.1013 -19.9636,0.2833 -6.0321,0.1601 -12.0583,0.436 -18.0799,0.8296 -5.5783,0.1993 -11.1611,0.088 -16.7423,0.1027 -5.5891,0.01 -11.1782,0 -16.7673,0.012 -5.5304,-0.012 -11.0609,-0.026 -16.5914,-0.018 -5.5277,7e-4 -11.0562,-0.023 -16.5829,0.1026 -5.3531,0.1459 -10.7064,0.4204 -16.0146,1.1676 -5.4427,0.7062 -10.901,1.207 -16.3603,1.7547 -4.9567,0.7593 -9.817,1.9908 -14.7779,2.7284 -4.8849,0.8895 -9.7988,1.6852 -14.7801,1.7031 -5.476,-0.01 -10.9527,0 -16.4279,-0.1054 -5.7916,-0.1745 -11.5864,-0.4546 -17.3277,-1.2845 -4.7546,-0.702 -9.4932,-1.6434 -14.2877,-1.9872 -3.9985,-0.057 -8.0215,-0.063 -11.9035,1.055 -5.6085,1.4182 -11.0544,3.2934 -16.2842,5.7939 -6.4173,2.8347 -12.7882,5.8485 -19.5492,7.797 -5.6585,1.6065 -11.4061,2.7787 -17.3273,2.5299 -4.07,0.024 -8.1398,0.073 -12.2098,0.088 -2.3332,-0.017 -5.1803,0.3329 -6.8981,-1.5552 -1.1608,-2.2609 -0.256,-4.9836 -0.5038,-7.4309 -0.023,-3.4197 -0.1082,-6.8398 -0.2118,-10.2579 -0.2589,-5.6884 -0.7662,-11.3539 -1.2138,-17.0287 -0.4069,-4.5712 -1.0816,-9.1095 -1.4354,-13.6856 -0.5087,-4.1084 -1.2659,-8.1783 -1.7626,-12.2866 -0.5837,-4.2074 -1.3572,-8.3855 -1.8955,-12.5989 -0.6592,-4.36 -1.1929,-8.6668 -0.8148,-13.0917 0.059,-5.3634 0.098,-10.7316 -0.1729,-16.0904 0,0 13.9943,-7.1305 13.9943,-7.1305 z"
+         id="path8343-1"
+         style="color:#000000;fill:#ffaaaa;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:3;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new" />
+      <path
+         transform="translate(0,-3160.6299)"
+         inkscape:connector-curvature="0"
+         d="m 2091.8241,2049.4978 c -2.1473,-3.1201 -3.2676,-6.7683 -4.3559,-10.3551 -1.2313,-3.8836 -2.0514,-7.8405 -2.4406,-11.8908 -0.1985,-4.485 -0.4557,-8.9672 -0.9673,-13.4292 -0.613,-4.2332 -0.9818,-8.4929 -1.5325,-12.7334 -0.501,-4.6405 -0.7077,-9.304 -1.1047,-13.9539 -0.4972,-5.1354 -0.634,-10.2938 -0.7868,-15.4478 0.082,-3.8579 -0.3212,-7.6535 -1.0038,-11.441 -0.3374,-2.7841 -1.476,-5.374 -1.9193,-8.1287 -0.3325,-3.8036 -0.1483,-7.6183 -0.6746,-11.4053 -0.4086,-1.8129 0.1448,-2.3608 -1.6977,-2.4435 -1.2332,0.025 -2.4656,0.078 -3.6989,0.1038 -1.9603,0.017 -3.9208,0 -5.8813,0 -2.1618,-0.1993 -4.23,0.4051 -6.338,0.7642 -2.6554,0.6873 -5.1373,1.8071 -7.6444,2.9071 -3.4437,1.3795 -6.9203,2.6457 -10.202,4.3873 -3.0625,1.3428 -5.9815,2.9563 -9.0494,4.2918 -2.8442,1.6213 -6.1037,1.9989 -9.3071,2.274 -4.0084,0.2344 -8.0264,0.1874 -12.0396,0.164 -5.1331,-0.023 -10.2663,-0.038 -15.3995,-0.034 -4.8518,0 -9.7036,0 -14.5553,0.011 -3.8056,-0.098 -7.5739,0.5473 -11.3544,0.8773 -3.3567,0.2031 -6.7225,0.2029 -10.0844,0.2167 -3.9879,0 -7.9757,-0.016 -11.9635,-0.016 -4.3768,0.063 -8.7395,0.5511 -13.1127,0.7875 -4.7681,0.5194 -9.5328,1.0181 -14.266,1.803 -5.8473,0.6048 -11.456,2.3534 -17.1286,3.7799 -6.2748,2.0949 -12.76,3.3456 -19.2512,4.5327 -6.3782,1.4857 -12.8803,2.1676 -19.4047,2.5477 -6.7747,0.2947 -13.5586,0.253 -20.3381,0.2596 -1.1247,-0.1479 -2.2723,-0.1736 -3.374,-0.4436 -2.9663,-0.7269 -5.7097,-2.3897 -8.4676,-3.642 -2.1008,-0.9539 -2.3104,-0.9936 -4.3903,-1.7701 -3.6023,-1.2316 -7.4102,-1.4109 -11.1799,-1.5156 -4.2181,0 -8.4147,-0.017 -12.619,-0.366 -4.4375,-0.43 -8.8943,-0.5625 -13.3493,-0.6437 -4.7684,-0.078 -9.5377,-0.062 -14.3065,-0.055 -4.5637,0.1772 -9.0374,1.0715 -13.5084,1.9257 -4.2603,1.1339 -8.6134,1.7977 -13.005,2.1129 -4.4851,0.252 -8.9794,0.2282 -13.4697,0.2178 -5.1104,0.1709 -10.1678,0.8822 -15.2494,1.3805 -5.5252,0.5541 -11.0845,0.4602 -16.6186,0.8258 -5.9256,0.3825 -11.8544,0.8581 -17.7398,1.6575 -5.299,0.7743 -10.5722,1.6416 -15.9113,2.1109 -4.6307,0.1774 -9.2403,0.5348 -13.8582,0.9122 -4.5573,0.5356 -9.0555,1.4385 -13.594,2.1046 -3.4659,0.2382 -6.8908,0.6802 -10.3324,1.138 -2.8599,0.6032 -5.6333,1.515 -8.4895,2.1394 -2.717,0.299 -5.2181,1.4751 -7.8764,2.0525 -2.2599,0.8483 -4.4937,1.7242 -6.684,2.7445 -0.4388,0.242 -0.8722,0.4939 -1.3164,0.7258 -3.5926,1.7726 0.8684,-0.4589 -2.6232,1.384 -0.4154,0.2193 -1.6707,0.858 -1.2647,0.6219 18.0056,-10.4707 15.9206,-9.2232 11.3337,-6.4562 -5.4462,2.8982 -11.144,8.1102 -17.762,9.0829 -0.1614,0.1987 -1.0099,-0.1652 -1.0908,-0.026 -0.074,0.1274 -0.1069,0.5126 0.022,0.4412 4.4656,-2.4742 8.8001,-5.1781 13.2002,-7.7672 0,0.1514 -0.257,0.1284 -0.2941,0.2521 -1.593,5.3124 -8.8856,8.3697 -14.4927,8.2307 -0.048,-0.01 -0.095,-0.017 -0.1428,-0.025 0,0 12.7465,-9.4561 12.7465,-9.4561 l 0,0 c 0.025,-0.016 0.049,-0.031 0.074,-0.047 4.9674,-2.2339 0.4462,-0.638 -13.0222,7.4432 -0.1959,0.1176 0.8226,0.3108 0.5565,-0.2588 35.5254,-21.596 7.2604,-6.671 15.0515,-8.3219 5.4313,-1.3523 13.3825,-8.0199 -9.4528,6.0749 6.8459,-3.9513 13.5533,-8.1738 20.6911,-11.5869 2.2403,-0.975 4.5088,-1.9274 6.8786,-2.5422 2.6172,-0.7389 5.1977,-1.6193 7.8953,-2.0326 2.8378,-0.6899 5.6335,-1.5771 8.5328,-1.9866 3.4095,-0.4494 6.8297,-0.7053 10.245,-1.0987 4.5328,-0.6596 9.0322,-1.5522 13.5964,-1.9851 4.6061,-0.3819 9.2132,-0.6422 13.8267,-0.9073 5.2991,-0.5095 10.5369,-1.4117 15.813,-2.1014 5.9198,-0.683 11.8576,-1.2226 17.8061,-1.5811 5.5348,-0.2888 11.0881,-0.2882 16.6037,-0.8989 5.1155,-0.558 10.2282,-1.1869 15.3805,-1.2837 4.4856,-0.027 8.9778,-0.024 13.4533,-0.3644 4.3442,-0.4275 8.6283,-1.179 12.8716,-2.2115 4.5222,-0.8548 9.0741,-1.6573 13.6915,-1.7007 4.7689,0.01 9.538,0.023 14.3066,0.094 4.4888,0.1042 8.9794,0.2441 13.4504,0.683 4.2047,0.3222 8.4097,0.1998 12.6228,0.2815 3.8768,0.1772 7.7721,0.5435 11.4132,1.9942 5.1277,2.1485 9.9652,5.39 15.6826,5.5344 6.7781,-0.01 13.561,-0.01 20.3314,-0.3717 6.4844,-0.4422 12.9247,-1.2488 19.274,-2.675 6.4988,-1.1989 12.9324,-2.6552 19.2387,-4.6558 5.7061,-1.4912 11.4064,-3.0203 17.2803,-3.7178 4.7861,-0.7393 9.596,-1.3185 14.4221,-1.7244 4.3983,-0.2651 8.7884,-0.7782 13.1985,-0.7399 4.0019,0 8.0039,10e-5 12.0058,-0.029 3.3574,-0.032 6.7197,-0.057 10.066,-0.3631 3.7539,-0.3478 7.5156,-0.7493 11.2912,-0.6584 4.8375,0.01 9.675,0.014 14.5125,0.022 5.1434,0.015 10.2868,0.02 15.4303,0.01 4.0195,-0.029 8.0501,0 12.0558,-0.3805 3.1651,-0.4114 6.2161,-1.1184 9.0348,-2.6842 3.0085,-1.4014 5.957,-2.9234 8.9705,-4.3143 3.3457,-1.593 6.83,-2.8425 10.232,-4.3074 2.5939,-1.1395 5.2395,-2.2075 8.0361,-2.7347 2.1381,-0.3819 4.2776,-0.6421 6.4564,-0.5202 1.9824,-0.01 3.9647,-0.026 5.9462,-0.092 1.3175,-0.033 2.6589,-0.1151 3.9483,0.213 1.9411,0.7468 2.4005,2.1999 2.5112,4.1775 0.4049,3.7703 0.2942,7.5583 0.697,11.329 0.438,2.7542 1.429,5.3846 1.7947,8.155 0.7225,3.876 1.2286,7.7593 1.0106,11.7175 0.059,5.1258 0.2325,10.2528 0.7243,15.3576 0.4515,4.6175 0.6386,9.248 1.1587,13.8585 0.5594,4.2554 0.9075,8.5288 1.4723,12.7842 0.5531,4.4538 0.8876,8.9351 1.0825,13.4182 0.3384,3.9543 1.014,7.8572 2.2629,11.6366 0.9934,3.3957 2.0252,6.9081 4.2924,9.7001 0,0 -13.4955,8.066 -13.4955,8.066 z"
+         id="path8345-8"
+         style="color:#000000;fill:#ffaaaa;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:3;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:new" />
+    </g>
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot4619"
+       style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:Sans;font-style:normal;font-weight:normal;font-size:40px;line-height:125%;letter-spacing:0px;word-spacing:0px"><flowRegion
+         id="flowRegion4621"><rect
+           id="rect4623"
+           width="1033.9711"
+           height="197.80315"
+           x="-23.976139"
+           y="919.27002" /></flowRegion><flowPara
+         id="flowPara4625"></flowPara></flowRoot>  </g>
 </svg>
