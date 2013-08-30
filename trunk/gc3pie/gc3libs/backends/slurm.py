@@ -50,7 +50,7 @@ from gc3libs.utils import same_docstring_as
 #        stamps. A value of standard, the default value, generates
 #        output in the form "year-month-dateThour:minute:second".
 
-# stat cmd: squeue --noheader --format='%i|%T|%r|%R'  -j jobid1,jobid2,...
+# stat cmd: squeue --noheader --format='%i^%T^%r^%R'  -j jobid1,jobid2,...
 #   %i: job id
 #
 #   %T: Job state, extended form: PENDING, RUNNING, SUSPENDED,
@@ -105,7 +105,7 @@ def count_jobs(squeue_output, whoami):
       * `q` is the number of queued jobs submitted by user `whoami`
 
     The `squeue_output` must contain the results of an invocation of
-    ``squeue --noheader --format='%i|%T|%u|%U|%r|%R'``.
+    ``squeue --noheader --format='%i^%T^%u^%U^%r^%R'``.
     """
     total_running = 0
     total_queued = 0
@@ -115,7 +115,7 @@ def count_jobs(squeue_output, whoami):
         if line == '':
             continue
         # the choice of format string makes it easy to parse squeue output
-        jobid, state, username, uid, reason, nodelist = line.split('|')
+        jobid, state, username, uid, reason, nodelist = line.split('^')
         if state in ['RUNNING', 'COMPLETING']:
             total_running += 1
             if username == whoami:
@@ -448,7 +448,7 @@ class SlurmLrms(batch.BatchSystem):
         try:
             self.transport.connect()
 
-            _command = ("%s --noheader -o '%%i|%%T|%%u|%%U|%%r|%%R'" %
+            _command = ("%s --noheader -o '%%i^%%T^%%u^%%U^%%r^%%R'" %
                         self._squeue)
             log.debug("Running `%s`...", _command)
             exitcode, stdout, stderr = self.transport.execute_command(_command)
