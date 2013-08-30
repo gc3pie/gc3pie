@@ -3,7 +3,7 @@
 """
 Job control on SLURM clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -191,7 +191,7 @@ class SlurmLrms(batch.BatchSystem):
         sbatch_argv, app_argv = app.sbatch(self)
         return (str.join(' ', sbatch_argv), str.join(' ', app_argv))
 
-    # stat cmd: squeue --noheader --format='%i|%T|%u|%U|%r|%R'  -j jobid1,jobid2,...
+    # stat cmd: squeue --noheader --format='%i^%T^%u^%U^%r^%R'  -j jobid1,jobid2,...
     #   %i: job id
     #   %T: Job  state,  extended  form: PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING, FAILED, TIMEOUT, PREEMPTED, and NODE_FAIL.
     #   %R: For pending jobs: the reason a job is waiting for execution is printed within parenthesis. For terminated jobs with failure: an  explanation  as to why the job failed is printed within parenthesis.  For all other job states: the list of allocate nodes.
@@ -200,7 +200,7 @@ class SlurmLrms(batch.BatchSystem):
     #   %U: numeric UID of the submitting user
     #
     def _stat_command(self, job):
-        return "%s --noheader -o %%i|%%T|%%r -j %s" % \
+        return "%s --noheader -o %%i^%%T^%%r -j %s" % \
             (self._squeue, job.lrms_jobid)
 
     def _parse_stat_output(self, stdout):
@@ -217,7 +217,7 @@ class SlurmLrms(batch.BatchSystem):
             jobstatus['state'] = Run.State.TERMINATING
         else:
             # parse stdout
-            jobid, state, reason = stdout.split('|')
+            jobid, state, reason = stdout.split('^')
             log.debug("translating SLURM's state '%s' to gc3libs.Run.State",
                       state)
             if state in ['PENDING', 'CONFIGURING']:
