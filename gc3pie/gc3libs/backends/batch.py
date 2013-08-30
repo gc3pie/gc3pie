@@ -504,6 +504,10 @@ class BatchSystem(LRMS):
                 # command output to get the termination status etc.
                 if job.state != Run.State.TERMINATING:
                     return job.state
+            else:
+                log.error(
+                    "Failed while running the `qstat`/`bjobs` command."
+                     " exit code: %d, stderr: '%s'" % (exit_code, stderr))
 
             # In some batch systems, jobs disappear from qstat
             # output as soon as they are finished. In these cases,
@@ -522,6 +526,11 @@ class BatchSystem(LRMS):
                         job.returncode = int(jobstatus['exitcode'])
                         job.state = Run.State.TERMINATING
                     return job.state
+                else:
+                    log.error(
+                        "Failed while running the `acct` command."
+                        " exit code: %d, stderr: '%s'" % (exit_code, stderr))
+   
 
             # No *stat command and no *acct command returned
             # correctly.
@@ -620,7 +629,8 @@ class BatchSystem(LRMS):
                 if exit_code == 127:
                     # no such command
                     raise gc3libs.exceptions.LRMSError(
-                        "Cannot execute remote command '%s'" % cmd)
+                        "Cannot execute remote command '%s'.", 
+                        " stderr: '%s'" % (cmd, stderr))
 
             return job
 
