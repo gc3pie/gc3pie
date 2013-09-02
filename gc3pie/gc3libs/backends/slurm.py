@@ -390,14 +390,14 @@ class SlurmLrms(batch.BatchSystem):
     def _parse_memspec(m):
         unit = m[-1]
         if unit == 'G':
-            return Memory(int(m[:-1]), unit=GB)
+            return Memory(int(round(float(m[:-1]))), unit=GB)
         elif unit == 'M':
-            return Memory(int(m[:-1]), unit=MB)
+            return Memory(int(round(float(m[:-1]))), unit=MB)
         elif unit == 'K':  # XXX: not sure which one is used
-            return Memory(int(m[:-1]), unit=kB)
+            return Memory(int(round(float(m[:-1]))), unit=kB)
         else:
             # XXX: what does SLURM use as a default?
-            return Memory(int(m), unit=bytes)
+            return Memory(int(round(float(m))), unit=bytes)
 
     @staticmethod
     def _parse_timestamp(ts):

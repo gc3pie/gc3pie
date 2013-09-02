@@ -162,6 +162,30 @@ def sacct_done_relative_timestamps(jobid=123):
         "")
 
 
+def sacct_done_fractional_rusage(jobid=123):
+    # sample gotten from Denisa Rodila, University of Geneva
+    return (
+        # command exitcode
+        0,
+        # stdout
+        """
+123|0:0|16|00:07:29|58:10.420|2013-08-30T23:16:22|2013-08-30T23:16:22|2013-08-30T23:23:51|||
+123.batch|0:0|1|00:07:29|00:02.713|2013-08-30T23:16:22|2013-08-30T23:16:22|2013-08-30T23:23:51|62088K|4115516K|
+123.0|0:0|1|00:06:56|05:44.992|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:26|73784K|401040K|
+123.1|0:0|1|00:07:01|05:44.968|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:31|74360K|401656K|
+123.2|0:0|1|00:07:13|05:51.685|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:43|74360K|401720K|
+123.3|0:0|1|00:07:21|06:01.088|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:51|73644K|401656K|
+123.4|0:0|1|00:07:16|05:52.315|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:46|69092K|401096K|
+123.5|0:0|1|00:07:01|05:46.964|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:31|74364K|401104K|
+123.6|0:0|1|00:07:10|05:46.222|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:40|69148K|401108K|
+123.7|0:0|1|00:07:10|05:49.074|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:40|74364K|401592K|
+123.8|0:0|1|00:07:06|05:44.432|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:36|74404K|401688K|
+123.9|0:0|1|00:07:04|05:45.962|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:34|72.50M|401652K|
+        """.strip(),
+        # stderr
+        "")
+
+
 def sacct_no_accounting(jobid=123):
     return (
         # command exitcode
@@ -311,6 +335,34 @@ username=NONEXISTENT
                      datetime.datetime(year=2012, month=9, day=24, hour=10, minute=47, second=29))
         assert_equal(job.slurm_completion_time,
                      datetime.datetime(year=2012, month=9, day=24, hour=10, minute=48, second=34))
+
+
+    def test_parse_sacct_output_fractional_rusage(self):
+        """Test `sacct` output with fractional resource usage."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.core.submit(app)
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        #self.transport.expected_answer['sacct'] = sacct_done_fractional_rusage()
+        self.transport.expected_answer['env'] = sacct_done_fractional_rusage()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.TERMINATING)
+
+        job = app.execution
+        # common job reporting values (see Issue 78)
+        assert_equal(job.exitcode,        0)
+        assert_equal(job.signal,          0)
+        assert_equal(job.duration,        7*minutes + 29*seconds)
+        assert_equal(job.max_used_memory, 4115516*kB)
+        assert_equal(job.used_cpu_time,   58*minutes + 10.420*seconds)
+        # SLURM-specific values
+        assert_equal(job.slurm_max_used_ram, 74404*kB)
+        assert_equal(job.slurm_submission_time,
+                     datetime.datetime(year=2013, month=8, day=30, hour=23, minute=16, second=22))
+        assert_equal(job.slurm_start_time,
+                     datetime.datetime(year=2013, month=8, day=30, hour=23, minute=16, second=22))
+        assert_equal(job.slurm_completion_time,
+                     datetime.datetime(year=2013, month=8, day=30, hour=23, minute=23, second=51))
 
 
     def test_cancel_job1(self):
