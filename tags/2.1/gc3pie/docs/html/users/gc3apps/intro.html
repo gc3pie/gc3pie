@@ -1,0 +1,432 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Introduction to session-based scripts &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="up" title="The GC3Apps software" href="index.html" />
+    <link rel="next" title="The ggamess script" href="ggamess.html" />
+    <link rel="prev" title="The GC3Apps software" href="index.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="ggamess.html" title="The ggamess script"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="The GC3Apps software"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >User Documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">The GC3Apps software</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="introduction-to-session-based-scripts">
+<span id="session-based-script"></span><h1>Introduction to <em>session-based</em> scripts<a class="headerlink" href="#introduction-to-session-based-scripts" title="Permalink to this headline">¶</a></h1>
+<p>All GC3Apps scripts derive their core functionality from a common
+blueprint, named a <em>session-based script</em>.  The purpose of this
+section is to describe this common functionality; script-specific
+sections detail the scope and options that are unique to a given
+script.  Readers interested in Python programming can find the
+complete documentation about the <em>session-based script</em> <a class="reference internal" href="../../glossary.html#term-api"><em class="xref std std-term">API</em></a> in
+the <tt class="xref py py-class docutils literal"><span class="pre">SessionBasedScript</span></tt> section.</p>
+<p>The functioning of GC3Apps scripts revolves around a so-called
+<em>session</em>.  A <a class="reference internal" href="../../glossary.html#term-session"><em class="xref std std-term">session</em></a> is just a named collection of jobs.  For
+instance, you could group into a single session jobs that analyze a
+set of related files.</p>
+<p>Each time it is run, a GC3Apps script performs the
+following steps:</p>
+<ol class="arabic">
+<li><p class="first">Reads the session directory and loads all stored jobs into memory.
+If the session directory does not exist, one will be created with
+empty contents.</p>
+</li>
+<li><p class="first">Scans the command-line input arguments: if existing jobs do not
+suffice to analyze the input data, new jobs are added to the
+session.</p>
+</li>
+<li><p class="first">The status of all existing jobs is updated, output from finished jobs
+is collected, and new jobs are submitted.</p>
+<p>Finally, a summary table of all known jobs is printed.  (To control
+the amount of printed information, see the <tt class="docutils literal"><span class="pre">-l</span></tt> command-line
+option below.)</p>
+</li>
+<li><p class="first">If the <tt class="docutils literal"><span class="pre">-C</span></tt> command-line option was given (see below), waits
+the specified amount of seconds, and then goes back to step 3.</p>
+<p>Execution can be interrupted at any time by pressing <tt class="kbd docutils literal"><span class="pre">Ctrl+C</span></tt>.</p>
+</li>
+</ol>
+<div class="section" id="basic-command-line-usage-and-options">
+<h2>Basic command-line usage and options<a class="headerlink" href="#basic-command-line-usage-and-options" title="Permalink to this headline">¶</a></h2>
+<p>The exact command-line usage of <em>session-based scripts</em> varies from
+one script to the other, so please consult the documentation page for
+your application.  There are quite a number of common options and
+behaviors, however, which are described here.</p>
+<div class="section" id="continuous-execution">
+<h3>Continuous execution<a class="headerlink" href="#continuous-execution" title="Permalink to this headline">¶</a></h3>
+<p>While single-pass execution of a GC3Apps script is possible (and
+sometimes used), it is much more common to keep the script running
+and let it manage jobs until all are finished.  This is accomplished
+with the following command-line option:</p>
+<blockquote>
+<div><table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-C <var>NUM</var></span>, <span class="option">--continuous <var>NUM</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Keep running, monitoring jobs and possibly submitting
+new ones or fetching results every NUM seconds.</p>
+<p class="last">When all jobs are finished, a GC3Apps script exits even if the
+<tt class="docutils literal"><span class="pre">-C</span></tt> option is given.</p>
+</td></tr>
+</tbody>
+</table>
+</div></blockquote>
+</div>
+<div class="section" id="verbose-listing-of-jobs">
+<h3>Verbose listing of jobs<a class="headerlink" href="#verbose-listing-of-jobs" title="Permalink to this headline">¶</a></h3>
+<p>Only a summary of job states is printed by default at the end of step
+3., together with the count of jobs that are in the specified state.
+Use the <tt class="docutils literal"><span class="pre">-l</span></tt> option (see below) to get a detailed listing of all
+jobs.</p>
+<blockquote>
+<div><table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-l <var>STATE</var></span>, <span class="option">--state <var>STATE</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Print a table of jobs including their status.</p>
+<p>The <em>STATE</em> argument restricts output to jobs in that particular
+state.  It can be a single <a class="reference internal" href="../../glossary.html#term-state"><em class="xref std std-term">state</em></a> word (e.g., <tt class="docutils literal"><span class="pre">RUNNING</span></tt>)
+or a comma-separated list thereof (e.g.,
+<tt class="docutils literal"><span class="pre">NEW,SUBMITTED,RUNNING</span></tt>).</p>
+<p>The pseudo-states <tt class="docutils literal"><span class="pre">ok</span></tt> and <tt class="docutils literal"><span class="pre">failed</span></tt> are also allowed for
+selecting jobs in <tt class="docutils literal"><span class="pre">TERMINATED</span></tt> state with exit code
+(respectively) 0 or nonzero.</p>
+<p class="last">If <em>STATE</em> is omitted, no restriction is placed on job states, and
+a table of <em>all</em> jobs is printed.</p>
+</td></tr>
+</tbody>
+</table>
+</div></blockquote>
+</div>
+<div class="section" id="maximum-number-of-concurrent-jobs">
+<h3>Maximum number of concurrent jobs<a class="headerlink" href="#maximum-number-of-concurrent-jobs" title="Permalink to this headline">¶</a></h3>
+<p>There is a maximum number of jobs that can be in <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> or
+<tt class="docutils literal"><span class="pre">RUNNING</span></tt> state at a given time.  GC3Apps scripts will delay
+submission of newly-created jobs so that this limit is never
+exceeded.  The default limit is 50, but it can be changed with the
+following command-line option:</p>
+<blockquote>
+<div><table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-J <var>NUM</var></span>, <span class="option">--max-running <var>NUM</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Set the maximum NUMber of jobs (default: 50) in <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt>
+or <tt class="docutils literal"><span class="pre">RUNNING</span></tt> state.</td></tr>
+</tbody>
+</table>
+</div></blockquote>
+</div>
+<div class="section" id="location-of-output-files">
+<h3>Location of output files<a class="headerlink" href="#location-of-output-files" title="Permalink to this headline">¶</a></h3>
+<p>By default, output files are placed in the same directory where the
+corresponding input file resides.  This can be changed with the
+following option; it is also possible to specify output locations that
+vary depending on certain job features.</p>
+<blockquote>
+<div><table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-o <var>DIRECTORY</var></span>, <span class="option">--output <var>DIRECTORY</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Output files from all jobs will be collected in the specified
+<em>DIRECTORY</em> path.  If the destination directory does not exist, it
+is created.</td></tr>
+</tbody>
+</table>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="job-control-options">
+<h2>Job control options<a class="headerlink" href="#job-control-options" title="Permalink to this headline">¶</a></h2>
+<p>These command-line options control the requirements and constraints of
+<em>new jobs</em>.  Indeed, note that changing the arguments to these options
+<em>does not</em> change the corresponding requirements on jobs that already
+exist in the session.</p>
+<blockquote>
+<div><table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-c <var>NUM</var></span>, <span class="option">--cpu-cores <var>NUM</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Set the number of CPU cores required for each job
+(default: 1).  <em>NUM</em> must be a whole number.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-m <var>GIGABYTES</var></span>, <span class="option">--memory-per-core <var>GIGABYTES</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Set the amount of memory required per execution core,
+in gigabytes (Default: 2). Currently, <em>GIGABYTES</em> can
+only be an integer number; fractional amounts are
+discarded.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-r <var>NAME</var></span>, <span class="option">--resource <var>NAME</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Submit jobs to a specific <a class="reference internal" href="../../glossary.html#term-resource"><em class="xref std std-term">resource</em></a>. <tt class="docutils literal"><span class="pre">NAME</span></tt> is a
+reource name or comma-separated list of resource names.
+Use the command <cite>gservers</cite> to list available resources.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-w <var>DURATION</var></span>, <span class="option">--wall-clock-time <var>DURATION</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Set the time limit for each job (default is &#8216;8&#8217; for
+&#8216;8 hours&#8217;). Jobs exceeding this limit will be stopped
+and considered as <em>failed</em>. The duration can be
+expressed as a whole number (indicating the duration
+in hours) or as a string in the form &#8216;hours:minutes&#8217;.</td></tr>
+</tbody>
+</table>
+</div></blockquote>
+</div>
+<div class="section" id="session-control-options">
+<h2>Session control options<a class="headerlink" href="#session-control-options" title="Permalink to this headline">¶</a></h2>
+<p>This set of options control the placement and contents of the <a class="reference internal" href="../../glossary.html#term-session"><em class="xref std std-term">session</em></a>.</p>
+<blockquote>
+<div><table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-s <var>PATH</var></span>, <span class="option">--session <var>PATH</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Store the session information in the directory at <em>PATH</em>.
+(By default, this is a subdirectory of the current directory,
+named after the script you are executing.)</p>
+<p class="last">If <em>PATH</em> is an existing directory, it will be used for storing job
+information, and an index file (with suffix <tt class="docutils literal"><span class="pre">.csv</span></tt>) will be
+created in it. Otherwise, the job information will be stored in a
+directory named after <em>PATH</em> with a suffix <tt class="docutils literal"><span class="pre">.jobs</span></tt> appended, and
+the index file will be named after <em>PATH</em> with a suffix <tt class="docutils literal"><span class="pre">.csv</span></tt>
+added.</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-N</span>, <span class="option">--new-session</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Discard any information saved in the session directory
+(see the <tt class="docutils literal"><span class="pre">--session</span></tt> option) and start a new session
+afresh. Any information about jobs previously recorded
+in the session is lost.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">-u</span>, <span class="option">--store-url <var>URL</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Store GC3Pie job information at the persistent storage specified
+by <em>URL</em>.  The <em>URL</em> can be any form that is understood by the
+<tt class="xref py py-func docutils literal"><span class="pre">gc3libs.persistence.make_store()</span></tt> function (which see for
+details).  A few examples:</p>
+<ul class="simple">
+<li><tt class="file docutils literal"><span class="pre">sqlite</span></tt> &#8211; the jobs are stored in a SQLite3 database
+named <tt class="docutils literal"><span class="pre">jobs.db</span></tt> and contained in the session directory.</li>
+<li><tt class="file docutils literal"><em><span class="pre">/path/to/a/directory</span></em></tt> &#8211; the jobs are stored in the given
+directory, one file per job (this is the default format used by
+GC3Pie)</li>
+<li><tt class="file docutils literal"><span class="pre">sqlite:////</span><em><span class="pre">path/to/a/file.db</span></em></tt> &#8211; the jobs are stored in
+the given SQLite3 database file.</li>
+<li><tt class="file docutils literal"><span class="pre">mysql://user,passwd&#64;</span><em><span class="pre">server</span></em><span class="pre">/</span><em><span class="pre">dbname</span></em></tt> &#8211; jobs are stored
+in table <tt class="docutils literal"><span class="pre">store</span></tt> of the specified MySQL database.  The DB
+server and connection credentials (username, password) are also
+part of the <em>URL</em>.</li>
+</ul>
+<p class="last">If this option is omitted, GC3Pie&#8217;s <em>SessionBasedScript</em> defaults
+to storing jobs in the subdirectory <tt class="file docutils literal"><span class="pre">jobs</span></tt> of the session
+directory; each job is saved in a separate file.</p>
+</td></tr>
+</tbody>
+</table>
+</div></blockquote>
+</div>
+<div class="section" id="exit-code">
+<h2>Exit code<a class="headerlink" href="#exit-code" title="Permalink to this headline">¶</a></h2>
+<p>A GC3Apps script exits when all jobs are finished, when some error
+occurred that prevented the script from completing, or when a user
+interrupts it with <tt class="kbd docutils literal"><span class="pre">Ctrl+C</span></tt></p>
+<p>In any case, the exit code of GC3Apps scripts tracks job status (in
+the following sense).  The exitcode is a bitfield; the 4
+least-significant bits are assigned a meaning according to the
+following table:</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="95%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Bit</th>
+<th class="head">Meaning</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>0</td>
+<td>Set if a fatal error occurred: the script could not complete</td>
+</tr>
+<tr class="row-odd"><td>1</td>
+<td>Set if there are jobs in <tt class="docutils literal"><span class="pre">FAILED</span></tt> state</td>
+</tr>
+<tr class="row-even"><td>2</td>
+<td>Set if there are jobs in <tt class="docutils literal"><span class="pre">RUNNING</span></tt> or <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> state</td>
+</tr>
+<tr class="row-odd"><td>3</td>
+<td>Set if there are jobs in <tt class="docutils literal"><span class="pre">NEW</span></tt> state</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>This boils down to the following rules:</p>
+<ul class="simple">
+<li>exitcode is 0: all jobs are <cite>DONE</cite>, no further action will be taken
+by the script (which exists immediately if called again on the same
+session).</li>
+<li>exitcode is 1: an error interrupted the script execution.</li>
+<li>exitcode is 2: all jobs finished, but some are in <cite>FAILED</cite> state.</li>
+<li>exitcode &gt; 3: run the script again to make jobs progress.</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Introduction to <em>session-based</em> scripts</a><ul>
+<li><a class="reference internal" href="#basic-command-line-usage-and-options">Basic command-line usage and options</a><ul>
+<li><a class="reference internal" href="#continuous-execution">Continuous execution</a></li>
+<li><a class="reference internal" href="#verbose-listing-of-jobs">Verbose listing of jobs</a></li>
+<li><a class="reference internal" href="#maximum-number-of-concurrent-jobs">Maximum number of concurrent jobs</a></li>
+<li><a class="reference internal" href="#location-of-output-files">Location of output files</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#job-control-options">Job control options</a></li>
+<li><a class="reference internal" href="#session-control-options">Session control options</a></li>
+<li><a class="reference internal" href="#exit-code">Exit code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">The GC3Apps software</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="ggamess.html"
+                        title="next chapter">The <strong>ggamess</strong> script</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="ggamess.html" title="The ggamess script"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="The GC3Apps software"
+             >previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >User Documentation</a> &raquo;</li>
+          <li><a href="index.html" >The GC3Apps software</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

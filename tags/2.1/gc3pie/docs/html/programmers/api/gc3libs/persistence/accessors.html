@@ -1,0 +1,346 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.persistence.accessors &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../../index.html" />
+    <link rel="next" title="gc3libs.persistence.filesystem" href="filesystem.html" />
+    <link rel="prev" title="gc3libs.persistence" href="../persistence.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="filesystem.html" title="gc3libs.persistence.filesystem"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../persistence.html" title="gc3libs.persistence"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.persistence.accessors">
+<span id="gc3libs-persistence-accessors"></span><h1><cite>gc3libs.persistence.accessors</cite><a class="headerlink" href="#module-gc3libs.persistence.accessors" title="Permalink to this headline">¶</a></h1>
+<p>Accessors for object attributes and container items.</p>
+<dl class="data">
+<dt id="gc3libs.persistence.accessors.GET">
+<tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GET</tt><em class="property"> = &lt;gc3libs.persistence.accessors.GetValue object at 0x64f83d0&gt;</em><a class="headerlink" href="#gc3libs.persistence.accessors.GET" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constant identity getter.</p>
+<p>Use this for better readability (e.g., <cite>GET[0]</cite> instead of
+<cite>GetValue()[0]</cite>).</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.persistence.accessors.GetAttributeValue">
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetAttributeValue</tt><big>(</big><em>attr</em>, <em>xform=&lt;function &lt;lambda&gt; at 0x40b5668&gt;</em>, <em>default=&lt;object object at 0x67950b0&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetAttributeValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an accessor function for the given attribute.</p>
+<p>An instance of <cite>GetAttributeValue</cite> is a callable that, given any
+object, returns the value of its attribute <cite>attr</cite>, whose name is
+specified in the <cite>GetAttributeValue</cite> constructor:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetAttributeValue</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>The accessor raises <cite>AttributeError</cite> if no such attribute
+exists):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+   <span class="c">...</span>
+<span class="gr">AttributeError</span>: <span class="n">&#39;Struct&#39; object has no attribute &#39;x&#39;</span>
+</pre></div>
+</div>
+<p>However, you can specify a default value, in which case the
+default value is returned and no error is raised:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetAttributeValue</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="go">42</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetAttributeValue</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+<span class="go">None</span>
+</pre></div>
+</div>
+<p>In other words, if <cite>fn = GetAttributeValue(&#8216;x&#8217;)</cite>, then <cite>fn(obj)</cite>
+evaluates to <cite>obj.x</cite>.</p>
+<p>If the string <cite>attr</cite> contains any dots, then attribute lookups are
+chained: if <cite>fn = GetAttributeValue(&#8216;x.y&#8217;)</cite> then <cite>fn(obj)</cite> evaluates to
+<cite>obj.x.y</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetAttributeValue</span><span class="p">(</span><span class="s">&#39;x.y&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">Struct</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="mi">42</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="go">42</span>
+</pre></div>
+</div>
+<p>The optional second argument <cite>xform</cite> allows composing the accessor
+with an arbitrary function that is passed an object and should
+return a (possibly different) object whose attributes should be
+looked up.  In other words, if <cite>xform</cite> is specified, then the
+returned accessor function computes <cite>xform(obj).attr</cite> instead of
+<cite>obj.attr</cite>.</p>
+<p>This allows combining <cite>GetAttributeValue</cite> with <a class="reference internal" href="#gc3libs.persistence.accessors.GetItemValue" title="gc3libs.persistence.accessors.GetItemValue"><tt class="xref py py-meth docutils literal"><span class="pre">GetItemValue()</span></tt></a> (which
+see), to access objects in deeply-nested data structures; see
+<a class="reference internal" href="#gc3libs.persistence.accessors.GetItemValue" title="gc3libs.persistence.accessors.GetItemValue"><tt class="xref py py-class docutils literal"><span class="pre">GetItemValue</span></tt></a> for examples.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.persistence.accessors.GetItemValue">
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetItemValue</tt><big>(</big><em>place</em>, <em>xform=&lt;function &lt;lambda&gt; at 0x64fcc08&gt;</em>, <em>default=&lt;object object at 0x67950b0&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetItemValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return accessor function for the given item in a sequence.</p>
+<p>An instance of <cite>GetItemValue</cite> is a callable that, given any
+sequence/container object, returns the value of the item at its
+place <cite>idx</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetItemValue</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="s">&#39;abc&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="go">&#39;b&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">1</span><span class="p">:</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="s">&#39;y&#39;</span> <span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="go">&#39;x&#39;</span>
+</pre></div>
+</div>
+<p>In other words, if <cite>fn = GetItemValue(x)</cite>, then <cite>fn(obj)</cite> evaluates
+to <cite>obj[x]</cite>.</p>
+<p>Note that the returned function <cite>fn</cite> raises <cite>IndexError</cite> or <cite>KeyError</cite>,
+(depending on the type of sequence/container) if place <cite>idx</cite> does not
+exist:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetItemValue</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="s">&#39;abc&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+   <span class="c">...</span>
+<span class="gr">IndexError</span>: <span class="n">list index out of range</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+   <span class="c">...</span>
+<span class="gr">KeyError</span>: <span class="n">42</span>
+</pre></div>
+</div>
+<p>However, you can specify a default value, in which case the
+default value is returned and no error is raised:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetItemValue</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;foo&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="go">&#39;foo&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="go">&#39;foo&#39;</span>
+</pre></div>
+</div>
+<p>The optional second argument <cite>xform</cite> allows composing the accessor
+with an arbitrary function that is passed an object and should
+return a (possibly different) object where the item lookup should
+be performed.  In other words, if <cite>xform</cite> is specified, then the
+returned accessor function computes <cite>xform(obj)[idx]</cite> instead of
+<cite>obj[idx]</cite>.  For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="s">&#39;abc&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetItemValue</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">xform</span><span class="o">=</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">upper</span><span class="p">()))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<span class="go">&#39;B&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="p">((</span><span class="s">&#39;a&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;b&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetItemValue</span><span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="n">xform</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>This allows combining <cite>GetItemValue</cite> with <tt class="xref py py-class docutils literal"><span class="pre">GetAttrValue</span></tt>
+(which see), to access objects in deeply-nested data structures.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.persistence.accessors.GetOnly">
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetOnly</tt><big>(</big><em>only</em>, <em>xform=&lt;function &lt;lambda&gt; at 0x66d1a28&gt;</em>, <em>default=&lt;object object at 0x67950b0&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetOnly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply accessor function to members of a certain class; return a
+default value otherwise.</p>
+<p>The <cite>GetOnly</cite> accessor performs just like <cite>GetValue</cite>, but is
+effective only on instances of a certain class; if the accessor
+function is passed an instance of a different class, the default
+value is returned:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn4</span> <span class="o">=</span> <span class="n">GetOnly</span><span class="p">(</span><span class="n">Struct</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">fn4</span><span class="p">(</span><span class="n">Struct</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s">&#39;bar&#39;</span><span class="p">)),</span> <span class="n">Struct</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">fn4</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s">&#39;bar&#39;</span><span class="p">)),</span> <span class="nb">dict</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn4</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s">&#39;bar&#39;</span><span class="p">))</span>
+<span class="go">42</span>
+</pre></div>
+</div>
+<p>If <cite>default</cite> is not specified, then <cite>None</cite> is returned:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn5</span> <span class="o">=</span> <span class="n">GetOnly</span><span class="p">(</span><span class="n">Struct</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">repr</span><span class="p">(</span><span class="n">fn5</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s">&#39;bar&#39;</span><span class="p">)))</span>
+<span class="go">&#39;None&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.persistence.accessors.GetValue">
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetValue</tt><big>(</big><em>default=&lt;object object at 0x67950b0&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide easier compositional syntax for <cite>GetAttributeValue</cite> and <cite>GetItemValue</cite>.</p>
+<p>Instances of <cite>GetAttributeValue</cite> and <cite>GetItemValue</cite> can be composed by
+passing one as <cite>xform</cite> parameter to the other; however, this
+results in the writing order being the opposite of the composition
+order: for instance, to create an accessor to evaluate <cite>x.a[0]</cite>
+for any Python object <cite>x</cite>, one has to write:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn1</span> <span class="o">=</span> <span class="n">GetItemValue</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">GetAttributeValue</span><span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The <cite>GetValue</cite> class allows to write accessor expressions the way
+they are normally written in Python:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">GET</span> <span class="o">=</span> <span class="n">GetValue</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn2</span> <span class="o">=</span> <span class="n">GET</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="p">[</span><span class="mi">21</span><span class="p">,</span><span class="mi">42</span><span class="p">],</span> <span class="n">b</span><span class="o">=</span><span class="s">&#39;foo&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="go">21</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="go">21</span>
+</pre></div>
+</div>
+<p>The optional <cite>default</cite> argument specifies a value that should be
+used in case the required attribute or item is not found:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn3</span> <span class="o">=</span> <span class="n">GetValue</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;no value found&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn3</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="go">&#39;no value found&#39;</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="gc3libs.persistence.accessors.GetValue.ONLY">
+<tt class="descname">ONLY</tt><big>(</big><em>specifier</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetValue.ONLY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restrict the action of the accessor expression to members of a certain class;
+return default value otherwise.</p>
+<p>The invocation to <tt class="xref py py-meth docutils literal"><span class="pre">only()</span></tt> should <em>always be last</em>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetValue</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;foo&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ONLY</span><span class="p">(</span><span class="n">Struct</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">Struct</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;bar&#39;</span><span class="p">,</span><span class="s">&#39;baz&#39;</span><span class="p">]))</span>
+<span class="go">&#39;bar&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;bar&#39;</span><span class="p">,</span><span class="s">&#39;baz&#39;</span><span class="p">]))</span>
+<span class="go">&#39;foo&#39;</span>
+</pre></div>
+</div>
+<p>If it&#8217;s not last, you will get <cite>AttributeError</cite> like the following:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetValue</span><span class="p">()</span><span class="o">.</span><span class="n">ONLY</span><span class="p">(</span><span class="n">Struct</span><span class="p">)</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]))</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr">AttributeError</span>: <span class="n">&#39;NoneType&#39; object has no attribute &#39;a&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../persistence.html"
+                        title="previous chapter"><cite>gc3libs.persistence</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="filesystem.html"
+                        title="next chapter"><cite>gc3libs.persistence.filesystem</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="filesystem.html" title="gc3libs.persistence.filesystem"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../persistence.html" title="gc3libs.persistence"
+             >previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

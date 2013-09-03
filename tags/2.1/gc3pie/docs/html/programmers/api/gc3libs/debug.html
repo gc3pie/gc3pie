@@ -1,0 +1,212 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.debug &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../index.html" />
+    <link rel="next" title="gc3libs.exceptions" href="exceptions.html" />
+    <link rel="prev" title="gc3libs.core" href="core.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="exceptions.html" title="gc3libs.exceptions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="core.html" title="gc3libs.core"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.debug">
+<span id="gc3libs-debug"></span><h1><cite>gc3libs.debug</cite><a class="headerlink" href="#module-gc3libs.debug" title="Permalink to this headline">¶</a></h1>
+<p>Tools for debugging GC3Libs based programs.</p>
+<dl class="docutils">
+<dt>Part of the code used in this module originally comes from:</dt>
+<dd><ul class="first last simple">
+<li><a class="reference external" href="http://wordaligned.com/articles/echo">http://wordaligned.com/articles/echo</a></li>
+</ul>
+</dd>
+</dl>
+<dl class="function">
+<dt id="gc3libs.debug.format_arg_value">
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">format_arg_value</tt><big>(</big><em>arg_val</em><big>)</big><a class="headerlink" href="#gc3libs.debug.format_arg_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a string representing a (name, value) pair.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">format_arg_value</span><span class="p">((</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
+<span class="go">&#39;x=(1, 2, 3)&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.debug.is_class_private_name">
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">is_class_private_name</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#gc3libs.debug.is_class_private_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine if a name is a class private name.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.debug.is_classmethod">
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">is_classmethod</tt><big>(</big><em>instancemethod</em><big>)</big><a class="headerlink" href="#gc3libs.debug.is_classmethod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine if an instancemethod is a classmethod.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.debug.method_name">
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">method_name</tt><big>(</big><em>method</em><big>)</big><a class="headerlink" href="#gc3libs.debug.method_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a method&#8217;s name.</p>
+<p>This function returns the name the method is accessed by from
+outside the class (i.e. it prefixes &#8220;private&#8221; methods appropriately).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.debug.name">
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">name</tt><big>(</big><em>item</em><big>)</big><a class="headerlink" href="#gc3libs.debug.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an item&#8217;s name.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.debug.trace">
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">trace</tt><big>(</big><em>fn</em>, <em>log=&lt;bound method Logger.debug of &lt;logging.Logger instance at 0x3d504d0&gt;&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.debug.trace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Logs calls to a function.</p>
+<p>Returns a decorated version of the input function which &#8220;echoes&#8221; calls
+made to it by writing out the function&#8217;s name and the arguments it was
+called with.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.debug.trace_class">
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">trace_class</tt><big>(</big><em>cls</em>, <em>log=&lt;bound method Logger.debug of &lt;logging.Logger instance at 0x3d504d0&gt;&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.debug.trace_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trace calls to class methods and static functions</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.debug.trace_instancemethod">
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">trace_instancemethod</tt><big>(</big><em>cls</em>, <em>method</em>, <em>log=&lt;bound method Logger.debug of &lt;logging.Logger instance at 0x3d504d0&gt;&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.debug.trace_instancemethod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change an instancemethod so that calls to it are traced.</p>
+<p>Replacing a classmethod is a little more tricky.
+See: <a class="reference external" href="http://www.python.org/doc/current/ref/types.html">http://www.python.org/doc/current/ref/types.html</a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.debug.trace_module">
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">trace_module</tt><big>(</big><em>mod</em>, <em>log=&lt;bound method Logger.debug of &lt;logging.Logger instance at 0x3d504d0&gt;&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.debug.trace_module" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trace calls to functions and methods in a module.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="core.html"
+                        title="previous chapter"><cite>gc3libs.core</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="exceptions.html"
+                        title="next chapter"><cite>gc3libs.exceptions</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="exceptions.html" title="gc3libs.exceptions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="core.html" title="gc3libs.core"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

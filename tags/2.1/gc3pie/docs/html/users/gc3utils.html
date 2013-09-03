@@ -1,0 +1,671 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The GC3Utils software &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="up" title="User Documentation" href="index.html" />
+    <link rel="next" title="Troubleshooting GC3Pie" href="troubleshooting.html" />
+    <link rel="prev" title="The gcrypto script" href="gc3apps/gcrypto.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="troubleshooting.html" title="Troubleshooting GC3Pie"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gc3apps/gcrypto.html" title="The gcrypto script"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-gc3utils-software">
+<span id="gc3utils"></span><h1><a class="toc-backref" href="#id1">The GC3Utils software</a><a class="headerlink" href="#the-gc3utils-software" title="Permalink to this headline">¶</a></h1>
+<p>The GC3Utils are lower-level commands, provided to perform common
+operations on jobs, regardless of their type or the application they run.</p>
+<p>For instance, GC3Utils provide commands to obtain the list and status
+of computational resources (<strong class="command">gservers</strong>); to clear the list of jobs from
+old and failed ones (<strong class="command">gclean</strong>); to get detailed information on a
+submitted job (<strong class="command">ginfo</strong>, mainly for debugging purposes).</p>
+<p>This chapter is a tutorial for the GC3Utils command-line utilities.</p>
+<p>If you find a technical term whose meaning is not clear to you, please
+look it up in the <a class="reference internal" href="../glossary.html#glossary"><em>Glossary</em></a>. (But feel free to ask on the
+<a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing list</a> if it&#8217;s still unclear!)</p>
+<div class="contents topic" id="contents">
+<p class="topic-title first">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#the-gc3utils-software" id="id1">The GC3Utils software</a><ul>
+<li><a class="reference internal" href="#gsession-manage-sessions" id="id2"><strong class="command">gsession</strong>: manage sessions</a></li>
+<li><a class="reference internal" href="#gstat-monitor-the-status-of-submitted-jobs" id="id3"><strong class="command">gstat</strong>: monitor the status of submitted jobs</a></li>
+<li><a class="reference internal" href="#gtail-peeking-at-the-job-output-and-error-report" id="id4"><strong class="command">gtail</strong>: peeking at the job output and error report</a></li>
+<li><a class="reference internal" href="#gkill-cancel-a-running-job" id="id5"><strong class="command">gkill</strong>: cancel a running job</a></li>
+<li><a class="reference internal" href="#gget-retrieve-the-output-of-finished-jobs" id="id6"><strong class="command">gget</strong>: retrieve the output of finished jobs</a></li>
+<li><a class="reference internal" href="#gclean-remove-a-completed-job-from-the-status-list" id="id7"><strong class="command">gclean</strong>: remove a completed job from the status list</a></li>
+<li><a class="reference internal" href="#gresub-re-submit-a-failed-job" id="id8"><strong class="command">gresub</strong>: re-submit a failed job</a></li>
+<li><a class="reference internal" href="#gservers-list-available-resources" id="id9"><strong class="command">gservers</strong>: list available resources</a></li>
+<li><a class="reference internal" href="#ginfo-accessing-low-level-details-of-a-job" id="id10"><strong class="command">ginfo</strong>: accessing low-level details of a job</a></li>
+<li><a class="reference internal" href="#gcloud-manage-vms-created-by-the-ec2-backend" id="id11"><strong class="command">gcloud</strong>: manage VMs created by the EC2 backend</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="gsession-manage-sessions">
+<h2><a class="toc-backref" href="#id2"><strong class="command">gsession</strong>: manage sessions</a><a class="headerlink" href="#gsession-manage-sessions" title="Permalink to this headline">¶</a></h2>
+<p>All jobs managed by one of the GC3Pie scripts are grouped into
+sessions; information related of a session is stored into a
+directory. The <strong class="command">gsession</strong> command allows you to show
+the jobs related to a specific session, to abort the session or to
+completely delete it.</p>
+<p>The <strong class="command">gsession</strong> accept two mandatory arguments: <cite>command</cite> and
+<cite>session</cite>. <cite>command</cite> must be one of:</p>
+<dl class="docutils">
+<dt>list</dt>
+<dd>list jobs related to the session.</dd>
+<dt>log</dt>
+<dd>show the session history.</dd>
+<dt>abort</dt>
+<dd>kill all jobs related to the session.</dd>
+<dt>delete</dt>
+<dd>abort the session and delete the session directory from disk.</dd>
+</dl>
+<p>For instance, if you want to check the status of the main tasks of a
+session, just run:</p>
+<div class="highlight-python"><pre>$ gsession list SESSION_DIRECTORY
++--------------------------------+---------------------------+-------+---------------------------------+
+| JobID                          | Job name                  | State | Info                            |
++--------------------------------+---------------------------+-------+---------------------------------+
+| ParallelTaskCollection.1140527 | ParallelTaskCollection-N1 | NEW   | NEW at Fri Feb 22 16:39:34 2013 |
++--------------------------------+---------------------------+-------+---------------------------------+</pre>
+</div>
+<p>This command will only show the <em>top-level tasks</em>, e.g. the main tasks
+created by the GC3 script. If you want to see <strong>all</strong> the tasks
+related to the session run the command with the option <tt class="docutils literal"><span class="pre">-r</span></tt>:</p>
+<div class="highlight-python"><pre>$ gsession list SESSION_DIRECTORY -r
++-----------------------------------------+---------------------------+------------+----------------------------------------+
+| JobID                                   | Job name                  | State      | Info                                   |
++-----------------------------------------+---------------------------+------------+----------------------------------------+
+| ParallelTaskCollection.1140527          | ParallelTaskCollection-N1 | NEW        | NEW at Fri Feb 22 16:39:34 2013        |
+|   WarholizeWorkflow.1140528             | WarholizedWorkflow        | RUNNING    | RUNNING at Fri Feb 22 16:39:34 2013    |
+|     GrayScaleConvertApplication.1140529 |                           | TERMINATED | TERMINATED at Fri Feb 22 16:39:25 2013 |
+|     TricolorizeMultipleImages.1140530   | Warholizer_Parallel       | NEW        |                                        |
+|       TricolorizeImage.1140531          | TricolorizeImage          | NEW        |                                        |
+|         CreateLutApplication.1140532    |                           | NEW        |                                        |
+|       TricolorizeImage.1140533          | TricolorizeImage          | NEW        |                                        |
+|         CreateLutApplication.1140534    |                           | NEW        |                                        |
+|       TricolorizeImage.1140535          | TricolorizeImage          | NEW        |                                        |
+|         CreateLutApplication.1140536    |                           | NEW        |                                        |
+|       TricolorizeImage.1140537          | TricolorizeImage          | NEW        |                                        |
+|         CreateLutApplication.1140538    |                           | NEW        |                                        |
++-----------------------------------------+---------------------------+------------+----------------------------------------+</pre>
+</div>
+<p>To have the full history of the session run <cite>gsession log</cite>:</p>
+<div class="highlight-python"><pre>$ gsession log SESSION_DIRECTORY
+Feb 22 16:39:01 GrayScaleConvertApplication.1140529: Submitting to 'hobbes' at Fri Feb 22 16:39:01 2013
+Feb 22 16:39:08 GrayScaleConvertApplication.1140529: RUNNING
+Feb 22 16:39:08 GrayScaleConvertApplication.1140529: SUBMITTED
+Feb 22 16:39:08 GrayScaleConvertApplication.1140529: Submitted to 'hobbes' at Fri Feb 22 16:39:08 2013
+Feb 22 16:39:08 WarholizeWorkflow.1140528: SUBMITTED
+Feb 22 16:39:24 GrayScaleConvertApplication.1140529: TERMINATING
+Feb 22 16:39:25 WarholizeWorkflow.1140528: RUNNING
+Feb 22 16:39:25 ParallelTaskCollection.1140527: RUNNING
+Feb 22 16:39:25 GrayScaleConvertApplication.1140529: Final output downloaded to 'Warholized.lena.jpg'
+Feb 22 16:39:25 GrayScaleConvertApplication.1140529: TERMINATED
+Feb 22 16:39:34 WarholizeWorkflow.1140528: NEW
+Feb 22 16:39:34 ParallelTaskCollection.1140527: NEW
+Feb 22 16:39:34 WarholizeWorkflow.1140528: RUNNING</pre>
+</div>
+<p>To abort a session, run the <cite>gsession abort</cite> command:</p>
+<div class="highlight-python"><pre>$ gsession abort SESSION_DIRECTORY</pre>
+</div>
+<p>This will kill all the running jobs and retrieve the results of the
+terminated jobs, but will leave the session directory untouched. To
+also delete the session directory, run <cite>gsession delete</cite>:</p>
+<div class="highlight-python"><pre>$ gsession delete SESSION_DIRECTORY</pre>
+</div>
+</div>
+<div class="section" id="gstat-monitor-the-status-of-submitted-jobs">
+<h2><a class="toc-backref" href="#id3"><strong class="command">gstat</strong>: monitor the status of submitted jobs</a><a class="headerlink" href="#gstat-monitor-the-status-of-submitted-jobs" title="Permalink to this headline">¶</a></h2>
+<p>To see the status of all the jobs you have submitted, use the
+<strong class="command">gstat</strong> command.  Typing:</p>
+<div class="highlight-python"><pre>gstat -s SESSION</pre>
+</div>
+<p>will print to the screen a table like the following:</p>
+<div class="highlight-python"><pre>Job ID    Status
+====================
+job.12    TERMINATED
+job.15    SUBMITTED
+job.16    RUNNING
+job.17    RUNNING
+job.23    NEW</pre>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you have never submitted any job, or if you have cleared
+your job list with the <strong class="command">gclean</strong> command, then <strong class="command">gstat</strong> will
+print <em>nothing</em> to the screen!</p>
+</div>
+<p>A job can be in one and only one of the following states:</p>
+<p><tt class="docutils literal"><span class="pre">NEW</span></tt></p>
+<blockquote>
+<div>The job has been created but not yet submitted: it only exists on
+the local disk.</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">RUNNING</span></tt></p>
+<blockquote>
+<div>The job is currently running &#8211; there&#8217;s nothing to do but wait.</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">SUBMITTED</span></tt></p>
+<blockquote>
+<div>The job has been sent to a compute resource for execution &#8211; it
+should change to <tt class="docutils literal"><span class="pre">RUNNING</span></tt> status eventually.</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">STOPPED</span></tt></p>
+<blockquote>
+<div>The job was sent to a remote cluster for execution, but it is stuck
+there for some unknown reason.  There is no automated procedure in
+this case: the best thing you can do is to contact the systems
+administrator to determine what has happened.</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">TERMINATED</span></tt></p>
+<blockquote>
+<div><p>The job has finished running; now there are three things you can do:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Use the <strong class="command">gget</strong> command to get the command output files back
+from the remote execution cluster.</li>
+<li>Use the <strong class="command">gclean</strong> command to remove this job from the list.
+After issuing <strong class="command">gclean</strong> on a job, any information on it is
+lost, so be sure you have retrieved any interesting output with
+<strong class="command">gget</strong> before!</li>
+<li>If something went wrong during the execution of the job (it did
+not complete its execution or -possibly- it did not even
+start), you can use the <strong class="command">ginfo</strong> command to try to debug the
+problem.</li>
+</ol>
+</div></blockquote>
+</div></blockquote>
+<p>The list of submitted jobs persists from one session to the other: you
+can log off, shut your computer down, then turn it on again next day
+and you will see the same list of jobs.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Completed jobs persist in the <strong class="command">gstat</strong> list until they are
+cleared off with the <strong class="command">gclean</strong> command.</p>
+</div>
+</div>
+<div class="section" id="gtail-peeking-at-the-job-output-and-error-report">
+<h2><a class="toc-backref" href="#id4"><strong class="command">gtail</strong>: peeking at the job output and error report</a><a class="headerlink" href="#gtail-peeking-at-the-job-output-and-error-report" title="Permalink to this headline">¶</a></h2>
+<p>Once a job has reached <tt class="docutils literal"><span class="pre">RUNNING</span></tt> status (check with <strong class="command">gstat</strong>), you
+can also monitor its progress by looking at the last lines in the job
+output and error stream.</p>
+<p>An example might clarify this: assume you have submitted a
+long-running computation as <em>job.16</em> and you know from <strong class="command">gstat</strong> that
+it got into <tt class="docutils literal"><span class="pre">RUNNING</span></tt> state; then to take a peek at what this job is
+doing, you issue the following command:</p>
+<div class="highlight-python"><pre>gtail job.16</pre>
+</div>
+<p>This would produce the following output, from which you can deduce how
+far <a class="reference external" href="http://www.msg.ameslab.gov/gamess/">GAMESS</a> has progressed into the computation:</p>
+<div class="highlight-python"><pre>RECOMMEND NRAD ABOVE  50 FOR ZETA'S ABOVE 1E+4
+
+RECOMMEND NRAD ABOVE  75 FOR ZETA'S ABOVE 1E+5
+
+RECOMMEND NRAD ABOVE 125 FOR ZETA'S ABOVE 1E+6
+
+DFT IS SWITCHED OFF, PERFORMING PURE SCF UNTIL SWOFF THRESHOLD IS REACHED.
+
+
+ITER EX DEM     TOTAL ENERGY        E CHANGE  DENSITY CHANGE    DIIS ERROR
+
+  1  0  0    -1079.0196780290 -1079.0196780290   0.343816910   1.529879639
+
+         * * *   INITIATING DIIS PROCEDURE   * * *
+
+  2  1  0    -1081.1910665431    -2.1713885141   0.056618918   0.105322104
+
+  3  2  0    -1081.2658345285    -0.0747679855   0.019565324   0.044813607</pre>
+</div>
+<p>By default, <strong class="command">gtail</strong> only outputs the last 10 lines of a job
+output/error stream. To see more, use the command line option <tt class="docutils literal"><span class="pre">-n</span></tt>;
+for example, to see the last 25 lines of the output, issue the command:</p>
+<div class="highlight-python"><pre>gtail -n 25 job.16</pre>
+</div>
+<p>The command <strong class="command">gtail</strong> is especially useful for long computations: you
+can see how far a job has gotten and, e.g., cancel it if it&#8217;s gotten
+stuck into an endless/unproductive loop.</p>
+<p>To &#8220;keep an eye&#8221; over what a job is doing, you can add the <tt class="docutils literal"><span class="pre">-f</span></tt> option
+to <strong class="command">gtail</strong>: this will run <strong class="command">gtail</strong> in &#8220;follow&#8221; mode, i.e.,
+<strong class="command">gtail</strong> will continue to display the contents of the job output and
+update it as time passes, until you hit Ctrl+C to interrupt it.</p>
+</div>
+<div class="section" id="gkill-cancel-a-running-job">
+<h2><a class="toc-backref" href="#id5"><strong class="command">gkill</strong>: cancel a running job</a><a class="headerlink" href="#gkill-cancel-a-running-job" title="Permalink to this headline">¶</a></h2>
+<p>To cancel a running job, you can use the command <strong class="command">gkill</strong>.  For
+instance, to cancel <em>job.16</em>, you would type the following command
+into the terminal:</p>
+<div class="highlight-python"><pre>gkill job.16</pre>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last"><em>There&#8217;s no way to undo a cancel operation!</em> Once you have issued a
+<strong class="command">gkill</strong> command, the job is deleted and it cannot be resumed.
+(You can still re-submit it with <strong class="command">gresub</strong>, though.)</p>
+</div>
+</div>
+<div class="section" id="gget-retrieve-the-output-of-finished-jobs">
+<h2><a class="toc-backref" href="#id6"><strong class="command">gget</strong>: retrieve the output of finished jobs</a><a class="headerlink" href="#gget-retrieve-the-output-of-finished-jobs" title="Permalink to this headline">¶</a></h2>
+<p>Once a job has reached <tt class="docutils literal"><span class="pre">RUNNING</span></tt> status (check with <strong class="command">gstat</strong>),
+you can retrieve its output files with the <strong class="command">gget</strong> command.  For
+instance, to download the output files of <em>job.15</em> you would use:</p>
+<div class="highlight-python"><pre>gget job.15</pre>
+</div>
+<p>This command will print out a message like:</p>
+<div class="highlight-python"><pre>Job results successfully retrieved in '/path/to/some/directory'</pre>
+</div>
+<p>If you are not running the <strong class="command">gget</strong> command on your computer, but
+rather on a shared front-end like <cite>ocikbgtw</cite>, you can copy+paste the
+path within quotes to the <a class="reference external" href="http://kb.iu.edu/data/akqg.html">sftp</a> command to get the files to your
+usual workstation.  For example, you can run the following command in
+a terminal on your computer to get the output files back to your
+workstation:</p>
+<div class="highlight-python"><pre>sftp ocikbgtw:'/path/to/some/directory'</pre>
+</div>
+<p>This will take you to the directory where the output files have been stored.</p>
+</div>
+<div class="section" id="gclean-remove-a-completed-job-from-the-status-list">
+<h2><a class="toc-backref" href="#id7"><strong class="command">gclean</strong>: remove a completed job from the status list</a><a class="headerlink" href="#gclean-remove-a-completed-job-from-the-status-list" title="Permalink to this headline">¶</a></h2>
+<p>Jobs persist in the <strong class="command">gstat</strong> list until they are cleared off; you
+need to use the <strong class="command">gclean</strong> command for that.</p>
+<p>Just call the <strong class="command">gclean</strong> command followed by the job identifier
+<em>job.NNN</em>.  For example:</p>
+<div class="highlight-python"><pre>gclean job.23</pre>
+</div>
+<p>In normal operation, you can only remove jobs that are in the
+<tt class="docutils literal"><span class="pre">TERMINATED</span></tt> status; if you want to force <strong class="command">gclean</strong> to remove a job
+that is not in any one of those states, just add <tt class="docutils literal"><span class="pre">-f</span></tt> to the command
+line.</p>
+</div>
+<div class="section" id="gresub-re-submit-a-failed-job">
+<h2><a class="toc-backref" href="#id8"><strong class="command">gresub</strong>: re-submit a failed job</a><a class="headerlink" href="#gresub-re-submit-a-failed-job" title="Permalink to this headline">¶</a></h2>
+<p>In case a job failed for accidental causes (e.g., the site where it
+was running went unexpectedly down), you can re-submit it with the
+<strong class="command">gresub</strong> command.</p>
+<p>Just call <strong class="command">gresub</strong>  followed by the job identifier
+<em>job.NNN</em>.  For example:</p>
+<div class="highlight-python"><pre>gresub job.42</pre>
+</div>
+<p>Resubmitting a job that is not in a terminal state (i.e.,
+<tt class="docutils literal"><span class="pre">TERMINATED</span></tt>) results in the job being killed (as with <strong class="command">gkill</strong>)
+before being submitted again.  If you are unsure what state
+a job is in, check it with <strong class="command">gstat</strong>.</p>
+</div>
+<div class="section" id="gservers-list-available-resources">
+<h2><a class="toc-backref" href="#id9"><strong class="command">gservers</strong>: list available resources</a><a class="headerlink" href="#gservers-list-available-resources" title="Permalink to this headline">¶</a></h2>
+<p>The <strong class="command">gservers</strong> command prints out information about the configured resources.
+For each resource, a summary of the information recorded in the configuration
+file and the current resource status is printed.  For example:</p>
+<div class="highlight-python"><pre>$ gservers
++----------------------------------------------------------------+
+|                     smscg                                      |
++================================================================+
+|                  Frontend host name / frontend   giis.smscg.ch |
+|                             Access mode / type   arc0          |
+|                      Authorization name / auth   smscg         |
+|                          Accessible? / updated   1             |
+|                 Total number of cores / ncores   4000          |
+|                     Total queued jobs / queued   3475          |
+|                  Own queued jobs / user_queued   0             |
+|                    Own running jobs / user_run   0             |
+|          Max cores per job / max_cores_per_job   256           |
+| Max memory per core (MB) / max_memory_per_core   2000          |
+|  Max walltime per job (minutes) / max_walltime   1440          |
++----------------------------------------------------------------+</pre>
+</div>
+<p>The meaning of the printed fields is as follows:</p>
+<ul class="simple">
+<li>The title of each box is the &#8220;resource name&#8221;, as you would write it
+after the <cite>-r</cite> option to <strong class="command">gsub</strong>.</li>
+<li><em>Access mode / type</em>: it is the kind of software that is used for
+accessing the resource; consult Section <a class="reference internal" href="configuration.html#configuration"><em>Configuration File</em></a> for more
+information about resource types.</li>
+<li><em>Authorization name / auth</em>: this is paired with the <em>Access mode /
+type</em>, and identifies a section in the <a class="reference internal" href="configuration.html#configuration"><em>configuration file</em></a> where authentication information for this
+resource is stored; see Section <a class="reference internal" href="configuration.html#configuration"><em>Configuration File</em></a> for more
+information.</li>
+<li><em>Accessible? / updated</em>: whether you are <em>currently</em> authorized to
+access this resource; note that if this turns <em>False</em> or <em>0</em> for
+resources that you should have access to, then something is wrong
+either with the state of your system, or with the resource itself.
+(The procedure on how to diagnose this is too complex to list here;
+consult your friendly systems administrator :-))</li>
+<li><em>Total number of cores</em>: the total number of cores present on the
+resource.  Note this can vary over time as cluster nodes go in and
+out of service: computers break, then are repaired, then break
+again, etc.</li>
+<li><em>Total queued jobs</em>: number of jobs (from all users) waiting to be
+executed on the remote compute cluster.</li>
+<li><em>Own queued jobs</em>: number of jobs (submitted by you) waiting to be
+executed on the remote compute cluster.</li>
+<li><em>Own running jobs</em>: number of jobs (submitted by you) currently
+executing on the remote compute cluster.</li>
+<li><em>Max cores per job</em>: the maximum number of cores that you can
+request for a single computational job on this resource.</li>
+<li><em>Max memory per core</em>: maximum amount of memory (per core) that you
+can request on this resource.  The amount shows the maximum
+requestable memory in MB.</li>
+<li><em>Max walltime per job</em>: maximum duration of a computational job on
+this resource. The amount shows the maximum time in seconds.</li>
+</ul>
+<p>The whole point of GC3Utils is to abstract job submission and
+management from detailed knowledge of the resources and their hardware
+and software configuration, but it is sometimes convenient and
+sometimes necessary to get into this level of detail...</p>
+</div>
+<div class="section" id="ginfo-accessing-low-level-details-of-a-job">
+<h2><a class="toc-backref" href="#id10"><strong class="command">ginfo</strong>: accessing low-level details of a job</a><a class="headerlink" href="#ginfo-accessing-low-level-details-of-a-job" title="Permalink to this headline">¶</a></h2>
+<p>It is sometimes necessary, for debugging purposes, to print out all
+the details about a job; the <strong class="command">ginfo</strong> command does just that: prints
+all the details that GC3Utils know about a single job.</p>
+<p>For instance, to print out detailed information about <cite>job.13</cite> in
+session <cite>TEST1</cite>, you would type:</p>
+<div class="highlight-python"><pre>ginfo -s TEST1 job.13</pre>
+</div>
+<p>For a job in <tt class="docutils literal"><span class="pre">RUNNING</span></tt> or <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> state, only little
+information is known: basically, where the job is running, and when it
+was started:</p>
+<div class="highlight-python"><pre>$ ginfo -s XXX job.13
+job.13
+    execution_targets: hera.wsl.ch
+    log:
+        SUBMITTED at Wed Mar  7 17:40:07 2012
+        Submitted to 'smscg' at Wed Mar  7 17:40:07 2012
+    lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/593513311384071771546195
+    resource_name: smscg
+    state_last_changed: 1331138407.33
+    timestamp:
+        SUBMITTED: 1331138407.33</pre>
+</div>
+<p>If you omit the job number, information about <em>all</em> jobs in the
+session will be printed.</p>
+<p>Most of the output is only useful if you are familiar with GC3Utils
+inner working. Nonetheless, <strong class="command">ginfo</strong> output is definitely something
+you should include in any report about a misbehaving job!</p>
+<p>For a finished job, the information is more complete and can include
+error messages in case the job has failed:</p>
+<div class="highlight-python"><pre>$ ginfo -s TEST1 job.13
+job.13
+    cores: 1
+    download_dir: /home/rmurri/gc3/gc3pie.googlecode.com/gc3pie/gc3apps/gamess/exam01
+    execution_targets: idgc3grid01.uzh.ch
+    log:
+        SUBMITTED at Wed Mar  7 15:52:37 2012
+        Submitted to 'idgc3grid01' at Wed Mar  7 15:52:37 2012
+        TERMINATING at Wed Mar  7 15:54:52 2012
+        Final output downloaded to '/home/rmurri/gc3/gc3pie.googlecode.com/gc3pie/gc3apps/gamess/exam01'
+        TERMINATED at Wed Mar  7 15:54:53 2012
+        Execution of gamess terminated normally wed mar  7 15:52:42 2012
+    lrms_jobid: gsiftp://idgc3grid01.uzh.ch:2811/jobs/2938713311319571678156670
+    lrms_jobname: exam01
+    original_exitcode: 0
+    queue: all.q
+    resource_name: idgc3grid01
+    state_last_changed: 1331132093.18
+    stderr_filename: exam01.out
+    stdout_filename: exam01.out
+    timestamp:
+        SUBMITTED: 1331131957.49
+        TERMINATED: 1331132093.18
+        TERMINATING: 1331132092.74
+    used_cputime: 0
+    used_memory: 492019
+    used_walltime: 60</pre>
+</div>
+<p>With option <tt class="docutils literal"><span class="pre">-v</span></tt>, <strong class="command">ginfo</strong> output is even more verbose and complete,
+and includes information about the application itself, the input and
+output files, plus some backend-specific information:</p>
+<div class="highlight-python"><pre>$ ginfo -c -s TEST1 job.13
+job.13
+    application_tag: gamess
+    arguments: exam01.inp
+    changed: False
+    environment:
+    executable: /$GAMESS_LOCATION/nggms
+    execution:
+        _arc0_state_last_checked: 1331138407.33
+        _exitcode: None
+        _signal: None
+        _state: SUBMITTED
+        execution_targets: hera.wsl.ch
+        log:
+            SUBMITTED at Wed Mar  7 17:40:07 2012
+            Submitted to 'smscg' at Wed Mar  7 17:40:07 2012
+        lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/593513311384071771546195
+        resource_name: smscg
+        state_last_changed: 1331138407.33
+        timestamp:
+            SUBMITTED: 1331138407.33
+    inp_file_path: test/data/exam01.inp
+    inputs:
+        file:///home/rmurri/gc3/gc3pie.googlecode.com/gc3pie/gc3apps/gamess/test/data/exam01.inp: exam01.inp
+    job_name: exam01
+    jobname: exam01
+    join: True
+    output_base_url: None
+    output_dir: /home/rmurri/gc3/gc3pie.googlecode.com/gc3pie/gc3apps/gamess/exam01
+    outputs:
+        exam01.dat: file, , exam01.dat, None, None, None, None
+        exam01.out: file, , exam01.out, None, None, None, None
+    persistent_id: job.33998
+    requested_architecture: None
+    requested_cores: 1
+    requested_memory: 2
+    requested_walltime: 8
+    stderr: None
+    stdin: None
+    stdout: exam01.out
+    tags: APPS/CHEM/GAMESS-2010
+    verno: None</pre>
+</div>
+</div>
+<div class="section" id="gcloud-manage-vms-created-by-the-ec2-backend">
+<h2><a class="toc-backref" href="#id11"><strong class="command">gcloud</strong>: manage VMs created by the EC2 backend</a><a class="headerlink" href="#gcloud-manage-vms-created-by-the-ec2-backend" title="Permalink to this headline">¶</a></h2>
+<p>The <strong class="command">gcloud</strong> command allows you to show and manage VMs created
+by the EC2 backend.</p>
+<p>To show a list of VMs currently running on the EC2 resources correctly
+configured run:</p>
+<div class="highlight-python"><pre>$ gcloud list
+====================================
+VMs running on EC2 resource `hobbes`
+====================================
+
++------------+---------+---------------+-------------+--------------+---------+
+|     id     |  state  |   public ip   | Nr. of jobs |   image id   | keypair |
++------------+---------+---------------+-------------+--------------+---------+
+| i-0000053e | running | 130.60.193.45 |      1      | ami-00000035 | antonio |
++------------+---------+---------------+-------------+--------------+---------+</pre>
+</div>
+<p>This command will show various information, if available, including
+the number of jobs currently running (or in <cite>TERMINATED</cite> state) on
+those VM, so that you can easily identify if there is a VM which is
+not used by any of yours script and you can safely terminate it.</p>
+<p>If you want to terminate a VM run the <cite>gcloud terminate</cite> command. In
+this case, however, you also have to specify the name of the resource
+with the option <tt class="docutils literal"><span class="pre">-r</span></tt>, and the ID of the VM you want to terminate:</p>
+<div class="highlight-python"><pre>$ gcloud terminate -r hobbes i-0000053e</pre>
+</div>
+<p>An empty output is a signal that the VM has been terminated.</p>
+<p>The <cite>EC2</cite> backend keeps track of all the VM it created, so that if a
+VM is not needed anymore it is able to terminate it
+automatically. However, sometimes you may need to keep a VM up&amp;running
+and thus you need to tell the EC2 backend to ignore that VM.</p>
+<p>This is possible with the <cite>gcloud forget</cite> command. You must supply the
+correct resource name with <tt class="docutils literal"><span class="pre">-r</span> <span class="pre">RESOURCE_NAME</span></tt> and a valid VM ID, and
+if the command succeeds then the VM will never be used by the EC2
+backend. Please note also that after running <cite>gcloud forget</cite>, the VM
+will not be shown in the output of <cite>gcloud list</cite>:</p>
+<p>The following example will explain the behavior:</p>
+<div class="highlight-python"><pre>$ gcloud list -r hobbes
+
+====================================
+VMs running on EC2 resource `hobbes`
+====================================
+
++------------+---------+---------------+-------------+--------------+---------+
+|     id     |  state  |   public ip   | Nr. of jobs |   image id   | keypair |
++------------+---------+---------------+-------------+--------------+---------+
+| i-00000540 | pending | 130.60.193.45 |     N/A     | ami-00000035 | antonio |
++------------+---------+---------------+-------------+--------------+---------+</pre>
+</div>
+<p>then we run <cite>gcloud forget</cite>:</p>
+<div class="highlight-python"><pre>$ gcloud forget  -r hobbes i-00000540</pre>
+</div>
+<p>and we run again <cite>gcloud list</cite>:</p>
+<div class="highlight-python"><pre>$ gcloud list -r hobbes
+
+====================================
+VMs running on EC2 resource `hobbes`
+====================================
+
+  no known VMs are currently running on this resource.</pre>
+</div>
+<p>You can also create a new VM using the default settings using the
+<cite>gcloud run</cite> command. In this case too you have to specify the <tt class="docutils literal"><span class="pre">-r</span></tt>
+command line option. The output of this command contains some basic
+information about the created VM:</p>
+<div class="highlight-python"><pre>$ gcloud run -r hobbes
++------------+---------+---------------------------------------------+-------------+--------------+---------+
+|     id     |  state  |                  public ip                  | Nr. of jobs |   image id   | keypair |
++------------+---------+---------------------------------------------+-------------+--------------+---------+
+| i-00000541 | pending | server-4e68ebc4-ea52-45ff-82d0-79699300b323 |     N/A     | ami-00000035 | antonio |
++------------+---------+---------------------------------------------+-------------+--------------+---------+</pre>
+</div>
+<p>Please note that while the VM is still in <cite>pending</cite> state, the value
+of the <cite>public ip</cite> field may be meaningless. A successive run of <cite>gcloud
+list</cite> should show you the correct <cite>public ip</cite>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The GC3Utils software</a><ul>
+<li><a class="reference internal" href="#gsession-manage-sessions"><strong class="command">gsession</strong>: manage sessions</a></li>
+<li><a class="reference internal" href="#gstat-monitor-the-status-of-submitted-jobs"><strong class="command">gstat</strong>: monitor the status of submitted jobs</a></li>
+<li><a class="reference internal" href="#gtail-peeking-at-the-job-output-and-error-report"><strong class="command">gtail</strong>: peeking at the job output and error report</a></li>
+<li><a class="reference internal" href="#gkill-cancel-a-running-job"><strong class="command">gkill</strong>: cancel a running job</a></li>
+<li><a class="reference internal" href="#gget-retrieve-the-output-of-finished-jobs"><strong class="command">gget</strong>: retrieve the output of finished jobs</a></li>
+<li><a class="reference internal" href="#gclean-remove-a-completed-job-from-the-status-list"><strong class="command">gclean</strong>: remove a completed job from the status list</a></li>
+<li><a class="reference internal" href="#gresub-re-submit-a-failed-job"><strong class="command">gresub</strong>: re-submit a failed job</a></li>
+<li><a class="reference internal" href="#gservers-list-available-resources"><strong class="command">gservers</strong>: list available resources</a></li>
+<li><a class="reference internal" href="#ginfo-accessing-low-level-details-of-a-job"><strong class="command">ginfo</strong>: accessing low-level details of a job</a></li>
+<li><a class="reference internal" href="#gcloud-manage-vms-created-by-the-ec2-backend"><strong class="command">gcloud</strong>: manage VMs created by the EC2 backend</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gc3apps/gcrypto.html"
+                        title="previous chapter">The <strong class="command">gcrypto</strong> script</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="troubleshooting.html"
+                        title="next chapter">Troubleshooting GC3Pie</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="troubleshooting.html" title="Troubleshooting GC3Pie"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gc3apps/gcrypto.html" title="The gcrypto script"
+             >previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" >User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.application.gamess &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../../index.html" />
+    <link rel="next" title="gc3libs.application.rosetta" href="rosetta.html" />
+    <link rel="prev" title="gc3libs.application.demo" href="demo.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="rosetta.html" title="gc3libs.application.rosetta"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="demo.html" title="gc3libs.application.demo"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.application.gamess">
+<span id="gc3libs-application-gamess"></span><h1><cite>gc3libs.application.gamess</cite><a class="headerlink" href="#module-gc3libs.application.gamess" title="Permalink to this headline">¶</a></h1>
+<p>Specialized support for computational jobs running GAMESS-US.</p>
+<dl class="class">
+<dt id="gc3libs.application.gamess.GamessAppPotApplication">
+<em class="property">class </em><tt class="descclassname">gc3libs.application.gamess.</tt><tt class="descname">GamessAppPotApplication</tt><big>(</big><em>inp_file_path</em>, <em>*other_input_files</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessAppPotApplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specialized <cite>AppPotApplication</cite> object to submit computational
+jobs running GAMESS-US.</p>
+<p>This class makes no check or guarantee that a GAMESS-US executable
+will be available in the executing AppPot instance: the
+<cite>apppot_img</cite> and <cite>apppot_tag</cite> keyword arguments can be used to
+select the AppPot system image to run this application; see the
+<tt class="xref py py-class docutils literal"><span class="pre">AppPotApplication</span></tt> for information.</p>
+<p>The <cite>__init__</cite> construction interface is compatible with the one
+used in <a class="reference internal" href="#gc3libs.application.gamess.GamessApplication" title="gc3libs.application.gamess.GamessApplication"><tt class="xref py py-class docutils literal"><span class="pre">GamessApplication</span></tt></a>. The only required parameter for
+construction is the input file name; any other argument names an
+additional input file, that is added to the <cite>Application.inputs</cite>
+list, but not otherwise treated specially.</p>
+<p>Any other keyword parameter that is valid in the <cite>Application</cite>
+class can be used here as well, with the exception of <cite>input</cite> and
+<cite>output</cite>.  Note that a GAMESS-US job is <em>always</em> submitted with
+<cite>join = True</cite>, therefore any <cite>stderr</cite> setting is ignored.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.application.gamess.GamessApplication">
+<em class="property">class </em><tt class="descclassname">gc3libs.application.gamess.</tt><tt class="descname">GamessApplication</tt><big>(</big><em>inp_file_path</em>, <em>*other_input_files</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessApplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specialized <cite>Application</cite> object to submit computational jobs running GAMESS-US.</p>
+<p>The only required parameter for construction is the input file
+name; subsequent positional arguments are additional input files,
+that are added to the <cite>Application.inputs</cite> list, but not otherwise
+treated specially.</p>
+<p>The <cite>verno</cite> parameter is used to request a specific version of
+GAMESS-US; if the default value <tt class="docutils literal"><span class="pre">None</span></tt> is used, the default
+version of GAMESS-US at the executing site is run.</p>
+<p>Any other keyword parameter that is valid in the <cite>Application</cite>
+class can be used here as well, with the exception of <cite>input</cite> and
+<cite>output</cite>.  Note that a GAMESS-US job is <em>always</em> submitted with
+<cite>join = True</cite>, therefore any <cite>stderr</cite> setting is ignored.</p>
+<dl class="method">
+<dt id="gc3libs.application.gamess.GamessApplication.terminated">
+<tt class="descname">terminated</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.application.gamess.GamessApplication.terminated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append to log the termination status line as extracted from
+the GAMESS &#8216;.out&#8217; file.</p>
+<p>The job exit code <cite>.execution.exitcode</cite> is (re)set according
+to the following table:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="16%" />
+<col width="84%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Exit code</th>
+<th class="head">Meaning</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>0</td>
+<td>the output file contains the string                                <tt class="docutils literal"><span class="pre">EXECUTION</span> <span class="pre">OF</span> <span class="pre">GAMESS</span> <span class="pre">TERMINATED</span> <span class="pre">normally</span></tt></td>
+</tr>
+<tr class="row-odd"><td>1</td>
+<td>the output file contains the string                                <tt class="docutils literal"><span class="pre">EXECUTION</span> <span class="pre">OF</span> <span class="pre">GAMESS</span> <span class="pre">TERMINATED</span> <span class="pre">-ABNORMALLY-</span></tt></td>
+</tr>
+<tr class="row-even"><td>2</td>
+<td>the output file contains the string                                <tt class="docutils literal"><span class="pre">ddikick</span> <span class="pre">exited</span> <span class="pre">unexpectedly</span></tt></td>
+</tr>
+<tr class="row-odd"><td>70 (<cite>os.EX_SOFTWARE</cite>)</td>
+<td>the output file cannot be read or                                does not match any of the above patterns</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="demo.html"
+                        title="previous chapter"><cite>gc3libs.application.demo</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="rosetta.html"
+                        title="next chapter"><cite>gc3libs.application.rosetta</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="rosetta.html" title="gc3libs.application.rosetta"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="demo.html" title="gc3libs.application.demo"
+             >previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>
