@@ -4,7 +4,7 @@
 This module provides a generic BatchSystem class from which all
 batch-like backends should inherit.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -529,7 +529,7 @@ class BatchSystem(LRMS):
                     log.error(
                         "Failed while running the `acct` command."
                         " exit code: %d, stderr: '%s'" % (exit_code, stderr))
-   
+
 
             # No *stat command and no *acct command returned
             # correctly.
@@ -617,24 +617,22 @@ class BatchSystem(LRMS):
             cmd = self._cancel_command(job.lrms_jobid)
             exit_code, stdout, stderr = self.transport.execute_command(cmd)
             if exit_code != 0:
-                # It is possible that 'qdel' fails because job has
-                # been already completed thus the cancel_job behaviour
-                # should be to
+                # XXX: It is possible that 'qdel' fails because job
+                # has been already completed thus the cancel_job
+                # behaviour should be tolerant to these errors.
                 log.error(
                     "Failed executing remote command '%s'; exit status %d",
                     cmd, exit_code)
-                log.debug("  remote command returned stdout '%s'", stdout)
-                log.debug("  remote command returned stderr '%s'", stderr)
+                log.debug("  remote command returned STDOUT '%s'", stdout)
+                log.debug("  remote command returned STDERR '%s'", stderr)
                 if exit_code == 127:
-                    # no such command
+                    # command was not executed, time to signal an exception
                     raise gc3libs.exceptions.LRMSError(
-                        "Cannot execute remote command '%s'.", 
-                        " stderr: '%s'" % (cmd, stderr))
-
+                        "Cannot execute remote command '%s'"
+                        " -- See DEBUG level log for details" % (cmd,))
             return job
-
         except:
-            log.critical('Failure in checking status')
+            log.critical('Failure checking status')
             raise
 
     @same_docstring_as(LRMS.free)
