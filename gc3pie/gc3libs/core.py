@@ -552,7 +552,7 @@ specified in the configuration file.
                              " since task is being killed: %s",
                              str(ex))
         job.signal = Run.Signals.Cancelled
-        job.history.append("Cancelled.")
+        job.history.append("Cancelled")
 
     def __kill_task(self, task, **extra_args):
         extra_args.setdefault('auto_enable_auth', self.auto_enable_auth)
