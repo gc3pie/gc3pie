@@ -3,7 +3,7 @@
 """
 Job control on SLURM clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -50,7 +50,7 @@ from gc3libs.utils import same_docstring_as
 #        stamps. A value of standard, the default value, generates
 #        output in the form "year-month-dateThour:minute:second".
 
-# stat cmd: squeue --noheader --format='%i|%T|%r|%R'  -j jobid1,jobid2,...
+# stat cmd: squeue --noheader --format='%i^%T^%r^%R'  -j jobid1,jobid2,...
 #   %i: job id
 #
 #   %T: Job state, extended form: PENDING, RUNNING, SUSPENDED,
@@ -105,7 +105,7 @@ def count_jobs(squeue_output, whoami):
       * `q` is the number of queued jobs submitted by user `whoami`
 
     The `squeue_output` must contain the results of an invocation of
-    ``squeue --noheader --format='%i|%T|%u|%U|%r|%R'``.
+    ``squeue --noheader --format='%i^%T^%u^%U^%r^%R'``.
     """
     total_running = 0
     total_queued = 0
@@ -115,7 +115,7 @@ def count_jobs(squeue_output, whoami):
         if line == '':
             continue
         # the choice of format string makes it easy to parse squeue output
-        jobid, state, username, uid, reason, nodelist = line.split('|')
+        jobid, state, username, uid, reason, nodelist = line.split('^')
         if state in ['RUNNING', 'COMPLETING']:
             total_running += 1
             if username == whoami:
@@ -191,7 +191,7 @@ class SlurmLrms(batch.BatchSystem):
         sbatch_argv, app_argv = app.sbatch(self)
         return (str.join(' ', sbatch_argv), str.join(' ', app_argv))
 
-    # stat cmd: squeue --noheader --format='%i|%T|%u|%U|%r|%R'  -j jobid1,jobid2,...
+    # stat cmd: squeue --noheader --format='%i^%T^%u^%U^%r^%R'  -j jobid1,jobid2,...
     #   %i: job id
     #   %T: Job  state,  extended  form: PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING, FAILED, TIMEOUT, PREEMPTED, and NODE_FAIL.
     #   %R: For pending jobs: the reason a job is waiting for execution is printed within parenthesis. For terminated jobs with failure: an  explanation  as to why the job failed is printed within parenthesis.  For all other job states: the list of allocate nodes.
@@ -200,12 +200,12 @@ class SlurmLrms(batch.BatchSystem):
     #   %U: numeric UID of the submitting user
     #
     def _stat_command(self, job):
-        return "%s --noheader -o %%i|%%T|%%r -j %s" % \
+        return "%s --noheader -o %%i^%%T^%%r -j %s" % \
             (self._squeue, job.lrms_jobid)
 
     def _parse_stat_output(self, stdout):
         """
-        Receive the output of ``squeue --noheader -o %i:%T:%r and parse it.
+        Receive the output of ``squeue --noheader -o %i^%T^%r and parse it.
         """
         jobstatus = dict()
         if stdout.strip() == '':
@@ -217,7 +217,7 @@ class SlurmLrms(batch.BatchSystem):
             jobstatus['state'] = Run.State.TERMINATING
         else:
             # parse stdout
-            jobid, state, reason = stdout.split('|')
+            jobid, state, reason = stdout.split('^')
             log.debug("translating SLURM's state '%s' to gc3libs.Run.State",
                       state)
             if state in ['PENDING', 'CONFIGURING']:
@@ -448,7 +448,7 @@ class SlurmLrms(batch.BatchSystem):
         try:
             self.transport.connect()
 
-            _command = ("%s --noheader -o '%%i|%%T|%%u|%%U|%%r|%%R'" %
+            _command = ("%s --noheader -o '%%i^%%T^%%u^%%U^%%r^%%R'" %
                         self._squeue)
             log.debug("Running `%s`...", _command)
             exitcode, stdout, stderr = self.transport.execute_command(_command)
