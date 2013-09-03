@@ -152,7 +152,6 @@ class Session(list):
 
         """
         self.path = os.path.abspath(path)
-        self.name = os.path.basename(self.path)
         self.tasks = dict()
         # Session not yet created
         self.created = -1

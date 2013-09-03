@@ -1414,7 +1414,8 @@ class SessionBasedScript(_Script):
         self.every_main_loop()
         # print results to user
         print ("Status of jobs in the '%s' session: (at %s)"
-               % (self.session.name, time.strftime('%X, %x')))
+               % (os.path.basename(self.params.session),
+                  time.strftime('%X, %x')))
         # summary
         stats = self._controller.stats()
         total = stats['total']
@@ -1431,7 +1432,7 @@ class SessionBasedScript(_Script):
         else:
             if self.params.session is not None:
                 print ("  There are no tasks in session '%s'."
-                       % self.session.name)
+                       % self.params.session)
             else:
                 print ("  No tasks in this session.")
         # compute exitcode based on the running status of jobs
