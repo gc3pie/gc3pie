@@ -105,7 +105,7 @@ def count_jobs(squeue_output, whoami):
       * `q` is the number of queued jobs submitted by user `whoami`
 
     The `squeue_output` must contain the results of an invocation of
-    ``squeue --noheader --format='%i:%T:%u:%U:%r:%R'``.
+    ``squeue --noheader --format='%i|%T|%u|%U|%r|%R'``.
     """
     total_running = 0
     total_queued = 0
@@ -115,7 +115,7 @@ def count_jobs(squeue_output, whoami):
         if line == '':
             continue
         # the choice of format string makes it easy to parse squeue output
-        jobid, state, username, uid, reason, nodelist = line.split(':')
+        jobid, state, username, uid, reason, nodelist = line.split('|')
         if state in ['RUNNING', 'COMPLETING']:
             total_running += 1
             if username == whoami:
@@ -200,7 +200,7 @@ class SlurmLrms(batch.BatchSystem):
     #   %U: numeric UID of the submitting user
     #
     def _stat_command(self, job):
-        return "%s --noheader -o %%i:%%T:%%r -j %s" % \
+        return "%s --noheader -o %%i|%%T|%%r -j %s" % \
             (self._squeue, job.lrms_jobid)
 
     def _parse_stat_output(self, stdout):
@@ -217,7 +217,7 @@ class SlurmLrms(batch.BatchSystem):
             jobstatus['state'] = Run.State.TERMINATING
         else:
             # parse stdout
-            jobid, state, reason = stdout.split(':')
+            jobid, state, reason = stdout.split('|')
             log.debug("translating SLURM's state '%s' to gc3libs.Run.State",
                       state)
             if state in ['PENDING', 'CONFIGURING']:
