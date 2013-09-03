@@ -290,9 +290,10 @@ class SlurmLrms(batch.BatchSystem):
     #    SLURM accounting storage is disabled
     #
     def _acct_command(self, job):
-        return '%s --noheader --parsable --format jobid,exitcode,ncpus,' \
-            'elapsed,totalcpu,submit,start,end,maxrss,maxvmsize -j %s' % \
-            (self._sacct, job.lrms_jobid)
+        return ('env SLURM_TIME_FORMAT=standard %s --noheader --parsable' \
+                ' --format jobid,exitcode,ncpus,elapsed,totalcpu,' \
+                'submit,start,end,maxrss,maxvmsize -j %s' % \
+                (self._sacct, job.lrms_jobid))
 
     def _parse_acct_output(self, stdout):
         acct = dict(
