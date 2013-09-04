@@ -998,6 +998,10 @@ class Application(Task):
             gc3libs.log.debug(
                 "Checking resource '%s' for compatibility with application requirements"
                 % lrms.name)
+            # Checking whether resource is 'enabled'. Discard otherwise
+            if (not lrms.enabled):
+                gc3libs.log.info("Rejecting resource '%s': resource currently disabled" % lrms.name)
+                continue
             # if architecture is specified, check that it matches the resource one
             if (self.requested_architecture is not None
                 and self.requested_architecture not in lrms.architecture):
