@@ -204,11 +204,6 @@ install_required_sw () {
 The following software packages need to be installed
 in order for GC3Pie to work: $missing
 
-If you have "sudo" privileges on this machine, you can install them by
-running:
-
-    apt-get install $missing
-
 There is a small chance that the required software
 is actually installed though we failed to detect it,
 so you may choose to proceed with GC3Pie installation
@@ -237,11 +232,6 @@ EOF
             cat <<EOF
 The following software packages need to be installed
 in order for GC3Pie to work: $missing
-
-If you have "sudo" privileges on this machine, you can install them by
-running:
-
-    sudo yum install $missing
 
 There is a small chance that the required software
 is actually installed though we failed to detect it,
