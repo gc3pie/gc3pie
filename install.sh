@@ -21,9 +21,8 @@
 #
 PROG="GC3Pie install"
 
+BASE_PIP_URL="https://pypi.python.org/simple"
 VIRTUALENV_LATEST_URL="https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
-PIP_URL="https://pypi.python.org/packages/source/p/pip/pip-1.4.1.tar.gz"
-SETUPTOOLS_URL="https://pypi.python.org/packages/source/s/setuptools/setuptools-1.1.1.tar.gz"
 VIRTUALENV_172_URL="https://raw.github.com/pypa/virtualenv/1.7.2/virtualenv.py"
 PIP_11_URL="http://pypi.python.org/packages/source/p/pip/pip-1.1.tar.gz"
 GC3_SVN_URL="http://gc3pie.googlecode.com/svn/trunk/gc3pie"
@@ -287,8 +286,10 @@ EOF
         0)
             # using latest virtualenv
             VIRTUALENV_URL=$VIRTUALENV_LATEST_URL
-            download $(basename $PIP_URL) $PIP_URL
-            download $(basename $SETUPTOOLS_URL) $SETUPTOOLS_URL
+            pip_download pip
+            pip_download setuptools
+            # download $(basename $PIP_URL) $PIP_URL
+            # download $(basename $SETUPTOOLS_URL) $SETUPTOOLS_URL
             ;;
         *)
             die 4 "unable to check python version" <<EOF
@@ -532,6 +533,19 @@ wget: http://www.gnu.org/software/wget/
 curl: http://curl.haxx.se/
 EOF
 fi
+
+# Command to get packages from pip
+pip_download () {
+    pkg=$1
+    url=$(download - $BASE_PIP_URL/$pkg/ | grep "source/./$pkg.*z" |sed 's:.*href="\([^#"]*\)["#].*:\1:g' | sort | tail -1 )
+    if [ -n "$url" ]; then
+        download $(basename $url) $BASE_PIP_URL/$url
+    else
+        die 5 "Package '$pkg' not found on PyPI!" <<EOF
+Unable to download package '$pkg' from PyPI.
+EOF
+    fi
+}
 
 # Install virtualenv
 if [ -d $VENVDIR ]
