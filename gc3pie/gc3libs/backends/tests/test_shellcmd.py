@@ -3,7 +3,7 @@
 """
 Unit tests for the `gc3libs.backends.shellcmd` module.
 """
-# Copyright (C) 2011-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -236,7 +236,7 @@ type=none
             outputs=[],
             output_dir=tmpdir,
             requested_cores=2,
-            requested_memory=10 * Memory.MB, )
+            requested_memory=10 * Memory.MiB, )
         cores_before = self.backend.free_slots
         mem_before = self.backend.available_memory
         self.core.submit(app)
@@ -378,7 +378,7 @@ type=none
             output_dir=tmpdir,
             requested_cores=1,
             requested_memory=10 * Memory.MiB, )
-
+        
         try:
             core1.submit(app)
             assert_equal(backend1.free_slots, backend1.max_cores - app.requested_cores)

@@ -33,7 +33,7 @@ relevant aspects of the application being represented.
 """
 __docformat__ = 'reStructuredText'
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.1 version (SVN $Revision$)'
 
 
 import copy
@@ -230,14 +230,14 @@ class Task(Persistable, Struct):
 
     # grid-level actions on this Task object are re-routed to the
     # grid/engine/core instance
-    def submit(self, resubmit=False, targets=None, **extra_args):
+    def submit(self, resubmit=False, **extra_args):
         """
         Start the computational job associated with this `Task` instance.
         """
         assert self._attached, ("Task.submit() called on detached task %s." % self)
         assert hasattr(self._controller, 'submit'), \
                ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
-        self._controller.submit(self, resubmit, targets, **extra_args)
+        self._controller.submit(self, resubmit, **extra_args)
 
 
     def update_state(self, **extra_args):
@@ -1055,7 +1055,7 @@ class Application(Task):
         Sort the given resources in order of preference.
 
         By default, less-loaded resources come first;
-        see `_cmp_resources`:meth:.
+        see `_cmp_resources`.
         """
         # shift lrms that are already in application.execution_targets
         # to the bottom of the list
@@ -1957,15 +1957,32 @@ class Run(Struct):
 
 def create_engine(*conf_files, **extra_args):
     """
-    Returns a `gc3libs.core.Engine`:class: class.
+    Create and return a `gc3libs.core.Engine`:class: class.
 
     It accepts an optional list of configuration filenames. If the
     filenames contain a `~` or a variable name, it will be expanded
     automatically.
 
     Called without arguments, a configuration file will be searched in
-    ~/.gc3/gc3pie.conf and used, if found .
+    ~/.gc3/gc3pie.conf (and used if found).
+
+    :param conf_files:    List of configuration files to read.
+    :param store:         See the like-named argument to the `Engine`:class: constructor.
+    :param can_submit:    See the like-named argument to the `Engine`:class: constructor.
+    :param can_retrieve:  See the like-named argument to the `Engine`:class: constructor.
+    :param max_in_flight: See the like-named argument to the `Engine`:class: constructor.
+    :param max_submitted: See the like-named argument to the `Engine`:class: constructor.
+
+    Any extra keyword argument is passed unchanged to the
+    `Configuration`:class: constructor.
+
     """
+    store = extra_args.pop('store', None)
+    can_submit = extra_args.pop('can_submit', True)
+    can_retrieve = extra_args.pop('can_retrieve', True)
+    max_in_flight = extra_args.pop('max_in_flight', 0)
+    max_submitted = extra_args.pop('max_submitted', 0)
+
     from gc3libs.config import Configuration
     from gc3libs.core import Core, Engine
     conf_files = [
@@ -1979,7 +1996,9 @@ def create_engine(*conf_files, **extra_args):
 
     cfg = Configuration(*conf_files, **extra_args)
     core = Core(cfg)
-    engine = Engine(core)
+    engine = Engine(core, store=store,
+                    can_submit=can_submit, can_retrieve=can_retrieve,
+                    max_in_flight=max_in_flight, max_submitted=max_submitted)
 
     return engine
 

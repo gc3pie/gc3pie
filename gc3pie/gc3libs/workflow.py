@@ -27,7 +27,7 @@ can implement problem-specific job control policies.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.1 version (SVN $Revision$)'
 
 import time
 import os
@@ -109,7 +109,7 @@ class TaskCollection(Task):
     # task execution manipulation -- these methods should be overriden
     # in derived classes, to implement the desired policy.
 
-    def submit(self, resubmit=False, targets=None, **extra_args):
+    def submit(self, resubmit=False, **extra_args):
         raise NotImplementedError("Called abstract method TaskCollection.submit() - this should be overridden in derived classes.")
 
 
@@ -309,7 +309,7 @@ class SequentialTaskCollection(TaskCollection):
             return Run.State.RUNNING
 
 
-    def submit(self, resubmit=False, targets=None, **extra_args):
+    def submit(self, resubmit=False, **extra_args):
         """
         Start the current task in the collection.
         """
@@ -317,7 +317,7 @@ class SequentialTaskCollection(TaskCollection):
             self._current_task = 0
         task = self.tasks[self._current_task]
         task.attach(self._controller)
-        task.submit(resubmit, targets, **extra_args)
+        task.submit(resubmit, **extra_args)
         if task.execution.state == Run.State.NEW:
             # submission failed, state unchanged
             self.execution.state = Run.State.NEW
@@ -521,12 +521,12 @@ class ParallelTaskCollection(TaskCollection):
         return [ task.progress() for task in self.tasks ]
 
 
-    def submit(self, resubmit=False, targets=None, **extra_args):
+    def submit(self, resubmit=False, **extra_args):
         """
         Start all tasks in the collection.
         """
         for task in self.tasks:
-            task.submit(resubmit, targets, **extra_args)
+            task.submit(resubmit, **extra_args)
         self.execution.state = self._state()
 
 
@@ -586,7 +586,6 @@ class ChunkedParameterSweep(ParallelTaskCollection):
         but also creates new tasks if less than
         `chunk_size` are running.
         """
-        ParallelTaskCollection.update_state(self, **extra_args)
         # XXX: proposal, reset chuck_size from self._controller.max_in_flight
         # this is the way to pass new 'max-running' value to the class
         # this creates though, a tigh coupling with 'controller' and maybe
@@ -612,9 +611,9 @@ class ChunkedParameterSweep(ParallelTaskCollection):
             for param in range(self._floor, top, self.step):
                 self.add(self.new_task(param, **extra_args))
             self._floor = top
-            self.execution.state = self._state()
             self.changed = True
-        return self.execution.state
+        return ParallelTaskCollection.update_state(self, **extra_args)
+
 
 class RetryableTask(Task):
     """
@@ -712,9 +711,8 @@ class RetryableTask(Task):
     def peek(self, *args, **extra_args):
         return self.task.peek(*args, **extra_args)
 
-    def submit(self, resubmit=False, targets=None, **extra_args):
-        # XXX: previous code ignored the `resubmit` argument; why?!
-        self.task.submit(resubmit, targets, **extra_args)
+    def submit(self, resubmit=False, **extra_args):
+        self.task.submit(**extra_args)
         # immediately update state if submission of managed task was successful;
         # otherwise this task may remain in ``NEW`` state which causes an
         # unwanted resubmission if the managing programs ends or is interrupted

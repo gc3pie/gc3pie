@@ -25,7 +25,7 @@ sources of a different project and it would not stop working.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.1 version (SVN $Revision$)'
 
 
 import itertools
@@ -476,14 +476,6 @@ def first(seq):
         pass
     raise TypeError("Argument to `first()` method needs to be iterator or sequence.")
 
-def fgrep(literal, filename):
-    """
-    Iterate over all lines in a file that contain the `literal` string.
-    """
-    with open(filename, 'r') as file:
-        for line in file:
-            if literal in line:
-                yield line
 
 def from_template(template, **extra_args):
     """
@@ -1376,48 +1368,14 @@ def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
     smtp.close()
 
 
-def touch(path):
-    """
-    Ensure a regular file exists at `path`.
-
-    If the file already exists, its access and modification time are
-    updated.
-
-    (This is a very limited and stripped down version of the ``touch``
-    POSIX utility.)
-    """
-    fd = open(path, 'a')
-    fd.close()
-
-
 def uniq(seq):
     """
     Iterate over all unique elements in sequence `seq`.
 
     Distinct values are returned in a sorted fashion.
-
-    Examples:
-
-      >>> for value in uniq([4,1,1,2,3,1,2]): print value
-      ...
-      1
-      2
-      3
-      4
-
-      >>> for value in uniq([1,2,3,4]): print value
-      ...
-      1
-      2
-      3
-      4
-
-      >>> for value in uniq([1,1,1,1]): print value
-      ...
-      1
-
     """
-    return sorted(set(seq))
+    for value, grouper in itertools.groupby(sorted(seq)):
+        yield value
 
 
 def unlock(lock):
@@ -1436,11 +1394,11 @@ def update_parameter_in_file(path, var_in, new_val, regex_in):
     '''
     Updates a parameter value in a parameter file using predefined regular
     expressions in `_loop_regexps`.
-
-    :param path: Full path to the parameter file.
-    :param var_in: The variable to modify.
-    :param new_val: The updated parameter value.
-    :param regex: Name of the regular expression that describes the format of the parameter file.
+    
+    :param path: Full path to the parameter file. 
+    :param var_in: The variable to modify. 
+    :param new_val: The updated parameter value. 
+    :param regex: Name of the regular expression that describes the format of the parameter file. 
     '''
     _loop_regexps = {
         'bar-separated':(r'([a-z]+[\s\|]+)'
@@ -1496,54 +1454,12 @@ def write_contents(path, data):
       >>> os.remove(tmpfile)
 
     """
-    with open(path, 'wb') as stream:
+    # XXX: this really calls for the `with:` statement...
+    try:
+        stream = open(path, 'wb')
         return stream.write(data)
-
-
-class YieldAtNext(object):
-    """
-    Provide an alternate protocol for generators.
-
-    Wrap a Python generator object, and buffer the return values from
-    `send` and `throw` calls, returning `None` instead. Return the
-    yielded value --or raise the `StopIteration` exception-- upon the
-    subsequent call to the `next` method.
-    """
-
-    __slots__ = [ '_generator', '_has_saved', '_saved', '_stop_iteration' ]
-
-    def __init__(self, generator):
-        self._generator = generator
-        self._has_saved = False
-        self._stop_iteration = False
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        if self._stop_iteration:
-            raise StopIteration
-        elif self._has_saved:
-            self._has_saved = False
-            # XXX: This keeps a reference to the returned object into
-            # `self._saved` until that attribute is overwritten.
-            return self._saved
-        else:
-            return self._generator.next()
-
-    def send(self, value):
-        try:
-            self._saved = self._generator.send(value)
-            self._has_saved = True
-        except StopIteration:
-            self._stop_iteration = True
-
-    def throw(self, *excinfo):
-        try:
-            self._saved = self._generator.throw(*excinfo)
-            self._has_saved = True
-        except StopIteration:
-            self._stop_iteration = True
+    finally:
+        stream.close()
 
 
 ##

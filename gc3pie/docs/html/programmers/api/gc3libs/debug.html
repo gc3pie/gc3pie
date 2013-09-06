@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -113,7 +111,7 @@ outside the class (i.e. it prefixes &#8220;private&#8221; methods appropriately)
 
 <dl class="function">
 <dt id="gc3libs.debug.trace">
-<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">trace</tt><big>(</big><em>fn</em>, <em>log=&lt;bound method Logger.debug of &lt;logging.Logger object at 0x23a3210&gt;&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.debug.trace" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">trace</tt><big>(</big><em>fn</em>, <em>log=&lt;bound method Logger.debug of &lt;logging.Logger instance at 0x1fd6518&gt;&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.debug.trace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Logs calls to a function.</p>
 <p>Returns a decorated version of the input function which &#8220;echoes&#8221; calls
 made to it by writing out the function&#8217;s name and the arguments it was
@@ -122,13 +120,13 @@ called with.</p>
 
 <dl class="function">
 <dt id="gc3libs.debug.trace_class">
-<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">trace_class</tt><big>(</big><em>cls</em>, <em>log=&lt;bound method Logger.debug of &lt;logging.Logger object at 0x23a3210&gt;&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.debug.trace_class" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">trace_class</tt><big>(</big><em>cls</em>, <em>log=&lt;bound method Logger.debug of &lt;logging.Logger instance at 0x1fd6518&gt;&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.debug.trace_class" title="Permalink to this definition">¶</a></dt>
 <dd><p>Trace calls to class methods and static functions</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.debug.trace_instancemethod">
-<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">trace_instancemethod</tt><big>(</big><em>cls</em>, <em>method</em>, <em>log=&lt;bound method Logger.debug of &lt;logging.Logger object at 0x23a3210&gt;&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.debug.trace_instancemethod" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">trace_instancemethod</tt><big>(</big><em>cls</em>, <em>method</em>, <em>log=&lt;bound method Logger.debug of &lt;logging.Logger instance at 0x1fd6518&gt;&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.debug.trace_instancemethod" title="Permalink to this definition">¶</a></dt>
 <dd><p>Change an instancemethod so that calls to it are traced.</p>
 <p>Replacing a classmethod is a little more tricky.
 See: <a class="reference external" href="http://www.python.org/doc/current/ref/types.html">http://www.python.org/doc/current/ref/types.html</a></p>
@@ -136,7 +134,7 @@ See: <a class="reference external" href="http://www.python.org/doc/current/ref/t
 
 <dl class="function">
 <dt id="gc3libs.debug.trace_module">
-<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">trace_module</tt><big>(</big><em>mod</em>, <em>log=&lt;bound method Logger.debug of &lt;logging.Logger object at 0x23a3210&gt;&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.debug.trace_module" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.debug.</tt><tt class="descname">trace_module</tt><big>(</big><em>mod</em>, <em>log=&lt;bound method Logger.debug of &lt;logging.Logger instance at 0x1fd6518&gt;&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.debug.trace_module" title="Permalink to this definition">¶</a></dt>
 <dd><p>Trace calls to functions and methods in a module.</p>
 </dd></dl>
 
@@ -194,7 +192,7 @@ See: <a class="reference external" href="http://www.python.org/doc/current/ref/t
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
