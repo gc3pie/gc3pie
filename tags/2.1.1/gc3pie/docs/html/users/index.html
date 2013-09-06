@@ -1,0 +1,278 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>User Documentation &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="next" title="Installation of GC3Pie" href="install.html" />
+    <link rel="prev" title="Welcome to GC3Pie documentation!" href="../index.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="install.html" title="Installation of GC3Pie"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../index.html" title="Welcome to GC3Pie documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="user-documentation">
+<span id="id1"></span><h1>User Documentation<a class="headerlink" href="#user-documentation" title="Permalink to this headline">¶</a></h1>
+<p>This section describes how to <a class="reference external" href="install.html">install</a> and <a class="reference external" href="configuration.html">configure</a> GC3Pie, and
+how to run <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>The GC3Apps software</em></a> and <a class="reference internal" href="gc3utils.html#gc3utils"><em>The GC3Utils software</em></a>.</p>
+<div class="section" id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation of GC3Pie</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#quick-start">Quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#non-standard-installation-options">Non-standard installation options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#manual-installation">Manual installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#upgrade">Upgrade</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#macosx-installation">MacOSX Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#html-documentation">HTML Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration File</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#location">Location</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-file-format">Configuration file format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#the-default-section">The <tt class="docutils literal"><span class="pre">DEFAULT</span></tt> section</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#auth-sections"><tt class="docutils literal"><span class="pre">auth</span></tt> sections</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#authentication-types">Authentication types</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#resource-sections"><tt class="docutils literal"><span class="pre">resource</span></tt> sections</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#arc0-resources"><tt class="docutils literal"><span class="pre">arc0</span></tt> resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#arc1-resources"><tt class="docutils literal"><span class="pre">arc1</span></tt> resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#sge-resources"><tt class="docutils literal"><span class="pre">sge</span></tt> resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#pbs-resources"><tt class="docutils literal"><span class="pre">pbs</span></tt> resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#lsf-resources"><tt class="docutils literal"><span class="pre">lsf</span></tt> resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#slurm-resources"><tt class="docutils literal"><span class="pre">slurm</span></tt> resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#shellcmd-resources"><tt class="docutils literal"><span class="pre">shellcmd</span></tt> resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#ec2-shellcmd-resource"><tt class="docutils literal"><span class="pre">ec2+shellcmd</span></tt> resource</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#example-resource-sections">Example <tt class="docutils literal"><span class="pre">resource</span></tt> sections</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#enabling-disabling-selected-resources">Enabling/disabling selected resources</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="env-vars.html">Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gc3apps/index.html">The GC3Apps software</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gc3apps/intro.html">Introduction to <em>session-based</em> scripts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/intro.html#basic-command-line-usage-and-options">Basic command-line usage and options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gc3apps/intro.html#continuous-execution">Continuous execution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gc3apps/intro.html#verbose-listing-of-jobs">Verbose listing of jobs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gc3apps/intro.html#maximum-number-of-concurrent-jobs">Maximum number of concurrent jobs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gc3apps/intro.html#location-of-output-files">Location of output files</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/intro.html#job-control-options">Job control options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/intro.html#session-control-options">Session control options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/intro.html#exit-code">Exit code</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gc3apps/ggamess.html">The <strong>ggamess</strong> script</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#how-to-run-gamess-on-the-grid">How to run GAMESS on the Grid</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#tweaking-execution">Tweaking execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggamess.html#updating-the-gamess-code">Updating the GAMESS code</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gc3apps/ggeotop.html">The <strong class="command">ggeotop</strong> script</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggeotop.html#introduction">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggeotop.html#command-line-invocation-of-ggeotop">Command-line invocation of <strong class="command">ggeotop</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggeotop.html#output-files-for-ggeotop">Output files for <strong class="command">ggeotop</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggeotop.html#example-usage">Example usage</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gc3apps/ggeotop.html#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/ggeotop.html#using-gc3pie-utilities">Using GC3Pie utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gc3apps/ggeotop.html#gkill-cancel-a-running-job"><strong class="command">gkill</strong>: cancel a running job</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gc3apps/ggeotop.html#ginfo-accessing-low-level-details-of-a-job"><strong class="command">ginfo</strong>: accessing low-level details of a job</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gc3apps/grosetta.html">The <strong class="command">grosetta</strong> and <strong class="command">gdocking</strong> scripts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/grosetta.html#introduction">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/grosetta.html#command-line-invocation-of-grosetta">Command-line invocation of <strong class="command">grosetta</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/grosetta.html#output-files-for-grosetta">Output files for <strong class="command">grosetta</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/grosetta.html#output-files-for-gdocking">Output files for <strong class="command">gdocking</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/grosetta.html#example-usage">Example usage</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gc3apps/grosetta.html#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gc3apps/grosetta.html#managing-a-session-by-repeated-grosetta-invocation">Managing a session by repeated <strong class="command">grosetta</strong> invocation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gc3apps/gcrypto.html">The <strong class="command">gcrypto</strong> script</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/gcrypto.html#introduction">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/gcrypto.html#command-line-invocation-of-gcrypto">Command-line invocation of <strong class="command">gcrypto</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/gcrypto.html#output-files-for-gcrypto">Output files for <strong class="command">gcrypto</strong></a></li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/gcrypto.html#example-usage">Example usage</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gc3apps/gcrypto.html#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gc3apps/gcrypto.html#using-gc3pie-utilities">Using GC3Pie utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gc3apps/gcrypto.html#gkill-cancel-a-running-job"><strong class="command">gkill</strong>: cancel a running job</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gc3apps/gcrypto.html#ginfo-accessing-low-level-details-of-a-job"><strong class="command">ginfo</strong>: accessing low-level details of a job</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gc3utils.html">The GC3Utils software</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gc3utils.html#gsession-manage-sessions"><strong class="command">gsession</strong>: manage sessions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gc3utils.html#gstat-monitor-the-status-of-submitted-jobs"><strong class="command">gstat</strong>: monitor the status of submitted jobs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gc3utils.html#gtail-peeking-at-the-job-output-and-error-report"><strong class="command">gtail</strong>: peeking at the job output and error report</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gc3utils.html#gkill-cancel-a-running-job"><strong class="command">gkill</strong>: cancel a running job</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gc3utils.html#gget-retrieve-the-output-of-finished-jobs"><strong class="command">gget</strong>: retrieve the output of finished jobs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gc3utils.html#gclean-remove-a-completed-job-from-the-status-list"><strong class="command">gclean</strong>: remove a completed job from the status list</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gc3utils.html#gresub-re-submit-a-failed-job"><strong class="command">gresub</strong>: re-submit a failed job</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gc3utils.html#gservers-list-available-resources"><strong class="command">gservers</strong>: list available resources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gc3utils.html#ginfo-accessing-low-level-details-of-a-job"><strong class="command">ginfo</strong>: accessing low-level details of a job</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gc3utils.html#gcloud-manage-vms-created-by-the-ec2-backend"><strong class="command">gcloud</strong>: manage VMs created by the EC2 backend</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting GC3Pie</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#what-is-a-python-traceback">What is a Python traceback?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#common-errors-using-gc3pie">Common errors using GC3Pie</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#attributeerror-args">AttributeError: args</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#attributeerror-module-object-has-no-attribute-stringio">AttributeError: <cite>module</cite> object has no attribute <cite>StringIO</cite></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#distributionnotfound">DistributionNotFound</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#ftpcontrolerror-server-responded-file-unavailable">FTPControlError: Server responded: File unavailable.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#importerror-site-packages-arclib-so-undefined-symbol-py-initmodule4">ImportError: <tt class="docutils literal"><span class="pre">.../site-packages/_arclib.so</span></tt>: undefined symbol: <tt class="docutils literal"><span class="pre">Py_InitModule4</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#importerror-no-module-named-pstats">ImportError: No module named <tt class="docutils literal"><span class="pre">pstats</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#noresources-could-not-initialize-any-computational-resource-please-check-log-and-configuration-file">NoResources: Could not initialize any computational resource - please check log and configuration file.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#terminate-called-after-throwing-an-instance-of-ldapqueryerror">Terminate called after throwing an instance of <tt class="docutils literal"><span class="pre">LdapQueryError</span></tt></a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#valueerror-i-o-operation-on-closed-file">ValueError: I/O operation on closed file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">User Documentation</a><ul>
+<li><a class="reference internal" href="#table-of-contents">Table of Contents</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../index.html"
+                        title="previous chapter">Welcome to GC3Pie documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="install.html"
+                        title="next chapter">Installation of GC3Pie</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="install.html" title="Installation of GC3Pie"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../index.html" title="Welcome to GC3Pie documentation!"
+             >previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

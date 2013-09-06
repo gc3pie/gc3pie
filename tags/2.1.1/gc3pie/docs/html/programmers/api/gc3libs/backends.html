@@ -1,0 +1,354 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.backends &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../index.html" />
+    <link rel="next" title="gc3libs.backends.arc0" href="backends/arc0.html" />
+    <link rel="prev" title="gc3libs.authentication.ssh" href="authentication/ssh.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="backends/arc0.html" title="gc3libs.backends.arc0"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="authentication/ssh.html" title="gc3libs.authentication.ssh"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.backends">
+<span id="gc3libs-backends"></span><h1><cite>gc3libs.backends</cite><a class="headerlink" href="#module-gc3libs.backends" title="Permalink to this headline">¶</a></h1>
+<p>Interface to different resource management systems for the GC3Libs.</p>
+<dl class="class">
+<dt id="gc3libs.backends.LRMS">
+<em class="property">class </em><tt class="descclassname">gc3libs.backends.</tt><tt class="descname">LRMS</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for interfacing with a computing resource.</p>
+<p>The following construction parameters are also set as instance
+attributes.  All of them are mandatory, except <cite>auth</cite>.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="32%" />
+<col width="21%" />
+<col width="47%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Attribute name</th>
+<th class="head">Expected Type</th>
+<th class="head">Meaning</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><cite>name</cite></td>
+<td>string</td>
+<td>A unique identifier for this
+resource, used for generating
+error message.</td>
+</tr>
+<tr class="row-odd"><td><cite>architecture</cite></td>
+<td>set of
+<cite>Run.Arch</cite>
+values</td>
+<td>Should contain one entry per
+each architecture
+supported. Valid architecture
+values are constants in the
+<cite>gc3libs.Run.Arch</cite> class.</td>
+</tr>
+<tr class="row-even"><td><cite>auth</cite></td>
+<td>string</td>
+<td>A <cite>gc3libs.authentication.Auth</cite>
+instance that will be used to
+access the computational
+resource associated with this
+backend.  The default value
+<cite>None</cite> is used to mean that no
+authentication credentials are
+needed (e.g., access to the
+resource has been
+pre-authenticated) or is
+managed outside of GC3Pie).</td>
+</tr>
+<tr class="row-odd"><td><cite>max_cores</cite></td>
+<td>int</td>
+<td>Maximum number of CPU cores
+that GC3Pie can allocate on
+this resource.</td>
+</tr>
+<tr class="row-even"><td><cite>max_cores_per_job</cite></td>
+<td>int</td>
+<td>Maximum number of CPU cores
+that GC3Pie can allocate on
+this resource <em>for a single
+job</em>.</td>
+</tr>
+<tr class="row-odd"><td><cite>max_memory_per_core</cite></td>
+<td>Memory</td>
+<td>Maximum memory that
+GC3Pie can allocate to jobs on
+this resource.  The value is
+<em>per core</em>, so the actual
+amount allocated to a single
+job is the value of this entry
+multiplied by the number of
+cores requested by the job.</td>
+</tr>
+<tr class="row-even"><td><cite>max_walltime</cite></td>
+<td>Duration</td>
+<td>Maximum wall-clock time
+that can be allotted
+to a single job running on this
+resource.</td>
+</tr>
+</tbody>
+</table>
+<p>The above should be considered <em>immutable</em> attributes: they are
+specified at construction time and changed never after.</p>
+<p>The following attributes are instead dynamically provided (i.e.,
+defined by the <cite>get_resource_status()</cite> method or similar), thus
+can change over the lifetime of the object:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="79%" />
+<col width="21%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Attribute name</th>
+<th class="head">Type</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>free_slots</td>
+<td>int</td>
+</tr>
+<tr class="row-odd"><td>user_run</td>
+<td>int</td>
+</tr>
+<tr class="row-even"><td>user_queued</td>
+<td>int</td>
+</tr>
+<tr class="row-odd"><td>queued</td>
+<td>int</td>
+</tr>
+</tbody>
+</table>
+<dl class="staticmethod">
+<dt id="gc3libs.backends.LRMS.authenticated">
+<em class="property">static </em><tt class="descname">authenticated</tt><big>(</big><em>fn</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.authenticated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator: mark a function as requiring authentication.</p>
+<p>Each invocation of the decorated function causes a call to the
+<cite>get</cite> method of the authentication object (configured with the
+<cite>auth</cite> parameter to the class constructor).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.LRMS.cancel_job">
+<tt class="descname">cancel_job</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.cancel_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cancel a running job.  If <cite>app</cite> is associated to a queued or
+running remote job, tell the execution middleware to cancel
+it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.LRMS.close">
+<tt class="descname">close</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implement gracefully close on LRMS dependent resources
+e.g. transport</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.LRMS.free">
+<tt class="descname">free</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.free" title="Permalink to this definition">¶</a></dt>
+<dd><p>Free up any remote resources used for the execution of <cite>app</cite>.
+In particular, this should delete any remote directories and
+files.</p>
+<p>Call this method when <cite>app.execution.state</cite> is anything other
+than <cite>TERMINATED</cite> results in undefined behavior and will
+likely be the cause of errors later on.  Be cautious.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.LRMS.get_resource_status">
+<tt class="descname">get_resource_status</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.get_resource_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the status of the resource associated with this <cite>LRMS</cite>
+instance in-place.  Return updated <cite>Resource</cite> object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.LRMS.get_results">
+<tt class="descname">get_results</tt><big>(</big><em>job</em>, <em>download_dir</em>, <em>overwrite=False</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.get_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve job output files into local directory <cite>download_dir</cite>
+(which must already exists).  Will not overwrite existing
+files, unless the optional argument <cite>overwrite</cite> is <cite>True</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.LRMS.peek">
+<tt class="descname">peek</tt><big>(</big><em>app</em>, <em>remote_filename</em>, <em>local_file</em>, <em>offset=0</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.peek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
+remote file <cite>remote_filename</cite> and write them into
+<cite>local_file</cite>.  If <cite>size</cite> is <cite>None</cite> (default), then snarf
+contents of remote file from <cite>offset</cite> unto the end.</p>
+<p>Argument <cite>local_file</cite> is either a local path name (string), or
+a file-like object supporting a <cite>.write()</cite> method.  If
+<cite>local_file</cite> is a path name, it is created if not existent,
+otherwise overwritten.</p>
+<p>Argument <cite>remote_filename</cite> is the name of a file in the remote job
+&#8220;sandbox&#8221;.</p>
+<p>Any exception raised by operations will be passed through.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.LRMS.submit_job">
+<tt class="descname">submit_job</tt><big>(</big><em>application</em>, <em>job</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.submit_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit an <cite>Application</cite> instance to the configured
+computational resource; return a <cite>gc3libs.Job</cite> instance for
+controlling the submitted job.</p>
+<p>This method only returns if the job is successfully submitted;
+upon any failure, an exception is raised.</p>
+<p><em>Note:</em></p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><cite>job.state</cite> is <em>not</em> altered; it is the caller&#8217;s
+responsibility to update it.</li>
+<li>the <cite>job</cite> object may be updated with any information that
+is necessary for this LRMS to perform further operations on it.</li>
+</ol>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.LRMS.update_job_state">
+<tt class="descname">update_job_state</tt><big>(</big><em>app</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.update_job_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Query the state of the remote job associated with <cite>app</cite> and
+update <cite>app.execution.state</cite> accordingly.  Return the
+corresponding <cite>Run.State</cite>; see <cite>Run.State</cite> for more details.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.LRMS.validate_data">
+<tt class="descname">validate_data</tt><big>(</big><em>data_file_list=None</em><big>)</big><a class="headerlink" href="#gc3libs.backends.LRMS.validate_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if the list of files is expressed in one of the
+file transfer protocols the LRMS supports.</p>
+<p>Return False otherwise.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="authentication/ssh.html"
+                        title="previous chapter"><cite>gc3libs.authentication.ssh</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="backends/arc0.html"
+                        title="next chapter"><cite>gc3libs.backends.arc0</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="backends/arc0.html" title="gc3libs.backends.arc0"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="authentication/ssh.html" title="gc3libs.authentication.ssh"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

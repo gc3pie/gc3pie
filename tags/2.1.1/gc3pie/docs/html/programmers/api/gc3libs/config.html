@@ -1,0 +1,269 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.config &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../index.html" />
+    <link rel="next" title="gc3libs.core" href="core.html" />
+    <link rel="prev" title="gc3libs.cmdline" href="cmdline.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="core.html" title="gc3libs.core"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="cmdline.html" title="gc3libs.cmdline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.config">
+<span id="gc3libs-config"></span><h1><cite>gc3libs.config</cite><a class="headerlink" href="#module-gc3libs.config" title="Permalink to this headline">¶</a></h1>
+<p>Deal with GC3Pie configuration files.</p>
+<dl class="class">
+<dt id="gc3libs.config.Configuration">
+<em class="property">class </em><tt class="descclassname">gc3libs.config.</tt><tt class="descname">Configuration</tt><big>(</big><em>*locations</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.config.Configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>In-memory representation of the GC3Pie configuration.</p>
+<p>This class provides facilities for:</p>
+<ul class="simple">
+<li>parsing configuration files (methods <a class="reference internal" href="#gc3libs.config.Configuration.load" title="gc3libs.config.Configuration.load"><tt class="xref py py-meth docutils literal"><span class="pre">load()</span></tt></a> and
+<a class="reference internal" href="#gc3libs.config.Configuration.merge_file" title="gc3libs.config.Configuration.merge_file"><tt class="xref py py-meth docutils literal"><span class="pre">merge_file()</span></tt></a>);</li>
+<li>validating the loaded values;</li>
+<li>instanciating the internal GC3Pie objects resulting from the
+configuration (methods <a class="reference internal" href="#gc3libs.config.Configuration.make_auth" title="gc3libs.config.Configuration.make_auth"><tt class="xref py py-meth docutils literal"><span class="pre">make_auth()</span></tt></a> and
+<tt class="xref py py-meth docutils literal"><span class="pre">make_resource()</span></tt>).</li>
+</ul>
+<p>The constructor takes a list of files to load (<cite>locations</cite>) and a
+list of key=value pairs to provide defaults for the configuration.
+Both lists are optional and can be omitted, resulting in a
+configuration containing only GC3Pie default values.</p>
+<p>Example 1: initialization from config file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">os</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">example_cfgfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">),</span> <span class="s">&#39;etc/gc3pie.conf.example&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">(</span><span class="n">example_cfgfile</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span><span class="o">.</span><span class="n">debug</span>
+<span class="go">&#39;0&#39;</span>
+</pre></div>
+</div>
+<p>Example 2: initialization from key=value list:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">(</span><span class="n">auto_enable_auth</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">foo</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bar</span><span class="o">=</span><span class="s">&#39;baz&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span><span class="o">.</span><span class="n">auto_enable_auth</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span><span class="o">.</span><span class="n">foo</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span><span class="o">.</span><span class="n">bar</span>
+<span class="go">&#39;baz&#39;</span>
+</pre></div>
+</div>
+<p>When both a configuration file <em>and</em> a key=value list is present,
+values in the configuration files override those in the key=value
+list:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">(</span><span class="n">example_cfgfile</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span><span class="o">.</span><span class="n">debug</span>
+<span class="go">&#39;0&#39;</span>
+</pre></div>
+</div>
+<p>Example 3: default initialization:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cfg</span><span class="o">.</span><span class="n">auto_enable_auth</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<dl class="attribute">
+<dt id="gc3libs.config.Configuration.auth_factory">
+<tt class="descname">auth_factory</tt><a class="headerlink" href="#gc3libs.config.Configuration.auth_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>The instance of <a class="reference internal" href="authentication.html#gc3libs.authentication.Auth" title="gc3libs.authentication.Auth"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.authentication.Auth</span></tt></a> used to
+manage auth access for the resources.</p>
+<p>This is a <em>read-only</em> attribute, created upon first access
+with the values set in <cite>self.auths</cite> and <cite>self.auto_enabled</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.config.Configuration.load">
+<tt class="descname">load</tt><big>(</big><em>*locations</em><big>)</big><a class="headerlink" href="#gc3libs.config.Configuration.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge settings from configuration files into this <cite>Configuration</cite> instance.</p>
+<p>Environment variables and <cite>~</cite> references are expanded in the
+location file names.</p>
+<p>If any of the specified files does not exist or cannot be read
+(for whatever reason), a message is logged but the error is
+ignored.  However, a <cite>NoConfigurationFile</cite> exception is raised
+if <em>none</em> of the specified locations could be read.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Raises <a class="reference internal" href="exceptions.html#gc3libs.exceptions.NoConfigurationFile" title="gc3libs.exceptions.NoConfigurationFile">gc3libs.exceptions.NoConfigurationFile</a>:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">if none of the specified files could be read.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.config.Configuration.make_auth">
+<tt class="descname">make_auth</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#gc3libs.config.Configuration.make_auth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return factory for auth credentials configured in section <tt class="docutils literal"><span class="pre">[auth/name]</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.config.Configuration.make_resources">
+<tt class="descname">make_resources</tt><big>(</big><em>ignore_errors=True</em><big>)</big><a class="headerlink" href="#gc3libs.config.Configuration.make_resources" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make backend objects corresponding to the configured resources.</p>
+<p>Return a dictionary, mapping the resource name (string) into
+the corresponding backend object.</p>
+<p>By default, errors in constructing backends (e.g., due to a
+bad configuration) are silently ignored: the offending
+configuration is just dropped.  This can be changed by setting
+the optional argument <cite>ignore_errors</cite> to <cite>False</cite>: in this
+case, an exception is raised whenever we fail to construct a
+backend.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.config.Configuration.merge_file">
+<tt class="descname">merge_file</tt><big>(</big><em>filename</em><big>)</big><a class="headerlink" href="#gc3libs.config.Configuration.merge_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read configuration files and merge the settings into this <cite>Configuration</cite> object.</p>
+<p>Contrary to <a class="reference internal" href="#gc3libs.config.Configuration.load" title="gc3libs.config.Configuration.load"><tt class="xref py py-meth docutils literal"><span class="pre">load()</span></tt></a> (which see), the file name is taken
+literally and an error is raised if the file cannot be read
+for whatever reason.</p>
+<p>Any parameter which is set in the configuration files
+<tt class="docutils literal"><span class="pre">[DEFAULT]</span></tt> section, and whose name does not start with
+underscore (<tt class="docutils literal"><span class="pre">_</span></tt>) defines an attribute in the current
+<cite>Configuration</cite>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">No type conversion is performed on values set this way - so
+they all end up being strings!</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Raises <a class="reference internal" href="exceptions.html#gc3libs.exceptions.ConfigurationError" title="gc3libs.exceptions.ConfigurationError">gc3libs.exceptions.ConfigurationError</a>:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">if the
+configuration file does not exist, cannot be read, is
+corrupt or has wrong format.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="cmdline.html"
+                        title="previous chapter"><cite>gc3libs.cmdline</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="core.html"
+                        title="next chapter"><cite>gc3libs.core</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="core.html" title="gc3libs.core"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="cmdline.html" title="gc3libs.cmdline"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

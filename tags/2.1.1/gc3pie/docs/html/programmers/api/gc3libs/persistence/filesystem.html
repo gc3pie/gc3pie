@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.persistence.filesystem &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../../index.html" />
+    <link rel="next" title="gc3libs.persistence.idfactory" href="idfactory.html" />
+    <link rel="prev" title="gc3libs.persistence.accessors" href="accessors.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="idfactory.html" title="gc3libs.persistence.idfactory"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="accessors.html" title="gc3libs.persistence.accessors"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.persistence.filesystem">
+<span id="gc3libs-persistence-filesystem"></span><h1><cite>gc3libs.persistence.filesystem</cite><a class="headerlink" href="#module-gc3libs.persistence.filesystem" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="gc3libs.persistence.filesystem.FilesystemStore">
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.filesystem.</tt><tt class="descname">FilesystemStore</tt><big>(</big><em>directory='/home/rmurri/.gc3/jobs'</em>, <em>idfactory=&lt;gc3libs.persistence.idfactory.IdFactory object at 0x215fd50&gt;</em>, <em>protocol=2</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save and load objects in a given directory.  Uses Python&#8217;s
+standard <cite>pickle</cite> module to serialize objects onto files.</p>
+<p>All objects are saved as files in the given directory (default:
+<cite>gc3libs.Default.JOBS_DIR</cite>).  The file name is the object ID.</p>
+<p>If an object contains references to other <cite>Persistable</cite> objects,
+these are saved in the file they would have been saved if the
+<cite>save</cite> method was called on them in the first place, and only an
+&#8216;external reference&#8217; is saved in the pickled container. This
+ensures that: (1) only one copy of a shared object is ever saved,
+and (2) any shared reference to <cite>Persistable</cite> objects is correctly
+restored when restoring the container.</p>
+<p>The default <cite>idfactory</cite> assigns object IDs by appending a
+sequential number to the class name; see class <cite>Id</cite> for
+details.</p>
+<p>The <cite>protocol</cite> argument specifies the serialization protocol to use,
+if different from <cite>gc3libs.persistence.serialization.DEFAULT_PROTOCOL</cite>.</p>
+<p>Any extra keyword arguments are ignored for compatibility with
+<cite>SqlStore</cite>.</p>
+<dl class="method">
+<dt id="gc3libs.persistence.filesystem.FilesystemStore.list">
+<tt class="descname">list</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return list of IDs of saved <cite>Job</cite> objects.</p>
+<p>This is an optional method; classes that do not implement it
+should raise a <cite>NotImplementedError</cite> exception.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.persistence.filesystem.FilesystemStore.load">
+<tt class="descname">load</tt><big>(</big><em>id_</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a saved object given its ID, and return it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.persistence.filesystem.FilesystemStore.remove">
+<tt class="descname">remove</tt><big>(</big><em>id_</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a given object from persistent storage, given its ID.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.persistence.filesystem.FilesystemStore.replace">
+<tt class="descname">replace</tt><big>(</big><em>id_</em>, <em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.replace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replace the object already saved with the given ID with a copy
+of <cite>obj</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.persistence.filesystem.FilesystemStore.save">
+<tt class="descname">save</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save an object, and return an ID.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.persistence.filesystem.make_filesystemstore">
+<tt class="descclassname">gc3libs.persistence.filesystem.</tt><tt class="descname">make_filesystemstore</tt><big>(</big><em>url</em>, <em>*args</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.make_filesystemstore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a <a class="reference internal" href="#gc3libs.persistence.filesystem.FilesystemStore" title="gc3libs.persistence.filesystem.FilesystemStore"><tt class="xref py py-class docutils literal"><span class="pre">FilesystemStore</span></tt></a> instance, given a &#8216;<a class="reference external" href="file:///">file:///</a>&#8216; URL
+and optional initialization arguments.</p>
+<p>This function is a bridge between the generic factory functions
+provided by <tt class="xref py py-func docutils literal"><span class="pre">gc3libs.persistence.make_store()</span></tt> and
+<tt class="xref py py-func docutils literal"><span class="pre">gc3libs.persistence.register()</span></tt> and the class constructor
+<cite>FilesystemStore</cite>:class.</p>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fs1</span> <span class="o">=</span> <span class="n">make_filesystemstore</span><span class="p">(</span><span class="n">gc3libs</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">Url</span><span class="p">(</span><span class="s">&#39;file:///tmp&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fs1</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span>
+<span class="go">&#39;FilesystemStore&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="accessors.html"
+                        title="previous chapter"><cite>gc3libs.persistence.accessors</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="idfactory.html"
+                        title="next chapter"><cite>gc3libs.persistence.idfactory</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="idfactory.html" title="gc3libs.persistence.idfactory"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="accessors.html" title="gc3libs.persistence.accessors"
+             >previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

@@ -1,0 +1,428 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.url &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../index.html" />
+    <link rel="next" title="gc3libs.utils" href="utils.html" />
+    <link rel="prev" title="gc3libs.template" href="template.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="utils.html" title="gc3libs.utils"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="template.html" title="gc3libs.template"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.url">
+<span id="gc3libs-url"></span><h1><cite>gc3libs.url</cite><a class="headerlink" href="#module-gc3libs.url" title="Permalink to this headline">¶</a></h1>
+<p>Utility classes and methods for dealing with URLs.</p>
+<dl class="class">
+<dt id="gc3libs.url.Url">
+<em class="property">class </em><tt class="descclassname">gc3libs.url.</tt><tt class="descname">Url</tt><a class="headerlink" href="#gc3libs.url.Url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represent a URL as a named-tuple object.  This is an immutable
+object that cannot be changed after creation.</p>
+<p>The following read-only attributes are defined on objects of class <cite>Url</cite>.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="7%" />
+<col width="51%" />
+<col width="29%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Attribute</th>
+<th class="head">Index</th>
+<th class="head">Value</th>
+<th class="head">Value if not present</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>scheme</td>
+<td>0</td>
+<td>URL scheme specifier</td>
+<td>empty string</td>
+</tr>
+<tr class="row-odd"><td>netloc</td>
+<td>1</td>
+<td>Network location part</td>
+<td>empty string</td>
+</tr>
+<tr class="row-even"><td>path</td>
+<td>2</td>
+<td>Hierarchical path</td>
+<td>empty string</td>
+</tr>
+<tr class="row-odd"><td>query</td>
+<td>3</td>
+<td>Query component</td>
+<td>empty string</td>
+</tr>
+<tr class="row-even"><td>hostname</td>
+<td>4</td>
+<td>Host name (lower case)</td>
+<td>None</td>
+</tr>
+<tr class="row-odd"><td>port</td>
+<td>5</td>
+<td>Port number as integer (if present)</td>
+<td>None</td>
+</tr>
+<tr class="row-even"><td>username</td>
+<td>6</td>
+<td>User name</td>
+<td>None</td>
+</tr>
+<tr class="row-odd"><td>password</td>
+<td>7</td>
+<td>Password</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p>There are two ways of constructing <cite>Url</cite> objects:</p>
+<ul>
+<li><p class="first">By passing a string <cite>urlstring</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Url</span><span class="p">(</span><span class="s">&#39;http://www.example.org/data&#39;</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">.</span><span class="n">scheme</span>
+<span class="go">&#39;http&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">.</span><span class="n">netloc</span>
+<span class="go">&#39;www.example.org&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">.</span><span class="n">path</span>
+<span class="go">&#39;/data&#39;</span>
+</pre></div>
+</div>
+<p>The default URL scheme is <tt class="docutils literal"><span class="pre">file</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Url</span><span class="p">(</span><span class="s">&#39;/tmp/foo&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">.</span><span class="n">scheme</span>
+<span class="go">&#39;file&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">.</span><span class="n">path</span>
+<span class="go">&#39;/tmp/foo&#39;</span>
+</pre></div>
+</div>
+<p>Please note that extra leading slashes &#8216;/&#8217; are interpreted as
+the begining of a network location:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Url</span><span class="p">(</span><span class="s">&#39;//foo/bar&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">.</span><span class="n">path</span>
+<span class="go">&#39;/bar&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">.</span><span class="n">netloc</span>
+<span class="go">&#39;foo&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Url</span><span class="p">(</span><span class="s">&#39;///foo/bar&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">path</span>
+<span class="go">&#39;/foo/bar&#39;</span>
+</pre></div>
+</div>
+<p>Check RFC 3986 <a class="reference external" href="http://tools.ietf.org/html/rfc3986">http://tools.ietf.org/html/rfc3986</a></p>
+<p>If <cite>force_abs</cite> is <cite>True</cite> (default), then the <cite>path</cite>
+attribute is made absolute, by calling <cite>os.path.abspath</cite> if
+necessary:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Url</span><span class="p">(</span><span class="s">&#39;foo/bar&#39;</span><span class="p">,</span> <span class="n">force_abs</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Otherwise, if <cite>force_abs</cite> is <cite>False</cite>, then the <cite>path</cite>
+attribute stores the passed string unchanged:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Url</span><span class="p">(</span><span class="s">&#39;foo&#39;</span><span class="p">,</span> <span class="n">force_abs</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">.</span><span class="n">path</span>
+<span class="go">&#39;foo&#39;</span>
+</pre></div>
+</div>
+<p>Other keyword arguments can specify defaults for missing parts
+of the URL:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Url</span><span class="p">(</span><span class="s">&#39;/tmp/foo&#39;</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s">&#39;file&#39;</span><span class="p">,</span> <span class="n">netloc</span><span class="o">=</span><span class="s">&#39;localhost&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">.</span><span class="n">scheme</span>
+<span class="go">&#39;file&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">.</span><span class="n">netloc</span>
+<span class="go">&#39;localhost&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">.</span><span class="n">path</span>
+<span class="go">&#39;/tmp/foo&#39;</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">By passing keyword arguments only, to construct an <cite>Url</cite> object
+with exactly those values for the named fields:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Url</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="s">&#39;http&#39;</span><span class="p">,</span> <span class="n">netloc</span><span class="o">=</span><span class="s">&#39;www.example.org&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s">&#39;/data&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this form, the <cite>force_abs</cite> parameter is ignored.</p>
+</li>
+</ul>
+<p>See also: <a class="reference external" href="http://docs.python.org/library/urlparse.html#urlparse-result-object">http://docs.python.org/library/urlparse.html#urlparse-result-object</a></p>
+<dl class="method">
+<dt id="gc3libs.url.Url.adjoin">
+<tt class="descname">adjoin</tt><big>(</big><em>relpath</em><big>)</big><a class="headerlink" href="#gc3libs.url.Url.adjoin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new <cite>Url</cite>, constructed by appending <cite>relpath</cite> to the
+path section of this URL.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">u0</span> <span class="o">=</span> <span class="n">Url</span><span class="p">(</span><span class="s">&#39;http://www.example.org&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u1</span> <span class="o">=</span> <span class="n">u0</span><span class="o">.</span><span class="n">adjoin</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">u1</span><span class="p">)</span>
+<span class="go">&#39;http://www.example.org/data&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u2</span> <span class="o">=</span> <span class="n">u1</span><span class="o">.</span><span class="n">adjoin</span><span class="p">(</span><span class="s">&#39;moredata&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">u2</span><span class="p">)</span>
+<span class="go">&#39;http://www.example.org/data/moredata&#39;</span>
+</pre></div>
+</div>
+<p>Even if <cite>relpath</cite> starts with <cite>/</cite>, it is still appended to the
+path in the base URL:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">u3</span> <span class="o">=</span> <span class="n">u2</span><span class="o">.</span><span class="n">adjoin</span><span class="p">(</span><span class="s">&#39;/evenmore&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">u3</span><span class="p">)</span>
+<span class="go">&#39;http://www.example.org/data/moredata/evenmore&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.url.UrlKeyDict">
+<em class="property">class </em><tt class="descclassname">gc3libs.url.</tt><tt class="descname">UrlKeyDict</tt><big>(</big><em>iter_or_dict=None</em>, <em>force_abs=False</em><big>)</big><a class="headerlink" href="#gc3libs.url.UrlKeyDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dictionary class enforcing that all keys are URLs.</p>
+<p>Strings and/or objects returned by <cite>urlparse</cite> can
+be used as keys.  Setting a string key automatically
+translates it to a URL:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">UrlKeyDict</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="s">&#39;/tmp/foo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="k">print</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="n">k</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> 
+<span class="go">(&lt;class &#39;....Url&#39;&gt;, &#39;/tmp/foo&#39;)</span>
+</pre></div>
+</div>
+<p>Retrieving the value associated with a key works with both the
+string or the url value of the key:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="s">&#39;/tmp/foo&#39;</span><span class="p">]</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="n">Url</span><span class="p">(</span><span class="s">&#39;/tmp/foo&#39;</span><span class="p">)]</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>Key lookup can use both the string or the <cite>Url</cite> value as well:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="s">&#39;/tmp/foo&#39;</span> <span class="ow">in</span> <span class="n">d</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Url</span><span class="p">(</span><span class="s">&#39;/tmp/foo&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">d</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s">&#39;file:///tmp/foo&#39;</span> <span class="ow">in</span> <span class="n">d</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s">&#39;http://example.org&#39;</span> <span class="ow">in</span> <span class="n">d</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>Class <cite>UrlKeyDict</cite> supports initialization by copying items from
+another <cite>dict</cite> instance or from an iterable of (key, value)
+pairs:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span> <span class="o">=</span> <span class="n">UrlKeyDict</span><span class="p">({</span> <span class="s">&#39;/tmp/foo&#39;</span><span class="p">:</span><span class="s">&#39;foo&#39;</span><span class="p">,</span> <span class="s">&#39;/tmp/bar&#39;</span><span class="p">:</span><span class="s">&#39;bar&#39;</span> <span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d2</span> <span class="o">=</span> <span class="n">UrlKeyDict</span><span class="p">([</span> <span class="p">(</span><span class="s">&#39;/tmp/foo&#39;</span><span class="p">,</span> <span class="s">&#39;foo&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;/tmp/bar&#39;</span><span class="p">,</span> <span class="s">&#39;bar&#39;</span><span class="p">)</span> <span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span> <span class="o">==</span> <span class="n">d2</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Differently from <cite>dict</cite>, initialization from keyword arguments
+alone is <em>not</em> supported:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d3</span> <span class="o">=</span> <span class="n">UrlKeyDict</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s">&#39;foo&#39;</span><span class="p">,</span> <span class="n">bar</span><span class="o">=</span><span class="s">&#39;bar&#39;</span><span class="p">)</span> 
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="o">...</span>
+<span class="gr">TypeError</span>: <span class="n">__init__() got an unexpected keyword argument &#39;foo&#39;</span>
+</pre></div>
+</div>
+<p>An empty <cite>UrlKeyDict</cite> instance is returned by the constructor
+when called with no parameters:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d0</span> <span class="o">=</span> <span class="n">UrlKeyDict</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">d0</span><span class="p">)</span>
+<span class="go">0</span>
+</pre></div>
+</div>
+<p>If <cite>force_abs</cite> is <cite>True</cite>, then all paths are converted to
+absolute ones in the dictionary keys.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">UrlKeyDict</span><span class="p">(</span><span class="n">force_abs</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="s">&#39;foo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="k">print</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">UrlKeyDict</span><span class="p">(</span><span class="n">force_abs</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="s">&#39;foo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="k">print</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.url.UrlValueDict">
+<em class="property">class </em><tt class="descclassname">gc3libs.url.</tt><tt class="descname">UrlValueDict</tt><big>(</big><em>iter_or_dict=None</em>, <em>force_abs=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.url.UrlValueDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dictionary class enforcing that all values are URLs.</p>
+<p>Strings and/or objects returned by <cite>urlparse</cite> can
+be used as values.  Setting a string value automatically
+translates it to a URL:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">UrlValueDict</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;/tmp/foo&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">Url</span><span class="p">(</span><span class="s">&#39;file:///tmp/bar&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">():</span> <span class="k">print</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">v</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> 
+<span class="go">(&lt;class &#39;....Url&#39;&gt;, &#39;/tmp/foo&#39;)</span>
+<span class="go">(&lt;class &#39;....Url&#39;&gt;, &#39;/tmp/bar&#39;)</span>
+</pre></div>
+</div>
+<p>Retrieving the value associated with a key always returns the
+URL-type value, regardless of how it was set:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">repr</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="go">&quot;Url(scheme=&#39;file&#39;, netloc=&#39;&#39;, path=&#39;/tmp/foo&#39;, hostname=None, port=None, username=None, password=None)&quot;</span>
+</pre></div>
+</div>
+<p>Class <cite>UrlValueDict</cite> supports initialization by any of the
+methods that work with a plain <cite>dict</cite> instance:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span> <span class="o">=</span> <span class="n">UrlValueDict</span><span class="p">({</span> <span class="s">&#39;foo&#39;</span><span class="p">:</span><span class="s">&#39;/tmp/foo&#39;</span><span class="p">,</span> <span class="s">&#39;bar&#39;</span><span class="p">:</span><span class="s">&#39;/tmp/bar&#39;</span> <span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d2</span> <span class="o">=</span> <span class="n">UrlValueDict</span><span class="p">([</span> <span class="p">(</span><span class="s">&#39;foo&#39;</span><span class="p">,</span> <span class="s">&#39;/tmp/foo&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;bar&#39;</span><span class="p">,</span> <span class="s">&#39;/tmp/bar&#39;</span><span class="p">)</span> <span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d3</span> <span class="o">=</span> <span class="n">UrlValueDict</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s">&#39;/tmp/foo&#39;</span><span class="p">,</span> <span class="n">bar</span><span class="o">=</span><span class="s">&#39;/tmp/bar&#39;</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span> <span class="o">==</span> <span class="n">d2</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d2</span> <span class="o">==</span> <span class="n">d3</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>In particular, an empty <cite>UrlDict</cite> instance is returned by the
+constructor when called with no parameters:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d0</span> <span class="o">=</span> <span class="n">UrlValueDict</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">d0</span><span class="p">)</span>
+<span class="go">0</span>
+</pre></div>
+</div>
+<p>If <cite>force_abs</cite> is <cite>True</cite>, then all paths are converted to
+absolute ones in the dictionary values.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">UrlValueDict</span><span class="p">(</span><span class="n">force_abs</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;foo&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">():</span> <span class="k">print</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">UrlValueDict</span><span class="p">(</span><span class="n">force_abs</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;foo&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">():</span> <span class="k">print</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="template.html"
+                        title="previous chapter"><cite>gc3libs.template</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="utils.html"
+                        title="next chapter"><cite>gc3libs.utils</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="utils.html" title="gc3libs.utils"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="template.html" title="gc3libs.template"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

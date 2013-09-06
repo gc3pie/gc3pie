@@ -1,0 +1,503 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.quantity &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../index.html" />
+    <link rel="next" title="gc3libs.session" href="session.html" />
+    <link rel="prev" title="gc3libs.persistence.store" href="persistence/store.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="session.html" title="gc3libs.session"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="persistence/store.html" title="gc3libs.persistence.store"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.quantity">
+<span id="gc3libs-quantity"></span><h1><cite>gc3libs.quantity</cite><a class="headerlink" href="#module-gc3libs.quantity" title="Permalink to this headline">¶</a></h1>
+<p>Manipulation of quantities with units attached with automated
+conversion among compatible units.</p>
+<p>For details and the discussion leading up to this,
+see: <cite>&lt;http://code.google.com/p/gc3pie/issues/detail?id=47&gt;</cite></p>
+<dl class="class">
+<dt id="gc3libs.quantity.Duration">
+<em class="property">class </em><tt class="descclassname">gc3libs.quantity.</tt><tt class="descname">Duration</tt><a class="headerlink" href="#gc3libs.quantity.Duration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represent the duration of a time lapse.</p>
+<p>Construction of a duration can be done by parsing a string
+specification; several formats are accepted:</p>
+<ul>
+<li><p class="first">A duration is an aggregate of days, hours, minutes and seconds:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">l3</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;1day 4hours 9minutes 16seconds&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l3</span><span class="o">.</span><span class="n">amount</span><span class="p">(</span><span class="n">Duration</span><span class="o">.</span><span class="n">s</span><span class="p">)</span> <span class="c"># convert to seconds</span>
+<span class="go">101356</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Any of the terms can be omitted (in which case it defaults
+to zero):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">l4</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;1day 4hours 16seconds&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l4</span> <span class="o">==</span> <span class="n">l3</span> <span class="o">-</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;9 minutes&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">The unit names can be singular or plural, and any amount of
+space can be added between the time unit name and the
+associated amount:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">l5</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;3 hour 42 minute&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l6</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;3 hours 42 minutes&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l7</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;3hours 42minutes&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l5</span> <span class="o">==</span> <span class="n">l6</span> <span class="o">==</span> <span class="n">l7</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Unit names can also be abbreviated using just the leading
+letter:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">l8</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;3h 42m&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l9</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;3h42m&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l8</span> <span class="o">==</span> <span class="n">l9</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">The abbreviated formats HH:MM:SS and DD:HH:MM:SS are also
+accepted:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># 1 hour + 1 minute + 1 second</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l1</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;01:01:01&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l1</span> <span class="o">==</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;3661 s&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># 1 day, 2 hours, 3 minutes, 4 seconds</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l2</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;01:02:03:04&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l2</span><span class="o">.</span><span class="n">amount</span><span class="p">(</span><span class="n">Duration</span><span class="o">.</span><span class="n">s</span><span class="p">)</span>
+<span class="go">93784</span>
+</pre></div>
+</div>
+<p>However, the formats HH:MM and MM:SS are rejected as ambiguous:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># is this hours:minutes or minutes:seconds ?</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l0</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;01:02&#39;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr">ValueError</span>: <span class="n">Duration &#39;01:02&#39; is ambiguous: use &#39;1m 2s&#39; for 1 minutes and 2 seconds, or &#39;1h 2m&#39; for 1 hours and 2 minutes.</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Finally, you can specify a duration like any other quantity,
+as an integral amount of a given time unit:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">l1</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;1 day&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l2</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;86400 s&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l1</span> <span class="o">==</span> <span class="n">l2</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>A new quantity can also be defined as a multiple of an existing
+one:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">an_hour</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="s">&#39;1 hour&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_day</span> <span class="o">=</span> <span class="mi">24</span> <span class="o">*</span> <span class="n">an_hour</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_day</span><span class="o">.</span><span class="n">amount</span><span class="p">(</span><span class="n">Duration</span><span class="o">.</span><span class="n">h</span><span class="p">)</span>
+<span class="go">24</span>
+</pre></div>
+</div>
+<p>The quantities <tt class="docutils literal"><span class="pre">Duration.hours</span></tt>, <tt class="docutils literal"><span class="pre">Duration.minutes</span></tt> and
+<tt class="docutils literal"><span class="pre">Duration.seconds</span></tt> (and their single-letter abbreviations <tt class="docutils literal"><span class="pre">h</span></tt>,
+<tt class="docutils literal"><span class="pre">m</span></tt>, <tt class="docutils literal"><span class="pre">s</span></tt>) are pre-defined with their obvious meaning.</p>
+<p>Also module-level aliases <tt class="docutils literal"><span class="pre">hours</span></tt>, <tt class="docutils literal"><span class="pre">minutes</span></tt> and <tt class="docutils literal"><span class="pre">seconds</span></tt>
+(and the one-letter forms) are available:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a_day1</span> <span class="o">=</span> <span class="mi">24</span><span class="o">*</span><span class="n">hours</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_day2</span> <span class="o">=</span> <span class="mi">1440</span><span class="o">*</span><span class="n">minutes</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_day3</span> <span class="o">=</span> <span class="mi">86400</span><span class="o">*</span><span class="n">seconds</span>
+</pre></div>
+</div>
+<p>This allows for yet another way of constructing duration objects,
+i.e., by passing the amount and the unit separately to the
+constructor:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a_day4</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="n">hours</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Two durations are equal if they indicate the exact same
+amount in seconds:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a_day1</span> <span class="o">==</span> <span class="n">a_day2</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_day1</span><span class="o">.</span><span class="n">amount</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="go">86400</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_day2</span><span class="o">.</span><span class="n">amount</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="go">86400</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_day</span> <span class="o">==</span> <span class="n">an_hour</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_day</span><span class="o">.</span><span class="n">amount</span><span class="p">(</span><span class="n">minutes</span><span class="p">)</span>
+<span class="go">1440</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">an_hour</span><span class="o">.</span><span class="n">amount</span><span class="p">(</span><span class="n">minutes</span><span class="p">)</span>
+<span class="go">60</span>
+</pre></div>
+</div>
+<p>Basic arithmetic is possible with durations:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">two_hours</span> <span class="o">=</span> <span class="n">an_hour</span> <span class="o">+</span> <span class="n">an_hour</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">two_hours</span> <span class="o">==</span> <span class="mi">2</span><span class="o">*</span><span class="n">an_hour</span>
+<span class="go">True</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">one_hour</span> <span class="o">=</span> <span class="n">two_hours</span> <span class="o">-</span> <span class="n">an_hour</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">one_hour</span><span class="o">.</span><span class="n">amount</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span>
+<span class="go">3600</span>
+</pre></div>
+</div>
+<p>It is also possible to add duration quantities defined with
+different units; the result is naturally expressed in the smaller
+unit of the two:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">one_hour_and_half</span> <span class="o">=</span> <span class="n">an_hour</span> <span class="o">+</span> <span class="mi">30</span><span class="o">*</span><span class="n">minutes</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">one_hour_and_half</span>
+<span class="go">Duration(90, unit=m)</span>
+</pre></div>
+</div>
+<p>Note that the two unit class and numeric amount are accessible through
+the <cite>unit</cite> and <tt class="xref py py-meth docutils literal"><span class="pre">amount()</span></tt> attributes:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">one_hour_and_half</span><span class="o">.</span><span class="n">unit</span>
+<span class="go">Duration(1, unit=m)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">one_hour_and_half</span><span class="o">.</span><span class="n">amount</span><span class="p">()</span>
+<span class="go">90</span>
+</pre></div>
+</div>
+<p>The <tt class="xref py py-meth docutils literal"><span class="pre">amount()</span></tt> method accepts an optional specification of an
+alternate unit to express the amount into:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">one_hour_and_half</span><span class="o">.</span><span class="n">amount</span><span class="p">(</span><span class="n">Duration</span><span class="o">.</span><span class="n">hours</span><span class="p">)</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>An optional <cite>conv</cite> argument is available to specify a numerical
+domain for conversion, in case the default integer arithmetic
+is not precise enough:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">one_hour_and_half</span><span class="o">.</span><span class="n">amount</span><span class="p">(</span><span class="n">Duration</span><span class="o">.</span><span class="n">hours</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="go">1.5</span>
+</pre></div>
+</div>
+<p>The <tt class="xref py py-meth docutils literal"><span class="pre">to_str()</span></tt> method allows representing a duration as a
+string, and provides choice of the output format and unit.  The
+format string should contain exactly two <tt class="docutils literal"><span class="pre">%</span></tt>-specifiers: the
+first one is used to format the numerical amount, and the second
+one to format the measurement unit name.</p>
+<p>By default, the unit used originally for defining the quantity is
+used:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">an_hour</span><span class="o">.</span><span class="n">to_str</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%d</span><span class="s"> [</span><span class="si">%s</span><span class="s">]&#39;</span><span class="p">)</span>
+<span class="go">&#39;1 [hour]&#39;</span>
+</pre></div>
+</div>
+<p>This can be overridden by specifying an optional second argument
+<cite>unit</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">an_hour</span><span class="o">.</span><span class="n">to_str</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%d</span><span class="s"> [</span><span class="si">%s</span><span class="s">]&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">Duration</span><span class="o">.</span><span class="n">m</span><span class="p">)</span>
+<span class="go">&#39;60 [m]&#39;</span>
+</pre></div>
+</div>
+<p>A third optional argument <cite>conv</cite> can set the numerical type to be
+used for conversion computations:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">an_hour</span><span class="o">.</span><span class="n">to_str</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%.1f</span><span class="s"> [</span><span class="si">%s</span><span class="s">]&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">Duration</span><span class="o">.</span><span class="n">m</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="go">&#39;60.0 [m]&#39;</span>
+</pre></div>
+</div>
+<p>The default numerical type is <cite>int</cite>, which in particular implies
+that you get a null amount if the requested unit is larger than
+the quantity:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">an_hour</span><span class="o">.</span><span class="n">to_str</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%d</span><span class="s"> [</span><span class="si">%s</span><span class="s">]&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">Duration</span><span class="o">.</span><span class="n">days</span><span class="p">)</span>
+<span class="go">&#39;0 [days]&#39;</span>
+</pre></div>
+</div>
+<p>Conversion to string uses the unit originally used for defining
+the quantity and the <tt class="docutils literal"><span class="pre">%g%s</span></tt> format:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">an_hour</span><span class="p">)</span>
+<span class="go">&#39;1hour&#39;</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="gc3libs.quantity.Duration.to_timedelta">
+<tt class="descname">to_timedelta</tt><big>(</big><em>duration</em><big>)</big><a class="headerlink" href="#gc3libs.quantity.Duration.to_timedelta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a duration into a Python <cite>datetime.timedelta</cite> object.</p>
+<p>This is useful to operate on Python&#8217;s <cite>datetime.time</cite> and
+<cite>datetime.date</cite> objects, which can be added or subtracted to
+<cite>datetime.timedelta</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.quantity.Memory">
+<em class="property">class </em><tt class="descclassname">gc3libs.quantity.</tt><tt class="descname">Memory</tt><a class="headerlink" href="#gc3libs.quantity.Memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represent an amount of RAM.</p>
+<p>Construction of a memory quantity can be done by parsing a string
+specification (amount followed by unit):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">byte</span> <span class="o">=</span> <span class="n">Memory</span><span class="p">(</span><span class="s">&#39;1 B&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">kilobyte</span> <span class="o">=</span> <span class="n">Memory</span><span class="p">(</span><span class="s">&#39;1 kB&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A new quantity can also be defined as a multiple of an existing
+one:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a_thousand_kB</span> <span class="o">=</span> <span class="mi">1000</span><span class="o">*</span><span class="n">kilobyte</span>
+</pre></div>
+</div>
+<p>The base-10 units (up to TB, Terabytes) and base-2 (up to TiB,
+TiBiBytes) are available as attributes of the <cite>Memory</cite> class.
+This allows for a third way of constructing quantity objects,
+i.e., by passing the amount and the unit separately to the
+constructor:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a_megabyte</span> <span class="o">=</span> <span class="n">Memory</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Memory</span><span class="o">.</span><span class="n">MB</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_mibibyte</span> <span class="o">=</span> <span class="n">Memory</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Memory</span><span class="o">.</span><span class="n">MiB</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_gigabyte</span> <span class="o">=</span> <span class="mi">1</span><span class="o">*</span><span class="n">Memory</span><span class="o">.</span><span class="n">GB</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_gibibyte</span> <span class="o">=</span> <span class="mi">1</span><span class="o">*</span><span class="n">Memory</span><span class="o">.</span><span class="n">GiB</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">two_terabytes</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">Memory</span><span class="o">.</span><span class="n">TB</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">two_tibibytes</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">Memory</span><span class="o">.</span><span class="n">TiB</span>
+</pre></div>
+</div>
+<p>Two memory quantities are equal if they indicate the exact same
+amount in bytes:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">kilobyte</span> <span class="o">==</span> <span class="mi">1000</span><span class="o">*</span><span class="n">byte</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_megabyte</span> <span class="o">==</span> <span class="n">a_mibibyte</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_megabyte</span> <span class="o">&lt;</span> <span class="n">a_mibibyte</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_megabyte</span> <span class="o">&gt;</span> <span class="n">a_gigabyte</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>Basic arithmetic is possible with memory quantities:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">two_bytes</span> <span class="o">=</span> <span class="n">byte</span> <span class="o">+</span> <span class="n">byte</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">two_bytes</span> <span class="o">==</span> <span class="mi">2</span><span class="o">*</span><span class="n">byte</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">half_gigabyte</span> <span class="o">=</span> <span class="n">a_gigabyte</span> <span class="o">/</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">half_gigabyte</span>
+<span class="go">Memory(476.837, unit=MiB)</span>
+</pre></div>
+</div>
+<p>The ratio of two memory quantities is correctly computed as a pure
+(floating-point) number:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a_gigabyte</span> <span class="o">/</span> <span class="n">a_megabyte</span>
+<span class="go">1000.0</span>
+</pre></div>
+</div>
+<p>It is also possible to add memory quantities defined with
+different units; the result is naturally expressed in the smaller
+unit of the two:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">one_gigabyte_and_half</span> <span class="o">=</span> <span class="mi">1</span><span class="o">*</span><span class="n">Memory</span><span class="o">.</span><span class="n">GB</span> <span class="o">+</span> <span class="mi">500</span><span class="o">*</span><span class="n">Memory</span><span class="o">.</span><span class="n">MB</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">one_gigabyte_and_half</span>
+<span class="go">Memory(1500, unit=MB)</span>
+</pre></div>
+</div>
+<p>Note that the two unit class and numeric amount are accessible through
+the <cite>unit</cite> and <tt class="xref py py-meth docutils literal"><span class="pre">amount()</span></tt> attributes:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">one_gigabyte_and_half</span><span class="o">.</span><span class="n">unit</span>
+<span class="go">Memory(1, unit=MB)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">one_gigabyte_and_half</span><span class="o">.</span><span class="n">amount</span><span class="p">()</span>
+<span class="go">1500</span>
+</pre></div>
+</div>
+<p>The <tt class="xref py py-meth docutils literal"><span class="pre">amount()</span></tt> method accepts an optional specification of an
+alternate unit to express the amount into:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">one_gigabyte_and_half</span><span class="o">.</span><span class="n">amount</span><span class="p">(</span><span class="n">Memory</span><span class="o">.</span><span class="n">GB</span><span class="p">)</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<p>An optional <cite>conv</cite> argument is available to specify a numerical
+domain for conversion, in case the default integer arithmetic
+is not precise enough:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">one_gigabyte_and_half</span><span class="o">.</span><span class="n">amount</span><span class="p">(</span><span class="n">Memory</span><span class="o">.</span><span class="n">GB</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="go">1.5</span>
+</pre></div>
+</div>
+<p>The <tt class="xref py py-meth docutils literal"><span class="pre">to_str()</span></tt> method allows representing a quantity as a
+string, and provides choice of the output format and unit.  The
+format string should contain exactly two <tt class="docutils literal"><span class="pre">%</span></tt>-specifiers: the
+first one is used to format the numerical amount, and the second
+one to format the measurement unit name.</p>
+<p>By default, the unit used originally for defining the quantity is
+used:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a_megabyte</span><span class="o">.</span><span class="n">to_str</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%d</span><span class="s"> [</span><span class="si">%s</span><span class="s">]&#39;</span><span class="p">)</span>
+<span class="go">&#39;1 [MB]&#39;</span>
+</pre></div>
+</div>
+<p>This can be overridden by specifying an optional second argument
+<cite>unit</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a_megabyte</span><span class="o">.</span><span class="n">to_str</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%d</span><span class="s"> [</span><span class="si">%s</span><span class="s">]&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">Memory</span><span class="o">.</span><span class="n">kB</span><span class="p">)</span>
+<span class="go">&#39;1000 [kB]&#39;</span>
+</pre></div>
+</div>
+<p>A third optional argument <cite>conv</cite> can set the numerical type to be
+used for conversion computations:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a_megabyte</span><span class="o">.</span><span class="n">to_str</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%g%s</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">Memory</span><span class="o">.</span><span class="n">GB</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="go">&#39;0.001GB&#39;</span>
+</pre></div>
+</div>
+<p>The default numerical type is <cite>int</cite>, which in particular implies
+that you get a null amount if the requested unit is larger than
+the quantity:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a_megabyte</span><span class="o">.</span><span class="n">to_str</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%g%s</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">Memory</span><span class="o">.</span><span class="n">GB</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+<span class="go">&#39;0GB&#39;</span>
+</pre></div>
+</div>
+<p>Conversion to string uses the unit originally used for defining
+the quantity and the <tt class="docutils literal"><span class="pre">%g%s</span></tt> format:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">a_megabyte</span><span class="p">)</span>
+<span class="go">&#39;1MB&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.quantity.Quantity">
+<em class="property">class </em><tt class="descclassname">gc3libs.quantity.</tt><tt class="descname">Quantity</tt><big>(</big><em>base_unit_name</em>, <em>**other_units</em><big>)</big><a class="headerlink" href="#gc3libs.quantity.Quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Metaclass for creating quantity classes.</p>
+<p>This factory creates subclasses of <tt class="xref py py-class docutils literal"><span class="pre">_Quantity</span></tt> and
+bootstraps the base unit.</p>
+<p>The name of the base unit is given as argument to the metaclass
+instance:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Memory1</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="gp">... </span>  <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="s">&#39;B&#39;</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span> <span class="o">=</span> <span class="n">Memory1</span><span class="p">(</span><span class="s">&#39;1 B&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">B</span><span class="p">)</span>
+<span class="go">2B</span>
+</pre></div>
+</div>
+<p>Optional keyword arguments create additional units; the argument
+key gives the unit name, and its value gives the ratio of the new
+unit to the base unit.  For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Memory2</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="gp">... </span>  <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="n">kB</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">MB</span><span class="o">=</span><span class="mi">1000</span><span class="o">*</span><span class="mi">1000</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_thousand_kB</span> <span class="o">=</span> <span class="n">Memory2</span><span class="p">(</span><span class="s">&#39;1000kB&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MB</span> <span class="o">=</span> <span class="n">Memory2</span><span class="p">(</span><span class="s">&#39;1   MB&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a_thousand_kB</span> <span class="o">==</span> <span class="n">MB</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Note that the units (base and additional) are also available as
+class attributes for easier referencing in Python code:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a_thousand_kB</span> <span class="o">==</span> <span class="n">Memory2</span><span class="o">.</span><span class="n">MB</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="persistence/store.html"
+                        title="previous chapter"><cite>gc3libs.persistence.store</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="session.html"
+                        title="next chapter"><cite>gc3libs.session</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="session.html" title="gc3libs.session"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="persistence/store.html" title="gc3libs.persistence.store"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

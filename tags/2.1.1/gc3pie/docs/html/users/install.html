@@ -1,0 +1,518 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installation of GC3Pie &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="up" title="User Documentation" href="index.html" />
+    <link rel="next" title="Configuration File" href="configuration.html" />
+    <link rel="prev" title="User Documentation" href="index.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="configuration.html" title="Configuration File"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="User Documentation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation-of-gc3pie">
+<h1>Installation of GC3Pie<a class="headerlink" href="#installation-of-gc3pie" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="quick-start">
+<h2>Quick start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h2>
+<p>We provide an installation script which automatically try to install
+GC3pie in your home directory.  The quick installation procedure has
+only been tested on variants of the GNU/Linux operating
+system. (However, the script should work on MacOSX as well, provided
+you follow the preparation steps outlined in the &#8220;MacOSX installation&#8221;
+section below.)</p>
+<p>To install GC3Pie just type this at your terminal prompt:</p>
+<div class="highlight-python"><pre>sh -c "$(wget -O- http://gc3pie.googlecode.com/svn/install.sh)"</pre>
+</div>
+<p>If <cite>wget</cite> is not installed in your computer, you should use <cite>curl</cite> instead:</p>
+<div class="highlight-python"><pre>sh -c "$(curl -s http://gc3pie.googlecode.com/svn/install.sh)"</pre>
+</div>
+<p>The above command creates a directory <tt class="file docutils literal"><span class="pre">$HOME/gc3pie</span></tt> and installs
+the latest release of GC3Pie and all its dependencies into it.</p>
+<p>In case you have trouble running the installation script, please send
+an email to <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">gc3pie<span>&#64;</span>googlegroups<span>&#46;</span>com</a> asking for help.  Include the full
+output of the script in your email, in order to help us to identify
+the problem.</p>
+</div>
+<div class="section" id="non-standard-installation-options">
+<h2>Non-standard installation options<a class="headerlink" href="#non-standard-installation-options" title="Permalink to this headline">¶</a></h2>
+<p>The installation script accept a few options that select alternatives
+to the standard behavior.  In order to use these options, you have to:</p>
+<ol class="arabic">
+<li><p class="first">download the installation script into a file named <tt class="file docutils literal"><span class="pre">install.sh</span></tt>:</p>
+<div class="highlight-python"><pre>wget http://gc3pie.googlecode.com/svn/install.sh</pre>
+</div>
+</li>
+<li><p class="first">run the command:</p>
+<div class="highlight-python"><pre>sh ./install.sh [options]</pre>
+</div>
+<p>replacing the string <tt class="docutils literal"><span class="pre">[options]</span></tt> with the actual options you want
+to pass to the script.</p>
+</li>
+</ol>
+<p>The accepted options are as follows:</p>
+<blockquote>
+<div><p><tt class="docutils literal"><span class="pre">-d</span> <span class="pre">DIRECTORY</span></tt></p>
+<blockquote>
+<div>Install GC3Pie in location <tt class="docutils literal"><span class="pre">DIRECTORY</span></tt> instead of
+<tt class="docutils literal"><span class="pre">$HOME/gc3pie</span></tt></div></blockquote>
+<p><tt class="docutils literal"><span class="pre">--overwrite</span></tt></p>
+<blockquote>
+<div>Overwrite the destination directory if it already
+exists. Default behavior is to abort installation.</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">--develop</span></tt></p>
+<blockquote>
+<div>Instead of installing the latest <em>release</em> of GC3Pie, it will
+install the <em>development branch</em> from the SVN repository.</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">--yes</span></tt></p>
+<blockquote>
+<div>Run non-interactively, and assume a &#8220;yes&#8221; reply to every
+question.</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">-p</span> <span class="pre">PYTHON</span></tt></p>
+<blockquote>
+<div>Uses the given <tt class="docutils literal"><span class="pre">PYTHON</span></tt> program as python interpreter.  By
+default the installation script looks for a <tt class="docutils literal"><span class="pre">python</span></tt> binary in
+the standard <tt class="docutils literal"><span class="pre">$PATH</span></tt>.</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">--no-gc3apps</span></tt></p>
+<blockquote>
+<div>Do not install any of the GC3Apps, e.g., <tt class="docutils literal"><span class="pre">gcodeml</span></tt>,
+<tt class="docutils literal"><span class="pre">grosetta</span></tt> and <tt class="docutils literal"><span class="pre">ggamess</span></tt>.</div></blockquote>
+</div></blockquote>
+</div>
+<div class="section" id="manual-installation">
+<h2>Manual installation<a class="headerlink" href="#manual-installation" title="Permalink to this headline">¶</a></h2>
+<p>In case you can&#8217;t or don&#8217;t want to use the automatic installation
+script, the following instructions will guide you through all the
+steps needed to manually install GC3Pie on your computer.</p>
+<p>These instructions show how to install GC3Pie from the GC3 source
+repository into a separate python environment (called <a class="reference external" href="http://pypi.python.org/pypi/virtualenv/1.7">virtualenv</a>).
+Installation into a virtualenv has two distinct advantages:</p>
+<blockquote>
+<div><ul class="simple">
+<li>All code is confined in a single directory,
+and can thus be easily replaced/removed.</li>
+<li>Better dependency handling: additional Python packages
+that GC3Pie depends upon can be installed even if they
+conflict with system-level packages.</li>
+</ul>
+</div></blockquote>
+<ol class="arabic" start="0">
+<li><p class="first">Install software prerequisites:</p>
+<ul>
+<li><p class="first">On Debian/Ubuntu, install packages: <tt class="docutils literal"><span class="pre">subversion</span></tt>,
+<tt class="docutils literal"><span class="pre">python-dev</span></tt>, <tt class="docutils literal"><span class="pre">python-profiler</span></tt> and the C/C++ compiler:</p>
+<div class="highlight-python"><pre>apt-get install subversion python-dev python-profiler gcc g++</pre>
+</div>
+</li>
+<li><p class="first">On CentOS5, install packages <tt class="docutils literal"><span class="pre">subversion</span></tt> and <tt class="docutils literal"><span class="pre">python-devel</span></tt>
+and the C/C++ compiler:</p>
+<div class="highlight-python"><pre>yum install subversion python-devel gcc gcc-c++</pre>
+</div>
+</li>
+<li><p class="first">On other Linux distributions, you will need to install:</p>
+<ul class="simple">
+<li>the <tt class="docutils literal"><span class="pre">svn</span></tt> command (from the <a class="reference external" href="http://subversion.apache.org/">SubVersion</a> VCS)</li>
+<li>Python development headers and libraries
+(for installing extension libraries written in C/C++)</li>
+<li>the Python package <tt class="docutils literal"><span class="pre">pstats</span></tt> (it&#8217;s part of the Python
+standard library, but sometimes it needs separate installation)</li>
+<li>a C/C++ compiler (this is usually installed by default).</li>
+</ul>
+</li>
+</ul>
+<p>If you intend to use also the ARC backend (required for SMSCG),
+you need the NorduGrid/ARC binaries and a working <tt class="docutils literal"><span class="pre">slcs-init</span></tt> command
+installed on the same machine where GC3Pie is.  You can find
+instructions for installing it at:</p>
+<blockquote>
+<div><p><a class="reference external" href="http://www.smscg.ch/WP/middleware/ARC1/smscg_ui_Installation.html">http://www.smscg.ch/WP/middleware/ARC1/smscg_ui_Installation.html</a></p>
+</div></blockquote>
+<p>Additional OS-specific installation details can be found at:</p>
+<blockquote>
+<div><p><a class="reference external" href="http://code.google.com/p/gc3pie/wiki/OSSpecificInstallDetails">http://code.google.com/p/gc3pie/wiki/OSSpecificInstallDetails</a></p>
+</div></blockquote>
+</li>
+<li><p class="first">If <a class="reference external" href="http://pypi.python.org/pypi/virtualenv/1.7">virtualenv</a> is not already installed on your system,
+get the Python package and install it:</p>
+<div class="highlight-python"><pre>wget http://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.7.tar.gz
+tar -xzf virtualenv-1.7.tar.gz &amp;&amp; rm virtualenv-1.7.tar.gz
+cd virtualenv-1.7/</pre>
+</div>
+<p>If you are installing as <cite>root</cite>, the following command is all you
+need:</p>
+<div class="highlight-python"><pre>python setup.py install</pre>
+</div>
+<p>If instead you are installing as a normal, unprivileged user,
+things get more complicated:</p>
+<div class="highlight-python"><pre>export PYTHONPATH=$HOME/lib64/python:$HOME/lib/python:$PYTHONPATH
+export PATH=$PATH:$HOME/bin
+mkdir -p $HOME/lib/python
+python setup.py install --home $HOME</pre>
+</div>
+<p>You will also <em>have to</em> add the two <cite>export</cite> lines above to the:</p>
+<ul class="simple">
+<li><cite>$HOME/.bashrc</cite> file, if using the <cite>bash</cite> shell or to the</li>
+<li><cite>$HOME/.cshrc</cite> file, if using the <cite>tcsh</cite> shell.</li>
+</ul>
+<p>In any case, once <cite>virtualenv</cite> has been installed, you can exit
+its directory and remove it:</p>
+<div class="highlight-python"><pre>cd ..
+rm -rf virtualenv-1.7</pre>
+</div>
+</li>
+<li><p class="first">Create a virtualenv to host the GC3Pie installation, and <tt class="docutils literal"><span class="pre">cd</span></tt>
+into it:</p>
+<div class="highlight-python"><pre>virtualenv --system-site-packages $HOME/gc3pie
+cd $HOME/gc3pie/
+source bin/activate</pre>
+</div>
+<p>In this step and in the following ones, the directory
+<tt class="docutils literal"><span class="pre">$HOME/gc3pie</span></tt> is going to be the installation folder of GC3Pie.
+You can change this to another directory path; any directory that&#8217;s
+writable by your Linux account will be OK.</p>
+<p>If you are installing system-wide as <tt class="docutils literal"><span class="pre">root</span></tt>, we suggest you
+install GC3Pie into <tt class="docutils literal"><span class="pre">/opt/gc3pie</span></tt> instead.</p>
+</li>
+<li><p class="first">Check-out the <tt class="docutils literal"><span class="pre">gc3pie</span></tt> files in a <tt class="docutils literal"><span class="pre">src/</span></tt> directory:</p>
+<div class="highlight-python"><pre>svn co http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie src</pre>
+</div>
+</li>
+<li><p class="first">Install the <tt class="docutils literal"><span class="pre">gc3pie</span></tt> in &#8220;develop&#8221; mode, so any modification
+pulled from subversion is immediately reflected in the running environment:</p>
+<div class="highlight-python"><pre>cd src/
+env CC=gcc ./setup.py develop
+cd .. # back into the `gc3pie` directory</pre>
+</div>
+<p>This will place all the GC3Pie command into the <tt class="docutils literal"><span class="pre">gc3pie/bin/</span></tt>
+directory.</p>
+</li>
+<li><p class="first">GC3Pie comes with driver scripts to run and manage large families
+of jobs from a few selected applications.  These scripts are not
+installed by default because not everyone needs them.</p>
+<p>Run the following commands to install the driver scripts for the
+applications you need:</p>
+<div class="highlight-python"><pre># if you are insterested in GAMESS, do the following
+ln -s '../src/gc3apps/gamess/ggamess.py' bin/ggamess
+
+# if you are insterested in Rosetta, do the following
+ln -s '../src/gc3apps/rosetta/gdocking.py' bin/gdocking
+ln -s '../src/gc3apps/rosetta/grosetta.py' bin/grosetta
+
+# if you are insterested in Codeml, do the following
+ln -s '../src/gc3apps/codeml/gcodeml.py' bin/gcodeml</pre>
+</div>
+</li>
+<li><p class="first">Before you can actually run the GC3Pie, you need to have a
+working configuration file; <a class="reference external" href="http://code.google.com/p/gc3pie/wiki/ConfigurationFile/">the ConfigurationFile Wiki page</a>
+provides an explanation of the syntax.</p>
+<p>The <a class="reference external" href="http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/gc3libs/etc/gc3pie.conf.example/">example configuration file</a>
+can be used as a startup point if you want to enable access to the <a class="reference external" href="http://www.smscg.ch/">SMSCG</a> infrastructure.
+Before you can actually use this file, you will need to:</p>
+<ul class="simple">
+<li>insert into it three values, for which we <cite>can NOT</cite> provide defaults:</li>
+</ul>
+<blockquote>
+<div><ol class="arabic">
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">aai_username</span></tt>:</dt>
+<dd><p class="first last">This is the &#8220;username&#8221; you are asked for when accessing
+any <a class="reference external" href="http://www.switch.ch/aai">SWITCHaai</a>/Shibboleth web page, e.g., <a class="reference external" href="https://gc3-aai01.uzh.ch/secure/">https://gc3-aai01.uzh.ch/secure/</a></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">idp</span></tt>:</dt>
+<dd><p class="first last">Find this out with the command &#8220;slcs-info&#8221;: it prints a list of
+IdP (Identity Provider IDs) followed by the human-readable name
+of the associated institution. Pick the one that corresponds to
+you University.  It is always the last two components of the
+University&#8217;s Internet domain name (e.g., &#8220;uzh.ch&#8221; or &#8220;ethz.ch&#8221;).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">vo</span></tt>:</dt>
+<dd><p class="first last">In order to use SMSCG, you must sign up to a VO (Virtual
+Organisation).  One the words &#8220;life&#8221;, &#8220;earth&#8221;, &#8220;atlas&#8221; or
+&#8220;crypto&#8221; should be here. Find out more at:  <a class="reference external" href="http://www.smscg.ch/www/user/">http://www.smscg.ch/www/user/</a></p>
+</dd>
+</dl>
+</li>
+</ol>
+<p>Please, remember to uncomment the three lines, too.</p>
+</div></blockquote>
+<ul>
+<li><p class="first">Enable the <a class="reference external" href="http://www.smscg.ch/">SMSCG</a> resource in the <tt class="docutils literal"><span class="pre">Examples</span></tt> section of the file.
+To do this simply uncomment the following lines:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># [resource/smscg]</span>
+<span class="c"># enabled = false</span>
+<span class="c"># name = smscg</span>
+<span class="c"># type = arc0</span>
+<span class="c"># auth = smscg</span>
+<span class="c"># arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland</span>
+<span class="c"># max_cores_per_job = 256</span>
+<span class="c"># max_memory_per_core = 2</span>
+<span class="c"># max_walltime = 24</span>
+<span class="c"># ncores = 8000</span>
+<span class="c"># architecture = i686, x86_64</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p class="first">Now you can check your GC3Pie installation; just type the command:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">gc3utils</span> <span class="o">--</span><span class="n">help</span>
+</pre></div>
+</div>
+<p>and you should see the following output appear on your screen:</p>
+<div class="highlight-python"><pre>Usage: gc3utils COMMAND [options]
+
+Command `gc3utils` is a unified front-end to computing resources.
+You can get more help on a specific sub-command by typing::
+  gc3utils COMMAND --help
+where command is one of these:
+  clean
+  get
+  info
+  kill
+  list
+  resub
+  stat
+  tail</pre>
+</div>
+<p>If you get some errors, do not despair!  The <cite>GC3Pie users
+mailing-list &lt;gc3pie&#64;googlegroups.com&gt;</cite> is there to help you :-)</p>
+</li>
+</ol>
+</div>
+<div class="section" id="upgrade">
+<span id="id1"></span><h2>Upgrade<a class="headerlink" href="#upgrade" title="Permalink to this headline">¶</a></h2>
+<p>If you used the installation script, the fastest way to upgrade is just to reinstall:</p>
+<ol class="arabic" start="0">
+<li><p class="first">De-activate the current GC3Pie virtual environment:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">deactivate</span>
+</pre></div>
+</div>
+<p>(If you get an error &#8220;command not found&#8221;, do not worry and proceed
+on to the next step; in case of other errors please stop here and
+report to the <cite>GC3Pie users mailing-list
+&lt;mailto:gc3pie.googlegroups.com&gt;</cite>.)</p>
+</li>
+<li><p class="first">Move the <tt class="file docutils literal"><span class="pre">$HOME/gc3pie</span></tt> directory to another location, e.g.:</p>
+<div class="highlight-python"><pre>mv $HOME/gc3pie $HOME/gc3pie.OLD</pre>
+</div>
+</li>
+<li><p class="first">Reinstall GC3Pie using the quick-install script (top of this page).</p>
+</li>
+<li><p class="first">Once you have verified that your new installation is working, you
+can remove the <tt class="file docutils literal"><span class="pre">$HOME/gc3pie.OLD</span></tt> directory.</p>
+</li>
+</ol>
+<p>If instead you installed GC3Pie using the &#8220;manual installation&#8221; instructions,
+then the following steps will update GC3Pie to the latest version
+in the code repository:</p>
+<ol class="arabic">
+<li><p class="first"><strong class="command">cd</strong> to the directory containing the GC3Pie virtualenv;
+assuming it is named <tt class="docutils literal"><span class="pre">gc3pie</span></tt> as in the above installation
+instructions, you can issue the commands:</p>
+<div class="highlight-python"><pre>cd $HOME/gc3pie # use '/opt/gc3pie' if root</pre>
+</div>
+</li>
+<li><p class="first">Activate the virtualenv:</p>
+<div class="highlight-python"><pre>source bin/activate</pre>
+</div>
+</li>
+<li><p class="first">Upgrade the <cite>gc3pie</cite> source and run the <tt class="file docutils literal"><span class="pre">setup.py</span></tt> script again:</p>
+<div class="highlight-python"><pre>cd src
+svn up
+env CC=gcc ./setup.py develop</pre>
+</div>
+</li>
+</ol>
+<p><em>Note:</em> A major restructuring of the SVN repository took place in
+r1124 to r1126 (Feb. 15, 2011); if your sources are older than SVN
+r1124, these upgrade instructions will not work, and you must
+<em>reinstall completely</em>.  You can check what version the SVN sources
+are, by running the <cite>svn info</cite> command in the <cite>src</cite> directory: watch
+out for the <cite>Revision:</cite> line.</p>
+</div>
+<div class="section" id="macosx-installation">
+<h2>MacOSX Installation<a class="headerlink" href="#macosx-installation" title="Permalink to this headline">¶</a></h2>
+<p>Installation on MacOSX machines is possible, however there are still a
+few issues.  Please let us know on the <cite>GC3Pie users mailing-list
+&lt;mailto:gc3pie&#64;googlegroups.com&gt;</cite> if you need MacOSX support.</p>
+<ol class="arabic simple">
+<li>Standard usage of the installation script (i.e., with no options)
+works, but you have to use <cite>curl</cite> since <cite>wget</cite> is not installed by
+default.</li>
+<li>In order to install GC3Pie you will need to install <a class="reference external" href="https://developer.apple.com/xcode/">XCode</a> and,
+in some of the MacOSX versions, also the <em>Command Line Tools for
+XCode</em></li>
+<li>Options can only be given in the abbreviated one-letter form (e.g.,
+<tt class="docutils literal"><span class="pre">-d</span></tt>); the long form (e.g., <tt class="docutils literal"><span class="pre">--directory</span></tt>) will not work.</li>
+<li>The <cite>shellcmd</cite> backend of GC3Pie depends on the GNU <tt class="docutils literal"><span class="pre">time</span></tt>
+command, which is not installed on MacOSX by default. This means
+that with a standard MacOSX installation the <cite>shellcmd</cite> resource
+will <strong>not</strong> work. However:<ul>
+<li>other resources, like <cite>pbs</cite> via <cite>ssh</cite> transport, will work.</li>
+<li>you can install the GNU time command either via <a class="reference external" href="http://www.macports.org/">MacPorts</a>,
+<a class="reference external" href="http://sourceforge.net/projects/fink/">Fink</a>, <a class="reference external" href="http://mxcl.github.com/homebrew/">Homebrew</a> or from the <a class="reference external" href="http://mirror.switch.ch/ftp/mirror/gnu/time/">this url</a>. After installing it
+you don&#8217;t need to update your <tt class="docutils literal"><span class="pre">PATH</span></tt> environment variable, it&#8217;s
+enough to set the <tt class="docutils literal"><span class="pre">time_cmd</span></tt> option in your GC3Pie
+configuration file.</li>
+</ul>
+</li>
+<li>At the time of this writing, <a class="reference external" href="http://www.nordugrid.org/documents/arc-client-install.html&gt;">the ARC client libraries are not
+available on MacOSX</a>, so ARC backends will not work.</li>
+</ol>
+</div>
+<div class="section" id="html-documentation">
+<h2>HTML Documentation<a class="headerlink" href="#html-documentation" title="Permalink to this headline">¶</a></h2>
+<p>HTML documentation for the GC3Libs programming interface can be
+read online at:</p>
+<blockquote>
+<div><a class="reference external" href="http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/docs/html/index.html">http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/docs/html/index.html</a></div></blockquote>
+<p>If you installed GC3Pie manually, or if you installed it using the
+<tt class="docutils literal"><span class="pre">install.sh</span></tt> script with the <tt class="docutils literal"><span class="pre">--develop</span></tt> option, you can also
+access a local copy of the documentation from the sources:</p>
+<div class="highlight-python"><pre>cd $HOME/gc3pie # or wherever the gc3pie virtualenv is installed
+cd src/docs
+make html</pre>
+</div>
+<p>Note that you need the Python package <a class="reference external" href="http://sphinx.pocoo.org/">Sphinx</a>
+in order to build the documentation locally.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installation of GC3Pie</a><ul>
+<li><a class="reference internal" href="#quick-start">Quick start</a></li>
+<li><a class="reference internal" href="#non-standard-installation-options">Non-standard installation options</a></li>
+<li><a class="reference internal" href="#manual-installation">Manual installation</a></li>
+<li><a class="reference internal" href="#upgrade">Upgrade</a></li>
+<li><a class="reference internal" href="#macosx-installation">MacOSX Installation</a></li>
+<li><a class="reference internal" href="#html-documentation">HTML Documentation</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">User Documentation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="configuration.html"
+                        title="next chapter">Configuration File</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="configuration.html" title="Configuration File"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="User Documentation"
+             >previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" >User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

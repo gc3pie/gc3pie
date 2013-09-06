@@ -1,0 +1,1001 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.utils &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../index.html" />
+    <link rel="next" title="gc3libs.workflow" href="workflow.html" />
+    <link rel="prev" title="gc3libs.url" href="url.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="workflow.html" title="gc3libs.workflow"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="url.html" title="gc3libs.url"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.utils">
+<span id="gc3libs-utils"></span><h1><cite>gc3libs.utils</cite><a class="headerlink" href="#module-gc3libs.utils" title="Permalink to this headline">¶</a></h1>
+<p>Generic Python programming utility functions.</p>
+<p>This module collects general utility functions, not specifically
+related to GC3Libs.  A good rule of thumb for determining if a
+function or class belongs in here is the following: place a function
+or class in this module if you could copy its code into the
+sources of a different project and it would not stop working.</p>
+<dl class="class">
+<dt id="gc3libs.utils.Enum">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Enum</tt><a class="headerlink" href="#gc3libs.utils.Enum" title="Permalink to this definition">¶</a></dt>
+<dd><p>A generic enumeration class.  Inspired by:
+<a class="reference external" href="http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python/2182437#2182437">http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python/2182437#2182437</a>
+with some more syntactic sugar added.</p>
+<p>An <cite>Enum</cite> class must be instanciated with a list of strings, that
+make the enumeration &#8220;label&#8221;:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">Animal</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s">&#39;CAT&#39;</span><span class="p">,</span> <span class="s">&#39;DOG&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Each label is available as an instance attribute, evaluating to
+itself:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">Animal</span><span class="o">.</span><span class="n">DOG</span>
+<span class="go">&#39;DOG&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Animal</span><span class="o">.</span><span class="n">CAT</span> <span class="o">==</span> <span class="s">&#39;CAT&#39;</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>As a consequence, you can test for presence of an enumeration
+label by string value:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="s">&#39;DOG&#39;</span> <span class="ow">in</span> <span class="n">Animal</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Finally, enumeration labels can also be iterated upon:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">Animal</span><span class="p">:</span> <span class="k">print</span> <span class="n">a</span>
+<span class="go">DOG</span>
+<span class="go">CAT</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.utils.ExponentialBackoff">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">ExponentialBackoff</tt><big>(</big><em>slot_duration=0.050000000000000003</em>, <em>max_retries=5</em><big>)</big><a class="headerlink" href="#gc3libs.utils.ExponentialBackoff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate waiting times with the <a class="reference external" href="http://en.wikipedia.org/wiki/Exponential_backoff#An_example_of_an_exponential_backoff_algorithm">exponential backoff</a> algorithm.</p>
+<p>Returned times are in seconds (or fractions thereof); they are
+integral multiples of the basic time slot, which is set with the
+<cite>slot_duration</cite> constructor parameter.</p>
+<p>After <cite>max_retries</cite> have been attempted, any call to this iterator
+will raise a <cite>StopIteration</cite> exception.</p>
+<p>The <cite>ExponentialBackoff</cite> class implements the iterator protocol,
+so you can just retrieve waiting times with the <cite>.next()</cite> method,
+or by looping over it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">314</span><span class="p">)</span> <span class="c"># not-so-random for testing purposes...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">wt</span> <span class="ow">in</span> <span class="n">ExponentialBackoff</span><span class="p">():</span>
+<span class="gp">... </span>  <span class="k">print</span> <span class="n">wt</span><span class="p">,</span>
+<span class="gp">...</span>
+<span class="go">0.0 0.0 0.0 0.25 0.15 0.3</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="gc3libs.utils.ExponentialBackoff.next">
+<tt class="descname">next</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.utils.ExponentialBackoff.next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return next waiting time.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.utils.ExponentialBackoff.wait">
+<tt class="descname">wait</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.utils.ExponentialBackoff.wait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for another while.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.utils.History">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">History</tt><a class="headerlink" href="#gc3libs.utils.History" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of messages with timestamps and (optional) tags.</p>
+<p>The <cite>append</cite> method should be used to add a message to the <cite>History</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">L</span> <span class="o">=</span> <span class="n">History</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;first message&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;second one&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <cite>last</cite> method returns the text of the last message appended, with its timestamp:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">last</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;second one at&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Iterating over a <cite>History</cite> instance returns message texts in the
+temporal order they were added to the list, with their timestamp:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">L</span><span class="p">:</span> <span class="k">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> 
+<span class="go">first message ...</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="gc3libs.utils.History.append">
+<tt class="descname">append</tt><big>(</big><em>message</em>, <em>*tags</em><big>)</big><a class="headerlink" href="#gc3libs.utils.History.append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append a message to this <cite>History</cite>.</p>
+<p>The message is timestamped with the time at the moment of the
+call.</p>
+<p>The optional <cite>tags</cite> argument is a sequence of strings. Tags
+are recorded together with the message and may be used to
+filter log messages given a set of labels. <em>(This feature is
+not yet implemented.)</em></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.utils.History.format_message">
+<tt class="descname">format_message</tt><big>(</big><em>message</em><big>)</big><a class="headerlink" href="#gc3libs.utils.History.format_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a formatted message, appending to the message its timestamp in human readable format.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.utils.History.last">
+<tt class="descname">last</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.utils.History.last" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return text of last message appended.
+If log is empty, return empty string.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gc3libs.utils.Log">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Log</tt><a class="headerlink" href="#gc3libs.utils.Log" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#gc3libs.utils.History" title="gc3libs.utils.History"><tt class="xref py py-class docutils literal"><span class="pre">History</span></tt></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.utils.PlusInfinity">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">PlusInfinity</tt><a class="headerlink" href="#gc3libs.utils.PlusInfinity" title="Permalink to this definition">¶</a></dt>
+<dd><p>An object that is greater-than any other object.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="mi">1</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">1</span> <span class="o">&lt;</span> <span class="n">x</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">1245632479102509834570124871023487235987634518745</span> <span class="o">&lt;</span> <span class="n">x</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxint</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxint</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sys</span><span class="o">.</span><span class="n">maxint</span> <span class="o">&lt;</span> <span class="n">x</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p><cite>PlusInfinity</cite> objects are actually larger than <em>any</em> given Python
+object:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="s">&#39;azz&#39;</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="nb">object</span><span class="p">()</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Note that <cite>PlusInfinity</cite> is a singleton, therefore you always get
+the same instance when calling the class constructor:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="ow">is</span> <span class="n">y</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Relational operators try to return the correct value when
+comparing <cite>PlusInfinity</cite> to itself:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">y</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;=</span> <span class="n">y</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">==</span> <span class="n">y</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;=</span> <span class="n">y</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.utils.Singleton">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Singleton</tt><a class="headerlink" href="#gc3libs.utils.Singleton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Derived classes of <cite>Singleton</cite> can have only one instance in the
+running Python interpreter.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Singleton</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">Singleton</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="ow">is</span> <span class="n">y</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.utils.Struct">
+<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Struct</tt><big>(</big><em>initializer=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.utils.Struct" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <cite>dict</cite>-like object, whose keys can be accessed with the usual
+&#8216;[...]&#8217; lookup syntax, or with the &#8216;.&#8217; get attribute syntax.</p>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">x</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">[</span><span class="s">&#39;y&#39;</span><span class="p">]</span>
+<span class="go">2</span>
+</pre></div>
+</div>
+<p>Values can also be initially set by specifying them as keyword
+arguments to the constructor:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">[</span><span class="s">&#39;z&#39;</span><span class="p">]</span>
+<span class="go">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">z</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+<p>Like <cite>dict</cite> instances, <cite>Struct`s have a `copy</cite> method to get a
+shallow copy of the instance:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span><span class="o">.</span><span class="n">z</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="gc3libs.utils.Struct.copy">
+<tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.utils.Struct.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a (shallow) copy of this <cite>Struct</cite> instance.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.backup">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">backup</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.backup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rename the filesystem entry at <cite>path</cite> by appending a unique
+numerical suffix; return new name.</p>
+<p>For example,</p>
+<ol class="arabic simple">
+<li>create a test file:</li>
+</ol>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">path</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li>then make a backup of it; the backup will end in <tt class="docutils literal"><span class="pre">.~1~</span></tt>:</li>
+</ol>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">path1</span> <span class="o">=</span> <span class="n">backup</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s">&#39;.~1~&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>3. re-create the file, and make a second backup: this time the
+file will be renamed with a <tt class="docutils literal"><span class="pre">.~2~</span></tt> extension:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">path2</span> <span class="o">=</span> <span class="n">backup</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s">&#39;.~2~&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>cleaning up tests</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="o">+</span><span class="s">&#39;.~1~&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="o">+</span><span class="s">&#39;.~2~&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.basename_sans">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">basename_sans</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.basename_sans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return base name without the extension.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.cache_for">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">cache_for</tt><big>(</big><em>lapse</em><big>)</big><a class="headerlink" href="#gc3libs.utils.cache_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cache the result of a (nullary) method invocation for a given
+amount of time. Use as a decorator on object methods whose results
+are to be cached.</p>
+<p>Store the result of the first invocation of the decorated
+method; if another invocation happens before <cite>lapse</cite> seconds
+have passed, return the cached value instead of calling the real
+function again.  If a new call happens after the grace period has
+expired, call the real function and store the result in the cache.</p>
+<p><strong>Note:</strong> Do not use with methods that take keyword arguments, as
+they will be discarded! In addition, arguments are compared to
+elements in the cache by <em>identity</em>, so that invoking the same
+method with equal but distinct object will result in two separate
+copies of the result being computed and stored in the cache.</p>
+<p>Cache results and timestamps are stored into the objects&#8217;
+<cite>_cache_value</cite> and <cite>_cache_last_updated</cite> attributes, so the caches
+are destroyed with the object when it goes out of scope.</p>
+<p>The working of the cached method can be demonstrated by the
+following simple code:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">X</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="bp">self</span><span class="o">.</span><span class="n">times</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="gp">... </span>    <span class="nd">@cache_for</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="gp">... </span>            <span class="bp">self</span><span class="o">.</span><span class="n">times</span> <span class="o">+=</span> <span class="mi">1</span>
+<span class="gp">... </span>            <span class="k">return</span> <span class="p">(</span><span class="s">&quot;times effectively run: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">times</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">X</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">foo</span><span class="p">()</span>
+<span class="go">&#39;times effectively run: 1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">foo</span><span class="p">()</span>
+<span class="go">&#39;times effectively run: 1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">foo</span><span class="p">()</span>
+<span class="go">&#39;times effectively run: 2&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.cat">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">cat</tt><big>(</big><em>*args</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.utils.cat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concatenate the contents of all <cite>args</cite> into <cite>output</cite>.  Both
+<cite>output</cite> and each of the <cite>args</cite> can be a file-like object or a
+string (indicating the path of a file to open).</p>
+<p>If <cite>append</cite> is <cite>True</cite>, then <cite>output</cite> is opened in append-only
+mode; otherwise it is overwritten.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.copy_recursively">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">copy_recursively</tt><big>(</big><em>src</em>, <em>dst</em>, <em>overwrite=False</em><big>)</big><a class="headerlink" href="#gc3libs.utils.copy_recursively" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy <cite>src</cite> to <cite>dst</cite>, descending it recursively if necessary.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.copyfile">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">copyfile</tt><big>(</big><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>link=False</em><big>)</big><a class="headerlink" href="#gc3libs.utils.copyfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy a file from <cite>src</cite> to <cite>dst</cite>; return <cite>True</cite> if the copy was
+actually made.  If <cite>overwrite</cite> is <cite>False</cite> (default), an existing
+destination entry is left unchanged and <cite>False</cite> is returned.</p>
+<p>If <cite>link</cite> is <cite>True</cite>, an attempt at hard-linking is done first;
+failing that, we copy the source file onto the destination
+one. Permission bits and modification times are copied as well.</p>
+<p>If <cite>dst</cite> is a directory, a file with the same basename as <cite>src</cite> is
+created (or overwritten) in the directory specified.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.copytree">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">copytree</tt><big>(</big><em>src</em>, <em>dst</em>, <em>overwrite=False</em><big>)</big><a class="headerlink" href="#gc3libs.utils.copytree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recursively copy an entire directory tree rooted at <cite>src</cite>.  If
+<cite>overwrite</cite> is <cite>False</cite> (default), entries that already exist in
+the destination tree are left unchanged and not overwritten.</p>
+<p>See also: <cite>shutil.copytree</cite>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.count">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">count</tt><big>(</big><em>seq</em>, <em>predicate</em><big>)</big><a class="headerlink" href="#gc3libs.utils.count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return number of items in <cite>seq</cite> that match <cite>predicate</cite>.
+Argument <cite>predicate</cite> should be a callable that accepts
+one argument and returns a boolean.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.defproperty">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">defproperty</tt><big>(</big><em>fn</em><big>)</big><a class="headerlink" href="#gc3libs.utils.defproperty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator to define properties with a simplified syntax in Python 2.4.
+See <a class="reference external" href="http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6">http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6</a>
+for details and examples.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.deploy_configuration_file">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">deploy_configuration_file</tt><big>(</big><em>filename</em>, <em>template_filename=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.deploy_configuration_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ensure that configuration file <cite>filename</cite> exists; possibly
+copying it from the specified <cite>template_filename</cite>.</p>
+<p>Return <cite>True</cite> if a file with the specified name exists in the
+configuration directory.  If not, try to copy the template file
+over and then return <cite>False</cite>; in case the copy operations fails,
+a <cite>NoConfigurationFile</cite> exception is raised.</p>
+<p>The <cite>template_filename</cite> is always resolved relative to GC3Libs&#8217;
+&#8216;package resource&#8217; directory (i.e., the <tt class="docutils literal"><span class="pre">etc/</span></tt> directory in the
+sources.  If <cite>template_filename</cite> is <cite>None</cite>, then it is assumed to
+be the base name of <cite>filename</cite>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.dirname">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">dirname</tt><big>(</big><em>pathname</em><big>)</big><a class="headerlink" href="#gc3libs.utils.dirname" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as <cite>os.path.dirname</cite> but return <cite>.</cite> in case of path names with no directory component.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.first">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">first</tt><big>(</big><em>seq</em><big>)</big><a class="headerlink" href="#gc3libs.utils.first" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the first element of sequence or iterator <cite>seq</cite>.
+Raise <cite>TypeError</cite> if the argument does not implement
+either of the two interfaces.</p>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">first</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="go">0</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="s">&#39;c&#39;</span><span class="p">:</span><span class="mi">3</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">first</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+<span class="go">&#39;a&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.from_template">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">from_template</tt><big>(</big><em>template</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.utils.from_template" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the contents of <cite>template</cite>, substituting all occurrences
+of Python formatting directives &#8216;%(key)s&#8217; with the corresponding values
+taken from dictionary <cite>extra_args</cite>.</p>
+<p>If <cite>template</cite> is an object providing a <cite>read()</cite> method, that is
+used to gather the template contents; else, if a file named
+<cite>template</cite> exists, the template contents are read from it;
+otherwise, <cite>template</cite> is treated like a string providing the
+template contents itself.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.getattr_nested">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">getattr_nested</tt><big>(</big><em>obj</em>, <em>name</em><big>)</big><a class="headerlink" href="#gc3libs.utils.getattr_nested" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like Python&#8217;s <cite>getattr</cite>, but perform a recursive lookup if <cite>name</cite> contains any dots.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.ifelse">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">ifelse</tt><big>(</big><em>test</em>, <em>if_true</em>, <em>if_false</em><big>)</big><a class="headerlink" href="#gc3libs.utils.ifelse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return <cite>if_true</cite> is argument <cite>test</cite> evaluates to <cite>True</cite>,
+return <cite>if_false</cite> otherwise.</p>
+<p>This is just a workaround for Python 2.4 lack of the
+conditional assignment operator:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">ifelse</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s">&quot;yes&quot;</span><span class="p">,</span> <span class="s">&quot;no&quot;</span><span class="p">);</span> <span class="k">print</span> <span class="n">b</span>
+<span class="go">yes</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">ifelse</span><span class="p">(</span><span class="ow">not</span> <span class="n">a</span><span class="p">,</span> <span class="s">&#39;yay&#39;</span><span class="p">,</span> <span class="s">&#39;nope&#39;</span><span class="p">);</span> <span class="k">print</span> <span class="n">b</span>
+<span class="go">nope</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.irange">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">irange</tt><big>(</big><em>start</em>, <em>stop</em>, <em>step=1</em><big>)</big><a class="headerlink" href="#gc3libs.utils.irange" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over all values greater or equal than <cite>start</cite> and less than <cite>stop</cite>.
+(Or the reverse, if <cite>step &lt; 0</cite>.)</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">irange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="go">[1, 2, 3, 4]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">irange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="go">[0, 3, 6]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">irange</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">))</span>
+<span class="go">[8, 6, 4, 2]</span>
+</pre></div>
+</div>
+<p>Unlike the built-in <cite>range</cite> function, <cite>irange</cite> also accepts
+floating-point values:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">irange</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+<span class="go">[0.0, 0.5]</span>
+</pre></div>
+</div>
+<p>Also unlike the built-in <cite>range</cite>, <em>both</em> <cite>start</cite> and <cite>stop</cite> have
+to be specified:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">irange</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr">TypeError</span>: <span class="n">irange() takes at least 2 arguments (1 given)</span>
+</pre></div>
+</div>
+<p>Of course, a null <cite>step</cite> is not allowed:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">irange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr">AssertionError</span>: <span class="n">Null step in irange.</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.lock">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">lock</tt><big>(</big><em>path</em>, <em>timeout</em>, <em>create=True</em><big>)</big><a class="headerlink" href="#gc3libs.utils.lock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lock the file at <cite>path</cite>.  Raise a <cite>LockTimeout</cite> error if the lock
+cannot be acquired within <cite>timeout</cite> seconds.</p>
+<p>Return a <cite>lock</cite> object that should be passed unchanged to the
+<cite>gc3libs.utils.unlock</cite> function.</p>
+<p>If no <cite>path</cite> points to a non-existent location, an empty file is
+created before attempting to lock (unless <cite>create</cite> is <cite>False</cite>).
+An attempt is made to remove the file in case an error happens.</p>
+<p>See also: <a class="reference internal" href="#gc3libs.utils.unlock" title="gc3libs.utils.unlock"><tt class="xref py py-func docutils literal"><span class="pre">gc3libs.utils.unlock()</span></tt></a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.mkdir">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">mkdir</tt><big>(</big><em>path</em>, <em>mode=511</em><big>)</big><a class="headerlink" href="#gc3libs.utils.mkdir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like <cite>os.makedirs</cite>, but does not throw an exception if PATH
+already exists.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.mkdir_with_backup">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">mkdir_with_backup</tt><big>(</big><em>path</em>, <em>mode=511</em><big>)</big><a class="headerlink" href="#gc3libs.utils.mkdir_with_backup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like <cite>os.makedirs</cite>, but if <cite>path</cite> already exists and is not empty,
+rename the existing one to a backup name (see the <cite>backup</cite> function).</p>
+<p>Unlike <cite>os.makedirs</cite>, no exception is thrown if the directory
+already exists and is empty, but the target directory permissions
+are not altered to reflect <cite>mode</cite>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.prettyprint">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2aaaaab17150&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
+Each output line consists of:</p>
+<blockquote>
+<div><ul class="simple">
+<li><cite>indent</cite> spaces,</li>
+<li>the key name,</li>
+<li>a colon character <tt class="docutils literal"><span class="pre">:</span></tt>,</li>
+<li>the associated value.</li>
+</ul>
+</div></blockquote>
+<p>If the total line length exceeds <cite>width</cite>, the value is printed
+on the next line, indented by further <cite>step</cite> spaces; a value of 0 for
+<cite>width</cite> disables this line wrapping.</p>
+<p>Optional argument <cite>only_keys</cite> can be a callable that must return
+<cite>True</cite> when called with keys that should be printed, or a list of
+key names to print.</p>
+<p>Dictionary instances appearing as values are processed recursively
+(up to <cite>maxdepth</cite> nesting).  Each nested instance is printed
+indented <cite>step</cite> spaces from the enclosing dictionary.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.progressive_number">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><em>qty=None</em>, <em>id_filename='/home/rmurri/.gc3/next_id.txt'</em><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a positive integer, whose value is guaranteed to
+be monotonically increasing across different invocations
+of this function, and also across separate instances of the
+calling program.</p>
+<p>Example:</p>
+<div class="highlight-python"><pre>(create a temporary directory to avoid bug #)</pre>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span><span class="o">,</span> <span class="nn">os</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">n</span> <span class="o">=</span> <span class="n">progressive_number</span><span class="p">(</span><span class="n">id_filename</span><span class="o">=</span><span class="n">tmp</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">progressive_number</span><span class="p">(</span><span class="n">id_filename</span><span class="o">=</span><span class="n">tmp</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">&gt;</span> <span class="n">n</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>If you specify a positive integer as argument, then a list of
+monotonically increasing numbers is returned.  For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ls</span> <span class="o">=</span> <span class="n">progressive_number</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">id_filename</span><span class="o">=</span><span class="n">tmp</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">ls</span><span class="p">)</span>
+<span class="go">5</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>(clean up test environment)</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>In other words, <cite>progressive_number(N)</cite> is equivalent to:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">nums</span> <span class="o">=</span> <span class="p">[</span> <span class="n">progressive_number</span><span class="p">()</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">)</span> <span class="p">]</span>
+</pre></div>
+</div>
+<p>only more efficient, because it has to obtain and release the lock
+only once.</p>
+<p>After every invocation of this function, the last returned number
+is stored into the file passed as argument <cite>id_filename</cite>.  If the
+file does not exist, an attempt to create it is made before
+allocating an id; the method can raise an <cite>IOError</cite> or <cite>OSError</cite>
+if <cite>id_filename</cite> cannot be opened for writing.</p>
+<p><em>Note:</em> as file-level locking is used to serialize access to the
+counter file, this function may block (default timeout: 30
+seconds) while trying to acquire the lock, or raise a
+<cite>LockTimeout</cite> exception if this fails.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raise :</th><td class="field-body">LockTimeout, IOError, OSError</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A positive integer number, monotonically increasing with
+every call.  A list of such numbers if argument <cite>qty</cite> is a
+positive integer.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.read_contents">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">read_contents</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.read_contents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the whole contents of the file at <cite>path</cite> as a single string.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">read_contents</span><span class="p">(</span><span class="s">&#39;/dev/null&#39;</span><span class="p">)</span>
+<span class="go">&#39;&#39;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">tmpfile</span><span class="p">)</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">w</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmpfile</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">w</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;hey&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">w</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">read_contents</span><span class="p">(</span><span class="n">tmpfile</span><span class="p">)</span>
+<span class="go">&#39;hey&#39;</span>
+</pre></div>
+</div>
+<p>(If you run this test, remember to do cleanup afterwards)</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmpfile</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.safe_repr">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">safe_repr</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.utils.safe_repr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a string describing Python object <cite>obj</cite>.</p>
+<p>Avoids calling any Python magic methods, so should be safe to use
+as a &#8216;last resort&#8217; in implementation of <cite>__str__</cite> and <cite>__repr__</cite>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.same_docstring_as">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">same_docstring_as</tt><big>(</big><em>referenced_fn</em><big>)</big><a class="headerlink" href="#gc3libs.utils.same_docstring_as" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function decorator: sets the docstring of the following function
+to the one of <cite>referenced_fn</cite>.</p>
+<p>Intended usage is for setting docstrings on methods redefined in
+derived classes, so that they inherit the docstring from the
+corresponding abstract method in the base class.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.samefile">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">samefile</tt><big>(</big><em>path1</em>, <em>path2</em><big>)</big><a class="headerlink" href="#gc3libs.utils.samefile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like <cite>os.path.samefile</cite> but return <cite>False</cite> if either one of the
+paths does not exist.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.sh_quote_safe">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">sh_quote_safe</tt><big>(</big><em>text</em><big>)</big><a class="headerlink" href="#gc3libs.utils.sh_quote_safe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Escape a string for safely passing as argument to a shell command.</p>
+<p>Return a single-quoted string that expands to the exact literal
+contents of <cite>text</cite> when used as an argument to a shell command.
+Examples (note that backslashes are doubled because of Python&#8217;s
+string read syntax):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">sh_quote_safe</span><span class="p">(</span><span class="s">&quot;arg&quot;</span><span class="p">))</span>
+<span class="go">&#39;arg&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">sh_quote_safe</span><span class="p">(</span><span class="s">&quot;&#39;arg&#39;&quot;</span><span class="p">))</span>
+<span class="go">&#39;&#39;\&#39;&#39;arg&#39;\&#39;&#39;&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.sh_quote_unsafe">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">sh_quote_unsafe</tt><big>(</big><em>text</em><big>)</big><a class="headerlink" href="#gc3libs.utils.sh_quote_unsafe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Double-quote a string for passing as argument to a shell command.</p>
+<p>Return a double-quoted string that expands to the contents of
+<cite>text</cite> but still allows variable expansion and <tt class="docutils literal"><span class="pre">\</span></tt>-escapes
+processing by the UNIX shell.  Examples (note that backslashes are
+doubled because of Python&#8217;s string read syntax):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">sh_quote_unsafe</span><span class="p">(</span><span class="s">&quot;arg&quot;</span><span class="p">))</span>
+<span class="go">&quot;arg&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">sh_quote_unsafe</span><span class="p">(</span><span class="s">&#39;&quot;arg&quot;&#39;</span><span class="p">))</span>
+<span class="go">&quot;\&quot;arg\&quot;&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">sh_quote_unsafe</span><span class="p">(</span><span class="s">r&#39;&quot;\&quot;arg\&quot;&quot;&#39;</span><span class="p">))</span>
+<span class="go">&quot;\&quot;\\\&quot;arg\\\&quot;\&quot;&quot;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.string_to_boolean">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">string_to_boolean</tt><big>(</big><em>word</em><big>)</big><a class="headerlink" href="#gc3libs.utils.string_to_boolean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert <cite>word</cite> to a Python boolean value and return it.
+The strings <cite>true</cite>, <cite>yes</cite>, <cite>on</cite>, <cite>1</cite> (with any
+capitalization and any amount of leading and trailing
+spaces) are recognized as meaning Python <cite>True</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">string_to_boolean</span><span class="p">(</span><span class="s">&#39;yes&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">string_to_boolean</span><span class="p">(</span><span class="s">&#39;Yes&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">string_to_boolean</span><span class="p">(</span><span class="s">&#39;YES&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">string_to_boolean</span><span class="p">(</span><span class="s">&#39; 1 &#39;</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">string_to_boolean</span><span class="p">(</span><span class="s">&#39;True&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">string_to_boolean</span><span class="p">(</span><span class="s">&#39;on&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Any other word is considered as boolean <cite>False</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">string_to_boolean</span><span class="p">(</span><span class="s">&#39;no&#39;</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">string_to_boolean</span><span class="p">(</span><span class="s">&#39;No&#39;</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">string_to_boolean</span><span class="p">(</span><span class="s">&#39;Nay!&#39;</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">string_to_boolean</span><span class="p">(</span><span class="s">&#39;woo-hoo&#39;</span><span class="p">)</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>This includes also the empty string and whitespace-only:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">string_to_boolean</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">string_to_boolean</span><span class="p">(</span><span class="s">&#39;  &#39;</span><span class="p">)</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.stripped">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">stripped</tt><big>(</big><em>iterable</em><big>)</big><a class="headerlink" href="#gc3libs.utils.stripped" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over lines in <cite>iterable</cite> and return each of them stripped
+of leading and trailing blanks.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.test_file">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">test_file</tt><big>(</big><em>path</em>, <em>mode</em>, <em>exception=&lt;type 'exceptions.RuntimeError'&gt;</em>, <em>isdir=False</em><big>)</big><a class="headerlink" href="#gc3libs.utils.test_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test for access to a path; if access is not granted, raise an
+instance of <cite>exception</cite> with an appropriate error message.
+This is a frontend to <tt class="xref py py-func docutils literal"><span class="pre">os.access()</span></tt>, which see for exact
+semantics and the meaning of <cite>path</cite> and <cite>mode</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> &#8211; Filesystem path to test.</li>
+<li><strong>mode</strong> &#8211; See <tt class="xref py py-func docutils literal"><span class="pre">os.access()</span></tt></li>
+<li><strong>exception</strong> &#8211; Class of exception to raise if test fails.</li>
+<li><strong>isdir</strong> &#8211; If <cite>True</cite> then also test that <cite>path</cite> points to a directory.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>If the test succeeds, <cite>True</cite> is returned:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">test_file</span><span class="p">(</span><span class="s">&#39;/bin/cat&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">F_OK</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">test_file</span><span class="p">(</span><span class="s">&#39;/bin/cat&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">R_OK</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">test_file</span><span class="p">(</span><span class="s">&#39;/bin/cat&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">X_OK</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">test_file</span><span class="p">(</span><span class="s">&#39;/tmp&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">X_OK</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>However, if the test fails, then an exception is raised:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">test_file</span><span class="p">(</span><span class="s">&#39;/bin/cat&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">W_OK</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr">RuntimeError</span>: <span class="n">Cannot write to file &#39;/bin/cat&#39;.</span>
+</pre></div>
+</div>
+<p>If the optional argument <cite>isdir</cite> is <cite>True</cite>, then additionally test
+that <cite>path</cite> points to a directory inode:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">test_file</span><span class="p">(</span><span class="s">&#39;/tmp&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">F_OK</span><span class="p">,</span> <span class="n">isdir</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="go">True</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">test_file</span><span class="p">(</span><span class="s">&#39;/bin/cat&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">F_OK</span><span class="p">,</span> <span class="n">isdir</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr">RuntimeError</span>: <span class="n">Expected &#39;/bin/cat&#39; to be a directory, but it&#39;s not.</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.to_bytes">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">to_bytes</tt><big>(</big><em>s</em><big>)</big><a class="headerlink" href="#gc3libs.utils.to_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert string <cite>s</cite> to an integer number of bytes.  Suffixes like
+&#8216;KB&#8217;, &#8216;MB&#8217;, &#8216;GB&#8217; (up to &#8216;YB&#8217;), with or without the trailing &#8216;B&#8217;,
+are allowed and properly accounted for.  Case is ignored in
+suffixes.</p>
+<p>Examples:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;12&#39;</span><span class="p">)</span>
+<span class="go">12</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;12B&#39;</span><span class="p">)</span>
+<span class="go">12</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;12KB&#39;</span><span class="p">)</span>
+<span class="go">12000</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;1G&#39;</span><span class="p">)</span>
+<span class="go">1000000000</span>
+</pre></div>
+</div>
+<p>Binary units &#8216;KiB&#8217;, &#8216;MiB&#8217; etc. are also accepted:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;1KiB&#39;</span><span class="p">)</span>
+<span class="go">1024</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">to_bytes</span><span class="p">(</span><span class="s">&#39;1MiB&#39;</span><span class="p">)</span>
+<span class="go">1048576</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.uniq">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">uniq</tt><big>(</big><em>seq</em><big>)</big><a class="headerlink" href="#gc3libs.utils.uniq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over all unique elements in sequence <cite>seq</cite>.</p>
+<p>Distinct values are returned in a sorted fashion.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.unlock">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">unlock</tt><big>(</big><em>lock</em><big>)</big><a class="headerlink" href="#gc3libs.utils.unlock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Release a previously-acquired lock.</p>
+<p>Argument <cite>lock</cite> should be the return value of a previous
+<cite>gc3libs.utils.lock</cite> call.</p>
+<p>See also: <a class="reference internal" href="#gc3libs.utils.lock" title="gc3libs.utils.lock"><tt class="xref py py-func docutils literal"><span class="pre">gc3libs.utils.lock()</span></tt></a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.update_parameter_in_file">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">update_parameter_in_file</tt><big>(</big><em>path</em>, <em>var_in</em>, <em>new_val</em>, <em>regex_in</em><big>)</big><a class="headerlink" href="#gc3libs.utils.update_parameter_in_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates a parameter value in a parameter file using predefined regular
+expressions in <cite>_loop_regexps</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> &#8211; Full path to the parameter file.</li>
+<li><strong>var_in</strong> &#8211; The variable to modify.</li>
+<li><strong>new_val</strong> &#8211; The updated parameter value.</li>
+<li><strong>regex</strong> &#8211; Name of the regular expression that describes the format of the parameter file.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.write_contents">
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">write_contents</tt><big>(</big><em>path</em>, <em>data</em><big>)</big><a class="headerlink" href="#gc3libs.utils.write_contents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overwrite the contents of the file at <cite>path</cite> with the given data.
+If the file does not exist, it is created.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">tmpfile</span><span class="p">)</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">write_contents</span><span class="p">(</span><span class="n">tmpfile</span><span class="p">,</span> <span class="s">&#39;big data here&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">read_contents</span><span class="p">(</span><span class="n">tmpfile</span><span class="p">)</span>
+<span class="go">&#39;big data here&#39;</span>
+</pre></div>
+</div>
+<p>(If you run this test, remember to clean up afterwards)</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmpfile</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="url.html"
+                        title="previous chapter"><cite>gc3libs.url</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="workflow.html"
+                        title="next chapter"><cite>gc3libs.workflow</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="workflow.html" title="gc3libs.workflow"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="url.html" title="gc3libs.url"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

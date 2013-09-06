@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Glossary &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="index.html" />
+    <link rel="prev" title="List of contributors to GC3Pie" href="credits.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="credits.html" title="List of contributors to GC3Pie"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="glossary">
+<span id="id1"></span><h1>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h1>
+<dl class="glossary docutils">
+<dt id="term-api">API</dt>
+<dd>Acronym of <em>Application Programming Interface.</em> An API is a
+description of the way one piece of software asks another program
+to perform a service (quoted from:
+<a class="reference external" href="http://www.computerworld.com/s/article/43487/Application_Programming_Interface">http://www.computerworld.com/s/article/43487/Application_Programming_Interface</a>
+which see for a more detailed explanation).</dd>
+<dt id="term-command-line">Command-line</dt>
+<dd>The sequence of words typed at the terminal prompt in
+order to run a specified application.</dd>
+<dt id="term-command-line-option">Command-line option</dt>
+<dd><p class="first">Arguments to a command (i.e., words on the command line) that
+select variants to the usual behavior of the command.  For
+instance, a command-line option can request more verbose reporting.</p>
+<p>Traditionally, UNIX command-line options consist of a dash
+(<tt class="docutils literal"><span class="pre">-</span></tt>), followed by one or more lowercase letters, or a
+double-dash (<tt class="docutils literal"><span class="pre">--</span></tt>) followed by a complete word or compound word.</p>
+<p class="last">For example, the words <tt class="docutils literal"><span class="pre">-h</span></tt> or <tt class="docutils literal"><span class="pre">--help</span></tt> usually instruct a
+command to print a short usage message and exit immediately after.</p>
+</dd>
+<dt id="term-core">Core</dt>
+<dd>A single computing unit. This was called a <em>CPU</em> until manufacturers
+started packing many processing units into a single package: now the
+term CPU is used for the package, and <em>core</em> is one of the several
+independent processing units within the package.</dd>
+<dt id="term-cpu-time">CPU Time</dt>
+<dd>The total time that computing units (processor <a class="reference internal" href="#term-core"><em class="xref std std-term">core</em></a>) are
+actively executing a <a class="reference internal" href="#term-job"><em class="xref std std-term">job</em></a>.  For single-threaded jobs, this
+is normally <em>less</em> then the actual duration (&#8216;wall-clock time&#8217; or
+<a class="reference internal" href="#term-walltime"><em class="xref std std-term">walltime</em></a>), because some time is lost in I/O and system
+operations.  For parallel jobs the CPU time is normally larger
+than the duration, because several processor cores are active on
+the job at the same time; the quotient of the CPU time and the
+duration measures the efficiency of the parallel job.</dd>
+<dt id="term-job">Job</dt>
+<dd>A computational job is a single run of a non-interactive
+application.  The prototypical example is a run of <a class="reference external" href="http://www.msg.ameslab.gov/gamess/">GAMESS</a> on a
+single input file.</dd>
+<dt id="term-persistent">Persistent</dt>
+<dd>Used in the sense of <em>preserved across program stops and system
+reboots</em>.  In practice, it just means that the relevant data is
+stored on disk or in some database.</dd>
+<dt id="term-resource">Resource</dt>
+<dd>Short for <em>computational resource</em>: any cluster or Grid where a job
+can run.</dd>
+<dt id="term-state">State</dt>
+<dd>A one-word indication of a computational <a class="reference internal" href="#term-job"><em class="xref std std-term">job</em></a> execution
+status (e.g., <tt class="docutils literal"><span class="pre">RUNNING</span></tt> or <tt class="docutils literal"><span class="pre">TERMINATED</span></tt>).  The terms <em>state</em>
+and <em>status</em> are used interchangeably in <a class="reference external" href="http://gc3pie.googlecode.com/">GC3Pie</a> documentation.</dd>
+<dt id="term-stderr">STDERR</dt>
+<dd>Abbreviation for &#8220;standard error stream&#8221;; it is the sequence of
+all text messages that a command prints to inform the user of
+problems or to report on operations progress.  The Linux/UNIX
+system allows two separate output streams, one for output proper,
+named <a class="reference internal" href="#term-stdout"><em class="xref std std-term">STDOUT</em></a>, and STDERR for &#8220;error messages&#8221;.  It is
+entirely up to the command to tag a message as &#8220;standard output&#8221;
+or &#8220;standard error&#8221;.</dd>
+<dt id="term-stdout">STDOUT</dt>
+<dd>Abbreviation for &#8220;standard output stream&#8221;.  It is the sequence of
+all characters that constitute the output of a command.  The Linux/UNIX
+system allows two separate output streams, one for output proper, and
+one for &#8220;error messages&#8221;, dubbed <a class="reference internal" href="#term-stderr"><em class="xref std std-term">STDERR</em></a>.  It is entirely up
+to the command to tag a message as &#8220;standard output&#8221; or &#8220;standard error&#8221;.</dd>
+<dt id="term-session">Session</dt>
+<dd>A <a class="reference internal" href="#term-persistent"><em class="xref std std-term">persistent</em></a> collection of GC3Pie tasks and jobs. Sessions
+are used by <a class="reference internal" href="users/gc3apps/index.html#gc3apps"><em>The GC3Apps software</em></a> to store job status across program runs.</dd>
+<dt id="term-walltime">Walltime</dt>
+<dd>Short for <em>wall-clock time</em>: indicates the total running time of a
+<a class="reference internal" href="#term-job"><em class="xref std std-term">job</em></a>.</dd>
+</dl>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="credits.html"
+                        title="previous chapter">List of contributors to GC3Pie</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="credits.html" title="List of contributors to GC3Pie"
+             >previous</a> |</li>
+        <li><a href="index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

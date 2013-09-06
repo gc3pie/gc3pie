@@ -1,0 +1,254 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.template &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../index.html" />
+    <link rel="next" title="gc3libs.url" href="url.html" />
+    <link rel="prev" title="gc3libs.session" href="session.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="url.html" title="gc3libs.url"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="session.html" title="gc3libs.session"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.template">
+<span id="gc3libs-template"></span><h1><cite>gc3libs.template</cite><a class="headerlink" href="#module-gc3libs.template" title="Permalink to this headline">¶</a></h1>
+<p>Support and expansion of programmatic templates.</p>
+<p>The module <cite>gc3libs.template</cite> allows creation of textual templates
+with a simple object-oriented programming interface: given a string
+with a list of substitutions (using the syntax of Python&#8217;s standard
+<cite>substitute</cite> module), a set of replacements can be specified, and the
+<cite>gc3libs.template.expansions</cite> function will generate all possible
+texts coming from the same template.  Templates can be nested, and
+expansions generated recursviely.</p>
+<dl class="class">
+<dt id="gc3libs.template.Template">
+<em class="property">class </em><tt class="descclassname">gc3libs.template.</tt><tt class="descname">Template</tt><big>(</big><em>template</em>, <em>validator=&lt;function &lt;lambda&gt; at 0x3823500&gt;</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template" title="Permalink to this definition">¶</a></dt>
+<dd><p>A template object is a pair <cite>(obj, keywords)</cite>.  Methods are
+provided to substitute the keyword values into <cite>obj</cite>, and to
+iterate over expansions of the given keywords (optionally
+filtering the allowed combination of keyword values).</p>
+<p>Second optional argument <cite>validator</cite> must be a function that
+accepts a set of keyword arguments, and returns <cite>True</cite> if the
+keyword combination is valid (can be expanded/substituted back
+into the template) or <cite>False</cite> if it should be discarded.
+The default validator passes any combination of keywords/values.</p>
+<dl class="method">
+<dt id="gc3libs.template.Template.expansions">
+<tt class="descname">expansions</tt><big>(</big><em>**keywords</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template.expansions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over all valid expansions of the templated object
+<em>and</em> the template keywords.  Returned items are <cite>Template</cite>
+instances constucted with the expanded template object and a
+valid combination of keyword values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.template.Template.substitute">
+<tt class="descname">substitute</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.Template.substitute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return result of interpolating the value of keywords into the
+template.  Keyword arguments <cite>extra_args</cite> can be used to override
+keyword values passed to the constructor.</p>
+<p>If the templated object provides a <cite>substitute</cite> method, then
+return the result of invoking it with the template keywords as
+keyword arguments.  Otherwise, return the result of applying
+Python standard library&#8217;s <cite>string.Template.safe_substitute()</cite>
+on the string representation of the templated object.</p>
+<p>Raise <cite>ValueError</cite> if the set of keywords/values is not valid
+according to the validator specified in the constructor.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.template.expansions">
+<tt class="descclassname">gc3libs.template.</tt><tt class="descname">expansions</tt><big>(</big><em>obj</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.template.expansions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over all expansions of a given object, recursively
+expanding all templates found.  How the expansions are actually
+computed, depends on the type of object being passed in the first
+argument <cite>obj</cite>:</p>
+<ul>
+<li><p class="first">If <cite>obj</cite> is a <cite>list</cite>, iterate over expansions of items in <cite>obj</cite>.
+(In particular, this flattens out nested lists.)</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">L</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">L</span><span class="p">))</span>
+<span class="go">[0, 2, 3]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">If <cite>obj</cite> is a dictionary, return dictionary formed by all
+combinations of a key <cite>k</cite> in <cite>obj</cite> with an expansion of the
+corresponding value <cite>obj[k]</cite>.  Expansions are computed by
+recursively calling <cite>expansions(obj[k], **extra_args)</cite>.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">D</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">D</span><span class="p">))</span>
+<span class="go">[{&#39;a&#39;: 1, &#39;b&#39;: 2}, {&#39;a&#39;: 1, &#39;b&#39;: 3}]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">If <cite>obj</cite> is a <cite>tuple</cite>, iterate over all tuples formed by the
+expansion of every item in <cite>obj</cite>.  (Each item <cite>t[i]</cite> is expanded
+by calling <cite>expansions(t[i], **extra_args)</cite>.)</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">T</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">T</span><span class="p">))</span>
+<span class="go">[(1, 2), (1, 3)]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">If <cite>obj</cite> is a <cite>Template</cite> class instance, then the returned values
+are the result of applying the template to the expansion of each
+of its keywords.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">T1</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="s">&quot;a=${n}&quot;</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">T1</span><span class="p">))</span>
+<span class="go">[Template(&#39;a=${n}&#39;, n=0), Template(&#39;a=${n}&#39;, n=1)]</span>
+</pre></div>
+</div>
+<p>Note that keywords passed to the <cite>expand</cite> invocation override
+the ones used in template construction:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">T2</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="s">&quot;a=${n}&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">T2</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">]))</span>
+<span class="go">[Template(&#39;a=${n}&#39;, n=1), Template(&#39;a=${n}&#39;, n=3)]</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">T3</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="s">&quot;a=${n}&quot;</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">T3</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]))</span>
+<span class="go">[Template(&#39;a=${n}&#39;, n=2), Template(&#39;a=${n}&#39;, n=3)]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Any other value is returned unchanged.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">V</span> <span class="o">=</span> <span class="mi">42</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">expansions</span><span class="p">(</span><span class="n">V</span><span class="p">))</span>
+<span class="go">[42]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="session.html"
+                        title="previous chapter"><cite>gc3libs.session</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="url.html"
+                        title="next chapter"><cite>gc3libs.url</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="url.html" title="gc3libs.url"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="session.html" title="gc3libs.session"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

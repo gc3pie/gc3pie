@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.application.codeml &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../../index.html" />
+    <link rel="next" title="gc3libs.application.demo" href="demo.html" />
+    <link rel="prev" title="gc3libs.application.apppot" href="apppot.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="demo.html" title="gc3libs.application.demo"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="apppot.html" title="gc3libs.application.apppot"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.application.codeml">
+<span id="gc3libs-application-codeml"></span><h1><cite>gc3libs.application.codeml</cite><a class="headerlink" href="#module-gc3libs.application.codeml" title="Permalink to this headline">¶</a></h1>
+<p>Simple interface to the CODEML application.</p>
+<dl class="class">
+<dt id="gc3libs.application.codeml.CodemlApplication">
+<em class="property">class </em><tt class="descclassname">gc3libs.application.codeml.</tt><tt class="descname">CodemlApplication</tt><big>(</big><em>*ctls</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.application.codeml.CodemlApplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a CODEML job with the specified &#8216;.ctl&#8217; files.</p>
+<p>The given &#8216;.ctl&#8217; input files are parsed and the &#8216;.phy&#8217; and
+&#8216;.nwk&#8217; files mentioned therein are added to the list of files
+to be copied to the execution site.</p>
+<dl class="staticmethod">
+<dt id="gc3libs.application.codeml.CodemlApplication.aux_files">
+<em class="property">static </em><tt class="descname">aux_files</tt><big>(</big><em>ctl_path</em><big>)</big><a class="headerlink" href="#gc3libs.application.codeml.CodemlApplication.aux_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return full path to the seqfile and treefile referenced in
+the &#8216;.ctl&#8217; file given as arguments.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.application.codeml.CodemlApplication.terminated">
+<tt class="descname">terminated</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.application.codeml.CodemlApplication.terminated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the exit code of a <cite>CodemlApplication</cite> job by inspecting its
+<tt class="docutils literal"><span class="pre">.mlc</span></tt> output files.</p>
+<p>An output file is valid iff its last line of each output file
+reads <tt class="docutils literal"><span class="pre">Time</span> <span class="pre">used:</span> <span class="pre">MM:SS</span></tt> <em>or</em> <tt class="docutils literal"><span class="pre">Time</span> <span class="pre">used:</span> <span class="pre">HH:MM:SS</span></tt></p>
+<p>The exit status of the whole job is a bit field composed as follows:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="15%" />
+<col width="85%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">bit no.</th>
+<th class="head">meaning</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>0</td>
+<td>H1.mlc valid (0=valid, 1=invalid)</td>
+</tr>
+<tr class="row-odd"><td>1</td>
+<td>H1.mlc present (0=present, 1=no file)</td>
+</tr>
+<tr class="row-even"><td>2</td>
+<td>H0.mlc valid (0=valid, 1=invalid)</td>
+</tr>
+<tr class="row-odd"><td>3</td>
+<td>H0.mlc present (0=present, 1=not present)</td>
+</tr>
+<tr class="row-even"><td>7</td>
+<td>error running codeml (1=error, 0=ok)</td>
+</tr>
+</tbody>
+</table>
+<p>The special value 127 is returned in case <tt class="docutils literal"><span class="pre">codeml</span></tt> did not
+run at all (Grid or remote cluster error).</p>
+<p>So, exit code 0 means that all files processed successfully,
+code 1 means that <tt class="docutils literal"><span class="pre">H0.mlc</span></tt> has not been downloaded (for whatever reason).</p>
+<dl class="docutils">
+<dt>TODO:</dt>
+<dd><ul class="first last simple">
+<li>Check if the stderr is empty.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="apppot.html"
+                        title="previous chapter"><cite>gc3libs.application.apppot</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="demo.html"
+                        title="next chapter"><cite>gc3libs.application.demo</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="demo.html" title="gc3libs.application.demo"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="apppot.html" title="gc3libs.application.apppot"
+             >previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

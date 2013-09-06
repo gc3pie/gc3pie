@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.application.turbomole &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../../index.html" />
+    <link rel="next" title="gc3libs.authentication" href="../authentication.html" />
+    <link rel="prev" title="gc3libs.application.rosetta" href="rosetta.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../authentication.html" title="gc3libs.authentication"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="rosetta.html" title="gc3libs.application.rosetta"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.application.turbomole">
+<span id="gc3libs-application-turbomole"></span><h1><cite>gc3libs.application.turbomole</cite><a class="headerlink" href="#module-gc3libs.application.turbomole" title="Permalink to this headline">¶</a></h1>
+<p>Specialized support for TurboMol.</p>
+<dl class="class">
+<dt id="gc3libs.application.turbomole.TurbomoleApplication">
+<em class="property">class </em><tt class="descclassname">gc3libs.application.turbomole.</tt><tt class="descname">TurbomoleApplication</tt><big>(</big><em>program</em>, <em>control</em>, <em>*others</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.application.turbomole.TurbomoleApplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run TURBOMOLE&#8217;s <cite>program</cite> on the given <cite>control</cite> file.  Any
+additional arguments are considered additional filenames to input
+files (e.g., the <tt class="docutils literal"><span class="pre">coord</span></tt> file) and copied to the execution
+directory.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>program</strong> (<em>str</em>) &#8211; Name of the TURBOMOLE&#8217;s program to run (e.g., <tt class="docutils literal"><span class="pre">ridft</span></tt>)</li>
+<li><strong>control</strong> (<em>str</em>) &#8211; Path to a file in TURBOMOLE&#8217;s <tt class="docutils literal"><span class="pre">control</span></tt> format.</li>
+<li><strong>others</strong> &#8211; Path(s) to additional input files.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.application.turbomole.TurbomoleDefineApplication">
+<em class="property">class </em><tt class="descclassname">gc3libs.application.turbomole.</tt><tt class="descname">TurbomoleDefineApplication</tt><big>(</big><em>program</em>, <em>define_in</em>, <em>coord</em>, <em>*others</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.application.turbomole.TurbomoleDefineApplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run TURBOMOLE&#8217;s &#8216;define&#8217; with the given <cite>define_in</cite> file as input,
+then run <cite>program</cite> on the <cite>control</cite> file produced.</p>
+<p>Any additional arguments are considered additional filenames to
+input files and copied to the execution directory.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>program</strong> (<em>str</em>) &#8211; Name of the TURBOMOLE&#8217;s program to run (e.g., <tt class="docutils literal"><span class="pre">ridft</span></tt>)</li>
+<li><strong>define_in</strong> (<em>str</em>) &#8211; Path to a file containing keystrokes to pass</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>as input to the &#8216;define&#8217; program.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>coord</strong> (<em>str</em>) &#8211; Path to a file containing the molecule</td>
+</tr>
+</tbody>
+</table>
+<p>coordinates in TURBOMOLE&#8217;s format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>others</strong> &#8211; Path(s) to additional input files.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="rosetta.html"
+                        title="previous chapter"><cite>gc3libs.application.rosetta</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../authentication.html"
+                        title="next chapter"><cite>gc3libs.authentication</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../authentication.html" title="gc3libs.authentication"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="rosetta.html" title="gc3libs.application.rosetta"
+             >previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>
