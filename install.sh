@@ -204,6 +204,11 @@ install_required_sw () {
 The following software packages need to be installed
 in order for GC3Pie to work: $missing
 
+If you have "sudo" privileges on this machine, you can install them by
+running:
+
+    apt-get install $missing
+
 There is a small chance that the required software
 is actually installed though we failed to detect it,
 so you may choose to proceed with GC3Pie installation
@@ -232,6 +237,11 @@ EOF
             cat <<EOF
 The following software packages need to be installed
 in order for GC3Pie to work: $missing
+
+If you have "sudo" privileges on this machine, you can install them by
+running:
+
+    sudo yum install $missing
 
 There is a small chance that the required software
 is actually installed though we failed to detect it,
@@ -539,7 +549,7 @@ pip_download () {
     pkg=$1
     url=$(download - $BASE_PIP_URL/$pkg/ | grep "source/./$pkg.*z" |sed 's:.*href="\([^#"]*\)["#].*:\1:g' | sort | tail -1 )
     if [ -n "$url" ]; then
-        download $(basename $url) $BASE_PIP_URL/$url
+        download $(basename $url) $BASE_PIP_URL/$pkg/$url
     else
         die 5 "Package '$pkg' not found on PyPI!" <<EOF
 Unable to download package '$pkg' from PyPI.
