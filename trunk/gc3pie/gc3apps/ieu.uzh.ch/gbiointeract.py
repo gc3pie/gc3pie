@@ -124,7 +124,7 @@ mkdir data
 gzip data/*.txt
 """ % str.join(' ', arguments)
         try:
-            (fd, self.tmp_filename) = tempfile.mkstemp(prefix='c3pie-gbiointeract')
+            (fd, self.tmp_filename) = tempfile.mkstemp(prefix='g3pie-gbiointeract')
             write_contents(self.tmp_filename, executable_script)
             os.chmod(self.tmp_filename, 0755)
         except Exception, ex:
