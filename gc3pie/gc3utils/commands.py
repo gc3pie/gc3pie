@@ -1525,7 +1525,7 @@ To get detailed info on a specific command, run:
 
 
     def _forget_vm(self, vmid):
-        matching_res = self._find_resources_running_vm(vmid)
+        matching_res = self._find_resources_by_running_vm(vmid)
         if len(matching_res) > 1:
             raise LookupError("VM with ID `%s` have been found on multiple "
                                "resources. Please specify the resource by "
