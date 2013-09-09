@@ -414,14 +414,24 @@ class EC2Lrms(LRMS):
                 args['is_secure'] = False
 
         self._conn = boto.connect_ec2(**args)
-
         # Set up the VMPool persistent class. This has been delayed
         # until here because otherwise self._conn is None
         pooldir = os.path.join(os.path.expandvars(EC2Lrms.RESOURCE_DIR),
                                'vmpool', self.name)
         self._vmpool = VMPool(pooldir, self._conn)
 
-        all_images = self._conn.get_all_images()
+        try:
+            all_images = self._conn.get_all_images()
+        except boto.exception.EC2ResponseError as ex:
+            if ex.status == 404:
+                # NotFound, probaly the endpoint is wrong
+                raise RuntimeError(
+                    "Unable to contact the EC2 endpoint at `%s`. Please, "
+                    "verify that the URL in the configuration file is "
+                    "correct." % (self.ec2_url,))
+            raise RuntimeError(
+                "Unknown error while connecting to the EC2 endpoint `%s`: "
+                "%s" % (self.ec2_url, ex))
         if self.image_id:
             if self.image_id not in [i.id for i in all_images]:
                 raise RuntimeError(
