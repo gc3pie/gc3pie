@@ -19,7 +19,7 @@ Top-level interface to Grid functionality.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision: 3391 $)'
+__version__ = 'development version (SVN $Revision$)'
 __date__ = '$Date$'
 
 
@@ -910,7 +910,7 @@ def first_come_first_serve(tasks, resources, matchmaker=MatchMaker()):
         # keep only compatible resources
         compatible_resources = matchmaker.filter(task, resources)
         if not compatible_resources:
-            gc3pie.log.warning(
+            gc3libs.log.warning(
                 "No compatible resources for task '%s'"
                 " - cannot submit it" % task)
             continue
