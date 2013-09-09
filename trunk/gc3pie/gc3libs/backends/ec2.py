@@ -249,7 +249,16 @@ class VMPool(object):
         """
         Return list of all known VMs.
         """
-        return [self.get_vm(vm_id) for vm_id in self._vm_ids]
+        vms = []
+        for vm_id in self._vm_ids:
+            try:
+                vms.append(self.get_vm(vm_id))
+            except UnrecoverableError as ex:
+                gc3libs.log.warning(
+                    "Cloud resource `%s`: ignoring error while trying to "
+                    "get information on VM wiht id `%s`: %s" \
+                    % (self.name, vm_id, ex))
+        return vms
 
     def load(self):
         """Populate list of VM IDs from the data saved on disk."""
