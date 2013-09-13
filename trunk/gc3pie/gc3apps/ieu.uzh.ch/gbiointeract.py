@@ -86,6 +86,7 @@ class GBiointeractApplication(Application):
                  public_good_diffusion,
                  public_good_durability,
                  death_rate,
+                 make_movie,
                  **extra_args):
         extra_args.setdefault('requested_cores', 1)
 
@@ -101,6 +102,8 @@ class GBiointeractApplication(Application):
                      '-d', str(int(public_good_durability)),
                      '-x', str(float(death_rate)),
                      '-D', 'data']
+        if make_movie:
+            arguments.append('-m')
 
         extra_args['jobname'] = "GBiointeract_cdiff:" + \
         "%f_pgdiff:%f_dur:%f_deathrate:%f" % (cell_diffusion,
@@ -173,11 +176,13 @@ class GBiointeractTaskCollection(ChunkedParameterSweep):
                  public_good_durability_range,
                  death_rate_range,
                  chunk_size,
+                 make_movie,
                  **extra_args):
         if not chunk_size:
             chunk_size = step
         self.executable = executable
         self.extra_args = extra_args
+        self.make_movie = make_movie
 
         self.combinations = list(itertools.product(
                  cell_diffusion_range,
@@ -199,7 +204,7 @@ class GBiointeractTaskCollection(ChunkedParameterSweep):
 
         return GBiointeractApplication(
             self.executable,
-            cd, d, pg, dr,
+            cd, d, pg, dr, self.make_movie,
             **self.extra_args)
 
 
@@ -247,6 +252,10 @@ class GBiointeractScript(SessionBasedScript):
                        "supplied, will use only that value, otherwise "
                        "will use all the values in the range from `N` "
                        "to `END` (exclusive) using `STEP` increments")
+        self.add_param("-M", "--make-movie", action="store_true",
+                       help="Also produce the `draw.txt` file containing "
+                       "the cell positions at each iteration.")
+
 
     def setup_args(self):
         self.add_param("executable", nargs="?", default='biointeract',
@@ -299,6 +308,7 @@ class GBiointeractScript(SessionBasedScript):
             self.params.public_good_durability_range,
             self.params.death_rate_range,
             self.params.max_running,
+            self.params.make_movie,
             **extra.copy()
             )]
 
