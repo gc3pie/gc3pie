@@ -83,8 +83,8 @@ class GBiointeractApplication(Application):
     def __init__(self,
                  executable,
                  cell_diffusion,
-                 public_good_diffusion,
                  public_good_durability,
+                 public_good_diffusion,
                  death_rate,
                  make_movie,
                  **extra_args):
