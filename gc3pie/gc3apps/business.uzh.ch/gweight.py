@@ -118,6 +118,11 @@ class GWeightApplication(Application):
             inputs[extra_args['driver_script']] = "./bin/run.R"
             arguments +=  "-m ./bin/run.R "
 
+        if extra_args.has_key('threads_posted_data'):
+            inputs[extra_args['threads_posted_data']] = "./data/threads.nodes.posted.rda"
+            arguments +=  "-t ./data/threads.nodes.posted.rda "
+
+
         # adding wrapper main script
         gweight_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
                                               "gc3libs/etc/gweight_wrap.sh")
@@ -230,6 +235,10 @@ class GWeightScript(SessionBasedScript):
                        dest="weight_function", default=None,
                        help="Location of the weight function R script.")
 
+        self.add_param("-T", "--threads.posted", metavar="[PATH]",
+                       dest="threads_posted_data", default=None,
+                       help="Location of threads posted data in .rda format.")
+
     def setup_args(self):
 
         self.add_param('edges_data', type=str,
@@ -292,6 +301,8 @@ class GWeightScript(SessionBasedScript):
                 extra_args['data'] = self.params.data
             if self.params.weight_function:
                 extra_args['weight_function'] = self.params.weight_function
+            if self.params.threads_posted_data:
+                extra_args['threads_posted_data'] = self.params.threads_posted_data
 
             self.log.debug("Creating Task for index : %d - %d" %
                            (index_chunk, (index_chunk + self.params.chunk_size)))
