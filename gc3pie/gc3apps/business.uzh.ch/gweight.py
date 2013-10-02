@@ -322,7 +322,7 @@ class GWeightScript(SessionBasedScript):
         merged_csv = "result-%s" % os.path.basename(self.params.edges_data)
 
         try:
-            fout=open(merged_csv,"a")
+            fout=open(merged_csv,"w+")
             for task in self.session:
                 if isinstance(task,GWeightTask) and task.execution.returncode == 0:
                     try:
