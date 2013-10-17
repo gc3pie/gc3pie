@@ -1,0 +1,1068 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="index.html" />
+    <link rel="next" title="gc3libs.application" href="gc3libs/application.html" />
+    <link rel="prev" title="GC3Libs programming API" href="index.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gc3libs/application.html" title="gc3libs.application"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="GC3Libs programming API"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs">
+<span id="gc3libs"></span><h1><cite>gc3libs</cite><a class="headerlink" href="#module-gc3libs" title="Permalink to this headline">¶</a></h1>
+<p>GC3Libs is a python package for controlling the life-cycle of a Grid
+or batch computational job.</p>
+<p>GC3Libs provides services for submitting computational jobs to Grids
+and batch systems, controlling their execution, persisting job
+information, and retrieving the final output.</p>
+<p>GC3Libs takes an application-oriented approach to batch computing. A
+generic <a class="reference internal" href="#gc3libs.Application" title="gc3libs.Application"><tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt></a> class provides the basic operations for
+controlling remote computations, but different <a class="reference internal" href="#gc3libs.Application" title="gc3libs.Application"><tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt></a>
+subclasses can expose adapted interfaces, focusing on the most
+relevant aspects of the application being represented.</p>
+<dl class="class">
+<dt id="gc3libs.Application">
+<em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Application</tt><big>(</big><em>arguments</em>, <em>inputs</em>, <em>outputs</em>, <em>output_dir</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Application" title="Permalink to this definition">¶</a></dt>
+<dd><p>Support for running a generic application with the GC3Libs.
+The following parameters are <em>required</em> to create an <cite>Application</cite>
+instance:</p>
+<dl class="docutils">
+<dt><cite>arguments</cite></dt>
+<dd>List or sequence of program arguments. The program to execute is
+the first one.; any object in the list will be converted to
+string via Python&#8217;s <cite>str()</cite>.</dd>
+<dt><cite>inputs</cite></dt>
+<dd><p class="first">Files that will be copied to the remote execution node before
+execution starts.</p>
+<p>There are two possible ways of specifying the <cite>inputs</cite> parameter:</p>
+<ul class="last">
+<li><p class="first">It can be a Python dictionary: keys are local file paths or
+URLs, values are remote file names.</p>
+</li>
+<li><p class="first">It can be a Python list: each item in the list should be a
+pair <cite>(source, remote_file_name)</cite>: the <cite>source</cite> can be a
+local file or a URL; <cite>remote_file_name</cite> is the path
+(relative to the execution directory) where <cite>source</cite> will be
+downloaded.  If <cite>remote_file_name</cite> is an absolute path, an
+<tt class="xref py py-class docutils literal"><span class="pre">InvalidArgument</span></tt> error is raised.</p>
+<p>A single string <cite>file_name</cite> is allowed instead of the pair
+and results in the local file <cite>file_name</cite> being copied to
+<cite>file_name</cite> on the remote host.</p>
+</li>
+</ul>
+</dd>
+<dt><cite>outputs</cite></dt>
+<dd><p class="first">Files and directories that will be copied from the remote
+execution node back to the local computer (or a
+network-accessible server) after execution has completed.
+Directories are copied recursively.</p>
+<p>There are three possible ways of specifying the <cite>outputs</cite> parameter:</p>
+<ul>
+<li><p class="first">It can be a Python dictionary: keys are remote file or
+directory paths (relative to the execution directory), values
+are corresponding local names.</p>
+</li>
+<li><p class="first">It can be a Python list: each item in the list should be a
+pair <cite>(remote_file_name, destination)</cite>: the <cite>destination</cite>
+can be a local file or a URL; <cite>remote_file_name</cite> is the path
+(relative to the execution directory) that will be uploaded
+to <cite>destination</cite>.  If <cite>remote_file_name</cite> is an absolute
+path, an <tt class="xref py py-class docutils literal"><span class="pre">InvalidArgument</span></tt> error is raised.</p>
+<p>A single string <cite>file_name</cite> is allowed instead of the pair
+and results in the remote file <cite>file_name</cite> being copied to
+<cite>file_name</cite> on the local host.</p>
+</li>
+<li><p class="first">The constant <cite>gc3libs.ANY_OUTPUT</cite> which instructs GC3Libs to
+copy every file in the remote execution directory back to the
+local output path (as specified by the <cite>output_dir</cite> attribute).</p>
+</li>
+</ul>
+<p class="last">Note that no errors will be raised if an output file is not present.
+Override the <tt class="xref py py-meth docutils literal"><span class="pre">terminated()</span></tt> method to raise errors for reacting
+on this kind of failures.</p>
+</dd>
+<dt><cite>output_dir</cite></dt>
+<dd>Path to the base directory where output files will be downloaded.
+Output file names are interpreted relative to this base directory.</dd>
+<dt><cite>requested_cores</cite>,`requested_memory`,`requested_walltime`</dt>
+<dd>specify resource requirements for the application:
+* the number of independent execution units (CPU cores),
+* amount of memory (as a <a class="reference internal" href="gc3libs/quantity.html#gc3libs.quantity.Memory" title="gc3libs.quantity.Memory"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.quantity.Memory</span></tt></a> object),
+* amount of wall-clock time to allocate for the computational job (as a <a class="reference internal" href="gc3libs/quantity.html#gc3libs.quantity.Duration" title="gc3libs.quantity.Duration"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.quantity.Duration</span></tt></a> object).</dd>
+</dl>
+<p>The following optional parameters may be additionally
+specified as keyword arguments and will be given special
+treatment by the <cite>Application</cite> class logic:</p>
+<dl class="docutils">
+<dt><cite>requested_architecture</cite></dt>
+<dd>specify that this application can only be executed on a certain
+processor architecture; see <a class="reference internal" href="#gc3libs.Run.Arch" title="gc3libs.Run.Arch"><tt class="xref py py-class docutils literal"><span class="pre">Run.Arch</span></tt></a> for a list of
+possible values.  The default value <cite>None</cite> means that any
+architecture is valid, i.e., there are no requirements on the
+processor architecture.</dd>
+<dt><cite>environment</cite></dt>
+<dd>a list of pairs <cite>(name, value)</cite>: the
+environment variable whose name is given by the contents of
+the string <cite>name</cite> will be defined as the content of string
+<cite>value</cite> (i.e., as if &#8220;export name=value&#8221; was executed prior
+to starting the application).  Alternately, one can pass in
+a list of strings of the form &#8220;name=value&#8221;.</dd>
+<dt><cite>output_base_url</cite></dt>
+<dd>if not <cite>None</cite>, this is prefixed to all output files (except
+stdout and stderr, which are always retrieved), so, for instance,
+having <cite>output_base_url=&#8221;gsiftp://example.org/data&#8221;</cite> will upload
+output files into that remote directory.</dd>
+<dt><cite>stdin</cite></dt>
+<dd>file name of a file whose contents will be fed as
+standard input stream to the remote-executing process.</dd>
+<dt><cite>stdout</cite></dt>
+<dd>name of a file where the standard output stream of
+the remote executing process will be redirected to; will be
+automatically added to <cite>outputs</cite>.</dd>
+<dt><cite>stderr</cite></dt>
+<dd>name of a file where the standard error stream of
+the remote executing process will be redirected to; will be
+automatically added to <cite>outputs</cite>.</dd>
+<dt><cite>join</cite></dt>
+<dd>if this evaluates to <cite>True</cite>, then standard error is
+redirected to the file specified by <cite>stdout</cite> and <cite>stderr</cite> is
+ignored.  (<cite>join</cite> has no effect if <cite>stdout</cite> is not given.)</dd>
+<dt><cite>tags</cite></dt>
+<dd>list of tag names (string) that must be present on a
+resource in order to be eligible for submission; in the ARC
+backend, tags are interpreted as run-time environments (RTE) to
+request.</dd>
+</dl>
+<p>Any other keyword arguments will be set as instance attributes,
+but otherwise ignored by the <cite>Application</cite> constructor.</p>
+<p>After successful construction, an <cite>Application</cite> object is
+guaranteed to have the following instance attributes:</p>
+<dl class="docutils">
+<dt><cite>arguments</cite></dt>
+<dd>list of strings specifying command-line arguments for executable
+invocation. The first element must be the executable.</dd>
+<dt><cite>inputs</cite></dt>
+<dd>dictionary mapping source URL (a <a class="reference internal" href="gc3libs/url.html#gc3libs.url.Url" title="gc3libs.url.Url"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.url.Url</span></tt></a>
+object) to a remote file name (a string); remote file names are
+relative paths (root directory is the remote job folder)</dd>
+<dt><cite>outputs</cite></dt>
+<dd>dictionary mapping remote file name (a string) to a destination
+(a <a class="reference internal" href="gc3libs/url.html#gc3libs.url.Url" title="gc3libs.url.Url"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.url.Url</span></tt></a>); remote file names are relative
+paths (root directory is the remote job folder)</dd>
+<dt><cite>output_dir</cite></dt>
+<dd>Path to the base directory where output files will be
+downloaded.  Output file names (those which are not URLs) are
+interpreted relative to this base directory.</dd>
+<dt><cite>execution</cite></dt>
+<dd><blockquote class="first">
+<div>a <cite>Run</cite> instance; its state attribute is initially set to <tt class="docutils literal"><span class="pre">NEW</span></tt>
+(Actually inherited from the <a class="reference internal" href="#gc3libs.Task" title="gc3libs.Task"><tt class="xref py py-class docutils literal"><span class="pre">Task</span></tt></a>)</div></blockquote>
+<dl class="last docutils">
+<dt><cite>environment</cite></dt>
+<dd>dictionary mapping environment variable names to the requested
+value (string); possibly empty</dd>
+</dl>
+</dd>
+<dt><cite>stdin</cite></dt>
+<dd><cite>None</cite> or a string specifying a (local) file name.  If <cite>stdin</cite>
+is not None, then it matches a key name in <cite>inputs</cite></dd>
+<dt><cite>stdout</cite></dt>
+<dd><cite>None</cite> or a string specifying a (remote) file name.  If <cite>stdout</cite>
+is not None, then it matches a key name in <cite>outputs</cite></dd>
+<dt><cite>stderr</cite></dt>
+<dd><cite>None</cite> or a string specifying a (remote) file name.  If <cite>stdout</cite>
+is not None, then it matches a key name in <cite>outputs</cite></dd>
+<dt><cite>join</cite></dt>
+<dd>boolean value, indicating whether <cite>stdout</cite> and <cite>stderr</cite> are
+collected into the same file</dd>
+<dt><cite>tags</cite></dt>
+<dd>list of strings specifying the tags to request in each resource
+for submission; possibly empty.</dd>
+</dl>
+<dl class="attribute">
+<dt id="gc3libs.Application.application_name">
+<tt class="descname">application_name</tt><em class="property"> = 'generic'</em><a class="headerlink" href="#gc3libs.Application.application_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>A name for applications of this class.</p>
+<p>This string is used as a prefix for configuration items related to
+this application in configured resources.  For example, if the
+<cite>application_name</cite> is <tt class="docutils literal"><span class="pre">foo</span></tt>, then the application interface code
+in GC3Pie might search for <tt class="docutils literal"><span class="pre">foo_cmd</span></tt>, <tt class="docutils literal"><span class="pre">foo_extra_args</span></tt>, etc.
+See <a class="reference internal" href="#gc3libs.Application.qsub_sge" title="gc3libs.Application.qsub_sge"><tt class="xref py py-meth docutils literal"><span class="pre">qsub_sge()</span></tt></a> for an actual example.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.bsub">
+<tt class="descname">bsub</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Application.bsub" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an LSF <tt class="docutils literal"><span class="pre">qsub</span></tt> command-line invocation for submitting an
+instance of this application.  Return a pair <cite>(cmd_argv,
+app_argv)</cite>, where <cite>cmd_argv</cite> is a list containing the
+<em>argv</em>-vector of the command to run to submit an instance of
+this application to the LSF batch system, and <cite>app_argv</cite> is
+the <em>argv</em>-vector to use when invoking the application.</p>
+<p>In the construction of the command-line invocation, one should
+assume that all the input files (as named in <cite>Application.inputs</cite>)
+have been copied to the current working directory, and that output
+files should be created in this same directory.</p>
+<p>The default implementation just prefixes any output from the
+<cite>cmdline</cite> method with an LSF <tt class="docutils literal"><span class="pre">bsub</span></tt> invocation of the form
+<tt class="docutils literal"><span class="pre">bsub</span> <span class="pre">-cwd</span> <span class="pre">.</span> <span class="pre">-L</span> <span class="pre">/bin/sh</span></tt> + resource limits.</p>
+<p>Override this method in application-specific classes to
+provide appropriate invocation templates and/or add
+resource-specific submission options.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.cmdline">
+<tt class="descname">cmdline</tt><big>(</big><em>resource</em><big>)</big><a class="headerlink" href="#gc3libs.Application.cmdline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return list of command-line arguments for invoking the application.</p>
+<p>This is exactly the <em>argv</em>-vector of the application process:
+the application command name is included as first item (index
+0) of the list, further items are command-line arguments.</p>
+<p>Hence, to get a UNIX shell command-line, just concatenate the
+elements of the list, separating them with spaces.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.compatible_resources">
+<tt class="descname">compatible_resources</tt><big>(</big><em>resources</em><big>)</big><a class="headerlink" href="#gc3libs.Application.compatible_resources" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of compatible resources.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.fetch_output">
+<tt class="descname">fetch_output</tt><big>(</big><em>download_dir</em>, <em>overwrite</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Application.fetch_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls the corresponding method of the controller.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.fetch_output_error">
+<tt class="descname">fetch_output_error</tt><big>(</big><em>ex</em><big>)</big><a class="headerlink" href="#gc3libs.Application.fetch_output_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invocation of <cite>Core.fetch_output()</cite> on this object failed;
+<cite>ex</cite> is the <cite>Exception</cite> that describes the error.</p>
+<p>If this method returns an exception object, that is raised as
+a result of the <cite>Core.fetch_output()</cite>, otherwise the return
+value is ignored and <cite>Core.fetch_output</cite> returns <cite>None</cite>.</p>
+<p>Default is to return <cite>ex</cite> unchanged; override in derived classes
+to change this behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.qsub_pbs">
+<tt class="descname">qsub_pbs</tt><big>(</big><em>resource</em>, <em>_suppress_warning=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Application.qsub_pbs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Similar to <cite>qsub_sge()</cite>, but for the PBS/TORQUE resource manager.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.qsub_sge">
+<tt class="descname">qsub_sge</tt><big>(</big><em>resource</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Application.qsub_sge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an SGE <tt class="docutils literal"><span class="pre">qsub</span></tt> command-line invocation for submitting an
+instance of this application.</p>
+<p>Return a pair <cite>(cmd_argv, app_argv)</cite>.  Both <cite>cmd_argv</cite> and
+<cite>app_argv</cite> are <em>argv</em>-lists: the command name is included as
+first item (index 0) of the list, further items are
+command-line arguments; <cite>cmd_argv</cite> is the <em>argv</em>-list for the
+submission command (excluding the actual application command
+part); <cite>app_argv</cite> is the <em>argv</em>-list for invoking the
+application.  By overriding this method, one can add futher
+resource-specific options at the end of the <cite>cmd_argv</cite>
+<em>argv</em>-list.</p>
+<p>In the construction of the command-line invocation, one should
+assume that all the input files (as named in <cite>Application.inputs</cite>)
+have been copied to the current working directory, and that output
+files should be created in this same directory.</p>
+<p>The default implementation just prefixes any output from the
+<cite>cmdline</cite> method with an SGE <tt class="docutils literal"><span class="pre">qsub</span></tt> invocation of the form
+<tt class="docutils literal"><span class="pre">qsub</span> <span class="pre">-cwd</span> <span class="pre">-S</span> <span class="pre">/bin/sh</span></tt> + resource limits.  Note that
+<em>there is no generic way of requesting a certain number of cores</em>
+in SGE: it all depends on the installed parallel environment, and
+these are totally under control of the local sysadmin;
+therefore, any request for cores is ignored and a warning is
+logged.</p>
+<p>Override this method in application-specific classes to
+provide appropriate invocation templates and/or add different
+submission options.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.rank_resources">
+<tt class="descname">rank_resources</tt><big>(</big><em>resources</em><big>)</big><a class="headerlink" href="#gc3libs.Application.rank_resources" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort the given resources in order of preference.</p>
+<p>By default, less-loaded resources come first;
+see <cite>_cmp_resources</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.sbatch">
+<tt class="descname">sbatch</tt><big>(</big><em>resource</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Application.sbatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a SLURM <tt class="docutils literal"><span class="pre">sbatch</span></tt> command-line invocation for submitting an
+instance of this application.</p>
+<p>Return a pair <cite>(cmd_argv, app_argv)</cite>.  Both <cite>cmd_argv</cite> and
+<cite>app_argv</cite> are <em>argv</em>-lists: the command name is included as
+first item (index 0) of the list, further items are
+command-line arguments; <cite>cmd_argv</cite> is the <em>argv</em>-list for the
+submission command (excluding the actual application command
+part); <cite>app_argv</cite> is the <em>argv</em>-list for invoking the
+application.  By overriding this method, one can add futher
+resource-specific options at the end of the <cite>cmd_argv</cite>
+<em>argv</em>-list.</p>
+<p>In the construction of the command-line invocation, one should
+assume that all the input files (as named in <cite>Application.inputs</cite>)
+have been copied to the current working directory, and that output
+files should be created in this same directory.</p>
+<p>Override this method in application-specific classes to
+provide appropriate invocation templates and/or add different
+submission options.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.submit_error">
+<tt class="descname">submit_error</tt><big>(</big><em>exs</em><big>)</big><a class="headerlink" href="#gc3libs.Application.submit_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invocation of <cite>Core.submit()</cite> on this object failed;
+<cite>exs</cite> is a list of <cite>Exception</cite> objects, one for each attempted
+submission.</p>
+<p>If this method returns an exception object, that is raised as
+a result of the <cite>Core.submit()</cite>, otherwise the return value is
+ignored and <cite>Core.submit</cite> returns <cite>None</cite>.</p>
+<p>Default is to always return the first exception in the list
+(on the assumption that it is the root of all exceptions or
+that at least it refers to the preferred resource).  Override
+in derived classes to change this behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.update_job_state_error">
+<tt class="descname">update_job_state_error</tt><big>(</big><em>ex</em><big>)</big><a class="headerlink" href="#gc3libs.Application.update_job_state_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle exceptions that occurred during a <cite>Core.update_job_state</cite> call.</p>
+<p>If this method returns an exception object, that exception is
+processed in <cite>Core.update_job_state()</cite> instead of the original
+one.  Any other return value is ignored and
+<cite>Core.update_job_state</cite> proceeds as if no exception had
+happened.</p>
+<p>Argument <cite>ex</cite> is the exception that was raised by the backend
+during job state update.</p>
+<p>Default is to return <cite>ex</cite> unchanged; override in derived
+classes to change this behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Application.xrsl">
+<tt class="descname">xrsl</tt><big>(</big><em>resource</em><big>)</big><a class="headerlink" href="#gc3libs.Application.xrsl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a string containing an xRSL sequence, suitable for
+submitting an instance of this application through ARC&#8217;s
+<tt class="docutils literal"><span class="pre">ngsub</span></tt> command.</p>
+<p>The default implementation produces XRSL content based on
+the construction parameters; you should override this method
+to produce XRSL tailored to your application.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">WARNING: ARClib SWIG bindings cannot resolve the overloaded
+constructor if the xRSL string argument is a Python &#8216;unicode&#8217;
+object; if you overload this method, force the result to be
+a &#8216;str&#8217;!</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.Default">
+<em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Default</tt><a class="headerlink" href="#gc3libs.Default" title="Permalink to this definition">¶</a></dt>
+<dd><p>A namespace for all constants and default values used in the
+GC3Libs package.</p>
+<dl class="attribute">
+<dt id="gc3libs.Default.ARC_CACHE_TIME">
+<tt class="descname">ARC_CACHE_TIME</tt><em class="property"> = 30</em><a class="headerlink" href="#gc3libs.Default.ARC_CACHE_TIME" title="Permalink to this definition">¶</a></dt>
+<dd><p>only update ARC resources status every this seconds</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gc3libs.Default.ARC_LOST_JOB_TIMEOUT">
+<tt class="descname">ARC_LOST_JOB_TIMEOUT</tt><em class="property"> = 120</em><a class="headerlink" href="#gc3libs.Default.ARC_LOST_JOB_TIMEOUT" title="Permalink to this definition">¶</a></dt>
+<dd><p>consider a submitted job lost if it does not show up in the information system after this duration</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gc3libs.Default.PROXY_VALIDITY_THRESHOLD">
+<tt class="descname">PROXY_VALIDITY_THRESHOLD</tt><em class="property"> = 600</em><a class="headerlink" href="#gc3libs.Default.PROXY_VALIDITY_THRESHOLD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be marked as to be renewed.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.Run">
+<em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Run</tt><big>(</big><em>initializer=None</em>, <em>attach=None</em>, <em>**keywd</em><big>)</big><a class="headerlink" href="#gc3libs.Run" title="Permalink to this definition">¶</a></dt>
+<dd><p>A specialized <cite>dict</cite>-like object that keeps information about
+the execution state of an <cite>Application</cite> instance.</p>
+<p>A <cite>Run</cite> object is guaranteed to have the following attributes:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><cite>log</cite></dt>
+<dd>A <cite>gc3libs.utils.History</cite> instance, recording human-readable text
+messages on events in this job&#8217;s history.</dd>
+<dt><cite>info</cite></dt>
+<dd>A simplified interface for reading/writing messages to
+<cite>Run.log</cite>.  Reading from the <cite>info</cite> attribute returns the last
+message appended to <cite>log</cite>.  Writing into <cite>info</cite> appends a
+message to <cite>log</cite>.</dd>
+<dt><cite>timestamp</cite></dt>
+<dd>Dictionary, recording the most recent timestamp when a certain
+state was reached.  Timestamps are given as UNIX epochs.</dd>
+</dl>
+</div></blockquote>
+<p>For properties <cite>state</cite>, <cite>signal</cite> and <cite>returncode</cite>, see the
+respective documentation.</p>
+<p><cite>Run</cite> objects support attribute lookup by both the <tt class="docutils literal"><span class="pre">[...]</span></tt> and
+the <tt class="docutils literal"><span class="pre">.</span></tt> syntax; see <cite>gc3libs.utils.Struct</cite> for examples.</p>
+<dl class="class">
+<dt id="gc3libs.Run.Arch">
+<em class="property">class </em><tt class="descname">Arch</tt><a class="headerlink" href="#gc3libs.Run.Arch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processor architectures, for use as values in the
+<cite>requested_architecture</cite> field of the <cite>Application</cite> class
+constructor.</p>
+<p>The following values are currently defined:</p>
+<dl class="docutils">
+<dt><cite>X86_64</cite></dt>
+<dd>64-bit Intel/AMD/VIA x86 processors in 64-bit mode.</dd>
+<dt><cite>X86_32</cite></dt>
+<dd>32-bit Intel/AMD/VIA x86 processors in 32-bit mode.</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gc3libs.Run.exitcode">
+<tt class="descclassname">Run.</tt><tt class="descname">exitcode</tt><a class="headerlink" href="#gc3libs.Run.exitcode" title="Permalink to this definition">¶</a></dt>
+<dd><p>The &#8220;exit code&#8221; part of a <cite>Run.returncode</cite>, see <cite>os.WEXITSTATUS</cite>.
+This is an 8-bit integer, whose meaning is entirely
+application-specific.  (However, the value <cite>255</cite> is often used
+to mean that an error has occurred and the application could
+not end its execution normally.)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Run.in_state">
+<tt class="descclassname">Run.</tt><tt class="descname">in_state</tt><big>(</big><em>*names</em><big>)</big><a class="headerlink" href="#gc3libs.Run.in_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return <cite>True</cite> if the <cite>Run</cite> state matches any of the given names.</p>
+<p>In addition to the states from <tt class="xref py py-class docutils literal"><span class="pre">Run.State</span></tt>, the two
+additional names <tt class="docutils literal"><span class="pre">ok</span></tt> and <tt class="docutils literal"><span class="pre">failed</span></tt> are also accepted, with
+the following meaning:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">ok</span></tt>: state is <cite>TERMINATED</cite> and <cite>returncode</cite> is 0.</li>
+<li><tt class="docutils literal"><span class="pre">failed</span></tt>: state is <cite>TERMINATED</cite> and <cite>returncode</cite> is non-zero.</li>
+</ul>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gc3libs.Run.info">
+<tt class="descclassname">Run.</tt><tt class="descname">info</tt><a class="headerlink" href="#gc3libs.Run.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>A simplified interface for reading/writing entries into <cite>history</cite>.</p>
+<p>Setting the <cite>info</cite> attribute appends a message to the log:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">j1</span> <span class="o">=</span> <span class="n">Run</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">j1</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="s">&#39;a message&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">j1</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="s">&#39;a second message&#39;</span>
+</pre></div>
+</div>
+<p>Getting the value of the <cite>info</cite> attribute returns the last
+message entered in the log:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">j1</span><span class="o">.</span><span class="n">info</span> 
+<span class="go">u&#39;a second message ...&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gc3libs.Run.returncode">
+<tt class="descclassname">Run.</tt><tt class="descname">returncode</tt><a class="headerlink" href="#gc3libs.Run.returncode" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <cite>returncode</cite> attribute of this job object encodes the
+<cite>Run</cite> termination status in a manner compatible with the POSIX
+termination status as implemented by <cite>os.WIFSIGNALED</cite> and
+<cite>os.WIFEXITED</cite>.</p>
+<p>However, in contrast with POSIX usage, the <cite>exitcode</cite> and the
+<cite>signal</cite> part can <em>both</em> be significant: in case a Grid
+middleware error happened <em>after</em> the application has
+successfully completed its execution.  In other words,
+<cite>os.WEXITSTATUS(returncode)</cite> is meaningful iff
+<cite>os.WTERMSIG(returncode)</cite> is 0 or one of the pseudo-signals
+listed in <cite>Run.Signals</cite>.</p>
+<p><cite>Run.exitcode</cite> and <cite>Run.signal</cite> are combined to form the
+return code 16-bit integer as follows (the convention appears
+to be obeyed on every known system):</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="14%" />
+<col width="86%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Bit</th>
+<th class="head">Encodes...</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>0..7</td>
+<td>signal number</td>
+</tr>
+<tr class="row-odd"><td>8</td>
+<td>1 if program dumped core.</td>
+</tr>
+<tr class="row-even"><td>9..16</td>
+<td>exit code</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p><em>Note:</em> the &#8220;core dump bit&#8221; is always 0 here.</p>
+<p>Setting the <cite>returncode</cite> property sets <cite>exitcode</cite> and
+<cite>signal</cite>; you can either assign a <cite>(signal, exitcode)</cite> pair to
+<cite>returncode</cite>, or set <cite>returncode</cite> to an integer from which the
+correct <cite>exitcode</cite> and <cite>signal</cite> attribute values are
+extracted:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">j</span> <span class="o">=</span> <span class="n">Run</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">j</span><span class="o">.</span><span class="n">returncode</span> <span class="o">=</span> <span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="mi">56</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">j</span><span class="o">.</span><span class="n">signal</span>
+<span class="go">42</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">j</span><span class="o">.</span><span class="n">exitcode</span>
+<span class="go">56</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">j</span><span class="o">.</span><span class="n">returncode</span> <span class="o">=</span> <span class="mi">137</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">j</span><span class="o">.</span><span class="n">signal</span>
+<span class="go">9</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">j</span><span class="o">.</span><span class="n">exitcode</span>
+<span class="go">0</span>
+</pre></div>
+</div>
+<p>See also <cite>Run.exitcode</cite> and <cite>Run.signal</cite>.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="gc3libs.Run.shellexit_to_returncode">
+<em class="property">static </em><tt class="descclassname">Run.</tt><tt class="descname">shellexit_to_returncode</tt><big>(</big><em>rc</em><big>)</big><a class="headerlink" href="#gc3libs.Run.shellexit_to_returncode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a shell exit code to a POSIX process return code.</p>
+<p>A POSIX shell represents the return code of the last-run
+program within its exit code as follows:</p>
+<ul class="simple">
+<li>If the program was terminated by signal <cite>N</cite>, the shell exits
+with code 128+N,</li>
+<li>otherwise, if the program terminated with exit code C, the
+shell exits with code C.</li>
+</ul>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gc3libs.Run.signal">
+<tt class="descclassname">Run.</tt><tt class="descname">signal</tt><a class="headerlink" href="#gc3libs.Run.signal" title="Permalink to this definition">¶</a></dt>
+<dd><p>The &#8220;signal number&#8221; part of a <cite>Run.returncode</cite>, see
+<cite>os.WTERMSIG</cite> for details.</p>
+<p>The &#8220;signal number&#8221; is a 7-bit integer value in the range
+0..127; value <cite>0</cite> is used to mean that no signal has been
+received during the application runtime (i.e., the application
+terminated by calling <tt class="docutils literal"><span class="pre">exit()</span></tt>).</p>
+<p>The value represents either a real UNIX system signal, or a
+&#8220;fake&#8221; one that GC3Libs uses to represent Grid middleware
+errors (see <cite>Run.Signals</cite>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="gc3libs.Run.state">
+<tt class="descclassname">Run.</tt><tt class="descname">state</tt><a class="headerlink" href="#gc3libs.Run.state" title="Permalink to this definition">¶</a></dt>
+<dd><p>The state a <cite>Run</cite> is in.</p>
+<p>The value of <cite>Run.state</cite> must always be a value from the
+<cite>Run.State</cite> enumeration, i.e., one of the following values.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="15%" />
+<col width="63%" />
+<col width="22%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Run.State value</th>
+<th class="head">purpose</th>
+<th class="head">can change to</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>NEW</td>
+<td>Job has not yet been submitted/started (i.e., gsub not called)</td>
+<td>SUBMITTED (by gsub)</td>
+</tr>
+<tr class="row-odd"><td>SUBMITTED</td>
+<td>Job has been sent to execution resource</td>
+<td>RUNNING, STOPPED</td>
+</tr>
+<tr class="row-even"><td>STOPPED</td>
+<td>Trap state: job needs manual intervention (either user-
+or sysadmin-level) to resume normal execution</td>
+<td>TERMINATING(by gkill),
+SUBMITTED (by miracle)</td>
+</tr>
+<tr class="row-odd"><td>RUNNING</td>
+<td>Job is executing on remote resource</td>
+<td>TERMINATING</td>
+</tr>
+<tr class="row-even"><td>TERMINATING</td>
+<td>Job has finished execution on remote resource;
+output not yet retrieved</td>
+<td>TERMINATED</td>
+</tr>
+<tr class="row-odd"><td>TERMINATED</td>
+<td>Job execution is finished (correctly or not)
+and will not be resumed; output has been retrieved</td>
+<td>None: final state</td>
+</tr>
+</tbody>
+</table>
+<p>When a <a class="reference internal" href="#gc3libs.Run" title="gc3libs.Run"><tt class="xref py py-class docutils literal"><span class="pre">Run</span></tt></a> object is first created, it is assigned
+the state NEW.  After a successful invocation of
+<cite>Core.submit()</cite>, it is transitioned to state SUBMITTED.
+Further transitions to RUNNING or STOPPED or TERMINATED state,
+happen completely independently of the creator progra; the
+<cite>Core.update_job_state()</cite> call provides updates on the status
+of a job.</p>
+<p>The STOPPED state is a kind of generic &#8220;run time error&#8221; state:
+a job can get into the STOPPED state if its execution is
+stopped (e.g., a SIGSTOP is sent to the remote process) or
+delayed indefinitely (e.g., the remote batch system puts the
+job &#8220;on hold&#8221;). There is no way a job can get out of the
+STOPPED state automatically: all transitions from the STOPPED
+state require manual intervention, either by the submitting
+user (e.g., cancel the job), or by the remote systems
+administrator (e.g., by releasing the hold).</p>
+<p>The TERMINATED state is the final state of a job: once a job
+reaches it, it cannot get back to any other state. Jobs reach
+TERMINATED state regardless of their exit code, or even if a
+system failure occurred during remote execution; actually,
+jobs can reach the TERMINATED status even if they didn&#8217;t run
+at all, for example, in case of a fatal failure during the
+submission step.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.Task">
+<em class="property">class </em><tt class="descclassname">gc3libs.</tt><tt class="descname">Task</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mix-in class implementing a facade for job control.</p>
+<p>A <cite>Task</cite> can be described as an &#8220;active&#8221; job, in the sense that
+all job control is done through methods on the <cite>Task</cite> instance
+itself; contrast this with operating on <cite>Application</cite> objects
+through a <cite>Core</cite> or <cite>Engine</cite> instance.</p>
+<p>The following pseudo-code is an example of the usage of the <cite>Task</cite>
+interface for controlling a job.  Assume that <cite>GamessApplication</cite> is
+inheriting from <cite>Task</cite> (it actually is):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">t</span> <span class="o">=</span> <span class="n">GamessApplication</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span>
+<span class="n">t</span><span class="o">.</span><span class="n">submit</span><span class="p">()</span>
+<span class="c"># ... do other stuff</span>
+<span class="n">t</span><span class="o">.</span><span class="n">update_state</span><span class="p">()</span>
+<span class="c"># ... take decisions based on t.execution.state</span>
+<span class="n">t</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span> <span class="c"># blocks until task is terminated</span>
+</pre></div>
+</div>
+<p>Each <cite>Task</cite> object has an <cite>execution</cite> attribute: it is an instance
+of class <a class="reference internal" href="#gc3libs.Run" title="gc3libs.Run"><tt class="xref py py-class docutils literal"><span class="pre">Run</span></tt></a>, initialized with a new instance of <cite>Run</cite>,
+and at any given time it reflects the current status of the
+associated remote job.  In particular, <cite>execution.state</cite> can be
+checked for the current task status.</p>
+<p>After successful initialization, a <cite>Task</cite> instance will have the
+following attributes:</p>
+<dl class="docutils">
+<dt><cite>changed</cite></dt>
+<dd>evaluates to <cite>True</cite> if the <cite>Task</cite> has been changed since last
+time it has been saved to persistent storage (see
+<tt class="xref py py-mod docutils literal"><span class="pre">gclibs.persistence</span></tt>)</dd>
+<dt><cite>execution</cite></dt>
+<dd>a <cite>Run</cite> instance; its state attribute is initially set to <tt class="docutils literal"><span class="pre">NEW</span></tt>.</dd>
+</dl>
+<dl class="method">
+<dt id="gc3libs.Task.attach">
+<tt class="descname">attach</tt><big>(</big><em>controller</em><big>)</big><a class="headerlink" href="#gc3libs.Task.attach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use the given Grid interface for operations on the job
+associated with this task.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.detach">
+<tt class="descname">detach</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.detach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove any reference to the current grid interface.  After
+this, calling any method other than <a class="reference internal" href="#gc3libs.Task.attach" title="gc3libs.Task.attach"><tt class="xref py py-meth docutils literal"><span class="pre">attach()</span></tt></a> results in
+an exception <tt class="xref py py-class docutils literal"><span class="pre">TaskDetachedFromGridError</span></tt> being thrown.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.fetch_output">
+<tt class="descname">fetch_output</tt><big>(</big><em>output_dir=None</em>, <em>overwrite=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Task.fetch_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the outputs of the computational job associated with
+this task into directory <cite>output_dir</cite>, or, if that is <cite>None</cite>,
+into the directory whose path is stored in instance attribute
+<cite>.output_dir</cite>.</p>
+<p>If the execution state is <cite>TERMINATING</cite>, transition the state to
+<cite>TERMINATED</cite> (which runs the appropriate hook).</p>
+<p>See <tt class="xref py py-meth docutils literal"><span class="pre">gc3libs.Core.fetch_output()</span></tt> for a full explanation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Path to the directory where the job output has been
+collected.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.free">
+<tt class="descname">free</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Task.free" title="Permalink to this definition">¶</a></dt>
+<dd><p>Release any remote resources associated with this task.</p>
+<p>See <tt class="xref py py-meth docutils literal"><span class="pre">gc3libs.Core.free()</span></tt> for a full explanation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.kill">
+<tt class="descname">kill</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Task.kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Terminate the computational job associated with this task.</p>
+<p>See <tt class="xref py py-meth docutils literal"><span class="pre">gc3libs.Core.kill()</span></tt> for a full explanation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.new">
+<tt class="descname">new</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.new" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state is (re)set to <cite>NEW</cite>.</p>
+<p>Note this will not be called when the application object is
+created, rather if the state is reset to <cite>NEW</cite> after it has
+already been submitted.</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.peek">
+<tt class="descname">peek</tt><big>(</big><em>what='stdout'</em>, <em>offset=0</em>, <em>size=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Task.peek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
+the associated job standard output or error stream, and write them
+into a local file.  Return a file-like object from which the
+downloaded contents can be read.</p>
+<p>See <tt class="xref py py-meth docutils literal"><span class="pre">gc3libs.Core.peek()</span></tt> for a full explanation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.progress">
+<tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.progress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Advance the associated job through all states of a regular
+lifecycle. In detail:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>If <cite>execution.state</cite> is <cite>NEW</cite>, the associated job is started.</li>
+<li>The state is updated until it reaches <cite>TERMINATED</cite></li>
+<li>Output is collected and the final returncode is returned.</li>
+</ol>
+</div></blockquote>
+<p>An exception <cite>TaskError</cite> is raised if the job hits state
+<cite>STOPPED</cite> or <cite>UNKNOWN</cite> during an update in phase 2.</p>
+<p>When the job reaches <cite>TERMINATING</cite> state, the output is
+retrieved; if this operation is successfull, state is advanced
+to <cite>TERMINATED</cite>.</p>
+<p>oNCE the job reaches <cite>TERMINATED</cite> state, the return code
+(stored also in <cite>.returncode</cite>) is returned; if the job is not
+yet in <cite>TERMINATED</cite> state, calling <cite>progress</cite> returns <cite>None</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises :</th><td class="field-body">exception <tt class="xref py py-class docutils literal"><span class="pre">UnexpectedStateError</span></tt> if the
+associated job goes into state <cite>STOPPED</cite> or <cite>UNKNOWN</cite></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">final returncode, or <cite>None</cite> if the execution
+state is not <cite>TERMINATED</cite>.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.running">
+<tt class="descname">running</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.running" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state transitions to <cite>RUNNING</cite>, i.e., the
+job has been successfully started on a (possibly) remote
+resource.</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.stopped">
+<tt class="descname">stopped</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.stopped" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state transitions to <cite>STOPPED</cite>, i.e., the
+job has been remotely suspended for an unknown reason and
+cannot automatically resume execution.</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.submit">
+<tt class="descname">submit</tt><big>(</big><em>resubmit=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Task.submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start the computational job associated with this <cite>Task</cite> instance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.submitted">
+<tt class="descname">submitted</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.submitted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state transitions to <cite>SUBMITTED</cite>, i.e.,
+the job has been successfully sent to a (possibly) remote
+execution resource and is now waiting to be scheduled.</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.terminated">
+<tt class="descname">terminated</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.terminated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state transitions to <cite>TERMINATED</cite>, i.e.,
+the job has finished execution (with whatever exit status, see
+<cite>returncode</cite>) and the final output has been retrieved.</p>
+<p>The location where the final output has been stored is
+available in attribute <cite>self.output_dir</cite>.</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.terminating">
+<tt class="descname">terminating</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.terminating" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state transitions to <cite>TERMINATING</cite>, i.e.,
+the remote job has finished execution (with whatever exit
+status, see <cite>returncode</cite>) but output has not yet been
+retrieved.</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.unknown">
+<tt class="descname">unknown</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.Task.unknown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when the job state transitions to <cite>UNKNOWN</cite>, i.e.,
+the job has not been updated for a certain period of time
+thus it is placed in UNKNOWN state.</p>
+<p>Two possible ways of changing from this state:
+1) next update cycle, job status is updated from the remote
+server
+2) derive this method for Application specific logic to deal
+with this case</p>
+<p>The default implementation does nothing, override in derived
+classes to implement additional behavior.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.update_state">
+<tt class="descname">update_state</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Task.update_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>In-place update of the execution state of the computational
+job associated with this <cite>Task</cite>.  After successful completion,
+<cite>.execution.state</cite> will contain the new state.</p>
+<p>After the job has reached the <cite>TERMINATING</cite> state, the following
+attributes are also set:</p>
+<dl class="docutils">
+<dt><cite>execution.duration</cite></dt>
+<dd>Time lapse from start to end of the job at the remote
+execution site, as a <a class="reference internal" href="gc3libs/quantity.html#gc3libs.quantity.Duration" title="gc3libs.quantity.Duration"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.quantity.Duration</span></tt></a> value.
+(This is also often referred to as the &#8216;wall-clock time&#8217; or
+<a class="reference internal" href="../../glossary.html#term-walltime"><em class="xref std std-term">walltime</em></a> of the job.)</dd>
+<dt><cite>execution.max_used_memory</cite></dt>
+<dd>Maximum amount of RAM used during job execution, represented
+as a <a class="reference internal" href="gc3libs/quantity.html#gc3libs.quantity.Memory" title="gc3libs.quantity.Memory"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.quantity.Memory</span></tt></a> value.</dd>
+<dt><cite>execution.used_cpu_time</cite></dt>
+<dd>Total time (as a <a class="reference internal" href="gc3libs/quantity.html#gc3libs.quantity.Duration" title="gc3libs.quantity.Duration"><tt class="xref py py-class docutils literal"><span class="pre">gc3libs.quantity.Duration</span></tt></a> value) that the
+processors has been actively executing the job&#8217;s code.</dd>
+</dl>
+<p>The execution backend may set additional attributes; the exact
+name and format of these additional attributes is
+backend-specific.  However, you can easily identify the
+backend-specific attributes because their name is prefixed
+with the (lowercased) backend name; for instance, the
+<tt class="xref py py-class docutils literal"><span class="pre">PbsLrms</span></tt> backend sets attributes <cite>pbs_queue</cite>,
+<cite>pbs_end_time</cite>, etc.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.Task.wait">
+<tt class="descname">wait</tt><big>(</big><em>interval=60</em><big>)</big><a class="headerlink" href="#gc3libs.Task.wait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Block until the associated job has reached <cite>TERMINATED</cite> state,
+then return the job&#8217;s return code.  Note that this does not
+automatically fetch the output.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>interval</strong> (<em>integer</em>) &#8211; Poll job state every this number of seconds</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.configure_logger">
+<tt class="descclassname">gc3libs.</tt><tt class="descname">configure_logger</tt><big>(</big><em>level=40</em>, <em>name=None</em>, <em>format='sphinx-build: [%(asctime)s] %(levelname)-8s: %(message)s'</em>, <em>datefmt='%Y-%m-%d %H:%M:%S'</em><big>)</big><a class="headerlink" href="#gc3libs.configure_logger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configure the <tt class="docutils literal"><span class="pre">gc3.gc3libs</span></tt> logger.</p>
+<p>Arguments <cite>level</cite>, <cite>format</cite> and <cite>datefmt</cite> set the corresponding
+arguments in the <cite>logging.basicConfig()</cite> call.</p>
+<p>If a user configuration file exists in file NAME.log.conf in the
+<tt class="docutils literal"><span class="pre">Default.RCDIR</span></tt> directory (usually <tt class="docutils literal"><span class="pre">~/.gc3</span></tt>), it is read and
+used for more advanced configuration; if it does not exist, then a
+sample one is created.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.create_engine">
+<tt class="descclassname">gc3libs.</tt><tt class="descname">create_engine</tt><big>(</big><em>*conf_files</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.create_engine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create and return a <tt class="xref py py-class docutils literal"><span class="pre">gc3libs.core.Engine</span></tt> class.</p>
+<p>It accepts an optional list of configuration filenames. If the
+filenames contain a <cite>~</cite> or a variable name, it will be expanded
+automatically.</p>
+<p>Called without arguments, a configuration file will be searched in
+~/.gc3/gc3pie.conf (and used if found).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>conf_files</strong> &#8211; List of configuration files to read.</li>
+<li><strong>store</strong> &#8211; See the like-named argument to the <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> constructor.</li>
+<li><strong>can_submit</strong> &#8211; See the like-named argument to the <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> constructor.</li>
+<li><strong>can_retrieve</strong> &#8211; See the like-named argument to the <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> constructor.</li>
+<li><strong>max_in_flight</strong> &#8211; See the like-named argument to the <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> constructor.</li>
+<li><strong>max_submitted</strong> &#8211; See the like-named argument to the <tt class="xref py py-class docutils literal"><span class="pre">Engine</span></tt> constructor.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Any extra keyword argument is passed unchanged to the
+<tt class="xref py py-class docutils literal"><span class="pre">Configuration</span></tt> constructor.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">GC3Libs programming API</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gc3libs/application.html"
+                        title="next chapter"><cite>gc3libs.application</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gc3libs/application.html" title="gc3libs.application"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="GC3Libs programming API"
+             >previous</a> |</li>
+        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

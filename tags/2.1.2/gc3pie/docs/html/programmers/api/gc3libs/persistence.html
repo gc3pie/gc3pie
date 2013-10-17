@@ -1,0 +1,173 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.persistence &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../index.html" />
+    <link rel="next" title="gc3libs.persistence.accessors" href="persistence/accessors.html" />
+    <link rel="prev" title="gc3libs.optimizer.extra" href="optimizer/extra.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="persistence/accessors.html" title="gc3libs.persistence.accessors"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="optimizer/extra.html" title="gc3libs.optimizer.extra"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.persistence">
+<span id="gc3libs-persistence"></span><h1><cite>gc3libs.persistence</cite><a class="headerlink" href="#module-gc3libs.persistence" title="Permalink to this headline">¶</a></h1>
+<p>Facade to store and retrieve Job information from permanent storage.</p>
+<div class="section" id="a-usage-warning">
+<h2>A usage warning<a class="headerlink" href="#a-usage-warning" title="Permalink to this headline">¶</a></h2>
+<p>This module saves Python objects using the <cite>pickle</cite> framework: thus,
+the <cite>Application</cite> subclass corresponding to a job must be already
+loaded (or at least <tt class="docutils literal"><span class="pre">import</span></tt>-able) in the Python interpreter for
+<cite>pickle</cite> to be able to &#8216;undump&#8217; the object from its on-disk
+representation.</p>
+<p>In other words, if you create a custom <cite>Application</cite> subclass in some
+client code, GC3Utils won&#8217;t be able to read job files created by this
+code, because the class definition is not available in GC3Utils.</p>
+<p>The recommended simple workaround is for a stand-alone script to
+&#8216;import self&#8217; and then use the fully qualified name to run the script.
+In other words, start your script with this boilerplate code:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">myscriptname</span>
+    <span class="n">myscriptname</span><span class="o">.</span><span class="n">MyScript</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The rest of the script now runs as the <tt class="docutils literal"><span class="pre">myscript</span></tt> module, which does
+the trick!</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Of course, the <tt class="docutils literal"><span class="pre">myscript.py</span></tt> file must be in the search path of
+the Python interpreter, or GC3Utils will still complain!</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><cite>gc3libs.persistence</cite></a><ul>
+<li><a class="reference internal" href="#a-usage-warning">A usage warning</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="optimizer/extra.html"
+                        title="previous chapter"><cite>gc3libs.optimizer.extra</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="persistence/accessors.html"
+                        title="next chapter"><cite>gc3libs.persistence.accessors</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="persistence/accessors.html" title="gc3libs.persistence.accessors"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="optimizer/extra.html" title="gc3libs.optimizer.extra"
+             >previous</a> |</li>
+        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

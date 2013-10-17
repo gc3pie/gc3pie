@@ -1,0 +1,177 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.application.rosetta &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../../index.html" />
+    <link rel="next" title="gc3libs.application.turbomole" href="turbomole.html" />
+    <link rel="prev" title="gc3libs.application.gamess" href="gamess.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="turbomole.html" title="gc3libs.application.turbomole"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gamess.html" title="gc3libs.application.gamess"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.application.rosetta">
+<span id="gc3libs-application-rosetta"></span><h1><cite>gc3libs.application.rosetta</cite><a class="headerlink" href="#module-gc3libs.application.rosetta" title="Permalink to this headline">¶</a></h1>
+<p>Specialized support for computational jobs running programs in the Rosetta suite.</p>
+<dl class="class">
+<dt id="gc3libs.application.rosetta.RosettaApplication">
+<em class="property">class </em><tt class="descclassname">gc3libs.application.rosetta.</tt><tt class="descname">RosettaApplication</tt><big>(</big><em>application</em>, <em>application_release</em>, <em>inputs</em>, <em>outputs=</em><span class="optional">[</span><span class="optional">]</span>, <em>flags_file=None</em>, <em>database=None</em>, <em>arguments=</em><span class="optional">[</span><span class="optional">]</span>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.application.rosetta.RosettaApplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specialized <cite>Application</cite> object to submit one run of a single
+application in the Rosetta suite.</p>
+<p>Required parameters for construction:</p>
+<blockquote>
+<div><ul class="simple">
+<li><cite>application</cite>: name of the Rosetta application to call (e.g., &#8220;docking_protocol&#8221; or &#8220;relax&#8221;)</li>
+<li><cite>inputs</cite>: a <cite>dict</cite> instance, keys are Rosetta <tt class="docutils literal"><span class="pre">-in:file:*</span></tt> options, values are the (local) path names of the corresponding files.  (Example: <tt class="docutils literal"><span class="pre">inputs={&quot;-in:file:s&quot;:&quot;1brs.pdb&quot;}</span></tt>)</li>
+<li><cite>outputs</cite>: list of output file names to fetch after Rosetta has finished running.</li>
+</ul>
+</div></blockquote>
+<p>Optional parameters:</p>
+<blockquote>
+<div><ul class="simple">
+<li><cite>flags_file</cite>: path to a local file containing additional flags for controlling Rosetta invocation; if <cite>None</cite>, a local configuration file will be used.</li>
+<li><cite>database</cite>: (local) path to the Rosetta DB; if this is not specified, then it is assumed that the correct location will be available at the remote execution site as environment variable <tt class="docutils literal"><span class="pre">ROSETTA_DB_LOCATION</span></tt></li>
+<li><cite>arguments</cite>: If present, they will be appended to the Rosetta application command line.</li>
+</ul>
+</div></blockquote>
+<dl class="method">
+<dt id="gc3libs.application.rosetta.RosettaApplication.terminated">
+<tt class="descname">terminated</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.application.rosetta.RosettaApplication.terminated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract output files from the tar archive created by the
+&#8216;rosetta.sh&#8217; script.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.application.rosetta.RosettaDockingApplication">
+<em class="property">class </em><tt class="descclassname">gc3libs.application.rosetta.</tt><tt class="descname">RosettaDockingApplication</tt><big>(</big><em>pdb_file_path</em>, <em>native_file_path=None</em>, <em>number_of_decoys_to_create=1</em>, <em>flags_file=None</em>, <em>application_release='3.1'</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.application.rosetta.RosettaDockingApplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specialized <cite>Application</cite> class for executing a single run of the
+Rosetta &#8220;docking_protocol&#8221; application.</p>
+<p>Currently used in the <cite>gdocking</cite> app.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gamess.html"
+                        title="previous chapter"><cite>gc3libs.application.gamess</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="turbomole.html"
+                        title="next chapter"><cite>gc3libs.application.turbomole</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="turbomole.html" title="gc3libs.application.turbomole"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gamess.html" title="gc3libs.application.gamess"
+             >previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

@@ -1,0 +1,882 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Configuration File &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="up" title="User Documentation" href="index.html" />
+    <link rel="next" title="Environment Variables" href="env-vars.html" />
+    <link rel="prev" title="Installation of GC3Pie" href="install.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="env-vars.html" title="Environment Variables"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="install.html" title="Installation of GC3Pie"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="configuration-file">
+<span id="configuration"></span><h1>Configuration File<a class="headerlink" href="#configuration-file" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="location">
+<h2>Location<a class="headerlink" href="#location" title="Permalink to this headline">¶</a></h2>
+<p>All commands in <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>The GC3Apps software</em></a> and <a class="reference internal" href="gc3utils.html#gc3utils"><em>The GC3Utils software</em></a> read two
+configuration files at startup:</p>
+<blockquote>
+<div><ul class="simple">
+<li>system-wide one located at :file:<tt class="docutils literal"><span class="pre">/etc/gc3/gc3pie.conf</span></tt>, and</li>
+<li>a user-private one at :file:<tt class="docutils literal"><span class="pre">~/.gc3/gc3pie.conf</span></tt>.</li>
+</ul>
+</div></blockquote>
+<p>Both files use the same format. The system-wide one is read first, so
+that users can override the system-level configuration in their private file.
+Configuration data from corresponding sections in the two
+configuration files is merged; the value in the user-private file
+overrides the one from the system-wide configuration.</p>
+<p>If you try to start any GC3Utils command without having a
+configuration file, a sample one will be copied to the user-private
+location :file:<tt class="docutils literal"><span class="pre">~/.gc3/gc3pie.conf</span></tt> and an error message will be
+displayed, directing you to edit the sample file before retrying.</p>
+</div>
+<div class="section" id="configuration-file-format">
+<h2>Configuration file format<a class="headerlink" href="#configuration-file-format" title="Permalink to this headline">¶</a></h2>
+<p>The GC3Pie configuration file follows the format understood by
+<a class="reference external" href="http://docs.python.org/library/configparser.html">Python ConfigParser</a>,
+which is very close to the syntax used in MS-Windows <tt class="docutils literal"><span class="pre">.INI</span></tt> files.
+See <a class="reference external" href="http://docs.python.org/library/configparser.html">http://docs.python.org/library/configparser.html</a> for reference.</p>
+<p>The GC3Libs configuration file consists of several configuration
+blocks.  Each configuration block (section) starts with a keyword in
+square brackets and contains the configuration options for a specific
+part.</p>
+<p>The following sections are used by the GC3Apps/GC3Utils programs:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">[DEFAULT]</span></tt> &#8211; this is for global settings.</li>
+<li><tt class="file docutils literal"><span class="pre">[auth/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt> &#8211; these are for settings related to identity/authentication (identifying yourself to clusters &amp; grids).</li>
+<li><tt class="file docutils literal"><span class="pre">[resource/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt> &#8211; these are for settings related to a specific computing resource (cluster, grid, etc.)</li>
+</ul>
+<p>Sections with other names are allowed but will be ignored.</p>
+</div>
+<div class="section" id="the-default-section">
+<h2>The <tt class="docutils literal"><span class="pre">DEFAULT</span></tt> section<a class="headerlink" href="#the-default-section" title="Permalink to this headline">¶</a></h2>
+<p>Values defined in the <tt class="docutils literal"><span class="pre">[DEFAULT]</span></tt> section will be inserted in
+<em>any other section</em> (unless they are explicitly overridden).
+For example, the following will add a <tt class="docutils literal"><span class="pre">debug=1</span></tt> line to any section
+in the configuration file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="n">DEFAULT</span><span class="p">]</span>
+<span class="n">debug</span><span class="o">=</span><span class="mi">1</span>
+</pre></div>
+</div>
+<p>See documentation of the <a class="reference external" href="http://docs.python.org/library/configparser.html">Python SafeConfigParser</a> object at
+<a class="reference external" href="http://docs.python.org/library/configparser.html">http://docs.python.org/library/configparser.html</a> for an explanation.</p>
+<p>The <tt class="docutils literal"><span class="pre">[DEFAULT]</span></tt> section is optional.</p>
+</div>
+<div class="section" id="auth-sections">
+<h2><tt class="docutils literal"><span class="pre">auth</span></tt> sections<a class="headerlink" href="#auth-sections" title="Permalink to this headline">¶</a></h2>
+<p>There can be more than one <tt class="docutils literal"><span class="pre">[auth]</span></tt> section.</p>
+<p>Each authentication section must begin with a line of the form:</p>
+<blockquote>
+<div><tt class="file docutils literal"><span class="pre">[auth/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt></div></blockquote>
+<p>where the <tt class="file docutils literal"><em><span class="pre">name</span></em></tt> portion is any alphanumeric string.</p>
+<p>You can have as many <tt class="file docutils literal"><span class="pre">[auth/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt> sections as you want; any
+name is allowed provided it&#8217;s composed only of letters, numbers and
+the underscore character <tt class="docutils literal"><span class="pre">_</span></tt>.</p>
+<p>This allows you to define different auth methods for different
+resources.  Each <tt class="file docutils literal"><span class="pre">[resource/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt> section will reference one
+(and one only) authentication section.</p>
+<div class="section" id="authentication-types">
+<h3>Authentication types<a class="headerlink" href="#authentication-types" title="Permalink to this headline">¶</a></h3>
+<p>Each <tt class="docutils literal"><span class="pre">auth</span></tt> section <em>must</em> specify a <tt class="docutils literal"><span class="pre">type</span></tt> setting.</p>
+<p><tt class="docutils literal"><span class="pre">type</span></tt> defines the authentication type that will be used to access
+a resource. There are three supported authentication types:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">ssh</span></tt>; use this for resources that will be accessed by opening an SSH connection to the front-end node of a cluster.</li>
+<li><tt class="docutils literal"><span class="pre">voms-proxy</span></tt>: uses <tt class="docutils literal"><span class="pre">voms-proxy-init</span></tt> to generate a proxy; use for resources that require a VOMS-enabled Grid proxy.</li>
+<li><tt class="docutils literal"><span class="pre">grid-proxy</span></tt>: uses <tt class="docutils literal"><span class="pre">grid-proxy-init</span></tt> to generate a proxy; use for resources that require a Grid proxy (but no VOMS extensions).</li>
+<li><tt class="docutils literal"><span class="pre">ec2</span></tt>: use this for a EC2-compatible cloud resource.</li>
+</ul>
+</div></blockquote>
+<p>For the <tt class="docutils literal"><span class="pre">ssh</span></tt>-type auth, the following keys must be provided:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">type</span></tt>: must be <tt class="docutils literal"><span class="pre">ssh</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">username</span></tt>: must be the username to log in as on the remote machine</li>
+</ul>
+</div></blockquote>
+<p>For the <tt class="docutils literal"><span class="pre">ec2</span></tt>-type auth, the following keys <em>can</em> be provided. If
+they are not found, the value of the corresponding environment
+variable will be used instead, if found, otherwise an error will be
+raised.</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">ec2_access_key</span></tt>: Your personal access key to authenticate
+against the specific cloud endpoint. If not found, the environment
+variable <tt class="docutils literal"><span class="pre">EC2_ACCESS_KEY</span></tt> will be used.</li>
+<li><tt class="docutils literal"><span class="pre">ec2_secret_key</span></tt>: Your personal secret key associated with the
+above <tt class="docutils literal"><span class="pre">ec2_access_key</span></tt>. If not found, the environment
+variable <tt class="docutils literal"><span class="pre">EC2_SECRET_KEY</span></tt> will be used.</li>
+</ul>
+</div></blockquote>
+<p>Any other key/value pair will be ignored.</p>
+<p>For the <tt class="docutils literal"><span class="pre">voms-proxy</span></tt> type auth, the following keys must be provided:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">type</span></tt>: must be <tt class="docutils literal"><span class="pre">voms-proxy</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">vo</span></tt>: the VO to authenticate with (passed directly to
+<tt class="docutils literal"><span class="pre">voms-proxy-init</span></tt> as argument to the <tt class="docutils literal"><span class="pre">--vo</span></tt> command-line
+switch)</li>
+<li><tt class="docutils literal"><span class="pre">cert_renewal_method</span></tt>: see below.</li>
+<li><tt class="docutils literal"><span class="pre">remember_password</span></tt>: see below.</li>
+</ul>
+</div></blockquote>
+<p>Any other key/value pair will be ignored.</p>
+<p>For the <tt class="docutils literal"><span class="pre">grid-proxy</span></tt> type auth, the following keys must be provided:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">type</span></tt>: must be <tt class="docutils literal"><span class="pre">grid-proxy</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">cert_renewal_method</span></tt>: see below.</li>
+<li><tt class="docutils literal"><span class="pre">remember_password</span></tt>: see below.</li>
+</ul>
+</div></blockquote>
+<p>Any other key/value pair will be ignored.</p>
+<p>For the <tt class="docutils literal"><span class="pre">voms-proxy</span></tt> and <tt class="docutils literal"><span class="pre">grid-proxy</span></tt> authentication types, the
+<tt class="docutils literal"><span class="pre">cert_renewal_method</span></tt> setting specifies whether GC3Libs should attempt
+to get a certificate if the current one is expired or otherwise invalid.
+Currently there are two supported <tt class="docutils literal"><span class="pre">cert_renewal_method</span></tt> types:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">slcs</span></tt>: user certificate is generated through an invocation of the <tt class="docutils literal"><span class="pre">slcs-init</span></tt>:command: program.</li>
+<li><tt class="docutils literal"><span class="pre">manual</span></tt>: user certificate is generated/renewed though an
+external process and has to be performed by the user outside of
+the scope of GC3Pie. In this case, if the user certificate is expired,
+invalid or non-existent, GC3Pie will fail to authenticate.</li>
+</ul>
+</div></blockquote>
+<p>For the <tt class="docutils literal"><span class="pre">slcs</span></tt> certificate renewal method, the  following keys must be provided:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">aai_username</span></tt>: passed directly to <strong class="command">slcs-init</strong> as argument to the <tt class="docutils literal"><span class="pre">--user</span></tt> command-line switch.</li>
+<li><tt class="docutils literal"><span class="pre">idp</span></tt>: passed directly to <strong class="command">slcs-init</strong> as argument to the <tt class="docutils literal"><span class="pre">--idp</span></tt> command-line switch.</li>
+</ul>
+</div></blockquote>
+<p>For the <tt class="docutils literal"><span class="pre">manual</span></tt> certificate renewal method, no additional keys are required.</p>
+<p>The <tt class="docutils literal"><span class="pre">remember_password</span></tt> entry (optional) must be set to a boolean
+value (the strings <tt class="docutils literal"><span class="pre">1`,</span> <span class="pre">``yes</span></tt>, <tt class="docutils literal"><span class="pre">true</span></tt> and <tt class="docutils literal"><span class="pre">on</span></tt> are interpreted
+as boolean &#8220;true&#8221;; any other value counts as &#8220;false&#8221;).  If set to a
+true value, the <tt class="docutils literal"><span class="pre">remember_password</span></tt> entry instructs GC3Pie to keep
+the password used for this authentication in the program&#8217;s main
+memory; this implies that you will be asked for the password at most
+once per program invocation.  This setting is optional, and defaults
+to &#8220;false&#8221;. Keeping passwords in memory is bad security practice; do
+not set this option to &#8220;true&#8221; unless you understand the implications.</p>
+<p><em>Example 1.</em> The following example <tt class="docutils literal"><span class="pre">auth</span></tt> section shows how to
+configure GC3Pie for using <a class="reference external" href="http://www.switch.ch/aai">SWITCHaai</a> <a class="reference external" href="http://www.switch.ch/grid/slcs/index.html">SLCS</a> services to generate a
+certificate and a <a class="reference external" href="http://vdt.cs.wisc.edu/components/voms.html">VOMS</a> proxy to access the Swiss National Distributed
+Computing Infrastructure <a class="reference external" href="http://www.smscg.ch/">SMSCG</a>:</p>
+<div class="highlight-python"><pre>[auth/smscg]
+type = voms-proxy
+cert_renewal_method = slcs
+aai_username = &lt;aai_user_name&gt; # SWITCHaai/Shibboleth user name
+idp= uzh.ch
+vo = smscg</pre>
+</div>
+<p><em>Example 2.</em> The following configuration sections are used to set up
+two different accounts, that GC3Pie programs can use.  Which account
+should be used on which computational resource is defined in the
+<a class="reference internal" href="#resource-sections">resource sections</a> (see below).</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="n">auth</span><span class="o">/</span><span class="n">ssh1</span><span class="p">]</span>
+<span class="nb">type</span> <span class="o">=</span> <span class="n">ssh</span>
+<span class="n">username</span> <span class="o">=</span> <span class="n">murri</span> <span class="c"># your username here</span>
+
+<span class="p">[</span><span class="n">auth</span><span class="o">/</span><span class="n">ssh2</span><span class="p">]</span> <span class="c"># I use a different account name on some resources</span>
+<span class="nb">type</span> <span class="o">=</span> <span class="n">ssh</span>
+<span class="n">username</span> <span class="o">=</span> <span class="n">rmurri</span>
+</pre></div>
+</div>
+<p><em>Example 3.</em> The following configuration section is used to access an
+EC2 resource (access and
+secret keys are of course invalid :)):</p>
+<div class="highlight-python"><pre>[auth/hobbes]
+type=ec2
+ec2_access_key=1234567890qwertyuiopasdfghjklzxc
+ec2_secret_key=cxzlkjhgfdsapoiuytrewq0987654321</pre>
+</div>
+</div>
+</div>
+<div class="section" id="resource-sections">
+<h2><tt class="docutils literal"><span class="pre">resource</span></tt> sections<a class="headerlink" href="#resource-sections" title="Permalink to this headline">¶</a></h2>
+<p>Each resource section must begin with a line of the form:</p>
+<blockquote>
+<div><tt class="file docutils literal"><span class="pre">[resource/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt></div></blockquote>
+<p>You can have as many <tt class="file docutils literal"><span class="pre">[resource/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt> sections as you want; this
+allows you to define many different resources.  Each <tt class="file docutils literal"><span class="pre">[resource/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt>
+section must reference one (and one only) <tt class="file docutils literal"><span class="pre">[auth/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt>
+section (by its <tt class="docutils literal"><span class="pre">auth</span></tt> key).</p>
+<p>Resources currently come in several flavours, distinguished by the
+value of the <tt class="docutils literal"><span class="pre">type</span></tt> key:</p>
+<blockquote>
+<div><ul class="simple">
+<li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">arc1</span></tt>, then the resource is accessed using the ARC grid middleware (version 1.1.x/1.0.x);</li>
+<li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">arc0</span></tt>, then the resource is accessed using the ARC grid middleware (version 0.8.x);</li>
+<li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">sge</span></tt>, then the resource is a <a class="reference external" href="http://gridengine.org/blog/2011/11/23/what-now/">Grid Engine</a> batch system, to be accessed by an SSH connection to its front-end node.</li>
+<li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">pbs</span></tt>, then the resource is a <a class="reference external" href="http://www.adaptivecomputing.com/products/open-source/torque/">Torque/PBS</a> batch system, to be accessed by an SSH connection to its front-end node.</li>
+<li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">lsf</span></tt>, then the resource is a <a class="reference external" href="http://www-03.ibm.com/systems/technicalcomputing/platformcomputing/products/lsf/index.html">LSF</a> batch system, to be accessed by an SSH connection to its front-end node.</li>
+<li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">slurm</span></tt>, then the resource is a <a class="reference external" href="https://computing.llnl.gov/linux/slurm/">SLURM</a> batch system, to be accessed by an SSH connection to its front-end node.</li>
+<li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">shellcmd</span></tt>, then the resource is the computer
+where the GC3Pie script is running and applications are executed
+by just spawning a local UNIX process.</li>
+<li>If <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">ec2+shellcmd</span></tt>, then the resource is a cloud with
+EC2-compatible APIs, and applications are run on Virtual Machines
+spawned on the cloud.</li>
+</ul>
+</div></blockquote>
+<p>All <tt class="file docutils literal"><span class="pre">[resource/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt> sections (except those of <tt class="docutils literal"><span class="pre">shellcmd</span></tt>
+type) <em>must</em> reference a valid <tt class="docutils literal"><span class="pre">auth/***</span></tt> section. Resources of
+<tt class="docutils literal"><span class="pre">sge</span></tt>, <tt class="docutils literal"><span class="pre">pbs</span></tt>, <tt class="docutils literal"><span class="pre">lsf</span></tt> and <tt class="docutils literal"><span class="pre">slurm</span></tt> type can only reference
+:command:<tt class="docutils literal"><span class="pre">ssh</span></tt> type sections.; resources of type <tt class="docutils literal"><span class="pre">arc0</span></tt> or
+<tt class="docutils literal"><span class="pre">arc1</span></tt> can only reference <tt class="docutils literal"><span class="pre">[auth/***]</span></tt> sections whose type is
+<tt class="docutils literal"><span class="pre">voms-proxy</span></tt> or <tt class="docutils literal"><span class="pre">grid-proxy</span></tt>.</p>
+<p>Some configuration keys are commmon to all resource types:</p>
+<blockquote>
+<div><ul>
+<li><p class="first"><tt class="docutils literal"><span class="pre">type</span></tt>: Resource type, see above.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">auth</span></tt>: the name of a valid <tt class="file docutils literal"><span class="pre">[auth/</span><em><span class="pre">name</span></em><span class="pre">]</span></tt> section; only
+the authentication section name (after the <tt class="docutils literal"><span class="pre">/</span></tt>) must be
+specified.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">max_cores_per_job</span></tt>: Maximum number of CPU cores that a job can request; a resource will be dropped during the brokering process if a job requests more cores than this.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">max_memory_per_core</span></tt>: Max amount of memory (expressed in GBs) that a job can request.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">max_walltime</span></tt>: Maximum job running time (in hours).</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">max_cores</span></tt>: Total number of cores provided by the resource.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">architecture</span></tt>: Processor architecture.  Should be one of the strings <tt class="docutils literal"><span class="pre">x86_64</span></tt> (for 64-bit Intel/AMD/VIA processors), <tt class="docutils literal"><span class="pre">i686</span></tt> (for 32-bit Intel/AMD/VIA x86 processors), or <tt class="docutils literal"><span class="pre">x86_64,i686</span></tt> if both architectures are available on the resource.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">time_cmd</span></tt>: Used only when <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">shellcmd</span></tt>. The <cite>time</cite> program is used as wrapper for the application in order to collect informations about the execution when running without a real <cite>LRMS</cite>.</p>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">prologue</span></tt>: Used only when <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">pbs</span></tt>, <tt class="docutils literal"><span class="pre">lsf</span></tt>,</dt>
+<dd><p class="first last"><tt class="docutils literal"><span class="pre">slurm</span></tt> or <tt class="docutils literal"><span class="pre">sge</span></tt>. The content of the <cite>prologue</cite> script will
+be <em>inserted</em> into the submission script and it&#8217;s executed before
+the real application.  It is intended to execute some shell
+commands needed to setup the execution environment before running
+the application (e.g. running a <cite>module load ...</cite> command). The
+script <strong>must</strong> be a valid, plain <cite>/bin/sh</cite> script.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">epilogue</span></tt>: Used only when <tt class="docutils literal"><span class="pre">type</span></tt> is <tt class="docutils literal"><span class="pre">pbs</span></tt>, <tt class="docutils literal"><span class="pre">lsf</span></tt>,</dt>
+<dd><p class="first last"><tt class="docutils literal"><span class="pre">slurm</span></tt> or <tt class="docutils literal"><span class="pre">sge</span></tt>. The content of the <cite>epilogue</cite> script will
+be <em>inserted</em> into the submission script and it&#8217;s executed after
+the real application. The script <strong>must</strong> be a valid, plain
+<cite>/bin/sh</cite> script.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">&lt;application_name&gt;_prologue</span></tt>: Same as <tt class="docutils literal"><span class="pre">prologue</span></tt>, but it is
+used only when <tt class="docutils literal"><span class="pre">&lt;application_name&gt;</span></tt>  matches the name of the
+application. Valid application names are: <cite>zods</cite>, <cite>gamess</cite>,
+<cite>turbomole</cite>, <cite>codeml</cite>, <cite>rosetta</cite>, <cite>rosetta_docking</cite>, <cite>geotop</cite>,</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">&lt;application_name&gt;_epilogue</span></tt>: Same as <tt class="docutils literal"><span class="pre">epilogue</span></tt>, but it is
+used only when <tt class="docutils literal"><span class="pre">&lt;application_name&gt;</span></tt>  matches the name of the
+application. Valid application names are: <cite>zods</cite>, <cite>gamess</cite>,
+<cite>turbomole</cite>, <cite>codeml</cite>, <cite>rosetta</cite>, <cite>rosetta_docking</cite>, <cite>geotop</cite>,</p>
+</li>
+</ul>
+</div></blockquote>
+<div class="section" id="arc0-resources">
+<h3><tt class="docutils literal"><span class="pre">arc0</span></tt> resources<a class="headerlink" href="#arc0-resources" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">arc_ldap</span></tt> key should be set to the LDAP URL of an ARC GIIS or
+GRIS.  If, in addition, the <tt class="docutils literal"><span class="pre">frontend</span></tt> key is also defined, then
+only queues belonging to the specified frontend will be considered for
+brokering.</p>
+<p>When a job has just been submitted, the ARC information system does
+not immediately report about it: the job will appear at the next cache
+update.  This creates a time window during which no information is
+reported about the job by ARC, as if it never existed.  In order not
+to mistake this for a &#8220;job lost&#8221; error, GC3Libs allow a &#8220;grace time&#8221;:
+job information lookups are allowed to fail for a certain time span
+after submission. The duration of this time span is set with the optional
+<tt class="docutils literal"><span class="pre">lost_job_timeout</span></tt> parameter, whose default is 4 times the ARC default
+cache time; this parameter should not be lower than twice the
+information system update frequency.</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">lost_job_timeout</span></tt>: Time (in seconds) a failure in job lookup in the information system will <em>not</em> be considered critical</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="arc1-resources">
+<h3><tt class="docutils literal"><span class="pre">arc1</span></tt> resources<a class="headerlink" href="#arc1-resources" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">arc_ldap</span></tt> key should be defined to a valid ARC1 information system URL.</p>
+<p>When a job has just been submitted, the ARC information system does
+not immediately report about it: the job will appear at the next cache
+update.  This creates a time window during which no information is
+reported about the job by ARC, as if it never existed.  In order not
+to mistake this for a &#8220;job lost&#8221; error, GC3Libs allow a &#8220;grace time&#8221;:
+job information lookups are allowed to fail for a certain time span
+after submission. The duration of this time span is set with the optional
+<tt class="docutils literal"><span class="pre">lost_job_timeout</span></tt> parameter, whose default is 4 times the ARC default
+cache time; this parameter should not be lower than twice the
+information system update frequency.</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">lost_job_timeout</span></tt>: Time (in seconds) a failure in job lookup in the information system will <em>not</em> be considered critical</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="sge-resources">
+<h3><tt class="docutils literal"><span class="pre">sge</span></tt> resources<a class="headerlink" href="#sge-resources" title="Permalink to this headline">¶</a></h3>
+<p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">sge</span></tt>-type resource section:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the SGE front-end node. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.</li>
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.   If <tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt> via SSH in order to execute SGE commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the SGE commands are run directly on the machine where GC3Pie is installed.</li>
+</ul>
+</div></blockquote>
+<p>To submit parallel jobs to SGE, a &#8220;parallel environment&#8221; name must be
+specified.  You can specify the PE to be used with a specific
+application using a configuration parameter <em>application name</em> +
+<tt class="docutils literal"><span class="pre">_pe</span></tt> (e.g., <tt class="docutils literal"><span class="pre">gamess_pe</span></tt>, <tt class="docutils literal"><span class="pre">zods_pe</span></tt>); the <tt class="docutils literal"><span class="pre">default_pe</span></tt>
+parameter dictates the parallel environment to use if no
+application-specific one is defined.  <em>If neither the
+application-specific, nor the ``default_pe`` parallel environments are
+defined, then it will not be possible to submit parallel jobs.</em></p>
+<p>When a job has finished, the SGE batch system does not (by default)
+immediately write its information into the accounting database.  This
+creates a time window during which no information is reported about
+the job by SGE, as if it never existed.  In order not to mistake this
+for a &#8220;job lost&#8221; error, GC3Libs allow a &#8220;grace time&#8221;: <strong class="command">qacct</strong>
+job information lookups are allowed to fail for a certain time span
+after the first time <strong class="command">qstat</strong> failed. The duration of this
+time span is set with the <tt class="docutils literal"><span class="pre">sge_accounting_delay</span></tt> parameter, whose
+default is 15 seconds (matches the default in SGE, as of release 6.2):</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">sge_accounting_delay</span></tt>: Time (in seconds) a failure in <strong class="command">qacct</strong> will <em>not</em> be considered critical.</li>
+</ul>
+</div></blockquote>
+<p>GC3Pie uses standard command line utilities to interact with the
+resource manager. By default these commands are searched using the
+<tt class="docutils literal"><span class="pre">PATH</span></tt> environment variable, but you can specify the full path of
+these commands and/or add some extra options. The following options
+are used by the SGE backend:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">qsub</span></tt>: submit a job.</li>
+<li><tt class="docutils literal"><span class="pre">qacct</span></tt>: get info on resources used by a job.</li>
+<li><tt class="docutils literal"><span class="pre">qdel</span></tt>: cancel a job.</li>
+<li><tt class="docutils literal"><span class="pre">qstat</span></tt>: get the status of a job or the status of available
+resources.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="pbs-resources">
+<h3><tt class="docutils literal"><span class="pre">pbs</span></tt> resources<a class="headerlink" href="#pbs-resources" title="Permalink to this headline">¶</a></h3>
+<p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">pbs</span></tt>-type resource section:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.  If
+<tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt>
+via SSH in order to execute Troque/PBS commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>,
+the Torque/PBS commands are run directly on the machine where
+GC3Pie is installed.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the Torque/PBS front-end node. This configuration
+item is only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH
+connection will be attempted to this node, in order to submit jobs
+and retrieve status info.</li>
+</ul>
+</div></blockquote>
+<p>GC3Pie uses standard command line utilities to interact with the
+resource manager. By default these commands are searched using the
+<tt class="docutils literal"><span class="pre">PATH</span></tt> environment variable, but you can specify the full path of
+these commands and/or add some extra options. The following options
+are used by the PBS backend:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">queue</span></tt>: the name of the queue to which jobs are submitted. If
+empty (the default), no job will be specified during submission.</li>
+<li><tt class="docutils literal"><span class="pre">qsub</span></tt>: submit a job.</li>
+<li><tt class="docutils literal"><span class="pre">qdel</span></tt>: cancel a job.</li>
+<li><tt class="docutils literal"><span class="pre">qstat</span></tt>: get the status of a job or the status of available
+resources.</li>
+<li><tt class="docutils literal"><span class="pre">tracejob</span></tt>: get info on resources used by a job.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="lsf-resources">
+<h3><tt class="docutils literal"><span class="pre">lsf</span></tt> resources<a class="headerlink" href="#lsf-resources" title="Permalink to this headline">¶</a></h3>
+<p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">lsf</span></tt>-type resource section:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.  If
+<tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt>
+via SSH in order to execute LSF commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the LSF
+commands are run directly on the machine where GC3Pie is
+installed.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the LSF front-end node. This configuration item is
+only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH connection
+will be attempted to this node, in order to submit jobs and
+retrieve status info.</li>
+</ul>
+</div></blockquote>
+<p>GC3Pie uses standard command line utilities to interact with the
+resource manager. By default these commands are searched using the
+<tt class="docutils literal"><span class="pre">PATH</span></tt> environment variable, but you can specify the full path of
+these commands and/or add some extra options. The following options
+are used by the LSF backend:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">bsub</span></tt>: submit a job.</li>
+<li><tt class="docutils literal"><span class="pre">bjobs</span></tt>: get the status and resource usage of a job.</li>
+<li><tt class="docutils literal"><span class="pre">bkill</span></tt>: cancel a job.</li>
+<li><tt class="docutils literal"><span class="pre">lshosts</span></tt>: get info on available resources.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="slurm-resources">
+<h3><tt class="docutils literal"><span class="pre">slurm</span></tt> resources<a class="headerlink" href="#slurm-resources" title="Permalink to this headline">¶</a></h3>
+<p>The following configuration keys are required in a <tt class="docutils literal"><span class="pre">slurm</span></tt>-type resource section:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Possible values are: <tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>.  If
+<tt class="docutils literal"><span class="pre">ssh</span></tt>, we try to connect to the host specified in <tt class="docutils literal"><span class="pre">frontend</span></tt>
+via SSH in order to execute SLURM commands.  If <tt class="docutils literal"><span class="pre">local</span></tt>, the
+SLURM commands are run directly on the machine where GC3Pie is
+installed.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: should contain the <abbr title="Fully-qualified domain name">FQDN</abbr> of the SLURM front-end node. This configuration item
+is only relevant if <tt class="docutils literal"><span class="pre">transport</span></tt> is <tt class="docutils literal"><span class="pre">local</span></tt>. An SSH connection
+will be attempted to this node, in order to submit jobs and
+retrieve status info.</li>
+</ul>
+</div></blockquote>
+<p>GC3Pie uses standard command line utilities to interact with the
+resource manager. By default these commands are searched using the
+<tt class="docutils literal"><span class="pre">PATH</span></tt> environment variable, but you can specify the full path of
+these commands and/or add some extra options. The following options
+are used by the SLURM backend:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">sbatch</span></tt>: submit a job.</li>
+<li><tt class="docutils literal"><span class="pre">scancel</span></tt>: cancel a job.</li>
+<li><tt class="docutils literal"><span class="pre">squeue</span></tt>: get the status of a job or of the available resources.</li>
+<li><tt class="docutils literal"><span class="pre">sacct</span></tt>: get info on resources used by a job.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="shellcmd-resources">
+<h3><tt class="docutils literal"><span class="pre">shellcmd</span></tt> resources<a class="headerlink" href="#shellcmd-resources" title="Permalink to this headline">¶</a></h3>
+<p>The following optional configuration keys are available in a
+<tt class="docutils literal"><span class="pre">shellcmd</span></tt>-type resource section:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">transport</span></tt>: Like any other resources, possible values are
+<tt class="docutils literal"><span class="pre">ssh</span></tt> or <tt class="docutils literal"><span class="pre">local</span></tt>. Default value is <tt class="docutils literal"><span class="pre">local</span></tt>.</li>
+<li><tt class="docutils literal"><span class="pre">frontend</span></tt>: If <cite>transport</cite> is <cite>ssh</cite>, then <cite>frontend</cite> is the
+<abbr title="Fully-qualified domain name">FQDN</abbr> of the remote machine
+where the jobs will be executed.</li>
+<li><tt class="docutils literal"><span class="pre">time_cmd</span></tt>: <tt class="xref py py-class docutils literal"><span class="pre">ShellcmdLrms</span></tt> needs the GNU implementation
+of the command <cite>time</cite> in order to get resource usage of the
+submitted jobs. <tt class="docutils literal"><span class="pre">time_cmd</span></tt> must contains the path to the binary
+file if this is different from the standard (<tt class="docutils literal"><span class="pre">/usr/bin/time</span></tt>).</li>
+<li><tt class="docutils literal"><span class="pre">override</span></tt>: <tt class="xref py py-class docutils literal"><span class="pre">ShellcmdLrms</span></tt> by default will try to gather
+information on the system the resource is running on, including
+the number of cores and the available memory. These values may be
+different from the values stored in the configuration file. If
+<tt class="docutils literal"><span class="pre">override</span></tt> is <cite>True</cite>, then the values automatically discovered
+will be used. If <tt class="docutils literal"><span class="pre">override</span></tt> is <cite>False</cite>, the values in the
+configuration file will be used regardless of the real values
+discovered by the resource.</li>
+<li><tt class="docutils literal"><span class="pre">spooldir</span></tt>: Path to a filesystem location where to create
+temporary working directories for processes executed through this
+backend. The default value <cite>None</cite> means to use <tt class="docutils literal"><span class="pre">$TMPDIR</span></tt> or
+<tt class="file docutils literal"><span class="pre">/tmp</span></tt> (see <cite>tempfile.mkftemp</cite> for details).</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="ec2-shellcmd-resource">
+<h3><tt class="docutils literal"><span class="pre">ec2+shellcmd</span></tt> resource<a class="headerlink" href="#ec2-shellcmd-resource" title="Permalink to this headline">¶</a></h3>
+<p>The following configuration options are available for a resource of
+type <tt class="docutils literal"><span class="pre">ec2+shellcmd</span></tt>. If these options are omitted, then the default
+of the <a class="reference external" href="https://github.com/boto/boto">boto</a> python library will be used, which at the time of
+writing means use the default region on Amazon.</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">ec2_url</span></tt>: The URL of the EC2 frontend. On a typical OpenStack</dt>
+<dd><p class="first last">installation this will look like:
+<tt class="docutils literal"><span class="pre">https://cloud.gc3.uzh.ch:8773/services/Cloud</span></tt>, while for
+amazon it&#8217;s something like
+<tt class="docutils literal"><span class="pre">https://ec2.us-east-1.amazonaws.com</span></tt> (this is valid for the
+zone <tt class="docutils literal"><span class="pre">us-east-1</span></tt> of course).
+If no value is specified, the environment variable <tt class="docutils literal"><span class="pre">EC2_URL</span></tt>
+will be used, and if not found an error is raised.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">ec2_region</span></tt>: the region you want to access to. Most OpenStack
+installations only have one region called <tt class="docutils literal"><span class="pre">nova</span></tt>.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">keypair_name</span></tt>: the name of the keypair to use when creating a
+new instance on the cloud. If it&#8217;s not found, a new keypair with
+this name and the key stored in <tt class="docutils literal"><span class="pre">public_key</span></tt> will be
+used. Please note that if the keypair exists already on the cloud
+but the associated public key is different from the one stored in
+<tt class="docutils literal"><span class="pre">public_key</span></tt>, then an error is raised and the resource will not
+be used.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">public_key</span></tt>: public key to use when creating the
+keypair. Please note that GC3Pie will assume that the
+corresponding private key is stored on a file with the same path
+but without the <tt class="docutils literal"><span class="pre">.pub</span></tt> extension. This private key is necessary
+in order to access the virtual machines created on the cloud.
+<strong>Amazon users</strong>: Please note that Amazon does not accept <strong>DSA</strong>
+keys; use RSA keys only for Amazon resources.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">vm_auth</span></tt>: the name of a valid <tt class="docutils literal"><span class="pre">auth</span></tt> stanza used to connect
+to the virtual machine.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">instance_type</span></tt>: the instance type (aka <em>flavor</em>, aka <em>size</em>)
+you want to use for your virtual machines by default.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">&lt;application&gt;_instance_type</span></tt>: you can override the default
+instance type for a specific application by defining an entry in
+the configuration file for that application. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">instance_type</span><span class="o">=</span><span class="n">m1</span><span class="o">.</span><span class="n">tiny</span>
+<span class="n">gc_gps_instance_type</span><span class="o">=</span><span class="n">m1</span><span class="o">.</span><span class="n">large</span>
+</pre></div>
+</div>
+<p>will use instance type <tt class="docutils literal"><span class="pre">m1.large</span></tt> for the <tt class="docutils literal"><span class="pre">gc_gps</span></tt> GC3Pie
+application, and <tt class="docutils literal"><span class="pre">m1.tiny</span></tt> for all the other applications.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">image_id</span></tt>: the <strong>ami-id</strong> of the image you want to
+use. OpenStack users: please note that the ID you will find on the
+web interface <strong>is not</strong> the <em>ami-id</em>. To get the <em>ami-id</em> of an
+image you have to use the command <tt class="docutils literal"><span class="pre">euca-describe-images</span></tt> from
+the <tt class="docutils literal"><span class="pre">euca2ools</span></tt> package.</p>
+<p>For <a class="reference external" href="http://www.gc3.uzh.ch/infrastructure/hobbes">Hobbes</a> users: all virtual machines distributed by the GC3
+team are in this <a class="reference external" href="http://www.gc3.uzh.ch/infrastructure/hobbes/appliances">list of appliances</a> with the corresponding
+ami-id.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">&lt;application&gt;_image_id</span></tt>: you can override the default image id
+for a specific application by defining an entry in the
+configuration file for that specific application. For example:</p>
+<div class="highlight-python"><pre>image_id=ami-00000048
+gc_gps_image_id=ami-0000002a</pre>
+</div>
+<p>will use the image <tt class="docutils literal"><span class="pre">ami-0000002a</span></tt> for <tt class="docutils literal"><span class="pre">gc_gps</span></tt> and image
+<tt class="docutils literal"><span class="pre">ami-00000048</span></tt> for all other applications.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">security_group_name</span></tt>: the name of the security group to use. If
+not found, it will be created using the rules found in
+<tt class="docutils literal"><span class="pre">security_group_rules</span></tt>. If the security group is found but some
+of the rules in <tt class="docutils literal"><span class="pre">security_group_rules</span></tt> are not present, they
+will be added to the security groups. Please note that if the
+security group defines some rule which is not listed in
+<tt class="docutils literal"><span class="pre">security_group_rules</span></tt> it will <strong>not</strong> be removed from the
+security group.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">security_group_rules</span></tt>: comma separated list of security rules
+the <tt class="docutils literal"><span class="pre">security_group</span></tt> must have. Each rule is in the form:</p>
+<div class="highlight-python"><pre>PROTOCOL:PORT_RANGE_START:PORT_RANGE_END:IP_NETWORK</pre>
+</div>
+<p>where:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">PROTOCOL</span></tt> can be one of <tt class="docutils literal"><span class="pre">tcp</span></tt>, <tt class="docutils literal"><span class="pre">udp</span></tt>, <tt class="docutils literal"><span class="pre">icmp</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">PORT_RANGE_START</span></tt> and <tt class="docutils literal"><span class="pre">PORT_RANGE_END</span></tt> are integers and
+define the range of ports to allow. If <tt class="docutils literal"><span class="pre">PROTOCOL</span></tt> is <tt class="docutils literal"><span class="pre">icmp</span></tt>
+please use <tt class="docutils literal"><span class="pre">-1</span></tt> for both values since in <tt class="docutils literal"><span class="pre">icmp</span></tt> there is no
+concept of <em>port</em>.</li>
+<li><tt class="docutils literal"><span class="pre">IP_NETWORK</span></tt> is a range of IP to allow in the form
+<tt class="docutils literal"><span class="pre">A.B.C.D/N</span></tt>.</li>
+</ul>
+<p>For instance, to allow access to the virtual machine from <em>any</em>
+machine in the internet you can use:</p>
+<div class="highlight-python"><pre>tcp:22:22:0.0.0.0/0</pre>
+</div>
+<p>Please note that in order to be able to access the created virtual
+machines GC3Pie <strong>needs</strong> to be able to connect via ssh, so the
+above rule is probably necessary in any gc3pie configuration. (of
+course, you can allow only your IP address or the IPs of your
+institution)</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">vm_pool_max_size</span></tt>: the maximum number of Virtual Machine GC3Pie
+will start on this cloud. If <cite>0</cite>, there is no predefined limit to
+the number of virtual machines GC3Pie will spawn.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">user_data</span></tt>: the <em>content</em> of a script that will run after the
+startup of the machine. For instance, to automatically upgrade a
+ubuntu machine after startup you can use:</p>
+<div class="highlight-python"><pre>user_data=#!/bin/bash
+  aptitude -y update
+  aptitude -y safe-upgrade</pre>
+</div>
+<p>Please note that if you need to span over multiple lines you have
+to indent the lines after <tt class="docutils literal"><span class="pre">user_data</span></tt>, as any indented line in a
+configuration file is interpreted as a continuation of the
+previous line.</p>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">&lt;application&gt;_user_data</span></tt>: you can override the default userdata
+for a specific application by defining an entry in the
+configuration file for that specific application. For example:</p>
+<div class="highlight-python"><pre># user_data=
+warholize_user_data = #!/bin/bash
+  aptitude update &amp;&amp; aptitude -y install imagemagick</pre>
+</div>
+<p>will install <cite>imagemagick</cite> only for the <cite>warholize</cite> application.</p>
+</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="example-resource-sections">
+<h3>Example <tt class="docutils literal"><span class="pre">resource</span></tt> sections<a class="headerlink" href="#example-resource-sections" title="Permalink to this headline">¶</a></h3>
+<p><em>Example 1.</em> This configuration stanza defines a resource <tt class="docutils literal"><span class="pre">smscg</span></tt>
+representing the whole <a class="reference external" href="http://www.smscg.ch/">SMSCG</a> infrastructure, accessed through the ARC
+(version 0.8.x) middleware:</p>
+<div class="highlight-python"><pre>[resource/smscg]
+# A whole ARC-based Grid
+type = arc0
+auth = &lt;voms_auth_name&gt;
+arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
+# These values are correct as of 2011-02-28; please
+# ask on the SMSCG mailing list if unsure.
+max_cores_per_job = 256
+max_memory_per_core = 3
+max_walltime = 9999
+ncores = 1200
+architecture = x86_64, i686</pre>
+</div>
+<p><em>Example 2.</em> This configuration stanza shows how to access a single
+cluster through the ARC middleware (version 1.x) using the name
+<tt class="docutils literal"><span class="pre">idgc3grid01</span></tt> (which is also the internet host name of the cluster
+front-end):</p>
+<div class="highlight-python"><pre>[resource/idgc3grid01]
+# A single cluster, accessed through the ARC middleware
+type = arc
+auth = &lt;auth_name&gt; # pick a ``voms`` type auth
+frontend = idgc3grid01.uzh.ch
+name = gc3
+arc_ldap = ldap://idgc3grid01.uzh.ch:2135/mds-vo-name=local,o=grid
+max_cores_per_job = 32
+max_memory_per_core = 2
+max_walltime = 12
+ncores = 80</pre>
+</div>
+<p><em>Example 3.</em> This configuration stanza defines a resource to submit
+jobs to the <a class="reference external" href="http://gridengine.org/blog/2011/11/23/what-now/">Grid Engine</a> cluster whose front-end host is
+<tt class="docutils literal"><span class="pre">ocikbpra.uzh.ch</span></tt>:</p>
+<div class="highlight-python"><pre>[resource/ocikbpra]
+# A single SGE cluster, accessed by SSH'ing to the front-end node
+type = sge
+auth = &lt;auth_name&gt; # pick an ``ssh`` type auth, e.g., "ssh1"
+transport = ssh
+frontend = ocikbpra.uzh.ch
+gamess_location = /share/apps/gamess
+max_cores_per_job = 80
+max_memory_per_core = 2
+max_walltime = 2
+ncores = 80</pre>
+</div>
+<p><em>Example 4.</em> This configuration stanza defines a resource to submit
+jobs on virtual machines that will be automatically started by GC3Pie
+on <a class="reference external" href="http://www.gc3.uzh.ch/infrastructure/hobbes">Hobbes</a>, the private OpenStack cloud of the University of Zurich:</p>
+<div class="highlight-python"><pre>[resource/hobbes]
+enabled=yes
+type=ec2+shellcmd
+ec2_url=http://hobbes.gc3.uzh.ch:8773/services/Cloud
+ec2_region=nova
+
+auth=ec2hobbes
+# These values my be overwritten by the remote resource
+max_cores_per_job = 8
+max_memory_per_core = 2
+max_walltime = 8
+max_cores = 32
+architecture = x86_64
+
+keypair_name=my_name
+# If keypair does not exists, a new one will be created starting from
+# `public_key`. Note that if the desired keypair exists, a check is
+# done on its fingerprint and a warning is issued if it does not match
+# with the one in `public_key`
+public_key=~/.ssh/id_dsa.pub
+vm_auth=gc3user_ssh
+instance_type=m1.tiny
+warholize_instance_type = m1.small
+image_id=ami-00000048
+warholize_image_id=ami-00000035
+security_group_name=gc3pie_ssh
+security_group_rules=tcp:22:22:0.0.0.0/0, icmp:-1:-1:0.0.0.0/0
+vm_pool_max_size = 8
+user_data=
+warholize_user_data = #!/bin/bash
+    aptitude update &amp;&amp; aptitude install -u imagemagick</pre>
+</div>
+</div>
+</div>
+<div class="section" id="enabling-disabling-selected-resources">
+<h2>Enabling/disabling selected resources<a class="headerlink" href="#enabling-disabling-selected-resources" title="Permalink to this headline">¶</a></h2>
+<p>Any resource can be disabled by adding a line <tt class="docutils literal"><span class="pre">enabled</span> <span class="pre">=</span> <span class="pre">false</span></tt> to its
+configuration stanza.  Conversely, a line <tt class="docutils literal"><span class="pre">enabled</span> <span class="pre">=</span> <span class="pre">true</span></tt> will undo
+the effect of an <tt class="docutils literal"><span class="pre">enabled</span> <span class="pre">=</span> <span class="pre">false</span></tt> line (possibly found in a different
+configuration file).</p>
+<p>This way, resources can be temporarily disabled (e.g., the cluster is
+down for maintenance) without having to remove them from the
+configuration file.</p>
+<p>You can selectively disable or enable resources that are defined in
+the system-wide configuration file.  Two main use cases are supported:
+the system-wide configuration file :file:<tt class="docutils literal"><span class="pre">/etc/gc3/gc3pie.conf</span></tt> lists and
+enables all available resources, and users can turn them off in their
+private configuration file :file:<tt class="docutils literal"><span class="pre">~/.gc3/gc3pie.conf</span></tt>; or the system-wide
+configuration can list all available resources but keep them disabled,
+and users can enable those they prefer in the private configuration
+file.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Configuration File</a><ul>
+<li><a class="reference internal" href="#location">Location</a></li>
+<li><a class="reference internal" href="#configuration-file-format">Configuration file format</a></li>
+<li><a class="reference internal" href="#the-default-section">The <tt class="docutils literal"><span class="pre">DEFAULT</span></tt> section</a></li>
+<li><a class="reference internal" href="#auth-sections"><tt class="docutils literal"><span class="pre">auth</span></tt> sections</a><ul>
+<li><a class="reference internal" href="#authentication-types">Authentication types</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#resource-sections"><tt class="docutils literal"><span class="pre">resource</span></tt> sections</a><ul>
+<li><a class="reference internal" href="#arc0-resources"><tt class="docutils literal"><span class="pre">arc0</span></tt> resources</a></li>
+<li><a class="reference internal" href="#arc1-resources"><tt class="docutils literal"><span class="pre">arc1</span></tt> resources</a></li>
+<li><a class="reference internal" href="#sge-resources"><tt class="docutils literal"><span class="pre">sge</span></tt> resources</a></li>
+<li><a class="reference internal" href="#pbs-resources"><tt class="docutils literal"><span class="pre">pbs</span></tt> resources</a></li>
+<li><a class="reference internal" href="#lsf-resources"><tt class="docutils literal"><span class="pre">lsf</span></tt> resources</a></li>
+<li><a class="reference internal" href="#slurm-resources"><tt class="docutils literal"><span class="pre">slurm</span></tt> resources</a></li>
+<li><a class="reference internal" href="#shellcmd-resources"><tt class="docutils literal"><span class="pre">shellcmd</span></tt> resources</a></li>
+<li><a class="reference internal" href="#ec2-shellcmd-resource"><tt class="docutils literal"><span class="pre">ec2+shellcmd</span></tt> resource</a></li>
+<li><a class="reference internal" href="#example-resource-sections">Example <tt class="docutils literal"><span class="pre">resource</span></tt> sections</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#enabling-disabling-selected-resources">Enabling/disabling selected resources</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="install.html"
+                        title="previous chapter">Installation of GC3Pie</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="env-vars.html"
+                        title="next chapter">Environment Variables</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="env-vars.html" title="Environment Variables"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="install.html" title="Installation of GC3Pie"
+             >previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" >User Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

@@ -1,0 +1,689 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Contributing to GC3Pie &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="up" title="Developer Documentation" href="index.html" />
+    <link rel="next" title="List of contributors to GC3Pie" href="../credits.html" />
+    <link rel="prev" title="Developer Documentation" href="index.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../credits.html" title="List of contributors to GC3Pie"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Developer Documentation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Developer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="contributing-to-gc3pie">
+<h1>Contributing to GC3Pie<a class="headerlink" href="#contributing-to-gc3pie" title="Permalink to this headline">¶</a></h1>
+<p>First of all, thanks for wanting to contribute to GC3Pie!  GC3Pie
+is an open-ended endeavour, and we&#8217;re always looking for new ideas,
+suggestions, and new code.  (And also, for fixes to bugs old and new ;-))</p>
+<p>The paragraphs below should brief you about the organization of the
+GC3Pie code repositories, and the suggested guidelines for code and
+documentation style.  Feel free to request more info or discuss the
+existing recommendations on the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing list</a></p>
+<div class="section" id="code-repository-organization">
+<h2>Code repository organization<a class="headerlink" href="#code-repository-organization" title="Permalink to this headline">¶</a></h2>
+<p>GC3Pie code is hosted in a <a class="reference external" href="http://code.google.com/">Google Code</a> repository, which you can
+access <a class="reference external" href="http://code.google.com/p/gc3pie/source/browse">online</a> or using any <a class="reference external" href="http://subversion.apache.org/">Subversion</a> client.  Refer to the
+<a class="reference external" href="http://code.google.com/p/gc3pie/source/checkout">checkout instructions</a> to grab a copy of the sources.</p>
+<p>Please note that anyone can read the sources, but you need to be
+granted <em>committer</em> status before you can make any modifications into
+the code; read section <a class="reference internal" href="#how-can-i-get-access-to-the-svn-repository">how can I get access to the SVN repository?</a>
+below to request write-access to the repository.</p>
+<div class="section" id="repository-structure">
+<h3>Repository structure<a class="headerlink" href="#repository-structure" title="Permalink to this headline">¶</a></h3>
+<p>The GC3Pie code repository follows the <a class="reference external" href="http://stackoverflow.com/a/109009/459543">standard subversion layout</a>:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">trunk</span></tt> is the place for development code: it has all the latest
+and greatest features, and also the newest and nastiest bugs.</li>
+<li><tt class="docutils literal"><span class="pre">tags</span></tt> is where released code is: each subdirectory of <tt class="docutils literal"><span class="pre">tags</span></tt> is
+a snapshot of a release of GC3Pie code, and should never change.</li>
+<li><tt class="docutils literal"><span class="pre">branches</span></tt> are alternative development lines, for instance code
+from past releases that still gets bugfixes, or experimental
+features that have not been implemented in the main development line
+<tt class="docutils literal"><span class="pre">trunk</span></tt> (because, e.g., they require a radical API change).</li>
+</ul>
+<p>We shall now describe the contents of the <tt class="docutils literal"><span class="pre">trunk</span></tt> directory, as
+there is where most new code will land.  Organization of the code in
+<tt class="docutils literal"><span class="pre">tags</span></tt> and <tt class="docutils literal"><span class="pre">branches</span></tt> is very similar and you should be able to
+adapt easily.</p>
+<p>The <tt class="docutils literal"><span class="pre">gc3pie</span></tt> directory in <tt class="docutils literal"><span class="pre">trunk</span></tt> contains all GC3Pie code.  It
+has one subdirectory for each of the main parts of GC3Pie:</p>
+<ul>
+<li><p class="first">The <tt class="docutils literal"><span class="pre">gc3libs</span></tt> directory contains the GC3Libs code, which is the
+core of GC3Pie.  GC3Libs are extensively described in the <a class="reference internal" href="../programmers/api/index.html#gc3libs"><em>API</em></a> section of this document; read the module descriptions
+to find out where your new suggested functionality would suit best.
+If unsure, ask on the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing list</a>.</p>
+</li>
+<li><p class="first">The <tt class="docutils literal"><span class="pre">gc3utils</span></tt> directory contains the sources for the low-level
+GC3Utils command-line utilities.</p>
+</li>
+<li><p class="first">The <tt class="docutils literal"><span class="pre">gc3apps</span></tt> directory contains the sources for higher level
+scripts that implement some computational use case of independent
+interest.</p>
+<p>The <tt class="docutils literal"><span class="pre">gc3apps</span></tt> directory contains one subdirectory per <em>application
+script</em>.  Actually, each subdirectory can contain one or more Python
+scripts, as long as they form a coherent bundle; for instance,
+<a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a> is a suite of applications in computational biology: there
+are different GC3Apps script corresponding to different uses of the
+<a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a> suite, all of them grouped into the <tt class="docutils literal"><span class="pre">rosetta</span></tt>
+subdirectory.</p>
+<p>Subdirectories of the <tt class="docutils literal"><span class="pre">gc3apps</span></tt> directory follow this naming
+convention:</p>
+<ul class="simple">
+<li>the directory name is the main application name, if the
+application that the scripts wrap is a known, publicly-released
+computational application (e.g., <a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a>, <a class="reference external" href="http://www.msg.ameslab.gov/gamess/">GAMESS</a>)</li>
+<li>the directory name is the requestor&#8217;s name, if the application
+that the scripts wrap is some research code that is being
+internally developed. For instance, the <tt class="docutils literal"><span class="pre">bf.uzh.ch</span></tt> directory
+contains scripts that wrap code for economic simulations that is
+being developed at the <a class="reference external" href="http://www.bf.uzh.ch/">Banking and Finance Institute of the University
+of Zurich</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="how-can-i-get-access-to-the-svn-repository">
+<h3>How can I get access to the SVN repository?<a class="headerlink" href="#how-can-i-get-access-to-the-svn-repository" title="Permalink to this headline">¶</a></h3>
+<p>Please send an email to &lt;<a class="reference external" href="mailto:gc3pie-dev&#37;&#52;&#48;googlegroups&#46;com">gc3pie-dev<span>&#64;</span>googlegroups<span>&#46;</span>com</a>&gt;.  Note that, in
+order to access the <a class="reference external" href="http://code.google.com/p/gc3pie/">GC3Pie source repository</a> you will need a
+<a class="reference external" href="http://www.google.com/accounts">Google Account</a>, so sending the request email from a <a class="reference external" href="http://gmail.com/">Gmail</a> address
+might be a good idea.</p>
+</div>
+</div>
+<div class="section" id="package-generation">
+<h2>Package generation<a class="headerlink" href="#package-generation" title="Permalink to this headline">¶</a></h2>
+<p>Due to issue <a class="reference external" href="http://code.google.com/p/gc3pie/issues/detail?id=329">329</a>, we don&#8217;t use the automatic discovery <em>feature</em> of
+<tt class="docutils literal"><span class="pre">setuptools</span></tt>, so the files included in the distributed packages are
+those in the <tt class="docutils literal"><span class="pre">MANIFEST.in</span></tt> file, please check <a class="reference external" href="http://docs.python.org/distutils/sourcedist.html#the-manifest-in-template">The MANIFEST.in
+template</a> section of the python documentation for a syntax
+reference. We usually include only code, documentation, and related
+files. We also include the regression tests, but we <strong>do not include</strong>
+the application tests in <tt class="docutils literal"><span class="pre">gc3apps/*/test</span></tt> directories.</p>
+</div>
+<div class="section" id="testing-the-code">
+<h2>Testing the code<a class="headerlink" href="#testing-the-code" title="Permalink to this headline">¶</a></h2>
+<p>In developing GC3Pie we try to use a <a class="reference external" href="http://en.wikipedia.org/wiki/Test-driven_development">Test Driven Development</a>
+approach, in the light of the quote: <em>It&#8217;s tested or it&#8217;s broken</em>. We
+use <a class="reference external" href="http://tox.testrun.org/latest/">tox</a> and <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> as test runners, which make creating tests very
+easy.</p>
+<div class="section" id="running-the-tests">
+<h3>Running the tests<a class="headerlink" href="#running-the-tests" title="Permalink to this headline">¶</a></h3>
+<p>You can both run tests on your current environment using <cite>nosetests</cite> or use <cite>tox_</cite> to
+create and run tests on separate environments. We suggest you to use
+<cite>nosetests</cite> while you are still fixing the problem, in order to be
+able to run only the failing test, but we strongly suggest you to run
+<cite>tox</cite> <em>before</em> committing your code.</p>
+<div class="section" id="running-tests-with-nosetests">
+<h4>Running tests with <cite>nosetests</cite><a class="headerlink" href="#running-tests-with-nosetests" title="Permalink to this headline">¶</a></h4>
+<p>In order to have the <cite>nosetests</cite> program, you need to install <cite>nose_</cite>
+in your current environment <strong>and</strong> gc3pie must be installed in
+develop mode:</p>
+<div class="highlight-python"><pre>pip install nose
+python setup.py develop</pre>
+</div>
+<p>Then, from the top level directory, run the tests with:</p>
+<div class="highlight-python"><pre>nose -c nose.cfg</pre>
+</div>
+<p>Nose will then crawl the directory tree looking for available
+tests. You can also specify a subset of the available sets, by:</p>
+<ul>
+<li><p class="first">specifying the directory from which nose should start looking for tests:</p>
+<div class="highlight-python"><pre># Run only backend-related tests
+nose -c nose.cfg gc3libs/backends</pre>
+</div>
+</li>
+<li><p class="first">specifying the file containing the tests you want to run:</p>
+<div class="highlight-python"><pre># Run only tests contained in a specific file
+nose -c nose.cfg gc3libs/tests/test_session.py</pre>
+</div>
+</li>
+<li><p class="first">specifying the id of the test (you need to run nose at least one to
+know which id is assigned to each test):</p>
+<div class="highlight-python"><pre># Run only test number 123
+nose -c nose.cfg 123</pre>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="running-multiple-tests">
+<h4>Running multiple tests<a class="headerlink" href="#running-multiple-tests" title="Permalink to this headline">¶</a></h4>
+<p>In order to test GC3Pie against multiple version of python we use
+<a class="reference external" href="http://tox.testrun.org/latest/">tox</a>, which creates virtual environments for all configured python
+version, runs <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> inside each one of them, and prints a summary of
+the test results.</p>
+<p>You don&#8217;t need to have <cite>tox</cite> installed in the virtual environment you
+use to develop gc3pie, you can create a new virtual environment and
+install <cite>tox</cite> on it with:</p>
+<div class="highlight-python"><pre>pip install tox</pre>
+</div>
+<p>Running <a class="reference external" href="http://tox.testrun.org/latest/">tox</a> is straightforward; just type <tt class="docutils literal"><span class="pre">tox</span></tt> on the command-line
+in GC3Pie&#8217;s top level source directory.</p>
+<p>The default <tt class="docutils literal"><span class="pre">tox.ini</span></tt> file shipped with GC3Pie attempts to test all
+Python versions from 2.4 to 2.7 (inclusive).  If you want to run tests
+only for a specific version of python, for instance Python 2.6, use
+the <tt class="docutils literal"><span class="pre">-e</span></tt> option:</p>
+<div class="highlight-python"><pre>tox -e py26
+[...]
+Ran 118 tests in 14.168s
+
+OK (SKIP=9)
+__________________________________________________________ [tox summary] ___________________________________________________________
+[TOX] py26: commands succeeded
+[TOX] congratulations :)</pre>
+</div>
+<p>(See section <a class="reference internal" href="#skipping-tests">skipping tests</a> for a discussion about how and when to
+define skipped tests.)</p>
+<p>Option <tt class="docutils literal"><span class="pre">-r</span></tt> instructs <strong class="command">tox</strong> to re-build the testing virtual
+environment. This is usually needed when you update the dependencies
+of GC3Pie or when you add or remove command line programs or
+configuration files. However, if you feel that the environments can be
+<em>unclean</em>, you can clean up everything by:</p>
+<ol class="arabic">
+<li><p class="first">deleting all the <tt class="docutils literal"><span class="pre">*.pyc</span></tt> file in your source tree:</p>
+<div class="highlight-python"><pre>find . -name '*.pyc' -delete</pre>
+</div>
+</li>
+<li><p class="first">deleting and recreating tox virtual environments:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">tox</span> <span class="o">-</span><span class="n">r</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="running-tests-on-python-2-5">
+<h4>Running tests on Python 2.5<a class="headerlink" href="#running-tests-on-python-2-5" title="Permalink to this headline">¶</a></h4>
+<p>Python 2.5 lacks SSL support, which is now activated by default in
+<tt class="docutils literal"><span class="pre">pip</span></tt> and <tt class="docutils literal"><span class="pre">distutils</span></tt>.  As a result, <tt class="docutils literal"><span class="pre">tox</span></tt> will not be able to
+download dependecies and fail.</p>
+<p>To work around this issue, use the following invocation of the test
+runner:</p>
+<blockquote>
+<div>env PIP_INSECURE=1 tox -e py25</div></blockquote>
+<p>The workaround comes -of course- at the expense of a security risk:
+you might be downloading and executing Python code from a rogue PyPI
+server...</p>
+</div>
+</div>
+<div class="section" id="organizing-tests">
+<h3>Organizing tests<a class="headerlink" href="#organizing-tests" title="Permalink to this headline">¶</a></h3>
+<p>Each single python file should have a test file inside a <tt class="docutils literal"><span class="pre">tests</span></tt>
+subpackage with filename created by prefixing <tt class="docutils literal"><span class="pre">test_</span></tt> to the
+filename to test.  For example, if you created a file <tt class="docutils literal"><span class="pre">foo.py</span></tt>,
+there should be a file <tt class="docutils literal"><span class="pre">tests/test_foo.py</span></tt> which will contains tests
+for <tt class="docutils literal"><span class="pre">foo.py</span></tt>.</p>
+<p>Even though following the naming convention above is not always
+possible, each test regarding a specific component should be in a file
+inside a <tt class="docutils literal"><span class="pre">tests</span></tt> directory inside that component.  For instance,
+tests for the subpackage <cite>gc3libs.persistence</cite> are located inside the
+directory <tt class="docutils literal"><span class="pre">gc3libs/persistence/tests</span></tt> but are not named after the
+specific file.</p>
+</div>
+<div class="section" id="writing-tests">
+<h3>Writing tests<a class="headerlink" href="#writing-tests" title="Permalink to this headline">¶</a></h3>
+<p>Please remember that it may be hard to understand, whenever a test
+fails, if it&#8217;s a bug in the code or in the tests!  Therefore please
+remember:</p>
+<ul class="simple">
+<li>Try to keep tests as simple as possible, and <em>always</em> simpler than
+the tested code. (<em>Debugging is twice as hard as writing the code in
+the first place.</em>,  Brian W. Kernighan and P. J. Plauger)</li>
+<li>Write multiple indipendent tests to test different possible behavior
+and/or different methods of a class.</li>
+<li>Tests should cover methods and functions, but also specific use cases.</li>
+<li>If you are fixing a bug, it&#8217;s good practice to write a test to check
+if the bug is still there, in order to avoid to re-include the bug
+in the future.</li>
+<li>Tests should clean up every temporary file they create.</li>
+</ul>
+<p>Writing tests is very easy: just create a file whose name begins with
+<tt class="docutils literal"><span class="pre">test_</span></tt>, then put in it some functions which name begins with
+<tt class="docutils literal"><span class="pre">test_</span></tt>; the <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> framework will automatically call each one of
+them. Moreover, <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> will run also any <a class="reference external" href="http://wiki.python.org/moin/DocTest">doctest</a> which will be found in
+the code.</p>
+<p>Full documentation of the <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> framework is available at the <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a>
+website. However, there are some of the interesting features you may
+want to use to improve your tests, detailed in the following sections.</p>
+<div class="section" id="testing-for-errors">
+<h4>Testing for errors<a class="headerlink" href="#testing-for-errors" title="Permalink to this headline">¶</a></h4>
+<p>If your test must verify that the code raises an exception, instead
+of wrapping the test inside a <tt class="docutils literal"><span class="pre">try:</span> <span class="pre">...</span> <span class="pre">except:</span></tt> block you can use
+the <cite>&#64;raises</cite> decorator from the <cite>nose.tools</cite> module:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">nose.tools</span> <span class="kn">import</span> <span class="n">raises</span>
+
+<span class="nd">@raises</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_invalid_invocation</span><span class="p">():</span>
+    <span class="n">Application</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This is exactly the same as writing:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">try</span><span class="p">:</span>
+    <span class="n">Application</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="bp">False</span><span class="p">,</span> <span class="s">&quot;we should have got an exception&quot;</span>
+<span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="skipping-tests">
+<h4>Skipping tests<a class="headerlink" href="#skipping-tests" title="Permalink to this headline">¶</a></h4>
+<p>If you want to skip a test, just raise a <cite>SkipTest</cite> exception
+(imported from the <cite>nose.plugins.skip</cite> module). This is useful when
+you know that the test will fail, either because the code is not ready
+yet, or because some environmental conditions are not satisfied (e.g.,
+an optional module is missing, or the code needs to access a service
+that is not available).  For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">nose.plugins.skip</span> <span class="kn">import</span> <span class="n">SkipTest</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">MySQLdb</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="n">SkipTest</span><span class="p">(</span><span class="s">&quot;Error importing MySQL backend. Skipping MySQL low level tests&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="generating-tests">
+<h4>Generating tests<a class="headerlink" href="#generating-tests" title="Permalink to this headline">¶</a></h4>
+<p>It is possible to use <a class="reference external" href="http://wiki.python.org/moin/Generators">Python generators</a> to create multiple
+tests at run time:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">test_evens</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">check_even</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="o">*</span><span class="mi">3</span>
+
+<span class="k">def</span> <span class="nf">check_even</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">nn</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">n</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">nn</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>This will result in five tests: <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> will iterate the generator,
+creating a function test case wrapper for each tuple it
+yields. Specifically, in the example above, <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> will execute the
+function calls <tt class="docutils literal"><span class="pre">check_even(0,0)</span></tt>, <tt class="docutils literal"><span class="pre">check_even(1,3)</span></tt>, ...,
+<tt class="docutils literal"><span class="pre">check_even(4,12)</span></tt> as if each of them were written in the source as
+a separate test; if any of them fails (i.e., raises an
+<cite>AssertionError</cite>), then the test is considered failed.</p>
+</div>
+<div class="section" id="grouping-tests-into-classes">
+<h4>Grouping tests into classes<a class="headerlink" href="#grouping-tests-into-classes" title="Permalink to this headline">¶</a></h4>
+<p>Tests that share the same set-up or clean-up code should be grouped
+into <em>test classes</em>:</p>
+<ul class="simple">
+<li>The exact same set-up and clean-up code <em>(fixtures)</em> will be run
+before and after each test, but is written down only once.</li>
+<li>Python class inheritance can be used to run the same tests on
+different configurations (e.g., by just overriding the set-up and
+clean-up code).</li>
+</ul>
+<p>A test class is a regular Python class, whose name begins with
+<tt class="docutils literal"><span class="pre">Test</span></tt> (first letter must be uppercase); each method whose name
+begins with <tt class="docutils literal"><span class="pre">test_</span></tt> defines a test case.</p>
+<p>If the class defines a <cite>setUp</cite> method, it will be called <em>before each
+test method</em>. If the class defines a <cite>tearDown</cite> method, it will be
+called <em>after each test method</em>.</p>
+<p>If class methods <tt class="docutils literal"><span class="pre">setup_class</span></tt> and <tt class="docutils literal"><span class="pre">teardown_class</span></tt> are defined,
+<a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> will invoke them <em>once</em> (before and after performing the tests
+of that class, respectively).</p>
+<p>A canonical example of a test class with fixtures looks like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">TestClass</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+   <span class="nd">@classmethod</span>
+   <span class="k">def</span> <span class="nf">setup_class</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+      <span class="o">...</span>
+
+   <span class="nd">@classmethod</span>
+   <span class="k">def</span> <span class="nf">teardown_class</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+      <span class="o">...</span>
+
+   <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="o">...</span>
+
+   <span class="k">def</span> <span class="nf">tearDown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="o">...</span>
+
+   <span class="k">def</span> <span class="nf">test_case_1</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="o">...</span>
+
+   <span class="k">def</span> <span class="nf">test_case_2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="o">...</span>
+
+   <span class="k">def</span> <span class="nf">test_case_3</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="o">...</span>
+</pre></div>
+</div>
+<p>The <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> framework will execute a code like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">TestClass</span><span class="o">.</span><span class="n">setup_class</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">test_method</span> <span class="ow">in</span> <span class="n">get_test_classes</span><span class="p">():</span>
+   <span class="n">obj</span> <span class="o">=</span> <span class="n">TestClass</span><span class="p">()</span>
+   <span class="n">obj</span><span class="o">.</span><span class="n">setUp</span><span class="p">()</span>
+   <span class="k">try</span><span class="p">:</span>
+      <span class="n">obj</span><span class="o">.</span><span class="n">test_method</span><span class="p">()</span>
+   <span class="k">finally</span><span class="p">:</span>
+      <span class="n">obj</span><span class="o">.</span><span class="n">tearDown</span><span class="p">()</span>
+<span class="n">TestClass</span><span class="o">.</span><span class="n">teardown_class</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>That is, for each test case, a new instance of the <cite>TestClass</cite> is
+created, set up, and torn down &#8211; thus approximating the Platonic
+ideal of running each test in a completely new, pristine environment.</p>
+</div>
+</div>
+<div class="section" id="opening-the-python-debugger-while-running-a-test">
+<h3>Opening the python debugger while running a test<a class="headerlink" href="#opening-the-python-debugger-while-running-a-test" title="Permalink to this headline">¶</a></h3>
+<p>When running using <cite>nosetests</cite>:command you cannot just execute
+<cite>pdb.set_trace()</cite> to open a debugger console. However, you can run the
+<cite>set_trace()</cite> function of the <cite>nose.tools</cite> module:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">nose.tools</span><span class="p">;</span> <span class="n">nose</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="coding-style">
+<h2>Coding style<a class="headerlink" href="#coding-style" title="Permalink to this headline">¶</a></h2>
+<p><strong>Python code should be written according to PEP 8 recommendations.</strong>
+(And by this we mean not just the code style.)</p>
+<p>Please take the time to read <a class="reference external" href="http://www.python.org/dev/peps/pep-0008/">PEP 8</a> through, as it is widely-used
+across the Python programming community &#8211; it will benefit your
+contribution to any free/open-source Python project!</p>
+<p>Anyway, here&#8217;s a short summary for the impatient:</p>
+<ul class="simple">
+<li>use English nouns to name variables and classes; use verbs to
+name object methods.</li>
+<li>use 4 spaces to indent code; never use TABs.</li>
+<li>use lowercase letters for method and variable names; use underscores
+<tt class="docutils literal"><span class="pre">_</span></tt> to separate words in multi-word identifiers (e.g.,
+<tt class="docutils literal"><span class="pre">lower_case_with_underscores</span></tt>)</li>
+<li>use &#8220;CamelCase&#8221; for class and exception names.</li>
+<li>but, above all, do not blindly follow the rules and try to do the
+thing that <em>enhances code clarity and readability!</em></li>
+</ul>
+<p>Here&#8217;s other code conventions that apply to GC3Pie code; since they
+are not always widely followed or known, a short rationale is given
+for each of them.</p>
+<ul>
+<li><p class="first">Every class and function should have a docstring. Use
+<a class="reference external" href="http://docutils.sourceforge.net/rst.html">reStructuredText</a> markup for docstrings and documentation text
+files.</p>
+<p><em>Rationale:</em> A concise English description of the purpose of a
+function can be faster to read than the code.  Also, undocumented
+functions and classes do not appear in this documentation, which
+makes them invisible to new users.</p>
+</li>
+<li><p class="first">Use fully-qualified names for all imported symbols; i.e., write
+<tt class="docutils literal"><span class="pre">import</span> <span class="pre">foo</span></tt> and then use <tt class="docutils literal"><span class="pre">foo.bar()</span></tt> instead of <tt class="docutils literal"><span class="pre">from</span> <span class="pre">foo</span>
+<span class="pre">import</span> <span class="pre">bar</span></tt>.  If there are few imports from a module, and the
+imported names do <em>clearly</em> belong to another module, this rule can
+be relaxed if this enhances readability, but <em>never</em> do use
+unqualified names for exceptions.</p>
+<p><em>Rationale:</em> There are so many functions and classes in GC3Pie, so
+it may be hard to know to which module the function <cite>count</cite> belongs.
+(Think especially of people who have to bugfix a module they didn&#8217;t
+write in the first place.)</p>
+</li>
+<li><p class="first">When calling methods or functions that accept both positional and
+optional arguments like:</p>
+<div class="highlight-python"><pre>def foo(a, b, key1=defvalue1, key2=defvalue2):</pre>
+</div>
+<p>always specify the argument name for optional arguments, which means
+<strong>do not call</strong>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">value1</span><span class="p">,</span> <span class="n">value2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>but <strong>call instead</strong>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">key1</span><span class="o">=</span><span class="n">value1</span><span class="p">,</span> <span class="n">key2</span><span class="o">=</span><span class="n">value2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><em>Rationale:</em> calling the function with explicit argument names will
+reduce the risk of hit some compatibility issues. It is perfectly
+fine, from the point of view of the developer, to change the
+signature of a function by swapping two different <em>optional</em>
+arguments, so this change can happen any time, although changing
+<em>positional</em> arguments will break backward compatibility, and thus
+it&#8217;s usually well advertised and tested.</p>
+</li>
+<li><p class="first">Use double quotes <tt class="docutils literal"><span class="pre">&quot;</span></tt> to enclose strings representing messages meant
+for human consumption (e.g., log messages, or strings that will be
+printed on the users&#8217; terminal screen).</p>
+<p><em>Rationale:</em> The apostrophe character <tt class="docutils literal"><span class="pre">'</span></tt> is a normal occurrence in
+English text; use of the double quotes minimizes the chances that
+you introduce a syntax error by terminating a string in its middle.</p>
+</li>
+<li><p class="first">Follow normal typographic conventions when writing user messages and
+output; prefer clarity and avoid ambiguity, even if this makes the
+messages longer.</p>
+<p><em>Rationale:</em> Messages meant to be read by users <em>will</em> be read by
+users; and if they are not read by users, they will be fired back
+verbatim on the mailing list on the next request for support. So
+they&#8217;d better be clear, or you&#8217;ll find yourself wondering what that
+message was intended to mean 6 months ago.</p>
+<p>Common typographical conventions enhance readability, and help users
+identify lines of readable text.</p>
+</li>
+<li><p class="first">Use single quotes <tt class="docutils literal"><span class="pre">'</span></tt> for strings that are meant for internal
+program usage (e.g., attribute names).</p>
+<p><em>Rationale:</em> To distinguish them visually from messages to the user.</p>
+</li>
+<li><p class="first">Use triple quotes <tt class="docutils literal"><span class="pre">&quot;&quot;&quot;</span></tt> for docstrings, even if they fit on a single
+line.</p>
+<p><em>Rationale:</em> Visual distinction.</p>
+</li>
+<li><p class="first">Each file should have this structure:</p>
+<ul class="simple">
+<li>the first line is the <a class="reference external" href="http://en.wikipedia.org/wiki/Shebang_(Unix)">hash-bang line</a>,</li>
+<li>the module docstring (explain briefly the module purpose and
+features),</li>
+<li>the copyright and licence notice,</li>
+<li>module imports (in the order suggested by <span class="target" id="index-0"></span><a class="pep reference external" href="http://www.python.org/dev/peps/pep-0008"><strong>PEP 8</strong></a>)</li>
+<li>and then the code...</li>
+</ul>
+<p><em>Rationale:</em> The docstring should be on top so it&#8217;s the first thing
+one reads when inspecting a file.  The copyright notice is just a
+waste of space, but we&#8217;re required by law to have it.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>The documentation can be found in gc3pie/docs. It is generated using
+Sphinx (<a class="reference external" href="http://sphinx-doc.org/contents.html">http://sphinx-doc.org/contents.html</a>).</p>
+<p>GC3Pie documentation is divided in three sections:</p>
+<ul class="simple">
+<li><a class="reference internal" href="../users/index.html#user-documentation"><em>User Documentation</em></a>: info on how to install, configure and run
+GC3Pie applications.</li>
+<li><a class="reference internal" href="../programmers/index.html#programmer-documentation"><em>Programmer Documentation</em></a>: info for programmers who want to
+use the GC3Pie libraries to write their own scripts and
+applications.</li>
+<li><a class="reference internal" href="index.html#developer-documentation"><em>Developer Documentation</em></a>: detailed information on how to
+contribute to GC3Pie and get your code included in the main library.</li>
+</ul>
+<p>The <em class="xref std std-ref">GC3Libs programming API</em> is the most relevant part of the
+docs for developers contributing code and is generated automatically
+from the docstrings inside the modules. Automatic documentation in
+Sphinx is described under
+<a class="reference external" href="http://sphinx-doc.org/tutorial.html#autodoc">http://sphinx-doc.org/tutorial.html#autodoc</a>. While updating the docs
+of existing modules is simply done by running <tt class="docutils literal"><span class="pre">make</span> <span class="pre">html</span></tt>, adding
+documentation for a new module requires one of the following two
+procedures:</p>
+<ul>
+<li><p class="first">Add a reference to the new module in
+<tt class="file docutils literal"><span class="pre">docs/programmers/api/index.txt</span></tt>. Additionally, create a file
+that enables automatic documentation for the module. For the module
+<tt class="file docutils literal"><span class="pre">core.py</span></tt>, for example, automatic documentation is enabled by
+a file <tt class="file docutils literal"><span class="pre">docs/programmers/api/gc3libs/core.txt</span></tt> with the
+following content:</p>
+<div class="highlight-python"><pre>`gc3libs.core`
+==============
+
+.. automodule:: gc3libs.core
+     :members:</pre>
+</div>
+</li>
+<li><p class="first">Execute the script <tt class="file docutils literal"><span class="pre">docs/programmers/api/makehier.sh</span></tt>, which
+automates the above.  Note that the <tt class="file docutils literal"><span class="pre">makehier.sh</span></tt> script will
+re-create all <tt class="docutils literal"><span class="pre">.txt</span></tt> files for all GC3Pie modules, so check if
+there were some unexpected changes (e.g., with <tt class="docutils literal"><span class="pre">svn</span> <span class="pre">status</span></tt>)
+before you commit!</p>
+</li>
+</ul>
+<p>Docstrings are written in <a class="reference external" href="http://docutils.sourceforge.net/rst.html">reStructuredText</a> format.  To be able to
+cross-reference between differen objects in the documentation, you
+should be familiar with <a class="reference external" href="http://sphinx-doc.org/domains.html#the-python-domain">Sphinx domains</a> in general and the <a class="reference external" href="http://sphinx-doc.org/domains.html#cross-referencing-python-objects">Python
+domain</a> in particular.</p>
+</div>
+<div class="section" id="questions">
+<h2>Questions?<a class="headerlink" href="#questions" title="Permalink to this headline">¶</a></h2>
+<p>Please write to the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing list</a>; we try to do our best to
+answer promptly.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Contributing to GC3Pie</a><ul>
+<li><a class="reference internal" href="#code-repository-organization">Code repository organization</a><ul>
+<li><a class="reference internal" href="#repository-structure">Repository structure</a></li>
+<li><a class="reference internal" href="#how-can-i-get-access-to-the-svn-repository">How can I get access to the SVN repository?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#package-generation">Package generation</a></li>
+<li><a class="reference internal" href="#testing-the-code">Testing the code</a><ul>
+<li><a class="reference internal" href="#running-the-tests">Running the tests</a><ul>
+<li><a class="reference internal" href="#running-tests-with-nosetests">Running tests with <cite>nosetests</cite></a></li>
+<li><a class="reference internal" href="#running-multiple-tests">Running multiple tests</a></li>
+<li><a class="reference internal" href="#running-tests-on-python-2-5">Running tests on Python 2.5</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#organizing-tests">Organizing tests</a></li>
+<li><a class="reference internal" href="#writing-tests">Writing tests</a><ul>
+<li><a class="reference internal" href="#testing-for-errors">Testing for errors</a></li>
+<li><a class="reference internal" href="#skipping-tests">Skipping tests</a></li>
+<li><a class="reference internal" href="#generating-tests">Generating tests</a></li>
+<li><a class="reference internal" href="#grouping-tests-into-classes">Grouping tests into classes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#opening-the-python-debugger-while-running-a-test">Opening the python debugger while running a test</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#coding-style">Coding style</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
+<li><a class="reference internal" href="#questions">Questions?</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Developer Documentation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../credits.html"
+                        title="next chapter">List of contributors to GC3Pie</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../credits.html" title="List of contributors to GC3Pie"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Developer Documentation"
+             >previous</a> |</li>
+        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="index.html" >Developer Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

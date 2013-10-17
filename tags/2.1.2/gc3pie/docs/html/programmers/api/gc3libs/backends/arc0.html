@@ -1,0 +1,349 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.backends.arc0 &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../../index.html" />
+    <link rel="next" title="gc3libs.backends.arc1" href="arc1.html" />
+    <link rel="prev" title="gc3libs.backends" href="../backends.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="arc1.html" title="gc3libs.backends.arc1"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../backends.html" title="gc3libs.backends"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.backends.arc0">
+<span id="gc3libs-backends-arc0"></span><h1><cite>gc3libs.backends.arc0</cite><a class="headerlink" href="#module-gc3libs.backends.arc0" title="Permalink to this headline">¶</a></h1>
+<p>Job control on ARC0 resources.</p>
+<dl class="class">
+<dt id="gc3libs.backends.arc0.ArcLrms">
+<em class="property">class </em><tt class="descclassname">gc3libs.backends.arc0.</tt><tt class="descname">ArcLrms</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth</em>, <em>arc_ldap=None</em>, <em>frontend=None</em>, <em>lost_job_timeout=120</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc0.ArcLrms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Manage jobs through the ARC middleware.</p>
+<p>In addition to attributes</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="45%" />
+<col width="33%" />
+<col width="21%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Attribute name</th>
+<th class="head">Type</th>
+<th class="head">Required?</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>arc_ldap</td>
+<td>string</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>frontend</td>
+<td>string</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<dl class="method">
+<dt id="gc3libs.backends.arc0.ArcLrms.cancel_job">
+<tt class="descname">cancel_job</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc0.ArcLrms.cancel_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cancel a running job.  If <cite>app</cite> is associated to a queued or
+running remote job, tell the execution middleware to cancel
+it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.arc0.ArcLrms.close">
+<tt class="descname">close</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.backends.arc0.ArcLrms.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if the list of files is expressed in one of the
+file transfer protocols the LRMS supports.</p>
+<p>Return False otherwise.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.arc0.ArcLrms.free">
+<tt class="descname">free</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc0.ArcLrms.free" title="Permalink to this definition">¶</a></dt>
+<dd><p>Free up any remote resources used for the execution of <cite>app</cite>.
+In particular, this should delete any remote directories and
+files.</p>
+<p>Call this method when <cite>app.execution.state</cite> is anything other
+than <cite>TERMINATED</cite> results in undefined behavior and will
+likely be the cause of errors later on.  Be cautious.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.arc0.ArcLrms.get_resource_status">
+<tt class="descname">get_resource_status</tt><big>(</big><em>obj</em>, <em>*args</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc0.ArcLrms.get_resource_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get dynamic information from the ARC infosystem and set
+attributes on the current object accordingly.</p>
+<p>The following attributes are set:</p>
+<ul class="simple">
+<li>total_queued</li>
+<li>free_slots</li>
+<li>user_running</li>
+<li>user_queued</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.arc0.ArcLrms.get_results">
+<tt class="descname">get_results</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc0.ArcLrms.get_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve job output files into local directory <cite>download_dir</cite>
+(which must already exists).  Will not overwrite existing
+files, unless the optional argument <cite>overwrite</cite> is <cite>True</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.arc0.ArcLrms.peek">
+<tt class="descname">peek</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc0.ArcLrms.peek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download <cite>size</cite> bytes (at offset <cite>offset</cite> from the start) from
+remote file <cite>remote_filename</cite> and write them into
+<cite>local_file</cite>.  If <cite>size</cite> is <cite>None</cite> (default), then snarf
+contents of remote file from <cite>offset</cite> unto the end.</p>
+<p>Argument <cite>local_file</cite> is either a local path name (string), or
+a file-like object supporting a <cite>.write()</cite> method.  If
+<cite>local_file</cite> is a path name, it is created if not existent,
+otherwise overwritten.</p>
+<p>Argument <cite>remote_filename</cite> is the name of a file in the remote job
+&#8220;sandbox&#8221;.</p>
+<p>Any exception raised by operations will be passed through.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.arc0.ArcLrms.submit_job">
+<tt class="descname">submit_job</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc0.ArcLrms.submit_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit an <cite>Application</cite> instance to the configured
+computational resource; return a <cite>gc3libs.Job</cite> instance for
+controlling the submitted job.</p>
+<p>This method only returns if the job is successfully submitted;
+upon any failure, an exception is raised.</p>
+<p><em>Note:</em></p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><cite>job.state</cite> is <em>not</em> altered; it is the caller&#8217;s
+responsibility to update it.</li>
+<li>the <cite>job</cite> object may be updated with any information that
+is necessary for this LRMS to perform further operations on it.</li>
+</ol>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.arc0.ArcLrms.update_job_state">
+<tt class="descname">update_job_state</tt><big>(</big><em>obj</em>, <em>*args</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc0.ArcLrms.update_job_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Query the state of the ARC0 job associated with <cite>app</cite> and
+update <cite>app.execution.state</cite> accordingly.  Return the
+corresponding <cite>Run.State</cite>; see <cite>Run.State</cite> for more details.</p>
+<p>The mapping of ARC0 job statuses to <cite>Run.State</cite> is as follows:</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="56%" />
+<col width="44%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">ARC job status</th>
+<th class="head"><cite>Run.State</cite></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>ACCEPTED</td>
+<td>SUBMITTED</td>
+</tr>
+<tr class="row-odd"><td>ACCEPTING</td>
+<td>SUBMITTED</td>
+</tr>
+<tr class="row-even"><td>SUBMITTING</td>
+<td>SUBMITTED</td>
+</tr>
+<tr class="row-odd"><td>PREPARING</td>
+<td>SUBMITTED</td>
+</tr>
+<tr class="row-even"><td>PREPARED</td>
+<td>SUBMITTED</td>
+</tr>
+<tr class="row-odd"><td>INLRMS:Q</td>
+<td>SUBMITTED</td>
+</tr>
+<tr class="row-even"><td>INLRMS:R</td>
+<td>RUNNING</td>
+</tr>
+<tr class="row-odd"><td>INLRMS:O</td>
+<td>STOPPED</td>
+</tr>
+<tr class="row-even"><td>INLRMS:E</td>
+<td>STOPPED</td>
+</tr>
+<tr class="row-odd"><td>INLRMS:S</td>
+<td>STOPPED</td>
+</tr>
+<tr class="row-even"><td>INLRMS:H</td>
+<td>STOPPED</td>
+</tr>
+<tr class="row-odd"><td>FINISHING</td>
+<td>RUNNING</td>
+</tr>
+<tr class="row-even"><td>EXECUTED</td>
+<td>RUNNING</td>
+</tr>
+<tr class="row-odd"><td>FINISHED</td>
+<td>TERMINATING</td>
+</tr>
+<tr class="row-even"><td>CANCELING</td>
+<td>TERMINATING</td>
+</tr>
+<tr class="row-odd"><td>FINISHED</td>
+<td>TERMINATING</td>
+</tr>
+<tr class="row-even"><td>FAILED</td>
+<td>TERMINATING</td>
+</tr>
+<tr class="row-odd"><td>KILLED</td>
+<td>TERMINATED</td>
+</tr>
+<tr class="row-even"><td>DELETED</td>
+<td>TERMINATED</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>Any other ARC job status is mapped to <cite>Run.State.UNKNOWN</cite>.  In
+particular, querying a job ID that is not found in the ARC
+information system will result in <cite>UNKNOWN</cite> state, as will
+querying a job that has just been submitted and has not yet
+found its way to the infosys.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.backends.arc0.ArcLrms.validate_data">
+<tt class="descname">validate_data</tt><big>(</big><em>data_file_list</em><big>)</big><a class="headerlink" href="#gc3libs.backends.arc0.ArcLrms.validate_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if the list of files is expressed in one of the
+file transfer protocols the LRMS supports.</p>
+<p>Return False otherwise.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../backends.html"
+                        title="previous chapter"><cite>gc3libs.backends</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="arc1.html"
+                        title="next chapter"><cite>gc3libs.backends.arc1</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="arc1.html" title="gc3libs.backends.arc1"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../backends.html" title="gc3libs.backends"
+             >previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>
