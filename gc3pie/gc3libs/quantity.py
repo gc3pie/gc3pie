@@ -8,7 +8,7 @@ For details and the discussion leading up to this,
 see: `<http://code.google.com/p/gc3pie/issues/detail?id=47>`
 
 """
-# Copyright (C) 2011, 2012, 2013, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -442,21 +442,6 @@ class _Quantity(object):
         # the quotient of two (homogeneous) quantities is a ratio (pure number)
         return (self.amount(self.base, conv=int) / other.amount(self.base, conv=int))
 
-    def __radd__(self, other):
-        """
-        Allow summing with a null value, even if non-quantity.
-        Summing with any other value raises a `TypeError`.
-
-        This is provided only to support built-in reducers like `sum`,
-        which start with a zero value and then sum all the arguments
-        to it.
-        """
-        if other == 0 or other == 0.0:
-            return self
-        else:
-            raise TypeError(
-                "Unsupported operands for +: %s (type '%s') and %s (type '%s')"
-                % (other, type(other), self, type(self)))
 
     ## rich comparison operators, to ensure only homogeneous quantities are compared
     @_make_comparison_function(operator.gt, int)
@@ -669,20 +654,18 @@ class Memory(object):
 
     """
     __metaclass__ = Quantity(
-        # base unit is "bytes"; use the symbol 'B', although this is not the SI usage.
+        # base unit is "bytes"; se the symbol 'B', although this is not the SI usage.
         'B',
         # 10-base units
         kB=1000,
         MB=1000*1000,
         GB=1000*1000*1000,
         TB=1000*1000*1000*1000,
-        PB=1000*1000*1000*1000*1000,
         # binary base units
         KiB=1024,                # KiBiByte
         MiB=1024*1024,           # MiBiByte
         GiB=1024*1024*1024,      # GiBiByte
         TiB=1024*1024*1024*1024, # TiBiByte
-        PiB=1024*1024*1024*1024*1024, # PiBiByte
         )
 
 

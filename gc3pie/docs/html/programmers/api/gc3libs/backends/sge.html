@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -64,77 +62,8 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="module-gc3libs.backends.sge">
-<span id="gc3libs-backends-sge"></span><h1><cite>gc3libs.backends.sge</cite><a class="headerlink" href="#module-gc3libs.backends.sge" title="Permalink to this headline">¶</a></h1>
-<p>Job control on SGE clusters (possibly connecting to the front-end via SSH).</p>
-<dl class="class">
-<dt id="gc3libs.backends.sge.SgeLrms">
-<em class="property">class </em><tt class="descclassname">gc3libs.backends.sge.</tt><tt class="descname">SgeLrms</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth</em>, <em>frontend</em>, <em>transport</em>, <em>accounting_delay=15</em>, <em>default_pe=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.SgeLrms" title="Permalink to this definition">¶</a></dt>
-<dd><p>Job control on SGE clusters (possibly by connecting via SSH to a
-submit node).</p>
-<dl class="method">
-<dt id="gc3libs.backends.sge.SgeLrms.get_resource_status">
-<tt class="descname">get_resource_status</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.SgeLrms.get_resource_status" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update the status of the resource associated with this <cite>LRMS</cite>
-instance in-place.  Return updated <cite>Resource</cite> object.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.backends.sge.compute_nr_of_slots">
-<tt class="descclassname">gc3libs.backends.sge.</tt><tt class="descname">compute_nr_of_slots</tt><big>(</big><em>qstat_output</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.compute_nr_of_slots" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the number of total, free, and used/reserved slots from
-the output of SGE&#8217;s <tt class="docutils literal"><span class="pre">qstat</span> <span class="pre">-F</span></tt>.</p>
-<p>Return a dictionary instance, mapping each host name into a
-dictionary instance, mapping the strings <tt class="docutils literal"><span class="pre">total</span></tt>, <tt class="docutils literal"><span class="pre">available</span></tt>,
-and <tt class="docutils literal"><span class="pre">unavailable</span></tt> to (respectively) the the total number of
-slots on the host, the number of free slots on the host, and the
-number of used+reserved slots on the host.</p>
-<p>Cluster-wide totals are associated with key <tt class="docutils literal"><span class="pre">global</span></tt>.</p>
-<p><strong>Note:</strong> The &#8216;available slots&#8217; computation carried out by this
-function is unreliable: there is indeed no notion of a &#8216;global&#8217; or
-even &#8216;per-host&#8217; number of &#8216;free&#8217; slots in SGE.  Slot numbers can
-be computed per-queue, but a host can belong in different queues
-at the same time; therefore the number of &#8216;free&#8217; slots available
-to a job actually depends on the queue it is submitted to.  Since
-SGE does not force users to submit explicitly to a queue, rather
-encourages use of a sort of &#8216;implicit&#8217; routing queue, there is no
-way to compute the number of free slots, as this entirely depends
-on how local policies will map a job to the available queues.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.backends.sge.count_jobs">
-<tt class="descclassname">gc3libs.backends.sge.</tt><tt class="descname">count_jobs</tt><big>(</big><em>qstat_output</em>, <em>whoami</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.count_jobs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parse SGE&#8217;s <tt class="docutils literal"><span class="pre">qstat</span></tt> output (as contained in string <cite>qstat_output</cite>)
-and return a quadruple <cite>(R, Q, r, q)</cite> where:</p>
-<blockquote>
-<div><ul class="simple">
-<li><cite>R</cite> is the total number of running jobs in the SGE cell (from
-any user);</li>
-<li><cite>Q</cite> is the total number of queued jobs in the SGE cell (from
-any user);</li>
-<li><cite>r</cite> is the number of running jobs submitted by user <cite>whoami</cite>;</li>
-<li><cite>q</cite> is the number of queued jobs submitted by user <cite>whoami</cite></li>
-</ul>
-</div></blockquote>
-</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.backends.sge.parse_qhost_f">
-<tt class="descclassname">gc3libs.backends.sge.</tt><tt class="descname">parse_qhost_f</tt><big>(</big><em>qhost_output</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.parse_qhost_f" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parse SGE&#8217;s <tt class="docutils literal"><span class="pre">qhost</span> <span class="pre">-F</span></tt> output (as contained in string <cite>qhost_output</cite>)
-and return a <cite>dict</cite> instance, mapping each host name to its attributes.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="gc3libs.backends.sge.parse_qstat_f">
-<tt class="descclassname">gc3libs.backends.sge.</tt><tt class="descname">parse_qstat_f</tt><big>(</big><em>qstat_output</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.parse_qstat_f" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parse SGE&#8217;s <tt class="docutils literal"><span class="pre">qstat</span> <span class="pre">-F</span></tt> output (as contained in string <cite>qstat_output</cite>)
-and return a <cite>dict</cite> instance, mapping each queue name to its attributes.</p>
-</dd></dl>
-
+  <div class="section" id="gc3libs-backends-sge">
+<h1><cite>gc3libs.backends.sge</cite><a class="headerlink" href="#gc3libs-backends-sge" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -189,7 +118,7 @@ and return a <cite>dict</cite> instance, mapping each queue name to its attribut
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

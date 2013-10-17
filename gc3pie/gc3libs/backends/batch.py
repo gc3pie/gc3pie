@@ -21,7 +21,7 @@ batch-like backends should inherit.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.2 version (SVN $Revision$)'
 
 
 from getpass import getuser
@@ -420,10 +420,9 @@ class BatchSystem(LRMS):
 
             if exit_code != 0:
                 raise gc3libs.exceptions.LRMSError(
-                    "Failed executing command 'cd %s && %s %s' on resource '%s';"
+                    "Failed executing command '%s' on resource '%s';"
                     " exit code: %d, stderr: '%s'."
-                    % (ssh_remote_folder, sub_cmd, script_filename,
-                       self.name, exit_code, stderr))
+                    % (cmd, self.name, exit_code, stderr))
 
             jobid = self._parse_submit_output(stdout)
             log.debug('Job submitted with jobid: %s', jobid)

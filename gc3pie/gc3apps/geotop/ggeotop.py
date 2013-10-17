@@ -36,7 +36,7 @@ Contents of a typical input folder::
     maps/
 """
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.2 version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
 
@@ -237,7 +237,6 @@ class GeotopApplication(Application):
             # log failure and stop here
             gc3libs.log.warning("Output folder '%s' not found. Cannot process any further" % tmp_output_dir)
             # use exit code 100 to indicate total failure
-            # XXX: When this happens ?
             self.execution.returncode = (0, 100)
         else:
             # move files one level up, except the ones listed in `exclude`
@@ -276,16 +275,16 @@ class GeotopApplication(Application):
 
             # search for termination files
             if (os.path.exists(os.path.join(self.simulation_dir, '_SUCCESSFUL_RUN'))
-                or os.path.exists(os.path.join(self.simulation_dir, 'out', '_SUCCESSFUL_RUN'))):
+                or os.path.exists(os.path.join(self.simulation_dir, 'out', '_SUCCESSFUL_RUN'))
                 # XXX: why are we looking for '.old' files??
-                # or os.path.exists(os.path.join(self.simulation_dir, '_SUCCESSFUL_RUN.old'))):
-                # or os.path.exists(os.path.join(self.simulation_dir,'out', '_SUCCESSFUL_RUN.old'))):
+                or os.path.exists(os.path.join(self.simulation_dir, '_SUCCESSFUL_RUN.old'))
+                or os.path.exists(os.path.join(self.simulation_dir,'out', '_SUCCESSFUL_RUN.old'))):
                 self.execution.returncode = (0, posix.EX_OK)
             elif (os.path.exists(os.path.join(self.simulation_dir, '_FAILED_RUN'))
-                or os.path.exists(os.path.join(self.simulation_dir, '_FAILED_RUN'))):
+                or os.path.exists(os.path.join(self.simulation_dir, '_FAILED_RUN'))
                 # XXX: why are we looking for '.old' files??
-                # or os.path.exists(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old'))
-                # or os.path.exists(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old'))):
+                or os.path.exists(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old'))
+                or os.path.exists(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old'))):
                 # use exit code 100 to indicate total failure
                 self.execution.returncode = (0, 100)
             else:
@@ -293,14 +292,6 @@ class GeotopApplication(Application):
                 # call _scan_and_tar to create new archive
                 # XXX: To consider a better way of handling this
                 # at the moment the entire input archive is recreated
-
-
-                # XXX: How to distinguish a failed geotop execution from one terminated
-                # by the LRMS ?
-
-                gc3libs.log.warning("Simulation did *not* produce any output marker"
-                                    "[_SUCCESSFUL_RUN,_FAILED_RUN].")
-                self.execution.returncode = (0,98)
                 gc3libs.log.info("Updating tar archive for resubmission.")
                 inputs = dict(self._scan_and_tar(self.simulation_dir))
                 # self._scan_and_tar(self.simulation_dir)
@@ -325,16 +316,10 @@ class GeotopTask(RetryableTask, gc3libs.utils.Struct):
         *Note:* There is currently no upper limit on the number of
         resubmissions!
         """
-        if self.task.execution.exitcode != 100 or self.task.execution.exitcode != 0:
-            # Candidate for retry
-            # Let's check how many times it has been restarted yet without producing
-            # any output
-            if self.retried > self.max_retries:
-                gc3libs.log.error("Maximum number of retries '%d' reached."
-                                  "Cloud not continue." % self.retried)
-            else:
-                return True
-        return False
+        if self.task.execution.exitcode == 99:
+            return True
+        else:
+            return False
 
 
 ## main script class
