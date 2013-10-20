@@ -21,7 +21,7 @@ front-end via SSH).
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.3 version (SVN $Revision$)'
 
 
 import datetime
@@ -52,7 +52,7 @@ import batch
 
 # regexps for extracting relevant strings
 
-_qsub_jobid_re = re.compile(r'(?P<jobid>\d+.*)', re.I)
+_qsub_jobid_re = re.compile(r'(?P<jobid>\d+)', re.I)
 
 _qstat_line_re = re.compile(
     r'^(?P<jobid>\d+)[^\d]+\s+'
@@ -237,8 +237,8 @@ class PbsLrms(batch.BatchSystem):
     def _submit_command(self, app):
         qsub_argv, app_argv = app.qsub_pbs(self)
         if self.queue is not None:
-            qsub_argv += ['-d', '.', '-q', ('%s' % self.queue)]
-        return (str.join(' ', qsub_argv), str.join(' ', app_argv))
+            qsub_argv += ['-q', ('%s' % self.queue)]
+        return (str.join(' ', qsub_argv), "cd $PBS_O_WORKDIR; " + str.join(' ', app_argv) + '\n')
 
     def _stat_command(self, job):
         return "%s %s | grep ^%s" % (
@@ -246,6 +246,9 @@ class PbsLrms(batch.BatchSystem):
 
     def _acct_command(self, job):
         return "%s %s" % (self._tracejob, job.lrms_jobid)
+
+    def _secondary_acct_command(self, job):
+        return "%s -x -f %s" % (self._qstat, job.lrms_jobid)
 
     def _parse_stat_output(self, stdout):
         # check that passed object obeys contract
@@ -271,7 +274,7 @@ class PbsLrms(batch.BatchSystem):
     def _parse_acct_output(self, stdout):
         jobstatus = {}
         for line in stdout.split('\n'):
-            # XXX: make a list of the three regexps and loop over it
+            # FIXME: make a list of the three regexps and loop over it
             match = _tracejob_queued_re.match(line)
             if match:
                 for key, value in match.groupdict().iteritems():
@@ -290,6 +293,29 @@ class PbsLrms(batch.BatchSystem):
                     attr, conv = _tracejob_keyval_mapping[key]
                     jobstatus[attr] = conv(value)
                 break
+        return jobstatus
+
+    def _parse_secondary_acct_output(self, stdout):
+        jobstatus = {}
+        for line in stdout.split('\n'):
+            if 'queue = ' in line:
+                jobstatus['queue'] = line.split('=')[1].strip()
+            if 'Exit_status =' in line:
+                jobstatus['exitcode'] = line.split('=')[1].strip()
+            if 'resources_used.cpupt = ' in line:
+                jobstatus['used_cpu_time'] = line.split('=')[1].strip()
+            if 'resources_used.cput =' in line:
+                jobstatus['used_cpu_time'] = line.split('=')[1].strip()
+            if 'resources_used.mem =' in line:
+                jobstatus['mem'] = line.split('=')[1].strip()
+            if 'resources_used.vmem =' in line:
+                jobstatus['used_memory'] = line.split('=')[1].strip()
+            if 'resources_used.walltime =' in line:
+                jobstatus['used_walltime'] = line.split('=')[1].strip()
+            if 'stime' in line:
+                jobstatus['pbs_started_at'] = line.split('=')[1].strip()
+            if 'etime' in line:
+                jobstatus['pbs_queued_at'] = line.split('=')[1].strip()
         return jobstatus
 
     def _cancel_command(self, jobid):
