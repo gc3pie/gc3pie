@@ -289,19 +289,21 @@ class BatchSystem(LRMS):
                 gc3libs.log.debug(
                     "%s script not defined for resource %s", script, self.name)
                 continue
-            if not os.path.isfile(self[script]):
-                gc3libs.log.debug(
-                    "%s script points to file '%s', which does"
-                    " not exist - ignoring.", script, self[script])
-                continue
-            gc3libs.log.debug("Adding %s file `%s` to the submission script"
-                              % (script, self[script]))
-            script_file = open(self[script])
-            script_txt.append("\n# %s file `%s` BEGIN\n"
-                              % (script, self[script]))
-            script_txt.append(script_file.read())
-            script_txt.append("\n# %s file END\n" % script)
-            script_file.close()
+            if os.path.isfile(self[script]):
+                gc3libs.log.debug("Adding %s file `%s` to the submission script"
+                                  % (script, self[script]))
+                script_file = open(self[script])
+                script_txt.append("\n# %s file `%s` BEGIN\n"
+                                  % (script, self[script]))
+                script_txt.append(script_file.read())
+                script_txt.append("\n# %s file END\n" % script)
+                script_file.close()
+            else:
+                # The *content* of the variable will be inserted in
+                # the script.
+                script_txt.append('\n# inline script BEGIN\n')
+                script_txt.append(self[script])
+                script_txt.append('\n# inline script END\n')
         return str.join("", script_txt)
 
     def get_prologue_script(self, app):
@@ -310,7 +312,8 @@ class BatchSystem(LRMS):
         application and will return a string which contains the
         contents of the script(s) merged together.
         """
-        prologues = ['prologue', app.application_name+'_prologue']
+        prologues = ['prologue', app.application_name+'_prologue',
+                     'prologue_content', app.application_name+'_prologue_content']
         return self._get_prepost_scripts(app, prologues)
 
     def get_epilogue_script(self, app):
@@ -319,7 +322,8 @@ class BatchSystem(LRMS):
         application and will return a string which contains the
         contents of the script(s) merged together.
         """
-        epilogues = ['epilogue', app.application_name+'epilogue']
+        epilogues = ['epilogue', app.application_name+'epilogue',
+                     'epilogue_content', app.application_name+'epilogue_content']
         return self._get_prepost_scripts(app, epilogues)
 
     @LRMS.authenticated
