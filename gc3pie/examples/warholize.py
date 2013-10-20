@@ -438,7 +438,7 @@ class TricolorizeMultipleImages(ParallelTaskCollection):
                 "%s.%d" % (self.output_dir, i),
                 "%s.%d" % (grayscaled_image, i),
                 colors,
-                self.warhol_dir))
+                self.warhol_dir, **extra_args))
 
         ParallelTaskCollection.__init__(self, self.tasks)
 
@@ -466,9 +466,10 @@ class TricolorizeImage(SequentialTaskCollection):
         self.warhol_dir = warhol_dir
         self.jobname = 'TricolorizeImage'
         self.output_file = output_file
-
+        
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
+        self.extra_args = extra_args
 
         gc3libs.log.info(
             "Tricolorize image %s to %s" % (
@@ -491,7 +492,7 @@ class TricolorizeImage(SequentialTaskCollection):
                 self.grayscaled_image,
                 os.path.join(last.output_dir, last.lutfile),
                 os.path.basename(self.output_file),
-                self.output_dir, self.warhol_dir, **extra_args))
+                self.output_dir, self.warhol_dir, **self.extra_args))
             return Run.State.RUNNING
         else:
             self.execution.returncode = last.execution.returncode
