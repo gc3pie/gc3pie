@@ -254,11 +254,12 @@ class WarholizeWorkflow(SequentialTaskCollection):
 # create the initial tasks that will be submitted. By now, we can submit
 # only the first one, `GrayScaleConvertApplication`, which will produce
 # a grayscale image from the input file::
-
+        self.extra_args = extra_args.copy()
+        self.extra_args.pop('output_dir')
         self.tasks = [
             GrayScaleConvertApplication(
                 self.input_image, self.grayscaled_image, self.output_dir,
-                self.output_dir, resize=self.resize),
+                self.output_dir, resize=self.resize, **self.extra_args),
             ]
 
         SequentialTaskCollection.__init__(self, self.tasks)
@@ -280,13 +281,13 @@ class WarholizeWorkflow(SequentialTaskCollection):
             self.add(TricolorizeMultipleImages(
                 os.path.join(self.output_dir, self.grayscaled_image),
                 self.copies, self.ncolors,
-                self.output_dir))
+                self.output_dir, **self.extra_args))
             return Run.State.RUNNING
         elif isinstance(last, TricolorizeMultipleImages):
             self.add(MergeImagesApplication(
                 os.path.join(self.output_dir, self.grayscaled_image),
                 last.warhol_dir,
-                self.output_image))
+                self.output_image, **self.extra_args))
             return Run.State.RUNNING
         else:
             self.execution.returncode = last.execution.returncode
@@ -336,7 +337,7 @@ class ApplicationWithCachedResults(gc3libs.Application):
 from gc3libs.utils import copyfile
 
 class GrayScaleConvertApplication(ApplicationWithCachedResults):
-    def __init__(self, input_image, grayscaled_image, output_dir, warhol_dir, resize=None):
+    def __init__(self, input_image, grayscaled_image, output_dir, warhol_dir, resize=None, **extra_args):
         self.warhol_dir = warhol_dir
         self.grayscaled_image = grayscaled_image
         self.application_name = 'warholize'
@@ -362,6 +363,7 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
             output_dir = output_dir,
             stdout = 'stdout.txt',
             stderr = 'stderr.txt',
+            **extra_args
             )
 
 # Creating a `gc3libs.Application` is straigthforward: you just
@@ -410,7 +412,7 @@ class TricolorizeMultipleImages(ParallelTaskCollection):
               'navy', 'turquoise1', 'SeaGreen', 'gold',
               'orange', 'magenta']
 
-    def __init__(self, grayscaled_image, copies, ncolors, output_dir):
+    def __init__(self, grayscaled_image, copies, ncolors, output_dir, **extra_args):
         gc3libs.log.info(
             "TricolorizeMultipleImages for %d copies run" % copies)
         self.jobname = "Warholizer_Parallel"
@@ -458,7 +460,7 @@ class TricolorizeImage(SequentialTaskCollection):
     grayscale image
     """
     def __init__(self, grayscaled_image, output_dir, output_file,
-                 colors, warhol_dir):
+                 colors, warhol_dir, **extra_args):
         self.grayscaled_image = grayscaled_image
         self.output_dir = output_dir
         self.warhol_dir = warhol_dir
@@ -477,7 +479,7 @@ class TricolorizeImage(SequentialTaskCollection):
                 self.grayscaled_image,
                 "%s.miff" % self.grayscaled_image,
                 self.output_dir,
-                colors, self.warhol_dir),
+                colors, self.warhol_dir, **extra_args),
             ]
 
         SequentialTaskCollection.__init__(self, self.tasks)
@@ -489,7 +491,7 @@ class TricolorizeImage(SequentialTaskCollection):
                 self.grayscaled_image,
                 os.path.join(last.output_dir, last.lutfile),
                 os.path.basename(self.output_file),
-                self.output_dir, self.warhol_dir))
+                self.output_dir, self.warhol_dir, **extra_args))
             return Run.State.RUNNING
         else:
             self.execution.returncode = last.execution.returncode
@@ -503,7 +505,7 @@ class CreateLutApplication(ApplicationWithCachedResults):
     """Create the LUT for the image using 3 colors picked randomly
     from CreateLutApplication.colors"""
 
-    def __init__(self, input_image, output_file, output_dir, colors, working_dir):
+    def __init__(self, input_image, output_file, output_dir, colors, working_dir, **extra_args):
         self.lutfile = os.path.basename(output_file)
         self.working_dir = working_dir
         self.application_name = 'warholize'
@@ -527,6 +529,7 @@ class CreateLutApplication(ApplicationWithCachedResults):
             output_dir = output_dir + '.createlut',
             stdout = 'stdout.txt',
             stderr = 'stderr.txt',
+            **extra_args
             )
 
 # And the `ApplyLutApplication` as well::
@@ -535,7 +538,7 @@ class ApplyLutApplication(ApplicationWithCachedResults):
     """Apply the LUT computed by `CreateLutApplication` to
     `image_file`"""
 
-    def __init__(self, input_image, lutfile, output_file, output_dir, working_dir):
+    def __init__(self, input_image, lutfile, output_file, output_dir, working_dir, **extra_args):
 
         gc3libs.log.info("Applying lut file %s to %s" % (lutfile, input_image))
         self.working_dir = working_dir
@@ -556,6 +559,7 @@ class ApplyLutApplication(ApplicationWithCachedResults):
             output_dir = output_dir + '.applylut',
             stdout = 'stdout.txt',
             stderr = 'stderr.txt',
+            **extra_args
             )
 
     def terminated(self):
@@ -587,7 +591,7 @@ class ApplyLutApplication(ApplicationWithCachedResults):
 import re
 
 class MergeImagesApplication(ApplicationWithCachedResults):
-    def __init__(self, grayscaled_image, input_dir, output_file):
+    def __init__(self, grayscaled_image, input_dir, output_file, **extra_args):
         ifile_regexp = re.compile(
             "%s.[0-9]+" % os.path.basename(grayscaled_image))
         input_files = [
@@ -623,6 +627,7 @@ class MergeImagesApplication(ApplicationWithCachedResults):
             output_dir = os.path.join(input_dir, 'output'),
             stdout = 'stdout.txt',
             stderr = 'stderr.txt',
+            **extra_args
             )
 
     def terminated(self):
