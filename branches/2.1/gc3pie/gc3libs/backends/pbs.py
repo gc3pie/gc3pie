@@ -237,10 +237,8 @@ class PbsLrms(batch.BatchSystem):
     def _submit_command(self, app):
         qsub_argv, app_argv = app.qsub_pbs(self)
         if self.queue is not None:
-            # qsub_argv += ['-d', '.', '-q', ('%s' % self.queue)]
-            # -d only supported in Torque
             qsub_argv += ['-q', ('%s' % self.queue)]
-        return (str.join(' ', qsub_argv), str.join(' ', app_argv))
+        return (str.join(' ', qsub_argv), "cd $PBS_O_WORKDIR; " + str.join(' ', app_argv) + '\n')
 
     def _stat_command(self, job):
         return "%s %s | grep ^%s" % (
