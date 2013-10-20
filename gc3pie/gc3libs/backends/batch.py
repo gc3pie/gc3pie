@@ -274,6 +274,26 @@ class BatchSystem(LRMS):
             "Abstract method `_parse_acct_output()` called - "
             "this should have been defined in a derived class.")
 
+    def _secondary_acct_command(self, job):
+        """This method is similar to `_parse_acct_output` but it is
+        called only if the former returns a non-0 exit status. This is
+        used to allow for a fallback method in case there are multiple
+        way to get information from a job
+        """
+        raise NotImplementedError(
+            "Abstract method `_secondary_acct_command()` called - "
+            "this should have been defined in a derived class.")
+
+    def _parse_acct_output(self, stdout):
+        """This method will parse the output of the secondaryu acct
+        command and return a dictionary containing infos about the
+        job. `BatchSystem` class does not make any assumption about
+        the keys contained in the dictionary.
+        """
+        raise NotImplementedError(
+            "Abstract method `_parse_secondary_acct_output()` called - "
+            "this should have been defined in a derived class.")
+
     def _cancel_command(self, jobid):
         """This method returns a string containing the command to
         issue to delete the job identified by `jobid`
@@ -530,9 +550,33 @@ class BatchSystem(LRMS):
                         job.state = Run.State.TERMINATING
                     return job.state
                 else:
-                    log.error(
-                        "Failed while running the `acct` command."
-                        " exit code: %d, stderr: '%s'" % (exit_code, stderr))
+                    # FIXME: Antonio: this is a quick and dirty fix to
+                    # allow a secondary acct command to run. This is
+                    # used to distinguish between a standard Torque
+                    # installation and a PBSPro where tracejob does
+                    # not work but where job_history_enable=True, so
+                    # that we can actually access information about
+                    # finished jobs with `qstat -x -f`. However, the
+                    # following code is *copied* from before, which is
+                    # something that should be avoided.
+                    cmd = self._secondary_acct_command(job)
+                    if cmd:
+                        log.debug(
+                        "The `qacct`/`tracejob` command returned no job "
+                        "information; trying with '%s' instead..." % cmd)
+                        exit_code, stdout, stderr = self.transport.execute_command(cmd)
+                        if exit_code == 0:
+                            jobstatus = self._parse_secondary_acct_output(stdout)
+                            job.update(jobstatus)
+                            if 'exitcode' in jobstatus:
+                                job.returncode = int(jobstatus['exitcode'])
+                                job.state = Run.State.TERMINATING
+                            return job.state
+                        else:
+                            log.error(
+                                "Failed while running the `acct` command."
+                                " exit code: %d, stderr: '%s'" % (exit_code, stderr))
+
 
 
             # No *stat command and no *acct command returned
