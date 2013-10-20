@@ -1,0 +1,141 @@
+#!/bin/bash
+
+echo [`date`] Start
+
+# add . as valid PATH 
+export PATH=.:$PATH
+
+OUTFILES_LIST="output.list"
+touch $OUTFILES_LIST
+
+if [ $# -ne 4 ]; then
+    echo "Wrong number of input paramenters. Expected 4, got $#" 
+    echo "Usage: gnfs-cmd <first value for special q> <special q range [first,first+cnt-1]> <number of threads> <input_files archive>"
+    exit 1
+fi
+
+# read input parameters
+f=$1;
+c=$2;
+# t=$3;
+t=$CRYPTO_SLOTS
+archive=$4;
+
+# open archive
+echo -n "opening archive... "
+tar xfz $archive
+if [ ! $? -eq 0 ]; then
+    echo "[ failed ]"
+    exit 1
+else
+    echo "[ ok ]"
+fi
+
+# DEBUG
+ls -la
+
+LASVIEW6="./gnfs-lasieve6"
+TDSVIEW="./tdsievemt"
+GZIP=`which gzip`
+
+chmod +x $LASVIEW6
+chmod +x $TDSVIEW
+
+mkdir pprod
+
+let j=$f+$c;
+
+A=37;
+if [ $f -ge 400000000 ]; then A=35; fi
+if [ $f -ge 1500000000 ]; then A=33; fi
+
+name="M8o_200"; 
+if [ $f -ge 300000000 ]; then name="M8o_300"; fi
+if [ $f -ge 400000000 ]; then name="M8o_400"; fi
+if [ $f -ge 600000000 ]; then name="M8o_600"; fi
+if [ $f -ge 800000000 ]; then name="M8o_800"; fi
+if [ $f -ge 1200000000 ]; then name="M8o_1200"; fi
+if [ $f -ge 1500000000 ]; then name="M8o_1500"; fi
+if [ $f -ge 2000000000 ]; then name="M8o_2000"; fi
+if [ $f -ge 3000000000 ]; then name="M8o_3000"; fi
+if [ $f -ge 4200000000 ]; then name="M8o_4200"; fi
+
+echo "alg sieve for $name, A=$A, $c spq in $f-$j";
+$LASVIEW6 -t $t -b $name -avvDoW0s -A $A -f $f -c $c
+iname=$name.lasieve-0.$f-$j.ab
+cat $name.lasieve-0.$f-$j.ab.nb2? $name.lasieve-0.$f-$j.ab.nb3[0-5] > $iname
+
+# echo "tdsieve 991";
+# $TDSVIEW -t $t -b M991 -vs -a 500000000,99 -i $iname
+# $GZIP M991.tdsieve.$f-$j
+# cat $name.lasieve-0.$f-$j.ab.nb35 >> $name.lasieve-0.$f-$j.ab
+echo "tdsieve 1081";
+$TDSVIEW -t $t -b M1081 -vs -a 500000000,103 -i $iname
+$GZIP M1081.tdsieve.$f-$j
+echo M1081.tdsieve.$f-$j.gz >> $OUTFILES_LIST
+
+echo "tdsieve 1111";
+$TDSVIEW -t $t -b M1111 -vs -a 500000000,103 -i $iname
+$GZIP M1111.tdsieve.$f-$j
+echo M1111.tdsieve.$f-$j.gz >> $OUTFILES_LIST
+
+echo "tdsieve 1129";
+$TDSVIEW -t $t -b M1129 -vs -a 500000000,103 -i $iname
+$GZIP M1129.tdsieve.$f-$j
+cat $name.lasieve-0.$f-$j.ab.nb36 >> $name.lasieve-0.$f-$j.ab
+echo M1129.tdsieve.$f-$j.gz >> $OUTFILES_LIST
+
+echo "tdsieve 1151";
+$TDSVIEW -t $t -b M1151 -vs -a 500000000,105 -i $iname
+$GZIP M1151.tdsieve.$f-$j
+echo M1151.tdsieve.$f-$j.gz >> $OUTFILES_LIST
+
+echo "tdsieve 1153";
+$TDSVIEW -t $t -b M1153 -vs -a 500000000,105 -i $iname
+$GZIP M1153.tdsieve.$f-$j
+echo M1153.tdsieve.$f-$j.gz >> $OUTFILES_LIST
+
+echo "tdsieve 1159";
+$TDSVIEW -t $t -b M1159 -vs -a 500000000,105 -i $iname
+$GZIP M1159.tdsieve.$f-$j
+cat $name.lasieve-0.$f-$j.ab.nb37 >> $name.lasieve-0.$f-$j.ab
+echo M1159.tdsieve.$f-$j.gz >> $OUTFILES_LIST
+
+echo "tdsieve 1177";
+$TDSVIEW -t $t -b M1177 -vs -a 2000000000,138 -i $iname
+$GZIP M1177.tdsieve.$f-$j
+echo M1177.tdsieve.$f-$j.gz >> $OUTFILES_LIST
+
+echo "tdsieve 1193";
+$TDSVIEW -t $t -b M1193 -vs -a 2000000000,141 -i $iname
+$GZIP M1193.tdsieve.$f-$j
+echo M1193.tdsieve.$f-$j.gz >> $OUTFILES_LIST
+
+echo "tdsieve 1199";
+$TDSVIEW -t $t -b M1199 -vs -a 2000000000,141 -i $iname
+$GZIP M1199.tdsieve.$f-$j
+echo M1199.tdsieve.$f-$j.gz >> $OUTFILES_LIST
+# cleanup
+rm $iname
+rm $name.lasieve-0.$f-$j.ab.nb??
+rm -r pprod
+
+echo -n "local verification: check produced gzip files.... "
+
+# simple local validation
+ZIP_FILE_COUNT=`cat $OUTFILES_LIST | wc -l`
+
+if [ $ZIP_FILE_COUNT -eq 9 ]; then
+    echo [passed]
+    RET=0
+else
+    echo [failed]
+    RET=1
+fi
+
+# additional cleanup
+ls * | grep -v gz$ | grep -v log$ | grep -v $OUTFILES_LIST | xargs --replace rm {}
+
+echo [`date`] Done
+
+exit $RET
