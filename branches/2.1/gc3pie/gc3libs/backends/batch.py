@@ -150,7 +150,7 @@ class BatchSystem(LRMS):
                 return match.group('jobid')
         raise gc3libs.exceptions.InternalError(
             "Could not extract jobid from qsub output '%s'"
-            % qsub_output.rstrip())
+            % output.rstrip())
 
     def _get_command_argv(self, name, default=None):
         """
