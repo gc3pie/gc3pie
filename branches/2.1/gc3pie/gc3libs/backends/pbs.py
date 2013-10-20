@@ -52,7 +52,7 @@ import batch
 
 # regexps for extracting relevant strings
 
-_qsub_jobid_re = re.compile(r'(?P<jobid>\d+)\.', re.I)
+_qsub_jobid_re = re.compile(r'(?P<jobid>\d+)', re.I)
 
 _qstat_line_re = re.compile(
     r'^(?P<jobid>\d+)[^\d]+\s+'
