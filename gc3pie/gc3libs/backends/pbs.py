@@ -261,7 +261,7 @@ class PbsLrms(batch.BatchSystem):
             jobstatus['state'] = Run.State.RUNNING
         elif job_status in ['S', 'H', 'T'] or 'qh' in job_status:
             jobstatus['state'] = Run.State.STOPPED
-        elif job_status in ['C', 'E']:
+        elif job_status in ['C', 'E', 'F']:
             jobstatus['state'] = Run.State.TERMINATING
         else:
             jobstatus['state'] = Run.State.UNKNOWN
