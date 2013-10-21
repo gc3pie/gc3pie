@@ -1383,7 +1383,7 @@ class Application(Task):
         if self.requested_cores > 1:
             qsub += ['-l', 'nodes=%d' % self.requested_cores]
         if 'jobname' in self and self.jobname:
-            qsub += ['-N', '"%s"' % self.jobname]
+            qsub += ['-N', '"%s"' % self.jobname[:15]]
         return (qsub, self.cmdline(resource))
 
 

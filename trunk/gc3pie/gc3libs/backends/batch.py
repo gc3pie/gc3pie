@@ -150,7 +150,7 @@ class BatchSystem(LRMS):
                 return match.group('jobid')
         raise gc3libs.exceptions.InternalError(
             "Could not extract jobid from qsub output '%s'"
-            % qsub_output.rstrip())
+            % output.rstrip())
 
     def _get_command_argv(self, name, default=None):
         """
@@ -274,6 +274,26 @@ class BatchSystem(LRMS):
             "Abstract method `_parse_acct_output()` called - "
             "this should have been defined in a derived class.")
 
+    def _secondary_acct_command(self, job):
+        """This method is similar to `_parse_acct_output` but it is
+        called only if the former returns a non-0 exit status. This is
+        used to allow for a fallback method in case there are multiple
+        way to get information from a job
+        """
+        raise NotImplementedError(
+            "Abstract method `_secondary_acct_command()` called - "
+            "this should have been defined in a derived class.")
+
+    def _parse_acct_output(self, stdout):
+        """This method will parse the output of the secondaryu acct
+        command and return a dictionary containing infos about the
+        job. `BatchSystem` class does not make any assumption about
+        the keys contained in the dictionary.
+        """
+        raise NotImplementedError(
+            "Abstract method `_parse_secondary_acct_output()` called - "
+            "this should have been defined in a derived class.")
+
     def _cancel_command(self, jobid):
         """This method returns a string containing the command to
         issue to delete the job identified by `jobid`
@@ -289,19 +309,21 @@ class BatchSystem(LRMS):
                 gc3libs.log.debug(
                     "%s script not defined for resource %s", script, self.name)
                 continue
-            if not os.path.isfile(self[script]):
-                gc3libs.log.debug(
-                    "%s script points to file '%s', which does"
-                    " not exist - ignoring.", script, self[script])
-                continue
-            gc3libs.log.debug("Adding %s file `%s` to the submission script"
-                              % (script, self[script]))
-            script_file = open(self[script])
-            script_txt.append("\n# %s file `%s` BEGIN\n"
-                              % (script, self[script]))
-            script_txt.append(script_file.read())
-            script_txt.append("\n# %s file END\n" % script)
-            script_file.close()
+            if os.path.isfile(self[script]):
+                gc3libs.log.debug("Adding %s file `%s` to the submission script"
+                                  % (script, self[script]))
+                script_file = open(self[script])
+                script_txt.append("\n# %s file `%s` BEGIN\n"
+                                  % (script, self[script]))
+                script_txt.append(script_file.read())
+                script_txt.append("\n# %s file END\n" % script)
+                script_file.close()
+            else:
+                # The *content* of the variable will be inserted in
+                # the script.
+                script_txt.append('\n# inline script BEGIN\n')
+                script_txt.append(self[script])
+                script_txt.append('\n# inline script END\n')
         return str.join("", script_txt)
 
     def get_prologue_script(self, app):
@@ -310,7 +332,8 @@ class BatchSystem(LRMS):
         application and will return a string which contains the
         contents of the script(s) merged together.
         """
-        prologues = ['prologue', app.application_name+'_prologue']
+        prologues = ['prologue', app.application_name+'_prologue',
+                     'prologue_content', app.application_name+'_prologue_content']
         return self._get_prepost_scripts(app, prologues)
 
     def get_epilogue_script(self, app):
@@ -319,7 +342,8 @@ class BatchSystem(LRMS):
         application and will return a string which contains the
         contents of the script(s) merged together.
         """
-        epilogues = ['epilogue', app.application_name+'epilogue']
+        epilogues = ['epilogue', app.application_name+'epilogue',
+                     'epilogue_content', app.application_name+'epilogue_content']
         return self._get_prepost_scripts(app, epilogues)
 
     @LRMS.authenticated
@@ -527,9 +551,33 @@ class BatchSystem(LRMS):
                         job.state = Run.State.TERMINATING
                     return job.state
                 else:
-                    log.error(
-                        "Failed while running the `acct` command."
-                        " exit code: %d, stderr: '%s'" % (exit_code, stderr))
+                    # FIXME: Antonio: this is a quick and dirty fix to
+                    # allow a secondary acct command to run. This is
+                    # used to distinguish between a standard Torque
+                    # installation and a PBSPro where tracejob does
+                    # not work but where job_history_enable=True, so
+                    # that we can actually access information about
+                    # finished jobs with `qstat -x -f`. However, the
+                    # following code is *copied* from before, which is
+                    # something that should be avoided.
+                    cmd = self._secondary_acct_command(job)
+                    if cmd:
+                        log.debug(
+                        "The `qacct`/`tracejob` command returned no job "
+                        "information; trying with '%s' instead..." % cmd)
+                        exit_code, stdout, stderr = self.transport.execute_command(cmd)
+                        if exit_code == 0:
+                            jobstatus = self._parse_secondary_acct_output(stdout)
+                            job.update(jobstatus)
+                            if 'exitcode' in jobstatus:
+                                job.returncode = int(jobstatus['exitcode'])
+                                job.state = Run.State.TERMINATING
+                            return job.state
+                        else:
+                            log.error(
+                                "Failed while running the `acct` command."
+                                " exit code: %d, stderr: '%s'" % (exit_code, stderr))
+
 
 
             # No *stat command and no *acct command returned
