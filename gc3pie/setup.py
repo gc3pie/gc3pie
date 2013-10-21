@@ -122,6 +122,7 @@ setuptools.setup(
         'gc3libs': [
             'etc/codeml.pl',
             'etc/gc3pie.conf.example',
+            'etc/geotop_wrap.sh',
             'etc/logging.conf.example',
             'etc/rosetta.sh',
             ],
