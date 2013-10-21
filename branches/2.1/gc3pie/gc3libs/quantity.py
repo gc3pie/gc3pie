@@ -661,11 +661,13 @@ class Memory(object):
         MB=1000*1000,
         GB=1000*1000*1000,
         TB=1000*1000*1000*1000,
+        PB=1000*1000*1000*1000*1000,
         # binary base units
         KiB=1024,                # KiBiByte
         MiB=1024*1024,           # MiBiByte
         GiB=1024*1024*1024,      # GiBiByte
         TiB=1024*1024*1024*1024, # TiBiByte
+        PiB=1024*1024*1024*1024*1024, # PiBiByte
         )
 
 
