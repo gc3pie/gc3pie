@@ -258,6 +258,12 @@ class LRMSSkipSubmissionToNextIteration(RecoverableError):
     """
     pass
 
+class MaximumCapacityReached(LRMSSubmitError, RecoverableError):
+    """
+    Indicates that a resource is full and cannot run any more jobs.
+    """
+    pass
+
 class NoConfigurationFile(FatalError):
     """
     Raised when the configuration file cannot be read (e.g., does not
