@@ -1245,11 +1245,12 @@ class Engine(object):
                         self._core.submit(task, targets=[resource])
                         if self._store:
                             self._store.save(task)
-                        self._in_flight.append(task)
-                        transitioned.append(task_index)
-                        if isinstance(task, Application):
-                            currently_submitted += 1
-                            currently_in_flight += 1
+                        if task_index not in transitioned:
+                            self._in_flight.append(task)
+                            transitioned.append(task_index)
+                            if isinstance(task, Application):
+                                currently_submitted += 1
+                                currently_in_flight += 1
                         sched.send(task.execution.state)
                     except Exception, err1:
                         # record the error in the task's history
