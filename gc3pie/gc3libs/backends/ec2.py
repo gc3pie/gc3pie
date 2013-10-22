@@ -934,7 +934,7 @@ class EC2Lrms(LRMS):
 
                 self._vmpool.add_vm(vm)
             else:
-                raise MaximuCapacityReached(
+                raise MaximumCapacityReached(
                     "Already running the maximum number of VM on resource %s:"
                     " %d VMs started, but max %d allowed by configuration."
                     % (self.name, len(self._vmpool), self.vm_pool_max_size),
