@@ -920,6 +920,11 @@ def first_come_first_serve(tasks, resources, matchmaker=MatchMaker()):
         for target in targets:
             try:
                 result = yield (task_idx, target.name)
+            except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration:
+                # this is not a real error: the resource is adapting
+                # for the task and will actually accept it sometime in
+                # the future, so continue with next task
+                break
             except Exception:
                 # propagate any error back to caller
                 raise
@@ -1269,11 +1274,6 @@ class Engine(object):
                         # inform scheduler and let it handle it
                         try:
                             sched.throw(* sys.exc_info())
-                        except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration, warn:
-                            # this is not a real error, rather a notice
-                            # that submission has been delayed; just echo
-                            # exception message to user and continue
-                            gc3libs.log.info("%s", warn)
                         except Exception, err2:
                             if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
                                 # propagate generic exceptions for debugging purposes
