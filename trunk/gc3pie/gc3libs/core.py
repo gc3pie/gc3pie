@@ -918,9 +918,13 @@ def first_come_first_serve(tasks, resources, matchmaker=MatchMaker()):
         targets = matchmaker.rank(task, compatible_resources)
         # now try submission of the task to each resource until one succeeds
         for target in targets:
-            result = yield (task_idx, target.name)
-            if result != Run.State.NEW:
-                # task accepted by resource, continue with next task
+            try:
+                result = yield (task_idx, target.name)
+            except Exception:
+                # propagate any error back to caller
+                raise
+            else:
+                # submission successful, continue with next task
                 break
 
 
@@ -1245,12 +1249,14 @@ class Engine(object):
                         self._core.submit(task, targets=[resource])
                         if self._store:
                             self._store.save(task)
-                        if task_index not in transitioned:
-                            self._in_flight.append(task)
-                            transitioned.append(task_index)
-                            if isinstance(task, Application):
-                                currently_submitted += 1
-                                currently_in_flight += 1
+                        # XXX: can remove the following assert when
+                        # we're sure Issue 419 is fixed
+                        assert task_index not in transitioned
+                        self._in_flight.append(task)
+                        transitioned.append(task_index)
+                        if isinstance(task, Application):
+                            currently_submitted += 1
+                            currently_in_flight += 1
                         sched.send(task.execution.state)
                     except Exception, err1:
                         # record the error in the task's history
