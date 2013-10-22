@@ -925,9 +925,11 @@ def first_come_first_serve(tasks, resources, matchmaker=MatchMaker()):
                 # for the task and will actually accept it sometime in
                 # the future, so continue with next task
                 break
-            except Exception:
-                # propagate any error back to caller
-                raise
+            except Exception, err:
+                # note error condition but continue with next resource
+                gc3libs.log.debug(
+                    "Scheduler ignored error in submitting task '%s': %s: %s",
+                    task, err.__class__.__name__, str(err), exc_info=True)
             else:
                 # submission successful, continue with next task
                 break
