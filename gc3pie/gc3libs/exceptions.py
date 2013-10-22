@@ -247,10 +247,11 @@ class LRMSError(Error):
     pass
 
 
-class LRMSSubmitError(Error):
+class LRMSSubmitError(LRMSError):
     pass
 
-class LRMSSkipSubmissionToNextIteration(RecoverableError):
+
+class LRMSSkipSubmissionToNextIteration(LRMSSubmitError, RecoverableError):
     """
     An elastic resource has initiated adapting for a new task.
     Although we cannot submit the task right now, it *will* be
@@ -258,11 +259,13 @@ class LRMSSkipSubmissionToNextIteration(RecoverableError):
     """
     pass
 
+
 class MaximumCapacityReached(LRMSSubmitError, RecoverableError):
     """
     Indicates that a resource is full and cannot run any more jobs.
     """
     pass
+
 
 class NoConfigurationFile(FatalError):
     """
