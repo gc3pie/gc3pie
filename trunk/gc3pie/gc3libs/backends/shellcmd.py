@@ -689,8 +689,8 @@ ReturnCode=%x"""
                 self.spooldir, 'gc3libs.XXXXXX'))
         if exit_code != 0:
             log.error(
-                "Error creating temporary directory on host %s: %s"
-                % (self.frontend, stderr))
+                "Error creating temporary directory on host %s: %s",
+                self.frontend, stderr)
 
         execdir = stdout.strip()
 
