@@ -24,6 +24,9 @@ PROG=$(basename "$0")
 
 ## configuration defaults
 
+# Assume shared FS by default
+SHARED_FS=1
+
 OVERWRITE="--keep-old-files"
 OUTPUT_ARCHIVE="output.tgz"
 TAR_EXCLUDE_PATTERN="--exclude .arc --exclude ./in --exclude ggeotop.log"
@@ -44,7 +47,7 @@ function cleanup_on_exit {
     actual_tag_files=''
     for file in $tag_files; do 
         if [ -r "$file" ]; then
-            actual_tag_files="$actual_tag_files $file"
+	    actual_tag_files="$actual_tag_files $file"
         fi
     done
     tar czvf $OUTPUT_ARCHIVE out/ $actual_tag_files $TAR_EXCLUDE_PATTERN
@@ -59,67 +62,132 @@ function cleanup_on_exit {
         echo "[failed]"
     fi
 }
-trap "cleanup_on_exit" EXIT TERM INT
-
 
 ## Parse command line options.
-USAGE="Usage: $PROG [-w] <input archive> <GEOTop executable>"
-while getopts w OPT; do
-    case "$OPT" in
-        w)
+USAGE=`cat <<EOF
+Usage: $PROG [-w -l] <input> <GEOTop executable>
+where options include:
+      -w        overwrite
+
+
+EOF`
+
+while getopts "wh" opt; do
+    case $opt in
+	w)
+	    # set overrite flag when opening tar input archive
             OVERWRITE="--overwrite"
-            ;;
-        \?)
-            # getopts issues an error message
-            die 1 "$USAGE"
-            ;;
+	    ;;
+	h)
+	    echo "$USAGE"
+	    exit 1
+	    ;;
+	\?)
+	    usage
+	    exit 1
+	    ;;
     esac
 done
 
 # Remove the switches we parsed above.
 shift `expr $OPTIND - 1`
 
-# We want at least one non-option argument.
+# We want 2 non-option argument:
+# 1. Input folder
+# 2. GEOTop executable
 # Remove this block if you don't need it.
-if [ $# -eq 0 ]; then
+if [ ! $# -eq 2 ]; then
     die 1 "$USAGE"
 fi
 
-INPUT_ARCHIVE=$1
+INPUT=$1
 GEOTOP_EXEC=$2
 
-# Check INPUT_ARCHIVE
-echo -n "$PROG: Checking for presence of input archive [$INPUT_ARCHIVE] ... "
-if [ ! -r $INPUT_ARCHIVE ]; then
+# Determine input type
+# Allowed input types:
+# application/x-tar
+# inode/directory
+# 
+# This will also instruct the script whether to use 
+# a shared filesystem or not
+
+echo -n "Resolving filesystem layout... "
+MIME_TYPE=`file --mime-type -b $INPUT 2>&1`
+if [ ! $? -eq 0 ]; then
     echo "[failed]"
-    die 1 "Cannot read input archive file '$INPUT_ARCHIVE', aborting."
+    die 1 $MIME_TYPE
 else
-    echo "[ok]"
+    if [ $MIME_TYPE == "application/x-gzip" ]; then
+	SHARED_FS=0
+	echo "[NON shared]"
+    elif [ $MIME_TYPE == "inode/directory" ]; then
+	# Input is a folder in a shared filesystem
+	SHARED_FS=1
+	echo "[shared]"
+    else
+	echo "[failed: $MIME_TYPE]"
+	die 1 "Unsupported mime-type $MIME_TYPE"
+    fi
 fi
 
-echo -n "$PROG: Running: tar $OVERWRITE -xzf $INPUT_ARCHIVE ... "
-tar $OVERWRITE -xzf $INPUT_ARCHIVE
-RET=$?
-rm -fv $INPUT_ARCHIVE
-if [ $RET -ne 0 ]; then
-    echo "[failed]"
-    die $RET "Could not extract files from input archive '$INPUT_ARCHIVE', aborting."
+# Check INPUT_ARCHIVE
+echo -n "$PROG: Checking input [$INPUT] ... "
+
+if [ $SHARED_FS -eq 1 ]; then
+    # Use local filesystem. No input archive
+    # Check whether input is a valid folder
+    if [ ! -d  $INPUT ]; then
+	echo "[failed]"
+	die 1 "Cannot read input folder '$INPUT', aborting."
+    else
+	WORKING_DIR=$INPUT
+	echo "[ok]"
+    fi
 else
-    echo "[ok]"
+    # Use shared filesystem
+    # check whether input is a valid 
+    # tar archive
+    if [ ! -r $INPUT ]; then
+	echo "[failed]"
+	die 1 "Cannot read input archive file '$INPUT', aborting."
+    else
+	echo "[ok]"
+	# Now untar input archive and set working_dir to
+	# extracted path
+	echo -n "$PROG: Running: tar $OVERWRITE -xzf $INPUT ... "
+	tar $OVERWRITE -xzf $INPUT
+	RET=$?
+	if [ $RET -ne 0 ]; then
+	    echo "[failed]"
+	    die $RET "Could not extract files from input archive '$INPUT', aborting."
+	else
+	    echo "[ok]"
+	fi
+	# Cleanup input archive
+	# XXX: is it really necessary ?
+	rm -fv $INPUT
+	WORKING_DIR=$PWD
+    fi
+fi
+
+# Set cleanup on exit for generating output archive
+# in case localFS is set to False
+if [ $SHARED_FS -eq 0 ]; then
+    trap "cleanup_on_exit" EXIT TERM INT
 fi
 
 ## Execute the GEOTOP code ##
 
-echo -n "$PROG: Checking for presence of executable [$GEOTOP_EXEC] ... "
+echo -n "$PROG: Checking GEOTop executable [$GEOTOP_EXEC] ... "
 if [ -x $GEOTOP_EXEC ]; then
     echo "[ok]"
     echo "$PROG: Starting execution of $GEOTOP_EXEC ... "
-    $GEOTOP_EXEC .
+    $GEOTOP_EXEC $WORKING_DIR
     RET=$?
     echo "$PROG: GEOtop execution terminated with exit code [$RET]"
-    rm -fv $GEOTOP_EXEC
+    # rm -fv $GEOTOP_EXEC
     exit $RET
 else
     echo "[failed]"
-    exit 126 # command not found
+    exit 127 # command not found
 fi
