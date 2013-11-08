@@ -12,9 +12,9 @@ if(length(args)!=3){
   source(args[1])
 
   # Read ID time file
-  time_to_load_id_time <- system.time(input.id_time <-read.csv(file=args[2],head=TRUE, sep=","))
+  time_to_load_id_time <- system.time(input.id_time <-read.csv(file=args[2],head=FALSE, sep=","))
   # Read friendship network file
-  time_to_load_friendship <- system.time(input.friendship_nw <-read.csv(file=args[3],head=TRUE, sep=","))
+  time_to_load_friendship <- system.time(input.friendship_nw <-read.csv(file=args[3],head=FALSE, sep=","))
 }
 
 cat("Time to load input data: ID time [",time_to_load_id_time,"], data [",time_to_load_friendship,"]\n")
@@ -26,7 +26,7 @@ time_to_process <- system.time(frd_nw_betweenness <- grid_test(id_time_sample=in
 cat("Time to process betweenness [",time_to_process,"]\n")
 
 # store result
-write.table(frd_nw_betweenness, "result.csv", quote=TRUE, row.names=FALSE, col.names=TRUE, sep=",")
+write.table(frd_nw_betweenness, "result.csv", quote=TRUE, row.names=FALSE, col.names=FALSE, sep=",")
 
 print("Done")
 
