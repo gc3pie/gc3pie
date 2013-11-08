@@ -1,21 +1,22 @@
 The ``bin/`` directory contains the master driver script: ``run.R`` and
-the weight function: ``f_get_weight.r``.
+the betweenness function: ``grid.r``.
 
 The ``data/`` directory contains the reference data:
-``two_mode_network.rda`` and ``edgelist.one.mode.100.csv``
+``friendship_nw_sample.csv`` and an example input file ``id_time_sample.csv``
 
-.. Main developers: "Radu Tanase" <radu.tanase@business.uzh.ch>
+.. Main developers: "Xin-Yu" <@business.uzh.ch>
 
 
 Execution requirements
 ======================
 
 At the remote end, it is required to have R (r-base) package
-and the R ``multicore`` library installed.
+and the R ``igraph`` library installed.
 
 _Note_: On the Hobbes could infrastructure, a dedicated VM with R and
 other component installed is available (image_id=_ami-00000084_).
 
+On Octavious (ETH): (image_id=_ami-0000003f_)
 
 
 Testing ``gweight``
