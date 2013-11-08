@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-#   ggrid.py -- Front-end script for evaluating R-based 'weight'
+#   gnw_measures.py -- Front-end script for evaluating R-based 'grid'
 #   function over a large dataset.
 #
 #   Copyright (C) 2011, 2012 GC3, University of Zurich
@@ -23,22 +23,24 @@
 Front-end script for submitting multiple `R` jobs.
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
-See the output of ``ggrid.py --help`` for program usage
+See the output of ``gnw_measures.py --help`` for program usage
 instructions.
 
 Input parameters consists of:
-:param str edges file: Path to an .csv file containing input data in
-the for of: 
+:param str id_times file: Path to an .csv file containing input data.
+
+Example: 
 "id","ts_reference","tf_reference"
 "12802",1663058794000,Inf
 "2617",1666361937000,1666362018000
 
-While the Friendship network .csv format is:
+Optional Data file in .csv format.
 
+Example:
 "userid_hash","friendid_hash","t_friendcreated"
 "15","33",1647193283000
 "44","81",1659876972000
-...
+
 
 XXX: To be clarified:
 . When input files should be removed ?
@@ -47,13 +49,13 @@ XXX: To be clarified:
 without re-creating a new session ?
 e.g. adding a new argument accepting chunk ranges (-R 3000:7500)
 This would trigger the re-run of the whole workflow only 
-for lines between 3000 and 7500
+for lines between 3000 and 7500 
 """
 
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
-  2013-07-03:
+  2013-11-07:
   * Initial version
 """
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
@@ -64,7 +66,7 @@ __docformat__ = 'reStructuredText'
 # for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
     import gnw_measures
-    gnw_measures.GgridScript().run()
+    gnw_measures.GnwScript().run()
 
 import os
 import sys
@@ -72,7 +74,6 @@ import time
 import tempfile
 
 import shutil
-# import csv
 
 from pkg_resources import Requirement, resource_filename
 
@@ -84,10 +85,10 @@ import gc3libs.utils
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
-## custom application class
-class GgridApplication(Application):
+class GnwApplication(Application):
     """
-    Custom class to wrap the execution of the R scripts passed in src_dir.
+    Custom class to wrap the execution of the R function over 
+    a chunked ``id_times`` file.
     """
     application_name = 'gnw_measures'
     
@@ -99,7 +100,6 @@ class GgridApplication(Application):
         self.output_file = os.path.join(self.output_dir,self.output_filename)
 
         outputs = [("./result.csv",self.output_filename)]
-
 
         # setup input references
         inputs = dict()
@@ -136,7 +136,7 @@ class GgridApplication(Application):
             arguments = arguments,
             inputs = inputs,
             outputs = outputs,
-            stdout = 'ggrid.log',
+            stdout = 'gnw_measures.log',
             join=True,
             **extra_args)
 
@@ -152,34 +152,34 @@ class GgridApplication(Application):
             self.execution.returncode = (0, 99)
 
 
-class GgridTask(RetryableTask):
+class GnwTask(RetryableTask):
     def __init__(self, id_times_filename, **extra_args):
         RetryableTask.__init__(
             self,
             # actual computational job
-            GgridApplication(
+            GnwApplication(
                 id_times_filename, 
                 **extra_args),
             **extra_args
             )
 
-class GgridScript(SessionBasedScript):
+class GnwScript(SessionBasedScript):
     """
     Splits input .csv file into smaller chunks, each of them of size 
     'self.params.chunk_size'.
     Then it submits one execution for each of the created chunked files.
     
-    The ``ggrid`` command keeps a record of jobs (submitted, executed
+    The ``gnw_measures`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
     
     Options can specify a maximum number of jobs that should be in
-    'SUBMITTED' or 'RUNNING' state; ``ggrid`` will delay submission of
+    'SUBMITTED' or 'RUNNING' state; ``gnw_measures`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
-    Once the processing of all chunked files has been completed, ``ggrid``
+    Once the processing of all chunked files has been completed, ``gnw_measures``
     aggregates them into a single larger output file located in 
     'self.params.output'.
     """
@@ -188,12 +188,12 @@ class GgridScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GgridTask, 
+            application = GnwTask, 
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
-            stats_only_for = GgridTask,
+            stats_only_for = GnwTask,
             )
 
     def setup_options(self):
@@ -224,8 +224,7 @@ class GgridScript(SessionBasedScript):
         path to command_file should also be valid.
         """
         
-        # check args:
-        # XXX: make them position independent
+        # check input arguments
         if not os.path.isfile(self.params.id_times):
             raise gc3libs.exceptions.InvalidUsage(
                 "Invalid path to input data: '%s'. File not found"
@@ -234,7 +233,6 @@ class GgridScript(SessionBasedScript):
         self.id_times_filename = os.path.basename(self.params.id_times)
 
         # Verify that 'self.params.chunk_size' is int
-        int(self.params.chunk_size)
         self.params.chunk_size = int(self.params.chunk_size)
 
     def new_tasks(self, extra):
@@ -246,7 +244,7 @@ class GgridScript(SessionBasedScript):
 
         for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.id_times,
                                                                               self.params.chunk_size):            
-            jobname = "ggrid-%s" % (str(index_chunk))
+            jobname = "gnw_measures-%s" % (str(index_chunk))
 
             extra_args = extra.copy()
 
@@ -256,16 +254,16 @@ class GgridScript(SessionBasedScript):
             
             extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
-                                                                        os.path.join('.computation',
+                                                                        os.path.join('computation',
                                                                                      jobname))
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
-                                                                        os.path.join('.computation',
+                                                                        os.path.join('computation',
                                                                                      jobname))
             extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
-                                                                        os.path.join('.computation',
+                                                                        os.path.join('computation',
                                                                                      jobname))
             extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
-                                                                        os.path.join('.computation',
+                                                                        os.path.join('computation',
                                                                                      jobname))
             
 
@@ -279,7 +277,7 @@ class GgridScript(SessionBasedScript):
             self.log.debug("Creating Task for index : %d - %d" %
                            (index_chunk, (index_chunk + self.params.chunk_size)))
 
-            tasks.append(GgridTask(
+            tasks.append(GnwTask(
                     input_file,
                     **extra_args))
 
@@ -296,7 +294,7 @@ class GgridScript(SessionBasedScript):
         try:
             fout=open(merged_csv,"w+")
             for task in self.session:
-                if isinstance(task,GgridTask) and task.execution.returncode == 0:
+                if isinstance(task,GnwTask) and task.execution.returncode == 0:
                     try:
                         for line in open(task.output_file):
                             fout.write(line)    
@@ -340,6 +338,9 @@ class GgridScript(SessionBasedScript):
         try:
             fd = open(file_to_chunk,'rb')
 
+            # Read header
+            header = fd.readline()
+
             fout = None
 
             for (i, line) in enumerate(fd):
@@ -348,11 +349,12 @@ class GgridScript(SessionBasedScript):
                         fout.close()
                     (handle, self.tmp_filename) = tempfile.mkstemp(dir=chunk_files_dir,
                                                                     prefix=
-                                                                   'ggrid-', 
+                                                                   'gnw_measuresn-', 
                                                                    suffix=
                                                                    "%d.csv" % i)
                     fout = open(self.tmp_filename,'w')
                     chunk.append((fout.name,i))
+                    fout.write(header)
                 fout.write(line)
             fout.close()
         except OSError, osx:
