@@ -43,7 +43,7 @@ except ImportError:
 # GC3Pie imports
 import gc3libs
 from gc3libs.exceptions import RecoverableError, UnrecoverableError, \
-    ConfigurationError, LRMSSkipSubmissionToNextIteration, MaximumCapacityReached
+    ConfigurationError, LRMSSkipSubmissionToNextIteration, MaximumCapacityReached, UnrecoverableAuthError
 import gc3libs.url
 from gc3libs import Run
 from gc3libs.utils import mkdir, same_docstring_as
