@@ -506,9 +506,9 @@ class EC2Lrms(LRMS):
 
             gc3libs.log.info(
                 "Successfully imported key `%s` with fingerprint `%s`"
-                " as keypir `%s`" % (imported_key.name,
-                                     imported_key.fingerprint,
-                                     self.keypair_name))
+                " as keypair `%s`" % (imported_key.name,
+                                      imported_key.fingerprint,
+                                      self.keypair_name))
         except Exception, ex:
             fd.close()
             raise UnrecoverableError("Error importing keypair %s: %s"
