@@ -159,6 +159,30 @@ EOF
 
 }
 
+require_python () {
+    require_command "$PYTHON"
+    # We only support python 2.6+, we do not support python 3.x at the
+    # moment.
+    python_right_version=$($PYTHON <<EOF
+import sys
+print(sys.version_info[0]==2 and sys.version_info[1] >= 6)
+EOF
+)
+
+    if [ "$python_right_version" != "True" ]; then
+        die 1 "Wrong version of python is installed" <<EOF
+
+GC3Pie requires Python version 2.6+. Unfortunately, we do not support
+your version of python: $($PYTHON --version 2>&1|sed 's/python//gi').
+
+If a version of python suitable by GC3Pie is present in some
+non-standard location you can specify it from the command line by
+rerunning the script with option '--python' followed by the path of
+the python binary.
+EOF
+    fi
+}
+
 integer_to_boolean () {
     # Get an integer `N` as input,
     # returns the string "Yes" if N > 0
@@ -358,6 +382,7 @@ install_gc3apps () {
               geotop/ggeotop.py \
               geotop/ggeotop_utils.py \
               ieu.uzh.ch/gmhc_coev.py \
+              ieu.uzh.ch/gbiointeract.py \
               turbomole/gricomp.py \
               rosetta/gdocking.py \
               rosetta/grosetta.py \
@@ -514,6 +539,8 @@ fi
 
 # check and install prerequisites
 install_required_sw
+
+require_python
 
 # Download command
 if have_command wget
