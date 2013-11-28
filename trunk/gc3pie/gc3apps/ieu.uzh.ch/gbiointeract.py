@@ -210,7 +210,7 @@ class GBiointeractTaskCollection(ChunkedParameterSweep):
 
 class GBiointeractScript(SessionBasedScript):
     """
-    Run multiple instances of `biointeract` witha a combination of
+    Run multiple instances of `biointeract` with a combination of
     supplied parameters.
     """
     version = __version__
