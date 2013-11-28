@@ -638,7 +638,7 @@ class EC2Lrms(LRMS):
         except Exception, ex:
             fd.close()
             raise UnrecoverableError("Error importing keypair %s: %s"
-                                     % self.keypair_name, ex)
+                                     % (self.keypair_name, ex))
 
     def _make_resource(self, remote_ip):
         """
