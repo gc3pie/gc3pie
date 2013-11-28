@@ -1005,6 +1005,13 @@ class EC2Lrms(LRMS):
 
     @same_docstring_as(LRMS.close)
     def close(self):
+        gc3libs.log.info("Closing connection to cloud '%s'...",
+                         self.name)
+        if self._conn is None and not self.enabled:
+            # The resources was most probably disabled by command
+            # line. We didn't update it before, so we don't care about
+            # currently running VMs now.
+            return
         # Update status of VMs and remote resources
         self.get_resource_status()
         for vm_id, resource in self.resources.items():
