@@ -290,6 +290,29 @@ EOF
 install_virtualenv () {
     DESTDIR=$1
 
+    # Check if gc3pie is already installed.
+    if have_command gc3utils; then
+        WITH_SITE_PACKAGES="--no-site-packages"
+        cat <<EOF
+
+WARNING
+=======
+
+Creating virtual environment with '--no-site-packages' option.  If you
+need to use nordugrid libraries you need to install them inside your
+virtual environment!
+
+EOF
+        ask_yn "Do you still want to proceed?"
+        if [ "$REPLY" = 'no' ]; then
+            echo "Aborting installation as requested."
+            echo
+            exit 0
+        fi
+    else
+        WITH_SITE_PACKAGES="--system-site-packages"
+    fi
+
     # Check python version using the *same* system used by
     # virtualenv.py
     $PYTHON <<EOF
@@ -328,8 +351,8 @@ EOF
     download virtualenv.py $VIRTUALENV_URL
     VIRTUALENV_CMD="$PYTHON virtualenv.py"
 
-    # python virtualenv.py --system-site-packages $DESTDIR
-    $VIRTUALENV_CMD $verbose --system-site-packages -p $PYTHON $DESTDIR
+    # python virtualenv.py --[no,system]-site-packages $DESTDIR
+    $VIRTUALENV_CMD $verbose $WITH_SITE_PACKAGES -p $PYTHON $DESTDIR
 }
 
 install_gc3pie_via_pip () {
