@@ -338,7 +338,7 @@ class EC2Lrms(LRMS):
         self.region = ec2_region
 
         # Mapping of job.ec2_instance_id => LRMS
-        self.resources = {}
+        self.subresources = {}
 
         auth = self._auth_fn()
         self.ec2_access_key = auth.ec2_access_key
@@ -524,16 +524,16 @@ class EC2Lrms(LRMS):
             vm.id, vm.state)
         return vm
 
-    def _get_remote_resource(self, vm):
+    def _get_subresource(self, vm):
         """
-        Return the resource associated to the virtual machine with
-        `vm`.
+        Return the resource associated to the virtual machine `vm`.
 
         Updates the internal list of available resources if needed.
+
         """
-        if vm.id not in self.resources:
-            self.resources[vm.id] = self._make_resource(vm.public_dns_name)
-        return self.resources[vm.id]
+        if vm.id not in self.subresources:
+            self.subresources[vm.id] = self._make_subresource(vm.public_dns_name)
+        return self.subresources[vm.id]
 
     def _get_vm(self, vm_id):
         """
@@ -644,14 +644,14 @@ class EC2Lrms(LRMS):
             raise UnrecoverableError("Error importing keypair %s: %s"
                                      % (self.keypair_name, ex))
 
-    def _make_resource(self, remote_ip):
+    def _make_subresource(self, remote_ip):
         """
         Create a resource associated to the instance with `remote_ip`
         ip using configuration file parameters.
         """
         if not remote_ip:
             raise ValueError(
-                "_make_resource: `remote_ip` must be a valid IP or hostname.")
+                "_make_subresource: `remote_ip` must be a valid IP or hostname.")
         gc3libs.log.debug(
             "Creating remote ShellcmdLrms resource for ip %s", remote_ip)
         args = self.subresource_args.copy()
@@ -663,7 +663,7 @@ class EC2Lrms(LRMS):
         args['ignore_ssh_host_keys'] = True
         args['name'] = "%s@%s" % (remote_ip, self.name)
         args['auth'] = args['vm_auth']
-        resource = self._cfgobj._make_resource(args)
+        resource = self._cfgobj._make_subresource(args)
         return resource
 
     def _parse_security_group(self):
@@ -777,7 +777,7 @@ class EC2Lrms(LRMS):
 
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
-        resource = self._get_remote_resource(self._get_vm(app.ec2_instance_id))
+        resource = self._get_subresource(self._get_vm(app.ec2_instance_id))
         return resource.cancel_job(app)
 
     @same_docstring_as(LRMS.get_resource_status)
@@ -826,7 +826,7 @@ class EC2Lrms(LRMS):
                     "VM with id `%s` is in terminal state `%s`.", vm.id, vm.state)
 
             # Get or create a resource associated to the vm
-            resource = self._get_remote_resource(vm)
+            resource = self._get_subresource(vm)
             try:
                 resource.get_resource_status()
             except Exception, ex:
@@ -844,14 +844,14 @@ class EC2Lrms(LRMS):
 
     @same_docstring_as(LRMS.get_results)
     def get_results(self, job, download_dir, overwrite=False):
-        resource = self._get_remote_resource(self._get_vm(job.ec2_instance_id))
+        resource = self._get_subresource(self._get_vm(job.ec2_instance_id))
         return resource.get_results(job, download_dir, overwrite=False)
 
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
-        if app.ec2_instance_id not in self.resources:
+        if app.ec2_instance_id not in self.subresources:
             try:
-                self.resources[app.ec2_instance_id] = self._get_remote_resource(
+                self.subresources[app.ec2_instance_id] = self._get_subresource(
                     self._get_vm(app.ec2_instance_id))
             except InstanceNotFound, ex:
                 gc3libs.log.error(
@@ -867,7 +867,7 @@ class EC2Lrms(LRMS):
                 app.execution.state = Run.State.UNKNOWN
                 raise ex
 
-        return self.resources[app.ec2_instance_id].update_job_state(app)
+        return self.subresources[app.ec2_instance_id].update_job_state(app)
 
     def submit_job(self, job):
         """
@@ -915,7 +915,7 @@ class EC2Lrms(LRMS):
         image_id = self.get_image_id_for_job(job)
         instance_type = self.get_instance_type_for_job(job)
         # First of all, try to submit to one of the subresources.
-        for vm_id, resource in self.resources.items():
+        for vm_id, resource in self.subresources.items():
             if not resource.updated:
                 # The VM is probably still booting, let's skip to the
                 # next one and add it to the list of "pending" VMs.
@@ -973,7 +973,7 @@ class EC2Lrms(LRMS):
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
-        resource = self._get_remote_resource(
+        resource = self._get_subresource(
             self._get_vm(app.ec2_instance_id))
         return resource.peek(app, remote_filename, local_file, offset, size)
 
@@ -1004,7 +1004,7 @@ class EC2Lrms(LRMS):
 
         # freeing the resource from the application is now needed as
         # the same instanc may run multiple applications
-        resource = self._get_remote_resource(self._get_vm(app.ec2_instance_id))
+        resource = self._get_subresource(self._get_vm(app.ec2_instance_id))
         resource.free(app)
 
         # FIXME: current approach in terminating running instances:
@@ -1016,7 +1016,7 @@ class EC2Lrms(LRMS):
             vm = self._get_vm(app.ec2_instance_id)
             gc3libs.log.info("VM instance %s at %s is no longer needed."
                              " Terminating.", vm.id, vm.public_dns_name)
-            del self.resources[vm.id]
+            del self.subresources[vm.id]
             vm.terminate()
             del self._vmpool[vm.id]
             # self._session.save_all()
@@ -1032,7 +1032,7 @@ class EC2Lrms(LRMS):
             return
         # Update status of VMs and remote resources
         self.get_resource_status()
-        for vm_id, resource in self.resources.items():
+        for vm_id, resource in self.subresources.items():
             if resource.updated and not resource.job_infos:
                 vm = self._get_vm(vm_id)
                 gc3libs.log.warning(
