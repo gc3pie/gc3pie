@@ -37,6 +37,7 @@ from prettytable import PrettyTable
 import time
 import types
 import re
+import multiprocessing as mp
 
 ## 3rd party modules
 import cli  # pyCLI
@@ -1391,7 +1392,6 @@ To get detailed info on a specific command, run:
         # non optional argument
         pass
 
-
     def main(self):
         import gc3utils.commands
 
@@ -1411,7 +1411,8 @@ To get detailed info on a specific command, run:
 
         return self.params.func()
 
-    def _print_vms(self, vms, res, header=True):
+    @staticmethod
+    def _print_vms(vms, res, header=True):
             table = PrettyTable()
             table.border=True
             if header:
@@ -1426,20 +1427,23 @@ To get detailed info on a specific command, run:
                 table.add_row((res.name, vm.id, vm.state, vm.public_dns_name, remote_jobs, ncores, vm.image_id, vm.key_name))
             print(table)
 
-
-    # Subcommand methods
-
-    def list_vms(self):
-        for res in self.resources:
+    @staticmethod
+    def list_vms_in_resource(res, lock, update):
             printed = 0
-            if self.params.update:
+            if update:
                 res.get_resource_status()
             else:
                 res._connect()
 
+            vms = res._vmpool.get_all_vms()
             # draw title to separate output from different resources
             title = "VMs running on EC2 resource `%s`" % res.name
             separator = ('=' * len(title))
+
+            # Acquire the lock before printing
+            lock.acquire()
+            gc3libs.log.debug(
+                "list_vms: Acquiring lock for resource %s", res.name)
             print('')
             print(separator)
             print(title)
@@ -1447,16 +1451,34 @@ To get detailed info on a specific command, run:
             print('')
 
             # draw table of VMs running on resource `res`
-            vms = res._vmpool.get_all_vms()
             if vms:
                 self._print_vms(vms, res)
                 printed += len(vms)
 
             if not printed:
                 print "  no known VMs are currently running on this resource."
+            gc3libs.log.debug(
+                "list_vms: Releasing lock for resource %s", res.name)
+            lock.release()
 
+    # Subcommand methods
+    def list_vms(self):
+        lock = mp.Lock()
+
+        pool = []
+        for res in self.resources:
+            gc3libs.log.debug(
+                "Creating a new process to get status of resource %s",
+                res.name)
+            def _run_list_vms():
+                return self.list_vms_in_resource(res, lock, self.params.update)
+            worker = mp.Process(target=_run_list_vms)
+            pool.append(worker)
+            worker.start()
+
+        for worker in pool:
+            worker.join()
         return 0
-
 
     def cleanup_vms(self):
         for res in self.resources:
