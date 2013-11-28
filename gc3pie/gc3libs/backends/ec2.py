@@ -59,6 +59,10 @@ available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
 _BOTO_ERRMSG_RE = re.compile(r'<Code>(?P<code>[A-Za-z0-9]+)</Code><Message>(?P<message>.*)</Message>', re.X)
 
 
+class InstanceNotFound(UnrecoverableError):
+    """Specified instance was not found"""
+
+
 class VMPool(object):
     """
     Persistable container for a list of VM objects.
@@ -230,7 +234,7 @@ class VMPool(object):
                     "Error getting VM %s: %s" % (vm_id, err),
                     do_log=True)
         if not reservations:
-            raise UnrecoverableError(
+            raise InstanceNotFound(
                 "No instance with id %s has been found." % vm_id)
 
         instances = dict((i.id, i) for i in reservations[0].instances
@@ -846,8 +850,22 @@ class EC2Lrms(LRMS):
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
         if app.ec2_instance_id not in self.resources:
-            self.resources[app.ec2_instance_id] = self._get_remote_resource(
-                self._get_vm(app.ec2_instance_id))
+            try:
+                self.resources[app.ec2_instance_id] = self._get_remote_resource(
+                    self._get_vm(app.ec2_instance_id))
+            except InstanceNotFound, ex:
+                gc3libs.log.error(
+                    "Changing state of task '%s' to TERMINATED since EC2 "
+                    "instance '%s' does not exist anymore.",
+                    app.execution.lrms_jobid, app.ec2_instance_id)
+                app.execution.state = Run.State.TERMINATED
+                raise ex
+            except UnrecoverableError, ex:
+                gc3libs.log.error(
+                    "Changing state of task '%s' to UNKNOWN because of "
+                    "an EC2 error.", app.execution.lrms_jobid)
+                app.execution.state = Run.State.UNKNOWN
+                raise ex
 
         return self.resources[app.ec2_instance_id].update_job_state(app)
 
