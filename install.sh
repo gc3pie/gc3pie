@@ -173,7 +173,7 @@ EOF
         die 1 "Wrong version of python is installed" <<EOF
 
 GC3Pie requires Python version 2.6+. Unfortunately, we do not support
-your version of python: $($PYTHON --version 2>&1|sed 's/python//gi').
+your version of python: $($PYTHON -V 2>&1|sed 's/python//gi').
 
 If a version of python suitable by GC3Pie is present in some
 non-standard location you can specify it from the command line by
