@@ -557,8 +557,7 @@ class SshTransport(Transport):
         """
         gc3libs.log.info(
             "Closing SshTransport to host '%s'... " % self.remote_frontend)
-
-        if self.sftp is not None and self.sftp.get_transport() is not None:
+        if self.sftp is not None and self.sftp.get_channel() is not None:
             self.sftp.close()
             gc3libs.log.info("... sftp connection to '%s' closed",
                              self.remote_frontend)
