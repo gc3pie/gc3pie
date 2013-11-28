@@ -290,6 +290,21 @@ EOF
 install_virtualenv () {
     DESTDIR=$1
 
+    if [ -n "$VIRTUAL_ENV" ]; then
+        cat <<EOF
+
+ERROR
+=====
+
+A virtual environment seems to be already *active*. This will cause
+this script to FAIL.
+
+Try to run 'deactivate' and run again the script.
+
+EOF
+        exit 0
+    fi
+
     # Check if gc3pie is already installed.
     if have_command gc3utils; then
         WITH_SITE_PACKAGES="--no-site-packages"
