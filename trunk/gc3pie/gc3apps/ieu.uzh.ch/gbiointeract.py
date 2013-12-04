@@ -133,7 +133,7 @@ mkdir data
 gzip data/*.txt
 """ % str.join(' ', arguments)
         try:
-            (fd, self.tmp_filename) = tempfile.mkstemp(prefix='g3pie-gbiointeract')
+            (fd, self.tmp_filename) = tempfile.mkstemp(prefix='gc3pie-gbiointeract_')
             write_contents(self.tmp_filename, executable_script)
             os.chmod(self.tmp_filename, 0755)
         except Exception, ex:
@@ -164,15 +164,15 @@ gzip data/*.txt
                              stderr="gbiointeract.err",
                              **extra_args)
 
-        def terminated(self):
-            """
-            Remove temporary script file
-            """
-            try:
-                os.remove(self.tmp_filename)
-            except Exception, ex:
-                gc3libs.log.error("Failed removing temporary file %s. " % self.tmp_filename +
-                              "Error type %s. Message %s" % (type(ex), str(ex)))
+    def terminated(self):
+        """
+        Remove temporary script file
+        """
+        try:
+            os.remove(self.tmp_filename)
+        except Exception, ex:
+            gc3libs.log.error("Failed removing temporary file %s. " % self.tmp_filename +
+                          "Error type %s. Message %s" % (type(ex), str(ex)))
 
 class GBiointeractTaskCollection(ChunkedParameterSweep):
     def __init__(self,
