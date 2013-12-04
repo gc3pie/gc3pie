@@ -87,6 +87,8 @@ class GBiointeractApplication(Application):
                  public_good_diffusion,
                  death_rate,
                  make_movie,
+                 num_cells=None,
+                 num_trials=None,
                  **extra_args):
         extra_args.setdefault('requested_cores', 1)
 
@@ -104,7 +106,11 @@ class GBiointeractApplication(Application):
                      '-D', 'data']
         if make_movie:
             arguments.append('-m')
-
+        if num_cells:
+            arguments.extend(['--num-cells', num_cells])
+        if num_trials:
+            arguments.extend(['--num-trials', num_trials])
+            
         extra_args['jobname'] = "GBiointeract_cdiff:" + \
         "%f_pgdiff:%f_dur:%f_deathrate:%f" % (cell_diffusion,
                                               public_good_diffusion,
@@ -177,12 +183,16 @@ class GBiointeractTaskCollection(ChunkedParameterSweep):
                  death_rate_range,
                  chunk_size,
                  make_movie,
+                 num_cells,
+                 num_trials,
                  **extra_args):
         if not chunk_size:
             chunk_size = step
         self.executable = executable
         self.extra_args = extra_args
         self.make_movie = make_movie
+        self.num_cells = num_cells
+        self.num_trials = num_trials
 
         self.combinations = list(itertools.product(
                  cell_diffusion_range,
@@ -205,6 +215,7 @@ class GBiointeractTaskCollection(ChunkedParameterSweep):
         return GBiointeractApplication(
             self.executable,
             cd, d, pg, dr, self.make_movie,
+            self.num_cells, self.num_trials,
             **self.extra_args)
 
 
@@ -255,7 +266,8 @@ class GBiointeractScript(SessionBasedScript):
         self.add_param("-M", "--make-movie", action="store_true",
                        help="Also produce the `draw.txt` file containing "
                        "the cell positions at each iteration.")
-
+        self.add_param("--num-cells", help="Maximum number of cells.")
+        self.add_param("--num-trials", help="Number of trials to run.")
 
     def setup_args(self):
         self.add_param("executable", nargs="?", default='biointeract',
@@ -309,6 +321,8 @@ class GBiointeractScript(SessionBasedScript):
             self.params.death_rate_range,
             self.params.max_running,
             self.params.make_movie,
+            self.params.num_cells,
+            self.params.num_trials,
             **extra.copy()
             )]
 
