@@ -4,7 +4,7 @@
 Job control on PBS/Torque clusters (possibly connecting to the
 front-end via SSH).
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -208,7 +208,7 @@ class PbsLrms(batch.BatchSystem):
                  max_memory_per_core, max_walltime,
                  auth,  # ignored if `transport` is 'local'
                  # these are inherited from `BatchSystem`
-                 frontend, transport,
+                 frontend, transport, keyfile=None,
                  accounting_delay=15,
                  # these are specific to this backend
                  queue=None,
@@ -219,7 +219,7 @@ class PbsLrms(batch.BatchSystem):
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
-            frontend, transport, accounting_delay=accounting_delay,
+            frontend, transport, keyfile, accounting_delay,
             **extra_args)
 
         # backend-specific setup
