@@ -354,10 +354,13 @@ class SgeLrms(batch.BatchSystem):
                  max_memory_per_core, max_walltime,
                  auth,  # ignored if `transport` is 'local'
                  # these are inherited from the `BatchSystem` class
-                 frontend, transport, keyfile=None,
-                 accounting_delay=15,
+                 frontend, transport,
                  # these are specific to the SGE class
                  default_pe=None,
+                 # (Note that optional arguments to the `BatchSystem` class, e.g.:
+                 #     keyfile=None, accounting_delay=15,
+                 # are collected into `extra_args` and should not be explicitly
+                 # spelled out in this signature.)
                  **extra_args):
 
         # init base class
@@ -365,7 +368,7 @@ class SgeLrms(batch.BatchSystem):
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
-            frontend, transport, keyfile, accounting_delay, **extra_args)
+            frontend, transport, **extra_args)
 
         self.default_pe = default_pe
 
