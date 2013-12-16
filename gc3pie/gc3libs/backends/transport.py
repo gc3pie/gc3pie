@@ -6,7 +6,7 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -240,7 +240,6 @@ class SshTransport(Transport):
         self.username = username
 
         self.ssh = paramiko.SSHClient()
-        self.ssh_config = paramiko.SSHConfig()
         self.keyfile = keyfile
         self.ignore_ssh_host_keys = ignore_ssh_host_keys
         self.sftp = None
@@ -249,11 +248,12 @@ class SshTransport(Transport):
 
         if not self.keyfile:
             try:
+                ssh_config = paramiko.SSHConfig()
                 config_filename = os.path.expanduser('~/.ssh/config')
                 config_file = open(config_filename)
-                self.ssh_config.parse(config_file)
+                ssh_config.parse(config_file)
                 # Check if we have an ssh configuration stanza for this host
-                hostconfig = self.ssh_config.lookup(self.remote_frontend)
+                hostconfig = ssh_config.lookup(self.remote_frontend)
                 self.keyfile = hostconfig.get('identityfile', None)
                 config_file.close()
             except IOError:
