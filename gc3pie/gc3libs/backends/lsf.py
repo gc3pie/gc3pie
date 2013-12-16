@@ -365,9 +365,12 @@ class LsfLrms(batch.BatchSystem):
                  max_memory_per_core, max_walltime,
                  auth, # ignored if `transport` is 'local'
                  # these are inherited from `BatchSystem`
-                 frontend, transport, keyfile=None,
-                 accounting_delay = 15,
+                 frontend, transport,
                  # these are specific to this backend
+                 # (Note that optional arguments to the `BatchSystem` class, e.g.:
+                 #     keyfile=None, accounting_delay=15,
+                 # are collected into `extra_args` and should not be explicitly
+                 # spelled out in this signature.)
                  **extra_args):
 
         # init base class
@@ -375,7 +378,7 @@ class LsfLrms(batch.BatchSystem):
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
-            frontend, transport, keyfile, accounting_delay,
+            frontend, transport,
             **extra_args)
 
         self.bsub = self._get_command_argv('bsub')
