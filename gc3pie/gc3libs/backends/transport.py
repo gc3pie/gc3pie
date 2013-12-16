@@ -225,6 +225,7 @@ class Transport(object):
 #
 
 import sys
+import types
 
 import paramiko
 
@@ -240,13 +241,13 @@ class SshTransport(Transport):
         self.username = username
 
         self.ssh = paramiko.SSHClient()
-        self.keyfile = keyfile
         self.ignore_ssh_host_keys = ignore_ssh_host_keys
         self.sftp = None
         self._is_open = False
         self.transport_channel = None
 
-        if not self.keyfile:
+        if keyfile is None:
+            # try to get the path to SSH public key file  from `~/.ssh/config`
             try:
                 ssh_config = paramiko.SSHConfig()
                 config_filename = os.path.expanduser('~/.ssh/config')
@@ -256,9 +257,16 @@ class SshTransport(Transport):
                 hostconfig = ssh_config.lookup(self.remote_frontend)
                 self.keyfile = hostconfig.get('identityfile', None)
                 config_file.close()
-            except IOError:
-                # File not found. Ignoring
-                pass
+            except IOError, err:
+                if err.errno == 2:
+                    # "No such file or directory" -- ignore error
+                    self.keyfile = None
+                else:
+                    raise
+        else:
+            assert type(keyfile) in types.StringTypes
+            self.keyfile = keyfile
+
 
     @same_docstring_as(Transport.connect)
     def connect(self):
