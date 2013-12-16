@@ -3,7 +3,7 @@
 """
 Job control on SGE clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -354,7 +354,7 @@ class SgeLrms(batch.BatchSystem):
                  max_memory_per_core, max_walltime,
                  auth,  # ignored if `transport` is 'local'
                  # these are inherited from the `BatchSystem` class
-                 frontend, transport,
+                 frontend, transport, keyfile=None,
                  accounting_delay=15,
                  # these are specific to the SGE class
                  default_pe=None,
@@ -365,7 +365,7 @@ class SgeLrms(batch.BatchSystem):
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
-            frontend, transport, accounting_delay, **extra_args)
+            frontend, transport, keyfile, accounting_delay, **extra_args)
 
         self.default_pe = default_pe
 
