@@ -663,7 +663,7 @@ class EC2Lrms(LRMS):
         args['ignore_ssh_host_keys'] = True
         args['name'] = "%s@%s" % (remote_ip, self.name)
         args['auth'] = args['vm_auth']
-        resource = self._cfgobj._make_subresource(args)
+        resource = self._cfgobj._make_resource(args)
         return resource
 
     def _parse_security_group(self):
