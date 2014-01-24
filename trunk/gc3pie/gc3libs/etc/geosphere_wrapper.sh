@@ -352,7 +352,7 @@ echo "Postprocessing:"
 echo -e "---------------\n"
 
 # generate output archive
-echo -n "Generating output archive... "
+echo "Generating output archive... "
 # e.g. tar cfz testo.results.tgz testo.*
 OUTPUT_ARCHIVE="result-${WORKING_DIR}-${TODAY}.tgz"
 log "${TAR} cfz ${OUTPUT_ARCHIVE} *"
@@ -372,8 +372,18 @@ cd $CUR_DIR
 case $OUTPUT_URL in
     "s3://"* )
 	# Upload to S3 repo
+	log "Checking whether output-data already exists... "
+	s3mcd -q info ${OUTPUT_URL}/${OUTPUT_ARCHIVE}
+	if [ $? -eq 0]; then
+	    # data exists on S3
+	    # postfix hours-minutes-secs
+	    POSTFIX="-`date +%H%M%S`"
+	    log "Output archive already exists; creating postfix ${POSTFIX}"
+	else
+	    POSTFIX=""
+	fi
 	log "Uploading result..."
-	put_s3_archive ${WORKING_DIR}/${OUTPUT_ARCHIVE} ${OUTPUT_URL}/${OUTPUT_ARCHIVE}
+	put_s3_archive ${WORKING_DIR}/${OUTPUT_ARCHIVE} ${OUTPUT_URL}/${OUTPUT_ARCHIVE}${POSTFIX}
 	if [ $? -ne 0 ]; then
 	    echo "ERROR: failed to upload output archive"
 	    FAILED=1
