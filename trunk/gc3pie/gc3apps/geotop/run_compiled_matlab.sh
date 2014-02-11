@@ -12,7 +12,7 @@ if [ "x$1" = "x" ]; then
   echo    $0 \<Matlab-compiled-script\> args
 else
   echo Setting up environment variables
-  MCRROOT="/usr/local/MATLAB/R2012a/"
+  # MCRROOT="/usr/local/MATLAB/R2012a/"
   # MCRROOT="$1"
   echo ---
   LD_LIBRARY_PATH=.:${MCRROOT}/runtime/glnxa64 ;
