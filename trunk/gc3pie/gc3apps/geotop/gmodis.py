@@ -97,11 +97,15 @@ class GmodisApplication(Application):
         _command.append("-d")
 
         if extra_args.has_key('fsc_dir'):
-            inputs.extend( (os.path.join(extra_args['fsc_dir'],v),
+            inputs.update(dict((os.path.join(extra_args['fsc_dir'],v),
                             os.path.join(
                                 os.path.basename(extra_args['fsc_dir']),
                                          v))
-                           for v in os.listdir(extra_args['fsc_dir']))
+                           for v in os.listdir(extra_args['fsc_dir'])))
+
+
+            
+
             _command.append("-f ./%s " % os.path.basename(extra_args['fsc_dir']))
 
         if extra_args.has_key('gmodis_funct'):
