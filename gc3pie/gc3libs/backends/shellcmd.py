@@ -726,9 +726,12 @@ ReturnCode=%x"""
         # link to a file we do not own)
         if app.arguments[0].startswith('./'):
             try:
-                os.chmod(app.arguments[0], 0755)
-            except OSError:
-                pass
+                self.transport.chmod(posixpath.join(execdir, app.arguments[0][2:]), 0755)
+                # os.chmod(app.arguments[0], 0755)
+            except:
+                log.error(
+                    "Failed setting execution flag on remote file '%s'",
+                    posixpath.join(execdir, app.arguments[0]))
 
         ## set up redirection
         redirection_arguments = ''
