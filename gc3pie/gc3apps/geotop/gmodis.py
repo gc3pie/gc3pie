@@ -58,6 +58,8 @@ import tempfile
 
 import shutil
 
+from pkg_resources import Requirement, resource_filename
+
 import gc3libs
 import gc3libs.exceptions
 from gc3libs import Application, Run, Task
@@ -80,7 +82,19 @@ class GmodisApplication(Application):
         self.output_dir = extra_args['output_dir']
 
         # setup input references
-        inputs = [ (input_file,os.path.basename(input_file)) ]
+
+        inputs = dict()
+
+        gmodis_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
+                                              "gc3libs/etc/gmodis_wrapper.sh")
+        inputs[gmodis_wrapper_sh] = os.path.basename(gmodis_wrapper_sh)
+
+        _command = []
+
+        _command.append("./%s" % os.path.basename(gmodis_wrapper_sh))
+
+        # Add denug info
+        _command.append("-d")
 
         if extra_args.has_key('fsc_dir'):
             inputs.extend( (os.path.join(extra_args['fsc_dir'],v),
@@ -88,124 +102,36 @@ class GmodisApplication(Application):
                                 os.path.basename(extra_args['fsc_dir']),
                                          v))
                            for v in os.listdir(extra_args['fsc_dir']))
+            _command.append("-f ./%s " % os.path.basename(extra_args['fsc_dir']))
 
         if extra_args.has_key('gmodis_funct'):
             # e.g. ('/home/data/matlab/gmodis','~/bin/gmodis')
-            inputs.append([extra_args['gmodis_funct'],
-                          os.path.basename(extra_args['gmodis_funct'])])
+            inputs[extra_args['gmodis_funct']] = os.path.basename(extra_args['gmodis_funct'])
 
+            _command.append("-x ./%s " % os.path.basename(extra_args['gmodis_funct']))
 
         if extra_args.has_key('matlab_driver'):
-            inputs.append([extra_args['matlab_driver'],
-                          os.path.basename(extra_args['matlab_driver'])])
+            inputs[extra_args['matlab_driver']] = os.path.basename(extra_args['matlab_driver'])
 
-            
+            _command.append("-s ./%s " % os.path.basename(extra_args['matlab_driver']))
+
+        inputs[input_file] = os.path.basename(input_file)
+        _command.append(os.path.basename(input_file))
+
         outputs =  gc3libs.ANY_OUTPUT
 
-
-        # prepare execution script from command
-        execution_script = """
-#!/bin/sh -x
-
-# Check environment:
-# Matlab/RTE
-# 
-
-# Check input data
-MATLAB_COMPILED_SCRIPT=%s
-FSC_LOAD_FOLDER=%s
-INPUT_FSC=%s
-OUTPUT_FOLDER=%s
-
-echo -n "MATLAB_COMPILED_SCRIPT... "
-if [ -x ${MATLAB_COMPILED_SCRIPT} ]; then
-    echo "[ok]"
-else
-    echo "[Command not found]"
-    exit 127 # Command not found
-fi
-
-echo -n "FSC_LOAD_FOLDER... "
-if [ -d ${FSC_LOAD_FOLDER} ]; then
-    echo "[ok]"
-else
-    echo "[Folder not found]"
-    exit 1 
-fi
-
-echo -n "INPUT_FSC... "
-if [ -e ${INPUT_FSC} ]; then
-    echo "[ok]"
-else
-    echo "[File not found]"
-    exit 1 
-fi
-
-echo -n "OUTPUT_FOLDER... "
-if [ -d ${OUTPUT_FOLDER} ]; then
-    echo "[ok]"
-else
-    # create it
-    mkdir -p ${OUTPUT_FOLDER}
-    echo "[ok]"
-fi
-
-# Check options
-
-# echo configuration
-
-# run script
-echo "Runnning: ./run_compiled_matlab.sh ${MATLAB_COMPILED_SCRIPT} ${FSC_LOAD_FOLDER} ${INPUT_FSC} ${OUTPUT_FOLDER}"
-./run_compiled_matlab.sh ${MATLAB_COMPILED_SCRIPT} ${FSC_LOAD_FOLDER} ${INPUT_FSC} ${OUTPUT_FOLDER}
-RET=$?
-
-# Prepare result
-
-exit $RET
-        """ % (os.path.basename(extra_args['gmodis_funct']), os.path.basename(extra_args['fsc_dir']), os.path.basename(input_file), "./output")
-
-        try:
-            # create script file
-            (handle, self.tmp_filename) = tempfile.mkstemp(prefix='gc3pie-gmodis', suffix=extra_args['jobname'])
-
-            # XXX: use NamedTemporaryFile instead with 'delete' = False
-
-            fd = open(self.tmp_filename,'w')
-            fd.write(execution_script)
-            fd.close()
-            os.chmod(fd.name,0777)
-        except Exception, ex:
-            gc3libs.log.debug("Error creating execution script" +
-                              "Error type: %s." % type(ex) +
-                              "Message: %s"  %ex.message)
-            raise
-
-        inputs.append((fd.name,'gmodis.sh'))
-
+        # Add memory requirement
+        extra_args['requested_memory'] = 16*GB
 
         Application.__init__(
             self,
-            arguments = ['./gmodis.sh'],
+            arguments = _command,
+            executables = "./%s" % os.path.basename(gmodis_wrapper_sh),
             inputs = inputs,
             outputs = outputs,
             stdout = 'gmodis.log',
             join=True,
             **extra_args)
-
-    def fetch_output_error(self, ex):
-        # Ignore errors if `pos.output` file has not been created by
-        # the application.
-        if isinstance(ex, gc3libs.exceptions.CopyError):
-            if os.path.basename(ex.source) == 'pos.output':
-                return None
-        return ex
-
-    def terminated(self):
-        """
-        Extract output file from 'out' 
-        """
-        pass
-
 
 class GmodisTask(RetryableTask):
     def __init__(self, input_file, **extra_args):
@@ -224,7 +150,7 @@ class GmodisTask(RetryableTask):
         due to an error within the exeuction environment
         (e.g. VM crash or LRMS kill)
         """
-        # XXX: check whether it is possible to distingish 
+        # XXX: check whether it is possible to distinguish 
         # between the error conditions and set meaningfull exitcode
         return False
 
@@ -236,10 +162,7 @@ directories and submit a job for each one found; job progress is
 monitored and, when a job is done, its output files are retrieved back
 into the simulation directory itself.
 
-A simulation directory is defined as a directory containing a
-``geotop.inpts`` file.
-
-The ``ggeotop`` command keeps a record of jobs (submitted, executed
+The ``gmodis`` command keeps a record of jobs (submitted, executed
 and pending) in a session file (set name with the ``-s`` option); at
 each invocation of the command, the status of all recorded jobs is
 updated, output from finished jobs is collected, and a summary table
@@ -247,7 +170,7 @@ of all known jobs is printed.  New jobs are added to the session if
 new input files are added to the command line.
 
 Options can specify a maximum number of jobs that should be in
-'SUBMITTED' or 'RUNNING' state; ``ggeotop`` will delay submission of
+'SUBMITTED' or 'RUNNING' state; ``gmodis`` will delay submission of
 newly-created jobs so that this limit is never exceeded.
     """
 
@@ -325,15 +248,15 @@ newly-created jobs so that this limit is never exceeded.
 
         tasks = []
 
-        for input_file in os.listdir(self.params.input_dir):
+        for input_file in os.listdir(os.path.abspath(self.params.input_dir)):
             try: 
                 # Take only .mat files
                 if input_file.endswith('.mat'): 
                     
                     # Use first sequence in input file name as jobname
                     # e.g. FSC10A1.A2000083_aT_fsc_stitch.mat will get
-                    # gmodis-FSC10A1
-                    jobname = "gmodis-%s" % input_file[:7]
+                    # gmodis-FSC10A1.A2000083
+                    jobname = "gmodis-%s" % input_file[:16]
                     
                     extra_args = extra.copy()
                     extra_args['jobname'] = jobname
@@ -358,7 +281,7 @@ newly-created jobs so that this limit is never exceeded.
                         extra_args['gmodis_funct'] = self.params.gmodis_funct
 
                     tasks.append(GmodisTask(
-                        os.path.join(self.params.input_dir,input_file),
+                        os.path.join(os.path.abspath(self.params.input_dir),input_file),
                         **extra_args))
                     
             except Exception, ex:

@@ -4,16 +4,16 @@
 # Sets up the MCR environment for the current $ARCH and executes 
 # the specified command.
 #
-exe_name=$0
-exe_dir=`dirname "$0"`
+# exe_name=$0
+# exe_dir=`dirname "$0"`
 echo "------------------------------------------"
 if [ "x$1" = "x" ]; then
   echo Usage:
   echo    $0 \<Matlab-compiled-script\> args
 else
   echo Setting up environment variables
-  # MCRROOT="/usr/local/MATLAB/R2012a/"
-  # MCRROOT="$1"
+  # MCRROOT as defined within given Appliance
+  MCRROOT=/opt/MATLAB/MATLAB_Compiler_Runtime/v717/
   echo ---
   LD_LIBRARY_PATH=.:${MCRROOT}/runtime/glnxa64 ;
   LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRROOT}/bin/glnxa64 ;
@@ -36,7 +36,8 @@ else
       args="${args} ${token}" 
       shift
   done
-  "${exe_dir}"/"${exe_name}" $args
+  echo "running: ${exe_name} $args"
+  ${exe_name} $args
 fi
 exit
 
