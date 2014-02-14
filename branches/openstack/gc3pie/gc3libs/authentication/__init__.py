@@ -174,6 +174,7 @@ Auth.register('none', NoneAuth)
 import gc3libs.authentication.grid
 import gc3libs.authentication.ssh
 import gc3libs.authentication.ec2
+import gc3libs.authentication.openstack
 
 ## main: run tests
 
