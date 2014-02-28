@@ -2,7 +2,7 @@
 # @(#)install.sh
 #
 #
-#  Copyright (C) 2012 GC3, University of Zurich. All rights reserved.
+#  Copyright (C) 2012-2014 GC3, University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -23,6 +23,7 @@ PROG="GC3Pie install"
 
 BASE_PIP_URL="https://pypi.python.org/simple"
 VIRTUALENV_LATEST_URL="https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
+VIRTUALENV_191_URL="https://raw.github.com/pypa/virtualenv/1.9.1/virtualenv.py"
 VIRTUALENV_172_URL="https://raw.github.com/pypa/virtualenv/1.7.2/virtualenv.py"
 PIP_11_URL="http://pypi.python.org/packages/source/p/pip/pip-1.1.tar.gz"
 GC3_SVN_URL="http://gc3pie.googlecode.com/svn/trunk/gc3pie"
@@ -175,18 +176,18 @@ EOF
 GC3Pie requires Python version 2.6+. Unfortunately, we do not support
 your version of python: $($PYTHON -V 2>&1|sed 's/python//gi').
 
-If a version of python suitable by GC3Pie is present in some
-non-standard location you can specify it from the command line by
-rerunning the script with option '--python' followed by the path of
-the python binary.
+If a version of Python suitable for using GC3Pie is present in some
+non-standard location, you can specify it from the command line by
+running this script agin with option '--python' followed by the path of
+the correct 'python' binary.
 EOF
     fi
 }
 
 integer_to_boolean () {
-    # Get an integer `N` as input,
-    # returns the string "Yes" if N > 0
-    # returns the string "No" otherwise
+    # Get an integer `N` as input:
+    # returns the string "yes" if N > 0;
+    # returns the string "no" otherwise.
     N=$1
     if [ -n "$N" ] && [ "$N" -ge 1 ]; then
         echo "yes"
@@ -299,7 +300,7 @@ ERROR
 A virtual environment seems to be already *active*. This will cause
 this script to FAIL.
 
-Try to run 'deactivate' and run again the script.
+Run 'deactivate', then run this script again.
 
 EOF
         exit 0
@@ -314,7 +315,7 @@ WARNING
 =======
 
 Creating virtual environment with '--no-site-packages' option.  If you
-need to use nordugrid libraries you need to install them inside your
+need to use the NorduGrid libraries, you need to install them inside the
 virtual environment!
 
 EOF
@@ -347,7 +348,7 @@ EOF
             ;;
         0)
             # using latest virtualenv
-            VIRTUALENV_URL=$VIRTUALENV_LATEST_URL
+            VIRTUALENV_URL=$VIRTUALENV_191_URL
             pip_download pip
             pip_download setuptools
             # download $(basename $PIP_URL) $PIP_URL
@@ -383,7 +384,7 @@ install_gc3pie_via_pip () {
     fi
     if ! test -x $VENVDIR/bin/pip; then
         die 5 "cannot find command 'pip' in '$VENVDIR/bin'" <<EOF
-The script was unable to create a valid virtual environment.
+This script was unable to create a valid virtual environment.
 EOF
     fi
     echo "Installing GC3Pie from PyPI package with '$VENVDIR/bin/pip' ..."
@@ -393,17 +394,19 @@ EOF
 install_gc3pie_via_svn () {
     require_cc
     require_svn
-    (
-        cd $VENVDIR
-        echo "Downloading GC3Pie from subversion repository $GC3_SVN_URL"
-        svn co $GC3_SVN_URL src
-        cd src
-        python setup.py develop
-    )
+    orig_wd=$PWD
+
+    cd $VENVDIR
+    echo "Downloading GC3Pie from subversion repository $GC3_SVN_URL ..."
+    svn co $GC3_SVN_URL src
+
+    cd src
+    python setup.py develop
+    cd $orig_wd
 }
 
 install_gc3apps () {
-    echo "Installing extra applications in $VENVDIR"
+    echo "Installing extra applications in $VENVDIR ..."
 
     if [ $DEVELOP -eq 0 ]
     then
@@ -439,7 +442,7 @@ install_gc3apps () {
 
 usage () {
     cat <<EOF
-This program will install GC3Pie in your directory '$HOME/gc3pie'.
+This program installs GC3Pie into directory '$VENVDIR'.
 
 usage:
 $0 [OPTIONS]
@@ -457,7 +460,7 @@ Options:
 
       -D, --develop          Install development version.
 
-      -N, --no-gc3apps       Do not install extra GC3 applications, like 'gcodeml', 'grosetta' and 'ggamess'.
+      -N, --no-gc3apps       Do not install extra GC3 applications, like 'gcodeml', 'grosetta', or 'ggamess'.
 
       -h, --help             Print this help text.
 
@@ -487,8 +490,6 @@ else
     fi
     eval set -- $args
 fi
-
-# eval set  -- "$ARGS"
 
 while true
 do
@@ -583,7 +584,7 @@ require_python
 # Download command
 if have_command wget
 then
-    download () { wget $verbose --no-check-certificate -O "$@"; }
+    download () { wget -nv $verbose --no-check-certificate -O "$@"; }
 elif have_command curl
 then
     download () { curl $verbose --insecure -L -s -o "$@"; }
@@ -591,11 +592,10 @@ else
     die 6 "No 'curl' or 'wget' command found." <<EOF
 The script needs either one of the 'curl' or 'wget' commands to run.
 Please, install at least one of them using the software manager of
-your distribution, or downloading it from internet.
+your distribution, or downloading it from internet:
 
-wget: http://www.gnu.org/software/wget/
-
-curl: http://curl.haxx.se/
+- wget: http://www.gnu.org/software/wget/
+- curl: http://curl.haxx.se/
 EOF
 fi
 
@@ -690,18 +690,22 @@ then
             echo
         fi
     fi
-    echo "==============================="
-    echo "Installation of GC3Pie is done!"
-    echo "==============================="
-    echo
-    echo "In order to work with GC3Pie you have to enable the virtual"
-    echo "environment with the command:"
-    echo
-    echo "    . $VENVDIR/bin/activate"
-    echo
-    echo "You need to run the above command on every new shell you open just once before using GC3Pie commands."
-    echo
-    echo "If the shell's prompt starts with '(gc3pie)' it means that the virtual environment"
-    echo "has been enabled."
+    cat <<EOF
+===============================
+Installation of GC3Pie is done!
+===============================
+
+In order to work with GC3Pie you have to enable the virtual
+environment with the command:
+
+    . $VENVDIR/bin/activate
+
+You need to run the above command on every new shell you open before
+using GC3Pie commands, but just once per session.
+
+If the shell's prompt starts with '(gc3pie)' it means that the virtual
+environment has been enabled.
+
+EOF
 
 fi
