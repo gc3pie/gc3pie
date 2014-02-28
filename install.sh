@@ -345,7 +345,7 @@ EOF
     fi
 
     # Check if gc3pie is already installed.
-    if have_command gc3utils; then
+    if have_command gc3utils || have_command easy_install || have_command pip; then
         WITH_SITE_PACKAGES="--no-site-packages"
         cat <<EOF
 
