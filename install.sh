@@ -387,7 +387,7 @@ EOF
             download pip-1.1.tar.gz $PIP_11_URL
             ;;
         0)
-            # using latest virtualenv
+            # use the latest virtualenv that can use `.tar.gz` files
             VIRTUALENV_URL=$VIRTUALENV_191_URL
             download_from_pypi pip
             download_from_pypi setuptools
@@ -412,7 +412,7 @@ EOF
 
     # Recent versions of `pip` insist that setuptools>=0.8 is installed,
     # because they try to use the "wheel" format for any kind of package
-    if pip wheel --help >& /dev/null; then
+    if pip wheel --help 1>/dev/null 2>/dev/null; then
         # need to update setuptools, or `pip` will error out::
         #
         #     Wheel installs require setuptools >= 0.8 for dist-info support.
