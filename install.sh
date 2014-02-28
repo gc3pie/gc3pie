@@ -314,6 +314,20 @@ EOF
     fi
 }
 
+
+download_from_pypi () {
+    pkg=$1
+    url=$(download - $BASE_PIP_URL/$pkg/ | grep "source/./$pkg.*z" |sed 's:.*href="\([^#"]*\)["#].*:\1:g' | sort | tail -1 )
+    if [ -n "$url" ]; then
+        download $(basename $url) $BASE_PIP_URL/$pkg/$url
+    else
+        die $EX_PROTOCOL "Package '$pkg' not found on PyPI!" <<EOF
+Unable to download package '$pkg' from PyPI.
+EOF
+    fi
+}
+
+
 install_virtualenv () {
     DESTDIR=$1
 
@@ -375,10 +389,8 @@ EOF
         0)
             # using latest virtualenv
             VIRTUALENV_URL=$VIRTUALENV_191_URL
-            pip_download pip
-            pip_download setuptools
-            # download $(basename $PIP_URL) $PIP_URL
-            # download $(basename $SETUPTOOLS_URL) $SETUPTOOLS_URL
+            download_from_pypi pip
+            download_from_pypi setuptools
             ;;
         *)
             die $EX_SOFTWARE "unable to check python version" <<EOF
@@ -395,6 +407,18 @@ EOF
 
     # python virtualenv.py --[no,system]-site-packages $DESTDIR
     $VIRTUALENV_CMD $verbose $WITH_SITE_PACKAGES -p $PYTHON $DESTDIR
+
+    . $VENVDIR/bin/activate
+
+    # Recent versions of `pip` insist that setuptools>=0.8 is installed,
+    # because they try to use the "wheel" format for any kind of package
+    if pip wheel --help >& /dev/null; then
+        # need to update setuptools, or `pip` will error out::
+        #
+        #     Wheel installs require setuptools >= 0.8 for dist-info support.
+        #
+        easy_install -U setuptools
+    fi
 }
 
 install_gc3pie_via_pip () {
@@ -625,19 +649,6 @@ your distribution, or downloading it from internet:
 EOF
 fi
 
-# Command to get packages from pip
-pip_download () {
-    pkg=$1
-    url=$(download - $BASE_PIP_URL/$pkg/ | grep "source/./$pkg.*z" |sed 's:.*href="\([^#"]*\)["#].*:\1:g' | sort | tail -1 )
-    if [ -n "$url" ]; then
-        download $(basename $url) $BASE_PIP_URL/$pkg/$url
-    else
-        die $EX_PROTOCOL "Package '$pkg' not found on PyPI!" <<EOF
-Unable to download package '$pkg' from PyPI.
-EOF
-    fi
-}
-
 # Install virtualenv
 if [ -d $VENVDIR ]
 then
@@ -687,8 +698,6 @@ then
 The script was unable to create a valid virtual environment.
 EOF
 fi
-
-. $VENVDIR/bin/activate
 
 rc=0
 if [ $DEVELOP -eq 0 ]
