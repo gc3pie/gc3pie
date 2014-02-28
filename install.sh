@@ -30,7 +30,8 @@ GC3_SVN_URL="http://gc3pie.googlecode.com/svn/trunk/gc3pie"
 
 VIRTUALENV_CMD="virtualenv"
 
-# Defaults
+
+## Defaults
 VENVDIR=$HOME/gc3pie
 DEVELOP=0
 WITHAPPS=1
@@ -38,7 +39,32 @@ OVERWRITEDIR=ask
 ASKCONFIRMATION=1
 PYTHON=python
 
-# Auxiliary functions
+
+## Exit status codes (mostly following <sysexits.h>)
+
+# successful exit
+EX_OK=0
+
+# wrong command-line invocation
+EX_USAGE=64
+
+# missing dependencies (e.g., no C compiler)
+EX_UNAVAILABLE=69
+
+# wrong python version
+EX_SOFTWARE=70
+
+# cannot create directory or file
+EX_CANTCREAT=73
+
+# user aborted operations
+EX_TEMPFAIL=75
+
+# misused as: unexpected error in some script we call
+EX_PROTOCOL=76
+
+
+## Auxiliary functions
 
 # abort RC [MSG]
 #
@@ -134,7 +160,7 @@ require_cc () {
     have_command $CC || have_command cc
     if [ $? -ne 0 ]
     then
-        die 1 "Unable to find a C compiler!" <<EOF
+        die $EX_UNAVAILABLE "unable to find a C compiler!" <<EOF
 To install the GC3Pie development branch, a C language compiler
 is needed.
 
@@ -149,7 +175,7 @@ require_svn () {
     have_command svn
     if [ $? -ne 0 ]
     then
-        die 2 "Unable to find the 'svn' command!" <<EOF
+        die $EX_UNAVAILABLE "Unable to find the 'svn' command!" <<EOF
 To install the GC3Pie development branch installation,
 the SubVersion ('svn') command is needed.
 
@@ -171,7 +197,7 @@ EOF
 )
 
     if [ "$python_right_version" != "True" ]; then
-        die 1 "Wrong version of python is installed" <<EOF
+        die $EX_UNAVAILABLE "Wrong version of python is installed" <<EOF
 
 GC3Pie requires Python version 2.6+. Unfortunately, we do not support
 your version of python: $($PYTHON -V 2>&1|sed 's/python//gi').
@@ -240,7 +266,7 @@ EOF
             if [ "$REPLY" = 'yes' ]; then
                 warn "Proceeding with installation at your request... keep fingers crossed!"
             else
-                die 3 "missing software prerequisites" <<EOF
+                die $EX_UNAVAILABLE "missing software prerequisites" <<EOF
 Please ask your system administrator to install the missing packages,
 or, if you have root access, you can do that by running the following
 command from the 'root' account:
@@ -269,7 +295,7 @@ EOF
             if [ "$REPLY" = 'yes' ]; then
                 warn "Proceeding with installation at your request... keep fingers crossed!"
             else
-                die 3 "missing software prerequisites" <<EOF
+                die $EX_UNAVAILABLE "missing software prerequisites" <<EOF
 Please ask your system administrator to install the missing packages,
 or, if you have root access, you can do that by running the following
 command from the 'root' account:
@@ -303,7 +329,7 @@ this script to FAIL.
 Run 'deactivate', then run this script again.
 
 EOF
-        exit 0
+        exit $EX_SOFTWARE
     fi
 
     # Check if gc3pie is already installed.
@@ -323,7 +349,7 @@ EOF
         if [ "$REPLY" = 'no' ]; then
             echo "Aborting installation as requested."
             echo
-            exit 0
+            exit $EX_TEMPFAIL
         fi
     else
         WITH_SITE_PACKAGES="--system-site-packages"
@@ -355,7 +381,7 @@ EOF
             # download $(basename $SETUPTOOLS_URL) $SETUPTOOLS_URL
             ;;
         *)
-            die 4 "unable to check python version" <<EOF
+            die $EX_SOFTWARE "unable to check python version" <<EOF
 The script was unable to check the version of the Python
 language installed (check returned an exit status of "$?").
 This check is needed to know which version of the "virtualenv"
@@ -383,7 +409,7 @@ install_gc3pie_via_pip () {
         done
     fi
     if ! test -x $VENVDIR/bin/pip; then
-        die 5 "cannot find command 'pip' in '$VENVDIR/bin'" <<EOF
+        die $EX_SOFTWARE "cannot find command 'pip' in '$VENVDIR/bin'" <<EOF
 This script was unable to create a valid virtual environment.
 EOF
     fi
@@ -504,7 +530,7 @@ do
             ;;
         -h|--help)
             usage
-            exit 0
+            exit $EX_OK
             ;;
         -D|--develop)
             DEVELOP=1
@@ -533,7 +559,7 @@ do
             warn "Unknown option: $1"
             echo
             usage
-            exit 1
+            exit $EX_USAGE
             ;;
     esac
     shift
@@ -573,7 +599,7 @@ ask_yn "Are you ready to proceed?"
 if [ "$REPLY" = 'no' ]; then
     echo "Aborting installation as requested."
     echo
-    exit 0
+    exit $EX_TEMPFAIL
 fi
 
 # check and install prerequisites
@@ -589,7 +615,7 @@ elif have_command curl
 then
     download () { curl $verbose --insecure -L -s -o "$@"; }
 else
-    die 6 "No 'curl' or 'wget' command found." <<EOF
+    die $EX_UNAVAILABLE "Neither 'curl' nor 'wget' command found." <<EOF
 The script needs either one of the 'curl' or 'wget' commands to run.
 Please, install at least one of them using the software manager of
 your distribution, or downloading it from internet:
@@ -606,7 +632,7 @@ pip_download () {
     if [ -n "$url" ]; then
         download $(basename $url) $BASE_PIP_URL/$pkg/$url
     else
-        die 5 "Package '$pkg' not found on PyPI!" <<EOF
+        die $EX_PROTOCOL "Package '$pkg' not found on PyPI!" <<EOF
 Unable to download package '$pkg' from PyPI.
 EOF
     fi
@@ -630,7 +656,7 @@ then
     fi
     if [ $OVERWRITEDIR = 'no' ]
     then
-        die 7 "Unable to create virtualenv in '$VENVDIR': directory already exists." <<EOF
+        die $EX_CANTCREAT "Unable to create virtualenv in '$VENVDIR': directory already exists." <<EOF
 The script was unable to create a virtual environment in "$VENVDIR"
 because the directory already exists.
 
@@ -657,7 +683,7 @@ install_virtualenv $VENVDIR
 rc=$?
 if [ $rc -ne 0 ]
 then
-    die 8 "Unable to create a new virtualenv in '$VENVDIR': 'virtualenv.py' script exited with code $rc." <<EOF
+    die $EX_PROTOCOL "Unable to create a new virtualenv in '$VENVDIR': 'virtualenv.py' script exited with code $rc." <<EOF
 The script was unable to create a valid virtual environment.
 EOF
 fi
@@ -709,3 +735,5 @@ environment has been enabled.
 EOF
 
 fi
+
+exit $EX_OK
