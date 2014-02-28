@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, 2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -29,10 +29,12 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
-# ugly workaround for Issue 95,
-# see: http://code.google.com/p/gc3pie/issues/detail?id=95
-#if __name__ == "__main__":
-#    import gdemo
+# Workaround for Issue 95: import this module and run it first
+# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+if __name__ == '__main__':
+    import gdemo_session
+    gdemo_session.Gdemo().run()
+
 
 #import gdemo
 #import ConfigParser
@@ -48,7 +50,7 @@ import sys
 
 import gc3libs
 from gc3libs import Application, Run, Task
-from gc3libs.cmdline import SessionBasedScript, _Script
+from gc3libs.cmdline import SessionBasedScript
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 import gc3libs.utils
 
@@ -189,9 +191,3 @@ class DemoIteration(SequentialTaskCollection):
         file.
         """
         gc3libs.log.debug("  ...done.")
-
-
-# run script
-if __name__ == '__main__':
-    import gdemo_session
-    gdemo_session.Gdemo().run()
