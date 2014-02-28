@@ -202,7 +202,7 @@ your version of python: $($PYTHON -V 2>&1|sed 's/python//gi').
 
 If a version of Python suitable for using GC3Pie is present in some
 non-standard location, you can specify it from the command line by
-running this script agin with option '--python' followed by the path of
+running this script again with option '--python' followed by the path of
 the correct 'python' binary.
 EOF
     fi
