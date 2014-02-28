@@ -11,7 +11,7 @@ with a list of substitutions (using the syntax of Python's standard
 texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012, 2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -209,8 +209,13 @@ def expansions(obj, **extra_args):
       Example::
 
         >>> D = {'a':1, 'b':[2,3]}
-        >>> list(expansions(D))
-        [{'a': 1, 'b': 2}, {'a': 1, 'b': 3}]
+        >>> E = list(expansions(D))
+        >>> len(E)
+        2
+        >>> {'a': 1, 'b': 2} in E
+        True
+        >>> {'a': 1, 'b': 3} in E
+        True
 
     * If `obj` is a `tuple`, iterate over all tuples formed by the
       expansion of every item in `obj`.  (Each item `t[i]` is expanded
