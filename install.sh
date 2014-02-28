@@ -24,8 +24,6 @@ PROG="GC3Pie install"
 BASE_PIP_URL="https://pypi.python.org/simple"
 VIRTUALENV_LATEST_URL="https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
 VIRTUALENV_191_URL="https://raw.github.com/pypa/virtualenv/1.9.1/virtualenv.py"
-VIRTUALENV_172_URL="https://raw.github.com/pypa/virtualenv/1.7.2/virtualenv.py"
-PIP_11_URL="http://pypi.python.org/packages/source/p/pip/pip-1.1.tar.gz"
 GC3_SVN_URL="http://gc3pie.googlecode.com/svn/trunk/gc3pie"
 
 VIRTUALENV_CMD="virtualenv"
@@ -369,38 +367,8 @@ EOF
         WITH_SITE_PACKAGES="--system-site-packages"
     fi
 
-    # Check python version using the *same* system used by
-    # virtualenv.py
-    $PYTHON <<EOF
-import sys
-if sys.version_info < (2, 5):
-  sys.exit(101)
-else:
-  sys.exit(0)
-EOF
-    case $? in
-        101)
-            # Using virtualenv 1.7.2, which is compatible with Python version < 2.5
-            warn "Using an old and possibly unsupported version of 'virtualenv' (1.7.2)"
-            VIRTUALENV_URL=$VIRTUALENV_172_URL
-            warn "Using an old and possibly unsupported version of 'pip' (1.1)"
-            download pip-1.1.tar.gz $PIP_11_URL
-            ;;
-        0)
-            # use the latest virtualenv that can use `.tar.gz` files
-            VIRTUALENV_URL=$VIRTUALENV_191_URL
-            download_from_pypi pip
-            download_from_pypi setuptools
-            ;;
-        *)
-            die $EX_SOFTWARE "unable to check python version" <<EOF
-The script was unable to check the version of the Python
-language installed (check returned an exit status of "$?").
-This check is needed to know which version of the "virtualenv"
-auxiliary script we need to download.
-EOF
-            ;;
-    esac
+    # Use the latest virtualenv that can use `.tar.gz` files
+    VIRTUALENV_URL=$VIRTUALENV_191_URL
 
     download virtualenv.py $VIRTUALENV_URL
     VIRTUALENV_CMD="$PYTHON virtualenv.py"
@@ -411,13 +379,28 @@ EOF
     . $VENVDIR/bin/activate
 
     # Recent versions of `pip` insist that setuptools>=0.8 is installed,
-    # because they try to use the "wheel" format for any kind of package
+    # because they try to use the "wheel" format for any kind of package.
+    # So we need to update setuptools, or `pip` will error out::
+    #
+    #     Wheel installs require setuptools >= 0.8 for dist-info support.
+    #
     if pip wheel --help 1>/dev/null 2>/dev/null; then
-        # need to update setuptools, or `pip` will error out::
-        #
-        #     Wheel installs require setuptools >= 0.8 for dist-info support.
-        #
-        easy_install -U setuptools
+        # NOTE: setuptools 2.x requires Python >= 2.6; since GC3Pie 2.1+
+        # dropped support for Python <2.6, we assume the Python version
+        # has already been checked when the code gets here and do not test
+        # it again ...
+        download_from_pypi setuptools
+        if ! (tar -xzf setuptools-*.tar.gz && cd setuptools-* && $PYTHON setup.py install);
+        then
+            die $EX_SOFTWARE \
+                "Failed to install the latest version of Python 'setuptools'" <<EOF
+
+The required Python package setuptools could not be installed.
+
+Please get in touch with the GC3Pie developers at the email address
+gc3pie@googlegroups.com to get help with this error.
+EOF
+        fi
     fi
 }
 
