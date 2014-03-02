@@ -62,7 +62,8 @@ CUR_DIR="$PWD"
 DEBUG=0
 FAILED=0
 STRUCTURE=`which structure`
-
+MAINPARAM="NO"
+EXTRAPARAM="NO"
 
 ## parse command-line 
 
@@ -71,7 +72,7 @@ if [ "x$(getopt -T)" == 'x--' ]; then
     set -- $(getopt 'h' "$@")
 else
     # GNU getopt
-    args=$(getopt --shell sh -l 'help' -o 'hdp:x:u:r:e:' -- "$@")
+    args=$(getopt --shell sh -l 'help' -o 'hdp:x:u:g:e:' -- "$@")
     # need `eval` here to remove quotes added by GNU `getopt`
     eval set -- $args
 fi
@@ -79,23 +80,35 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --help|-h) usage; exit 0 ;;
 	-d) DEBUG=1 ;; 
-	-p) MAINPARAM_FILE="$2" ;;
-	-x) EXTRAPARAM_FILE="$2" ;;
+	-p) MAINPARAM_FILE="YES" ;;
+	-x) EXTRAPARAM_FILE="YES" ;;
 	-u) OUTPUT_FILE="$2" ;; 
-	-r) K_RANGE="$2" ;;
+	-g) K_RANGE="$2" ;;
 	-e) REPLICA="$2" ;;
 	--) shift; break ;;
     esac
     shift
 done
 
+# Copy the R scripts need to start the simulation in the local execution directory.
+cp ~/pms_structure_utils.R .
+cp ~/pms_usecase_structure.R .
+
+# Copy the main parameter file
+if [ "$MAINPARAM" == "NO" ]; then
+   cp ~/mainparams.txt .
+fi
+
+# Copy the extra parameter file
+if [ "$EXTRAPARAM" == "NO" ]; then
+   cp ~/extraparams.txt .
+fi
+
 # get the number of cores
 NCORE=`/usr/bin/nproc` 
 
 echo "[`date +%Y-%m-%d" "%H:%M:%S`] Start"
 log "STRUCTURE executable: ${STRUCTURE}"
-log "main param file: ${MAINPARAM_FILE}"
-log "extra param file: ${EXTRAPARAM_FILE}"
 log "output file: ${OUTPUT_FILE}"
 log "k range: ${K_RANGE}"
 log "replica: ${REPLICA}"
@@ -106,22 +119,6 @@ if [ -x ${STRUCTURE} ]; then
 else
     echo "[Command not found]"
     exit 127 # Command not found
-fi
-
-echo -n "MAIN PARAM_FILE... "
-if [ -e ${MAINPARAM_FILE} ]; then
-    echo "[ok]"
-else
-    echo "[File not found]"
-    exit 1 
-fi
-
-echo -n "EXTRA PARAM FILE... "
-if [ -d ${EXTRAPARAM_FILE} ]; then
-    echo "[ok]"
-else
-    echo "[File not found]"
-    exit 1
 fi
 
 # Customize pms_usecase_structure.R file based on the specified arguments and options
@@ -135,8 +132,11 @@ sed -i "s/KRANGE/$K_RANGE/g" pms_usecase_structure.R
 sed -i "s/REPLICA/$REPLICA/g" pms_usecase_structure.R
 sed -i "s/CORES/$NCORE/g" pms_usecase_structure.R
 
-#FIXME: Run dos2unix command on the input fils and param files
-#FIXME: Manage the cases in which mainparams and extraparams files are copied.
+# Run dos2unix command on the input fils and param files
+dos2unix ./$3
+dos2unix ./mainparams.txt
+dos2unix ./extraparams.txt
+
 
 # echo configuration
 
