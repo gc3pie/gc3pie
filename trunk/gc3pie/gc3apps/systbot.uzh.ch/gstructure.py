@@ -61,16 +61,17 @@ class GStructureApplication(Application):
 
     application_name = 'structure'
 
-    def __init__(self, inputs, **extra_args):
+    def __init__(self, input_file, **extra_args):
         """
         The wrapper script is being used for start the simulation. 
         """
+        files_to_send = []
 
         gstructure_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
                                               "gc3libs/etc/gstructure_wrapper.sh")
 
-
-        inputs.append((gstructure_wrapper_sh,os.path.basename(gstructure_wrapper_sh)))
+        files_to_send.append((gstructure_wrapper_sh,os.path.basename(gstructure_wrapper_sh)))
+        files_to_send.append((input_file))
 
         cmd = "./gstructure_wrapper.sh -d "  
 
@@ -82,27 +83,37 @@ class GStructureApplication(Application):
 
         if extra_args.has_key('output_file'):
             cmd += " -u %s " % extra_args['output_file']
+        else: 
+            cmd += " -u %s " % extra_args['output_file'].default
 
         if extra_args.has_key('k_range'):
-            cmd += " -r %s " % extra_args['k_range']
+            cmd += " -g %s " % extra_args['k_range']
+        else:
+            cmd += " -g %s " % extra_args['k_range'].default
 
         if extra_args.has_key('replica'):
             cmd += " -e %s " % extra_args['replica']
+        else:
+            cmd += " -e %s " % extra_args['replica'].default
 
-        cmd += " %s %s %s " % extra_args['loc'], extra_args['ind'], extra_args['output_file']
+        cmd += " %s " % extra_args['loc']
+
+        cmd += " %s " % extra_args['ind']
+
+        cmd += " %s " % os.path.basename(extra_args['input_source'])
 
         Application.__init__(
             self,
             # arguments should mimic the command line interfaca of the command to be
             # executed on the remote end
             arguments = cmd,
-            inputs = inputs,
+            inputs = files_to_send,
             outputs = gc3libs.ANY_OUTPUT,
             stdout = 'gstructure.log',
             join=True,
             **extra_args)
 
-class GstructureTask(RetryableTask, gc3libs.utils.Struct):
+class GStructureTask(RetryableTask, gc3libs.utils.Struct):
     """
     Run ``gstructure`` on a given simulation directory until completion.
     """
@@ -110,7 +121,7 @@ class GstructureTask(RetryableTask, gc3libs.utils.Struct):
         RetryableTask.__init__(
             self,
             # actual computational job
-            GstructureApplication(input_file, **extra_args),
+            GStructureApplication(input_file, **extra_args),
             # keyword arguments
             **extra_args)
 
@@ -139,30 +150,30 @@ newly-created jobs so that this limit is never exceeded.
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GstructureTask,
+            application = GStructureTask,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
-            stats_only_for = GstructureTask,
+            stats_only_for = GStructureTask,
             )
 
 
     def setup_options(self):
 
-        self.add_param("-p", "--mainparams", metavar="str", default="mainparams.txt",
-                       dest="mainparam_file", help="Uses a different main parameters file.")
+        self.add_param("-p", "--mainparams", metavar="MAIN_CONFIG_FILE", default="mainparams.txt",
+                       dest="mainparams_file", help="Uses a different main parameters file.")
 
-        self.add_param("-x", "--extraparams", metavar="str", default="extraparams.txt",
-                       dest="extraprams_file", help="Uses a different extra parameters file.")
+        self.add_param("-x", "--extraparams", metavar="EXTRA_CONFIG_FILE", default="extraparams.txt",
+                       dest="extraparams_file", help="Uses a different extra parameters file.")
 
-        self.add_param("-u", "--output", metavar="str", default="struct.out",
+        self.add_param("-u", "--output", metavar="OUTPUT_FILE_NAME", default="struct.out",
                        dest="output_file", help="Output file name where results will be saved.")
 
-        self.add_param("-r", "--K-range", metavar="str", default="1:20",
+        self.add_param("-g", "--K-range", metavar="K_RANGE", default="1:20",
                        dest="k_range", help="Structure K range.")
 
-        self.add_param("-e", "--replica", metavar="int", default=3,
+        self.add_param("-e", "--replica", metavar="REPLICA_NUM", default=3,
                        dest="replica", help="Structure replicates.")
 
     def setup_args(self):
@@ -184,18 +195,19 @@ newly-created jobs so that this limit is never exceeded.
     def new_tasks(self, extra):
 
         tasks = []
-        input_files = [] 
-        extentions = [ '.tsv', '.txt', '.struc' ]
+        input_files = []
+        inputs = [] 
+        extentions = ( '.tsv', '.txt', '.struc', '.tab' )
 
         if os.path.isdir(self.params.input_source): 
              
             for i in self._list_local_folder(self.params.input_source):
-                if not hidden and i.endswith(extentions):
+                if i.endswith(extentions):
                     input_files.append(i)
     
         elif os.path.isfile(self.params.input_source):
 
-            if not hidded and self.params.input_source.endswith(extentions):
+            if self.params.input_source.endswith(extentions):
                 input_files.append(self.params.input_source) 
 
         for input_file in input_files:  
@@ -218,13 +230,11 @@ newly-created jobs so that this limit is never exceeded.
                 extra_args['ind'] = self.params.ind
                 extra_args['input_source'] = self.params.input_source
 
-                if self.params.mainparam_file:
-                    extra_args['mainparam_file'] = self.params.mainparam_file
-                    inputs[self.params.mainparam_file] = 'mainparams.txt'
+                if self.params.mainparams_file:
+                    extra_args['mainparams_file'] = self.params.mainparams_file
 
-                if self.params.extraparam_file:
-                    extra_args['extraparam_file'] = self.params.extraparam_file
-                    inputs[self.params.extraparam_file] = 'extraparams.txt'    
+                if self.params.extraparams_file:
+                    extra_args['extraparams_file'] = self.params.extraparams_file
 
                 if self.params.output_file:
                     extra_args['output_file'] = self.params.output_file
@@ -235,12 +245,10 @@ newly-created jobs so that this limit is never exceeded.
                 if self.params.replica:
                     extra_args['replica'] = self.params.replica 
 
-                inputs[self.params.input_source] = self.params.input_source  
- 
                 self.log.info("Creating Task for input file: %s" % input_file)
                     
-                tasks.append(GstructureTask(
-                    inputs,
+                tasks.append(GStructureTask(
+                    input_file,
                     **extra_args
                     ))
 
