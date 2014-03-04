@@ -70,21 +70,26 @@ class GStructureApplication(Application):
         gstructure_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
                                               "gc3libs/etc/gstructure_wrapper.sh")
 
+        basename_input_file = os.path.basename(input_file)
         files_to_send.append((gstructure_wrapper_sh,os.path.basename(gstructure_wrapper_sh)))
-        files_to_send.append((input_file))
+        files_to_send.append((input_file,basename_input_file))
+        
 
         cmd = "./gstructure_wrapper.sh -d "  
 
-        if extra_args.has_key('mainparam_file'):
+        if 'mainparam_file' in extra_args:
             cmd += " -p %s " % extra_args['mainparam_file']
+            files_to_send.append(extra_args['mainparam_file'],'mainparams.txt')            
 
-        if extra_args.has_key('extraparam_file'):
+        if 'extraparam_file' in extra_args:
             cmd += " -x %s " % extra_args['extraparam_file']
+            files_to_send.append(extra_args['extraparam_file'],'extraparams.txt')
 
-        if extra_args.has_key('output_file'):
+        if 'output_file' in extra_args:
             cmd += " -u %s " % extra_args['output_file']
-        else: 
-            cmd += " -u %s " % extra_args['output_file'].default
+        else:
+            output_file = basename_input_file.split(".")[0] + ".out"
+            cmd += " -u %s " % output_file
 
         if extra_args.has_key('k_range'):
             cmd += " -g %s " % extra_args['k_range']
@@ -100,7 +105,12 @@ class GStructureApplication(Application):
 
         cmd += " %s " % extra_args['ind']
 
-        cmd += " %s " % os.path.basename(extra_args['input_source'])
+        cmd += " %s " % basename_input_file
+
+        extra_args['requested_memory'] = 30*GB
+
+        self.output_dir = basename_input_file + "_output" 
+        extra_args['output_dir'] = self.output_dir
 
         Application.__init__(
             self,
@@ -167,7 +177,7 @@ newly-created jobs so that this limit is never exceeded.
         self.add_param("-x", "--extraparams", metavar="EXTRA_CONFIG_FILE", default="extraparams.txt",
                        dest="extraparams_file", help="Uses a different extra parameters file.")
 
-        self.add_param("-u", "--output", metavar="OUTPUT_FILE_NAME", default="struct.out",
+        self.add_param("-u", "--output", metavar="OUTPUT_FILE_NAME",
                        dest="output_file", help="Output file name where results will be saved.")
 
         self.add_param("-g", "--K-range", metavar="K_RANGE", default="1:20",
@@ -186,8 +196,6 @@ newly-created jobs so that this limit is never exceeded.
                        help="Structure input file/Structure input directory") 
 
     def parse_args(self):
-        """
-        """
 
         self.params.input_source = os.path.abspath(self.params.input_source)
 
@@ -202,13 +210,15 @@ newly-created jobs so that this limit is never exceeded.
         if os.path.isdir(self.params.input_source): 
              
             for i in self._list_local_folder(self.params.input_source):
-                if i.endswith(extentions):
-                    input_files.append(i)
+                for ext in extentions:
+                    if i.endswith(ext):
+                        input_files.append(i)
     
         elif os.path.isfile(self.params.input_source):
 
-            if self.params.input_source.endswith(extentions):
-                input_files.append(self.params.input_source) 
+                for ext in extentions:    
+                    if self.params.input_source.endswith(ext):
+                        input_files.append(self.params.input_source) 
 
         for input_file in input_files:  
 
@@ -219,26 +229,18 @@ newly-created jobs so that this limit is never exceeded.
     
                 # FIXME: ignore SessionBasedScript feature of customizing 
                 # output folder
-                extra_args['output_dir'] = self.params.output
-                extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
-                extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
-                extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', jobname)
-                extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', jobname)
-    
                 
                 extra_args['loc'] = self.params.loc
                 extra_args['ind'] = self.params.ind
                 extra_args['input_source'] = self.params.input_source
-
+                #extra_args['output_dir'] = self.params.input_source
+                
                 if self.params.mainparams_file:
                     extra_args['mainparams_file'] = self.params.mainparams_file
 
                 if self.params.extraparams_file:
                     extra_args['extraparams_file'] = self.params.extraparams_file
 
-                if self.params.output_file:
-                    extra_args['output_file'] = self.params.output_file
-    
                 if self.params.k_range:
                     extra_args['k_range'] = self.params.k_range
    
@@ -257,55 +259,8 @@ newly-created jobs so that this limit is never exceeded.
 
     def _list_local_folder(self, input_folder):
         """
-        return a list of all .fastq files in the input folder
+        return a list of all files in the input folder
         """
     
-        return [ os.path.join(input_folder,infile) for infile in os.listdir(input_folder) if infile.endswith('.fastq') ]
-
-
-    def _list_S3_container(self, s3_url):
-        """
-        Use s3cmd command line interface to interact with
-        a remote S3-compatible ObjectStore.
-        Assumption: 
-        . s3cmd configuration file available
-        and correctly pointing to the right ObjectStore.
-        . s3cmd available in PATH environmental variable.
-        . Valid for only 1 S3_URL path
-        """
-
-        import subprocess
-
-        # read content of remote S3CMD_URL
-        try:
-            # 's3cmd ls' should return a list of model archives
-            # for each of them bundle archive_name and working_dir
-            _process = subprocess.Popen("s3cmd ls %s" % s3_url,
-                                        stdout=subprocess.PIPE, 
-                                        stderr=subprocess.PIPE,
-                                        close_fds=True, shell=True)
-                
-            (out, err) = _process.communicate()
-            exitcode = _process.returncode
-            
-            if (exitcode != 0):
-                raise Exception("Error: %s, %s", (out,err))
-
-            # Parse 'out_list' result and extract all .tgz or .zip archive names
-
-            for s3_obj in out.strip().split("\n"):
-                if s3_obj.startswith("DIR"):
-                    # it's a S3 directory; ignore
-                    continue
-                # object string format: '2014-01-09 16:41 3627374 s3://a4mesh/model_1.zip'
-                s3_url = s3_obj.split()[3] 
-                if(s3_url.startswith("s3://")):
-                   yield s3_url
-
-        except Exception, ex:
-            gc3libs.log.error("Failed while reading remote S3 container. "+
-                              "%s", ex.message)
-
-
-
+        return [ os.path.join(input_folder,infile) for infile in os.listdir(input_folder) ]
 
