@@ -2,7 +2,7 @@
 """
 Top-level interface to Grid functionality.
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -675,16 +675,16 @@ an overlay Grid on the resources specified in the configuration file.
 
     def __peek_application(self, app, what, offset, size, **extra_args):
         """Implementation of `peek` on `Application` objects."""
-        job = app.execution
         if what == 'stdout':
-            remote_filename = job.stdout_filename
+            remote_filename = app.stdout
         elif what == 'stderr':
-            remote_filename = job.stderr_filename
+            remote_filename = app.stderr
         else:
             raise Error("File name requested to `Core.peek` must be"
                         " 'stdout' or 'stderr', not '%s'" % what)
 
         # Check if local data available
+        job = app.execution
         if job.state == Run.State.TERMINATED:
             # FIXME: local data could be stale!!
             filename = os.path.join(app.output_dir, remote_filename)
