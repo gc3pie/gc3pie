@@ -2,7 +2,7 @@
 #
 #   cmdline.py -- Prototypes for GC3Libs-based scripts
 #
-#   Copyright (C) 2010, 2011, 2012 GC3, University of Zurich
+#   Copyright (C) 2010, 2011, 2012, 2014 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -878,7 +878,7 @@ class SessionBasedScript(_Script):
         if 'task' in task:
             # RetryableTask
             self._fix_output_dir(task.task, name)
-            
+
 
 
     def new_tasks(self, extra):
@@ -984,14 +984,15 @@ class SessionBasedScript(_Script):
         # ensure we display enough decimal digits in percentages when
         # running a large number of jobs; see Issue 308 for a more
         # detailed descrition of the problem
-        precision = max(1, math.log10(total) - 1)
-        fmt = '(%%.%df%%%%)' % precision
-        for state in sorted(stats.keys()):
-            table.add_row([
-                    state,
-                    "%d/%d" % (stats[state], total),
-                    fmt % (100.00 * stats[state] / total)
-                    ])
+        if total > 0:
+            precision = max(1, math.log10(total) - 1)
+            fmt = '(%%.%df%%%%)' % precision
+            for state in sorted(stats.keys()):
+                table.add_row([
+                        state,
+                        "%d/%d" % (stats[state], total),
+                        fmt % (100.00 * stats[state] / total)
+                        ])
         output.write(str(table))
         output.write("\n")
 
