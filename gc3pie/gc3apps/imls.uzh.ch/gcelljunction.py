@@ -92,7 +92,7 @@ class GCellJunctionApplication(Application):
             exe_opts = [ ]
         Application.__init__(
             self,
-            arguments=['./' + os.path.basename(wrapper_sh), '-d', '--'] + exe_opts + [ sim_no ],
+            arguments=['./' + os.path.basename(wrapper_sh), '--'] + exe_opts + [ sim_no ],
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
             stdout = 'tricellular_junctions.log',
