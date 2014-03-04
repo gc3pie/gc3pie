@@ -56,6 +56,7 @@ from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript
 from gc3libs.compat._collections import defaultdict
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
+from gc3libs.workflow import RetryableTask
 
 
 ## custom application class
@@ -69,13 +70,14 @@ class GCellJunctionApplication(Application):
     application_name = 'tricellular_junction'
 
     def __init__(self, sim_no, executable=None, **extra_args):
+        self.sim_no = sim_no
         wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
                                        "gc3libs/etc/gcelljunction_wrapper.sh")
         inputs = { wrapper_sh:os.path.basename(wrapper_sh) }
         extra_args.setdefault('requested_cores', 1)
         extra_args.setdefault('requested_memory', 4*GB)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
-        extra_args.setdefault('requested_walltime', 12*hours)
+        extra_args.setdefault('requested_walltime', 60*Duration.days)
         # command-line parameters to pass to the tricellular_junction_* program
         self.sim_no = sim_no
         if executable is not None:
@@ -96,6 +98,36 @@ class GCellJunctionApplication(Application):
             stdout = 'tricellular_junctions.log',
             join=True,
             **extra_args)
+
+
+class GCellJunctionTask(RetryableTask, gc3libs.utils.Struct):
+    """
+    Retry execution of a `GCellJunctionApplication` if it fails.
+    """
+    def __init__(self, sim_no, executable=None, **extra_args):
+        self.sim_no = sim_no
+        RetryableTask.__init__(
+            self,
+            # actual computational job
+            GCellJunctionApplication(sim_no, executable, **extra_args),
+            # keyword arguments
+            **extra_args)
+
+    _CHECK_LINES = 5
+    def update_state(self, **extra_args):
+        state = super(GCellJunctionTask, self).update_state(**extra_args)
+        try:
+            estimated_size = gc3libs.Default.PEEK_FILE_SIZE * self._CHECK_LINES
+            with self.task.peek('stdout', offset=-estimated_size, size=estimated_size) as fd:
+                for line in reversed(fd.readlines()):
+                    line = line.strip()
+                    if line != '':
+                        self.execution.info = line
+        except Exception, err:
+            gc3libs.log.warning(
+                "Ignored error while updating state of Task %s: %s: %s",
+                self, err.__class__.__name__, err)
+        return state
 
 
 ## main script class
@@ -130,7 +162,7 @@ newly-created jobs so that this limit is never exceeded.
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
-            stats_only_for = GCellJunctionApplication,
+            stats_only_for = GCellJunctionTask,
             )
 
 
@@ -165,66 +197,34 @@ newly-created jobs so that this limit is never exceeded.
                 except (OSError, IOError), ex:
                     self.log.warning("Cannot open input file '%s': %s: %s",
                                      path, ex.__class__.__name__, str(ex))
-                try:
-                    # the `csv.sniff()` function is confused by blank and comment lines,
-                    # so we need to filter the input to build a correct sample
-                    sample_lines = [ ]
-                    while len(sample_lines) < 5:
-                        line = inputfile.readline()
-                        # exit at end of file
-                        if line == '':
-                            break
-                        # ignore comment lines as they confuse `csv.sniff`
-                        if line.startswith('#') or line.strip() == '':
-                            continue
-                        sample_lines.append(line)
-                    csv_dialect = csv.Sniffer().sniff(str.join('', sample_lines))
-                    self.log.debug("Detected CSV delimiter '%s'", csv_dialect.delimiter)
-                except csv.Error:
-                    # in case of any auto-detection failure, fall back to the default
-                    self.log.warning("Could not determine field delimiter in file '%s',"
-                                     " assuming it's a comma character (',').",
-                                     path)
-                    csv_dialect = 'excel'
-                inputfile.seek(0)
-                for lineno, row in enumerate(csv.reader(inputfile, csv_dialect)):
+                for lineno, line in enumerate(inputfile):
+                    line = line.strip()
                     # ignore blank and comment lines (those that start with '#')
-                    if len(row) == 0 or row[0].startswith('#'):
+                    if len(line) == 0 or line.startswith('#'):
                         continue
                     try:
-                        (replicates, sim_no) = row
+                        sim_no = int(line)
                     except ValueError:
                         self.log.error("Wrong format in line %d of file '%s':"
-                                       " need 2 comma-separated values, (no. of replicates and `SimNo`)"
-                                       " but actually got %d ('%s')."
+                                       " need 1 integer value (`SimNo`),"
+                                       " but actually got '%s'."
                                        " Ignoring input line, fix it and re-run.",
-                                       lineno+1, path, len(row), str.join(',', (str(x) for x in row)))
+                                       lineno+1, path, line)
                         continue # with next `row`
                     # extract parameter values
-                    try:
-                        iterno = int(replicates)
-                        sim_no = int(sim_no)
-                    except ValueError, ex:
-                        self.log.warning("Ignoring line '%s' in input file '%s': %s",
-                                         str.join(',', row), path, str(ex))
-                        continue
                     basename = ('tricellular_junction_%d' % (sim_no,))
 
                     # prepare job(s) to submit
-                    if (iterno > iters[basename]):
-                        self.log.info(
-                                "Requested %d iterations for %s: %d already in session, preparing %d more",
-                                iterno, basename, iters[basename], iterno - iters[basename])
-                        for iter in range(iters[basename]+1, iterno+1):
-                            kwargs = extra.copy()
-                            base_output_dir = kwargs.pop('output_dir', self.params.output)
-                            jobname=('%s#%d' % (basename, iter))
-                            yield GCellJunctionApplication(
-                                sim_no,
-                                executable=self.params.executable,
-                                jobname=jobname,
-                                output_dir=os.path.join(base_output_dir, jobname),
-                                **kwargs)
+                    already = len([ task for task in self.session if task.sim_no == sim_no ])
+                    kwargs = extra.copy()
+                    base_output_dir = kwargs.pop('output_dir', self.params.output)
+                    jobname=('%s#%d' % (basename, already+1))
+                    yield GCellJunctionTask(
+                        sim_no,
+                        executable=self.params.executable,
+                        jobname=jobname,
+                        output_dir=os.path.join(base_output_dir, jobname),
+                        **kwargs)
 
             else:
                 self.log.error("Ignoring input file '%s': not a CSV file.", path)
