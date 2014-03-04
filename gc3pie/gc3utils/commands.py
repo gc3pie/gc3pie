@@ -3,7 +3,7 @@
 """
 Implementation of the `core` command-line front-ends.
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -1420,10 +1420,10 @@ To get detailed info on a specific command, run:
             for vm in vms:
                 remote_jobs = 'N/A'
                 ncores = 'N/A'
-                if vm.id in res.resources:
-                    if res.resources[vm.id].updated:
-                        remote_jobs = str(len(res.resources[vm.id].job_infos))
-                        ncores = str(res.resources[vm.id].max_cores)
+                if vm.id in res.subresources:
+                    if res.subresources[vm.id].updated:
+                        remote_jobs = str(len(res.subresources[vm.id].job_infos))
+                        ncores = str(res.subresources[vm.id].max_cores)
                 table.add_row((res.name, vm.id, vm.state, vm.public_dns_name, remote_jobs, ncores, vm.image_id, vm.key_name))
             print(table)
 
@@ -1452,7 +1452,7 @@ To get detailed info on a specific command, run:
 
             # draw table of VMs running on resource `res`
             if vms:
-                self._print_vms(vms, res)
+                cmd_gcloud._print_vms(vms, res)
                 printed += len(vms)
 
             if not printed:
@@ -1488,7 +1488,7 @@ To get detailed info on a specific command, run:
             vms = res._vmpool.get_all_vms()
             if vms:
                 for vm in vms:
-                    remote_jobs = len(res.resources[vm.id].job_infos)
+                    remote_jobs = len(res.subresources[vm.id].job_infos)
                     if remote_jobs == 0:
                         if self.params.dry_run:
                             print("No job running on VM `%s` of resource `%s`;"
