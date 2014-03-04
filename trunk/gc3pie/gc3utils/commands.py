@@ -591,6 +591,9 @@ Output files can be retrieved multiple times until a job reaches
 released once the output files have been fetched.
     """
     def setup_options(self):
+        self.add_param("-A", action="store_true", dest="all", default=False,
+                       help="Download *all* files of *all* tasks in a session."
+                       " USE WITH CAUTION!")
         self.add_param("-d", "--download-dir", action="store", dest="download_dir", default=None,
                        help="Destination directory (job id will be appended to it); default is '.'")
         self.add_param("-f", "--overwrite", action="store_true", dest="overwrite", default=False,
@@ -603,19 +606,30 @@ released once the output files have been fetched.
             # session not found?
             raise RuntimeError('Session %s not found' % self.params.session)
 
-        if len(self.params.args) == 0:
-            self.log.error("No job IDs given on command line: nothing to do."
-                           " Type '%s --help' for usage help."
-                           # if we were called with an absolute path,
-                           # presume the command has been found by the
-                           # shell through PATH and just print the command name,
-                           # otherwise print the exact path name.
-                           % utils.ifelse(os.path.isabs(sys.argv[0]),
-                                          os.path.basename(sys.argv[0]),
-                                          sys.argv[0]))
+        if self.params.all and len(self.params.args) > 0:
+            raise gc3libs.exceptions.InvalidUsage(
+                "Option '-A' conflicts with list of job IDs:"
+                " use either '-A' or explicitly list task IDs.")
+
+        if self.params.all:
+            args = self.session.store.list()
+            if len(args) == 0:
+                self.log.info("No jobs in session: nothing to do.")
+        else:
+            args = self.params.args
+            if len(args) == 0:
+                self.log.error("No job IDs given on command line: nothing to do."
+                               " Type '%s --help' for usage help."
+                               # if we were called with an absolute path,
+                               # presume the command has been found by the
+                               # shell through PATH and just print the command name,
+                               # otherwise print the exact path name.
+                               % utils.ifelse(os.path.isabs(sys.argv[0]),
+                                              os.path.basename(sys.argv[0]),
+                                              sys.argv[0]))
 
         failed = 0
-        for jobid in self.params.args:
+        for jobid in args:
             try:
                 app = self.session.load(jobid)
                 app.attach(self._core)
