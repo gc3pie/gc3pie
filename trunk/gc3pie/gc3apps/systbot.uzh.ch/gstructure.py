@@ -107,7 +107,7 @@ class GStructureApplication(Application):
 
         cmd += " %s " % basename_input_file
 
-        extra_args['requested_memory'] = 30*GB
+        extra_args['requested_memory'] = 7*GB
 
         self.output_dir = basename_input_file + "_output" 
         extra_args['output_dir'] = self.output_dir
@@ -178,13 +178,16 @@ newly-created jobs so that this limit is never exceeded.
                        dest="extraparams_file", help="Uses a different extra parameters file.")
 
         self.add_param("-u", "--output", metavar="OUTPUT_FILE_NAME",
-                       dest="output_file", help="Output file name where results will be saved.")
+                       dest="output_file", help="Output file name where results will be saved. "
+                       "Default: INPUT_FILE.out" )
 
         self.add_param("-g", "--K-range", metavar="K_RANGE", default="1:20",
-                       dest="k_range", help="Structure K range.")
+                       dest="k_range", help="Structure K range. " 
+                       "Default: %(default)s" )
 
         self.add_param("-e", "--replica", metavar="REPLICA_NUM", default=3,
-                       dest="replica", help="Structure replicates.")
+                       dest="replica", help="Structure replicates. "
+                       "Default: %(default)s" )
 
     def setup_args(self):
 
