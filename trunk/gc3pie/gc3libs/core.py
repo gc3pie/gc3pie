@@ -1467,7 +1467,7 @@ class Engine(object):
         """
         Proxy for `Core.peek` (which see).
         """
-        self._core.peek(task, what, offset, size, **extra_args)
+        return self._core.peek(task, what, offset, size, **extra_args)
 
 
     def close(self):
