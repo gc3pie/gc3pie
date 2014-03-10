@@ -4,7 +4,7 @@
 Job control on PBS/Torque clusters (possibly connecting to the
 front-end via SSH).
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -176,7 +176,6 @@ def count_jobs(qstat_output, whoami):
     own_queued = 0
     n = 0
     for line in qstat_output.split('\n'):
-        # import pdb; pdb.set_trace()
         log.info("Output line: %s" % line)
         m = _qstat_line_re.match(line)
         if not m:
