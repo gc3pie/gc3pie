@@ -2,7 +2,7 @@
 """
 Interface to different resource management systems for the GC3Libs.
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -231,15 +231,21 @@ class LRMS(gc3libs.utils.Struct):
         `local_file`.  If `size` is `None` (default), then snarf
         contents of remote file from `offset` unto the end.
 
+        First argument `remote_filename` is the path to a file
+        relative to the remote job "sandbox".
+
         Argument `local_file` is either a local path name (string), or
         a file-like object supporting a `.write()` method.  If
         `local_file` is a path name, it is created if not existent,
-        otherwise overwritten.
+        otherwise overwritten.  In any case, upon exit from this
+        procedure, the stream will be positioned just after the
+        written bytes.
 
-        Argument `remote_filename` is the name of a file in the remote job
-        "sandbox".
+        Fourth optional argument `offset` is the offset from the start
+        of the file.  If `offset` is negative, it is interpreted as an
+        offset from the *end* of the remote file.
 
-        Any exception raised by operations will be passed through.
+        Any exception raised by operations will be re-raised to the caller.
         """
         raise NotImplementedError(
             "Abstract method `LRMS.peek()` called "
