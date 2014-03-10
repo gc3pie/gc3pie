@@ -339,7 +339,7 @@ class UrlKeyDict(dict):
     Differently from `dict`, initialization from keyword arguments
     alone is *not* supported:
 
-        >>> d3 = UrlKeyDict(foo='foo', bar='bar') # doctest: +ELLIPSIS
+        >>> d3 = UrlKeyDict(foo='foo') # doctest: +ELLIPSIS
         Traceback (most recent call last):
             ...
         TypeError: __init__() got an unexpected keyword argument 'foo'
