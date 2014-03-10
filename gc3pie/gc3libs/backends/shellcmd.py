@@ -2,7 +2,7 @@
 """
 Run applications as local processes.
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -27,6 +27,7 @@ import cPickle as pickle
 from getpass import getuser
 import os
 import os.path
+import posix
 import posixpath
 import time
 
@@ -838,17 +839,31 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
-        rfh = open(remote_filename, 'r')
-        rfh.seek(offset)
-        data = rfh.read(size)
-        rfh.close()
-
-        try:
-            local_file.write(data)
-        except (TypeError, AttributeError):
-            output_file = open(local_file, 'w+b')
-            output_file.write(data)
-            output_file.close()
+        # `remote_filename` must be relative to the execution directory
+        assert not os.path.isabs(remote_filename)
+        # see https://github.com/fabric/fabric/issues/306 about why it
+        # is correct to use `posixpath.join` for remote paths (instead
+        # of `os.path.join`)
+        remote_filename = posixpath.join(
+            app.execution.lrms_execdir, remote_filename)
+        gc3libs.log.debug(
+            "Reading %s bytes starting at offset %s from remote file '%s' ...",
+            size, offset, remote_filename)
+        with self.transport.open(remote_filename, 'r') as remotely:
+            if offset >= 0:
+                # seek from start of file
+                remotely.seek(offset, 0)
+            else:
+                # seek from end of file
+                remotely.seek(offset, 2)
+            data = remotely.read(size)
+            try:
+                # is `local_file` a file-like object?
+                local_file.write(data)
+            except (TypeError, AttributeError):
+                # no, then treat it as a file name
+                with open(local_file, 'w+b') as locally:
+                    locally.write(data)
 
     def validate_data(self, data_file_list=[]):
         """
