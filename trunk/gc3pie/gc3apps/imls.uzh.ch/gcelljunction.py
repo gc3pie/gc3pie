@@ -115,25 +115,25 @@ class GCellJunctionTask(RetryableTask, gc3libs.utils.Struct):
 
     _CHECK_LINES = 5
     def update_state(self, **extra_args):
-        state = super(GCellJunctionTask, self).update_state(**extra_args)
-        try:
-            estimated_size = gc3libs.Default.PEEK_FILE_SIZE * self._CHECK_LINES
-            with self.task.peek('stdout', offset=-estimated_size, size=estimated_size) as fd:
-                # drop first and last lines, as they may be partial
-                lines = fd.readlines()[1:-1]
-                # gc3libs.log.debug(
-                #     "Lines read from remote output: %s",
-                #     str.join(' ', [("<<%s>>" % ln) for ln in lines]))
-                for line in reversed(lines):
-                    line = line.strip()
-                    if line != '':
-                        self.execution.info = line
-                        break
-        except Exception, err:
-            gc3libs.log.warning(
-                "Ignored error while updating state of Task %s: %s: %s",
-                self, err.__class__.__name__, err)
-        return state
+        super(GCellJunctionTask, self).update_state(**extra_args)
+        if self.execution.state == Run.State.RUNNING:
+            try:
+                estimated_size = gc3libs.Default.PEEK_FILE_SIZE * self._CHECK_LINES
+                with self.task.peek('stdout', offset=-estimated_size, size=estimated_size) as fd:
+                    # drop first and last lines, as they may be partial
+                    lines = fd.readlines()[1:-1]
+                    # gc3libs.log.debug(
+                    #     "Lines read from remote output: %s",
+                    #     str.join(' ', [("<<%s>>" % ln) for ln in lines]))
+                    for line in reversed(lines):
+                        line = line.strip()
+                        if line != '':
+                            self.execution.info = line
+                            break
+            except Exception, err:
+                gc3libs.log.warning(
+                    "Ignored error while updating state of Task %s: %s: %s",
+                    self, err.__class__.__name__, err)
 
 
 ## main script class
