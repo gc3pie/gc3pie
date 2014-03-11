@@ -578,7 +578,7 @@ class SshTransport(Transport):
         try:
             # check connection first
             self.connect()
-            return self.sftp.open(source, mode, bufsize)
+            return self._SFTPFileWithCLibSeek(self.sftp.open(source, mode, bufsize))
         except Exception, ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not open file '%s' on host '%s': %s: %s"
