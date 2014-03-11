@@ -4,7 +4,7 @@
 Job control using ``libarcclient``.  (Which can submit to all
 EMI-supported resources.)
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -65,7 +65,7 @@ class Arc1Lrms(LRMS):
 
         log.warning(
             "The ARC1 backend (used in resource '%s') is deprecated"
-            " and will be removed in a future release."
+            " and will be removed in the next major release of GC3Pie."
             " Consider changing your configuration.",
             name)
 

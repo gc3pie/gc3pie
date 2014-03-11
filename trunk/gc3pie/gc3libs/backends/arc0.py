@@ -3,7 +3,7 @@
 """
 Job control on ARC0 resources.
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -120,6 +120,13 @@ class ArcLrms(LRMS):
         #arcnotifier.SetNotifyTimeStamp(True)
 
         self.targets_blacklist = []
+
+        log.warning(
+            "The ARC0 backend (used in resource '%s') is deprecated"
+            " and will be removed in the next major release of GC3Pie."
+            " Consider changing your configuration.",
+            name)
+
 
     @same_docstring_as(LRMS.cancel_job)
     @LRMS.authenticated
