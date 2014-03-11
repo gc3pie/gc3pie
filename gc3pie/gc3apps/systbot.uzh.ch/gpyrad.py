@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-#   gpyrad.py -- Front-end script for submitting multiple `pyrad` jobs.
+#   gpyrad.py -- Front-end script for submitting multiple `PyRAD` jobs.
 #
 #   Copyright (C) 2013, 2014 GC3, University of Zurich
 #
@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Front-end script for submitting multiple `GeoSphere` jobs.
+Front-end script for submitting multiple `PyRAD` jobs.
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gpyrad --help`` for program usage instructions.
@@ -28,8 +28,8 @@ __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
 
-  2013-08-16:
-  * Initial release, forked off the ``ggeoshpere`` sources.
+  2014-02-24:
+  * Initial release, forked off the ``ggeosphere`` sources.
 """
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
 __docformat__ = 'reStructuredText'
@@ -52,11 +52,19 @@ from gc3libs.cmdline import SessionBasedScript, executable_file
 import gc3libs.utils
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
+import gc3libs.url
+
+# Default values
+DEFAULT_WCLUST=0.9
 
 ## custom application class
 
 class GpyradApplication(Application):
     """
+    Fetches execution wrapper, input file and checks
+    whether optional arguments have been passed.
+    Namely ''wclust'' that sets the pyRAD clustering
+    treshold and ''paramsfile'' needed to run PyRAD.
     """
 
     application_name = 'pyrad'
@@ -65,6 +73,8 @@ class GpyradApplication(Application):
         """
         The wrapper script is being used for start the simulation. 
         """
+
+        output_folder_name = 'clust%.1f' % DEFAULT_WCLUST
 
         inputs = []
         
@@ -75,14 +85,30 @@ class GpyradApplication(Application):
         inputs.append((gpyrad_wrapper_sh,os.path.basename(gpyrad_wrapper_sh)))
 
         cmd = "./gpyrad_wrapper.sh -d "
-        
+
+        if extra_args.has_key('s3cfg'):
+            inputs.append((extra_args['s3cfg'],
+                           "etc/s3cfg"))
+
         if extra_args.has_key('wclust'):
             cmd += " -w %s " % extra_args['wclust']
+            output_folder_name = 'clust%.1f' % extra_args['wclust']
 
         if extra_args.has_key('paramsfile'):
-            cmd += " -p %s " % extra_args['paramsfile']
+            cmd += " -p ./params.tmpl "
+            #XXX: params file contains important paths needed
+            # by pyRAD. If we deploy an alternative params.txt file supplied 
+            # by the end-user, we might incurr in the risk that we can no longer use
+            # the assumptions we made with the original params.txt file.
+            inputs.append((extra_args['paramsfile'],'./params.tmpl'))
 
-        cmd += " %s " % input_file
+        remote_input_file = os.path.join('./input',os.path.basename(input_file))
+
+        cmd += " %s " % remote_input_file
+        inputs.append((input_file,remote_input_file))
+
+        # Add memory requirement
+        extra_args['requested_memory'] = 512*MB
 
         Application.__init__(
             self,
@@ -90,7 +116,8 @@ class GpyradApplication(Application):
             # executed on the remote end
             arguments = cmd,
             inputs = inputs,
-            outputs = gc3libs.ANY_OUTPUT,
+            outputs = [output_folder_name],
+            # outputs = gc3libs.ANY_OUTPUT,
             stdout = 'gpyrad.log',
             join=True,
             **extra_args)
@@ -144,16 +171,31 @@ newly-created jobs so that this limit is never exceeded.
     def setup_options(self):
         self.add_param("-T", "--treshold", metavar="INT",
                        dest="wclust", default=None,
-                       help="Wclust: clustering threshold as a decimal.")
+                       help="Wclust: clustering threshold as a decimal."+
+                       "Note: if '-p' is used, this option will be ignored.")
 
         self.add_param("-P", "--params", metavar="PATH",
                        dest="paramsfile", default=None,
-                       help="Location of params.txt fiule required by pyrad.")
+                       help="Location of params.txt fiule required by pyrad. "+
+                       "WARNING: The default params.txt is used to make "+
+                       "assumption on the location of pyRAD and the "+
+                       "input folder where the *.fastq files are located. "+
+                       "Passing an alternative params.txt file might break "+
+                       "such assumptions resulting in a falied execution. " +
+                       "Please check the default params.txt file located in "+
+                       "'test.pyRAD' folder where gpyrad.py is located.")
+
+
+        self.add_param("-Y", "--s3cfg", metavar="PATH",
+                       dest="s3cfg", default=None,
+                       help="Location of the s3cfg configuration file. "+
+                       "Default assumes 's3cfg' configuration file being "+
+                       "available on the remote execution node.")
 
     def setup_args(self):
 
         self.add_param('input_container', type=str,
-                       help="Path to local folder containing fastq files")
+                       help="Path to local folder containing fastq files.")
 
     def parse_args(self):
         """
@@ -161,16 +203,20 @@ newly-created jobs so that this limit is never exceeded.
         path to command_file should also be valid.
         """
 
-        self.params.input_container = os.path.abspath(self.params.input_container)
 
+        # Resolve protocol
+        self.input_folder_url = gc3libs.url.Url(self.params.input_container)
+
+        # self.params.input_container = os.path.abspath(self.params.input_container)
+        
 
     def new_tasks(self, extra):
 
         tasks = []
 
-        for input_file in self._list_local_folder(self.params.input_container):
+        for input_file in self._list_folder_by_url(self.input_folder_url):
 
-            jobname = "%s" % input_file.split(".")[0]
+            jobname = "%s" % os.path.basename(input_file).split(".")[0]
             
             extra_args = extra.copy()
             extra_args['jobname'] = jobname
@@ -184,13 +230,13 @@ newly-created jobs so that this limit is never exceeded.
             extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', jobname)
 
-
-            if self.params.wclust:
-                extra_args['wclust'] = self.params.wclust
-
             if self.params.paramsfile:
                 extra_args['paramsfile'] = self.params.paramsfile
+            elif self.params.wclust:
+                extra_args['wclust'] = self.params.wclust
 
+            if self.params.s3cfg:
+                extra_args['s3cfg'] = self.params.s3cfg
 
             self.log.info("Creating Task for input file: %s" % input_file)
                 
@@ -202,15 +248,25 @@ newly-created jobs so that this limit is never exceeded.
         return tasks
 
 
+    def _list_folder_by_url(self, url):
+        """
+        """
+
+        if url.scheme == "s3":
+            return self._list_s3_container(url)
+        if url.scheme ==  "file":
+            return self._list_local_folder(url)
+        else:
+            gc3libs.log.error("Unsupported Input folder URL %s. "+
+                              "Only supported protocols are: [file,s3] " % url.scheme)
+            return None
+
     def _list_local_folder(self, input_folder):
         """
         return a list of all .fastq files in the input folder
         """
     
-        return [ os.path.join(input_folder,infile) for infile in os.listdir(input_folder) if infile.endswith('.fastq') ]
-
-
-
+        return [ os.path.join(input_folder.path,infile) for infile in os.listdir(input_folder.path) if infile.endswith('.fastq') ]        
 
     def _list_S3_container(self, s3_url):
         """
@@ -248,7 +304,7 @@ newly-created jobs so that this limit is never exceeded.
                     continue
                 # object string format: '2014-01-09 16:41 3627374 s3://a4mesh/model_1.zip'
                 s3_url = s3_obj.split()[3] 
-                if(s3_url.startswith("s3://")):
+                if(s3_url.endswith(".fastq")):
                    yield s3_url
 
         except Exception, ex:

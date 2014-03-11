@@ -22,6 +22,26 @@
 #-----------------------------------------------------------------------
 PROG=$(basename "$0")
 
+# Set system utilities
+TODAY=`date +%Y-%m-%d`
+CUR_DIR="$PWD"
+
+DEFAULT_PYRAD_LOCATION="$HOME/pyRAD"
+
+S3CMD=`which s3cmd`
+S3CFG="./etc/s3cfg"
+
+# Set default values
+DEBUG=0
+FAILED=0
+#XXX: check whether this is corrent or need more test
+PYRAD="$DEFAULT_PYRAD_LOCATION/pyRAD"
+OUTPUT_FOLDER="./output/"
+INPUT_FOLDER="./input"
+WCLUST=0.9
+PARAMS_FILE="$DEFAULT_PYRAD_LOCATION/params.tmpl"
+
+
 ## helper functions
 function log {
     if [ $DEBUG -ne 0 ]; then
@@ -37,6 +57,30 @@ function die () {
   exit $rc
 }
 
+function verify_s3 {
+    echo "Dumping S3cmd configuration"
+    $S3CMD -c $S3CFG --dump-config 1>/dev/null 2>&1
+    return $?
+}
+
+function get_s3_bucket {
+    S3_URL=$1
+    LOCAT_DES=$2
+
+    log "$S3CMD -c $S3CFG --check-md5 sync ${S3_URL} ${LOCAL_DEST}"
+    $S3CMD -c $S3CFG sync ${S3_URL} ${LOCAL_DEST}
+    return $?
+}
+
+function sync_s3_bucket {
+    LOCAL_FOLDER=$1
+    S3_URL=$2
+
+    log "$S3CMD -c $S3CFG sync ${LOCAL_FOLDER} ${S3_URL}"
+    $S3CMD -c $S3CFG put ${LOCAL_FOLDER} ${S3_URL}
+    return $?
+}
+
 ## Parse command line options.
 USAGE=`cat <<EOF
 Usage: 
@@ -49,18 +93,6 @@ Options:
 
 EOF`
 
-# Set system utilities
-TODAY=`date +%Y-%m-%d`
-CUR_DIR="$PWD"
-
-# Set default values
-DEBUG=0
-FAILED=0
-#XXX: check whether this is corrent or need more test
-PYRAD=`which pyrad`
-OUTPUT_FOLDER="./output/"
-WCLUST=0.9
-PARAMS_FILE="./params.txt"
 
 while getopts "w:p:d" opt; do
     case $opt in
@@ -93,6 +125,35 @@ fi
 INPUT_FASTQ=$1
 
 echo "[`date +%Y-%m-%d" "%H:%M:%S`] Start"
+log "Checking input archive... "
+case ${INPUT_FASTQ} in
+    "s3://"* )
+	# S3 URL
+	log "S3 archive type"
+	verify_s3
+	if [ $? -ne 0 ]; then
+	    echo "CRITICAL: Cannot use s3cmd command."
+	    echo "Please check s3cfg configuration."
+	    exit 1
+	fi
+	log "Downloading fastq from S3... "
+	get_s3_bucket ${INPUT_FASTQ} .
+	if [ $? -ne 0 ]; then
+	    echo "CRITICAL: Failed getting input fastq"
+	    exit 1
+	fi
+	log "Download completed."
+	;;
+    "/"*|"./"* )
+	# Local archive
+	log "Local archive"
+	;;
+     * )
+	echo "Not supported input archive format"
+	exit 1
+	;;
+esac
+
 log "PYRAD executable: ${PYRAD}"
 log "WCLUST: ${WCLUST}"
 log "PARAMS_FILE: ${PARAMS_FILE}"
@@ -124,14 +185,21 @@ else
 fi
 
 # Customize param file
+# copy params file
+cp ${PARAMS_FILE} ./params.txt
+PARAMS_FILE="./params.txt"
 
 log "Customizing params file adding wclust value"
-sed -i -e 's/WCLUST/${WCLUST}/g' ${PARAMS_FILE}
+sed -i -e "s|@PYRAD@|${DEFAULT_PYRAD_LOCATION}|g" ${PARAMS_FILE}
+sed -i -e "s|@WCLUST@|${WCLUST}|g" ${PARAMS_FILE}
+sed -i -e "s|@INPUT@|${INPUT_FOLDER}|g" ${PARAMS_FILE}
+
 
 # echo configuration
 
 # run script
 log "Running: ${PYRAD} -p ${PARAMS_FILE} -s123"
+# strace -f -o strace.log ${PYRAD} -p ${PARAMS_FILE} -s123
 ${PYRAD} -p ${PARAMS_FILE} -s123
 RET=$?
 
