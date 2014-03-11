@@ -6,7 +6,7 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -209,6 +209,22 @@ class Transport(object):
         """
         raise NotImplementedError(
             "Abstract method `Transport.remove_tree()` called - "
+            "this should have been defined in a derived class.")
+
+    def stat(self, path):
+        """
+        Retrieve information about a filesystem entry.
+
+        The return value is an object whose attributes correspond to
+        the attributes of Python's ``stat`` structure as returned by
+        `os.stat`, except that it may contain fewer fields for
+        compatibility with Paramiko.
+
+        The supported fields are: ``st_mode``, ``st_size``,
+        ``st_atime``, and ``st_mtime``.
+        """
+        raise NotImplementedError(
+            "Abstract method `Transport.stat()` called - "
             "this should have been defined in a derived class.")
 
     def close(self):
@@ -546,6 +562,17 @@ class SshTransport(Transport):
                 % (path, self.remote_frontend,
                    ex.__class__.__name__, str(ex)))
 
+    @same_docstring_as(Transport.stat)
+    def stat(self, path):
+        try:
+            self.connect()
+            return self.sftp.stat(path)
+        except Exception, err:
+            raise gc3libs.exceptions.TransportError(
+                "Could not stat() file '%s' on host '%s': %s: %s"
+                % (source, self.remote_frontend,
+                   err.__class__.__name__, str(err)))
+
     @same_docstring_as(Transport.open)
     def open(self, source, mode, bufsize=-1):
         try:
@@ -782,6 +809,15 @@ class LocalTransport(Transport):
             raise gc3libs.exceptions.TransportError(
                 "Could not remove directory tree '%s': %s: %s"
                 % (path, ex.__class__.__name__, str(ex)))
+
+    @same_docstring_as(Transport.stat)
+    def stat(self, path):
+        try:
+            return os.stat(path)
+        except Exception, err:
+            raise gc3libs.exceptions.TransportError(
+                "Could not stat() file '%s' on host localhost: %s: %s"
+                % (source, err.__class__.__name__, str(err)))
 
     @same_docstring_as(Transport.open)
     def open(self, source, mode, bufsize=0):
