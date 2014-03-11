@@ -846,16 +846,22 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
         # of `os.path.join`)
         remote_filename = posixpath.join(
             app.execution.lrms_execdir, remote_filename)
+        statinfo = self.transport.stat(remote_filename)
+        # seeking backwards past the beginning of the file makes the
+        # read() fail in SFTP, so be sure that we do not rewind too
+        # much...
+        if offset < 0 and -offset > statinfo.st_size:
+            offset = 0
         gc3libs.log.debug(
             "Reading %s bytes starting at offset %s from remote file '%s' ...",
             size, offset, remote_filename)
         with self.transport.open(remote_filename, 'r') as remotely:
             if offset >= 0:
                 # seek from start of file
-                remotely.seek(offset, 0)
+                remotely.seek(offset, os.SEEK_SET)
             else:
                 # seek from end of file
-                remotely.seek(offset, 2)
+                remotely.seek(offset, os.SEEK_END)
             data = remotely.read(size)
             try:
                 # is `local_file` a file-like object?
