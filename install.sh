@@ -315,7 +315,7 @@ EOF
 
 download_from_pypi () {
     pkg=$1
-    url=$(download - $BASE_PIP_URL/$pkg/ | grep "source/./$pkg.*z" |sed 's:.*href="\([^#"]*\)["#].*:\1:g' | sort | tail -1 )
+    url=$(download - $BASE_PIP_URL/$pkg/ | grep "source/./$pkg.*gz" |sed 's:.*href="\([^#"]*\)["#].*:\1:g' | sort | tail -1 )
     if [ -n "$url" ]; then
         download $(basename $url) $BASE_PIP_URL/$pkg/$url
     else
