@@ -1396,18 +1396,8 @@ class SessionBasedScript(_Script):
           the script, so be careful.
 
         Invocation of this method should return a numeric exitcode,
-        that will be used as the scripts' exitcode.  As stated in the
-        `SessionBasedScript`, the exitcode is a bitfield; only the 4
-        least-significant bits are used, with the following meaning:
-
-           ===  ============================================================
-           Bit  Meaning
-           ===  ============================================================
-             0  Set if a fatal error occurred: the script could not complete
-             1  Set if there are jobs in `FAILED` state
-             2  Set if there are jobs in `RUNNING` or `SUBMITTED` state
-             3  Set if there are jobs in `NEW` state
-           ===  ============================================================
+        that will be used as the scripts' exitcode.  See
+        `_main_loop_exitcode` for an explanation.
         """
         # advance all jobs
         self._controller.progress()
@@ -1436,6 +1426,28 @@ class SessionBasedScript(_Script):
             else:
                 print ("  No tasks in this session.")
         # compute exitcode based on the running status of jobs
+        return self._main_loop_exitcode(stats)
+
+    def _main_loop_exitcode(self, stats):
+        """
+        Compute the exit code for the `_main` function.
+        (And, hence, for the whole `SessionBasedScript`.)
+
+        The exitcode is a bitfield; only the 4 least-significant bits
+        are used, with the following meaning:
+
+           ===  ============================================================
+           Bit  Meaning
+           ===  ============================================================
+             0  Set if a fatal error occurred: the script could not complete
+             1  Set if there are jobs in `FAILED` state
+             2  Set if there are jobs in `RUNNING` or `SUBMITTED` state
+             3  Set if there are jobs in `NEW` state
+           ===  ============================================================
+
+        Override this method if you need to alter the termination
+        condition for a `SessionBasedScript`.
+        """
         rc = 0
         if stats['failed'] > 0:
             rc |= 2
