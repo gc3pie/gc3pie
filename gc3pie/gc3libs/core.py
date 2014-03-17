@@ -328,9 +328,7 @@ an overlay Grid on the resources specified in the configuration file.
                               % resource.name)
             try:
                 job.timestamp[Run.State.NEW] = time.time()
-                job.info = ("Submitting to '%s' at %s"
-                        % (resource.name,
-                           time.ctime(job.timestamp[Run.State.NEW])))
+                job.info = ("Submitting to '%s'" % (resource.name,))
                 resource.submit_job(app)
             except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration, ex:
                 gc3libs.log.info(
@@ -348,9 +346,7 @@ an overlay Grid on the resources specified in the configuration file.
                              str(app), resource.name)
             job.state = Run.State.SUBMITTED
             job.resource_name = resource.name
-            job.info = ("Submitted to '%s' at %s"
-                        % (job.resource_name,
-                           time.ctime(job.timestamp[Run.State.SUBMITTED])))
+            job.info = ("Submitted to '%s'" % (job.resource_name,))
             app.changed = True
             app.submitted()
             # job submitted; return to caller
