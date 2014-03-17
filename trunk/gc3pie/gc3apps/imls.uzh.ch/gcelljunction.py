@@ -176,6 +176,9 @@ newly-created jobs so that this limit is never exceeded.
         self.add_param("-x", "--executable", metavar="PATH",
                        dest="executable", default=None,
                        help="Path to the `tricellular_junctions` executable file.")
+        # change default for the memory/walltime options
+        self.actions['memory_per_core'].default = 4*Memory.GB
+        self.actions['wctime'].default = '60 days'
 
 
     def make_directory_path(self, pathspec, jobname):
