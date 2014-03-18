@@ -77,11 +77,13 @@ class GSMD_ProjectionsApplication(Application):
         files_to_send.append((extra_args['input_tar'],basename_input_tar))
         
 
-        cmd = "./smd_projections_wrapper.sh -d "  
+        cmd = "./smd_projections_wrapper.sh -d"  
 
         cmd += " %s " % basename_input_tar
 
-        extra_args['requested_memory'] = 7*GB
+        cmd += " %s " % os.path.splitext(basename_input_tar)[0]
+
+        extra_args['requested_memory'] = 4*GB
 
         self.output_dir = basename_input_tar + "_output" 
         extra_args['output_dir'] = self.output_dir
@@ -198,9 +200,9 @@ newly-created jobs so that this limit is never exceeded.
 
     def _list_local_folder(self, input_folder):
         """
-        return a list of all files in the input folder
+        return a list of all the directories in the input folder
         """
     
-        return [ os.path.join(input_folder,infile) for infile in os.listdir(input_folder) ]
+        return [ infile for infile in os.listdir(input_folder) if os.path.isdir(os.path.join(input_folder,infile)) ]
 
 
