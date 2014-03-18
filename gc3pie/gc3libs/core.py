@@ -16,7 +16,7 @@ Top-level interface to Grid functionality.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 2110-1301 USA
 #
 __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
@@ -333,8 +333,9 @@ an overlay Grid on the resources specified in the configuration file.
             except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration, ex:
                 gc3libs.log.info(
                     "Submission of job %s delayed" % app)
-                exs.append(ex)
-                break
+                return
+                # exs.append(ex)
+                # break
             except Exception, ex:
                 gc3libs.log.info(
                     "Error in submitting job to resource '%s': %s: %s",
