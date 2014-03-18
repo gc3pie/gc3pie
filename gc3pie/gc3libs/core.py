@@ -272,6 +272,18 @@ an overlay Grid on the resources specified in the configuration file.
         elif job.state != Run.State.NEW:
             return
 
+        # Validate Application local input files
+        for input_ref in app.inputs.keys():
+            if input_ref.scheme == 'file':
+                # Local file, check existence before proceeding
+                if not os.path.exists(input_ref.path):
+                    gc3libs.log.error("Failed while checking Application local input "
+                                      "reference: '%s'. Not found", input_ref.path)
+                    raise gc3libs.exceptions.UnrecoverableDataStagingError("Failed while checking "+
+                                                                           "Application "+
+                                                                           "local input reference: "+
+                                                                           " '%s'. Not found" % input_ref.path)
+
         if targets is not None:
             assert len(targets) > 0
         else: # targets is None
@@ -334,8 +346,6 @@ an overlay Grid on the resources specified in the configuration file.
                 gc3libs.log.info(
                     "Submission of job %s delayed" % app)
                 return
-                # exs.append(ex)
-                # break
             except Exception, ex:
                 gc3libs.log.info(
                     "Error in submitting job to resource '%s': %s: %s",
