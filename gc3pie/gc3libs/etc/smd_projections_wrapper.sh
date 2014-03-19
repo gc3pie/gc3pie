@@ -95,7 +95,7 @@ fi
 Rscript --vanilla SDM_projections.R $2 SDMs_calibration 
 RET=$?
 
-rm -rf ./SDMs_calibration ./SDM_projections.R ./*.tar
+rm -rf ./SDMs_calibration ./SDM_projections.R ./*.tar ./$2 
 
 log "Simulation ended with exit code $RET"
 
