@@ -58,8 +58,6 @@ from gc3libs.workflow import RetryableTask
 ## custom application class
 
 class GSMD_ProjectionsApplication(Application):
-    """
-    """
 
     application_name = 'gsmd_projections'
 
@@ -81,11 +79,11 @@ class GSMD_ProjectionsApplication(Application):
 
         cmd += " %s " % basename_input_tar
 
-        cmd += " %s " % os.path.splitext(basename_input_tar)[0]
+        cmd += " %s " % basename_input_tar.split('.')[0]
 
-        extra_args['requested_memory'] = 4*GB
+        extra_args['requested_memory'] = 6*GB
 
-        self.output_dir = basename_input_tar + "_output" 
+        self.output_dir = basename_input_tar.split('.')[0] + "_output" 
         extra_args['output_dir'] = self.output_dir
 
         Application.__init__(
@@ -200,7 +198,7 @@ newly-created jobs so that this limit is never exceeded.
 
     def _list_local_folder(self, input_folder):
         """
-        return a list of all the directories in the input folder
+        Return a list of all the directories in the input folder.
         """
     
         return [ infile for infile in os.listdir(input_folder) if os.path.isdir(os.path.join(input_folder,infile)) ]
