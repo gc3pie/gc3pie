@@ -75,7 +75,11 @@ class GSMD_ProjectionsApplication(Application):
         files_to_send.append((extra_args['input_tar'],basename_input_tar))
         
 
-        cmd = "./smd_projections_wrapper.sh -d"  
+        cmd = "./smd_projections_wrapper.sh -d" 
+
+        if 'calibration' in extra_args:
+            cmd += " -b "
+            files_to_send.append((extra_args['calibration'],'calibration.tar')) 
 
         cmd += " %s " % basename_input_tar
 
@@ -143,6 +147,11 @@ newly-created jobs so that this limit is never exceeded.
             )
 
 
+    def setup_options(self):
+
+        self.add_param("-b", "--calibration", metavar="CALIBRATION_DIR",
+                       dest="calibration_dir", help="Use a different calibration directory.")
+
     def setup_args(self):
 
         self.add_param('input_source', type=str,
@@ -157,6 +166,7 @@ newly-created jobs so that this limit is never exceeded.
 
         tasks = []
         input_tars = []
+        extra_args = extra.copy()
 
         cwd = os.getcwd()
         os.chdir(self.params.input_source)    
@@ -179,20 +189,39 @@ newly-created jobs so that this limit is never exceeded.
 
         os.chdir(cwd)
 
+
+        # Create an archive of the calibration directory
+        if os.path.isdir(self.params.calibration_dir):
+
+            calibration_tar_file = "calibration.tar"
+
+            if os.path.isfile(calibration_tar_file):
+                try:
+                    os.remove(calibration_tar_file)
+                except OSError, x:
+                    gc3libs.log.error("Failed removing '%s': %s: %s",
+                                      calibration_tar_file, x.__class__, x.message)
+                    pass
+
+            tar = tarfile.open(calibration_tar_file, "w:gz", dereference=True)
+            tar.add(self.params.calibration_dir)
+            tar.close()
+
+            extra_args['calibration'] = calibration_tar_file
+
         for input_tar in input_tars:  
 
-                jobname = "%s" % input_tar
-                
-                extra_args = extra.copy()
-                extra_args['jobname'] = jobname
+            jobname = "%s" % input_tar
+            
+            extra_args['jobname'] = jobname
     
-                extra_args['input_tar'] = self.params.input_source + "/" + os.path.basename(input_tar.name) 
+            extra_args['input_tar'] = self.params.input_source + "/" + os.path.basename(input_tar.name) 
+            
+            self.log.info("Creating Task for input file: %s" % input_tar.name)
                 
-                self.log.info("Creating Task for input file: %s" % input_tar.name)
-                    
-                tasks.append(GSMD_ProjectionsTask(
-                    **extra_args
-                    ))
+            tasks.append(GSMD_ProjectionsTask(
+                **extra_args
+                ))
 
         return tasks
 
