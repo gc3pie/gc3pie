@@ -306,12 +306,6 @@ class Configuration(gc3libs.utils.Struct):
                 config_items = dict(parser.items(sectname))
                 auths[name].update(config_items)
                 auths[name]['name'] = name
-                # if __debug__:
-                #     gc3libs.log.debug(
-                #         "Config._parse(): Auth '%s' defined by: %s.",
-                #         name, str.join(', ', [
-                #             ("%s=%r" % (k,v)) for k,v in sorted(auths[name].iteritems())
-                #             ]))
 
             elif  sectname.startswith('resource/'):
                 # handle resource section
