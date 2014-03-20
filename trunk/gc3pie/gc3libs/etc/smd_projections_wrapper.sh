@@ -57,28 +57,37 @@ CUR_DIR="$PWD"
 DEBUG=0
 FAILED=0
 ## parse command-line 
+NEW_CALIBRATION="NO"
 
 if [ "x$(getopt -T)" == 'x--' ]; then
     # old-style getopt, use compatibility syntax
     set -- $(getopt 'h' "$@")
 else
     # GNU getopt
-    args=$(getopt --shell sh -l 'help' -o 'hd' -- "$@")
+    args=$(getopt --shell sh -l 'help' -o 'hdb' -- "$@")
     # need `eval` here to remove quotes added by GNU `getopt`
     eval set -- $args
 fi
 while [ $# -gt 0 ]; do
     case "$1" in
         --help|-h) usage; exit 0 ;;
-	-d) DEBUG=1 ;; 
+	-d) DEBUG=1 ;;
+    -b) NEW_CALIBRATION="YES" ;; 
 	--) shift; break ;;
     esac
     shift
 done
 
+
 # Copy the R scripts need to start the simulation in the local execution directory.
+
 cp ~/SDM_projections.R .
-cp -a ~/SDMs_calibration .
+
+if [ "$NEW_CALIBRATION" == "NO" ]; then
+    cp -a ~/SDMs_calibration .
+else 
+    tar -xvf ./calibration.tar 
+fi
 
 echo "[`date +%Y-%m-%d" "%H:%M:%S`] Start"
 
