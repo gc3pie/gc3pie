@@ -319,8 +319,15 @@ ReturnCode=%x"""
         except Exception, ex:
             log.warning("Could not remove directory '%s': %s: %s",
                         app.execution.lrms_execdir, ex.__class__.__name__, ex)
-        pid = app.execution.lrms_jobid
-        self._delete_job_resource_file(pid)
+
+        try:
+            pid = app.execution.lrms_jobid
+            self._delete_job_resource_file(pid)
+        except AttributeError:
+            # lrms_jobid not yet assigned
+            # probabaly submit process failed before
+            # ingnore and continue
+            pass
 
     def _gather_machine_specs(self):
         """
@@ -692,8 +699,14 @@ ReturnCode=%x"""
             log.error(
                 "Error creating temporary directory on host %s: %s",
                 self.frontend, stderr)
+            log.debug('Cleaning up failed application')
+            self.free(app)
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "Error creating temporary directory on host %s: %s",
+                self.frontend, stderr)
 
         execdir = stdout.strip()
+        app.execution.lrms_execdir = execdir
 
         # Copy input files to remote dir
 
@@ -717,10 +730,11 @@ ReturnCode=%x"""
                 log.critical(
                     "Copying input file '%s' to remote host '%s' failed",
                     local_path.path, self.frontend)
+                log.debug('Cleaning up failed application')
+                self.free(app)
                 raise
 
-        app.execution.lrms_execdir = execdir
-        app.execution.state = Run.State.RUNNING
+        # app.execution.state = Run.State.RUNNING
 
         # try to ensure that a local executable really has
         # execute permissions, but ignore failures (might be a
@@ -762,7 +776,13 @@ ReturnCode=%x"""
             ShellcmdLrms.WRAPPER_DIR)
 
         if not self.transport.isdir(wrapper_dir):
-            self.transport.makedirs(wrapper_dir)
+            try:
+                self.transport.makedirs(wrapper_dir)
+            except:
+                log.error("Failed while creating remote folder "+
+                          "%s" % wrapper_dir)
+                self.free(app)
+                raise
 
         # Build
         pidfilename = posixpath.join(wrapper_dir,
@@ -774,10 +794,11 @@ ReturnCode=%x"""
             wrapper_dir,
             ShellcmdLrms.WRAPPER_SCRIPT)
 
-        # Create the wrapper script
-        wrapper_script = self.transport.open(
-            wrapper_script_fname, 'w')
-        wrapper_script.write("""#!/bin/sh
+        try:
+            # Create the wrapper script
+            wrapper_script = self.transport.open(
+                wrapper_script_fname, 'w')
+            wrapper_script.write("""#!/bin/sh
 echo $$ > %s
 cd %s
 exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
@@ -785,12 +806,22 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
        wrapper_output_filename,
        ShellcmdLrms.TIMEFMT, redirection_arguments,
        env_arguments, arguments))
-        wrapper_script.close()
+            wrapper_script.close()
+        except gc3libs.exceptions.TransportError:
+            log.error("Cleanign failed application")
+            self.free(app)
+            raise
 
-        self.transport.chmod(wrapper_script_fname, 0755)
 
-        # Execute the script in background
-        self.transport.execute_command(wrapper_script_fname, detach=True)
+        try:
+            self.transport.chmod(wrapper_script_fname, 0755)
+            
+            # Execute the script in background
+            self.transport.execute_command(wrapper_script_fname, detach=True)
+        except gc3libs.exceptions.TransportError:
+            log.error("Cleanign failed application")
+            self.free(app)
+            raise
 
         # Just after the script has been started the pidfile should be
         # filled in with the correct pid.
@@ -809,6 +840,7 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
                 else:
                     raise
         if pidfile is None:
+            #XXX: probably self.free(app) should go here as well
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Unable to get PID file of submitted process from"
                 " execution directory `%s`: %s"
@@ -817,6 +849,7 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
         try:
             pid = int(pid)
         except ValueError:
+            #XXX: probably self.free(app) should go here as well
             pidfile.close()
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Invalid pid `%s` in pidfile %s." % (pid, pidfilename))
