@@ -273,15 +273,15 @@ an overlay Grid on the resources specified in the configuration file.
             return
 
         # Validate Application local input files
-        for input_ref in app.inputs.keys():
+        for input_ref in app.inputs:
             if input_ref.scheme == 'file':
                 # Local file, check existence before proceeding
                 if not os.path.exists(input_ref.path):
                     gc3libs.log.error("Failed while checking Application local input "
                                       "reference: '%s'. Not found", input_ref.path)
-                    raise gc3libs.exceptions.UnrecoverableDataStagingError("Failed while checking "+
-                                                                           "Application "+
-                                                                           "local input reference: "+
+                    raise gc3libs.exceptions.UnrecoverableDataStagingError("Failed while checking "
+                                                                           "Application "
+                                                                           "local input reference: "
                                                                            " '%s'. Not found" % input_ref.path)
 
         if targets is not None:
@@ -345,7 +345,8 @@ an overlay Grid on the resources specified in the configuration file.
             except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration, ex:
                 gc3libs.log.info(
                     "Submission of job %s delayed" % app)
-                return
+                # Just raise the exception
+                raise
             except Exception, ex:
                 gc3libs.log.info(
                     "Error in submitting job to resource '%s': %s: %s",
@@ -1271,6 +1272,7 @@ class Engine(object):
                         if isinstance(task, Application):
                             currently_submitted += 1
                             currently_in_flight += 1
+
                         sched.send(task.execution.state)
                     except Exception, err1:
                         # record the error in the task's history
