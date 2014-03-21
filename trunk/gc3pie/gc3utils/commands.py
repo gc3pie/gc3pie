@@ -982,6 +982,10 @@ To get detailed info on a specific command, run:
                 continue
             try:
                 task.kill()
+            except gc3libs.exceptions.Error, err:
+                gc3libs.log.error(
+                    "Could not abort task '%s': %s: %s",
+                    task, err.__class__.__name__, err)
             finally:
                 task.free()
                 rc -= 1
