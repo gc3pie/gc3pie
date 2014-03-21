@@ -10,7 +10,7 @@ patterns of job group execution; they can be combined to form more
 complex workflows.  Hook methods are provided so that derived classes
 can implement problem-specific job control policies.
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -708,6 +708,9 @@ class RetryableTask(Task):
 
     def kill(self, **extra_args):
         self.task.kill(**extra_args)
+        if self.task.execution.state == Run.State.TERMINATED:
+            self.execution.state = Run.State.TERMINATED
+            self.changed = True
 
     def peek(self, *args, **extra_args):
         return self.task.peek(*args, **extra_args)
