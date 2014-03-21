@@ -640,8 +640,9 @@ an overlay Grid on the resources specified in the configuration file.
                 raise
         except gc3libs.exceptions.InvalidResourceName, irn:
             gc3libs.log.warning("Failed while retrieving resource %s from core.Detailed Error message: %s" % (app.execution.resource_name, str(irn)))
-        gc3libs.log.debug("Setting job '%s' status to TERMINATED"
-                          " and returncode to SIGCANCEL" % job)
+        gc3libs.log.debug(
+            "Setting task '%s' status to TERMINATED"
+            " and returncode to SIGCANCEL", app)
         app.changed = True
         # setting the state runs the state-transition handlers,
         # which may raise an error -- ignore them, but log nonetheless
