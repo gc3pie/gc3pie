@@ -34,6 +34,7 @@ import time
 # GC3Pie imports
 import gc3libs
 import gc3libs.exceptions
+import gc3libs.backends.transport
 from gc3libs import log, Run
 from gc3libs.utils import same_docstring_as, samefile, copy_recursively
 from gc3libs.utils import Struct, sh_quote_unsafe, defproperty
