@@ -193,7 +193,6 @@ ReturnCode=%x"""
         self.cfg_resourcedir = resourcedir or ShellcmdLrms.RESOURCE_DIR
 
         # Configure transport
-        self.frontend = frontend
         if transport == 'local':
             self.transport = gc3libs.backends.transport.LocalTransport()
             self._username = getuser()
@@ -206,6 +205,7 @@ ReturnCode=%x"""
         else:
             raise gc3libs.exceptions.TransportError(
                 "Unknown transport '%s'" % transport)
+        self.frontend = frontend
 
         # use `max_cores` as the max number of processes to allow
         self.user_queued = 0
@@ -329,6 +329,15 @@ ReturnCode=%x"""
             # probabaly submit process failed before
             # ingnore and continue
             pass
+
+    @defproperty
+    def frontend():
+        def fget(self):
+            return self._frontend
+        def fset(self, value):
+            self._frontend = value
+            self.transport.remote_frontend = value
+        return locals()
 
     def _gather_machine_specs(self):
         """
