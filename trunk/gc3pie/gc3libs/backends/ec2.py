@@ -603,7 +603,7 @@ class EC2Lrms(LRMS):
                 return False
             except paramiko.SSHException, ex:
                 gc3libs.log.debug(
-                    "File `%s` is not a valid %s private key: ",
+                    "File `%s` is not a valid %s private key: %s",
                     keyfile, format, ex)
                 # try with next format
                 continue
