@@ -43,7 +43,8 @@ except ImportError:
 # GC3Pie imports
 import gc3libs
 from gc3libs.exceptions import RecoverableError, UnrecoverableError, \
-    ConfigurationError, LRMSSkipSubmissionToNextIteration, MaximumCapacityReached, UnrecoverableAuthError
+    ConfigurationError, LRMSSkipSubmissionToNextIteration, \
+    MaximumCapacityReached, UnrecoverableAuthError, TransportError
 import gc3libs.url
 from gc3libs import Run
 from gc3libs.utils import mkdir, same_docstring_as
@@ -170,7 +171,9 @@ class VMPool(object):
         """
         Add a VM object to the list of VMs.
         """
-        gc3libs.utils.touch(os.path.join(self.path, vm.id))
+        if not hasattr(vm, 'preferred_ip'):
+            vm.preferred_ip = vm.private_ip_address
+        gc3libs.utils.write_contents(os.path.join(self.path, vm.id), vm.preferred_ip)
         self._vm_ids.add(vm.id)
         self._vm_cache[vm.id] = vm
         self.changed = True
@@ -243,6 +246,11 @@ class VMPool(object):
             raise UnrecoverableError(
                 "No instance with id %s has been found." % vm_id)
         vm = instances[vm_id]
+        if not hasattr(vm, 'preferred_ip'):
+            # read from file
+            vm.preferred_ip = gc3libs.utils.read_contents(os.path.join(self.path, vm.id))
+        if not vm.preferred_ip:
+            vm.preferred_ip = vm.private_ip_address
         self._vm_cache[vm_id] = vm
         if vm_id not in self._vm_ids:
             self._vm_ids.add(vm_id)
@@ -275,7 +283,8 @@ class VMPool(object):
     def save(self):
         """Ensure all VM IDs will be found by the next `load()` call."""
         for vm_id in self._vm_ids:
-            gc3libs.utils.touch(os.path.join(self.path, vm_id))
+            gc3libs.utils.write_contents(os.path.join(self.path, vm_id),
+                                         self.get_vm(vm_id).preferred_ip)
 
     def update(self, remove=False):
         """
@@ -292,6 +301,7 @@ class VMPool(object):
         added = ids_on_disk - self._vm_ids
         for vm_id in added:
             self._vm_ids.add(vm_id)
+        self.save()
         if remove:
             removed = self._vm_ids - ids_on_disk
             for vm_id in removed:
@@ -532,7 +542,7 @@ class EC2Lrms(LRMS):
 
         """
         if vm.id not in self.subresources:
-            self.subresources[vm.id] = self._make_subresource(vm.public_dns_name)
+            self.subresources[vm.id] = self._make_subresource(vm.preferred_ip)
         return self.subresources[vm.id]
 
     def _get_vm(self, vm_id):
@@ -829,6 +839,23 @@ class EC2Lrms(LRMS):
             resource = self._get_subresource(vm)
             try:
                 resource.get_resource_status()
+            except TransportError, ex:
+                if vm.preferred_ip == vm.public_dns_name:
+                    # Try with private IP
+                    vm.preferred_ip = vm.private_ip_address
+                elif vm.preferred_ip == vm.private_ip_address:
+                    vm.preferred_ip = vm.public_dns_name
+                resource.frontend = vm.preferred_ip
+                gc3libs.log.info(
+                    "Connection error. Trying with secondary IP address %s",
+                    vm.preferred_ip)
+                try:
+                    resource.get_resource_status()
+                except Exception, ex:
+                    gc3libs.log.info(
+                        "Ignoring error while updating resource %s. "
+                        "The corresponding VM may not be ready yet. Error: %s",
+                        resource.name, ex)
             except Exception, ex:
                 # XXX: Actually, we should try to identify the kind of
                 # error we are getting. For instance, if the
@@ -840,6 +867,7 @@ class EC2Lrms(LRMS):
                     "Ignoring error while updating resource %s. "
                     "The corresponding VM may not be ready yet. Error: %s",
                     resource.name, ex)
+        self._vmpool.update()
         return self
 
     @same_docstring_as(LRMS.get_results)

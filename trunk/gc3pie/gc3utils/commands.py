@@ -1434,7 +1434,7 @@ To get detailed info on a specific command, run:
             table = PrettyTable()
             table.border=True
             if header:
-                table.field_names = ["resource", "id", "state", "public ip", "Nr. of jobs", "Nr. of cores","image id", "keypair"]
+                table.field_names = ["resource", "id", "state", "IP Address", "Nr. of jobs", "Nr. of cores","image id", "keypair"]
             for vm in vms:
                 remote_jobs = 'N/A'
                 ncores = 'N/A'
@@ -1442,7 +1442,7 @@ To get detailed info on a specific command, run:
                     if res.subresources[vm.id].updated:
                         remote_jobs = str(len(res.subresources[vm.id].job_infos))
                         ncores = str(res.subresources[vm.id].max_cores)
-                table.add_row((res.name, vm.id, vm.state, vm.public_dns_name, remote_jobs, ncores, vm.image_id, vm.key_name))
+                table.add_row((res.name, vm.id, vm.state, vm.preferred_ip, remote_jobs, ncores, vm.image_id, vm.key_name))
             print(table)
 
     @staticmethod
