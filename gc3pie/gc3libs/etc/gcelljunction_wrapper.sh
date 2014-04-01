@@ -23,6 +23,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 me=$(basename "$0")
+version='SVN $Revision$'
 
 ## defaults
 
@@ -106,7 +107,7 @@ if [ $# -lt 1 ]; then
 fi
 
 
-echo "=== Starting at `date '+%Y-%m-%d %H:%M:%S'`"
+echo "=== $me ($version) starting at `date '+%Y-%m-%d %H:%M:%S'`"
 
 # echo configuration
 echo -n "=== checking exe: ${exe} -- "
