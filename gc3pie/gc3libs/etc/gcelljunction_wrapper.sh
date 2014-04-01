@@ -58,10 +58,12 @@ Options:
 __EOF__
 }
 
+
 ## parse command-line
 
 # since SIM_NO might be the number `-1` or `-2`, we need to prevent
-# `getopt` from treating it as an option.
+# `getopt` from treating it as an option, so stop parsing at the first
+# non-option argument
 export POSIXLY_CORRECT=1
 
 short_opts='dhm:x:'
@@ -109,7 +111,7 @@ echo "=== Starting at `date '+%Y-%m-%d %H:%M:%S'`"
 # echo configuration
 echo -n "=== checking exe: ${exe} -- "
 if [ -r ${exe} ]; then
-    echo -n "present "
+    echo -n "present, "
 else
     echo "NOT FOUND"
     exit 127 # Command not found
