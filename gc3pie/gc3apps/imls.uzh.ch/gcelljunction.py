@@ -74,10 +74,10 @@ class GCellJunctionApplication(Application):
         wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
                                        "gc3libs/etc/gcelljunction_wrapper.sh")
         inputs = { wrapper_sh:os.path.basename(wrapper_sh) }
-        extra_args.setdefault('requested_cores', 1)
-        extra_args.setdefault('requested_memory', 4*GB)
+        extra_args.setdefault('requested_cores',        1)
+        extra_args.setdefault('requested_memory',       4*GB)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
-        extra_args.setdefault('requested_walltime', 60*Duration.days)
+        extra_args.setdefault('requested_walltime',     60*Duration.days)
         # command-line parameters to pass to the tricellular_junction_* program
         self.sim_no = sim_no
         if executable is not None:
