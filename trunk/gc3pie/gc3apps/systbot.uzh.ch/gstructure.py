@@ -43,6 +43,7 @@ if __name__ == "__main__":
 
 from pkg_resources import Requirement, resource_filename
 import os
+import csv
 import posix
 
 # gc3 library imports
@@ -189,19 +190,22 @@ newly-created jobs so that this limit is never exceeded.
                        dest="replica", help="Structure replicates. "
                        "Default: %(default)s" )
 
-    def setup_args(self):
+        self.add_param("-T", "--control-file", metavar="CONTROL_FILE", 
+                       dest="control_file", help="Control csv file for managing multiple input files with differetn loc and ind") 
 
-        self.add_param('loc', type=int,
-                       help="Number of loci in the structure input file")
-        self.add_param('ind', type=int, 
-                       help="Number of individuals in the structure input file")
-        self.add_param('input_source', type=str,
-                       help="Structure input file/Structure input directory") 
+        self.add_param("--loc", type=int, metavar="LOC",
+                       dest="loc", help="Number of loci in the structure input file")
+    
+        self.add_param("--ind", type=int, metavar="IND",
+                       dest="ind", help="Number of individuals in the structure input file")
+
+        self.add_param("--input_source", type=str,metavar="INPUT_SOURCE",
+                       dest="input_source", help="Structure input file/Structure input directory") 
 
     def parse_args(self):
 
-        self.params.input_source = os.path.abspath(self.params.input_source)
-
+        if self.params.input_source:
+            self.params.input_source = os.path.abspath(self.params.input_source)
 
     def new_tasks(self, extra):
 
@@ -209,54 +213,77 @@ newly-created jobs so that this limit is never exceeded.
         input_files = []
         inputs = [] 
         extentions = ( '.tsv', '.txt', '.struc', '.tab' )
+        extra_args = extra.copy()
 
-        if os.path.isdir(self.params.input_source): 
-             
-            for i in self._list_local_folder(self.params.input_source):
+        if self.params.mainparams_file:
+            extra_args['mainparams_file'] = self.params.mainparams_file
+
+        if self.params.extraparams_file:
+            extra_args['extraparams_file'] = self.params.extraparams_file
+
+        if self.params.k_range:
+            extra_args['k_range'] = self.params.k_range
+
+        if self.params.replica:
+            extra_args['replica'] = self.params.replica
+
+        # Check if control_file variable is defined. If yes, 
+        # proceed differently for crating the tasks.
+        if self.params.control_file:
+            gc3libs.log.warning("As you issued the script with the control, file options loc and ind paramters will be ignored")
+
+            if self.params.control_file.endswith('.csv'):
+                try:
+                    inputfile = open(self.params.control_file, 'r')
+                except (OSError, IOError), ex:
+                    self.log.warning("Cannot open input file '%s': %s: %s",
+                                     path, ex.__class__.__name__, str(ex))
+                for row in csv.reader(inputfile):
+                    extra_args['input_source'] = row[0]        
+                    extra_args['loc'] = row[1]
+                    extra_args['ind'] = row[2]
+
+                    input_file = row[0]
+
+                    tasks.append(GStructureTask(
+                        input_file,
+                        **extra_args
+                        ))
+        else:
+             if os.path.isdir(self.params.input_source):
+
+                for i in self._list_local_folder(self.params.input_source):
+                    for ext in extentions:
+                        if i.endswith(ext):
+                            input_files.append(i)
+
+             elif os.path.isfile(self.params.input_source):
+
                 for ext in extentions:
-                    if i.endswith(ext):
-                        input_files.append(i)
+                        if self.params.input_source.endswith(ext):
+                            input_files.append(self.params.input_source)
     
-        elif os.path.isfile(self.params.input_source):
-
-                for ext in extentions:    
-                    if self.params.input_source.endswith(ext):
-                        input_files.append(self.params.input_source) 
-
-        for input_file in input_files:  
-
-                jobname = "%s" % input_file.split(".")[0]
-                
-                extra_args = extra.copy()
-                extra_args['jobname'] = jobname
+             for input_file in input_files:  
     
-                # FIXME: ignore SessionBasedScript feature of customizing 
-                # output folder
-                
-                extra_args['loc'] = self.params.loc
-                extra_args['ind'] = self.params.ind
-                extra_args['input_source'] = self.params.input_source
-                #extra_args['output_dir'] = self.params.input_source
-                
-                if self.params.mainparams_file:
-                    extra_args['mainparams_file'] = self.params.mainparams_file
-
-                if self.params.extraparams_file:
-                    extra_args['extraparams_file'] = self.params.extraparams_file
-
-                if self.params.k_range:
-                    extra_args['k_range'] = self.params.k_range
-   
-                if self.params.replica:
-                    extra_args['replica'] = self.params.replica 
-
-                self.log.info("Creating Task for input file: %s" % input_file)
+                    jobname = "%s" % input_file.split(".")[0]
                     
-                tasks.append(GStructureTask(
-                    input_file,
-                    **extra_args
-                    ))
-
+                    extra_args['jobname'] = jobname
+        
+                    # FIXME: ignore SessionBasedScript feature of customizing 
+                    # output folder
+                    
+                    extra_args['loc'] = self.params.loc
+                    extra_args['ind'] = self.params.ind
+                    extra_args['input_source'] = self.params.input_source
+                    #extra_args['output_dir'] = self.params.input_source
+                    
+                    self.log.info("Creating Task for input file: %s" % input_file)
+                        
+                    tasks.append(GStructureTask(
+                        input_file,
+                        **extra_args
+                        ))
+    
         return tasks
 
 
