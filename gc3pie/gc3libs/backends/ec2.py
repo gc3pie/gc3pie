@@ -542,7 +542,7 @@ class EC2Lrms(LRMS):
 
         """
         if vm.id not in self.subresources:
-            self.subresources[vm.id] = self._make_subresource(vm.preferred_ip)
+            self.subresources[vm.id] = self._make_subresource(vm.id, vm.preferred_ip)
         return self.subresources[vm.id]
 
     def _get_vm(self, vm_id):
@@ -654,14 +654,11 @@ class EC2Lrms(LRMS):
             raise UnrecoverableError("Error importing keypair %s: %s"
                                      % (self.keypair_name, ex))
 
-    def _make_subresource(self, remote_ip):
+    def _make_subresource(self, id, remote_ip):
         """
         Create a resource associated to the instance with `remote_ip`
         ip using configuration file parameters.
         """
-        if not remote_ip:
-            raise ValueError(
-                "_make_subresource: `remote_ip` must be a valid IP or hostname.")
         gc3libs.log.debug(
             "Creating remote ShellcmdLrms resource for ip %s", remote_ip)
         args = self.subresource_args.copy()
@@ -671,8 +668,9 @@ class EC2Lrms(LRMS):
         if args['keyfile'].endswith('.pub'):
             args['keyfile'] = args['keyfile'][:-4]
         args['ignore_ssh_host_keys'] = True
-        args['name'] = "%s@%s" % (remote_ip, self.name)
+        args['name'] = "%s@%s" % (id, self.name)
         args['auth'] = args['vm_auth']
+        args['ssh_timeout'] = 7
         resource = self._cfgobj._make_resource(args)
         return resource
 
