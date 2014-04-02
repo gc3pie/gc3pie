@@ -838,22 +838,21 @@ class EC2Lrms(LRMS):
             try:
                 resource.get_resource_status()
             except TransportError, ex:
-                if vm.preferred_ip == vm.public_dns_name:
-                    # Try with private IP
-                    vm.preferred_ip = vm.private_ip_address
-                elif vm.preferred_ip == vm.private_ip_address:
-                    vm.preferred_ip = vm.public_dns_name
-                resource.frontend = vm.preferred_ip
-                gc3libs.log.info(
-                    "Connection error. Trying with secondary IP address %s",
-                    vm.preferred_ip)
-                try:
-                    resource.get_resource_status()
-                except Exception, ex:
+                for ip in [vm.public_dns_name, vm.private_ip_address]:
+                    if vm.preferred_ip == ip:
+                        continue
+                    vm.preferred_ip = ip
+                    resource.frontend = ip
                     gc3libs.log.info(
-                        "Ignoring error while updating resource %s. "
-                        "The corresponding VM may not be ready yet. Error: %s",
-                        resource.name, ex)
+                        "Connection error. Trying with secondary IP address %s",
+                        vm.preferred_ip)
+                    try:
+                        resource.get_resource_status()
+                    except Exception, ex:
+                        gc3libs.log.info(
+                            "Ignoring error while updating resource %s. "
+                            "The corresponding VM may not be ready yet. Error: %s",
+                            resource.name, ex)
             except Exception, ex:
                 # XXX: Actually, we should try to identify the kind of
                 # error we are getting. For instance, if the
