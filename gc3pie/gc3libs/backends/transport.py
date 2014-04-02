@@ -251,12 +251,14 @@ import gc3libs
 class SshTransport(Transport):
 
     def __init__(self, remote_frontend, port=gc3libs.Default.SSH_PORT,
-                 username=None, ignore_ssh_host_keys=False, keyfile=None):
+                 username=None, ignore_ssh_host_keys=False, keyfile=None,
+                 timeout=gc3libs.Default.SSH_CONNECT_TIMEOUT):
         self.remote_frontend = remote_frontend
         self.port = port
         self.username = username
 
         self.ssh = paramiko.SSHClient()
+        self.timeout = timeout
         self.ignore_ssh_host_keys = ignore_ssh_host_keys
         self.sftp = None
         self._is_open = False
@@ -303,10 +305,10 @@ class SshTransport(Transport):
 
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 gc3libs.log.debug(
-                    "Connecting to host '%s' as user '%s' via SSH ...",
-                    self.remote_frontend, self.username)
+                    "Connecting to host '%s' as user '%s' via SSH (timeout %ds)...",
+                    self.remote_frontend, self.username, self.timeout)
                 self.ssh.connect(self.remote_frontend,
-                                 timeout=gc3libs.Default.SSH_CONNECT_TIMEOUT,
+                                 timeout=self.timeout,
                                  username=self.username,
                                  allow_agent=True,
                                  key_filename=self.keyfile)
