@@ -485,7 +485,7 @@ ReturnCode=%x"""
         log.debug("Reading resource file for pid %s", pid)
         jobinfo = None
         fname = posixpath.join(self.resource_dir, str(pid))
-        fp = self.transport.open(fname, 'br')
+        fp = self.transport.open(fname, 'rb')
         try:
             jobinfo = pickle.load(fp)
         except Exception, ex:
@@ -503,7 +503,7 @@ ReturnCode=%x"""
         # XXX: We should check for exceptions!
         log.debug("Updating resource file for pid %s", pid)
         fp = self.transport.open(
-            posixpath.join(self.resource_dir, str(pid)), 'bw')
+            posixpath.join(self.resource_dir, str(pid)), 'wb')
         pickle.dump(resources, fp, -1)
         fp.close()
 
