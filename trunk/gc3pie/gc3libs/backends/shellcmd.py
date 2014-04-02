@@ -66,8 +66,7 @@ def _make_remote_and_local_path_pair(transport, job, remote_relpath,
 
 
 class ShellcmdLrms(LRMS):
-    """
-    Execute an `Application`:class: instance as a local process.
+    """Execute an `Application`:class: instance as a local process.
 
     Construction of an instance of `ShellcmdLrms` takes the following
     optional parameters (in addition to any parameters taken by the
@@ -126,6 +125,12 @@ class ShellcmdLrms(LRMS):
       instead of the ones in the configuration file. If `override` is
       False, instead, the values in the configuration file will be
       used.
+
+    :param int ssh_timeout:
+
+      If `transport` is `ssh`, this value will be used as timeout (in
+      seconds) for the TCP connect.
+
     """
 
     # this matches what the ARC grid-manager does
@@ -168,6 +173,7 @@ ReturnCode=%x"""
                  frontend='localhost', transport='local', time_cmd=None,
                  override='False', keyfile=None, ignore_ssh_host_keys=False,
                  spooldir=None, resourcedir=None,
+                 ssh_timeout=gc3libs.Default.SSH_CONNECT_TIMEOUT,
                  **extra_args):
 
         # init base class
@@ -201,7 +207,7 @@ ReturnCode=%x"""
             self._username = auth.username
             self.transport = gc3libs.backends.transport.SshTransport(
                 frontend, username=self._username, keyfile=keyfile,
-                ignore_ssh_host_keys=ignore_ssh_host_keys)
+                ignore_ssh_host_keys=ignore_ssh_host_keys, timeout=ssh_timeout)
         else:
             raise gc3libs.exceptions.TransportError(
                 "Unknown transport '%s'" % transport)
