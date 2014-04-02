@@ -491,6 +491,7 @@ ReturnCode=%x"""
         except Exception, ex:
             log.error("Unable to read remote resource file %s: %s",
                       fname, ex)
+            raise
         fp.close()
         return jobinfo
 
