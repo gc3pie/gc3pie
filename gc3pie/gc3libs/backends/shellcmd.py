@@ -484,11 +484,14 @@ ReturnCode=%x"""
         self.transport.connect()
         log.debug("Reading resource file for pid %s", pid)
         jobinfo = None
-        fp = self.transport.open(
-            posixpath.join(self.resource_dir, str(pid)), 'r')
-        data = fp.read()
+        fname = posixpath.join(self.resource_dir, str(pid))
+        fp = self.transport.open(fname, 'br')
+        try:
+            jobinfo = pickle.load(fp)
+        except Exception, ex:
+            log.error("Unable to read remote resource file %s: %s",
+                      fname, ex)
         fp.close()
-        jobinfo = pickle.loads(data)
         return jobinfo
 
     def _update_job_resource_file(self, pid, resources):
@@ -499,7 +502,7 @@ ReturnCode=%x"""
         # XXX: We should check for exceptions!
         log.debug("Updating resource file for pid %s", pid)
         fp = self.transport.open(
-            posixpath.join(self.resource_dir, str(pid)), 'w')
+            posixpath.join(self.resource_dir, str(pid)), 'bw')
         pickle.dump(resources, fp, -1)
         fp.close()
 
@@ -646,7 +649,7 @@ ReturnCode=%x"""
             try:
                 outcome = self._parse_wrapper_output(wrapper_file)
                 app.execution.returncode = int(outcome.ReturnCode)
-                self._update_job_resource_usage(pid, terminated=True)
+                self._delete_job_resource_file(pid)
             except:
                 wrapper_file.close()
 
