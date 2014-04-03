@@ -351,6 +351,8 @@ echo -e "\n\n"
 echo "Postprocessing:"
 echo -e "---------------\n"
 
+cd $CUR_DIR
+
 # generate output archive
 echo "Generating output archive... "
 # e.g. tar cfz testo.results.tgz testo.*
@@ -373,7 +375,7 @@ case $OUTPUT_URL in
     "s3://"* )
 	# Upload to S3 repo
 	log "Checking whether output-data already exists... "
-	s3mcd -q info ${OUTPUT_URL}/${OUTPUT_ARCHIVE}
+	$S3CMD -c $S3CFG -q info ${OUTPUT_URL}/${OUTPUT_ARCHIVE}
 	if [ $? -eq 0]; then
 	    # data exists on S3
 	    # postfix hours-minutes-secs
