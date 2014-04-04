@@ -50,6 +50,7 @@ from gc3libs.backends.vmpool import VMPool, InstanceNotFound
 from gc3libs.session import Session
 from gc3libs.persistence import Persistable
 from gc3libs.utils import cache_for
+from gc3libs.quantity import MiB
 
 available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
 
@@ -57,8 +58,52 @@ ERROR_STATES = ['ERROR', 'UNNKNOWN']
 PENDING_STATES = ['BUILD', 'REBUILD', 'REBOOT', 'HARD_REBOOT',
                   'RESIZE', 'REVERT_RESIZE']
 
+def select_biggest_flavor(flavors):
+    """Select the flavor with the biggest CPU, RAM and disk available in `flavors` list of flavor objects.
+    """
+    biggest_flavor = None
+    for flv in flavors:
+        if not biggest_flavor:
+            biggest_flavor = flv
+            continue
+        # if this flavor has less cpus or less ram, skip it
+        if flv.vcpus < biggest_flavor.vcpus or \
+           flv.ram < biggest_flavor.ram:
+            continue
+        # if it has the same cpus and ram, but a smaller disk, skip it
+        if flv.vcpus == biggest_flavor.vcpus \
+           and flv.ram == biggest_flavor.ram \
+           and flv.disk < biggest_flavor.disk:
+            continue
+        else:
+            # Otherwise, pick it.
+            biggest_flavor = flv
+    return biggest_flavor
 
+
+def select_smallest_flavor_for_job(job, flavors):
+    """
+    Get an `Application`:class: `job` and a list of OpenStack flavors
+    `flavors`.
+
+    returns the smallest flavor that the application can fit, or None
+    """
+    smallest_flavor = None
+    for flv in flavors:
+        # Is it big enough for the application?
+        if flv.vcpus < job.requested_cores or \
+           flv.ram*MiB < job.requested_memory:
+            continue
+        # Good, it is big enough, but is it the smallest?
+        if not smallest_flavor \
+           or flv.ram < smallest_flavor.ram \
+           or flv.vcpus < smallest_flavor.vcpus:
+            smallest_flavor = flv
+    return smallest_flavor
+
+    
 class OpenStackVMPool(VMPool):
+
     """
     Implementation of `VMPool` for OpenStack cloud
     """
@@ -93,6 +138,7 @@ class OpenStackLrms(LRMS):
         self.user_run = 0
         self.user_queued = 0
         self.queued = 0
+        self._flavors = []
         self.vm_pool_max_size = vm_pool_max_size
         if vm_pool_max_size is not None:
             try:
@@ -180,12 +226,24 @@ class OpenStackLrms(LRMS):
         pooldir = os.path.join(os.path.expandvars(OpenStackLrms.RESOURCE_DIR),
                                'vmpool', self.name)
         self._vmpool = OpenStackVMPool(pooldir, self.client)
+        # XXX: we need to get the list of available flavors, in order
+        # to set self.max_cores  and self.max_memory_per_core
+        self._connect()
 
     def _connect(self):
-        self.client.authenticate()
+        if not self.client.client.auth_token or not self._flavors:
+            self.client.authenticate()
+            # Fill the flavors and update the resource.
+            self._flavors = self.client.flavors.list()
+            flavor = select_biggest_flavor(self._flavors)
+            gc3libs.log.info("Biggest flavor available on the cloud: %s",
+                             flavor.name)
+            self['max_cores'] = self['max_cores_per_job'] = flavor.vcpus
+            self['max_memory_per_core'] = flavor.ram * MiB
+            
         
-    def _create_instance(self, image_id, name='gc3pie-instance', instance_type=None,
-                         user_data=None):
+    def _create_instance(self, image_id, name='gc3pie-instance',
+                         instance_type=None, user_data=None):
         """
         Create an instance using the image `image_id` and instance
         type `instance_type`. If not `instance_type` is defined, use
@@ -217,21 +275,11 @@ class OpenStackLrms(LRMS):
             self._setup_security_groups()
             args['security_groups'] = [self.security_group_name]
 
-
-        flavors = self._get_available_flavors()
-        flavor = flavors[0]
-        if instance_type:
-            try:
-                flavor = self._get_flavor(instance_type)
-            except:
-                raise ConfigurationError(
-                    "Instance type %s not found. Check configuration option "
-                    "`instance_type` and try again." % instance_type)
         # FIXME: we should add check/creation of proper security
         # groups
         gc3libs.log.debug("Create new VM using image id `%s`", image_id)
         try:
-            vm = self.client.servers.create(name, image_id, flavor,
+            vm = self.client.servers.create(name, image_id, instance_type,
                                             key_name=self.keypair_name, **args)
         except Exception, ex:
             # scrape actual error kind and message out of the
@@ -277,10 +325,24 @@ class OpenStackLrms(LRMS):
 
         Updates the internal list of available resources if needed.
 
-        """
+        """        
         if vm.id not in self.subresources:
             self.subresources[vm.id] = self._make_subresource(
                 vm.id, vm.preferred_ip)
+            # Update resource based on flavor specs
+            try:
+                flavor = self.client.flavors.get(vm.flavor['id'])
+                res = self.subresources[vm.id]
+                res['max_memory_per_core'] = flavor.ram * MiB
+                res['max_cores_per_job'] = flavor.vcpus
+                res['max_cores'] = flavor.vcpus
+            except Exception, ex:
+                # Ignore any error here, as we can get information on
+                # the subresources when we connect to it.
+                gc3libs.log.info(
+                    "Ignoring error while setting max_cores_per_job/max_memory"
+                    " values for new subresource %s based on flavor: %s",
+                    self.subresources[vm.id].name, ex)
         return self.subresources[vm.id]
 
     def _get_vm(self, vm_id):
@@ -477,8 +539,7 @@ class OpenStackLrms(LRMS):
 
     @cache_for(120)
     def _get_flavor(self, name):
-        flavors = self._get_available_flavors()
-        flavor = [fl for fl in flavors if fl.name == name]
+        flavor = [fl for fl in self._flavors if fl.name == name]
         if not flavor:
             raise NotFound("Flavor `%s` not found." % name)
         return flavor[0]
@@ -505,9 +566,17 @@ class OpenStackLrms(LRMS):
         """
         conf_option = job.application_name + '_instance_type'
         if conf_option in self:
-            return self[conf_option]
+            flavor = self._get_flavor(self[conf_option])
+            gc3libs.log.debug(
+                "Using flavor %s as per configuration option %s",
+                flavor.name, conf_option)
+            return flavor
         else:
-            return self.instance_type
+            flavor = select_smallest_flavor_for_job(job, self._flavors)
+            gc3libs.log.debug(
+                "Using flavor %s which is the smallest flavor that can run"
+                " application %s", flavor.name, job.jobname)
+            return flavor
 
     def get_user_data_for_job(self, job):
         """
@@ -678,7 +747,6 @@ class OpenStackLrms(LRMS):
         # nr.  386:
         #     http://code.google.com/p/gc3pie/issues/detail?id=386
         self.get_resource_status()
-
         pending_vms = set(vm.id for vm in self._vmpool.get_all_vms()
                           if vm.status in PENDING_STATES)
 
@@ -689,9 +757,10 @@ class OpenStackLrms(LRMS):
                                      "%s" % (image_id, self.os_auth_url))
 
         instance_type = self.get_instance_type_for_job(job)
-        if instance_type not in [flv.name for flv in self._get_available_flavors()]:
-            raise ConfigurationError("Instance type ID %s does not exist in "
-                                     "cloud %s" % (image_id, self.os_auth_url))
+        if not instance_type:
+            raise RuntimeError(
+                "Unable to find a suitable instancee type for "
+                "application %s" % job.jobname)
 
         # First of all, try to submit to one of the subresources.
         for vm_id, resource in self.subresources.items():
@@ -704,10 +773,7 @@ class OpenStackLrms(LRMS):
                 # Check that the required image id and instance type
                 # are correct
                 vm = self._get_vm(vm_id)
-                flavors = self._get_available_flavors()
-                flavor = [flv.name for flv in flavors if flv.id]
-                if vm.image['id'] != image_id or \
-                   not flavor or flavor[0] != instance_type:
+                if vm.image['id'] != image_id:
                     continue
                 resource.submit_job(job)
                 job.os_instance_id = vm_id
