@@ -1420,11 +1420,11 @@ To get detailed info on a specific command, run:
             resources = [res for res in resources
                          if res.name == self.params.resource_name]
             if not resources:
-                raise RuntimeError('No EC2 resource found matching name `%s`.'
+                raise RuntimeError('No Cloud resource found matching name `%s`.'
                                    '' % self.params.resource_name)
 
         if not resources:
-            raise RuntimeError('No EC2 resource found.')
+            raise RuntimeError('No Cloud resource found.')
 
         self.resources = resources
 
@@ -1434,36 +1434,37 @@ To get detailed info on a specific command, run:
     def _print_vms(vms, res, header=True):
         table = PrettyTable()
         table.border=True
-        if res.type.startswith('ec2'):
-            if header:
-                table.field_names = ["resource", "id", "state", "IP Address", "Nr. of jobs", "Nr. of cores","image id", "keypair"]
+        if header:
+            table.field_names = ["resource", "id", "state", "IP Address", "other IPs", "Nr. of jobs", "Nr. of cores","image", "keypair"]
 
-            for vm in vms:
-                remote_jobs = 'N/A'
-                ncores = 'N/A'
-                if vm.id in res.subresources:
-                    if res.subresources[vm.id].updated:
-                        remote_jobs = str(len(res.subresources[vm.id].job_infos))
-                        ncores = str(res.subresources[vm.id].max_cores)
-                table.add_row((res.name, vm.id, vm.state, vm.public_dns_name, remote_jobs, ncores, vm.image_id, vm.key_name))
-        elif res.type.startswith('openstack'):
-            if header:
-                table.field_names = ["id", "name", "state", "public ip", "Nr. of jobs", "Nr. of cores","image name", "keypair"]
+        images = []
+        for vm in vms:
+            remote_jobs = 'N/A'
+            ncores = 'N/A'
+            status = ''
+            image_name = ''
+            ips = []
+            if vm.id in res.subresources:
+                if res.subresources[vm.id].updated:
+                    remote_jobs = str(len(res.subresources[vm.id].job_infos))
+                    ncores = str(res.subresources[vm.id].max_cores)
 
-            images =  res._get_available_images()
-            
-            for vm in vms:
-                remote_jobs = 'N/A'
-                ncores = 'N/A'
+            if res.type.startswith('ec2'):
+                ips = [vm.public_dns_name, vm.private_ip_address]
+                status = vm.state
+                image_name = vm.image_id
+            elif res.type.startswith('openstack'):
+                ips = vm.networks.get('private', []) + vm.networks.get('public', [])
+                status = vm.status
+                if not images:
+                    images.extend(res._get_available_images())
+
                 image_name = filter(lambda x: x.id == vm.image['id'], images)[0].name
-                if vm.id in res.subresources:
-                    if res.subresources[vm.id].updated:
-                        remote_jobs = str(len(res.subresources[vm.id].job_infos))
-                        ncores = str(res.subresources[vm.id].max_cores)
-                table.add_row((vm.id, vm.name, vm.status, res._get_preferred_ip(vm), remote_jobs, ncores, image_name, vm.key_name))
-        else:
-            table.field_names=["ERROR",]
-            table.add_row(("Cloud type %s not supported." % res.type,))
+            if vm.preferred_ip in ips:
+                ips.remove(vm.preferred_ip)
+            
+            table.add_row((res.name, vm.id, status, vm.preferred_ip, str.join(', ', ips), remote_jobs, ncores, image_name, vm.key_name))
+
         print(table)
 
     @staticmethod
@@ -1476,7 +1477,7 @@ To get detailed info on a specific command, run:
 
             vms = res._vmpool.get_all_vms()
             # draw title to separate output from different resources
-            title = "VMs running on EC2 resource `%s`" % res.name
+            title = "VMs running on Cloud resource `%s` of type %s" % (res.name, res.type)
             separator = ('=' * len(title))
 
             # Acquire the lock before printing
