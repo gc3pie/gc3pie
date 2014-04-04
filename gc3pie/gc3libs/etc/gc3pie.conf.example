@@ -88,6 +88,7 @@ debug = 0
 #  pbs            resource is a TORQUE/OpenPBS cluster, accessed via qsub/qstat over SSH
 #  shellcmd       run jobs on the local computer
 #  ec2+<subtype>  run jobs on VMs created on a cloud with EC2-compatible APIs
+#  openstack+<subtype>  run jobs on VMs created on a cloud with OpenStack APIs
 #
 # Every resource/*** section must reference a valid auth/*** section.
 # Resources of `arc0` type can only reference voms-proxy/grid-proxy
@@ -257,6 +258,24 @@ architecture=x64_64
 # 
 # ec2_secret_key =
 
+# [auth/hobbes]
+# type = openstack
+#
+# If `os_username` is empty, then the `OS_USERNAME` environment
+# variable will be used, if any.
+# 
+# os_username =
+#
+# If `os_password` is empty, then the `OS_PASSWORD` environment
+# variable will be used, if any.
+# 
+# os_password =
+#
+# If `os_project_name` is empty, then the `OS_TENANT_NAME` environment
+# variable will be used, if any.
+#
+# os_project_name =
+
 # Images created by the GC3 team have a `gc3-user` account by default.
 #
 # [auth/gc3user_ssh]
@@ -264,6 +283,39 @@ architecture=x64_64
 # username = gc3-user
 
 # [resource/hobbes]
+# enabled = yes
+# auth = hobbes
+#
+# This resource will create a new VM for each submitted job, and a
+# resource associated to the VM. These subresources define the way we
+# access the VM. It is usually a `shellcmd` backend with `ssh`
+# transport, but in the future this may change.
+#
+# The `type` option defines which backend we want to use for the
+# subresource. The syntax is:
+#
+# openstack+`subresourcetype`
+#
+# where `subresourcetype` is any valid resource type. However, we
+# currently only support `shellcmd`.
+# 
+# type = openstack+shellcmd
+
+# If `os_auth_url` is empty, then the `OS_AUTH_URL` environment variable
+# is will be used, if any. If OS_AUTH_URL is empty too, the default url
+# for AWS will be used.
+# 
+# os_auth_url = http://cloud.gc3.uzh.ch:5000/v2.0
+
+# OpenStack Region to use. It is usually needed only if AWS is not used.
+#
+# os_region = nova
+
+# Maximum number of VM running at the same time
+# 
+# vm_pool_max_size = 
+
+# [resource/ec2hobbes]
 # enabled = yes
 # auth = ec2hobbes
 #

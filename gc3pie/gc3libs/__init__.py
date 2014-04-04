@@ -85,6 +85,7 @@ class Default(object):
     SLURM_LRMS = 'slurm'
     SUBPROCESS_LRMS = 'subprocess'
     EC2_LRMS = 'ec2'
+    OPENSTACK_LRMS = 'openstack'
 
     # Transport information
     SSH_PORT = 22

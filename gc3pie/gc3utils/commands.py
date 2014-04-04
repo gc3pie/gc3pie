@@ -1351,7 +1351,7 @@ To get detailed info on a specific command, run:
         listparser = self._add_subcmd(
             'list',
             self.list_vms,
-            help='List VMs currently know to the EC2 backend.')
+            help='List VMs currently know to the Cloud backend.')
         listparser.add_argument(
             '-r', '--resource', metavar="NAME", dest="resource_name",
             default=None, help="Select resource by name.")
@@ -1414,7 +1414,8 @@ To get detailed info on a specific command, run:
         import gc3utils.commands
 
         resources = [res for res in self._core.get_resources()
-                     if res.type.startswith('ec2')]
+                     if res.type.startswith('ec2') or 
+                     res.type.startswith('openstack')]
         if self.params.resource_name:
             resources = [res for res in resources
                          if res.name == self.params.resource_name]
@@ -1431,10 +1432,12 @@ To get detailed info on a specific command, run:
 
     @staticmethod
     def _print_vms(vms, res, header=True):
-            table = PrettyTable()
-            table.border=True
+        table = PrettyTable()
+        table.border=True
+        if res.type.startswith('ec2'):
             if header:
                 table.field_names = ["resource", "id", "state", "IP Address", "Nr. of jobs", "Nr. of cores","image id", "keypair"]
+
             for vm in vms:
                 remote_jobs = 'N/A'
                 ncores = 'N/A'
@@ -1442,8 +1445,26 @@ To get detailed info on a specific command, run:
                     if res.subresources[vm.id].updated:
                         remote_jobs = str(len(res.subresources[vm.id].job_infos))
                         ncores = str(res.subresources[vm.id].max_cores)
-                table.add_row((res.name, vm.id, vm.state, vm.preferred_ip, remote_jobs, ncores, vm.image_id, vm.key_name))
-            print(table)
+                table.add_row((res.name, vm.id, vm.state, vm.public_dns_name, remote_jobs, ncores, vm.image_id, vm.key_name))
+        elif res.type.startswith('openstack'):
+            if header:
+                table.field_names = ["id", "name", "state", "public ip", "Nr. of jobs", "Nr. of cores","image name", "keypair"]
+
+            images =  res._get_available_images()
+            
+            for vm in vms:
+                remote_jobs = 'N/A'
+                ncores = 'N/A'
+                image_name = filter(lambda x: x.id == vm.image['id'], images)[0].name
+                if vm.id in res.subresources:
+                    if res.subresources[vm.id].updated:
+                        remote_jobs = str(len(res.subresources[vm.id].job_infos))
+                        ncores = str(res.subresources[vm.id].max_cores)
+                table.add_row((vm.id, vm.name, vm.status, res._get_preferred_ip(vm), remote_jobs, ncores, image_name, vm.key_name))
+        else:
+            table.field_names=["ERROR",]
+            table.add_row(("Cloud type %s not supported." % res.type,))
+        print(table)
 
     @staticmethod
     def list_vms_in_resource(res, lock, update):
@@ -1548,7 +1569,12 @@ To get detailed info on a specific command, run:
         vm = resource._vmpool.get_vm(vmid)
         gc3libs.log.info("Terminating VM `%s` on resource `%s`" %
                          (vmid, resource.name))
-        vm.terminate()
+        if res.type.startswith('ec2'):
+            vm.terminate()
+        elif res.type.startswith('openstack'):
+            vm.delete()
+        else:
+            gc3libs.log.error("Unsupported cloud provider %s." % res.type)
         resource._vmpool.remove_vm(vmid)
 
     def terminate_vm(self):
