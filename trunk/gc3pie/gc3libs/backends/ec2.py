@@ -647,10 +647,6 @@ class EC2Lrms(LRMS):
                             "Ignoring error while updating resource %s. "
                             "The corresponding VM may not be ready yet. Error: %s",
                             resource.name, ex)
-                # Unable to connect to the VM using any IP.  Ensure
-                # this resource is considered "pending" as we couldn't
-                # update its status
-                resource.updated = False
             except Exception, ex:
                 # XXX: Actually, we should try to identify the kind of
                 # error we are getting. For instance, if the
@@ -669,7 +665,7 @@ class EC2Lrms(LRMS):
                     specs = self._instance_type_specs
                     specs['architecture'] = resource['architecture']
                     specs['max_cores'] = resource['max_cores']
-                    specs['max_cores_per_job'] = resource['max_cores']
+                    specs['max_cores_per_job'] = resource['max_cores_per_job']
                     specs['max_memory_per_core'] = resource['total_memory']
                     self.update(specs)                            
 
@@ -748,6 +744,21 @@ class EC2Lrms(LRMS):
 
         image_id = self.get_image_id_for_job(job)
         instance_type = self.get_instance_type_for_job(job)
+        # Check that we can actually submit to a flavor like this
+        # XXX: this check shouldn't be done by the Engine???
+        if self._instance_type_specs:
+            specs = self._instance_type_specs
+            max_mem = specs['max_memory_per_core']
+            max_cpus = specs['max_cores_per_job']
+            if (job.requested_memory is not None and 
+                job.requested_memory > max_mem) \
+                or (job.requested_cores is not None and
+                    job.requested_cores > max_cpus):
+                raise gc3libs.exceptions.LRMSSubmitError(
+                    "EC2 flavor %s does not have enough memory/cpus "
+                    "to run application %s" % (
+                        self.instance_type, job.jobname))
+
         # First of all, try to submit to one of the subresources.
         for vm_id, resource in self.subresources.items():
             if not resource.updated:
