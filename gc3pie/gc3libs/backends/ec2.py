@@ -163,6 +163,7 @@ class EC2Lrms(LRMS):
         self.image_id = image_id
         self.image_name = image_name
         self.instance_type = instance_type
+        self._instance_type_specs = {}
         self.user_data = user_data
 
         self._parse_security_group()
@@ -661,6 +662,17 @@ class EC2Lrms(LRMS):
                     "Ignoring error while updating resource %s. "
                     "The corresponding VM may not be ready yet. Error: %s",
                     resource.name, ex)
+            if resource.updated:
+                # Update also the instance_type specs, if not
+                # already updated
+                if not self._instance_type_specs:
+                    specs = self._instance_type_specs
+                    specs['architecture'] = resource['architecture']
+                    specs['max_cores'] = resource['max_cores']
+                    specs['max_cores_per_job'] = resource['max_cores']
+                    specs['max_memory_per_core'] = resource['total_memory']
+                    self.update(specs)                            
+
         self._vmpool.update()
         return self
 
