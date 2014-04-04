@@ -1570,12 +1570,12 @@ To get detailed info on a specific command, run:
         vm = resource._vmpool.get_vm(vmid)
         gc3libs.log.info("Terminating VM `%s` on resource `%s`" %
                          (vmid, resource.name))
-        if res.type.startswith('ec2'):
+        if resource.type.startswith('ec2'):
             vm.terminate()
-        elif res.type.startswith('openstack'):
+        elif resource.type.startswith('openstack'):
             vm.delete()
         else:
-            gc3libs.log.error("Unsupported cloud provider %s." % res.type)
+            gc3libs.log.error("Unsupported cloud provider %s." % resource.type)
         resource._vmpool.remove_vm(vmid)
 
     def terminate_vm(self):
