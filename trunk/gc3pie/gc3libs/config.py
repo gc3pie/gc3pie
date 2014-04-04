@@ -564,6 +564,9 @@ class Configuration(gc3libs.utils.Struct):
             elif resdict['type'].split('+')[0] == gc3libs.Default.EC2_LRMS:
                 from gc3libs.backends.ec2 import EC2Lrms
                 cls = EC2Lrms
+            elif resdict['type'].split('+')[0] == gc3libs.Default.OPENSTACK_LRMS:
+                from gc3libs.backends.openstack import OpenStackLrms
+                cls = OpenStackLrms
             else:
                 raise gc3libs.exceptions.ConfigurationError(
                     "Unknown resource type '%s'" % resdict['type'])
