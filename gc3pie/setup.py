@@ -96,6 +96,7 @@ setuptools.setup(
     # run-time dependencies
     install_requires = [
         'boto',
+        'python-novaclient',
         # paramiko and pycrypto are required for SSH operations
         # ("pycrypto" is actually a dependency of Paramiko, but
         # setuptools apparently does not process dependencies recursively)
