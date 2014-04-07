@@ -57,50 +57,6 @@ available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
 ERROR_STATES = ['ERROR', 'UNNKNOWN']
 PENDING_STATES = ['BUILD', 'REBUILD', 'REBOOT', 'HARD_REBOOT',
                   'RESIZE', 'REVERT_RESIZE']
-
-def select_biggest_flavor(flavors):
-    """Select the flavor with the biggest CPU, RAM and disk available in `flavors` list of flavor objects.
-    """
-    biggest_flavor = None
-    for flv in flavors:
-        if not biggest_flavor:
-            biggest_flavor = flv
-            continue
-        # if this flavor has less cpus or less ram, skip it
-        if flv.vcpus < biggest_flavor.vcpus or \
-           flv.ram < biggest_flavor.ram:
-            continue
-        # if it has the same cpus and ram, but a smaller disk, skip it
-        if flv.vcpus == biggest_flavor.vcpus \
-           and flv.ram == biggest_flavor.ram \
-           and flv.disk < biggest_flavor.disk:
-            continue
-        else:
-            # Otherwise, pick it.
-            biggest_flavor = flv
-    return biggest_flavor
-
-
-def select_smallest_flavor_for_job(job, flavors):
-    """
-    Get an `Application`:class: `job` and a list of OpenStack flavors
-    `flavors`.
-
-    returns the smallest flavor that the application can fit, or None
-    """
-    smallest_flavor = None
-    for flv in flavors:
-        # Is it big enough for the application?
-        if flv.vcpus < job.requested_cores or \
-           flv.ram*MiB < job.requested_memory:
-            continue
-        # Good, it is big enough, but is it the smallest?
-        if not smallest_flavor \
-           or flv.ram < smallest_flavor.ram \
-           or flv.vcpus < smallest_flavor.vcpus:
-            smallest_flavor = flv
-    return smallest_flavor
-
     
 class OpenStackVMPool(VMPool):
 
@@ -235,7 +191,7 @@ class OpenStackLrms(LRMS):
             self.client.authenticate()
             # Fill the flavors and update the resource.
             self._flavors = self.client.flavors.list()
-            flavor = select_biggest_flavor(self._flavors)
+            flavor = max(self._flavors, key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
             gc3libs.log.info("Biggest flavor available on the cloud: %s",
                              flavor.name)
             self['max_cores'] = self['max_cores_per_job'] = flavor.vcpus
@@ -572,7 +528,8 @@ class OpenStackLrms(LRMS):
                 flavor.name, conf_option)
             return flavor
         else:
-            flavor = select_smallest_flavor_for_job(job, self._flavors)
+            valid_flavors = filter(lambda flv: flv.vcpus >= job.requested_cores and flv.ram >= job.requested_memory, self._flavors)
+            flavor = min(valid_flavors, key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
             gc3libs.log.debug(
                 "Using flavor %s which is the smallest flavor that can run"
                 " application %s", flavor.name, job.jobname)
