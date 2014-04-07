@@ -82,7 +82,7 @@ class VMPool(object):
         if os.path.isdir(path):
             self.load()
         else:
-            mkdir(self.path)
+            os.makedirs(self.path)
             self._vm_ids = set()
 
         self.conn = connection
