@@ -104,7 +104,7 @@ class Default(object):
     VOMS_DIR = "/etc/grid-security/vomsdir"
 
     # Openstack default VM Operating System overhead
-    VM_OS_OVERHEAD = 512 # Will be set to MiB
+    VM_OS_OVERHEAD = 512*MiB
 
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable
