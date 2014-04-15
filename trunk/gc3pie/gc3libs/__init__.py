@@ -50,7 +50,7 @@ import logging
 import logging.config
 log = logging.getLogger("gc3.gc3libs")
 
-from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds, MiB
 from gc3libs.compat._collections import OrderedDict
 
 # this needs to be defined before we import other GC3Libs modules, as
@@ -102,6 +102,9 @@ class Default(object):
 
     CERTIFICATE_AUTHORITIES_DIR = "/etc/grid-security/certificates"
     VOMS_DIR = "/etc/grid-security/vomsdir"
+
+    # Openstack default VM Operating System overhead
+    VM_OS_OVERHEAD = 512 # Will be set to MiB
 
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable

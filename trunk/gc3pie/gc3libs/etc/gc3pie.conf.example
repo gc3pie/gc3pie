@@ -315,6 +315,18 @@ architecture=x64_64
 # 
 # vm_pool_max_size = 
 
+# Operating System memory overhead for each VM.
+# This value, expressed in MiB, will be used to compute the memory
+# availability of a given flavor when matching it with the application
+# memory requirements:
+#
+# flavor.memory - vm_os_overhead >= application.requested_memory
+#
+# This should guarantee that the actual available memory of a given VM will
+# satisfy the application requirements.
+# 
+# vm_os_overhead = 512
+
 # [resource/ec2hobbes]
 # enabled = yes
 # auth = ec2hobbes
