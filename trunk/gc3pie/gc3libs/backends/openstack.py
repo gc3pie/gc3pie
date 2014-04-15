@@ -530,7 +530,7 @@ class OpenStackLrms(LRMS):
         else:
             valid_flavors = [ flv for flv in self._flavors 
                               if flv.vcpus >= job.requested_cores 
-                              and flv.ram >= job.requested_memory ]
+                              and flv.ram * MiB >= job.requested_memory ]
             flavor = min(valid_flavors, key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
             gc3libs.log.debug(
                 "Using flavor %s which is the smallest flavor that can run"
