@@ -54,8 +54,6 @@ from gc3libs.quantity import MiB
 
 available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
 
-OS_OVERHEAD = 512*MiB
-
 ERROR_STATES = ['ERROR', 'UNNKNOWN']
 PENDING_STATES = ['BUILD', 'REBUILD', 'REBOOT', 'HARD_REBOOT',
                   'RESIZE', 'REVERT_RESIZE']
@@ -86,7 +84,8 @@ class OpenStackLrms(LRMS):
                  keypair_name, public_key, os_region=None,
                  image_id=None, image_name=None, os_auth_url=None,
                  instance_type=None, auth=None, vm_pool_max_size=None,
-                 user_data=None, **extra_args):
+                 user_data=None, vm_os_overhead=gc3libs.Default.VM_OS_OVERHEAD,
+                 **extra_args):
         LRMS.__init__(
             self, name,
             architecture, max_cores, max_cores_per_job,
@@ -141,6 +140,7 @@ class OpenStackLrms(LRMS):
         self.image_name = image_name
         self.instance_type = instance_type
         self.user_data = user_data
+        self.vm_os_overhead = int(vm_os_overhead) * MiB
 
         self._parse_security_group()
         self._conn = None
@@ -532,7 +532,7 @@ class OpenStackLrms(LRMS):
         else:
             valid_flavors = [ flv for flv in self._flavors 
                               if flv.vcpus >= job.requested_cores 
-                              and (flv.ram * MiB - OS_OVERHEAD) >= job.requested_memory ]
+                              and (flv.ram * MiB - self.vm_os_overhead) >= job.requested_memory ]
             flavor = min(valid_flavors, key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
             gc3libs.log.debug(
                 "Using flavor %s which is the smallest flavor that can run"
