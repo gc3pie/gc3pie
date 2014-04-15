@@ -105,9 +105,8 @@ debug = 0
 #    * max_cores_per_job: Maximum number of CPU cores that a job can request; 
 #            a resource will be dropped during the brokering process if a job 
 #            requests more cores than this.
-#    * max_memory_per_core: Max amount of memory (expressed in GBs) 
-#      	     that a job can request
-#    * max_walltime: Maximum job running time (in hours)
+#    * max_memory_per_core: Max amount of memory that a job can request
+#    * max_walltime: Maximum job running time
 #
 #    * ``prologue``: Used only when ``type`` is ``pbs``, ``lsf``,
 #       ``slurm`` or ``sge``. The content of the `prologue` script will
@@ -153,8 +152,8 @@ time_cmd=/usr/bin/time
 max_cores=2
 max_cores_per_job=2
 # adjust the following to match the features of your local computer
-max_memory_per_core=2
-max_walltime=2
+max_memory_per_core=2 GB
+max_walltime=2 hours
 architecture=x64_64
 # When True, the shellcmd backend will discover the actual
 # architecture, the number of cores and the total memory of the
@@ -174,8 +173,8 @@ architecture=x64_64
 # name = gc3
 # arc_ldap = ldap://idgc3grid01.uzh.ch:2135/o=grid/mds-vo-name=local
 # max_cores_per_job = 256
-# max_memory_per_core = 2
-# max_walltime = 99999
+# max_memory_per_core = 2 GB
+# max_walltime = 99999 hours
 # max_cores = 320
 # architecture = x86_64
 
@@ -189,8 +188,8 @@ architecture=x64_64
 # auth = smscg
 # arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
 # max_cores_per_job = 256
-# max_memory_per_core = 2
-# max_walltime = 24
+# max_memory_per_core = 2 GB
+# max_walltime = 24 hours
 # ncores = 8000
 # architecture = i686, x86_64
 
@@ -206,8 +205,8 @@ architecture=x64_64
 # architecture = x86_64
 # max_cores = 4096
 # max_cores_per_job = 1024
-# max_memory_per_core = 3
-# max_walltime = 72
+# max_memory_per_core = 3 GB
+# max_walltime = 72 hours
 # # see http://gridengine.info/2005/11/04/immediate-accounting-data-flushing
 # # if you need to lower this
 # accounting_delay = 15
@@ -231,8 +230,8 @@ architecture=x64_64
 # architecture = x86_64
 # max_cores = 8192
 # max_cores_per_job = 1024
-# max_memory_per_core = 3
-# max_walltime = 72
+# max_memory_per_core = 3 GB
+# max_walltime = 72 hours
 # # you can specify alternate paths to the LSF commands, e.g., to use
 # # wrapper scripts or to specify addtional options; GC3Pie will *append*
 # # the standard arguments to what you specify here
@@ -316,16 +315,15 @@ architecture=x64_64
 # vm_pool_max_size = 
 
 # Operating System memory overhead for each VM.
-# This value, expressed in MiB, will be used to compute the memory
-# availability of a given flavor when matching it with the application
-# memory requirements:
+# This value will be used to compute the memory availability of a given 
+# flavor when matching it with the application memory requirements:
 #
 # flavor.memory - vm_os_overhead >= application.requested_memory
 #
 # This should guarantee that the actual available memory of a given VM will
 # satisfy the application requirements.
 # 
-# vm_os_overhead = 512
+# vm_os_overhead = 512 MiB
 
 # [resource/ec2hobbes]
 # enabled = yes
@@ -450,7 +448,7 @@ architecture=x64_64
 # Values currently used by the resource broker of GC3Pie.
 #
 # max_cores_per_job = 8
-# max_memory_per_core = 2
-# max_walltime = 8
+# max_memory_per_core = 2 GB
+# max_walltime = 8 hours
 # max_cores = 32
 # architecture = x86_64

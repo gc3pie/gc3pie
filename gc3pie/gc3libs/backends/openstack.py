@@ -140,8 +140,7 @@ class OpenStackLrms(LRMS):
         self.image_name = image_name
         self.instance_type = instance_type
         self.user_data = user_data
-        self.vm_os_overhead = int(vm_os_overhead) * MiB
-
+        self.vm_os_overhead = gc3libs.quantity.Memory(vm_os_overhead)
         self._parse_security_group()
         self._conn = None
 
