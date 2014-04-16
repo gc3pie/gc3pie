@@ -113,7 +113,7 @@ class GpyradApplication(Application):
         inputs.append((input_file,remote_input_file))
 
         # Add memory requirement
-        extra_args['requested_memory'] = 512*MB
+        extra_args['requested_memory'] = 2*GB
 
         Application.__init__(
             self,
