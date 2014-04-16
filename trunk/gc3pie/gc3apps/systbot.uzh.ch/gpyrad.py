@@ -79,14 +79,15 @@ class GpyradApplication(Application):
         """
 
         inputs = []
-        
+        outputs = []
+
         gpyrad_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
                                               "gc3libs/etc/gpyrad_wrapper.sh")
 
 
         inputs.append((gpyrad_wrapper_sh,os.path.basename(gpyrad_wrapper_sh)))
 
-        cmd = "./gpyrad_wrapper.sh -d "
+        cmd = "./gpyrad_wrapper.sh "
 
         if 's3cfg' in extra_args:
             inputs.append((extra_args['s3cfg'],
@@ -98,6 +99,11 @@ class GpyradApplication(Application):
         else:
             # This is a convention of PyRAD 
             output_folder_name = 'clust%.1f' % float(DEFAULT_WCLUST)
+        outputs.append(output_folder_name)
+
+        if 'debug' in extra_args:
+            cmd += "-d "
+            outputs.append('strace.log')
 
         if 'paramsfile' in extra_args:
             cmd += " -p ./params.tmpl "
@@ -121,8 +127,7 @@ class GpyradApplication(Application):
             # executed on the remote end
             arguments = cmd,
             inputs = inputs,
-            outputs = [output_folder_name],
-            # outputs = gc3libs.ANY_OUTPUT,
+            outputs = outputs,
             stdout = 'gpyrad.log',
             join=True,
             **extra_args)
@@ -223,6 +228,13 @@ newly-created jobs so that this limit is never exceeded.
     def new_tasks(self, extra):
 
         tasks = []
+
+        #XXX: I would have like to use the same forumla as in
+        # cmdline:405 but I found it very confusing
+        # easier to use a linear threshold
+        # 0: error 1: warning 2: info 3: debug
+        if self.params.verbose > 3:
+            extra['debug'] = True
 
         for input_file in self._list_folder_by_url(self.input_folder_url):
 
