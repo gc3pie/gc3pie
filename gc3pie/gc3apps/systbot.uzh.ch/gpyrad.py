@@ -28,6 +28,10 @@ __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
 
+  2014-04-16:
+  * Retrieve only specific result folder as output.
+  * Initial experimental support for S3 repository
+
   2014-02-24:
   * Initial release, forked off the ``ggeosphere`` sources.
 """
@@ -74,8 +78,6 @@ class GpyradApplication(Application):
         The wrapper script is being used for start the simulation. 
         """
 
-        output_folder_name = 'clust%.1f' % DEFAULT_WCLUST
-
         inputs = []
         
         gpyrad_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
@@ -86,15 +88,18 @@ class GpyradApplication(Application):
 
         cmd = "./gpyrad_wrapper.sh -d "
 
-        if extra_args.has_key('s3cfg'):
+        if 's3cfg' in extra_args:
             inputs.append((extra_args['s3cfg'],
                            "etc/s3cfg"))
 
-        if extra_args.has_key('wclust'):
+        if 'wclust' in extra_args:
             cmd += " -w %s " % extra_args['wclust']
-            output_folder_name = 'clust%.1f' % extra_args['wclust']
+            output_folder_name = 'clust%.1f' % float(extra_args['wclust'])
+        else:
+            # This is a convention of PyRAD 
+            output_folder_name = 'clust%.1f' % float(DEFAULT_WCLUST)
 
-        if extra_args.has_key('paramsfile'):
+        if 'paramsfile' in extra_args:
             cmd += " -p ./params.tmpl "
             #XXX: params file contains important paths needed
             # by pyRAD. If we deploy an alternative params.txt file supplied 
@@ -203,12 +208,17 @@ newly-created jobs so that this limit is never exceeded.
         path to command_file should also be valid.
         """
 
-
-        # Resolve protocol
         self.input_folder_url = gc3libs.url.Url(self.params.input_container)
 
-        # self.params.input_container = os.path.abspath(self.params.input_container)
-        
+        if self.params.paramsfile and not os.path.isfile(self.params.paramsfile):
+            raise gc3libs.exceptions.InvalidUsage(
+                "Invalid params file '%s': File not found"
+                % self.params.paramsfile)
+
+        if self.params.s3cfg and not os.path.isfile(self.params.s3cfg):
+            raise gc3libs.exceptions.InvalidUsage(
+                "Invalid S3cmd config file '%s': File not found"
+                % self.params.s3cfg)
 
     def new_tasks(self, extra):
 
@@ -254,7 +264,7 @@ newly-created jobs so that this limit is never exceeded.
 
         if url.scheme == "s3":
             return self._list_s3_container(url)
-        if url.scheme ==  "file":
+        elif url.scheme ==  "file":
             return self._list_local_folder(url)
         else:
             gc3libs.log.error("Unsupported Input folder URL %s. "+

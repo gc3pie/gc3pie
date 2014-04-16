@@ -26,7 +26,11 @@ PROG=$(basename "$0")
 TODAY=`date +%Y-%m-%d`
 CUR_DIR="$PWD"
 
-DEFAULT_PYRAD_LOCATION="$HOME/pyRAD"
+# Check for pyRAD location
+if [ "${PYRAD_LOCATION}x" == "x" ]; then
+    # No pyRAD location set. Use default
+    PYRAD_LOCATION="$HOME/pyRAD"
+fi  
 
 S3CMD=`which s3cmd`
 S3CFG="./etc/s3cfg"
@@ -35,11 +39,12 @@ S3CFG="./etc/s3cfg"
 DEBUG=0
 FAILED=0
 #XXX: check whether this is corrent or need more test
-PYRAD="$DEFAULT_PYRAD_LOCATION/pyRAD"
+# PYRAD="$PYRAD_LOCATION/pyRAD"
+PYRAD=`which pyRAD`
 OUTPUT_FOLDER="./output/"
 INPUT_FOLDER="./input"
 WCLUST=0.9
-PARAMS_FILE="$DEFAULT_PYRAD_LOCATION/params.tmpl"
+PARAMS_FILE="$PYRAD_LOCATION/params.tmpl"
 
 
 ## helper functions
@@ -190,7 +195,7 @@ cp ${PARAMS_FILE} ./params.txt
 PARAMS_FILE="./params.txt"
 
 log "Customizing params file adding wclust value"
-sed -i -e "s|@PYRAD@|${DEFAULT_PYRAD_LOCATION}|g" ${PARAMS_FILE}
+sed -i -e "s|@PYRAD@|${PYRAD_LOCATION}|g" ${PARAMS_FILE}
 sed -i -e "s|@WCLUST@|${WCLUST}|g" ${PARAMS_FILE}
 sed -i -e "s|@INPUT@|${INPUT_FOLDER}|g" ${PARAMS_FILE}
 
@@ -199,8 +204,14 @@ sed -i -e "s|@INPUT@|${INPUT_FOLDER}|g" ${PARAMS_FILE}
 
 # run script
 log "Running: ${PYRAD} -p ${PARAMS_FILE} -s123"
-# strace -f -o strace.log ${PYRAD} -p ${PARAMS_FILE} -s123
-${PYRAD} -p ${PARAMS_FILE} -s123
+if [ $DEBUG -ne 0 ]; then
+    log "Running: strace -f -o strace.log ${PYRAD} -p ${PARAMS_FILE} -s123"
+    strace -f -o strace.log ${PYRAD} -p ${PARAMS_FILE} -s123
+else
+    log "Running: ${PYRAD} -p ${PARAMS_FILE} -s123"
+    ${PYRAD} -p ${PARAMS_FILE} -s123
+fi
+
 RET=$?
 
 log "Simulation ended with exit code $RET"
