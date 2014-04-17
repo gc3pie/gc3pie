@@ -54,7 +54,7 @@ import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, executable_file
 import gc3libs.utils
-from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds, GiB
 from gc3libs.workflow import RetryableTask
 import gc3libs.url
 
@@ -119,7 +119,7 @@ class GpyradApplication(Application):
         inputs.append((input_file,remote_input_file))
 
         # Add memory requirement
-        extra_args['requested_memory'] = 1.5*GB
+        extra_args.setdefault('requested_memory', 1.5*GiB)
 
         Application.__init__(
             self,
