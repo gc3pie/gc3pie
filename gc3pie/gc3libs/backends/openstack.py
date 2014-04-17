@@ -607,7 +607,7 @@ class OpenStackLrms(LRMS):
                 gc3libs.log.info(
                     "Ignoring error while updating resource %s. "
                     "Trying other IPs. Error: %s", resource.name, ex)
-                for ip in vm.networks.get('public',[]) + vm.networks.get('private', []):
+                for ip in reduce(lambda x,y: x+y, vm.networks.values()):
                     if vm.preferred_ip == ip:
                         continue
                     vm.preferred_ip = ip
