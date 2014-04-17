@@ -59,7 +59,7 @@ from gc3libs.workflow import RetryableTask
 import gc3libs.url
 
 # Default values
-DEFAULT_WCLUST=0.9
+DEFAULT_WCLUST="0.9"
 
 ## custom application class
 
@@ -95,10 +95,10 @@ class GpyradApplication(Application):
 
         if 'wclust' in extra_args:
             cmd += " -w %s " % extra_args['wclust']
-            output_folder_name = 'clust%.1f' % float(extra_args['wclust'])
+            output_folder_name = 'clust%s' % extra_args['wclust']
         else:
             # This is a convention of PyRAD 
-            output_folder_name = 'clust%.1f' % float(DEFAULT_WCLUST)
+            output_folder_name = 'clust%.1f' % DEFAULT_WCLUST
         outputs.append(output_folder_name)
 
         if 'debug' in extra_args:
