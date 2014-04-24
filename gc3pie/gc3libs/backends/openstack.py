@@ -185,7 +185,7 @@ class OpenStackLrms(LRMS):
         self._vmpool = OpenStackVMPool(pooldir, self.client)
         # XXX: we need to get the list of available flavors, in order
         # to set self.max_cores  and self.max_memory_per_core
-        self._connect()
+        # self._connect()
 
     def _connect(self):
         if not self.client.client.auth_token or not self._flavors:
@@ -283,6 +283,7 @@ class OpenStackLrms(LRMS):
         Updates the internal list of available resources if needed.
 
         """        
+        self._connect()
         if vm.id not in self.subresources:
             self.subresources[vm.id] = self._make_subresource(
                 vm.id, vm.preferred_ip)
@@ -392,6 +393,7 @@ class OpenStackLrms(LRMS):
 
     @cache_for(120)
     def _get_security_groups(self):
+        self._connect()
         return self.client.security_groups.list()
 
     @cache_for(120)
@@ -447,6 +449,7 @@ class OpenStackLrms(LRMS):
         Check the current configuration and set up the security group
         if it does not exist.
         """
+        self._connect()
         if not self.security_group_name:
             gc3libs.log.error("Group name in `security_group_name`"
                               " configuration option cannot be empty!")
@@ -488,10 +491,12 @@ class OpenStackLrms(LRMS):
 
     @cache_for(120)
     def _get_available_images(self):
+        self._connect()
         return self.client.images.list()
 
     @cache_for(120)
     def _get_available_flavors(self):
+        self._connect()
         return self.client.flavors.list()
 
     @cache_for(120)
@@ -503,6 +508,7 @@ class OpenStackLrms(LRMS):
 
     @cache_for(120)
     def _get_keypair(self, keypair_name):
+        self._connect()
         return self.client.keypairs.get(keypair_name)
 
     def get_image_id_for_job(self, job):
@@ -649,6 +655,7 @@ class OpenStackLrms(LRMS):
 
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
+        self._connect()
         if app.os_instance_id not in self.subresources:
             try:
                 self.subresources[app.os_instance_id] = self._get_subresource(
@@ -867,6 +874,7 @@ class OpenStackLrms(LRMS):
             self.compute_api_version, self.os_username, self.os_password,
             self.os_tenant_name, self.os_auth_url,
             region_name=self.os_region_name)
+        self._connect()
 
 
 ## main: run tests
