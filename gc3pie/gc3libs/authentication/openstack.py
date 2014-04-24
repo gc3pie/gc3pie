@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2012, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2014, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -30,7 +30,6 @@ import gc3libs.exceptions
 
 class OpenStackAuth(object):
     def __init__(self, **auth):
-        self.__dict__.update(auth)
         try:
             # test validity
             assert auth['type'] == 'openstack', \
@@ -57,7 +56,9 @@ class OpenStackAuth(object):
         except AssertionError, x:
             raise gc3libs.exceptions.ConfigurationError(
                 'Erroneous configuration parameter: %s' % str(x))
-        
+
+        self.__dict__.update(auth)
+
 
     def check(self):
         gc3libs.log.debug('Checking auth: OpenStackAuth')
