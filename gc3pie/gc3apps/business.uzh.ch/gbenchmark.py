@@ -198,7 +198,7 @@ class GbenchmarkScript(SessionBasedScript):
         for bench in _benchmarks:
             self.benchmarks.extend(compare(bench))
 
-        gc3libs.log.info("Benchmark retained: %s" % str(self.benchmarks))
+        gc3libs.log.info("Benchmark retained: %s", str(self.benchmarks))
 
     def new_tasks(self, extra):
         """
