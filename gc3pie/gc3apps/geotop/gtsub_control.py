@@ -177,6 +177,7 @@ class GTSubControlScript(SessionBasedScript):
               "Expecting one and only one `col=` line in %s, found %d"
               % (paramfile, len(lines)))
         line = lines[0].strip()
+        start, end = line.split('=')
         if (end == "" or start == ""):
             raise ValueError("col option in the parfile.r is not properly set."
                             " It is set like %s, must be col=Value." % ( line ))
@@ -188,7 +189,7 @@ class GTSubControlScript(SessionBasedScript):
         lines = list(gc3libs.utils.fgrep("beg <-", paramfile))
         if len(lines) != 1:
           raise RuntimeError(
-              "Expecting one and only one `col=` line in %s, found %d"
+              "Expecting one and only one `beg=` line in %s, found %d"
               % (paramfile, len(lines)))
         line = lines[0].strip() 
         line_elements = line.split(' ')
@@ -200,7 +201,7 @@ class GTSubControlScript(SessionBasedScript):
         lines = list(gc3libs.utils.fgrep("end <-", paramfile))
         if len(lines) != 1:
           raise RuntimeError(
-              "Expecting one and only one `col=` line in %s, found %d"
+              "Expecting one and only one `end=` line in %s, found %d"
               % (paramfile, len(lines)))
         line = lines[0].strip()       
         line_elements = line.split(' ')
