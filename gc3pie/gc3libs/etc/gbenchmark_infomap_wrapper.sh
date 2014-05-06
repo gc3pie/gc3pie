@@ -34,6 +34,7 @@ infomap_python_command="python ${INFOMAP_PYTHON} "
 infomap_cpp_command="${INFOMAP_CPP} --input-format=link-list --tree --map --clu "
 infomap_R_command="Rscript --vanilla ${INFOMAP_R} "
 
+RUN_SCRIPT=""
 RESULT_FOLDER="./results"
 
 DEBUG=0
@@ -64,8 +65,12 @@ Options:
 
 EOF`
 
-while getopts "b:d" opt; do
+while getopts "r:b:d" opt; do
     case $opt in
+	r )
+	    # Run the following script instead of the default one
+	    RUN_SCRIPT=$OPTARG
+	    ;;
 	d )
 	    DEBUG=1
 	    ;;
@@ -114,20 +119,24 @@ else
 fi
 
 # Define command to run depending on the selected benchmark
-case $BENCHMARK in
-    "python" )
-	command="$infomap_python_command $NETWORK_FILE $RESULT_FOLDER"
-	;;
-    "cpp")
-	command="$infomap_cpp_command $NETWORK_FILE $RESULT_FOLDER"
-	;;
-    "r")
-	command="$infomap_R_command $NETWORK_FILE $RESULT_FOLDER"
-	;;
-    *)
-	die 1 "Not supported benchmark format: '$BENCHMARK'"
-	;;
-esac
+if [ "${RUN_SCRIPT}x" == "x" ]; then
+    case $BENCHMARK in
+	"python" )
+	    command="$infomap_python_command $NETWORK_FILE $RESULT_FOLDER"
+	    ;;
+	"cpp")
+	    command="$infomap_cpp_command $NETWORK_FILE $RESULT_FOLDER"
+	    ;;
+	"r")
+	    command="$infomap_R_command $NETWORK_FILE $RESULT_FOLDER"
+	    ;;
+	*)
+	    die 1 "Not supported benchmark format: '$BENCHMARK'"
+	    ;;
+    esac
+else
+    command="${RUN_SCRIPT} $NETWORK_FILE $RESULT_FOLDER"
+fi
 
 log "Network file: $NETWORK_FILE"
 log "Result folder: $RESULT_FOLDER"
