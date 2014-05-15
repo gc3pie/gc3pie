@@ -598,15 +598,15 @@ class GeoSphereScript(SessionBasedScript):
         if not config.has_section("default"):
             raise ConfigParser.ParsingError("Section 'default' not found")
 
-        self.extra['s3cfg'] = validate_config_option(config, 
-                                                     "S3ConfigFileLocation", 
-                                                     DEFAULT_S3CFG)
+        self.extra['s3cfg'] = os.path.expandvars(validate_config_option(config, 
+                                                                        "S3ConfigFileLocation", 
+                                                                        DEFAULT_S3CFG))
 
-        self.extra['input'] = validate_config_option(config, 
-                                                     "InputLocation")
+        self.extra['input'] = os.path.expandvars(validate_config_option(config, 
+                                                                        "InputLocation"))
         
-        self.extra['output'] = validate_config_option(config, 
-                                                      "OutputLocation")
+        self.extra['output'] = os.path.expandvars(validate_config_option(config, 
+                                                                         "OutputLocation"))
 
         self.extra['preserve-output'] = validate_config_option(config, 
                                                                "PreserveOutputWhenInputRemoved")
@@ -632,9 +632,9 @@ class GeoSphereScript(SessionBasedScript):
                                                                    "save_simulation_log", 
                                                                    False)
 
-        self.extra['simulation_log_location'] = validate_config_option(config, 
+        self.extra['simulation_log_location'] = os.path.expandvars(validate_config_option(config, 
                                                                        "simulation_log_location", 
-                                                                       False)
+                                                                       False))
 
 
 ###  TODO  ####
