@@ -33,6 +33,7 @@ TODAY=`date +%Y-%m-%d`
 DEBUG=0
 FAILED=0
 CUR_DIR="$PWD"
+OUTPUT_ARCHIVE=""
 
 function log {
     if [ $DEBUG -ne 0 ]; then
@@ -50,7 +51,7 @@ function open_tar_archive {
     ARCHIVE=$1
     # Check whether tar command is available
 
-    if [ "x$TAR" == "x" ]; then
+    if [ -z "$TAR" ]; then
 	# No tar command available
 	echo "Cannot open .tgz archive. TAR command not found"
 	return 1
@@ -65,7 +66,7 @@ function open_zip_archive {
     ARCHIVE=$1
     # Check whether tar command is available
 
-    if [ "x$UNZIP" == "x" ]; then
+    if [ -z "$UNZIP" ]; then
 	# No unzip command available
 	echo "Cannot open .zip archive. UNZIP command not found"
 	return 1
@@ -98,7 +99,7 @@ function get_s3_archive_mimetype {
     S3_URL=$1
 
     # Verify S3cmd configuration
-    if [ "x$S3CMD" == "x" ]; then
+    if [ -z "$S3CMD" ]; then
 	echo "S3cmd not found"
 	return 1
     fi
@@ -157,6 +158,9 @@ while getopts "g:h:o:d" opt; do
 	d )
 	    DEBUG=1
 	    ;;
+	# o )
+	#     OUTPUT_ARCHIVE="$OPTARG"
+	#     ;;
 	g )
 	    GROK="$OPTARG"
 	    if [ ! -x $GROK ]; then
@@ -196,6 +200,8 @@ INPUT_ARCHIVE=$1
 WORKING_DIR=$2
 OUTPUT_URL=$3
 
+OUTPUT_ARCHIVE=`basename ${OUTPUT_URL}`
+
 echo "[`date +%Y-%m-%d" "%H:%M:%S`] Start"
 echo -e "\n"
 
@@ -232,7 +238,7 @@ case ${INPUT_ARCHIVE} in
 	fi
 	log "S3 archive download completed."
 	;;
-    "/"* )
+    "./"* )
 	# Local archive
 	log "Local archive"
 	log "getting mimetype... "
@@ -305,7 +311,7 @@ echo "GROK"
 
 # Check whether 'grok' and 'hgs' have been defined
 # Check whether grok command has been set
-if [ "x$GROK" == "x" ]; then
+if [ -z "$GROK" ]; then
     echo "CRITICAL: No 'grok' command found"
     exit 1
 elif [ ! -x "$GROK" ]; then
@@ -313,7 +319,7 @@ elif [ ! -x "$GROK" ]; then
     exit 1
 fi
 # Check whether grok command has been set
-if [ "x$HGS" == "x" ]; then
+if [ -z "$HGS" ]; then
     echo "CRITICAL: No 'hgs' command found"
     exit 1
 elif [ ! -x "$HGS" ]; then
@@ -324,7 +330,7 @@ fi
 GROK_LOG=grok.log
 HGS_LOG=hgs.log
 
-cd ${WORKING_DIR}
+cd "${WORKING_DIR}"
 echo "working in $PWD"
 
 # run grok
@@ -351,14 +357,14 @@ echo -e "\n\n"
 echo "Postprocessing:"
 echo -e "---------------\n"
 
-cd $CUR_DIR
+# Return to original location
+cd "${CUR_DIR}"
 
 # generate output archive
 echo "Generating output archive... "
 # e.g. tar cfz testo.results.tgz testo.*
-OUTPUT_ARCHIVE="result-${WORKING_DIR}-${TODAY}.tgz"
-log "${TAR} cfz ${OUTPUT_ARCHIVE} *"
-${TAR} cfz ${OUTPUT_ARCHIVE} *
+log "${TAR} cfz ${OUTPUT_ARCHIVE} ${WORKING_DIR}"
+${TAR} cfz ${OUTPUT_ARCHIVE} ${WORKING_DIR}
 RET=$?
 echo "[$RET]"
 if [ $RET -ne 0 ]; then
@@ -368,15 +374,12 @@ fi
 log "Uploading output archive to S3 container... "
 # Check whether output needs to be uploaded to an ObjectStore
 
-# Return to original location
-cd $CUR_DIR
-
 case $OUTPUT_URL in
     "s3://"* )
 	# Upload to S3 repo
 	log "Checking whether output-data already exists... "
-	$S3CMD -c $S3CFG -q info ${OUTPUT_URL}/${OUTPUT_ARCHIVE}
-	if [ $? -eq 0]; then
+	$S3CMD -c $S3CFG -q info ${OUTPUT_URL}
+	if [ $? -eq 0 ]; then
 	    # data exists on S3
 	    # postfix hours-minutes-secs
 	    POSTFIX="-`date +%H%M%S`"
@@ -385,12 +388,17 @@ case $OUTPUT_URL in
 	    POSTFIX=""
 	fi
 	log "Uploading result..."
-	put_s3_archive ${WORKING_DIR}/${OUTPUT_ARCHIVE} ${OUTPUT_URL}/${OUTPUT_ARCHIVE}${POSTFIX}
+	put_s3_archive ${OUTPUT_ARCHIVE} ${OUTPUT_URL}${POSTFIX}
 	if [ $? -ne 0 ]; then
 	    echo "ERROR: failed to upload output archive"
 	    FAILED=1
 	fi
 	log "Result upload completed."
+	;;
+    "./"* )
+	# keep output archive local
+	# will be retrieved in a separate step
+	log "Result kep local"
 	;;
     * )
 	echo "ERROR: expected output URL of type s3://"
