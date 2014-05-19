@@ -557,8 +557,8 @@ class OpenStackLrms(LRMS):
 
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
-        resource = self._get_subresource(self._get_vm(app.os_instance_id))
-        return resource.cancel_job(app)
+        subresource = self._get_subresource(self._get_vm(app.os_instance_id))
+        return subresource.cancel_job(app)
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
@@ -609,35 +609,35 @@ class OpenStackLrms(LRMS):
                 continue
 
             # Get or create a resource associated to the vm
-            resource = self._get_subresource(vm)
+            subresource = self._get_subresource(vm)
             try:
-                resource.get_resource_status()
+                subresource.get_resource_status()
             except TransportError, ex:
                 # TODO: get all the IPs and try with all of them to connect.
                 # Start with preferred_ip if defined
                 gc3libs.log.info(
-                    "Ignoring error while updating resource %s. "
-                    "Trying other IPs. Error: %s", resource.name, ex)
+                    "Ignoring error while updating resource '%s'. "
+                    "Trying other IPs. Error: %s", subresource.name, ex)
                 for ip in sum(vm.networks.values(), []):
                     if vm.preferred_ip == ip:
                         continue
                     vm.preferred_ip = ip
-                    resource.frontend = ip
+                    subresource.frontend = ip
                     gc3libs.log.info(
                         "Connection error. Trying with alternate IP address %s",
                         vm.preferred_ip)
                     try:
-                        resource.get_resource_status()
+                        subresource.get_resource_status()
                         break
                     except Exception, ex:
                         gc3libs.log.info(
-                            "Ignoring error while updating resource %s. "
+                            "Ignoring error while updating resource '%s'. "
                             "The corresponding VM may not be ready yet. Error: %s",
-                            resource.name, ex)
+                            subresource.name, ex)
                 # Unable to connect to the VM using any IP.  Ensure
                 # this resource is considered "pending" as we couldn't
                 # update its status
-                resource.updated = False
+                subresource.updated = False
             except Exception, ex:
                 # XXX: Actually, we should try to identify the kind of
                 # error we are getting. For instance, if the
@@ -646,16 +646,16 @@ class OpenStackLrms(LRMS):
                 # to them, thus causing an increasing number of
                 # useless VMs created on the cloud.
                 gc3libs.log.info(
-                    "Ignoring error while updating resource %s. "
+                    "Ignoring error while updating resource '%s'. "
                     "The corresponding VM may not be ready yet. Error: %s",
-                    resource.name, ex)
+                    subresource.name, ex)
         self._vmpool.update()
         return self
 
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir, overwrite=False):
         try:
-            resource = self._get_subresource(self._get_vm(app.os_instance_id))
+            subresource = self._get_subresource(self._get_vm(app.os_instance_id))
         except InstanceNotFound, ex:
             gc3libs.log.error(
                 "Changing state of task '%s' to TERMINATED since OpenStack"
@@ -679,7 +679,7 @@ class OpenStackLrms(LRMS):
                 " an OpenStack API error (%s: %s)."
                 % (err.__class__.__name__, err))
             raise
-        return resource.get_results(app, download_dir, overwrite=False)
+        return subresource.get_results(app, download_dir, overwrite=False)
 
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
@@ -826,9 +826,9 @@ class OpenStackLrms(LRMS):
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
-        resource = self._get_subresource(
+        subresource = self._get_subresource(
             self._get_vm(app.os_instance_id))
-        return resource.peek(app, remote_filename, local_file, offset, size)
+        return subresource.peek(app, remote_filename, local_file, offset, size)
 
     def validate_data(self, data_file_list=None):
         """
@@ -858,18 +858,18 @@ class OpenStackLrms(LRMS):
         # freeing the resource from the application is now needed as
         # the same instanc may run multiple applications
         try:
-            resource = self._get_subresource(self._get_vm(app.os_instance_id))
+            subresource = self._get_subresource(self._get_vm(app.os_instance_id))
         except InstanceNotFound:
             # ignore -- if the instance is no more, there is
             # nothing we should free
             return
-        resource.free(app)
+        subresource.free(app)
 
         # FIXME: current approach in terminating running instances:
         # if no more applications are currently running, turn the instance off
         # check with the associated resource
-        resource.get_resource_status()
-        if len(resource.job_infos) == 0:
+        subresource.get_resource_status()
+        if len(subresource.job_infos) == 0:
             # turn VM off
             vm = self._get_vm(app.os_instance_id)
 
@@ -878,7 +878,7 @@ class OpenStackLrms(LRMS):
             del self.subresources[vm.id]
             vm.delete()
             del self._vmpool[vm.id]
-            # self._session.save_all()
+
 
     @same_docstring_as(LRMS.close)
     def close(self):
@@ -891,8 +891,8 @@ class OpenStackLrms(LRMS):
             return
         # Update status of VMs and remote resources
         self.get_resource_status()
-        for vm_id, resource in self.subresources.items():
-            if resource.updated and not resource.job_infos:
+        for vm_id, subresource in self.subresources.items():
+            if subresource.updated and not subresource.job_infos:
                 vm = self._get_vm(vm_id)
                 gc3libs.log.warning(
                     "VM instance %s at %s is no longer needed. "
@@ -900,8 +900,7 @@ class OpenStackLrms(LRMS):
                     vm.id, vm.preferred_ip)
                 vm.delete()
                 self._vmpool.remove_vm(vm.id)
-            resource.close()
-        # self._session.save_all()
+            subresource.close()
 
     def __getstate__(self):
         # Do not save `novaclient.client.Client` class as it is
