@@ -57,7 +57,7 @@ available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
 ERROR_STATES = ['ERROR', 'UNNKNOWN']
 PENDING_STATES = ['BUILD', 'REBUILD', 'REBOOT', 'HARD_REBOOT',
                   'RESIZE', 'REVERT_RESIZE']
-    
+
 class OpenStackVMPool(VMPool):
 
     """
@@ -111,7 +111,7 @@ class OpenStackLrms(LRMS):
 
         # Mapping of job.os_instance_id => LRMS
         self.subresources = {}
-    
+
         auth = self._auth_fn()
         if os_auth_url is None:
             os_auth_url = os.getenv('OS_AUTH_URL')
@@ -197,8 +197,8 @@ class OpenStackLrms(LRMS):
                              flavor.name)
             self['max_cores'] = self['max_cores_per_job'] = flavor.vcpus
             self['max_memory_per_core'] = flavor.ram * MiB
-            
-        
+
+
     def _create_instance(self, image_id, name='gc3pie-instance',
                          instance_type=None, user_data=None):
         """
@@ -248,7 +248,7 @@ class OpenStackLrms(LRMS):
             # fall back to normal reporting...
             raise UnrecoverableError("Error starting instance: %s" % ex)
 
-        
+
         self._vmpool.add_vm(vm)
         gc3libs.log.info(
             "VM with id `%s` has been created and is in %s state.",
@@ -281,8 +281,7 @@ class OpenStackLrms(LRMS):
         Return the resource associated to the virtual machine `vm`.
 
         Updates the internal list of available resources if needed.
-
-        """        
+        """
         self._connect()
         if vm.id not in self.subresources:
             self.subresources[vm.id] = self._make_subresource(
@@ -371,7 +370,7 @@ class OpenStackLrms(LRMS):
                 return False
             except paramiko.SSHException, ex:
                 gc3libs.log.debug(
-                    "File `%s` is not a valid %s private key: %s", 
+                    "File `%s` is not a valid %s private key: %s",
                     keyfile, format, ex)
                 # try with next format
                 continue
@@ -461,7 +460,7 @@ class OpenStackLrms(LRMS):
             try:
                 gc3libs.log.info("Creating security group %s",
                                  self.security_group_name)
-                
+
                 self.client.security_groups.create(
                     self.security_group_name,
                     "GC3Pie_%s" % self.security_group_name)
@@ -535,8 +534,8 @@ class OpenStackLrms(LRMS):
                 flavor.name, conf_option)
             return flavor
         else:
-            valid_flavors = [ flv for flv in self._flavors 
-                              if flv.vcpus >= job.requested_cores 
+            valid_flavors = [ flv for flv in self._flavors
+                              if flv.vcpus >= job.requested_cores
                               and (flv.ram * MiB - self.vm_os_overhead) >= job.requested_memory ]
             flavor = min(valid_flavors, key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
             gc3libs.log.debug(
@@ -638,7 +637,6 @@ class OpenStackLrms(LRMS):
                 # this resource is considered "pending" as we couldn't
                 # update its status
                 resource.updated = False
-
             except Exception, ex:
                 # XXX: Actually, we should try to identify the kind of
                 # error we are getting. For instance, if the
