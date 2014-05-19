@@ -785,7 +785,7 @@ class OpenStackLrms(LRMS):
         instance_type = self.get_instance_type_for_job(job)
         if not instance_type:
             raise RuntimeError(
-                "Unable to find a suitable instancee type for "
+                "Unable to find a suitable instance type for "
                 "application %s" % job.jobname)
 
         # First of all, try to submit to one of the subresources.
@@ -810,7 +810,7 @@ class OpenStackLrms(LRMS):
                 return job
             except (LRMSSubmitError, InstanceNotFound), ex:
                 gc3libs.log.debug(
-                    "Ignoring error while submit to resource %s: %s. ",
+                    "Ignoring error in submitting to resource '%s': %s",
                     subresource.name, str(ex))
 
         # Couldn't submit to any resource.
