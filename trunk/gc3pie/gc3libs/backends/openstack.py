@@ -591,17 +591,22 @@ class OpenStackLrms(LRMS):
                     " Terminating it!", vm.id)
                 vm.delete()
                 self._vmpool.remove_vm(vm.id)
+                self.subresources.pop(vm.id)
+                continue
             elif vm.status == 'DELETED':
                 gc3libs.log.info(
                     "VM `%s` in DELETE state. It has probably been terminated"
                     " from outside GC3Pie. Removing it from the list of VM.",
                     vm.id)
                 self._vmpool.remove_vm(vm.id)
+                self.subresources.pop(vm.id)
+                continue
             elif vm.status in ['SHUTOFF', 'SUSPENDED', 'RESCUE', 'VERIFY_RESIZE']:
                 # The VM has probably ben stopped or shut down from
                 # outside GC3Pie.
                 gc3libs.log.error(
                     "VM with id `%s` is in permanent state `%s`.", vm.id, vm.state)
+                continue
 
             # Get or create a resource associated to the vm
             resource = self._get_subresource(vm)
@@ -662,17 +667,27 @@ class OpenStackLrms(LRMS):
                     self._get_vm(app.os_instance_id))
             except InstanceNotFound, ex:
                 gc3libs.log.error(
-                    "Changing state of task '%s' to TERMINATED since OpenStack "
-                    "instance '%s' does not exist anymore.",
+                    "Changing state of task '%s' to TERMINATED since OpenStack"
+                    " instance '%s' does not exist anymore.",
                     app.execution.lrms_jobid, app.os_instance_id)
                 app.execution.state = Run.State.TERMINATED
-                raise ex
-            except UnrecoverableError, ex:
+                app.execution.signal = Run.Signals.RemoteError
+                app.execution.history.append(
+                    "State changed to TERMINATED since OpenStack"
+                    " instance '%s' does not exist anymore."
+                    % (app.os_instance_id,))
+                raise
+            except UnrecoverableError, err:
                 gc3libs.log.error(
-                    "Changing state of task '%s' to UNKNOWN because of "
-                    "an OpenStack API error.", app.execution.lrms_jobid)
+                    "Changing state of task '%s' to UNKNOWN because of"
+                    " an OpenStack API error (%s: %s)",
+                    app.execution.lrms_jobid, err.__class__.__name__, err)
                 app.execution.state = Run.State.UNKNOWN
-                raise ex
+                app.execution.history.append(
+                    "State changed to UNKNOWN because of"
+                    " an OpenStack API error (%s: %s)."
+                    % (err.__class__.__name__, err))
+                raise
 
         return self.subresources[app.os_instance_id].update_job_state(app)
 
