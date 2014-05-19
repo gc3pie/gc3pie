@@ -743,8 +743,8 @@ class OpenStackLrms(LRMS):
                 "application %s" % job.jobname)
 
         # First of all, try to submit to one of the subresources.
-        for vm_id, resource in self.subresources.items():
-            if not resource.updated:
+        for vm_id, subresource in self.subresources.items():
+            if not subresource.updated:
                 # The VM is probably still booting, let's skip to the
                 # next one and add it to the list of "pending" VMs.
                 pending_vms.add(vm_id)
@@ -755,17 +755,17 @@ class OpenStackLrms(LRMS):
                 vm = self._get_vm(vm_id)
                 if vm.image['id'] != image_id:
                     continue
-                resource.submit_job(job)
+                subresource.submit_job(job)
                 job.os_instance_id = vm_id
                 job.changed = True
                 gc3libs.log.info(
                     "Job successfully submitted to remote resource %s.",
-                    resource.name)
+                    subresource.name)
                 return job
             except gc3libs.exceptions.LRMSSubmitError, ex:
                 gc3libs.log.debug(
                     "Ignoring error while submit to resource %s: %s. ",
-                    resource.name, str(ex))
+                    subresource.name, str(ex))
 
         # Couldn't submit to any resource.
         if not pending_vms:
