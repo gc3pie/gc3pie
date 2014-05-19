@@ -857,7 +857,12 @@ class OpenStackLrms(LRMS):
 
         # freeing the resource from the application is now needed as
         # the same instanc may run multiple applications
-        resource = self._get_subresource(self._get_vm(app.os_instance_id))
+        try:
+            resource = self._get_subresource(self._get_vm(app.os_instance_id))
+        except InstanceNotFound:
+            # ignore -- if the instance is no more, there is
+            # nothing we should free
+            return
         resource.free(app)
 
         # FIXME: current approach in terminating running instances:
