@@ -21,9 +21,10 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+
 import os
 import paramiko
-import re
+from string import ascii_letters, digits
 
 # OpenStack APIs
 try:
@@ -130,7 +131,7 @@ class OpenStackLrms(LRMS):
                 "Cannot connect to the OpenStack API:"
                 " No 'os_auth_url' argument passed to the OpenStack backend.")
         # Keypair names can only contain alphanumeric chars!
-        if re.match(r'.*\W.*', keypair_name):
+        if not set(keypair_name).issubset(set(ascii_letters + digits + '_')):
             raise ConfigurationError(
                 "Keypair name `%s` is invalid: keypair names can only contain "
                 "alphanumeric chars: [a-zA-Z0-9_]" % keypair_name)
