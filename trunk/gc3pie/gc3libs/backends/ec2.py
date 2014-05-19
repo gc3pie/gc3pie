@@ -667,7 +667,7 @@ class EC2Lrms(LRMS):
                     specs['max_cores'] = resource['max_cores']
                     specs['max_cores_per_job'] = resource['max_cores_per_job']
                     specs['max_memory_per_core'] = resource['total_memory']
-                    self.update(specs)                            
+                    self.update(specs)
 
         self._vmpool.update()
         return self
@@ -750,7 +750,7 @@ class EC2Lrms(LRMS):
             specs = self._instance_type_specs
             max_mem = specs['max_memory_per_core']
             max_cpus = specs['max_cores_per_job']
-            if (job.requested_memory is not None and 
+            if (job.requested_memory is not None and
                 job.requested_memory > max_mem) \
                 or (job.requested_cores is not None and
                     job.requested_cores > max_cpus):
