@@ -301,12 +301,11 @@ architecture=x64_64
 # type = openstack+shellcmd
 
 # If `os_auth_url` is empty, then the `OS_AUTH_URL` environment variable
-# is will be used, if any. If OS_AUTH_URL is empty too, the default url
-# for AWS will be used.
+# is will be used. 
 # 
 # os_auth_url = http://cloud.gc3.uzh.ch:5000/v2.0
 
-# OpenStack Region to use. It is usually needed only if AWS is not used.
+# OpenStack Region to use.
 #
 # os_region = nova
 
@@ -324,6 +323,10 @@ architecture=x64_64
 # satisfy the application requirements.
 # 
 # vm_os_overhead = 512 MiB
+
+### **Note:** You also need to copy here the contents of the "VM AUTHENTICATION"
+### and "CLOUD SECURITY" sections below!
+
 
 # [resource/ec2hobbes]
 # enabled = yes
