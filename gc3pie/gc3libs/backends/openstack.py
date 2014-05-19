@@ -40,9 +40,16 @@ except ImportError:
 
 # GC3Pie imports
 import gc3libs
-from gc3libs.exceptions import RecoverableError, UnrecoverableError, \
-    ConfigurationError, LRMSSkipSubmissionToNextIteration, \
-    MaximumCapacityReached, UnrecoverableAuthError, TransportError
+from gc3libs.exceptions import \
+    ConfigurationError, \
+    LRMSSkipSubmissionToNextIteration, \
+    LRMSSubmitError, \
+    MaximumCapacityReached, \
+    RecoverableError, \
+    TransportError, \
+    UnrecoverableAuthError, \
+    UnrecoverableDataStagingError, \
+    UnrecoverableError
 import gc3libs.url
 from gc3libs import Run
 from gc3libs.utils import mkdir, same_docstring_as
@@ -667,7 +674,7 @@ class OpenStackLrms(LRMS):
                 "State changed to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore."
                 % (app.os_instance_id,))
-            raise
+            raise UnrecoverableDataStagingError("VM where job was running is no longer available")
         except UnrecoverableError, err:
             gc3libs.log.error(
                 "Changing state of task '%s' to UNKNOWN because of"
@@ -826,8 +833,20 @@ class OpenStackLrms(LRMS):
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
-        subresource = self._get_subresource(
-            self._get_vm(app.os_instance_id))
+        try:
+            subresource = self._get_subresource(self._get_vm(app.os_instance_id))
+        except InstanceNotFound, ex:
+            gc3libs.log.error(
+                "Changing state of task '%s' to TERMINATED since OpenStack"
+                " instance '%s' does not exist anymore.",
+                app.execution.lrms_jobid, app.os_instance_id)
+            app.execution.state = Run.State.TERMINATED
+            app.execution.signal = Run.Signals.RemoteError
+            app.execution.history.append(
+                "State changed to TERMINATED since OpenStack"
+                " instance '%s' does not exist anymore."
+                % (app.os_instance_id,))
+            raise UnrecoverableDataStagingError("VM where job was running is no longer available.")
         return subresource.peek(app, remote_filename, local_file, offset, size)
 
     def validate_data(self, data_file_list=None):
