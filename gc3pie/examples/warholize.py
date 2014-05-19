@@ -341,6 +341,7 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
         self.warhol_dir = warhol_dir
         self.grayscaled_image = grayscaled_image
         self.application_name = 'warholize'
+        self.jobname = extra_args.get('jobname', 'GrayScaleConvertApplication')
 
         arguments = [
             'convert',
