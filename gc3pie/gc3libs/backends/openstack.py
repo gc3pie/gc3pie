@@ -711,7 +711,6 @@ class OpenStackLrms(LRMS):
                     " an OpenStack API error (%s: %s)."
                     % (err.__class__.__name__, err))
                 raise
-
         return self.subresources[app.os_instance_id].update_job_state(app)
 
     def submit_job(self, job):
