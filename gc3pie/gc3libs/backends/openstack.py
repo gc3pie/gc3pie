@@ -653,9 +653,33 @@ class OpenStackLrms(LRMS):
         return self
 
     @same_docstring_as(LRMS.get_results)
-    def get_results(self, job, download_dir, overwrite=False):
-        resource = self._get_subresource(self._get_vm(job.os_instance_id))
-        return resource.get_results(job, download_dir, overwrite=False)
+    def get_results(self, app, download_dir, overwrite=False):
+        try:
+            resource = self._get_subresource(self._get_vm(app.os_instance_id))
+        except InstanceNotFound, ex:
+            gc3libs.log.error(
+                "Changing state of task '%s' to TERMINATED since OpenStack"
+                " instance '%s' does not exist anymore.",
+                app.execution.lrms_jobid, app.os_instance_id)
+            app.execution.state = Run.State.TERMINATED
+            app.execution.signal = Run.Signals.RemoteError
+            app.execution.history.append(
+                "State changed to TERMINATED since OpenStack"
+                " instance '%s' does not exist anymore."
+                % (app.os_instance_id,))
+            raise
+        except UnrecoverableError, err:
+            gc3libs.log.error(
+                "Changing state of task '%s' to UNKNOWN because of"
+                " an OpenStack API error (%s: %s)",
+                app.execution.lrms_jobid, err.__class__.__name__, err)
+            app.execution.state = Run.State.UNKNOWN
+            app.execution.history.append(
+                "State changed to UNKNOWN because of"
+                " an OpenStack API error (%s: %s)."
+                % (err.__class__.__name__, err))
+            raise
+        return resource.get_results(app, download_dir, overwrite=False)
 
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
