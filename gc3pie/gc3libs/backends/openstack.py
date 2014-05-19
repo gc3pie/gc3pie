@@ -808,7 +808,7 @@ class OpenStackLrms(LRMS):
                     "Job successfully submitted to remote resource %s.",
                     subresource.name)
                 return job
-            except gc3libs.exceptions.LRMSSubmitError, ex:
+            except (LRMSSubmitError, InstanceNotFound), ex:
                 gc3libs.log.debug(
                     "Ignoring error while submit to resource %s: %s. ",
                     subresource.name, str(ex))
