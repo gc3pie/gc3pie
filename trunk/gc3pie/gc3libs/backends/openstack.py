@@ -212,7 +212,7 @@ class OpenStackLrms(LRMS):
 
         args = {}
         if user_data:
-            args['user_data'] = user_data
+            args['userdata'] = user_data
 
         # Check if the desired keypair is present
         try:
