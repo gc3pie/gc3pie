@@ -511,6 +511,7 @@ class CreateLutApplication(ApplicationWithCachedResults):
         self.lutfile = os.path.basename(output_file)
         self.working_dir = working_dir
         self.application_name = 'warholize'
+        self.jobname = 'CreateLutApplication'
         gc3libs.log.info("Creating lut file %s from %s using "
                          "colors: %s" % (
             self.lutfile, input_image, str.join(", ", colors)))
