@@ -95,21 +95,22 @@ setuptools.setup(
 
     # run-time dependencies
     install_requires = [
-        'boto',
-        'python-novaclient',
+        'boto==2.9.4',
+        'python-novaclient==2.15',
         # paramiko and pycrypto are required for SSH operations
         # ("pycrypto" is actually a dependency of Paramiko, but
         # setuptools apparently does not process dependencies recursively)
-        'paramiko', 'pycrypto>=1.9',
+        'paramiko==1.13',
+        'pycrypto==2.6.1',
         # prettytable -- format tabular text output
-        'prettytable',
+        'prettytable==0.7.2',
         # pyCLI -- object-oriented command-line app programming
-        'pyCLI>=2.0.3',
+        'pyCLI==2.0.3',
         # Needed by SqlStore
         # 0.7.9 is the latest version with Python2.4 support
         'sqlalchemy==0.7.9',
         # Needed for parsing human-readable dates (gselect uses it).
-        'parsedatetime',
+        'parsedatetime==0.8.7',
         # needed by Benjamin's DE optimizer code
         # To add as an *optional* dependency
         # 'numpy',
