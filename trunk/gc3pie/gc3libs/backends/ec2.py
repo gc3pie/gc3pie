@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2012-2013, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2014, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -673,9 +673,9 @@ class EC2Lrms(LRMS):
         return self
 
     @same_docstring_as(LRMS.get_results)
-    def get_results(self, job, download_dir, overwrite=False):
-        resource = self._get_subresource(self._get_vm(job.ec2_instance_id))
-        return resource.get_results(job, download_dir, overwrite=False)
+    def get_results(self, app, download_dir, overwrite=False):
+        resource = self._get_subresource(self._get_vm(app.ec2_instance_id))
+        return resource.get_results(app, download_dir, overwrite=False)
 
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
