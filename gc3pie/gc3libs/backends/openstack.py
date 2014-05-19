@@ -564,7 +564,22 @@ class OpenStackLrms(LRMS):
 
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
-        subresource = self._get_subresource(self._get_vm(app.os_instance_id))
+        try:
+            subresource = self._get_subresource(self._get_vm(app.os_instance_id))
+        except InstanceNotFound:
+            # ignore -- if this VM exists no more, we need not cancel any job
+            pass
+        except UnrecoverableError, err:
+            gc3libs.log.error(
+                "Changing state of task '%s' to UNKNOWN because of"
+                " an OpenStack API error (%s: %s)",
+                app.execution.lrms_jobid, err.__class__.__name__, err)
+            app.execution.state = Run.State.UNKNOWN
+            app.execution.history.append(
+                "State changed to UNKNOWN because of"
+                " an OpenStack API error (%s: %s)."
+                % (err.__class__.__name__, err))
+            raise
         return subresource.cancel_job(app)
 
     @same_docstring_as(LRMS.get_resource_status)
