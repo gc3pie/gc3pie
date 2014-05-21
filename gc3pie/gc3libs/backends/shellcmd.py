@@ -85,7 +85,7 @@ class ShellcmdLrms(LRMS):
       Path to a filesystem location where to create
       temporary working directories for processes executed through
       this backend. The default value `None` means to use ``$TMPDIR``
-      or `/tmp`:file: (see `tempfile.mkftemp` for details).
+      or `/var/tmp`:file: (see `tempfile.mkftemp` for details).
 
     :param str resourcedir:
 
@@ -185,7 +185,7 @@ ReturnCode=%x"""
         # GNU time is needed
         self.time_cmd = time_cmd
 
-        # default is to use $TMPDIR or '/tmp' (see
+        # default is to use $TMPDIR or '/var/tmp' (see
         # `tempfile.mkftemp`), but we delay the determination of the
         # correct dir to the submit_job, so that we don't have to use
         # `transport` right now.
@@ -706,8 +706,8 @@ ReturnCode=%x"""
             if ex != 0 or not stdout.strip() or not stdout[0] == '/':
                 log.debug(
                     "Unable to recover a valid absolute path for spooldir. "
-                    "Using `/tmp`")
-                self.spooldir = '/tmp'
+                    "Using `/var/tmp`")
+                self.spooldir = '/var/tmp'
             else:
                 self.spooldir = stdout.strip()
 
