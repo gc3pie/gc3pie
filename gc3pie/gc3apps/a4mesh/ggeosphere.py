@@ -473,8 +473,8 @@ class GeoSphereScript(SessionBasedScript):
 
             if not skip:
                 # Add as a new task
-                gc3libs.log.debug("Found new model to add: '%s'" % os.path.basename(str(input_model)))
-                task =  self._create_task(input_model, **self.extra.copy())
+                gc3libs.log.info("Found new model to add: '%s'" % os.path.basename(str(input_model)))
+                task =  self._create_task(input_model, self._get_output(input_model), **self.extra.copy())
                 self.session.add(task)
                 self._controller.add(task)
 
