@@ -46,7 +46,7 @@ PATH=/usr/local/bin:/sbin:/usr/sbin:/bin:/usr/bin:${A4MESH_DIR}/bin
 
 SESSION_NAME="ggeosphere"
 
-GGEOSPHERE_ARGS="-c ${A4MESH_CONFIG} -s ${SESSION_DIR}/${SESSION_NAME} -C60"
+GGEOSPHERE_ARGS="-c ${A4MESH_CONFIG} -s ${SESSION_DIR}/${SESSION_NAME} -C60 -d True"
 
 # Enable GC3Pie virtualenv
 if [ ! -z "$GC3PIE_VIRTUALENV" ]; then
