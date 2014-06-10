@@ -19,7 +19,7 @@ in core Python, namely:
   this indicates a bug in the software.
 
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -115,6 +115,7 @@ class AuthError(Error):
     """
     pass
 
+
 class RecoverableAuthError(AuthError, RecoverableError):
     pass
 
@@ -173,6 +174,15 @@ class InternalError(Error):
     that do not depend on the library client code.  For instance, when
     a response string gotten from an external command cannot be parsed
     as expected.
+    """
+    pass
+
+class AuxiliaryCommandError(InternalError):
+    """
+    Raised when some external command that we depend upon has failed.
+
+    For instance, we might need to list processes on a remote machine
+    but ``ps aux`` does not run because of insufficient privileges.
     """
     pass
 

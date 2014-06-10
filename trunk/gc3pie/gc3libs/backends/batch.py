@@ -283,10 +283,12 @@ class BatchSystem(LRMS):
 
         This is used to allow for a fallback method in case there are
         multiple ways to get information from a job.
+
+        By default this method does nothing, as most batch systems do
+        only have one and one only way of getting accounting
+        information.
         """
-        raise NotImplementedError(
-            "Abstract method `_secondary_acct_command()` called - "
-            "this should have been defined in a derived class.")
+        return None
 
     def _parse_secondary_acct_output(self, stdout):
         """
@@ -496,6 +498,25 @@ class BatchSystem(LRMS):
                 "see log file for errors", self.name)
             raise
 
+
+    def __do_acct(self, job, cmd, parse):
+        """Run `cmd` to get accounting information and update `job` state accordingly."""
+        exit_code, stdout, stderr = self.transport.execute_command(cmd)
+        if exit_code == 0:
+            jobstatus = parse(stdout)
+            job.update(jobstatus)
+            if 'exitcode' in jobstatus:
+                job.returncode = int(jobstatus['exitcode'])
+                job.state = Run.State.TERMINATING
+            return job.state
+        else:
+            raise gc3libs.exceptions.AuxiliaryCommandError(
+                "Failed running accounting command `%s`:"
+                " exit code: %d, stderr: '%s'"
+                % (cmd, exit_code, stderr),
+                do_log=True)
+
+
     @same_docstring_as(LRMS.update_job_state)
     @LRMS.authenticated
     def update_job_state(self, app):
@@ -546,45 +567,27 @@ class BatchSystem(LRMS):
             cmd = self._acct_command(job)
             if cmd:
                 log.debug(
-                    "The `qstat`/`bjobs` command returned no job information;"
-                    " trying with '%s' instead ..." % cmd)
-                exit_code, stdout, stderr = self.transport.execute_command(cmd)
-                if exit_code == 0:
-                    jobstatus = self._parse_acct_output(stdout)
-                    job.update(jobstatus)
-                    if 'exitcode' in jobstatus:
-                        job.returncode = int(jobstatus['exitcode'])
-                        job.state = Run.State.TERMINATING
-                    return job.state
-                else:
-                    # FIXME: Antonio: this is a quick and dirty fix to
-                    # allow a secondary acct command to run. This is
-                    # used to distinguish between a standard Torque
-                    # installation and a PBSPro where tracejob does
-                    # not work but where job_history_enable=True, so
-                    # that we can actually access information about
-                    # finished jobs with `qstat -x -f`. However, the
-                    # following code is *copied* from before, which is
-                    # something that should be avoided.
-                    cmd = self._secondary_acct_command(job)
-                    if cmd:
-                        log.debug(
-                        "The `qacct`/`tracejob` command returned no job "
-                        "information; trying with '%s' instead..." % cmd)
-                        exit_code, stdout, stderr = self.transport.execute_command(cmd)
-                        if exit_code == 0:
-                            jobstatus = self._parse_secondary_acct_output(stdout)
-                            job.update(jobstatus)
-                            if 'exitcode' in jobstatus:
-                                job.returncode = int(jobstatus['exitcode'])
-                                job.state = Run.State.TERMINATING
-                            return job.state
-                        else:
-                            log.error(
-                                "Failed while running the `acct` command."
-                                " exit code: %d, stderr: '%s'" % (exit_code, stderr))
-
-
+                    "The job status command returned no information;"
+                    " trying with '%s' instead ...", cmd)
+                try:
+                    return self.__do_acct(job, cmd, self._parse_acct_output)
+                except gc3libs.exceptions.AuxiliaryCommandError:
+                    # This is used to distinguish between a standard
+                    # Torque installation and a PBSPro where `tracejob`
+                    # does not work but if `job_history_enable=True`,
+                    # then we can actually access information about
+                    # finished jobs with `qstat -x -f`.
+                    try:
+                        cmd = self._secondary_acct_command(job)
+                        if cmd:
+                            log.debug(
+                                "The primary job accounting command returned no"
+                                " information; trying with '%s' instead...", cmd)
+                            return self.__do_acct(job, cmd, self._parse_secondary_acct_output)
+                    except (gc3libs.exceptions.AuxiliaryCommandError,
+                            NotImplementedError):
+                        # ignore error -- there is nothing we can do
+                        pass
 
             # No *stat command and no *acct command returned
             # correctly.
@@ -596,9 +599,9 @@ class BatchSystem(LRMS):
                         "Failed executing remote command: '%s';"
                         "exit status %d", cmd, exit_code)
                     log.debug(
-                        "  remote command returned stdout: '%s'" % stdout)
+                        "  remote command returned stdout: '%s'", stdout)
                     log.debug(
-                        "  remote command returned stderr: '%s'" % stderr)
+                        "  remote command returned stderr: '%s'", stderr)
                     raise gc3libs.exceptions.LRMSError(
                         "Failed executing remote command: '%s'; exit status %d"
                         % (cmd, exit_code))
