@@ -4,7 +4,7 @@
 This module provides a generic BatchSystem class from which all
 batch-like backends should inherit.
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -255,8 +255,9 @@ class BatchSystem(LRMS):
             "this should have been defined in a derived class.")
 
     def _acct_command(self, job):
-        """This method returns a string containing the command to
-        issue to get accounting information about the `job`.
+        """
+        Return a string containing the command to issue to get accounting
+        information about the `job`.
 
         It is usually called only if the _stat_command() fails.
         """
@@ -265,9 +266,11 @@ class BatchSystem(LRMS):
             "this should have been defined in a derived class.")
 
     def _parse_acct_output(self, stdout):
-        """This method will parse the output of the acct command and
-        return a dictionary containing infos about the
-        job. `BatchSystem` class does not make any assumption about
+        """
+        Parse the output of `_acct_command` and return a dictionary
+        containing infos about the job.
+
+        The `BatchSystem`:class: does not make any assumption about
         the keys contained in the dictionary.
         """
         raise NotImplementedError(
@@ -275,19 +278,22 @@ class BatchSystem(LRMS):
             "this should have been defined in a derived class.")
 
     def _secondary_acct_command(self, job):
-        """This method is similar to `_parse_acct_output` but it is
-        called only if the former returns a non-0 exit status. This is
-        used to allow for a fallback method in case there are multiple
-        way to get information from a job
+        """
+        Like `_acct_command` but called only if it exits with non-0 status.
+
+        This is used to allow for a fallback method in case there are
+        multiple ways to get information from a job.
         """
         raise NotImplementedError(
             "Abstract method `_secondary_acct_command()` called - "
             "this should have been defined in a derived class.")
 
-    def _parse_acct_output(self, stdout):
-        """This method will parse the output of the secondaryu acct
-        command and return a dictionary containing infos about the
-        job. `BatchSystem` class does not make any assumption about
+    def _parse_secondary_acct_output(self, stdout):
+        """
+        Parse the output of `_secondary_acct_command` and return a
+        dictionary containing infos about the job.
+
+        The `BatchSystem` class does not make any assumption about
         the keys contained in the dictionary.
         """
         raise NotImplementedError(
