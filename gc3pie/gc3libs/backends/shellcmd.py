@@ -586,13 +586,11 @@ ReturnCode=%x"""
         # ArcLRMS convention
         log.debug("Downloading job output into '%s' ...", download_dir)
         for remote_path, local_path in stageout:
-            log.debug("Downloading remote file '%s' to local file '%s'",
-                      remote_path, local_path)
             if (overwrite
                     or not os.path.exists(local_path)
                     or os.path.isdir(local_path)):
-                log.debug("Copying remote '%s' to local '%s'"
-                          % (remote_path, local_path))
+                log.debug("Copying remote '%s' to local '%s'",
+                          remote_path, local_path)
                 # ignore missing files (this is what ARC does too)
                 self.transport.get(remote_path, local_path,
                                    ignore_nonexisting=True)
@@ -719,7 +717,7 @@ ReturnCode=%x"""
             log.error(
                 "Error creating temporary directory on host %s: %s",
                 self.frontend, stderr)
-            log.debug('Cleaning up failed application')
+            log.debug('Freeing resources used by failed application')
             self.free(app)
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Error creating temporary directory on host %s: %s",
@@ -729,15 +727,12 @@ ReturnCode=%x"""
         app.execution.lrms_execdir = execdir
 
         # Copy input files to remote dir
-
-        # FIXME: this code is took from
-        # gc3libs.backends.batch.BatchSystem.submit_job
         for local_path, remote_path in app.inputs.items():
             remote_path = posixpath.join(execdir, remote_path)
             remote_parent = os.path.dirname(remote_path)
             try:
                 if remote_parent not in ['', '.']:
-                    log.debug("Making remote directory '%s'" % remote_parent)
+                    log.debug("Making remote directory '%s'", remote_parent)
                     self.transport.makedirs(remote_parent)
                 log.debug("Transferring file '%s' to '%s'" % (local_path.path,
                                                               remote_path))
@@ -753,8 +748,6 @@ ReturnCode=%x"""
                 log.debug('Cleaning up failed application')
                 self.free(app)
                 raise
-
-        # app.execution.state = Run.State.RUNNING
 
         # try to ensure that a local executable really has
         # execute permissions, but ignore failures (might be a
@@ -828,18 +821,17 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
        env_arguments, arguments))
             wrapper_script.close()
         except gc3libs.exceptions.TransportError:
-            log.error("Cleanign failed application")
+            log.error("Freeing resources used by failed application")
             self.free(app)
             raise
 
-
         try:
             self.transport.chmod(wrapper_script_fname, 0755)
-            
+
             # Execute the script in background
             self.transport.execute_command(wrapper_script_fname, detach=True)
         except gc3libs.exceptions.TransportError:
-            log.error("Cleanign failed application")
+            log.error("Freeing resources used by failed application")
             self.free(app)
             raise
 
