@@ -209,11 +209,23 @@ def cat(*args, **extra_args):
             output.write(line)
 
 
-def copyfile(src, dst, overwrite=False, link=False):
+def copyfile(src, dst, overwrite=False, changed_only=True, link=False):
     """
     Copy a file from `src` to `dst`; return `True` if the copy was
-    actually made.  If `overwrite` is `False` (default), an existing
-    destination entry is left unchanged and `False` is returned.
+    actually made.
+
+    If `overwrite` is ``False`` (default), an existing destination entry
+    is left unchanged and `False` is returned.
+
+    If `overwrite` is ``True``, then `changed_only` determines
+    if the destination file is overwritten:
+
+    - if `changed_only` is ``True`` (default), then destination is
+      overwritten if and only if it has a different size or has been
+      modified less recently than the source;
+
+    - if `changed_only` is ``False``, then the destination is
+      overwritten unconditionally.
 
     If `link` is `True`, an attempt at hard-linking is done first;
     failing that, we copy the source file onto the destination
@@ -221,6 +233,9 @@ def copyfile(src, dst, overwrite=False, link=False):
 
     If `dst` is a directory, a file with the same basename as `src` is
     created (or overwritten) in the directory specified.
+
+    Return ``True`` or ``False``, depending on whether the source file
+    was actually copied (or linked) to the destination.
     """
     if os.path.isdir(dst):
         dst = os.path.join(dst, os.path.basename(src))
@@ -229,9 +244,18 @@ def copyfile(src, dst, overwrite=False, link=False):
     if samefile(src, dst):
         return False
     try:
-        dstdir = os.path.dirname(dst)
-        if not os.path.exists(dstdir):
-            os.makedirs(dstdir)
+        if not os.path.exists(dst):
+            dstdir = dirname(dst)
+            if not os.path.exists(dstdir):
+                os.makedirs(dstdir)
+        else:
+            # `dst` exists, check for changes
+            if changed_only:
+                sstat = os.stat(src)
+                dstat = os.stat(dst)
+                if (sstat.st_size == dstat.st_size and sstat.st_mtime <= dstat.st_mtime):
+                    # same size and destination more recent, do not copy
+                    return False
         if link:
             try:
                 os.link(src, dst)
@@ -245,14 +269,29 @@ def copyfile(src, dst, overwrite=False, link=False):
     return True
 
 
-def copytree(src, dst, overwrite=False):
+def copytree(src, dst, overwrite=False, changed_only=True):
     """
-    Recursively copy an entire directory tree rooted at `src`.  If
-    `overwrite` is `False` (default), entries that already exist in
+    Recursively copy an entire directory tree rooted at `src`.
+
+    If `overwrite` is ``False`` (default), entries that already exist in
     the destination tree are left unchanged and not overwritten.
+
+    If `overwrite` is ``True``, then `changed_only` determines
+    which files are overwritten:
+
+    - if `changed_only` is ``True`` (default), then only files for
+      which the source has a different size or has been modified
+      more recently than the destination are copied;
+
+    - if `changed_only` is ``False``, then *all* files in `source`
+      will be copied into `destination`, unconditionally.
+
+    Destination directory `dst` is created if it does not exist.
 
     See also: `shutil.copytree`.
     """
+    assert os.path.isdir(src), \
+        ("Source path `%s` does not name an existing directory" % src)
     errors = []
     if not os.path.exists(dst):
         os.makedirs(dst)
@@ -261,7 +300,7 @@ def copytree(src, dst, overwrite=False):
         dstname = os.path.join(dst, name)
         try:
             if os.path.isdir(srcname):
-                errors.extend(copytree(srcname, dstname, overwrite))
+                errors.extend(copytree(srcname, dstname, overwrite, changed_only))
             else:
                 copyfile(srcname, dstname)
         except (IOError, os.error), why:
@@ -269,14 +308,17 @@ def copytree(src, dst, overwrite=False):
     return errors
 
 
-def copy_recursively(src, dst, overwrite=False):
+def copy_recursively(src, dst, overwrite=False, changed_only=True):
     """
     Copy `src` to `dst`, descending it recursively if necessary.
+
+    The `overwrite` and `changed_only` optional arguments
+    have the same effect as in `copytree`:func: (which see).
     """
     if os.path.isdir(src):
-        copytree(src, dst, overwrite)
+        copytree(src, dst, overwrite, changed_only)
     else:
-        copyfile(src, dst, overwrite)
+        copyfile(src, dst, overwrite, changed_only)
 
 
 def count(seq, predicate):
