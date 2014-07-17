@@ -1185,7 +1185,7 @@ class SessionBasedScript(_Script):
                        " and start a new session afresh.  Any information about previous jobs is lost.")
 
         # 3. script execution control
-        self.add_param("-C", "--continuous",
+        self.add_param("-C", "--continuous", "--watch",
                        type=positive_int, dest="wait", default=0,
                        metavar="NUM",
                        help="Keep running, monitoring jobs and possibly submitting new ones or"
