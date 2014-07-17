@@ -773,6 +773,87 @@ def mkdir_with_backup(path, mode=0777):
         os.makedirs(path, mode)
 
 
+def movefile(src, dst, overwrite=False, changed_only=True, link=False):
+    """
+    Move a file from `src` to `dst`; return `True` if the move was
+    actually made.
+
+    The `overwrite` and `changed_only` optional arguments
+    have the same effect as in `copyfile`:func: (which see).
+
+    If `dst` is a directory, a file with the same basename as `src` is
+    created (or overwritten) in the directory specified.
+
+    Return ``True`` or ``False``, depending on whether the source file
+    was actually moved to the destination.
+
+    See also: `copyfile`:func:
+    """
+    if os.path.isdir(dst):
+        dst = os.path.join(dst, os.path.basename(src))
+    if os.path.exists(dst) and not overwrite:
+        return False
+    if samefile(src, dst):
+        return False
+    if not os.path.exists(dst):
+        dstdir = dirname(dst)
+        if not os.path.exists(dstdir):
+            os.makedirs(dstdir)
+    else:
+        # `dst` exists, check for changes
+        if changed_only:
+            sstat = os.stat(src)
+            dstat = os.stat(dst)
+            if (sstat.st_size == dstat.st_size and sstat.st_mtime <= dstat.st_mtime):
+                # same size and destination more recent, do not move
+                return False
+    try:
+        shutil.move(src, dst)
+    except WindowsError:
+        pass
+    return True
+
+
+def movetree(src, dst, overwrite=False, changed_only=True):
+    """
+    Recursively move an entire directory tree rooted at `src`.
+
+    The `overwrite` and `changed_only` optional arguments
+    have the same effect as in `copytree`:func: (which see).
+
+    See also: `copytree`:func:.
+    """
+    assert os.path.isdir(src), \
+        ("Source path `%s` does not name an existing directory" % src)
+    errors = []
+    if not os.path.exists(dst):
+        os.makedirs(dst)
+    for name in os.listdir(src):
+        srcname = os.path.join(src, name)
+        dstname = os.path.join(dst, name)
+        try:
+            if os.path.isdir(srcname):
+                errors.extend(movetree(srcname, dstname, overwrite, changed_only))
+            else:
+                movefile(srcname, dstname)
+        except (IOError, os.error), why:
+            errors.append((srcname, dstname, why))
+    return errors
+
+
+def move_recursively(src, dst, overwrite=False, changed_only=True):
+    """
+    Move `src` to `dst`, descending it recursively if necessary.
+
+    The `overwrite` and `changed_only` optional arguments
+    have the same effect as in `copytree`:func: (which see).
+    """
+    if os.path.isdir(src):
+        movetree(src, dst, overwrite, changed_only)
+    else:
+        movefile(src, dst, overwrite, changed_only)
+
+
 def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
                 only_keys=None, output=sys.stdout, _key_prefix='', _exclude=None):
     """
