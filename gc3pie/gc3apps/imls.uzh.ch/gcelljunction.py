@@ -192,6 +192,13 @@ newly-created jobs so that this limit is never exceeded.
             return pathspec
 
 
+    def before_main_loop(self):
+        # XXX: should this be done with `make_controller` instead?
+        self._controller.retrieve_running = True
+        self._controller.retrieve_overwrites = True
+        self._controller.retrieve_changed_only = True
+
+
     def new_tasks(self, extra):
         # how many iterations are we already computing (per parameter set)?
         iters = defaultdict(int)
