@@ -674,8 +674,8 @@ class EC2Lrms(LRMS):
 
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir, overwrite=False, changed_only=True):
-        resource = self._get_subresource(self._get_vm(app.ec2_instance_id))
-        return resource.get_results(app, download_dir,
+        subresource = self._get_subresource(self._get_vm(app.ec2_instance_id))
+        return subresource.get_results(app, download_dir,
                                     ignore_nonexisting=False,
                                     overwrite=overwrite,
                                     changed_only=changed_only)
