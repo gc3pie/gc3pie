@@ -734,10 +734,9 @@ ReturnCode=%x"""
                 if remote_parent not in ['', '.']:
                     log.debug("Making remote directory '%s'", remote_parent)
                     self.transport.makedirs(remote_parent)
-                log.debug("Transferring file '%s' to '%s'" % (local_path.path,
-                                                              remote_path))
-                self.transport.put(local_path.path, remote_path,
-                                   recursive=True)
+                log.debug("Transferring file '%s' to '%s'",
+                          local_path.path, remote_path)
+                self.transport.put(local_path.path, remote_path)
                 # preserve execute permission on input files
                 if os.access(local_path.path, os.X_OK):
                     self.transport.chmod(remote_path, 0755)
