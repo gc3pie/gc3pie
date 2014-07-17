@@ -1350,10 +1350,11 @@ class SessionBasedScript(_Script):
         ## create an `Engine` instance to manage the job list
         self._controller = self.make_task_controller()
 
-        # ...now do a first round of submit/update/retrieve
+        ## the main loop, at long last!
         self.before_main_loop()
         rc = 13 # Keep in sync with `_Script.run()` method
         try:
+            # do a first round of submit/update/retrieve...
             rc = self._main_loop()
             if self.params.wait > 0:
                 self.log.info("sleeping for %d seconds..." % self.params.wait)
@@ -1364,6 +1365,7 @@ class SessionBasedScript(_Script):
                     # interrupts in the breaks.  Ugly, but works...
                     for x in xrange(self.params.wait):
                         time.sleep(1)
+                    # ...and now repeat the submit/update/retrieve
                     rc = self._main_loop()
         except KeyboardInterrupt: # gracefully intercept Ctrl+C
             sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
