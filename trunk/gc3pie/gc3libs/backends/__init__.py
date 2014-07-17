@@ -183,11 +183,40 @@ class LRMS(gc3libs.utils.Struct):
             "Abstract method `LRMS.get_resource_status()` called "
             "- this should have been defined in a derived class.")
 
-    def get_results(self, job, download_dir, overwrite=False):
+    def get_results(self, job, download_dir, overwrite=False, changed_only=True):
         """
-        Retrieve job output files into local directory `download_dir`
-        (which must already exists).  Will not overwrite existing
-        files, unless the optional argument `overwrite` is `True`.
+        Retrieve job output files into local directory `download_dir`.
+
+        Directory `download_dir` must already exists.
+
+        If optional 3rd argument `overwrite` is ``False`` (default),
+        then existing files within `download_dir` (or subdirectories
+        thereof) will *not* be altered in any way.
+
+        If `overwrite` is instead ``True``, then the (optional) 4th
+        argument `changed_only` determines what files are overwritten:
+
+        - if `changed_only` is ``True`` (default), then only files for
+          which the source has a different size or has been modified
+          more recently than the destination are copied;
+
+        - if `changed_only` is ``False``, then *all* files in `source`
+          will be copied into `destination`, unconditionally.
+
+        Output files that do not exist in `download_dir` will be
+        copied, independently of the `overwrite` and `changed_only`
+        settings.
+
+        :param Task job:
+          the `Task`:class: instance whose output should be retrieved
+        :param str download_dir:
+          path to download files into
+        :param bool overwrite:
+          if `False`, do not download files that already exist
+        :param bool changed_only:
+          if both this and `overwrite` are `True`, only overwrite
+          those files such that the source is newer or different in
+          size than the destination.
         """
         raise NotImplementedError(
             "Abstract method `LRMS.get_results()` called "

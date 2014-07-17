@@ -677,7 +677,7 @@ class OpenStackLrms(LRMS):
         return self
 
     @same_docstring_as(LRMS.get_results)
-    def get_results(self, app, download_dir, overwrite=False):
+    def get_results(self, app, download_dir, overwrite=False, changed_only=True):
         try:
             subresource = self._get_subresource(self._get_vm(app.os_instance_id))
         except InstanceNotFound, ex:
@@ -703,7 +703,7 @@ class OpenStackLrms(LRMS):
                 " an OpenStack API error (%s: %s)."
                 % (err.__class__.__name__, err))
             raise
-        return subresource.get_results(app, download_dir, overwrite=False)
+        return subresource.get_results(app, download_dir, overwrite, changed_only)
 
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
