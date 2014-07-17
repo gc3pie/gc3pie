@@ -37,7 +37,7 @@ Configuration file format
 -------------------------
 
 The GC3Pie configuration file follows the format understood by
-`Python ConfigParser <http://docs.python.org/library/configparser.html>`_, 
+`Python ConfigParser <http://docs.python.org/library/configparser.html>`_,
 which is very close to the syntax used in MS-Windows ``.INI`` files.
 See http://docs.python.org/library/configparser.html for reference.
 
@@ -58,7 +58,7 @@ Sections with other names are allowed but will be ignored.
 The ``DEFAULT`` section
 -----------------------
 
-The ``[DEFAULT]`` section is optional.  
+The ``[DEFAULT]`` section is optional.
 
 Values defined in the ``[DEFAULT]`` section can be used to insert
 values in other sections, using the ``%(name)s`` syntax.  See
@@ -70,7 +70,7 @@ http://docs.python.org/library/configparser.html for an example.
 ``auth`` sections
 -----------------
 
-There can be more than one ``[auth]`` section.  
+There can be more than one ``[auth]`` section.
 
 Each authentication section must begin with a line of the form:
 
@@ -170,7 +170,7 @@ not set this option to "true" unless you understand the implications.
 *Example 1.* The following example ``auth`` section shows how to
 configure GC3Pie for using SWITCHaai_ SLCS_ services to generate a
 certificate and a VOMS_ proxy to access the Swiss National Distributed
-Computing Infrastructure SMSCG_:: 
+Computing Infrastructure SMSCG_::
 
     [auth/smscg]
     type = voms-proxy
@@ -190,7 +190,7 @@ should be used on which computational resource is defined in the
 
     [auth/ssh2] # I use a different account name on some resources
     type = ssh
-    username = rmurri 
+    username = rmurri
 
 *Example 3.* The following configuration section is used to access an
 EC2 resource (access and
@@ -268,11 +268,11 @@ Some configuration keys are commmon to all resource types:
   * ``<application_name>_prologue``: Same as ``prologue``, but it is
     used only when ``<application_name>``  matches the name of the
     application. Valid application names are: `zods`, `gamess`,
-    `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`, 
+    `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`,
   * ``<application_name>_epilogue``: Same as ``epilogue``, but it is
     used only when ``<application_name>``  matches the name of the
     application. Valid application names are: `zods`, `gamess`,
-    `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`, 
+    `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`,
 
 ``arc0`` resources
 ~~~~~~~~~~~~~~~~~~
@@ -391,7 +391,7 @@ are used by the PBS backend:
 
   * ``qstat``: get the status of a job or the status of available
     resources.
- 
+
   * ``tracejob``: get info on resources used by a job.
 
 
@@ -450,7 +450,7 @@ resource manager. By default these commands are searched using the
 these commands and/or add some extra options. The following options
 are used by the SLURM backend:
 
-  * ``sbatch``: submit a job. 
+  * ``sbatch``: submit a job.
 
   * ``scancel``: cancel a job.
 
@@ -584,7 +584,7 @@ writing means use the default region on Amazon.
       please use ``-1`` for both values since in ``icmp`` there is no
       concept of *port*.
     - ``IP_NETWORK`` is a range of IP to allow in the form
-      ``A.B.C.D/N``. 
+      ``A.B.C.D/N``.
 
     For instance, to allow access to the virtual machine from *any*
     machine in the internet you can use::
