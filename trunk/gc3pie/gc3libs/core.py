@@ -970,7 +970,8 @@ def _contained(elt, lst):
 
 
 class Engine(object):
-    """Submit tasks in a collection, and update their state until a
+    """
+    Submit tasks in a collection, and update their state until a
     terminal state is reached. Specifically:
 
       * tasks in `NEW` state are submitted;
@@ -1017,20 +1018,36 @@ class Engine(object):
         value implements a first-come first-serve algorithm: tasks are
         submitted in the order they have been added to the `Engine`.
 
+      `retrieve_running`
+        If ``True``, snapshot output from RUNNING jobs at every
+        invocation of `progress`:meth:
+
+      `retrieve_overwrites`
+        If ``True``, overwrite files in the output directory of any
+        job (as opposed to moving destination away and downloading a
+        fresh copy). See `Core.fetch_output`:meth: for details.
+
+      `retrieve_changed_only`
+        If both this and `overwrite` are ``True``, then only changed
+        files are downloaded. See `Core.fetch_output`:meth: for
+        details.
+
     Any of the above can also be set by passing a keyword argument to
     the constructor (assume ``g`` is a `Core`:class: instance)::
 
       | >>> e = Engine(g, can_submit=False)
       | >>> e.can_submit
       | False
-
     """
 
     def __init__(self, controller, tasks=list(), store=None,
                  can_submit=True, can_retrieve=True,
                  max_in_flight=0, max_submitted=0,
                  output_dir=None, fetch_output_overwrites=False,
-                 scheduler=first_come_first_serve):
+                 scheduler=first_come_first_serve,
+                 retrieve_running=False,
+                 retrieve_overwrites=False,
+                 retrieve_changed_only=True):
         """
         Create a new `Engine` instance.  Arguments are as follows:
 
@@ -1056,7 +1073,11 @@ class Engine(object):
         :param output_dir:
         :param fetch_output_overwrites:
         :param scheduler:
+        :param bool retrieve_running:
+        :param bool retrieve_overwrites:
+        :param bool retrieve_changed_only:
           Optional keyword arguments; see `Engine`:class: for a description.
+
         """
         # internal-use attributes
         self._new = []
@@ -1077,6 +1098,9 @@ class Engine(object):
         self.output_dir = output_dir
         self.fetch_output_overwrites = fetch_output_overwrites
         self.scheduler = scheduler
+        self.retrieve_running = retrieve_running
+        self.retrieve_overwrites = retrieve_overwrites
+        self.retrieve_changed_only = retrieve_changed_only
 
 
     def add(self, task):
@@ -1171,6 +1195,23 @@ class Engine(object):
                 elif state == Run.State.RUNNING:
                     if isinstance(task, Application):
                         currently_in_flight += 1
+                    if self.can_retrieve and self.retrieve_running:
+                        # try to get output
+                        try:
+                            self._core.fetch_output(task,
+                                                    overwrite=self.retrieve_overwrites,
+                                                    changed_only=self.retrieve_changed_only)
+                        except Exception, x:
+                            if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
+                                # propagate generic exceptions for debugging purposes
+                                raise
+                            else:
+                                gc3libs.log.error(
+                                    "Ignored error in fetching output of RUNNING task '%s': %s: %s",
+                                    task, x.__class__.__name__, str(x))
+                                gc3libs.log.debug(
+                                    "Ignored error in fetching output of RUNNING task '%s': %s: %s",
+                                    task, x.__class__.__name__, str(x), exc_info=True)
                 elif state == Run.State.STOPPED:
                     transitioned.append(index) # task changed state, mark as to remove
                     self._stopped.append(task)
@@ -1323,7 +1364,9 @@ class Engine(object):
             for index, task in enumerate(self._terminating):
                 # try to get output
                 try:
-                    self._core.fetch_output(task)
+                    self._core.fetch_output(task,
+                                            overwrite=self.retrieve_overwrites,
+                                            changed_only=self.retrieve_changed_only)
                 except gc3libs.exceptions.UnrecoverableDataStagingError, ex:
                     gc3libs.log.error("Error in fetching output of task '%s',"
                                       " will mark it as TERMINATED"
