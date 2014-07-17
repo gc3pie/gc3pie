@@ -631,6 +631,7 @@ released once the output files have been fetched.
                                               sys.argv[0]))
 
         failed = 0
+        download_dirs = set()
         for jobid in args:
             try:
                 app = self.session.load(jobid)
@@ -645,19 +646,32 @@ released once the output files have been fetched.
                         "Output of '%s' already downloaded to '%s'"
                         % (app.persistent_id, app.output_dir))
 
-                self._core.fetch_output(app, output_dir=self.params.download_dir,
-                                        overwrite=self.params.overwrite,
-                                        changed_only=self.params.changed_only)
+                # XXX: this uses "private" code from `Application` and `Core.fetch_output`
+                app_download_dir = app._get_download_dir(self.params.download_dir)
+                # avoid downloading files twice for virtual tasks that
+                # wrap an application (e.g., `RetryableTask`)
+                if app_download_dir not in download_dirs:
+                    self._core.fetch_output(app,
+                                            output_dir=self.params.download_dir,
+                                            overwrite=self.params.overwrite,
+                                            changed_only=self.params.changed_only)
+                    if app.changed:
+                        self.session.store.replace(app.persistent_id, app)
+                    download_dirs.add(app_download_dir)
+                else:
+                    self.log.debug("Output directory '%s' already visited,"
+                                   " not downloading again.", app_download_dir)
+                # print message to user anyhow
                 if app.execution.state == Run.State.TERMINATED:
                     print("Job final results were successfully retrieved in '%s'"
-                          % app._get_download_dir(self.params.download_dir))
+                          % (app_download_dir,))
                 else:
                     print("A snapshot of job results was successfully retrieved in '%s'"
-                          % app._get_download_dir(self.params.download_dir))
-                self.session.store.replace(app.persistent_id, app)
+                          % (app_download_dir,))
 
             except Exception, ex:
-                print("Failed retrieving results of job '%s': %s" % (jobid, str(ex)))
+                print("Failed retrieving results of job '%s': %s"
+                      % (jobid, str(ex)))
                 failed += 1
                 continue
 
