@@ -598,6 +598,8 @@ released once the output files have been fetched.
                        help="Destination directory (job id will be appended to it); default is '.'")
         self.add_param("-f", "--overwrite", action="store_true", dest="overwrite", default=False,
                        help="Overwrite files in destination directory")
+        self.add_param("-c", "--changed-only", action="store_true", dest="changed_only", default=False,
+                       help="Only download files that were changed on remote side.")
 
     def main(self):
         try:
@@ -643,7 +645,9 @@ released once the output files have been fetched.
                         "Output of '%s' already downloaded to '%s'"
                         % (app.persistent_id, app.output_dir))
 
-                self._core.fetch_output(app, output_dir=self.params.download_dir, overwrite=self.params.overwrite)
+                self._core.fetch_output(app, output_dir=self.params.download_dir,
+                                        overwrite=self.params.overwrite,
+                                        changed_only=self.params.changed_only)
                 if app.execution.state == Run.State.TERMINATED:
                     print("Job final results were successfully retrieved in '%s'"
                           % app._get_download_dir(self.params.download_dir))
@@ -1414,7 +1418,7 @@ To get detailed info on a specific command, run:
         import gc3utils.commands
 
         resources = [res for res in self._core.get_resources()
-                     if res.type.startswith('ec2') or 
+                     if res.type.startswith('ec2') or
                      res.type.startswith('openstack')]
         if self.params.resource_name:
             resources = [res for res in resources
@@ -1462,7 +1466,7 @@ To get detailed info on a specific command, run:
                 image_name = filter(lambda x: x.id == vm.image['id'], images)[0].name
             if vm.preferred_ip in ips:
                 ips.remove(vm.preferred_ip)
-            
+
             table.add_row((res.name, vm.id, status, vm.preferred_ip, str.join(', ', ips), remote_jobs, ncores, image_name, vm.key_name))
 
         print(table)
