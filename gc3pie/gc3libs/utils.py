@@ -28,6 +28,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
+import contextlib
 import itertools
 import os
 import os.path
@@ -36,6 +37,7 @@ import random
 import re
 import shutil
 import sys
+import tempfile
 import time
 import cStringIO as StringIO
 import UserDict
@@ -1218,6 +1220,24 @@ def stripped(iterable):
     """
     for item in iterable:
         yield item.strip()
+
+
+@contextlib.contextmanager
+def tempdir(**kwargs):
+    """
+    A context manager for creating and then deleting a temporary directory.
+
+    All arguments are passed unchanged to the `tempfile.mkdtemp`
+    standand library function.
+
+    (Original source and credits: http://stackoverflow.com/a/10965572/459543)
+    """
+    tmpdir = tempfile.mkdtemp(**kwargs)
+    try:
+        yield tmpdir
+    finally:
+        if os.path.isdir(tmpdir):
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def test_file(path, mode, exception=RuntimeError, isdir=False):
