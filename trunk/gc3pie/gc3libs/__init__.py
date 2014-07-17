@@ -294,7 +294,8 @@ class Task(Persistable, Struct):
         self._controller.kill(self, **extra_args)
 
 
-    def fetch_output(self, output_dir=None, overwrite=False, **extra_args):
+    def fetch_output(self, output_dir=None,
+                     overwrite=False, changed_only=True, **extra_args):
         """
         Retrieve the outputs of the computational job associated with
         this task into directory `output_dir`, or, if that is `None`,
@@ -309,11 +310,10 @@ class Task(Persistable, Struct):
         :return: Path to the directory where the job output has been
                  collected.
         """
-        #result = self._controller.fetch_output(self, output_dir, overwrite, **extra_args)
         if self.execution.state == Run.State.TERMINATED:
             return self.output_dir
-        # advance state to TERMINATED
         if self.execution.state == Run.State.TERMINATING:
+            # advance state to TERMINATED
             self.output_dir = self._get_download_dir(output_dir)
             self.execution.info = ("Final output downloaded to '%s'" % self.output_dir)
             self.execution.state = Run.State.TERMINATED
@@ -1073,11 +1073,12 @@ class Application(Task):
                     selected.append(lrms)
         return selected
 
-    def fetch_output(self, download_dir, overwrite, **extra_args):
+    def fetch_output(self, download_dir, overwrite, changed_only, **extra_args):
         """
-        Calls the corresponding method of the controller.
+        Call the corresponding method of the controller.
         """
-        return self._controller.fetch_output(self, download_dir, overwrite, **extra_args)
+        return self._controller.fetch_output(
+            download_dir, overwrite, changed_only, **extra_args)
 
     ##
     ## backend interface methods

@@ -126,7 +126,8 @@ class TaskCollection(Task):
         raise NotImplementedError("Called abstract method TaskCollection.kill() - this should be overridden in derived classes.")
 
 
-    def fetch_output(self, output_dir=None, overwrite=False, **extra_args):
+    def fetch_output(self, output_dir=None,
+                     overwrite=False, changed_only=True, **extra_args):
         # if `output_dir` is not None, it is interpreted as the base
         # directory where to download files; each task will get its
         # own subdir based on its `.persistent_id`
@@ -146,6 +147,7 @@ class TaskCollection(Task):
                 task,
                 task_output_dir,
                 overwrite,
+                changed_only,
                 **extra_args)
         # if any sub-task is not yet TERMINATED, return the base
         # output directory for the collection...

@@ -493,17 +493,31 @@ an overlay Grid on the resources specified in the configuration file.
             task.update_state()
 
 
-    def fetch_output(self, app, download_dir=None, overwrite=False, **extra_args):
+    def fetch_output(self, app, download_dir=None,
+                     overwrite=False, changed_only=True, **extra_args):
         """
-        Retrieve output into local directory `app.output_dir`;
-        optional argument `download_dir` overrides this.
+        Retrieve output into local directory `app.output_dir`.
+
+        Optional argument `download_dir` overrides the download location.
 
         The download directory is created if it does not exist.  If it
         already exists, and the optional argument `overwrite` is
-        `False` (default), it is renamed with a `.NUMBER` suffix and a
-        new empty one is created in its place.  Otherwise, if
-        'overwrite` is `True`, files are downloaded over the ones
-        already present.
+        ``False`` (default), it is renamed with a `.NUMBER` suffix and
+        a new empty one is created in its place.  Otherwise, if
+        'overwrite` is ``True``, files are downloaded over the ones
+        already present; in this case, the `changed_only` argument
+        controls which files are overwritten:
+
+        - if `changed_only` is ``True`` (default), then only files for
+          which the source has a different size or has been modified
+          more recently than the destination are copied;
+
+        - if `changed_only` is ``False``, then *all* files in `source`
+          will be copied into `destination`, unconditionally.
+
+        Source files that do not exist at `destination` will be
+        copied, independently of the `overwrite` and `changed_only`
+        settings.
 
         If the task is in TERMINATING state, the state is changed to
         `TERMINATED`, attribute `output_dir`:attr: is set to the
@@ -524,12 +538,12 @@ an overlay Grid on the resources specified in the configuration file.
         assert isinstance(app, Task), \
             "Core.fetch_output: passed an `app` argument which is not a `Task` instance."
         if isinstance(app, Application):
-            self.__fetch_output_application(app, download_dir, overwrite, **extra_args)
+            self.__fetch_output_application(app, download_dir, overwrite, changed_only, **extra_args)
         else:
             # generic `Task` object
-            self.__fetch_output_task(app, download_dir, overwrite, **extra_args)
+            self.__fetch_output_task(app, download_dir, overwrite, changed_only, **extra_args)
 
-    def __fetch_output_application(self, app, download_dir, overwrite, **extra_args):
+    def __fetch_output_application(self, app, download_dir, overwrite, changed_only, **extra_args):
         """Implementation of `fetch_output` on `Application` objects."""
         job = app.execution
         if job.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
@@ -557,15 +571,14 @@ an overlay Grid on the resources specified in the configuration file.
         # download job output
         try:
             lrms = self.get_backend(job.resource_name)
-            # self.auths.get(lrms.auth)
-            lrms.get_results(app, download_dir)
+            lrms.get_results(app, download_dir, overwrite, changed_only)
             # clear previous data staging errors
             if job.signal == Run.Signals.DataStagingFailure:
                 job.signal = 0
         except gc3libs.exceptions.InvalidResourceName, ex:
             gc3libs.log.warning(
-                "Failed retrieving resource %s from core."
-                " Detailed Error message: %s" % (app.execution.resource_name, str(ex)))
+                "No such resource '%s': %s"
+                % (app.execution.resource_name, str(ex)))
             ex = app.fetch_output_error(ex)
             if isinstance(ex, Exception):
                 job.info = ("No output could be retrieved: %s" % str(ex))
@@ -599,9 +612,9 @@ an overlay Grid on the resources specified in the configuration file.
         return Task.fetch_output(app, download_dir)
 
 
-    def __fetch_output_task(self, task, download_dir, overwrite, **extra_args):
+    def __fetch_output_task(self, task, download_dir, overwrite, changed_only, **extra_args):
         """Implementation of `fetch_output` on generic `Task` objects."""
-        return task.fetch_output(download_dir, overwrite, **extra_args)
+        return task.fetch_output(download_dir, overwrite, changed_only, **extra_args)
 
 
     def get_resources(self, **extra_args):
@@ -1454,14 +1467,15 @@ class Engine(object):
         pass
 
 
-    def fetch_output(self, task, output_dir=None, overwrite=False, **extra_args):
+    def fetch_output(self, task, output_dir=None,
+                     overwrite=False, changed_only=True, **extra_args):
         """
         Enqueue task for later output retrieval.
 
         .. warning:: FIXME
 
-          The `output_dir` and `overwrite` parameters are currently ignored.
-
+          The `output_dir`, `overwrite`, and `changed_only` parameters
+          are currently ignored.
         """
         self.add(task)
 
