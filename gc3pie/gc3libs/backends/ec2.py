@@ -673,9 +673,12 @@ class EC2Lrms(LRMS):
         return self
 
     @same_docstring_as(LRMS.get_results)
-    def get_results(self, app, download_dir, overwrite=False):
+    def get_results(self, app, download_dir, overwrite=False, changed_only=True):
         resource = self._get_subresource(self._get_vm(app.ec2_instance_id))
-        return resource.get_results(app, download_dir, overwrite=False)
+        return resource.get_results(app, download_dir,
+                                    ignore_nonexisting=False,
+                                    overwrite=overwrite,
+                                    changed_only=changed_only)
 
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):

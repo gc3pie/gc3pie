@@ -709,7 +709,7 @@ class BatchSystem(LRMS):
 
     @same_docstring_as(LRMS.get_results)
     @LRMS.authenticated
-    def get_results(self, app, download_dir, overwrite=False):
+    def get_results(self, app, download_dir, overwrite=False, changed_only=True):
         if app.output_base_url is not None:
             raise gc3libs.exceptions.UnrecoverableDataStagingError(
                 "Retrieval of output files to non-local destinations"
@@ -736,22 +736,12 @@ class BatchSystem(LRMS):
             # ArcLRMS convention
             log.debug("Downloading job output into '%s' ...", download_dir)
             for remote_path, local_path in stageout:
-                log.debug("Downloading remote file '%s' to local file '%s'",
-                          remote_path, local_path)
-                if (overwrite
-                        or not os.path.exists(local_path)
-                        or os.path.isdir(local_path)):
-                    log.debug("Copying remote '%s' to local '%s'"
-                              % (remote_path, local_path))
-                    # ignore missing files (this is what ARC does too)
-                    self.transport.get(remote_path, local_path,
-                                       ignore_nonexisting=True)
-                else:
-                    log.info("Local file '%s' already exists;"
-                             " will not be overwritten!",
-                             local_path)
-
-            return  # XXX: should we return list of downloaded files?
+                # ignore missing files (this is what ARC does too)
+                self.transport.get(remote_path, local_path,
+                                   ignore_nonexisting=True,
+                                   overwrite=overwrite,
+                                   changed_only=changed_only)
+            return
 
         except:
             raise
