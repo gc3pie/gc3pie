@@ -508,10 +508,9 @@ class OpenStackLrms(LRMS):
 
     @cache_for(120)
     def _get_flavor(self, name):
-        flavors = (fl for fl in self._flavors if fl.name == name)
         try:
             # pick the first match with that name
-            return flavors.next()
+            return (fl for fl in self._flavors if fl.name == name).next()
         except StopIteration:
             # no flavor by the given name
             raise NotFound("Flavor `%s` not found." % name)
