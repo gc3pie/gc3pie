@@ -1077,7 +1077,7 @@ class Application(Task):
         """
         Call the corresponding method of the controller.
         """
-        return self._controller.fetch_output(
+        return self._controller.fetch_output(self,
             download_dir, overwrite, changed_only, **extra_args)
 
     ##
