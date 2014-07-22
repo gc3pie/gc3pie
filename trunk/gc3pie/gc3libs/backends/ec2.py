@@ -431,21 +431,18 @@ class EC2Lrms(LRMS):
         Create a new keypair and import the public key defined in the
         configuration file.
         """
-        fd = open(os.path.expanduser(self.public_key))
-        try:
-            key_material = fd.read()
-            imported_key = self._conn.import_key_pair(
-                self.keypair_name, key_material)
-
-            gc3libs.log.info(
-                "Successfully imported key `%s` with fingerprint `%s`"
-                " as keypair `%s`" % (imported_key.name,
-                                      imported_key.fingerprint,
-                                      self.keypair_name))
-        except Exception, ex:
-            fd.close()
-            raise UnrecoverableError("Error importing keypair %s: %s"
-                                     % (self.keypair_name, ex))
+        with open(os.path.expanduser(self.public_key)) as fd:
+            try:
+                key_material = fd.read()
+                imported_key = self._conn.import_key_pair(
+                    self.keypair_name, key_material)
+                gc3libs.log.info(
+                    "Successfully imported key `%s`"
+                    " with fingerprint `%s` as keypair `%s`",
+                    imported_key.name, imported_key.fingerprint, self.keypair_name)
+            except Exception, ex:
+                raise UnrecoverableError("Error importing keypair %s: %s"
+                                         % (self.keypair_name, ex))
 
     def _make_subresource(self, id, remote_ip):
         """
