@@ -20,7 +20,7 @@ Job control on SLURM clusters (possibly connecting to the front-end via SSH).
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.4 version (SVN $Revision$)'
 
 
 import datetime
@@ -146,11 +146,8 @@ class SlurmLrms(batch.BatchSystem):
                  auth,  # ignored if `transport` is 'local'
                  # these are inherited from `BatchSystem`
                  frontend, transport,
+                 accounting_delay=15,
                  # these are specific to this backend
-                 # (Note that optional arguments to the `BatchSystem` class, e.g.:
-                 #     keyfile=None, accounting_delay=15,
-                 # are collected into `extra_args` and should not be explicitly
-                 # spelled out in this signature.)
                  **extra_args):
 
         # init base class
@@ -158,7 +155,7 @@ class SlurmLrms(batch.BatchSystem):
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
-            frontend, transport,
+            frontend, transport, accounting_delay=accounting_delay,
             **extra_args)
 
         # backend-specific setup
@@ -208,7 +205,7 @@ class SlurmLrms(batch.BatchSystem):
 
     def _parse_stat_output(self, stdout):
         """
-        Receive the output of ``squeue --noheader -o %i:%T:%r and parse it.
+        Receive the output of ``squeue --noheader -o %i^%T^%r and parse it.
         """
         jobstatus = dict()
         if stdout.strip() == '':

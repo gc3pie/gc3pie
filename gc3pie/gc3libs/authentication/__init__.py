@@ -19,7 +19,7 @@ Authentication support for the GC3Libs.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.4 version (SVN $Revision$)'
 
 import sys
 
@@ -174,7 +174,6 @@ Auth.register('none', NoneAuth)
 import gc3libs.authentication.grid
 import gc3libs.authentication.ssh
 import gc3libs.authentication.ec2
-import gc3libs.authentication.openstack
 
 ## main: run tests
 

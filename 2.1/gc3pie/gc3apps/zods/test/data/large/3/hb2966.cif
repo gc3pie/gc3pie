@@ -1,0 +1,361 @@
+##############################################################################
+###                                                                        ###
+###        Electronic paper (Acta Crystallographica Section E)             ###
+###                                                                        ###
+##############################################################################
+#                                                                            #
+# This CIF contains the data in a paper accepted for publication in Acta     #
+# Crystallographica Section E. It conforms to the requirements of Notes      #
+# for Authors for Section E, and has been peer reviewed under the auspices   #
+# of the IUCr Commission on Journals.                                        #
+#                                                                            #
+# Full details of the Crystallographic Information File format               #
+# are given in the paper "The Crystallographic Information File (CIF):       #
+# a New Standard Archive File for Crystallography" by S. R. Hall, F. H.      #
+# Allen and I. D. Brown [Acta Cryst. (1991), A47, 655-685].                  #
+#                                                                            #
+# The current version of the core CIF dictionary is obtainable from          #
+# ftp://ftp.iucr.org/pub/cif_core.dic. The current version number is 2.4.    #
+#                                                                            #
+# Software is freely available for graphical display of the structure(s) in  #
+# this CIF.  For information consult the CIF home page http://www.iucr.org/  #
+# cif/home.html                                                              #
+#                                                                            #
+# This file may be used for bona fide research purposes within the           #
+# scientific community so long as proper attribution is given to the journal # 
+# article from which it was obtained.                                        #
+#                                                                            #
+##############################################################################
+                                             
+data_global
+_audit_creation_method     SHELXL-97
+_journal_date_recd_electronic     2009-05-05
+_journal_date_accepted     2009-05-06
+_journal_name_full     'Acta Crystallographica, Section E'
+_journal_year     2009
+_journal_volume     65
+_journal_issue      6
+_journal_page_first     o1276
+_journal_page_last     o1276
+_journal_paper_category     QO
+_journal_coeditor_code     HB2966
+_publ_contact_author
+;
+Dr. Seik Weng Ng
+Department of Chemistry
+University of Malaya
+50603 Kuala Lumpur
+Malaysia
+;
+_publ_contact_author_email     seikweng@um.edu.my
+_publ_contact_author_fax     '03 7967 4193'
+_publ_contact_author_phone     '03 7967 6778'
+_publ_section_title
+;
+4-(Dimethylamino)pyridinium tribromide: whole molecule disorder of cation and
+anion
+;
+loop_
+    _publ_author_name
+    _publ_author_address
+    'Ng, Seik Weng'
+;
+Department of Chemistry
+University of Malaya
+50603 Kuala Lumpur
+Malaysia
+;
+_publ_section_synopsis     .
+data_I
+_audit_creation_method     SHELXL-97
+_chemical_name_systematic
+;
+4-(Dimethylamino)pyridinium tribromide
+;
+_chemical_name_common     ?
+_chemical_formula_moiety     '[C7 H11 N2] +, [Br3] -'
+_chemical_formula_sum     'C7 H11 Br3 N2'
+_chemical_formula_iupac     'C7 H11 N2 +, Br3 -'
+_chemical_formula_weight     362.91
+_chemical_melting_point     ?
+_symmetry_cell_setting     Orthorhombic
+_symmetry_space_group_name_H-M     'P 2 2 21'
+_symmetry_space_group_name_Hall     'P 2c 2'
+loop_
+    _symmetry_equiv_pos_as_xyz
+    'x, y, z'
+    '-x, -y, z+1/2'
+    '-x, y, -z+1/2'
+    'x, -y, -z'
+_cell_length_a     4.16880(10)
+_cell_length_b     8.8349(2)
+_cell_length_c     14.7255(4)
+_cell_angle_alpha     90.00
+_cell_angle_beta     90.00
+_cell_angle_gamma     90.00
+_cell_volume     542.35(2)
+_cell_formula_units_Z     2
+_cell_measurement_reflns_used     2094
+_cell_measurement_theta_min     2.7
+_cell_measurement_theta_max     28.3
+_cell_measurement_temperature     100(2)
+_exptl_crystal_description     Block
+_exptl_crystal_colour     Colorless
+_exptl_crystal_size_max     0.20
+_exptl_crystal_size_mid     0.15
+_exptl_crystal_size_min     0.10
+_exptl_crystal_density_diffrn     2.222
+_exptl_crystal_density_meas     ?
+_exptl_crystal_density_method     'not measured'
+_exptl_crystal_F_000     344
+_exptl_absorpt_coefficient_mu     11.110
+_exptl_absorpt_correction_type     Multi-scan
+_exptl_absorpt_process_details     '(SADABS; Sheldrick, 1996)'
+_exptl_absorpt_correction_T_min     0.656
+_exptl_absorpt_correction_T_max     1.000
+_diffrn_ambient_temperature     100(2)
+_diffrn_radiation_type     MoK\a
+_diffrn_radiation_wavelength     0.71073
+_diffrn_radiation_source     'fine-focus sealed tube'
+_diffrn_radiation_monochromator     graphite
+_diffrn_measurement_device_type     'Bruker SMART APEX CCD'
+_diffrn_measurement_method     '\w scans'
+_diffrn_detector_area_resol_mean     ?
+_diffrn_reflns_number     5156
+_diffrn_reflns_av_R_equivalents     0.0247
+_diffrn_reflns_av_sigmaI/netI     0.0220
+_diffrn_reflns_theta_min     2.31
+_diffrn_reflns_theta_max     27.47
+_diffrn_reflns_theta_full     27.47
+_diffrn_measured_fraction_theta_max     1.000
+_diffrn_measured_fraction_theta_full     1.000
+_diffrn_reflns_limit_h_min     -5
+_diffrn_reflns_limit_h_max     5
+_diffrn_reflns_limit_k_min     -11
+_diffrn_reflns_limit_k_max     11
+_diffrn_reflns_limit_l_min     -19
+_diffrn_reflns_limit_l_max     19
+_diffrn_standards_number     0
+_diffrn_standards_interval_count     0
+_diffrn_standards_interval_time     0
+_diffrn_standards_decay_%     0
+_reflns_number_total     1256
+_reflns_number_gt     1114
+_reflns_threshold_expression     I>2\s(I)
+_refine_ls_structure_factor_coef     Fsqd
+_refine_ls_matrix_type     full
+_refine_ls_R_factor_all     0.0262
+_refine_ls_R_factor_gt     0.0208
+_refine_ls_wR_factor_gt     0.0485
+_refine_ls_wR_factor_ref     0.0508
+_refine_ls_goodness_of_fit_ref     0.984
+_refine_ls_restrained_S_all     0.964
+_refine_ls_number_reflns     1256
+_refine_ls_number_parameters     100
+_refine_ls_number_restraints     60
+_refine_ls_hydrogen_treatment     constr
+_refine_ls_weighting_scheme     calc
+_refine_ls_weighting_details
+                 'calc w=1/[\s^2^(Fo^2^)+(0.0322P)^2^] where P=(Fo^2^+2Fc^2^)/3'
+_atom_sites_solution_hydrogens     geom
+_atom_sites_solution_primary     direct
+_atom_sites_solution_secondary     difmap
+_refine_ls_shift/su_max     0.001
+_refine_ls_shift/su_mean     0.001
+_refine_diff_density_max     0.423
+_refine_diff_density_min     -0.335
+_refine_ls_extinction_method     none
+_refine_ls_extinction_coef     ?
+_refine_ls_abs_structure_details     'Flack (1983), 480 Friedel pairs'
+_refine_ls_abs_structure_Flack     0.47(4)
+loop_
+    _atom_type_symbol
+    _atom_type_description
+    _atom_type_scat_dispersion_real
+    _atom_type_scat_dispersion_imag
+    _atom_type_scat_source
+    'C' 'C' 0.0033 0.0016
+                         'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+    'H' 'H' 0.0000 0.0000
+                         'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+    'N' 'N' 0.0061 0.0033
+                         'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+    'Br' 'Br' -0.2901 2.4595
+                         'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+_computing_data_collection     'APEX2 (Bruker, 2008)'
+_computing_cell_refinement     'SAINT (Bruker, 2008)'
+_computing_data_reduction     'SAINT (Bruker, 2008)'
+_computing_structure_solution     'SHELXS-97 (Sheldrick, 2008)'
+_computing_structure_refinement     'SHELXL-97 (Sheldrick, 2008)'
+_computing_molecular_graphics     'X-Seed (Barbour, 2001)'
+_computing_publication_material     'pubCIF (Westrip, 2009)'
+loop_
+    _atom_site_type_symbol
+    _atom_site_label
+    _atom_site_fract_x
+    _atom_site_fract_y
+    _atom_site_fract_z
+    _atom_site_U_iso_or_equiv
+    _atom_site_adp_type
+    _atom_site_calc_flag
+    _atom_site_refinement_flags
+    _atom_site_occupancy
+    _atom_site_disorder_assembly
+    _atom_site_disorder_group
+    Br Br1 0.5290(6) 0.25953(5) 0.23869(12) 0.0155(3) Uani d P 0.50 A -1
+    Br Br2 0.2738(3) 0.27497(11) 0.07779(5) 0.0196(2) Uani d P 0.50 A -1
+    Br Br3 0.7682(3) 0.24565(11) 0.39355(5) 0.01777(18) Uani d P 0.50 A -1
+    N N2 1.1882(7) 0.2417(5) -0.3550(3) 0.0144(9) Uani d PDU 0.50 B -2
+    N N1 0.7232(7) 0.2399(4) -0.10428(15) 0.0209(11) Uani d PGDU 0.50 B -2
+    H H1 0.6250 0.2392 -0.0514 0.025 Uiso calc PR 0.50 B -2
+    C C1 0.7724(9) 0.1050(3) -0.1509(2) 0.0190(11) Uani d PGDU 0.50 B -2
+    H H1A 0.7000 0.0122 -0.1257 0.023 Uiso calc PR 0.50 B -2
+    C C2 0.9276(8) 0.1061(3) -0.23446(19) 0.0196(13) Uani d PGDU 0.50 B -2
+    H H2 0.9612 0.0140 -0.2663 0.024 Uiso calc PR 0.50 B -2
+    C C3 1.0335(5) 0.2420(3) -0.27138(13) 0.0147(11) Uani d PGDU 0.50 B -2
+    C C4 0.9844(9) 0.3768(3) -0.2248(2) 0.0195(12) Uani d PGDU 0.50 B -2
+    H H4 1.0568 0.4697 -0.2500 0.023 Uiso calc PR 0.50 B -2
+    C C5 0.8292(9) 0.3757(3) -0.1412(2) 0.0208(14) Uani d PGDU 0.50 B -2
+    H H5 0.7956 0.4679 -0.1093 0.025 Uiso calc PR 0.50 B -2
+    C C6 1.2376(13) 0.1015(6) -0.4024(3) 0.0226(13) Uani d PDU 0.50 B -2
+    H H6A 1.0314 0.0498 -0.4102 0.034 Uiso calc PR 0.50 B -2
+    H H6B 1.3829 0.0370 -0.3672 0.034 Uiso calc PR 0.50 B -2
+    H H6C 1.3321 0.1220 -0.4620 0.034 Uiso calc PR 0.50 B -2
+    C C7 1.2983(11) 0.3839(6) -0.3936(4) 0.0223(14) Uani d PDU 0.50 B -2
+    H H7A 1.1130 0.4479 -0.4077 0.033 Uiso calc PR 0.50 B -2
+    H H7B 1.4196 0.3638 -0.4493 0.033 Uiso calc PR 0.50 B -2
+    H H7C 1.4366 0.4359 -0.3497 0.033 Uiso calc PR 0.50 B -2
+loop_
+    _atom_site_aniso_label
+    _atom_site_aniso_U_11
+    _atom_site_aniso_U_22
+    _atom_site_aniso_U_33
+    _atom_site_aniso_U_12
+    _atom_site_aniso_U_13
+    _atom_site_aniso_U_23
+    Br1 0.0195(8) 0.01421(16) 0.0128(8) -0.0005(3) 0.0021(5) -0.0007(2)
+    Br2 0.0201(4) 0.0274(5) 0.0112(4) 0.0019(3) 0.0015(3) -0.0010(3)
+    Br3 0.0210(4) 0.0207(4) 0.0116(4) -0.0011(3) 0.0007(3) 0.0001(3)
+    N2 0.021(2) 0.0110(19) 0.011(2) -0.001(2) -0.0034(17) 0.005(2)
+    N1 0.023(3) 0.032(3) 0.008(2) 0.007(3) 0.0025(19) -0.001(2)
+    C1 0.019(3) 0.021(3) 0.017(3) -0.001(2) -0.003(3) 0.002(2)
+    C2 0.012(3) 0.0175(19) 0.029(4) -0.0005(16) 0.004(3) 0.003(2)
+    C3 0.019(2) 0.0179(18) 0.008(3) -0.001(3) -0.002(2) 0.0001(17)
+    C4 0.020(2) 0.022(2) 0.016(3) -0.004(3) -0.005(4) 0.0004(16)
+    C5 0.019(3) 0.023(3) 0.020(3) 0.001(2) -0.001(3) 0.001(3)
+    C6 0.032(3) 0.019(2) 0.017(3) 0.000(3) -0.001(4) 0.004(2)
+    C7 0.023(4) 0.023(3) 0.020(3) 0.005(2) 0.008(3) -0.005(2)
+_geom_special_details
+;
+ All esds (except the esd in the dihedral angle between two l.s. planes)
+ are estimated using the full covariance matrix.  The cell esds are taken
+ into account individually in the estimation of esds in distances, angles
+ and torsion angles; correlations between esds in cell parameters are only
+ used when they are defined by crystal symmetry.  An approximate (isotropic)
+ treatment of cell esds is used for estimating esds involving l.s. planes.
+;
+loop_
+    _geom_bond_atom_site_label_1
+    _geom_bond_atom_site_label_2
+    _geom_bond_site_symmetry_2
+    _geom_bond_distance
+    _geom_bond_publ_flag
+    Br1 Br3 . 2.492(3) ?
+    Br1 Br2 . 2.601(3) ?
+    N2 C3 . 1.390(5) ?
+    N2 C6 . 1.436(7) ?
+    N2 C7 . 1.454(7) ?
+    N1 C1 . 1.3900 ?
+    N1 C5 . 1.3900 ?
+    N1 H1 . 0.8800 ?
+    C1 C2 . 1.3900 ?
+    C1 H1A . 0.9500 ?
+    C2 C3 . 1.3900 ?
+    C2 H2 . 0.9500 ?
+    C3 C4 . 1.3900 ?
+    C4 C5 . 1.3900 ?
+    C4 H4 . 0.9500 ?
+    C5 H5 . 0.9500 ?
+    C6 H6A . 0.9800 ?
+    C6 H6B . 0.9800 ?
+    C6 H6C . 0.9800 ?
+    C7 H7A . 0.9800 ?
+    C7 H7B . 0.9800 ?
+    C7 H7C . 0.9800 ?
+loop_
+    _geom_angle_atom_site_label_1
+    _geom_angle_atom_site_label_2
+    _geom_angle_atom_site_label_3
+    _geom_angle_site_symmetry_1
+    _geom_angle_site_symmetry_3
+    _geom_angle
+    _geom_angle_publ_flag
+    Br3 Br1 Br2 . . 179.41(8) ?
+    C3 N2 C6 . . 119.9(4) ?
+    C3 N2 C7 . . 119.4(4) ?
+    C6 N2 C7 . . 120.7(4) ?
+    C1 N1 C5 . . 120.0 ?
+    C1 N1 H1 . . 120.0 ?
+    C5 N1 H1 . . 120.0 ?
+    N1 C1 C2 . . 120.0 ?
+    N1 C1 H1A . . 120.0 ?
+    C2 C1 H1A . . 120.0 ?
+    C1 C2 C3 . . 120.0 ?
+    C1 C2 H2 . . 120.0 ?
+    C3 C2 H2 . . 120.0 ?
+    N2 C3 C4 . . 120.5(3) ?
+    N2 C3 C2 . . 119.5(3) ?
+    C4 C3 C2 . . 120.0 ?
+    C5 C4 C3 . . 120.0 ?
+    C5 C4 H4 . . 120.0 ?
+    C3 C4 H4 . . 120.0 ?
+    C4 C5 N1 . . 120.0 ?
+    C4 C5 H5 . . 120.0 ?
+    N1 C5 H5 . . 120.0 ?
+    N2 C6 H6A . . 109.5 ?
+    N2 C6 H6B . . 109.5 ?
+    H6A C6 H6B . . 109.5 ?
+    N2 C6 H6C . . 109.5 ?
+    H6A C6 H6C . . 109.5 ?
+    H6B C6 H6C . . 109.5 ?
+    N2 C7 H7A . . 109.5 ?
+    N2 C7 H7B . . 109.5 ?
+    H7A C7 H7B . . 109.5 ?
+    N2 C7 H7C . . 109.5 ?
+    H7A C7 H7C . . 109.5 ?
+    H7B C7 H7C . . 109.5 ?
+loop_
+    _geom_torsion_atom_site_label_1
+    _geom_torsion_atom_site_label_2
+    _geom_torsion_atom_site_label_3
+    _geom_torsion_atom_site_label_4
+    _geom_torsion_site_symmetry_1
+    _geom_torsion_site_symmetry_2
+    _geom_torsion_site_symmetry_3
+    _geom_torsion_site_symmetry_4
+    _geom_torsion
+    _geom_torsion_publ_flag
+    C5 N1 C1 C2 . . . . 0.0 ?
+    N1 C1 C2 C3 . . . . 0.0 ?
+    C6 N2 C3 C4 . . . . 179.95(9) ?
+    C7 N2 C3 C4 . . . . -0.07(11) ?
+    C6 N2 C3 C2 . . . . -0.08(13) ?
+    C7 N2 C3 C2 . . . . 179.90(9) ?
+    C1 C2 C3 N2 . . . . -179.96(9) ?
+    C1 C2 C3 C4 . . . . 0.0 ?
+    N2 C3 C4 C5 . . . . 179.96(9) ?
+    C2 C3 C4 C5 . . . . 0.0 ?
+    C3 C4 C5 N1 . . . . 0.0 ?
+    C1 N1 C5 C4 . . . . 0.0 ?
+loop_
+    _geom_hbond_atom_site_label_D
+    _geom_hbond_atom_site_label_H
+    _geom_hbond_atom_site_label_A
+    _geom_hbond_site_symmetry_A
+    _geom_hbond_distance_DH
+    _geom_hbond_distance_HA
+    _geom_hbond_distance_DA
+    _geom_hbond_angle_DHA
+    _geom_hbond_publ_flag
+    N1 H1 Br2 . 0.88 2.42 3.286(2) 167 yes
+

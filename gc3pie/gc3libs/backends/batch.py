@@ -4,7 +4,7 @@
 This module provides a generic BatchSystem class from which all
 batch-like backends should inherit.
 """
-# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,7 @@ batch-like backends should inherit.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.4 version (SVN $Revision$)'
 
 
 from getpass import getuser
@@ -255,9 +255,8 @@ class BatchSystem(LRMS):
             "this should have been defined in a derived class.")
 
     def _acct_command(self, job):
-        """
-        Return a string containing the command to issue to get accounting
-        information about the `job`.
+        """This method returns a string containing the command to
+        issue to get accounting information about the `job`.
 
         It is usually called only if the _stat_command() fails.
         """
@@ -266,11 +265,9 @@ class BatchSystem(LRMS):
             "this should have been defined in a derived class.")
 
     def _parse_acct_output(self, stdout):
-        """
-        Parse the output of `_acct_command` and return a dictionary
-        containing infos about the job.
-
-        The `BatchSystem`:class: does not make any assumption about
+        """This method will parse the output of the acct command and
+        return a dictionary containing infos about the
+        job. `BatchSystem` class does not make any assumption about
         the keys contained in the dictionary.
         """
         raise NotImplementedError(
@@ -278,24 +275,19 @@ class BatchSystem(LRMS):
             "this should have been defined in a derived class.")
 
     def _secondary_acct_command(self, job):
+        """This method is similar to `_parse_acct_output` but it is
+        called only if the former returns a non-0 exit status. This is
+        used to allow for a fallback method in case there are multiple
+        way to get information from a job
         """
-        Like `_acct_command` but called only if it exits with non-0 status.
+        raise NotImplementedError(
+            "Abstract method `_secondary_acct_command()` called - "
+            "this should have been defined in a derived class.")
 
-        This is used to allow for a fallback method in case there are
-        multiple ways to get information from a job.
-
-        By default this method does nothing, as most batch systems do
-        only have one and one only way of getting accounting
-        information.
-        """
-        return None
-
-    def _parse_secondary_acct_output(self, stdout):
-        """
-        Parse the output of `_secondary_acct_command` and return a
-        dictionary containing infos about the job.
-
-        The `BatchSystem` class does not make any assumption about
+    def _parse_acct_output(self, stdout):
+        """This method will parse the output of the secondaryu acct
+        command and return a dictionary containing infos about the
+        job. `BatchSystem` class does not make any assumption about
         the keys contained in the dictionary.
         """
         raise NotImplementedError(
@@ -452,10 +444,9 @@ class BatchSystem(LRMS):
 
             if exit_code != 0:
                 raise gc3libs.exceptions.LRMSError(
-                    "Failed executing command 'cd %s && %s %s' on resource '%s';"
+                    "Failed executing command '%s' on resource '%s';"
                     " exit code: %d, stderr: '%s'."
-                    % (ssh_remote_folder, sub_cmd, script_filename,
-                       self.name, exit_code, stderr))
+                    % (cmd, self.name, exit_code, stderr))
 
             jobid = self._parse_submit_output(stdout)
             log.debug('Job submitted with jobid: %s', jobid)
@@ -497,25 +488,6 @@ class BatchSystem(LRMS):
                 "Failure submitting job to resource '%s' - "
                 "see log file for errors", self.name)
             raise
-
-
-    def __do_acct(self, job, cmd, parse):
-        """Run `cmd` to get accounting information and update `job` state accordingly."""
-        exit_code, stdout, stderr = self.transport.execute_command(cmd)
-        if exit_code == 0:
-            jobstatus = parse(stdout)
-            job.update(jobstatus)
-            if 'exitcode' in jobstatus:
-                job.returncode = int(jobstatus['exitcode'])
-                job.state = Run.State.TERMINATING
-            return job.state
-        else:
-            raise gc3libs.exceptions.AuxiliaryCommandError(
-                "Failed running accounting command `%s`:"
-                " exit code: %d, stderr: '%s'"
-                % (cmd, exit_code, stderr),
-                do_log=True)
-
 
     @same_docstring_as(LRMS.update_job_state)
     @LRMS.authenticated
@@ -567,27 +539,45 @@ class BatchSystem(LRMS):
             cmd = self._acct_command(job)
             if cmd:
                 log.debug(
-                    "The job status command returned no information;"
-                    " trying with '%s' instead ...", cmd)
-                try:
-                    return self.__do_acct(job, cmd, self._parse_acct_output)
-                except gc3libs.exceptions.AuxiliaryCommandError:
-                    # This is used to distinguish between a standard
-                    # Torque installation and a PBSPro where `tracejob`
-                    # does not work but if `job_history_enable=True`,
-                    # then we can actually access information about
-                    # finished jobs with `qstat -x -f`.
-                    try:
-                        cmd = self._secondary_acct_command(job)
-                        if cmd:
-                            log.debug(
-                                "The primary job accounting command returned no"
-                                " information; trying with '%s' instead...", cmd)
-                            return self.__do_acct(job, cmd, self._parse_secondary_acct_output)
-                    except (gc3libs.exceptions.AuxiliaryCommandError,
-                            NotImplementedError):
-                        # ignore error -- there is nothing we can do
-                        pass
+                    "The `qstat`/`bjobs` command returned no job information;"
+                    " trying with '%s' instead ..." % cmd)
+                exit_code, stdout, stderr = self.transport.execute_command(cmd)
+                if exit_code == 0:
+                    jobstatus = self._parse_acct_output(stdout)
+                    job.update(jobstatus)
+                    if 'exitcode' in jobstatus:
+                        job.returncode = int(jobstatus['exitcode'])
+                        job.state = Run.State.TERMINATING
+                    return job.state
+                else:
+                    # FIXME: Antonio: this is a quick and dirty fix to
+                    # allow a secondary acct command to run. This is
+                    # used to distinguish between a standard Torque
+                    # installation and a PBSPro where tracejob does
+                    # not work but where job_history_enable=True, so
+                    # that we can actually access information about
+                    # finished jobs with `qstat -x -f`. However, the
+                    # following code is *copied* from before, which is
+                    # something that should be avoided.
+                    cmd = self._secondary_acct_command(job)
+                    if cmd:
+                        log.debug(
+                        "The `qacct`/`tracejob` command returned no job "
+                        "information; trying with '%s' instead..." % cmd)
+                        exit_code, stdout, stderr = self.transport.execute_command(cmd)
+                        if exit_code == 0:
+                            jobstatus = self._parse_secondary_acct_output(stdout)
+                            job.update(jobstatus)
+                            if 'exitcode' in jobstatus:
+                                job.returncode = int(jobstatus['exitcode'])
+                                job.state = Run.State.TERMINATING
+                            return job.state
+                        else:
+                            log.error(
+                                "Failed while running the `acct` command."
+                                " exit code: %d, stderr: '%s'" % (exit_code, stderr))
+
+
 
             # No *stat command and no *acct command returned
             # correctly.
@@ -599,9 +589,9 @@ class BatchSystem(LRMS):
                         "Failed executing remote command: '%s';"
                         "exit status %d", cmd, exit_code)
                     log.debug(
-                        "  remote command returned stdout: '%s'", stdout)
+                        "  remote command returned stdout: '%s'" % stdout)
                     log.debug(
-                        "  remote command returned stderr: '%s'", stderr)
+                        "  remote command returned stderr: '%s'" % stderr)
                     raise gc3libs.exceptions.LRMSError(
                         "Failed executing remote command: '%s'; exit status %d"
                         % (cmd, exit_code))
@@ -709,7 +699,7 @@ class BatchSystem(LRMS):
 
     @same_docstring_as(LRMS.get_results)
     @LRMS.authenticated
-    def get_results(self, app, download_dir, overwrite=False, changed_only=True):
+    def get_results(self, app, download_dir, overwrite=False):
         if app.output_base_url is not None:
             raise gc3libs.exceptions.UnrecoverableDataStagingError(
                 "Retrieval of output files to non-local destinations"
@@ -736,12 +726,22 @@ class BatchSystem(LRMS):
             # ArcLRMS convention
             log.debug("Downloading job output into '%s' ...", download_dir)
             for remote_path, local_path in stageout:
-                # ignore missing files (this is what ARC does too)
-                self.transport.get(remote_path, local_path,
-                                   ignore_nonexisting=True,
-                                   overwrite=overwrite,
-                                   changed_only=changed_only)
-            return
+                log.debug("Downloading remote file '%s' to local file '%s'",
+                          remote_path, local_path)
+                if (overwrite
+                        or not os.path.exists(local_path)
+                        or os.path.isdir(local_path)):
+                    log.debug("Copying remote '%s' to local '%s'"
+                              % (remote_path, local_path))
+                    # ignore missing files (this is what ARC does too)
+                    self.transport.get(remote_path, local_path,
+                                       ignore_nonexisting=True)
+                else:
+                    log.info("Local file '%s' already exists;"
+                             " will not be overwritten!",
+                             local_path)
+
+            return  # XXX: should we return list of downloaded files?
 
         except:
             raise

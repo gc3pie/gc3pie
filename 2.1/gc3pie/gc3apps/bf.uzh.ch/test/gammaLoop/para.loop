@@ -1,0 +1,6 @@
+Variable       Index            ParameterFile             paraProp         Group       groupRestrs        vals   ParaFileRegex
+beta               (0)              input/parameters.in       None           1           diagnol             0.95                               bar-separated
+gamma              (0)              input/parameters.in       None           2           diagnol             2,2.1                            bar-separated
+#gamma              (0)              input/parameters.in       None           2           diagnol             3.                                  bar-separated
+psi                (0)              input/parameters.in       None           3           diagnol             -1                                 bar-separated
+nAgent                (0)              input/parameters.in       None           3           diagnol          4                                 bar-separated

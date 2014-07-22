@@ -3,7 +3,7 @@
 """
 Implementation of the `core` command-line front-ends.
 """
-# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -20,8 +20,10 @@ Implementation of the `core` command-line front-ends.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
-__author__ = "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, Riccardo Murri <riccardo.murri@uzh.ch>, Antonio Messina <arcimboldo@gmail.com>"
+__version__ = '2.1.4 version (SVN $Revision$)'
+__author__ = "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>, "
+"Riccardo Murri <riccardo.murri@uzh.ch>"
+"Antonio Messina <arcimboldo@gmail.com>"
 __date__ = '$Date$'
 __copyright__ = "Copyright (c) 2009-2012 Grid Computing Competence Center, University of Zurich"
 
@@ -37,7 +39,6 @@ from prettytable import PrettyTable
 import time
 import types
 import re
-import multiprocessing as mp
 
 ## 3rd party modules
 import cli  # pyCLI
@@ -591,15 +592,10 @@ Output files can be retrieved multiple times until a job reaches
 released once the output files have been fetched.
     """
     def setup_options(self):
-        self.add_param("-A", action="store_true", dest="all", default=False,
-                       help="Download *all* files of *all* tasks in a session."
-                       " USE WITH CAUTION!")
         self.add_param("-d", "--download-dir", action="store", dest="download_dir", default=None,
                        help="Destination directory (job id will be appended to it); default is '.'")
         self.add_param("-f", "--overwrite", action="store_true", dest="overwrite", default=False,
                        help="Overwrite files in destination directory")
-        self.add_param("-c", "--changed-only", action="store_true", dest="changed_only", default=False,
-                       help="Only download files that were changed on remote side.")
 
     def main(self):
         try:
@@ -608,31 +604,19 @@ released once the output files have been fetched.
             # session not found?
             raise RuntimeError('Session %s not found' % self.params.session)
 
-        if self.params.all and len(self.params.args) > 0:
-            raise gc3libs.exceptions.InvalidUsage(
-                "Option '-A' conflicts with list of job IDs:"
-                " use either '-A' or explicitly list task IDs.")
-
-        if self.params.all:
-            args = self.session.store.list()
-            if len(args) == 0:
-                self.log.info("No jobs in session: nothing to do.")
-        else:
-            args = self.params.args
-            if len(args) == 0:
-                self.log.error("No job IDs given on command line: nothing to do."
-                               " Type '%s --help' for usage help."
-                               # if we were called with an absolute path,
-                               # presume the command has been found by the
-                               # shell through PATH and just print the command name,
-                               # otherwise print the exact path name.
-                               % utils.ifelse(os.path.isabs(sys.argv[0]),
-                                              os.path.basename(sys.argv[0]),
-                                              sys.argv[0]))
+        if len(self.params.args) == 0:
+            self.log.error("No job IDs given on command line: nothing to do."
+                           " Type '%s --help' for usage help."
+                           # if we were called with an absolute path,
+                           # presume the command has been found by the
+                           # shell through PATH and just print the command name,
+                           # otherwise print the exact path name.
+                           % utils.ifelse(os.path.isabs(sys.argv[0]),
+                                          os.path.basename(sys.argv[0]),
+                                          sys.argv[0]))
 
         failed = 0
-        download_dirs = set()
-        for jobid in args:
+        for jobid in self.params.args:
             try:
                 app = self.session.load(jobid)
                 app.attach(self._core)
@@ -646,32 +630,17 @@ released once the output files have been fetched.
                         "Output of '%s' already downloaded to '%s'"
                         % (app.persistent_id, app.output_dir))
 
-                # XXX: this uses "private" code from `Application` and `Core.fetch_output`
-                app_download_dir = app._get_download_dir(self.params.download_dir)
-                # avoid downloading files twice for virtual tasks that
-                # wrap an application (e.g., `RetryableTask`)
-                if app_download_dir not in download_dirs:
-                    self._core.fetch_output(app,
-                                            output_dir=self.params.download_dir,
-                                            overwrite=self.params.overwrite,
-                                            changed_only=self.params.changed_only)
-                    if app.changed:
-                        self.session.store.replace(app.persistent_id, app)
-                    download_dirs.add(app_download_dir)
-                else:
-                    self.log.debug("Output directory '%s' already visited,"
-                                   " not downloading again.", app_download_dir)
-                # print message to user anyhow
+                self._core.fetch_output(app, output_dir=self.params.download_dir, overwrite=self.params.overwrite)
                 if app.execution.state == Run.State.TERMINATED:
                     print("Job final results were successfully retrieved in '%s'"
-                          % (app_download_dir,))
+                          % app._get_download_dir(self.params.download_dir))
                 else:
                     print("A snapshot of job results was successfully retrieved in '%s'"
-                          % (app_download_dir,))
+                          % app._get_download_dir(self.params.download_dir))
+                self.session.store.replace(app.persistent_id, app)
 
             except Exception, ex:
-                print("Failed retrieving results of job '%s': %s"
-                      % (jobid, str(ex)))
+                print("Failed retrieving results of job '%s': %s" % (jobid, str(ex)))
                 failed += 1
                 continue
 
@@ -1000,10 +969,6 @@ To get detailed info on a specific command, run:
                 continue
             try:
                 task.kill()
-            except gc3libs.exceptions.Error, err:
-                gc3libs.log.error(
-                    "Could not abort task '%s': %s: %s",
-                    task, err.__class__.__name__, err)
             finally:
                 task.free()
                 rc -= 1
@@ -1056,7 +1021,7 @@ To get detailed info on a specific command, run:
                 jobname = app.jobname
             except AttributeError:
                 jobname = ''
-
+            
             rows.append([indent + str(app.persistent_id),
                          jobname,
                          app.execution.state,
@@ -1365,32 +1330,18 @@ To get detailed info on a specific command, run:
         self.subparsers = self.argparser.add_subparsers(
             title="subcommands",
             description="gcloud accept the following subcommands.")
-
+    
         listparser = self._add_subcmd(
             'list',
             self.list_vms,
-            help='List VMs currently know to the Cloud backend.')
+            help='List VMs currently know to the EC2 backend.')
         listparser.add_argument(
             '-r', '--resource', metavar="NAME", dest="resource_name",
             default=None, help="Select resource by name.")
         listparser.add_argument(
             '-n', '--no-update', action="store_false", dest="update",
-            help="Do not update job and flavor information;"
-            " only print what is in the local database.")
-
-        cleanparser = self._add_subcmd(
-            'cleanup',
-            self.cleanup_vms,
-            help='Terminate VMs not currently running any job.')
-        cleanparser.add_argument(
-            '-r', '--resource', metavar="NAME", dest="resource_name",
-            default=None, help="Limit to VMs running on this resource.")
-        cleanparser.add_argument(
-            '-n', '--dry-run',
-            action="store_true", dest="dry_run", default=False,
-            help="Do not perform any actual killing;"
-            " just print what VMs would be terminated.")
-
+            help="Do not update job statuses; only print what's in the "
+            "local database.")
         terminateparser = self._add_subcmd(
             'terminate',
             self.terminate_vm,
@@ -1410,7 +1361,7 @@ To get detailed info on a specific command, run:
         forgetparser.add_argument(
             '-r', '--resource', metavar="NAME", dest="resource_name",
             default=None, help="Select resource by name.")
-
+        
         runparser = self._add_subcmd(
             'run',
             self.create_vm,
@@ -1428,135 +1379,63 @@ To get detailed info on a specific command, run:
         # non optional argument
         pass
 
+
     def main(self):
         import gc3utils.commands
 
         resources = [res for res in self._core.get_resources()
-                     if res.type.startswith('ec2') or
-                     res.type.startswith('openstack')]
+                     if res.type.startswith('ec2')]
         if self.params.resource_name:
-            resources = [res for res in resources
+            resources = [res for res in resources 
                          if res.name == self.params.resource_name]
             if not resources:
-                raise RuntimeError('No Cloud resource found matching name `%s`.'
+                raise RuntimeError('No EC2 resource found matching name `%s`.'
                                    '' % self.params.resource_name)
 
         if not resources:
-            raise RuntimeError('No Cloud resource found.')
+            raise RuntimeError('No EC2 resource found.')
 
         self.resources = resources
 
         return self.params.func()
 
-    @staticmethod
-    def _print_vms(vms, res, header=True):
-        table = PrettyTable()
-        table.border=True
-        if header:
-            table.field_names = ["resource", "id", "state", "IP Address", "other IPs", "Nr. of jobs", "Nr. of cores","image", "keypair"]
+    def _print_vms(self, vms, res, header=True):
+            table = PrettyTable()
+            table.border=True
+            if header:
+                table.field_names = ["id", "state", "public ip", "Nr. of jobs", "image id", "keypair"]
+            for vm in vms:
+                remote_jobs = 'N/A'
+                if vm.id in res.resources:
+                    if res.resources[vm.id].updated:
+                        remote_jobs = str(len(res.resources[vm.id].job_infos))
+                table.add_row((vm.id, vm.state, vm.public_dns_name, remote_jobs, vm.image_id, vm.key_name))
+            print(table)
+    
 
-        images = []
-        for vm in vms:
-            remote_jobs = 'N/A'
-            ncores = 'N/A'
-            status = ''
-            image_name = ''
-            ips = []
-            if vm.id in res.subresources:
-                if res.subresources[vm.id].updated:
-                    remote_jobs = str(len(res.subresources[vm.id].job_infos))
-                    ncores = str(res.subresources[vm.id].max_cores)
+    # Subcommand methods
 
-            if res.type.startswith('ec2'):
-                ips = [vm.public_dns_name, vm.private_ip_address]
-                status = vm.state
-                image_name = vm.image_id
-            elif res.type.startswith('openstack'):
-                ips = vm.networks.get('private', []) + vm.networks.get('public', [])
-                status = vm.status
-                if not images:
-                    images.extend(res._get_available_images())
-
-                image_name = filter(lambda x: x.id == vm.image['id'], images)[0].name
-            if vm.preferred_ip in ips:
-                ips.remove(vm.preferred_ip)
-
-            table.add_row((res.name, vm.id, status, vm.preferred_ip, str.join(', ', ips), remote_jobs, ncores, image_name, vm.key_name))
-
-        print(table)
-
-    @staticmethod
-    def list_vms_in_resource(res, lock, update):
+    def list_vms(self):
+        for res in self.resources:
             printed = 0
-            if update:
+            if self.params.update:
                 res.get_resource_status()
             else:
                 res._connect()
+            resname = "VMs running on EC2 resource `%s`" % res.name
+            print ("""
+%s
+%s
+%s
+""" % ("="*len(resname), resname, "="*len(resname)))
 
-            vms = res._vmpool.get_all_vms()
-            # draw title to separate output from different resources
-            title = "VMs running on Cloud resource `%s` of type %s" % (res.name, res.type)
-            separator = ('=' * len(title))
-
-            # Acquire the lock before printing
-            lock.acquire()
-            gc3libs.log.debug(
-                "list_vms: Acquiring lock for resource %s", res.name)
-            print('')
-            print(separator)
-            print(title)
-            print(separator)
-            print('')
-
-            # draw table of VMs running on resource `res`
+            vms = res._vms.get_all_vms()
             if vms:
-                cmd_gcloud._print_vms(vms, res)
+                self._print_vms(vms, res)
                 printed += len(vms)
 
             if not printed:
                 print "  no known VMs are currently running on this resource."
-            gc3libs.log.debug(
-                "list_vms: Releasing lock for resource %s", res.name)
-            lock.release()
-
-    # Subcommand methods
-    def list_vms(self):
-        lock = mp.Lock()
-
-        pool = []
-        for res in self.resources:
-            gc3libs.log.debug(
-                "Creating a new process to get status of resource %s",
-                res.name)
-            def _run_list_vms():
-                return self.list_vms_in_resource(res, lock, self.params.update)
-            worker = mp.Process(target=_run_list_vms)
-            pool.append(worker)
-            worker.start()
-
-        for worker in pool:
-            worker.join()
-        return 0
-
-    def cleanup_vms(self):
-        for res in self.resources:
-            res.get_resource_status()
-
-            # walk list of VMs and kill the unused ones
-            vms = res._vmpool.get_all_vms()
-            if vms:
-                for vm in vms:
-                    remote_jobs = len(res.subresources[vm.id].job_infos)
-                    if remote_jobs == 0:
-                        if self.params.dry_run:
-                            print("No job running on VM `%s` of resource `%s`;"
-                                  " would terminate it." % (vm.id, res.name))
-                        else:
-                            # no dry run -- the real thing!
-                            gc3libs.log.info(
-                                "No job running on VM `%s` of resource `%s`;"
-                                " terminating it ...", vm.id, res.name)
-                            self._terminate_vm(vm.id, res)
 
         return 0
 
@@ -1567,34 +1446,27 @@ To get detailed info on a specific command, run:
         """
         matching_res = []
         for resource in self.resources:
-            if vmid in resource._vmpool:
+            if vmid in resource._vms:
                 matching_res.append(resource)
         return matching_res
 
-    def _terminate_vm(self, vmid, res=None):
-        if res is None:
-            matching_res = self._find_resources_by_running_vm(vmid)
-        else:
-            matching_res = [res]
+    def _terminate_vm(self, vmid):
+        matching_res = self._find_resources_by_running_vm(vmid)
         if len(matching_res) > 1:
             raise LookupError("VM with ID `%s` have been found on multiple "
                                "resources. Please specify the resource by "
-                               "running `gcloud terminate` with the `-r` option.")
+                               "running `grun` with the `-r` option.")
         elif not matching_res:
             raise LookupError(
                 "VM with id `%s` not found." % (vmid))
 
         resource = matching_res[0]
-        vm = resource._vmpool.get_vm(vmid)
+        vm = resource._vms.get_vm(vmid)
         gc3libs.log.info("Terminating VM `%s` on resource `%s`" %
                          (vmid, resource.name))
-        if resource.type.startswith('ec2'):
-            vm.terminate()
-        elif resource.type.startswith('openstack'):
-            vm.delete()
-        else:
-            gc3libs.log.error("Unsupported cloud provider %s." % resource.type)
-        resource._vmpool.remove_vm(vmid)
+        vm.terminate()
+        resource._vms.remove_vm(vmid)
+        resource._session.save(resource._vms)
 
     def terminate_vm(self):
         for resource in self.resources:
@@ -1608,9 +1480,8 @@ To get detailed info on a specific command, run:
                 errors += 1
         return errors
 
-
     def _forget_vm(self, vmid):
-        matching_res = self._find_resources_by_running_vm(vmid)
+        matching_res = self._find_resources_running_vm(vmid)
         if len(matching_res) > 1:
             raise LookupError("VM with ID `%s` have been found on multiple "
                                "resources. Please specify the resource by "
@@ -1620,7 +1491,9 @@ To get detailed info on a specific command, run:
                 "VM with id `%s` not found." % (vmid))
 
         resource = matching_res[0]
-        resource._vmpool.remove_vm(vmid)
+        resource._vms.remove_vm(vmid)
+        resource._session.save(resource._vms)
+        
 
     def forget_vm(self):
         for resource in self.resources:
@@ -1635,7 +1508,6 @@ To get detailed info on a specific command, run:
                 errors += 1
         return errors
 
-
     def create_vm(self):
         if len(self.resources) > 1:
             raise RuntimeError("Please specify the resource where you want to "
@@ -1643,7 +1515,8 @@ To get detailed info on a specific command, run:
 
         resource = self.resources[0]
         resource._connect()
-        image_id = self.params.image_id or resource.image_id
+        image_id = self.params.image_id or resource.image_id 
         vm = resource._create_instance(image_id)
-        resource._vmpool.add_vm(vm)
+        resource._vms.add_vm(vm)
+        resource._session.save(resource._vms)
         self._print_vms([vm], resource)

@@ -8,7 +8,7 @@ function or class belongs in here is the following: place a function
 or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
-# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -25,10 +25,9 @@ sources of a different project and it would not stop working.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.4 version (SVN $Revision$)'
 
 
-import contextlib
 import itertools
 import os
 import os.path
@@ -37,7 +36,6 @@ import random
 import re
 import shutil
 import sys
-import tempfile
 import time
 import cStringIO as StringIO
 import UserDict
@@ -209,23 +207,11 @@ def cat(*args, **extra_args):
             output.write(line)
 
 
-def copyfile(src, dst, overwrite=False, changed_only=True, link=False):
+def copyfile(src, dst, overwrite=False, link=False):
     """
     Copy a file from `src` to `dst`; return `True` if the copy was
-    actually made.
-
-    If `overwrite` is ``False`` (default), an existing destination entry
-    is left unchanged and `False` is returned.
-
-    If `overwrite` is ``True``, then `changed_only` determines
-    if the destination file is overwritten:
-
-    - if `changed_only` is ``True`` (default), then destination is
-      overwritten if and only if it has a different size or has been
-      modified less recently than the source;
-
-    - if `changed_only` is ``False``, then the destination is
-      overwritten unconditionally.
+    actually made.  If `overwrite` is `False` (default), an existing
+    destination entry is left unchanged and `False` is returned.
 
     If `link` is `True`, an attempt at hard-linking is done first;
     failing that, we copy the source file onto the destination
@@ -233,9 +219,6 @@ def copyfile(src, dst, overwrite=False, changed_only=True, link=False):
 
     If `dst` is a directory, a file with the same basename as `src` is
     created (or overwritten) in the directory specified.
-
-    Return ``True`` or ``False``, depending on whether the source file
-    was actually copied (or linked) to the destination.
     """
     if os.path.isdir(dst):
         dst = os.path.join(dst, os.path.basename(src))
@@ -244,18 +227,9 @@ def copyfile(src, dst, overwrite=False, changed_only=True, link=False):
     if samefile(src, dst):
         return False
     try:
-        if not os.path.exists(dst):
-            dstdir = dirname(dst)
-            if not os.path.exists(dstdir):
-                os.makedirs(dstdir)
-        else:
-            # `dst` exists, check for changes
-            if changed_only:
-                sstat = os.stat(src)
-                dstat = os.stat(dst)
-                if (sstat.st_size == dstat.st_size and sstat.st_mtime <= dstat.st_mtime):
-                    # same size and destination more recent, do not copy
-                    return False
+        dstdir = os.path.dirname(dst)
+        if not os.path.exists(dstdir):
+            os.makedirs(dstdir)
         if link:
             try:
                 os.link(src, dst)
@@ -269,29 +243,14 @@ def copyfile(src, dst, overwrite=False, changed_only=True, link=False):
     return True
 
 
-def copytree(src, dst, overwrite=False, changed_only=True):
+def copytree(src, dst, overwrite=False):
     """
-    Recursively copy an entire directory tree rooted at `src`.
-
-    If `overwrite` is ``False`` (default), entries that already exist in
+    Recursively copy an entire directory tree rooted at `src`.  If
+    `overwrite` is `False` (default), entries that already exist in
     the destination tree are left unchanged and not overwritten.
-
-    If `overwrite` is ``True``, then `changed_only` determines
-    which files are overwritten:
-
-    - if `changed_only` is ``True`` (default), then only files for
-      which the source has a different size or has been modified
-      more recently than the destination are copied;
-
-    - if `changed_only` is ``False``, then *all* files in `source`
-      will be copied into `destination`, unconditionally.
-
-    Destination directory `dst` is created if it does not exist.
 
     See also: `shutil.copytree`.
     """
-    assert os.path.isdir(src), \
-        ("Source path `%s` does not name an existing directory" % src)
     errors = []
     if not os.path.exists(dst):
         os.makedirs(dst)
@@ -300,7 +259,7 @@ def copytree(src, dst, overwrite=False, changed_only=True):
         dstname = os.path.join(dst, name)
         try:
             if os.path.isdir(srcname):
-                errors.extend(copytree(srcname, dstname, overwrite, changed_only))
+                errors.extend(copytree(srcname, dstname, overwrite))
             else:
                 copyfile(srcname, dstname)
         except (IOError, os.error), why:
@@ -308,17 +267,14 @@ def copytree(src, dst, overwrite=False, changed_only=True):
     return errors
 
 
-def copy_recursively(src, dst, overwrite=False, changed_only=True):
+def copy_recursively(src, dst, overwrite=False):
     """
     Copy `src` to `dst`, descending it recursively if necessary.
-
-    The `overwrite` and `changed_only` optional arguments
-    have the same effect as in `copytree`:func: (which see).
     """
     if os.path.isdir(src):
-        copytree(src, dst, overwrite, changed_only)
+        copytree(src, dst, overwrite)
     else:
-        copyfile(src, dst, overwrite, changed_only)
+        copyfile(src, dst, overwrite)
 
 
 def count(seq, predicate):
@@ -432,9 +388,9 @@ class Enum(frozenset):
 
     Finally, enumeration labels can also be iterated upon::
 
-      >>> for a in sorted(Animal): print a
-      CAT
+      >>> for a in Animal: print a
       DOG
+      CAT
     """
     def __new__(cls, *args):
         return frozenset.__new__(cls, args)
@@ -520,14 +476,6 @@ def first(seq):
         pass
     raise TypeError("Argument to `first()` method needs to be iterator or sequence.")
 
-def fgrep(literal, filename):
-    """
-    Iterate over all lines in a file that contain the `literal` string.
-    """
-    with open(filename, 'r') as file:
-        for line in file:
-            if literal in line:
-                yield line
 
 def from_template(template, **extra_args):
     """
@@ -741,6 +689,9 @@ class History(object):
         """Return all messages texts in a single string, separated by newline characters."""
         return str.join('\n', [self.format_message(record) for record in self._messages])
 
+# for compatibility with existing running session (2012-08-24); remove later on
+Log = History
+
 
 def mkdir(path, mode=0777):
     """
@@ -771,87 +722,6 @@ def mkdir_with_backup(path, mode=0777):
             pass
     else:
         os.makedirs(path, mode)
-
-
-def movefile(src, dst, overwrite=False, changed_only=True, link=False):
-    """
-    Move a file from `src` to `dst`; return `True` if the move was
-    actually made.
-
-    The `overwrite` and `changed_only` optional arguments
-    have the same effect as in `copyfile`:func: (which see).
-
-    If `dst` is a directory, a file with the same basename as `src` is
-    created (or overwritten) in the directory specified.
-
-    Return ``True`` or ``False``, depending on whether the source file
-    was actually moved to the destination.
-
-    See also: `copyfile`:func:
-    """
-    if os.path.isdir(dst):
-        dst = os.path.join(dst, os.path.basename(src))
-    if os.path.exists(dst) and not overwrite:
-        return False
-    if samefile(src, dst):
-        return False
-    if not os.path.exists(dst):
-        dstdir = dirname(dst)
-        if not os.path.exists(dstdir):
-            os.makedirs(dstdir)
-    else:
-        # `dst` exists, check for changes
-        if changed_only:
-            sstat = os.stat(src)
-            dstat = os.stat(dst)
-            if (sstat.st_size == dstat.st_size and sstat.st_mtime <= dstat.st_mtime):
-                # same size and destination more recent, do not move
-                return False
-    try:
-        shutil.move(src, dst)
-    except WindowsError:
-        pass
-    return True
-
-
-def movetree(src, dst, overwrite=False, changed_only=True):
-    """
-    Recursively move an entire directory tree rooted at `src`.
-
-    The `overwrite` and `changed_only` optional arguments
-    have the same effect as in `copytree`:func: (which see).
-
-    See also: `copytree`:func:.
-    """
-    assert os.path.isdir(src), \
-        ("Source path `%s` does not name an existing directory" % src)
-    errors = []
-    if not os.path.exists(dst):
-        os.makedirs(dst)
-    for name in os.listdir(src):
-        srcname = os.path.join(src, name)
-        dstname = os.path.join(dst, name)
-        try:
-            if os.path.isdir(srcname):
-                errors.extend(movetree(srcname, dstname, overwrite, changed_only))
-            else:
-                movefile(srcname, dstname)
-        except (IOError, os.error), why:
-            errors.append((srcname, dstname, why))
-    return errors
-
-
-def move_recursively(src, dst, overwrite=False, changed_only=True):
-    """
-    Move `src` to `dst`, descending it recursively if necessary.
-
-    The `overwrite` and `changed_only` optional arguments
-    have the same effect as in `copytree`:func: (which see).
-    """
-    if os.path.isdir(src):
-        movetree(src, dst, overwrite, changed_only)
-    else:
-        movefile(src, dst, overwrite, changed_only)
 
 
 def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
@@ -1345,24 +1215,6 @@ def stripped(iterable):
         yield item.strip()
 
 
-@contextlib.contextmanager
-def tempdir(**kwargs):
-    """
-    A context manager for creating and then deleting a temporary directory.
-
-    All arguments are passed unchanged to the `tempfile.mkdtemp`
-    standand library function.
-
-    (Original source and credits: http://stackoverflow.com/a/10965572/459543)
-    """
-    tmpdir = tempfile.mkdtemp(**kwargs)
-    try:
-        yield tmpdir
-    finally:
-        if os.path.isdir(tmpdir):
-            shutil.rmtree(tmpdir, ignore_errors=True)
-
-
 def test_file(path, mode, exception=RuntimeError, isdir=False):
     """
     Test for access to a path; if access is not granted, raise an
@@ -1516,48 +1368,14 @@ def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
     smtp.close()
 
 
-def touch(path):
-    """
-    Ensure a regular file exists at `path`.
-
-    If the file already exists, its access and modification time are
-    updated.
-
-    (This is a very limited and stripped down version of the ``touch``
-    POSIX utility.)
-    """
-    fd = open(path, 'a')
-    fd.close()
-
-
 def uniq(seq):
     """
     Iterate over all unique elements in sequence `seq`.
 
     Distinct values are returned in a sorted fashion.
-
-    Examples:
-
-      >>> for value in uniq([4,1,1,2,3,1,2]): print value
-      ...
-      1
-      2
-      3
-      4
-
-      >>> for value in uniq([1,2,3,4]): print value
-      ...
-      1
-      2
-      3
-      4
-
-      >>> for value in uniq([1,1,1,1]): print value
-      ...
-      1
-
     """
-    return sorted(set(seq))
+    for value, grouper in itertools.groupby(sorted(seq)):
+        yield value
 
 
 def unlock(lock):
@@ -1576,11 +1394,11 @@ def update_parameter_in_file(path, var_in, new_val, regex_in):
     '''
     Updates a parameter value in a parameter file using predefined regular
     expressions in `_loop_regexps`.
-
-    :param path: Full path to the parameter file.
-    :param var_in: The variable to modify.
-    :param new_val: The updated parameter value.
-    :param regex: Name of the regular expression that describes the format of the parameter file.
+    
+    :param path: Full path to the parameter file. 
+    :param var_in: The variable to modify. 
+    :param new_val: The updated parameter value. 
+    :param regex: Name of the regular expression that describes the format of the parameter file. 
     '''
     _loop_regexps = {
         'bar-separated':(r'([a-z]+[\s\|]+)'
@@ -1636,54 +1454,12 @@ def write_contents(path, data):
       >>> os.remove(tmpfile)
 
     """
-    with open(path, 'wb') as stream:
+    # XXX: this really calls for the `with:` statement...
+    try:
+        stream = open(path, 'wb')
         return stream.write(data)
-
-
-class YieldAtNext(object):
-    """
-    Provide an alternate protocol for generators.
-
-    Wrap a Python generator object, and buffer the return values from
-    `send` and `throw` calls, returning `None` instead. Return the
-    yielded value --or raise the `StopIteration` exception-- upon the
-    subsequent call to the `next` method.
-    """
-
-    __slots__ = [ '_generator', '_has_saved', '_saved', '_stop_iteration' ]
-
-    def __init__(self, generator):
-        self._generator = generator
-        self._has_saved = False
-        self._stop_iteration = False
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        if self._stop_iteration:
-            raise StopIteration
-        elif self._has_saved:
-            self._has_saved = False
-            # XXX: This keeps a reference to the returned object into
-            # `self._saved` until that attribute is overwritten.
-            return self._saved
-        else:
-            return self._generator.next()
-
-    def send(self, value):
-        try:
-            self._saved = self._generator.send(value)
-            self._has_saved = True
-        except StopIteration:
-            self._stop_iteration = True
-
-    def throw(self, *excinfo):
-        try:
-            self._saved = self._generator.throw(*excinfo)
-            self._has_saved = True
-        except StopIteration:
-            self._stop_iteration = True
+    finally:
+        stream.close()
 
 
 ##

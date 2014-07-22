@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -33,7 +33,7 @@ relevant aspects of the application being represented.
 """
 __docformat__ = 'reStructuredText'
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.4 version (SVN $Revision$)'
 
 
 import copy
@@ -50,7 +50,7 @@ import logging
 import logging.config
 log = logging.getLogger("gc3.gc3libs")
 
-from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds, MiB
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.compat._collections import OrderedDict
 
 # this needs to be defined before we import other GC3Libs modules, as
@@ -85,7 +85,6 @@ class Default(object):
     SLURM_LRMS = 'slurm'
     SUBPROCESS_LRMS = 'subprocess'
     EC2_LRMS = 'ec2'
-    OPENSTACK_LRMS = 'openstack'
 
     # Transport information
     SSH_PORT = 22
@@ -102,9 +101,6 @@ class Default(object):
 
     CERTIFICATE_AUTHORITIES_DIR = "/etc/grid-security/certificates"
     VOMS_DIR = "/etc/grid-security/vomsdir"
-
-    # Openstack default VM Operating System overhead
-    VM_OS_OVERHEAD = 512*MiB
 
 from gc3libs.exceptions import *
 from gc3libs.persistence import Persistable
@@ -234,14 +230,14 @@ class Task(Persistable, Struct):
 
     # grid-level actions on this Task object are re-routed to the
     # grid/engine/core instance
-    def submit(self, resubmit=False, targets=None, **extra_args):
+    def submit(self, resubmit=False, **extra_args):
         """
         Start the computational job associated with this `Task` instance.
         """
         assert self._attached, ("Task.submit() called on detached task %s." % self)
         assert hasattr(self._controller, 'submit'), \
                ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
-        self._controller.submit(self, resubmit, targets, **extra_args)
+        self._controller.submit(self, resubmit, **extra_args)
 
 
     def update_state(self, **extra_args):
@@ -294,8 +290,7 @@ class Task(Persistable, Struct):
         self._controller.kill(self, **extra_args)
 
 
-    def fetch_output(self, output_dir=None,
-                     overwrite=False, changed_only=True, **extra_args):
+    def fetch_output(self, output_dir=None, overwrite=False, **extra_args):
         """
         Retrieve the outputs of the computational job associated with
         this task into directory `output_dir`, or, if that is `None`,
@@ -310,10 +305,11 @@ class Task(Persistable, Struct):
         :return: Path to the directory where the job output has been
                  collected.
         """
+        #result = self._controller.fetch_output(self, output_dir, overwrite, **extra_args)
         if self.execution.state == Run.State.TERMINATED:
             return self.output_dir
+        # advance state to TERMINATED
         if self.execution.state == Run.State.TERMINATING:
-            # advance state to TERMINATED
             self.output_dir = self._get_download_dir(output_dir)
             self.execution.info = ("Final output downloaded to '%s'" % self.output_dir)
             self.execution.state = Run.State.TERMINATED
@@ -1059,7 +1055,7 @@ class Application(Task):
         Sort the given resources in order of preference.
 
         By default, less-loaded resources come first;
-        see `_cmp_resources`:meth:.
+        see `_cmp_resources`.
         """
         # shift lrms that are already in application.execution_targets
         # to the bottom of the list
@@ -1073,12 +1069,11 @@ class Application(Task):
                     selected.append(lrms)
         return selected
 
-    def fetch_output(self, download_dir, overwrite, changed_only, **extra_args):
+    def fetch_output(self, download_dir, overwrite, **extra_args):
         """
-        Call the corresponding method of the controller.
+        Calls the corresponding method of the controller.
         """
-        return self._controller.fetch_output(self,
-            download_dir, overwrite, changed_only, **extra_args)
+        return self._controller.fetch_output(self, download_dir, overwrite, **extra_args)
 
     ##
     ## backend interface methods
@@ -1920,13 +1915,15 @@ class Run(Struct):
                 self.exitcode = None
             else:
                 try:
-                    # `value` can be a tuple `(signal, exitcode)`;
-                    # ensure values are within allowed range
-                    self.signal = int(value[0])   & 0x7f
-                    self.exitcode = int(value[1]) & 0xff
+                    # `value` can be a tuple `(signal, exitcode)`
+                    self.signal = int(value[0])
+                    self.exitcode = int(value[1])
                 except (TypeError, ValueError):
                     self.exitcode = (int(value) >> 8) & 0xff
                     self.signal = int(value) & 0x7f
+                # ensure values are within allowed range
+                self.exitcode &= 0xff
+                self.signal &= 0x7f
         return (locals())
 
     # `Run.Signals` is an instance of global class `_Signals`
@@ -1960,15 +1957,32 @@ class Run(Struct):
 
 def create_engine(*conf_files, **extra_args):
     """
-    Returns a `gc3libs.core.Engine`:class: class.
+    Create and return a `gc3libs.core.Engine`:class: class.
 
     It accepts an optional list of configuration filenames. If the
     filenames contain a `~` or a variable name, it will be expanded
     automatically.
 
     Called without arguments, a configuration file will be searched in
-    ~/.gc3/gc3pie.conf and used, if found .
+    ~/.gc3/gc3pie.conf (and used if found).
+
+    :param conf_files:    List of configuration files to read.
+    :param store:         See the like-named argument to the `Engine`:class: constructor.
+    :param can_submit:    See the like-named argument to the `Engine`:class: constructor.
+    :param can_retrieve:  See the like-named argument to the `Engine`:class: constructor.
+    :param max_in_flight: See the like-named argument to the `Engine`:class: constructor.
+    :param max_submitted: See the like-named argument to the `Engine`:class: constructor.
+
+    Any extra keyword argument is passed unchanged to the
+    `Configuration`:class: constructor.
+
     """
+    store = extra_args.pop('store', None)
+    can_submit = extra_args.pop('can_submit', True)
+    can_retrieve = extra_args.pop('can_retrieve', True)
+    max_in_flight = extra_args.pop('max_in_flight', 0)
+    max_submitted = extra_args.pop('max_submitted', 0)
+
     from gc3libs.config import Configuration
     from gc3libs.core import Core, Engine
     conf_files = [
@@ -1982,7 +1996,9 @@ def create_engine(*conf_files, **extra_args):
 
     cfg = Configuration(*conf_files, **extra_args)
     core = Core(cfg)
-    engine = Engine(core)
+    engine = Engine(core, store=store,
+                    can_submit=can_submit, can_retrieve=can_retrieve,
+                    max_in_flight=max_in_flight, max_submitted=max_submitted)
 
     return engine
 

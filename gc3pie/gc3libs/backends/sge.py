@@ -3,7 +3,7 @@
 """
 Job control on SGE clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -20,7 +20,7 @@ Job control on SGE clusters (possibly connecting to the front-end via SSH).
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.4 version (SVN $Revision$)'
 
 
 # stdlib imports
@@ -355,12 +355,9 @@ class SgeLrms(batch.BatchSystem):
                  auth,  # ignored if `transport` is 'local'
                  # these are inherited from the `BatchSystem` class
                  frontend, transport,
+                 accounting_delay=15,
                  # these are specific to the SGE class
                  default_pe=None,
-                 # (Note that optional arguments to the `BatchSystem` class, e.g.:
-                 #     keyfile=None, accounting_delay=15,
-                 # are collected into `extra_args` and should not be explicitly
-                 # spelled out in this signature.)
                  **extra_args):
 
         # init base class
@@ -368,7 +365,7 @@ class SgeLrms(batch.BatchSystem):
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth,
-            frontend, transport, **extra_args)
+            frontend, transport, accounting_delay, **extra_args)
 
         self.default_pe = default_pe
 

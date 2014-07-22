@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -162,11 +160,12 @@ are allowed, but you must enclose them in quotes.  Note that:<ul>
 to the actual <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> program.  Additional input files are
 specified on the command line between the <tt class="docutils literal"><span class="pre">flags</span></tt> file and the PDB
 input files.</p>
-<div class="highlight-python"><pre>   $ grosetta flags alignment.filt query.fasta query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb 1cgqA.pdb
+<div class="highlight-python"><div class="highlight"><pre>   $ grosetta flags alignment.filt query.fasta query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb 1cgqA.pdb
 
 You can see that the listing of output patterns has been omitted,
 so `grosetta`:command: will use the default and retrieve all
-`*.pdb`:file:, `*.sc`:file: and `*.fasc`:file: files.</pre>
+`*.pdb`:file:, `*.sc`:file: and `*.fasc`:file: files.
+</pre></div>
 </div>
 </div></blockquote>
 <p>There will be a number of <em>identical</em> jobs being executed as a result
@@ -200,20 +199,22 @@ one job will be created (as in the <em>example 1.</em> above).</p>
 instances of <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a>, each of which generates 2 decoys (save the
 last one, which only generates 1 decoy) of the molecule described in
 file <tt class="docutils literal"><span class="pre">1bjpA.pdb</span></tt>:</p>
-<div class="highlight-python"><pre>$ grosetta --session SAMPLE_SESSION --total-decoys 5 --decoys-per-job 2 flags alignment.filt query.fasta query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ grosetta --session SAMPLE_SESSION --total-decoys 5 --decoys-per-job 2 flags alignment.filt query.fasta query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb
+</pre></div>
 </div>
 <p>In this example, job information is stored into session
 <tt class="docutils literal"><span class="pre">SAMPLE_SESSION</span></tt> (see the documentation of the <tt class="docutils literal"><span class="pre">--session</span></tt> option
 in <a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a>).  The command above creates the jobs,
 submits them, and finally prints the following status report:</p>
-<div class="highlight-python"><pre>Status of jobs in the 'SAMPLE_SESSION' session: (at 10:53:46, 02/28/12)
+<div class="highlight-python"><div class="highlight"><pre>Status of jobs in the &#39;SAMPLE_SESSION&#39; session: (at 10:53:46, 02/28/12)
         NEW   0/3    (0.0%)
     RUNNING   0/3    (0.0%)
     STOPPED   0/3    (0.0%)
   SUBMITTED   3/3   (100.0%)
  TERMINATED   0/3    (0.0%)
 TERMINATING   0/3    (0.0%)
-      total   3/3   (100.0%)</pre>
+      total   3/3   (100.0%)
+</pre></div>
 </div>
 <p>Note that the status report counts the number of <em>jobs in the
 session</em>, not the total number of decoys being generated.  (Feel
@@ -228,7 +229,7 @@ session and start over, use the <tt class="docutils literal"><span class="pre">-
 all jobs have finished running and the output files have been
 correctly retrieved.  On successful completion, the command given in
 <em>example 2.</em> above, would print:</p>
-<div class="highlight-python"><pre>Status of jobs in the 'SAMPLE_SESSION' session: (at 11:05:50, 02/28/12)
+<div class="highlight-python"><div class="highlight"><pre>Status of jobs in the &#39;SAMPLE_SESSION&#39; session: (at 11:05:50, 02/28/12)
         NEW   0/3    (0.0%)
     RUNNING   0/3    (0.0%)
     STOPPED   0/3    (0.0%)
@@ -236,7 +237,8 @@ correctly retrieved.  On successful completion, the command given in
  TERMINATED   3/3   (100.0%)
 TERMINATING   0/3    (0.0%)
          ok   3/3   (100.0%)
-      total   3/3   (100.0%)</pre>
+      total   3/3   (100.0%)
+</pre></div>
 </div>
 <p>The three jobs are named <tt class="docutils literal"><span class="pre">0--1</span></tt>, <tt class="docutils literal"><span class="pre">2--3</span></tt> and <tt class="docutils literal"><span class="pre">4--5</span></tt> (you could
 see this by passing the <tt class="docutils literal"><span class="pre">-l</span></tt> option to <strong class="command">grosetta</strong>); each of
@@ -271,13 +273,15 @@ and <tt class="file docutils literal"><span class="pre">minirosetta.static.stder
 <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> execution.  For each of the <tt class="docutils literal"><span class="pre">S_*.pdb</span></tt> files above, a
 line like the following should be present in the log file (the file
 name and number of elapsed seconds will of course vary!):</p>
-<div class="highlight-python"><pre>protocols.jd2.JobDistributor: S_1CA7A_1_0001 reported success in 124 seconds</pre>
+<div class="highlight-python"><div class="highlight"><pre>protocols.jd2.JobDistributor: S_1CA7A_1_0001 reported success in 124 seconds
+</pre></div>
 </div>
 <p>The <tt class="file docutils literal"><span class="pre">minirosetta.static.stdout.txt</span></tt> contains a copy of the
 <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> output log, plus the output of the wrapper script.
 In case of successful <a class="reference external" href="http://www.rosettacommons.org/manuals/archive/rosetta3.4_user_guide/de/daa/boinc_minirosetta_usage.html">minirosetta</a> run, the last line of this file
 will read:</p>
-<div class="highlight-python"><pre>minirosetta.static: All done, exitcode: 0</pre>
+<div class="highlight-python"><div class="highlight"><pre>minirosetta.static: All done, exitcode: 0
+</pre></div>
 </div>
 </div>
 <div class="section" id="output-files-for-gdocking">
@@ -299,7 +303,7 @@ following content:<ul>
 </ul>
 <p>The following scheme summarizes the location of <strong class="command">gdocking</strong>
 output files:</p>
-<div class="highlight-python"><pre>(directory where gdocking is run)/
+<div class="highlight-python"><div class="highlight"><pre>(directory where gdocking is run)/
   |
   +- file1.pdb      Original input file
   |
@@ -313,9 +317,10 @@ output files:</p>
   +- file1.N--M.fasc   FASC file for decoys N to M [1]
   |
   +- file1.decoys.tar  tar archive of PDB file of all decoys
-  |                    generated corresponding to 'file1.pdb' [2]
+  |                    generated corresponding to &#39;file1.pdb&#39; [2]
   |
-  ...</pre>
+  ...
+</pre></div>
 </div>
 <p>Let <em>P</em> be the total number of decoys (the argument to the <tt class="docutils literal"><span class="pre">-P</span></tt> option),
 and <em>p</em> be the number of decoys per job (argument to the <tt class="docutils literal"><span class="pre">-p</span></tt> option).
@@ -339,12 +344,13 @@ Malmstroem</a>).</p>
 option and lets it manage a set of jobs until completion.</p>
 <p>So, to generate one decoy from a set of given input files, one can use
 the following command-line invocation:</p>
-<div class="highlight-python"><pre>$ grosetta -s example -C 120 -P 1 -p 1 \
+<div class="highlight-python"><div class="highlight"><pre>$ grosetta -s example -C 120 -P 1 -p 1 \
     flags alignment.filt query.fasta \
     query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz \
     boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb \
     2fltA.pdb 2fm7A.pdb 2op8A.pdb 2ormA.pdb 2os5A.pdb \
-    3c6vA.pdb</pre>
+    3c6vA.pdb
+</pre></div>
 </div>
 <p>The <tt class="docutils literal"><span class="pre">-s</span> <span class="pre">example</span></tt> option tells <strong class="command">grosetta</strong> to store
 information about the computational jobs in the <tt class="docutils literal"><span class="pre">example.jobs</span></tt>
@@ -359,16 +365,18 @@ value should be such that the computational job can actually compute
 that many decoys in the allotted <a class="reference internal" href="../../glossary.html#term-walltime"><em class="xref std std-term">wall-clock time</em></a>).</p>
 <p>The above command will start by printing a status report like the
 following:</p>
-<div class="highlight-python"><pre>Status of jobs in the 'example.csv' session:
- SUBMITTED   1/1 (100.0%)</pre>
+<div class="highlight-python"><div class="highlight"><pre>Status of jobs in the &#39;example.csv&#39; session:
+ SUBMITTED   1/1 (100.0%)
+</pre></div>
 </div>
 <p>It will continue printing an updated status report every 120 seconds
 until the requested number of decoys (set by the <tt class="docutils literal"><span class="pre">-P</span></tt> option) has
 been computed.</p>
 <p>In GC3Pie terminology when a job is finished and its output has been
 successfully retrieved, the job is marked as <tt class="docutils literal"><span class="pre">TERMINATED</span></tt>:</p>
-<div class="highlight-python"><pre>Status of jobs in the 'example.csv' session:
- TERMINATED   1/1 (100.0%)</pre>
+<div class="highlight-python"><div class="highlight"><pre>Status of jobs in the &#39;example.csv&#39; session:
+ TERMINATED   1/1 (100.0%)
+</pre></div>
 </div>
 </div>
 <div class="section" id="managing-a-session-by-repeated-grosetta-invocation">
@@ -386,12 +394,13 @@ but may still be useful in certain settings.</p>
 session name is chosen with the <tt class="docutils literal"><span class="pre">-s</span></tt> (short for <tt class="docutils literal"><span class="pre">--session</span></tt>)
 option.  You should take care of re-using the same session name
 with subsequent commands.</p>
-<div class="highlight-python"><pre>$ grosetta -s example flags alignment.filt query.fasta \
+<div class="highlight-python"><div class="highlight"><pre>$ grosetta -s example flags alignment.filt query.fasta \
     query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz \
     boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb \
     2fltA.pdb 2fm7A.pdb 2op8A.pdb 2ormA.pdb 2os5A.pdb
-Status of jobs in the 'example.csv' session:
- SUBMITTED   1/1 (100.0%)</pre>
+Status of jobs in the &#39;example.csv&#39; session:
+ SUBMITTED   1/1 (100.0%)
+</pre></div>
 </div>
 </li>
 <li><p class="first">Now we call <strong class="command">grosetta</strong> again, and request that 3 decoys be
@@ -399,12 +408,13 @@ computed starting from a single PDB file (<tt class="docutils literal"><span cla
 the command line).  Since we are submitting a single PDB file, the
 3 decoys will be computed all in a single run, so the
 <tt class="docutils literal"><span class="pre">--decoys-per-job</span></tt> option will have value <tt class="docutils literal"><span class="pre">3</span></tt>.</p>
-<div class="highlight-python"><pre>$ grosetta -s example --total-decoys 3 --decoys-per-job 3 \
+<div class="highlight-python"><div class="highlight"><pre>$ grosetta -s example --total-decoys 3 --decoys-per-job 3 \
     flags alignment.filt query.fasta \
     query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz \
     boinc_aaquery09_05.200_v1_3.gz 3c6vA.pdb
-Status of jobs in the 'example.csv' session:
- SUBMITTED   3/3 (100.0%)</pre>
+Status of jobs in the &#39;example.csv&#39; session:
+ SUBMITTED   3/3 (100.0%)
+</pre></div>
 </div>
 <p>Note that 3 jobs were submitted: <strong class="command">grosetta</strong> interprets the
 <tt class="docutils literal"><span class="pre">--total-decoys</span></tt> option globally, and adds one job to compute the
@@ -424,22 +434,24 @@ option to tell <strong class="command">grosetta</strong> that we would like to o
 the session named <em>example</em>.</p>
 <p>All non-option arguments can be omitted: as long
 as the total number of decoys is unchanged, they&#8217;re not needed.</p>
-<div class="highlight-python"><pre>$ grosetta -s example -l
+<div class="highlight-python"><div class="highlight"><pre>$ grosetta -s example -l
 Decoys Nr.       State (JobID)       Info
 ================================================================================
 0--1             RUNNING (job.766)   Running at Mon Dec 20 19:32:08 2010
 2--3             RUNNING (job.767)   Running at Mon Dec 20 19:33:23 2010
-0--2             RUNNING (job.768)   Running at Mon Dec 20 19:33:43 2010</pre>
+0--2             RUNNING (job.768)   Running at Mon Dec 20 19:33:43 2010
+</pre></div>
 </div>
 <p>Without the <tt class="docutils literal"><span class="pre">-l</span></tt> option only a summary of job statuses is presented:</p>
-<div class="highlight-python"><pre>$ grosetta -s example
-Status of jobs in the 'grosetta.csv' session:
- RUNNING     3/3 (100.0%)</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ grosetta -s example
+Status of jobs in the &#39;grosetta.csv&#39; session:
+ RUNNING     3/3 (100.0%)
+</pre></div>
 </div>
 <p>Alternatively, we can keep the command line arguments used in the
 previous invocation: they will be ignored since they do not add any
 new job (the number of decoys to compute is always 1):</p>
-<div class="highlight-python"><pre>$ grosetta -s example -l flags alignment.filt query.fasta \
+<div class="highlight-python"><div class="highlight"><pre>$ grosetta -s example -l flags alignment.filt query.fasta \
     query.psipred_ss2 boinc_aaquery03_05.200_v1_3.gz \
     boinc_aaquery09_05.200_v1_3.gz 1bjpA.pdb 1ca7A.pdb \
     2fltA.pdb 2fm7A.pdb 2op8A.pdb 2ormA.pdb 2os5A.pdb \
@@ -448,14 +460,15 @@ Decoys Nr.       State (JobID)       Info
 ================================================================================
 0--1             RUNNING (job.766)
 2--3             RUNNING (job.767)   Running at Mon Dec 20 19:33:23 2010
-0--2             RUNNING (job.768)   Running at Mon Dec 20 19:33:43 2010</pre>
+0--2             RUNNING (job.768)   Running at Mon Dec 20 19:33:43 2010
+</pre></div>
 </div>
 <p>Note that the <tt class="docutils literal"><span class="pre">-l</span></tt> option is available also in combination with
 the <tt class="docutils literal"><span class="pre">-C</span></tt> option (see <a class="reference internal" href="#manage-a-set-of-jobs-from-start-to-end">Manage a set of jobs from start to end</a>).</p>
 </li>
 <li><p class="first">Calling <tt class="docutils literal"><span class="pre">grosetta</span></tt> again when jobs are done triggers automated
 download of the results:</p>
-<div class="highlight-python"><pre>$ ../grosetta.py
+<div class="highlight-python"><div class="highlight"><pre>$ ../grosetta.py
 File downloaded:
 gsiftp://idgc3grid01.uzh.ch:2811/jobs/214661292869757468202765/minirosetta.static.stdout.txt
 File downloaded:
@@ -463,16 +476,18 @@ gsiftp://idgc3grid01.uzh.ch:2811/jobs/214661292869757468202765/minirosetta.stati
  ...
 File downloaded:
 gsiftp://idgc3grid01.uzh.ch:2811/jobs/214661292869757468202765/.arc/input
-Status of jobs in the 'grosetta.csv' session:
+Status of jobs in the &#39;grosetta.csv&#39; session:
  TERMINATED  1/1 (100.0%)
- ok          1/1 (100.0%)</pre>
+ ok          1/1 (100.0%)
+</pre></div>
 </div>
 <p>The <tt class="docutils literal"><span class="pre">-l</span></tt> option comes handy to see what directory contains the
 job output:</p>
-<div class="highlight-python"><pre>$ grosetta -l
+<div class="highlight-python"><div class="highlight"><pre>$ grosetta -l
 Decoys Nr.       State (JobID)         Info
 ==================================================================================
-0--1             TERMINATED (job.766)  Output retrieved into directory '/tmp/0--1'</pre>
+0--1             TERMINATED (job.766)  Output retrieved into directory &#39;/tmp/0--1&#39;
+</pre></div>
 </div>
 </li>
 </ol>
@@ -548,7 +563,7 @@ Decoys Nr.       State (JobID)         Info
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

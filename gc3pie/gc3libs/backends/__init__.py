@@ -2,7 +2,7 @@
 """
 Interface to different resource management systems for the GC3Libs.
 """
-# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,7 +19,7 @@ Interface to different resource management systems for the GC3Libs.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.4 version (SVN $Revision$)'
 
 
 import gc3libs
@@ -183,40 +183,11 @@ class LRMS(gc3libs.utils.Struct):
             "Abstract method `LRMS.get_resource_status()` called "
             "- this should have been defined in a derived class.")
 
-    def get_results(self, job, download_dir, overwrite=False, changed_only=True):
+    def get_results(self, job, download_dir, overwrite=False):
         """
-        Retrieve job output files into local directory `download_dir`.
-
-        Directory `download_dir` must already exists.
-
-        If optional 3rd argument `overwrite` is ``False`` (default),
-        then existing files within `download_dir` (or subdirectories
-        thereof) will *not* be altered in any way.
-
-        If `overwrite` is instead ``True``, then the (optional) 4th
-        argument `changed_only` determines what files are overwritten:
-
-        - if `changed_only` is ``True`` (default), then only files for
-          which the source has a different size or has been modified
-          more recently than the destination are copied;
-
-        - if `changed_only` is ``False``, then *all* files in `source`
-          will be copied into `destination`, unconditionally.
-
-        Output files that do not exist in `download_dir` will be
-        copied, independently of the `overwrite` and `changed_only`
-        settings.
-
-        :param Task job:
-          the `Task`:class: instance whose output should be retrieved
-        :param str download_dir:
-          path to download files into
-        :param bool overwrite:
-          if `False`, do not download files that already exist
-        :param bool changed_only:
-          if both this and `overwrite` are `True`, only overwrite
-          those files such that the source is newer or different in
-          size than the destination.
+        Retrieve job output files into local directory `download_dir`
+        (which must already exists).  Will not overwrite existing
+        files, unless the optional argument `overwrite` is `True`.
         """
         raise NotImplementedError(
             "Abstract method `LRMS.get_results()` called "
@@ -260,21 +231,15 @@ class LRMS(gc3libs.utils.Struct):
         `local_file`.  If `size` is `None` (default), then snarf
         contents of remote file from `offset` unto the end.
 
-        First argument `remote_filename` is the path to a file
-        relative to the remote job "sandbox".
-
         Argument `local_file` is either a local path name (string), or
         a file-like object supporting a `.write()` method.  If
         `local_file` is a path name, it is created if not existent,
-        otherwise overwritten.  In any case, upon exit from this
-        procedure, the stream will be positioned just after the
-        written bytes.
+        otherwise overwritten.
 
-        Fourth optional argument `offset` is the offset from the start
-        of the file.  If `offset` is negative, it is interpreted as an
-        offset from the *end* of the remote file.
+        Argument `remote_filename` is the name of a file in the remote job
+        "sandbox".
 
-        Any exception raised by operations will be re-raised to the caller.
+        Any exception raised by operations will be passed through.
         """
         raise NotImplementedError(
             "Abstract method `LRMS.peek()` called "

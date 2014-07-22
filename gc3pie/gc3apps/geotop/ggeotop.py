@@ -2,7 +2,7 @@
 #
 #   ggeotop.py -- Front-end script for submitting multiple `GEOtop` jobs to SMSCG.
 #
-#   Copyright (C) 2012, 2013 GC3, University of Zurich
+#   Copyright (C) 2011, 2012 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -36,11 +36,9 @@ Contents of a typical input folder::
     maps/
 """
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.4 version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
-  2013-11-05:
-  * Support for local filesystem
 
   2012-01-19:
   * Added mechanism to validate input folder on more detailed pattern
@@ -50,7 +48,7 @@ __changelog__ = """
   2011-11-07:
   * Initial release, forked off the ``gmhc_coev`` sources.
 """
-__author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
+__author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 
@@ -156,42 +154,22 @@ class GeotopApplication(Application):
     def __init__(self, simulation_dir, executable=None, **extra_args):
         # remember for later
         self.simulation_dir = simulation_dir
-        self.shared_FS = extra_args['shared_FS']
 
-        inputs = dict()
+        inputs = dict(self._scan_and_tar(simulation_dir))
 
-        # execution wrapper needs to be added anyway
         geotop_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
                                               "gc3libs/etc/geotop_wrap.sh")
+
         inputs[geotop_wrapper_sh] = os.path.basename(geotop_wrapper_sh)
 
-        _command = "./%s " % os.path.basename(geotop_wrapper_sh)
-
-        # If shared_FS, no inputs are defined
-        # as they are already available on the computational nodes
-        if not self.shared_FS:
-            # compress input folder
-            inputs.update(dict(self._scan_and_tar(simulation_dir)))
-
-            # set ANY_OUTPUT for output
-            outputs = gc3libs.ANY_OUTPUT
-
-            # Set executable name and include in input list
-            if executable is not None:
-                # use the specified executable
-                # include executable within input list
-                executable_name = './' + os.path.basename(executable)
-                inputs[executable] = os.path.basename(executable)
-
-            # use '-l' flag for wrapper script for non-shared FS
-            _command += "input.tgz "
+        if executable is not None:
+            # use the specified executable
+            executable_name = './' + os.path.basename(executable)
+            inputs[executable] = os.path.basename(executable)
         else:
-            # sharedFS: everything is local
-            executable_name = os.path.abspath(executable)
-            _command += " %s " % os.path.abspath(self.simulation_dir)
-            outputs = []
-            
-        _command += "%s" % executable_name
+            raise NotImplementedError("No RTE for GEOtop defined; please specify an executable!")
+            # use the default one provided by the RTE
+            executable_name = '/$GEOTOP'
 
         # set some execution defaults...
         extra_args.setdefault('requested_cores', 1)
@@ -204,11 +182,10 @@ class GeotopApplication(Application):
             # GEOtop requires only one argument: the simulation directory
             # In our case, since all input files are staged to the
             # execution directory, the only argument is fixed to ``.``
-            # arguments = ['./'+os.path.basename(geotop_wrapper_sh), 'input.tgz', executable_name ],
-            arguments = _command,
+            arguments = ['./'+os.path.basename(geotop_wrapper_sh), 'input.tgz', executable_name ],
             inputs = inputs,
-            # outputs = gc3libs.ANY_OUTPUT,
-            outputs = outputs,
+            outputs = gc3libs.ANY_OUTPUT,
+            # outputs = outputs,
             output_dir = os.path.join(simulation_dir, 'tmp'),
             stdout = 'ggeotop.log',
             join=True,
@@ -227,109 +204,97 @@ class GeotopApplication(Application):
         # ``_FAILED_RUN`` are found.
         self.execution.returncode = (0, 99)
 
+        full_tarname = os.path.join(self.output_dir, GEOTOP_OUTPUT_ARCHIVE)
 
-        if not self.shared_FS:
-            full_tarname = os.path.join(self.output_dir, GEOTOP_OUTPUT_ARCHIVE)
+        # check and unpack output archive
+        if os.path.isfile(full_tarname):
+            # execution somehow terminated.
+            # untar archive
+            gc3libs.log.info("Expected output archive found in file '%s'",
+                             full_tarname)
+            try:
+                tar = tarfile.open(full_tarname)
+                gc3libs.log.debug("Output tarfile '%s' contains: %s",
+                                  full_tarname, str.join(', ', tar.getnames()))
+                tar.extractall(path=self.simulation_dir)
+                tar.close()
+                os.remove(full_tarname)
+            except Exception, ex:
+                gc3libs.log.error("Error opening output archive '%s': %s: %s",
+                                  full_tarname, ex.__class__, ex.message)
+                pass
 
-            # check and unpack output archive
-            if os.path.isfile(full_tarname):
-                # execution somehow terminated.
-                # untar archive
-                gc3libs.log.info("Expected output archive found in file '%s'",
-                                 full_tarname)
-                try:
-                    tar = tarfile.open(full_tarname)
-                    gc3libs.log.debug("Output tarfile '%s' contains: %s",
-                                      full_tarname, str.join(', ', tar.getnames()))
-                    tar.extractall(path=self.simulation_dir)
-                    tar.close()
-                    os.remove(full_tarname)
-                except Exception, ex:
-                    gc3libs.log.error("Error opening output archive '%s': %s: %s",
-                                      full_tarname, ex.__class__, ex.message)
-                    pass
+        tmp_output_dir = self.output_dir
+        exclude = [
+            os.path.basename(self.arguments[0]),
+            self.stdout,
+            self.stderr,
+            GEOTOP_OUTPUT_ARCHIVE,
+            ]
 
-            tmp_output_dir = self.output_dir
-            exclude = [
-                os.path.basename(self.arguments[0]),
-                self.stdout,
-                self.stderr,
-                GEOTOP_OUTPUT_ARCHIVE,
-                ]
-
-            if not os.path.isdir(tmp_output_dir):
-                # output folder not available
-                # log failure and stop here
-                gc3libs.log.warning("Output folder '%s' not found. Cannot process any further" % tmp_output_dir)
-                # use exit code 100 to indicate total failure
-                # XXX: When this happens ?
-                self.execution.returncode = (0, 100)
-            else:
-                # move files one level up, except the ones listed in `exclude`
-                for entry in os.listdir(tmp_output_dir):
-                    src_entry = os.path.join(tmp_output_dir, entry)
-                    gc3libs.log.debug("Considering entry '%s' ...", src_entry)
-                    # concatenate all output files together
-                    if entry == self.stdout:
-                        gc3libs.utils.cat(src_entry, output=os.path.join(self.simulation_dir, entry), append=True)
-                        # try remove it
-                        os.remove(src_entry)
-                        gc3libs.log.debug("  ... appended to '%s'", os.path.join(self.simulation_dir, entry))
-                        continue
-                    if entry == self.stderr:
-                        gc3libs.utils.cat(src_entry, output=os.path.join(self.simulation_dir, entry), append=True)
-                        # try remove it
-                        os.remove(src_entry)
-                        gc3libs.log.debug("  ... appended to '%s'", os.path.join(self.simulation_dir, entry))
-                        continue
-                    if entry in exclude or (entry.startswith('script.') and entry.endswith('.sh')):
-                        # delete entry and continue with next one
-                        os.remove(src_entry)
-                        gc3libs.log.debug("  ... it's a GC3Pie auxiliary file, ignore it!",)
-                        continue
-
-                    # now really move file one level up
-                    dest_entry = os.path.join(self.simulation_dir, entry)
-                    if os.path.exists(dest_entry):
-                        # backup with numerical suffix
-                        # gc3libs.utils.backup(dest_entry)
-                        shutil.rmtree(dest_entry, ignore_errors=True)
-                    os.rename(os.path.join(tmp_output_dir, entry), dest_entry)
-                    gc3libs.log.debug("  ... moved to '%s'", os.path.join(dest_entry))
-                # os.removedirs(tmp_output_dir)
-                shutil.rmtree(tmp_output_dir, ignore_errors=True)
-
-        # search for termination files
-        if (os.path.exists(os.path.join(self.simulation_dir, '_SUCCESSFUL_RUN'))
-            or os.path.exists(os.path.join(self.simulation_dir, 'out', '_SUCCESSFUL_RUN'))):
-            # XXX: why are we looking for '.old' files??
-            # or os.path.exists(os.path.join(self.simulation_dir, '_SUCCESSFUL_RUN.old'))):
-            # or os.path.exists(os.path.join(self.simulation_dir,'out', '_SUCCESSFUL_RUN.old'))):
-            self.execution.returncode = (0, posix.EX_OK)
-        elif (os.path.exists(os.path.join(self.simulation_dir, '_FAILED_RUN'))
-              or os.path.exists(os.path.join(self.simulation_dir, '_FAILED_RUN'))):
-            # XXX: why are we looking for '.old' files??
-            # or os.path.exists(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old'))
-            # or os.path.exists(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old'))):
+        if not os.path.isdir(tmp_output_dir):
+            # output folder not available
+            # log failure and stop here
+            gc3libs.log.warning("Output folder '%s' not found. Cannot process any further" % tmp_output_dir)
             # use exit code 100 to indicate total failure
             self.execution.returncode = (0, 100)
         else:
-            # should be resubmitted
-            # call _scan_and_tar to create new archive
-            # XXX: To consider a better way of handling this
-            # at the moment the entire input archive is recreated
-            
-            
-            # XXX: How to distinguish a failed geotop execution from one terminated
-            # by the LRMS ?
+            # move files one level up, except the ones listed in `exclude`
+            for entry in os.listdir(tmp_output_dir):
+                src_entry = os.path.join(tmp_output_dir, entry)
+                gc3libs.log.debug("Considering entry '%s' ...", src_entry)
+                # concatenate all output files together
+                if entry == self.stdout:
+                    gc3libs.utils.cat(src_entry, output=os.path.join(self.simulation_dir, entry), append=True)
+                    # try remove it
+                    os.remove(src_entry)
+                    gc3libs.log.debug("  ... appended to '%s'", os.path.join(self.simulation_dir, entry))
+                    continue
+                if entry == self.stderr:
+                    gc3libs.utils.cat(src_entry, output=os.path.join(self.simulation_dir, entry), append=True)
+                    # try remove it
+                    os.remove(src_entry)
+                    gc3libs.log.debug("  ... appended to '%s'", os.path.join(self.simulation_dir, entry))
+                    continue
+                if entry in exclude or (entry.startswith('script.') and entry.endswith('.sh')):
+                    # delete entry and continue with next one
+                    os.remove(src_entry)
+                    gc3libs.log.debug("  ... it's a GC3Pie auxiliary file, ignore it!",)
+                    continue
 
-            gc3libs.log.warning("Simulation did *not* produce any output marker"
-                                "[_SUCCESSFUL_RUN,_FAILED_RUN].")
-            self.execution.returncode = (0,98)
-            if not self.shared_FS:
+                # now really move file one level up
+                dest_entry = os.path.join(self.simulation_dir, entry)
+                if os.path.exists(dest_entry):
+                    # backup with numerical suffix
+                    # gc3libs.utils.backup(dest_entry)
+                    shutil.rmtree(dest_entry, ignore_errors=True)
+                os.rename(os.path.join(tmp_output_dir, entry), dest_entry)
+                gc3libs.log.debug("  ... moved to '%s'", os.path.join(dest_entry))
+            # os.removedirs(tmp_output_dir)
+            shutil.rmtree(tmp_output_dir, ignore_errors=True)
+
+            # search for termination files
+            if (os.path.exists(os.path.join(self.simulation_dir, '_SUCCESSFUL_RUN'))
+                or os.path.exists(os.path.join(self.simulation_dir, 'out', '_SUCCESSFUL_RUN'))
+                # XXX: why are we looking for '.old' files??
+                or os.path.exists(os.path.join(self.simulation_dir, '_SUCCESSFUL_RUN.old'))
+                or os.path.exists(os.path.join(self.simulation_dir,'out', '_SUCCESSFUL_RUN.old'))):
+                self.execution.returncode = (0, posix.EX_OK)
+            elif (os.path.exists(os.path.join(self.simulation_dir, '_FAILED_RUN'))
+                or os.path.exists(os.path.join(self.simulation_dir, '_FAILED_RUN'))
+                # XXX: why are we looking for '.old' files??
+                or os.path.exists(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old'))
+                or os.path.exists(os.path.join(self.simulation_dir, 'out', '_FAILED_RUN.old'))):
+                # use exit code 100 to indicate total failure
+                self.execution.returncode = (0, 100)
+            else:
+                # should be resubmitted
+                # call _scan_and_tar to create new archive
+                # XXX: To consider a better way of handling this
+                # at the moment the entire input archive is recreated
                 gc3libs.log.info("Updating tar archive for resubmission.")
                 inputs = dict(self._scan_and_tar(self.simulation_dir))
-            # self._scan_and_tar(self.simulation_dir)
+                # self._scan_and_tar(self.simulation_dir)
 
 
 class GeotopTask(RetryableTask, gc3libs.utils.Struct):
@@ -344,23 +309,17 @@ class GeotopTask(RetryableTask, gc3libs.utils.Struct):
             # keyword arguments
             **extra_args)
 
-    # def retry(self):
-    #     """
-    #     Resubmit a GEOtop application instance iff it exited with code 99.
+    def retry(self):
+        """
+        Resubmit a GEOtop application instance iff it exited with code 99.
 
-    #     *Note:* There is currently no upper limit on the number of
-    #     resubmissions!
-    #     """
-    #     if self.task.execution.exitcode != 100 or self.task.execution.exitcode != 0:
-    #         # Candidate for retry
-    #         # Let's check how many times it has been restarted yet without producing
-    #         # any output
-    #         if self.retried > self.max_retries:
-    #             gc3libs.log.error("Maximum number of retries '%d' reached."
-    #                               "Cloud not continue." % self.retried)
-    #         else:
-    #             return True
-    #     return False
+        *Note:* There is currently no upper limit on the number of
+        resubmissions!
+        """
+        if self.task.execution.exitcode == 99:
+            return True
+        else:
+            return False
 
 
 ## main script class
@@ -404,13 +363,9 @@ newly-created jobs so that this limit is never exceeded.
                        dest="executable", default=None,
                        help="Path to the GEOtop executable file.")
 
-        # self.add_param("-q", "--summary", metavar="TIME", dest="summary_period",
-        #                default=1800,
-        #                help="Creates a summary of the current execution.")
-
-        self.add_param("-S", "--sharedfs", dest="shared_FS", 
-                       action="store_true", default=False,
-                       help="Whether the destination resource should assume shared filesystem where Input/Output data will be made available. Data transfer will happen through lcoal filesystem. Default: False.")
+        self.add_param("-q", "--summary", metavar="TIME", dest="summary_period",
+                       default=1800,
+                       help="Creates a summary of the current execution.")
 
     def parse_args(self):
         """
@@ -435,18 +390,14 @@ newly-created jobs so that this limit is never exceeded.
         # as well as 'in' and 'out' fodlers
         for path in self._validate_input_folders(self.params.args):
             # construct GEOtop job
-
-            args = extra.copy()
-            args['shared_FS'] = self.params.shared_FS
-
             yield GeotopTask(
                 path,                   # path to the directory containing input files
-                os.path.abspath(self.params.executable), # path to the GEOtop executable
+                self.params.executable, # path to the GEOtop executable
                 # job name
                 jobname=gc3libs.utils.basename_sans(path),
                 # extra keyword arguments passed to the constructor,
                 # see `GeotopTask.__init__`
-                **args
+                **extra.copy()
                 )
 
     def _validate_input_folders(self, paths):
@@ -472,8 +423,7 @@ newly-created jobs so that this limit is never exceeded.
                         and not os.path.isfile(os.path.join(dirpath, 'out', '_SUCCESSFUL_RUN'))
                         and not os.path.isfile(os.path.join(dirpath, 'out', '_FAILED_RUN'))
                         ):
-                        # Return absolute path
-                        yield os.path.abspath(dirpath)
+                        yield dirpath
                     else:
                         gc3libs.log.warning(
                             "Ignoring path '%s':"

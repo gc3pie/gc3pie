@@ -6,7 +6,7 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.
 """
-# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -23,7 +23,7 @@ via SSH.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.4 version (SVN $Revision$)'
 
 
 import os
@@ -32,7 +32,7 @@ import errno
 import shutil
 import getpass
 
-from gc3libs.utils import same_docstring_as, samefile
+from gc3libs.utils import same_docstring_as
 import gc3libs.exceptions
 
 
@@ -83,117 +83,6 @@ class Transport(object):
         """
         raise NotImplementedError(
             "Abstract method `Transport.execute_command()` called - "
-            "this should have been defined in a derived class.")
-
-    def exists(self, path):
-        """
-        Return ``True`` if `path` names an existing filesystem object.
-        """
-        raise NotImplementedError(
-            "Abstract method `Transport.exists()` called - "
-            "this should have been defined in a derived class.")
-
-    def get(self, source, destination, ignore_nonexisting=False,
-            overwrite=False, changed_only=True):
-        """
-        Copy remote `source` to local `destination`.
-
-        Permission bits are copied. Both `source` and `destination`
-        are path names given as strings.
-
-        If `source` is a directory, then `destination` must be a
-        directory too, and this method will descend `source`
-        recursively to copy the entire file and directory structure;
-        if `destination` contains non-existing directories they will
-        be automatically created.
-
-        If `source` is a instead a file and `destination` is a
-        directory, a file with the same basename as source is created
-        (or overwritten) in the directory specified.
-
-        Any exception raised by operations will be passed through,
-        unless the optional third argument `ignore_nonexisting` is
-        `True`, in which case exceptions arising from a non-existing
-        source or destination path will be ignored.
-
-        If optional 4th argument `overwrite` is ``False`` (default),
-        then existing files at the `destination` location will *not*
-        be altered in any way.  If `overwrite` is instead ``True``,
-        then the (optional) 5th argument `changed_only` determines
-        which files are overwritten:
-
-        - if `changed_only` is ``True`` (default), then only files for
-          which the source has a different size or has been modified
-          more recently than the destination are copied;
-
-        - if `changed_only` is ``False``, then *all* files in `source`
-          will be copied into `destination`, unconditionally.
-
-        Source files that do not exist at `destination` will be
-        copied, independently of the `overwrite` and `changed_only`
-        settings.
-
-        :param str source: the file or directory to copy
-        :param str destination: the destination file or directory
-        :param bool ignore_nonexisting: if `True`, no exceptions will be raised if `source` does not exist
-        :param bool overwrite: if `True`, overwrite existing destination files
-        :param bool changed_only: if both this and `overwrite` are `True`, only overwrite those files such that the source is newer or different in size than the destination.
-        """
-        try:
-            if self.isdir(source):
-                # `source` is a dir, recursively descend it
-                assert os.path.isdir(destination)
-                for name in self.listdir(source):
-                    # don't use `os.path.join` for remote path names,
-                    # ``/`` is the right separator to use; see
-                    # http://code.fabfile.org/issues/show/306
-                    self.get(source + '/' + name, destination + '/' + name,
-                             ignore_nonexisting, overwrite, changed_only)
-            else:
-                # `source` is a file
-                if os.path.exists(destination):
-                    if not overwrite:
-                        gc3libs.log.debug(
-                            "Transport.get(): NOT overwriting local file '%s'"
-                            " with remote file '%s' from host '%s'",
-                            destination, source, self.remote_frontend)
-                        return
-                    elif changed_only:
-                        sst = self.stat(source)
-                        dst = os.stat(destination)
-                        if (sst.st_size == dst.st_size
-                            and sst.st_mtime <= dst.st_mtime):
-                            gc3libs.log.debug(
-                                "Transport.get(): Local file '%s'"
-                                " has same size and modification time as"
-                                " remote file '%s' from host '%s':"
-                                " NOT overwriting it.",
-                                destination, source, self.remote_frontend)
-                            return
-                # do the copy
-                parent = os.path.dirname(destination)
-                if not os.path.exists(parent):
-                    os.makedirs(parent)
-                self._get_impl(source, destination)
-        except Exception, ex:
-            # IOError(errno=2) means the remote path is not existing
-            if (ignore_nonexisting and isinstance(ex, IOError) and ex.errno == 2):
-                pass
-            else:
-                raise gc3libs.exceptions.TransportError(
-                    "Could not download '%s' on host '%s' to '%s': %s: %s"
-                    % (source, self.remote_frontend, destination,
-                       ex.__class__.__name__, str(ex)))
-
-    def _get_impl(self, source, destination):
-        """
-        Actual implementation of the `get` functionality.
-
-        This should be overridden in derived classes, to provide
-        the actual behavior in the template method `Transport.get`.
-        """
-        raise NotImplementedError(
-            "Abstract method `Transport._get_impl()` called - "
             "this should have been defined in a derived class.")
 
     def get_remote_username(self):
@@ -261,92 +150,49 @@ class Transport(object):
             "Abstract method `Transport.open()` called - "
             "this should have been defined in a derived class.")
 
-    def put(self, source, destination, ignore_errors=False,
-            overwrite=False, changed_only=True):
+    def put(self, source, destination):
         """
-        Copy local `source` to remote `destination`.
+        Copy the file source to the file or directory destination.
+        If destination is a directory, a file with the same basename
+        as source is created (or overwritten) in the directory specified.
 
-        This works exactly like `get`:method: (which see),
-        but the locality of `source` and `destination` is swapped.
+        Permission bits are copied. source and destination are path
+        names given as strings.
 
-        In addition, where `get`:method: has an optional 3rd argument
-        `ignore_nonexisting`, the `put` method has an optional 3rd
-        argument `ignore_errors` which makes it ignore *any* errors
-        occurring in remote operations.
-        """
-        try:
-            destdir = os.path.dirname(destination)
-            self.makedirs(destdir)
-        except Exception, ex:
-            raise gc3libs.exceptions.TransportError(
-                "Could not make directory '%s' on host '%s': %s: %s"
-                % (destdir, self.remote_frontend,
-                   ex.__class__.__name__, str(ex)))
-        try:
-            if os.path.isdir(source):
-                # destination must be a directory
-                assert self.isdir(destination), \
-                    "Transport.put(): when source is a directory," \
-                    " destination must be a directory, too!"
-                # `source` is a directory, recursively descend it
-                self.makedirs(destination)
-                for entry in os.listdir(source):
-                    # don't use `os.path.join` for remote path names,
-                    # ``/`` is the right separator to use; see
-                    # http://code.fabfile.org/issues/show/306
-                    self.put(source + '/' + entry,
-                             destination + '/' + entry,
-                             ignore_errors, overwrite, changed_only)
-            else:
-                # `source` is a file
-                if self.exists(destination):
-                    if not overwrite:
-                        gc3libs.log.debug(
-                            "Transport.put(): NOT overwriting remote file '%s'"
-                            " with local file '%s' from host '%s'",
-                            destination, source, self.remote_frontend)
-                        return
-                    elif changed_only:
-                        sst = os.stat(source)
-                        dst = self.stat(destination)
-                        if (sst.st_size == dst.st_size
-                            and sst.st_mtime <= dst.st_mtime):
-                            gc3libs.log.debug(
-                                "Tranport.put(): Remote file '%s'"
-                                " has same size and modification time as"
-                                " local file '%s' from host '%s':"
-                                " NOT overwriting it.",
-                                destination, source, self.remote_frontend)
-                            return
-                # do the copy
-                parent = os.path.dirname(destination)
-                try:
-                    if not self.exists(parent):
-                        self.makedirs(parent)
-                    self._put_impl(source, destination)
-                # according to the docs, Paramiko raises IOError in
-                # case operations fail on the remote end (i.e., not
-                # for communication problems)
-                except IOError:
-                    if ignore_errors:
-                        pass
-                    else:
-                        raise
-        except Exception, ex:
-            raise gc3libs.exceptions.TransportError(
-                "Could not upload '%s' to '%s' on host '%s': %s: %s"
-                % (source, destination, self.remote_frontend,
-                   ex.__class__.__name__, str(ex)))
+        If destination contains non existing directories they will be
+        automatically created.
 
-    def _put_impl(self, source, destination):
-        """
-        Actual implementation of the `put` functionality.
+        Any exception raised by operations will be passed through.
 
-        This should be overridden in derived classes, to provide
-        the actual behavior in the template method `Transport.put`.
+        :param str source: the file to copy
+        :param str destination: the destination file or directory
         """
         raise NotImplementedError(
             "Abstract method `Transport.put()` called - "
+            "this should have been defined in a derived class.")
+
+    def get(self, source, destination, ignore_nonexisting=False):
+        """
+        Copy the file source to the file or directory destination.
+        If destination is a directory, a file with the same basename
+        as source is created (or overwritten) in the directory specified.
+
+        Permission bits are copied. source and destination are path
+        names given as strings.
+
+        Any exception raised by operations will be passed through,
+        unless the optional third argument `ignore_nonexisting` is
+        `True`, in which case exceptions arising from a non-existing
+        source or destination path will be ignored.
+
+        If destination contains non existing directories they will be
+        automatically created.
+
+        :param str source: the file to copy
+        :param str destination: the destination file or directory
+        """
+        raise NotImplementedError(
+            "Abstract method `Transport.get()` called - "
             "this should have been defined in a derived class.")
 
     def remove(self, path):
@@ -365,22 +211,6 @@ class Transport(object):
             "Abstract method `Transport.remove_tree()` called - "
             "this should have been defined in a derived class.")
 
-    def stat(self, path):
-        """
-        Retrieve information about a filesystem entry.
-
-        The return value is an object whose attributes correspond to
-        the attributes of Python's ``stat`` structure as returned by
-        `os.stat`, except that it may contain fewer fields for
-        compatibility with Paramiko.
-
-        The supported fields are: ``st_mode``, ``st_size``,
-        ``st_atime``, and ``st_mtime``.
-        """
-        raise NotImplementedError(
-            "Abstract method `Transport.stat()` called - "
-            "this should have been defined in a derived class.")
-
     def close(self):
         """
         Close the transport channel
@@ -395,7 +225,6 @@ class Transport(object):
 #
 
 import sys
-import types
 
 import paramiko
 
@@ -405,40 +234,31 @@ import gc3libs
 class SshTransport(Transport):
 
     def __init__(self, remote_frontend, port=gc3libs.Default.SSH_PORT,
-                 username=None, ignore_ssh_host_keys=False, keyfile=None,
-                 timeout=gc3libs.Default.SSH_CONNECT_TIMEOUT):
+                 username=None, ignore_ssh_host_keys=False, keyfile=None):
         self.remote_frontend = remote_frontend
         self.port = port
         self.username = username
 
         self.ssh = paramiko.SSHClient()
-        self.timeout = timeout
+        self.ssh_config = paramiko.SSHConfig()
+        self.keyfile = keyfile
         self.ignore_ssh_host_keys = ignore_ssh_host_keys
         self.sftp = None
         self._is_open = False
         self.transport_channel = None
 
-        if keyfile is None:
-            # try to get the path to SSH public key file  from `~/.ssh/config`
+        if not self.keyfile:
             try:
-                ssh_config = paramiko.SSHConfig()
                 config_filename = os.path.expanduser('~/.ssh/config')
                 config_file = open(config_filename)
-                ssh_config.parse(config_file)
+                self.ssh_config.parse(config_file)
                 # Check if we have an ssh configuration stanza for this host
-                hostconfig = ssh_config.lookup(self.remote_frontend)
+                hostconfig = self.ssh_config.lookup(self.remote_frontend)
                 self.keyfile = hostconfig.get('identityfile', None)
                 config_file.close()
-            except IOError, err:
-                if err.errno == 2:
-                    # "No such file or directory" -- ignore error
-                    self.keyfile = None
-                else:
-                    raise
-        else:
-            assert type(keyfile) in types.StringTypes
-            self.keyfile = keyfile
-
+            except IOError:
+                # File not found. Ignoring
+                pass
 
     @same_docstring_as(Transport.connect)
     def connect(self):
@@ -459,10 +279,10 @@ class SshTransport(Transport):
 
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 gc3libs.log.debug(
-                    "Connecting to host '%s' as user '%s' via SSH (timeout %ds)...",
-                    self.remote_frontend, self.username, self.timeout)
+                    "Connecting to host '%s' as user '%s' via SSH ...",
+                    self.remote_frontend, self.username)
                 self.ssh.connect(self.remote_frontend,
-                                 timeout=self.timeout,
+                                 timeout=gc3libs.Default.SSH_CONNECT_TIMEOUT,
                                  username=self.username,
                                  allow_agent=True,
                                  key_filename=self.keyfile)
@@ -572,26 +392,6 @@ class SshTransport(Transport):
                 "Failed executing remote command '%s': %s: %s"
                 % (command, ex.__class__.__name__, str(ex)))
 
-    @same_docstring_as(Transport.exists)
-    def exists(self, path):
-        try:
-            self.connect()
-            self.sftp.stat(path)
-            return True
-        except IOError, err:
-            if err.errno == 2:
-                return False
-            else:
-                raise gc3libs.exceptions.TransportError(
-                    "Could not stat() file '%s' on host '%s': %s: %s"
-                    % (source, self.remote_frontend,
-                       err.__class__.__name__, str(err)))
-        except Exception, err:
-            raise gc3libs.exceptions.TransportError(
-                "Could not stat() file '%s' on host '%s': %s: %s"
-                % (source, self.remote_frontend,
-                   err.__class__.__name__, str(err)))
-
     @same_docstring_as(Transport.get_remote_username)
     def get_remote_username(self):
         (exitcode, stdout, stderr) = self.execute_command('whoami')
@@ -644,36 +444,65 @@ class SshTransport(Transport):
                 pass
 
     @same_docstring_as(Transport.put)
-    def put(self, source, destination, ignore_errors=False,
-            overwrite=False, changed_only=True):
+    def put(self, source, destination, recursive=False):
         gc3libs.log.debug("SshTransport.put(): local source: '%s';"
-                          " remote destination: '%s'; remote host: '%s'.",
-                          source, destination, self.remote_frontend)
-        self.connect() # ensure connection is up
-        Transport.put(self, source, destination,
-                      ignore_errors, overwrite, changed_only)
-
-    def _put_impl(self, source, destination):
-        """
-        Copy remote file `source` to local `destination` using SFTP.
-        """
-        self.sftp.put(source, destination)
+                          " remote destination: '%s'; remote host: '%s'."
+                          % (source, destination, self.remote_frontend))
+        try:
+            destdir = os.path.dirname(destination)
+            self.makedirs(destdir)
+        except Exception, ex:
+            raise gc3libs.exceptions.TransportError(
+                "Could not make directory '%s' on host '%s': %s: %s"
+                % (destdir, self.remote_frontend,
+                   ex.__class__.__name__, str(ex)))
+        try:
+            # check connection first
+            self.connect()
+            if recursive and os.path.isdir(source):
+                # destination must be a directory. Each entry in
+                # source must be copied in destination.
+                self.makedirs(destination)
+                for entry in os.listdir(source):
+                    self.put(source + '/' + entry,
+                             destination + '/' + entry,
+                             recursive=recursive)
+            else:
+                self.sftp.put(source, destination)
+        except Exception, ex:
+            raise gc3libs.exceptions.TransportError(
+                "Could not upload '%s' to '%s' on host '%s': %s: %s"
+                % (source, destination, self.remote_frontend,
+                   ex.__class__.__name__, str(ex)))
 
     @same_docstring_as(Transport.get)
-    def get(self, source, destination, ignore_nonexisting=False,
-            overwrite=False, changed_only=True):
-        gc3libs.log.debug("SshTranport.get(): remote source %s; "
-                          "remote host: %s; local destination: %s.",
-                          source, self.remote_frontend, destination)
-        self.connect() # ensure connection is up
-        Transport.get(self, source, destination,
-                      ignore_nonexisting, overwrite, changed_only)
-
-    def _get_impl(self, source, destination):
-        """
-        Copy remote file `source` to local `destination` using SFTP.
-        """
-        self.sftp.get(source, destination)
+    def get(self, source, destination, ignore_nonexisting=False):
+        try:
+            gc3libs.log.debug("SshTranport.get(): remote source %s; "
+                              "remote host: %s; local destination: %s.",
+                              source, self.remote_frontend, destination)
+            if self.isdir(source):
+                # recursively descend it
+                for name in self.listdir(source):
+                    # don't use `os.path.join` here, ``/`` is
+                    # the right separator to use; see
+                    # http://code.fabfile.org/issues/show/306
+                    self.get(source + '/' + name, destination + '/' + name)
+            else:
+                # check connection first
+                self.connect()
+                parent = os.path.dirname(destination)
+                if not os.path.exists(parent):
+                    os.makedirs(parent)
+                self.sftp.get(source, destination)
+        except Exception, ex:
+            # IOError(errno=2) means the remote path is not existing
+            if not (ignore_nonexisting
+                    and isinstance(ex, IOError) and ex.errno == 2):
+                raise gc3libs.exceptions.TransportError(
+                    "Could not download '%s' on host '%s' to '%s': %s: %s"
+                    % (source, self.remote_frontend, destination,
+                       ex.__class__.__name__, str(ex)))
 
     @same_docstring_as(Transport.remove)
     def remove(self, path):
@@ -708,17 +537,6 @@ class SshTransport(Transport):
                 "Could not remove tree '%s' on host '%s': %s: %s"
                 % (path, self.remote_frontend,
                    ex.__class__.__name__, str(ex)))
-
-    @same_docstring_as(Transport.stat)
-    def stat(self, path):
-        try:
-            self.connect()
-            return self.sftp.stat(path)
-        except Exception, err:
-            raise gc3libs.exceptions.TransportError(
-                "Could not stat() file '%s' on host '%s': %s: %s"
-                % (source, self.remote_frontend,
-                   err.__class__.__name__, str(err)))
 
     @same_docstring_as(Transport.open)
     def open(self, source, mode, bufsize=-1):
@@ -868,39 +686,6 @@ class LocalTransport(Transport):
                 "Failed executing command '%s': %s: %s"
                 % (command, ex.__class__.__name__, str(ex)))
 
-    @same_docstring_as(Transport.exists)
-    def exists(self, path):
-        return os.path.exists(path)
-
-    @same_docstring_as(Transport.get)
-    def get(self, source, destination, ignore_nonexisting=False,
-            overwrite=False, changed_only=True):
-        assert self._is_open is True, \
-            "`Transport.get()` called" \
-            " on `Transport` instance closed / not yet open"
-        Transport.get(self, source, destination,
-                      ignore_nonexisting, overwrite, changed_only)
-
-    def _get_impl(self, source, destination):
-        """
-        Copy local file `source` over `destination`.
-        """
-        self._copy_skip_same(source, destination)
-
-    @staticmethod
-    def _copy_skip_same(source, destination):
-        """
-        Copy local file `source` over `destination`.
-        Raise no error if they point to the same file.
-        """
-        if samefile(source, destination):
-            gc3libs.log.warning(
-                "Attempt to copy file '%s' over itself."
-                " Ignoring.", source)
-            return False
-        else:
-            return shutil.copy(source, destination)
-
     @same_docstring_as(Transport.get_remote_username)
     def get_remote_username(self):
         return getpass.getuser()
@@ -931,19 +716,35 @@ class LocalTransport(Transport):
                 pass
 
     @same_docstring_as(Transport.put)
-    def put(self, source, destination, ignore_errors=False,
-            overwrite=False, changed_only=True):
+    def put(self, source, destination, recursive=False):
         assert self._is_open is True, \
-            "`Transport.put()` called" \
+            "`Transport.execute_command()` called" \
             " on `Transport` instance closed / not yet open"
-        Transport.put(self, source, destination,
-                       ignore_errors, overwrite, changed_only)
 
-    def _put_impl(self, source, destination):
-        """
-        Copy local file `source` over `destination`.
-        """
-        self._copy_skip_same(source, destination)
+        try:
+            gc3libs.log.debug("Running method 'put';"
+                              " source: %s. destination: %s"
+                              % (source, destination))
+            if source != destination:
+                # If destination parents does not exist, create it:
+                parent = os.path.dirname(destination)
+                if not os.path.exists(parent):
+                    os.makedirs(parent)
+                if recursive and os.path.isdir(source):
+                    return shutil.copytree(source, destination)
+                else:
+                    return shutil.copy(source, destination)
+            else:
+                gc3libs.log.warning("Attempt to copy file over itself"
+                                    " ('%s'). Ignoring." % source)
+                return True
+        except Exception, ex:
+            raise gc3libs.exceptions.CopyError(source, destination, ex)
+
+    @same_docstring_as(Transport.get)
+    def get(self, source, destination, ignore_nonexisting=False):
+        gc3libs.log.debug("Transport.get() implemented by Transport.put()... ")
+        self.put(source, destination)
 
     @same_docstring_as(Transport.remove)
     def remove(self, path):
@@ -973,15 +774,6 @@ class LocalTransport(Transport):
             raise gc3libs.exceptions.TransportError(
                 "Could not remove directory tree '%s': %s: %s"
                 % (path, ex.__class__.__name__, str(ex)))
-
-    @same_docstring_as(Transport.stat)
-    def stat(self, path):
-        try:
-            return os.stat(path)
-        except Exception, err:
-            raise gc3libs.exceptions.TransportError(
-                "Could not stat() file '%s' on host localhost: %s: %s"
-                % (source, err.__class__.__name__, str(err)))
 
     @same_docstring_as(Transport.open)
     def open(self, source, mode, bufsize=0):
