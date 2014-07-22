@@ -50,6 +50,7 @@ is_absolute_path () {
 
 ## environment check
 
+require_command dot
 require_command egrep
 require_command getopt
 require_command make
