@@ -1,0 +1,265 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gc3libs.optimizer.dif_evolution &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     'development (SVN $Revision$)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="up" title="GC3Libs programming API" href="../../index.html" />
+    <link rel="next" title="gc3libs.optimizer.drivers" href="drivers.html" />
+    <link rel="prev" title="gc3libs.optimizer" href="../optimizer.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23320630-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="drivers.html" title="gc3libs.optimizer.drivers"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../optimizer.html" title="gc3libs.optimizer"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-gc3libs.optimizer.dif_evolution">
+<span id="gc3libs-optimizer-dif-evolution"></span><h1><cite>gc3libs.optimizer.dif_evolution</cite><a class="headerlink" href="#module-gc3libs.optimizer.dif_evolution" title="Permalink to this headline">¶</a></h1>
+<p>This module implements a global optimization algorithm called Differential
+Evolution.</p>
+<p>Consider the following optimization problem: <span class="math">min ~ f(\mathbf{x}) ~~ s.t.
+~~ \mathbf{x} \in D</span>, where <span class="math">D \in \mathbb{R}^d</span> and <span class="math">f: D
+\mapsto \mathbb{R}</span>. Class <a class="reference internal" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm" title="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm"><tt class="xref py py-class docutils literal"><span class="pre">DifferentialEvolutionAlgorithm</span></tt></a> solves this
+optimization problem using the differential evolution algorithm. No further
+assumptions on the function <span class="math">f</span> are needed. Thus it can be non-convex,
+noisy etc.</p>
+<p>The domain <span class="math">D</span> is implicitly specified by passing the function
+<tt class="xref py py-func docutils literal"><span class="pre">filtern_fn()</span></tt> to <a class="reference internal" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm" title="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm"><tt class="xref py py-class docutils literal"><span class="pre">DifferentialEvolutionAlgorithm</span></tt></a>.</p>
+<p>Some information related to Differential Evolution can be found in the following papers:</p>
+<ol class="arabic simple">
+<li>Tvrdik 2008: <a class="reference external" href="http://www.proceedings2008.imcsit.org/pliks/95.pdf">http://www.proceedings2008.imcsit.org/pliks/95.pdf</a></li>
+<li>Fleetwood: <a class="reference external" href="http://www.maths.uq.edu.au/MASCOS/Multi-Agent04/Fleetwood.pdf">http://www.maths.uq.edu.au/MASCOS/Multi-Agent04/Fleetwood.pdf</a></li>
+<li>Piyasatian: <a class="reference external" href="http://www-personal.une.edu.au/~jvanderw/DE_1.pdf">http://www-personal.une.edu.au/~jvanderw/DE_1.pdf</a></li>
+</ol>
+<p><a class="reference internal" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.evolve_fn" title="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.evolve_fn"><tt class="xref py py-func docutils literal"><span class="pre">evolve_fn()</span></tt></a> is an adaptation of the following MATLAB code: 
+<a class="reference external" href="http://www.icsi.berkeley.edu/~storn/DeMat.zip">http://www.icsi.berkeley.edu/~storn/DeMat.zip</a> hosted on <a class="reference external" href="http://www.icsi.berkeley.edu/~storn/code.html#deb1">http://www.icsi.berkeley.edu/~storn/code.html#deb1</a>.</p>
+<dl class="class">
+<dt id="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm">
+<em class="property">class </em><tt class="descclassname">gc3libs.optimizer.dif_evolution.</tt><tt class="descname">DifferentialEvolutionAlgorithm</tt><big>(</big><em>initial_pop</em>, <em>de_strategy='DE_rand'</em>, <em>de_step_size=0.85</em>, <em>prob_crossover=1.0</em>, <em>exp_cross=False</em>, <em>itermax=100</em>, <em>dx_conv_crit=None</em>, <em>y_conv_crit=None</em>, <em>in_domain=None</em>, <em>seed=None</em>, <em>logger=None</em>, <em>after_update_opt_state=</em><span class="optional">[</span><span class="optional">]</span><big>)</big><a class="headerlink" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Differential Evolution Algorithm class.
+<a class="reference internal" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm" title="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm"><tt class="xref py py-class docutils literal"><span class="pre">DifferentialEvolutionAlgorithm</span></tt></a> explicitly allows for an another
+process to control the optimization. Driver classes can be found
+in <tt class="xref py py-mod docutils literal"><span class="pre">gc3libs.optimizer.drivers.py</span></tt>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>initial_pop</strong> (<em>list</em>) &#8211; Initial population for the optimization.</li>
+<li><strong>de_strategy</strong> (<em>str</em>) &#8211; e.g. DE_rand_either_or_algorithm. Allowed are:</li>
+<li><strong>de_step_size</strong> (<em>float</em>) &#8211; Differential Evolution step size.</li>
+<li><strong>prob_crossover</strong> (<em>float</em>) &#8211; Probability new population draws will replace old members.</li>
+<li><strong>exp_cross</strong> (<em>bool</em>) &#8211; Set True to use exponential crossover.</li>
+<li><strong>itermax</strong> (<em>int</em>) &#8211; Maximum # of iterations.</li>
+<li><strong>dx_conv_crit</strong> (<em>float</em>) &#8211; Abort optimization if all population members are within a certain distance to each other.</li>
+<li><strong>y_conv_crit</strong> (<em>float</em>) &#8211; Declare convergence when the target function is below a <cite>y_conv_crit</cite>.</li>
+<li><strong>in_domain</strong> (<em>fun</em>) &#8211; Optional function that implements nonlinear constraints.</li>
+<li><strong>seed</strong> (<em>float</em>) &#8211; Seed to initialize NumPy&#8217;s random number generator.</li>
+<li><strong>logger</strong> (<em>obj</em>) &#8211; Configured logger to use.</li>
+<li><strong>after_update_opt_state</strong> (<em>list</em>) &#8211; Functions that are called at the end of 
+<tt class="xref py py-meth docutils literal"><span class="pre">DifferentialEvolutionAlgorithm.after_update_opt_state()</span></tt>. Use this list
+to provide problem-specific printing and plotting routines. Examples can be found
+in <a class="reference internal" href="extra.html#module-gc3libs.optimizer.extra" title="gc3libs.optimizer.extra"><tt class="xref py py-mod docutils literal"><span class="pre">gc3libs.optimizer.extra</span></tt></a>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The <cite>de_strategy</cite> value must be chosen from the
+<cite>dif_evolution.strategies</cite> enumeration.  Allowed values are
+(description of the strategies taken from <a class="reference external" href="http://www.icsi.berkeley.edu/~storn/DeMat.zip">http://www.icsi.berkeley.edu/~storn/DeMat.zip</a>):</p>
+<ol class="arabic">
+<li><p class="first"><tt class="docutils literal"><span class="pre">'DE_rand'</span></tt>: The classical version of DE.</p>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">'DE_local_to_best'</span></tt>: A version which has been used by quite a number of</dt>
+<dd><p class="first last">scientists. Attempts a balance between robustness # and fast convergence.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">'DE_best_with_jitter'</span></tt>: Taylored for small population sizes and fast</dt>
+<dd><p class="first last">convergence. Dimensionality should not be too high.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">'DE_rand_with_per_vector_dither'</span></tt>: Classical DE with dither to become even more robust.</p>
+</li>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">'DE_rand_with_per_generation_dither'</span></tt>: Classical DE with dither to become even more robust.</dt>
+<dd><p class="first last">Choosing de_step_size = 0.3 is a good start here.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">'DE_rand_either_or_algorithm'</span></tt>: Alternates between differential mutation and three-point- recombination.</p>
+</li>
+</ol>
+<dl class="method">
+<dt id="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.evolve">
+<tt class="descname">evolve</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.evolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a new population fullfilling <cite>in_domain</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list of population members</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.evolve_fn">
+<em class="property">static </em><tt class="descname">evolve_fn</tt><big>(</big><em>population</em>, <em>prob_crossover</em>, <em>de_step_size</em>, <em>dim</em>, <em>best_iter</em>, <em>de_strategy</em>, <em>exp_cross</em><big>)</big><a class="headerlink" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.evolve_fn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return new population, evolved according to <cite>de_strategy</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>population</strong> &#8211; Population generating offspring from.</li>
+<li><strong>prob_crossover</strong> &#8211; Probability new population draws will replace old members.</li>
+<li><strong>de_step_size</strong> &#8211; Differential Evolution step size.</li>
+<li><strong>dim</strong> &#8211; Dimension of each population member.</li>
+<li><strong>best_iter</strong> &#8211; Best population member of the current population.</li>
+<li><strong>de_strategy</strong> &#8211; Differential Evolution strategy. See <a class="reference internal" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm" title="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm"><tt class="xref py py-class docutils literal"><span class="pre">DifferentialEvolutionAlgorithm</span></tt></a>.</li>
+<li><strong>bool</strong> (<em>exp_cross</em>) &#8211; Set True to use exponential crossover.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.select">
+<tt class="descname">select</tt><big>(</big><em>new_pop</em>, <em>new_vals</em><big>)</big><a class="headerlink" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.select" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a one-on-one battle by index, keeping the member
+with lowest corresponding value.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../optimizer.html"
+                        title="previous chapter"><cite>gc3libs.optimizer</cite></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="drivers.html"
+                        title="next chapter"><cite>gc3libs.optimizer.drivers</cite></a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="drivers.html" title="gc3libs.optimizer.drivers"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../optimizer.html" title="gc3libs.optimizer"
+             >previous</a> |</li>
+        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

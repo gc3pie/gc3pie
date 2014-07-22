@@ -1,0 +1,252 @@
+\documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usepackage{gc3}
+
+\title{%
+  Application requirements
+}
+\author[Riccardo Murri]{%
+  GC3: Grid Computing Competence Center, \\
+  University of Zurich
+}
+\date{Oct.~1, 2012}
+
+\begin{document}
+
+% title frame
+\maketitle
+
+
+\begin{frame}
+  Applications need to allocate computing resources.
+  For instance, request 4 processors for 8 hours.
+
+  \+
+  GC3Pie allows requesting:
+  \begin{itemize}
+  \item the number of processors that a job can use,
+  \item the architecture (32-bit or 64-bit) of these processors,
+  \item the guaranteed duration of a job,
+  \item the amount of memory that a job can use (per processor).
+  \end{itemize}
+
+  \+ 
+  More fine-grained matching is possible, but outside the scope of
+  this introductory training.
+\end{frame}
+
+
+\begin{frame}
+  Resources are requested using additional constructor parameters for
+  \texttt{Application} objects.
+
+  \+
+  The allowed parameters are:
+  \lstinline|requested_cores|,
+  \lstinline|requested_architecture|,
+  \lstinline|requested_walltime|,
+  \lstinline|requested_memory|.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Running parallel jobs}
+
+  You request allocation of a certain number of processors using the
+  \lstinline|requested_cores| parameter: set it to the number of CPU
+  cores that you want.
+
+  \+ 
+  For example, the following runs the command \texttt{mpixexec
+    simulator} on 4 processors:
+  \begin{lstlisting}
+    class ZodsApplication(Application):
+      # ...
+      Application.__init__(self,
+        ['mpiexec', '-n', '4', 'simulator'],
+        # ...
+        @\HL{requested\_cores=4}@)
+  \end{lstlisting}
+  
+  \+ 
+  {\small Note that GC3Pie only guarantees the availability of a certain
+    number of processors; it is your application's responsibility to use
+    them, e.g., by starting a command using MPI or any other parallel
+    processing mechanism.}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Requesting processor architecture}
+  
+  If you send the compiled executable along with your application, you
+  need to select only resources that can run that binary file.
+
+  \+ 
+  The \lstinline|requested_architecture| parameter provides the
+  choice between \lstinline|gc3libs.Run.Arch.X86_64| (for 64-bit
+  Intel/AMD computers) and \lstinline|gc3libs.Run.Arch.X86_32| (for
+  32-bit ones).
+
+  \+
+  Example:
+  \begin{lstlisting}
+    class CodemlApplication(Application):
+      # ...
+      Application.__init__(self,
+        ['./codeml.bin'],
+        inputs = ['/home/rmurri/selectome/codeml.bin', ...]
+        # ...
+        @\HL{requested\_architecture=gc3libs.Run.Arch.X86\_64}@)
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Requesting running time}
+
+  In order to ensure that your job is allotted enough time to run on
+  the remote computing system, use the \lstinline|requested_walltime|
+  parameter.
+
+  \+
+  Example:
+  \begin{lstlisting}
+    @\HL{\textbf{from} gc3libs.quantity \textbackslash}@
+    @\HL{~~\textbf{import} days, hours, minutes, seconds}@
+    class CodemlApplication(Application):
+      # ...
+      Application.__init__(self,
+        # ...
+        @\HL{requested\_walltime=8*hours}@)
+  \end{lstlisting}
+
+  \+ 
+  You \emph{must} use a \texttt{gc3libs.quantity} multiple for the
+  \lstinline|requested_walltime| parameter; any other value will be
+  rejected with an error.
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Units of time}
+  The Python module \texttt{gc3libs.quantity} provides units for
+  expressing time requirements in days, hours, minutes, seconds.
+
+  \+
+  Just multiply the unit by the amount you need:
+  \begin{lstlisting}
+    >>> an_hour = 1*hours
+  \end{lstlisting}
+  Or sum the amounts:
+  \begin{lstlisting}
+    >>> two_days = 1*days + 24*hours
+  \end{lstlisting}
+
+  \+
+  GC3Pie will automatically perform the conversions:
+  \begin{lstlisting}
+    >>> two_hours = 2*hours
+    >>> another_two_hours = 7200*seconds
+    >>> two_hours == another_two_hours
+    True
+  \end{lstlisting}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{CPU time vs wall-clock time}
+  
+  ``CPU time'' is the total time spent by all CPUs in the system
+  actually executing code from our job.
+
+  \+ 
+  The ``wall-clock time'' (abbr. ``walltime'') is the time that
+  passes on a clock from the moment the system starts executing a job
+  until the end of that job.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Requesting memory}
+  In order to secure a certain amount of memory for a job, use the
+  \lstinline|requested_memory| parameter.
+
+  \+
+  Example:
+  \begin{lstlisting}
+    @\HL{\textbf{from} gc3libs.quantity \textbf{import} GB, MB, kB}@
+    class CodemlApplication(Application):
+      # ...
+      Application.__init__(self,
+        # ...
+        @\HL{requested\_memory=8*GB}@)
+  \end{lstlisting}
+
+  \+ 
+  Note that \lstinline|requested_memory| expresses the total
+  memory used by the job!
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Units of memory}
+  The Python module \texttt{gc3libs.quantity} provides units for
+  expressing memory requirements in kilo-, Mega- and Giga-bytes.
+
+  \+
+  Just multiply the unit by the amount you need:
+  \begin{lstlisting}
+    >>> a_gigabyte = 1*GB
+    >>> two_megabytes = 2*MB
+  \end{lstlisting}
+
+  \+
+  GC3Pie will automatically perform the conversions:
+  \begin{lstlisting}
+    >>> two_gigabytes = 2*GB
+    >>> another_two_gbs = 2000*MB
+    >>> two_gigabytes == another_two_gbs
+    True
+  \end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{All together now}
+
+  \begin{lstlisting}
+    from gc3libs.quantity import GB, MB, kB
+    from gc3libs.quantity import days, hours, minutes
+    class CodemlApplication(Application):
+      # ...
+      Application.__init__(self,
+        # ...
+        requested_cores=1,
+        requested_memory=2*GB,
+        requested_walltime=8*hours)
+  \end{lstlisting}
+
+  \+ 
+  When several resource requirements are specified, GC3Pie tries to
+  satisfy \emph{all} of them.  If this is not possible,
+  \lstinline|core.submit(app)| fails and the job stays in state
+  \emph{NEW}.
+  
+\end{frame}
+
+
+\begin{frame}
+  \begin{exercise}
+    Modify the \texttt{SquareApplication} in
+    \href{http://www.gc3.uzh.ch/teaching/gc3pie2012/square.py}{square.py}
+    so that it requests an impossibly high amount of memory. Re-run
+    the script and watch it fail: the application should not be
+    submitted and remain in state \emph{NEW}.
+
+    \+
+    Can you achieve the same result by using other requirement specifiers?
+  \end{exercise}
+\end{frame}
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
