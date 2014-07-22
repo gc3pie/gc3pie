@@ -53,6 +53,7 @@ is_absolute_path () {
 require_command egrep
 require_command getopt
 require_command make
+require_command pyreverse
 require_command python
 require_command svn
 
@@ -63,7 +64,7 @@ python -c 'import sphinx_pypi_upload' \
     || die 1 "Cannot load required Python module 'sphinx_pypi_upload'"
 
 
-## parse command-line 
+## parse command-line
 
 maybe=""
 debug=""
