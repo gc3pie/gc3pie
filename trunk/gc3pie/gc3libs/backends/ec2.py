@@ -383,7 +383,7 @@ class EC2Lrms(LRMS):
             gc3libs.log.warning(
                 "Option `public_key` in configuration file should contain"
                 " the path to a public key file (with `.pub` ending),"
-                " but '%s' was found instead. Continuing anyway.",
+                " but `%s` was found instead. Continuing anyway.",
                 self.public_key)
 
         pkey = None
@@ -393,15 +393,18 @@ class EC2Lrms(LRMS):
                 ]:
             try:
                 gc3libs.log.debug(
-                    "Trying to load key file `%s` as %s key...",
+                    "Trying to load key file `%s` as SSH %s key...",
                     keyfile, format)
                 pkey = reader(keyfile)
-                ## PasswordRequiredException < SSHException so we must check this first
+                gc3libs.log.info(
+                    "Successfully loaded key file `%s` as SSH %s key.",
+                    keyfile, format)
+            ## PasswordRequiredException < SSHException so we must check this first
             except paramiko.PasswordRequiredException:
                 gc3libs.log.warning(
                     "Key %s is encripted with a password, so we cannot check if it"
                     " matches the remote keypair (maybe you should start `ssh-agent`?)."
-                    " Continuing without check.",
+                    " Continuing without consistency check with remote fingerprint.",
                     keyfile)
                 return False
             except paramiko.SSHException, ex:
@@ -418,8 +421,10 @@ class EC2Lrms(LRMS):
         localkey_fingerprint = self.__str_fingerprint(pkey)
         if localkey_fingerprint != ec2_key.fingerprint:
             raise UnrecoverableAuthError(
-                "Keypair `%s` is present but has different fingerprint: "
-                "%s != %s. Aborting!" % (
+                "Keypair `%s` exists but has different fingerprint than local one:"
+                " local public key file `%s` has fingerprint `%s`,"
+                " whereas EC2 API reports fingerprint `%s`. Aborting!" % (
+                    self.public_key,
                     self.keypair_name,
                     localkey_fingerprint,
                     ec2_key.fingerprint,
