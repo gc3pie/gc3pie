@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<input xsi:noNamespaceSchemaLocation="simulator.xsd" print_level="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" job_name="x_m">
+  <reference_intensities file_name="ref.xml" file_format="xml"></reference_intensities>
+  <average_structure>
+    <file format="cif" name="x.cif" />
+  </average_structure>
+  <disentanglement translational_symmetry_directions="a,b">
+    <user_defined>
+      <chemical_units_list>
+        <chemical_unit label="A1" probability="0.5" atom_list="$CIF_A_1"></chemical_unit>
+        <chemical_unit label="A2" probability="0.5" atom_list="$CIF_A_2"></chemical_unit>
+      </chemical_units_list>
+      <sets_of_alternatives_list>
+        <set_of_alternatives label="soa1" chemical_units_list="A1;A2"></set_of_alternatives>
+      </sets_of_alternatives_list>
+    </user_defined>
+  </disentanglement>
+  <disordered_crystal_simulation>
+    <default_crystal_builder n_MC_cycles="40" crystal_dimensions="1,1,10000" />
+  </disordered_crystal_simulation>
+  <interactions>
+    <interaction>
+      <discrete parameters="p1">
+        <chemical_units>A1;A1,(-X,-Y,-Z)</chemical_units>
+      </discrete>
+    </interaction>
+    <interaction>
+      <discrete parameters="p2">
+        <chemical_units>A2;A2,(-X,-Y,-Z)</chemical_units>
+      </discrete>
+    </interaction>
+  </interactions>
+  <independent_parameters>
+    <parameter label="p1" value="-0.65" />
+  </independent_parameters>
+  <dependent_parameters>
+    <parameter label="p2">
+      <formula>(1-${p1})</formula>
+    </parameter>
+  </dependent_parameters>
+  <intensity_calculation lot_dimensions="1,1,20" n_lots="2000" form_factor_type="x-ray" />
+  <run_type>
+    <calculate_intensities n_clones="1">
+      <output>
+        <!--<crystals output_file_formats="xml,discus,xyz,pdb" />-->
+        <intensities output_file_formats="xml,vtk" />
+      </output>
+    </calculate_intensities>
+  </run_type>
+  <analysis output="cuau_m.an">
+    <analyses_list>
+      <composition />
+      <conditional_probability>
+        <conditions_list>
+          <chemical_unit_condition chemical_units_list="A1,(X,Y,Z+1)" />
+        </conditions_list>
+      </conditional_probability>
+      <!--<histogram><properties_list><displacement><atom>F1</atom></displacement></properties_list><conditions_list><combined_condition operator="xor"><property_condition><condition><less_than>2.5</less_than></condition><property><distance><atom_position atom="F1" /><atom_position atom="La2" /></distance></property></property_condition><cu_condition chemical_units_list="AU,(1,0,0)"></cu_condition></combined_condition></conditions_list></histogram>-->
+      <!--<histogram><binning><n_bins>10,10,10</n_bins></binning><properties_list><atom_position atom="Cu1"></atom_position></properties_list><output><vtk file_name="cu_displacement"></vtk></output></histogram>-->
+      <!--<histogram><binning><n_bins>20</n_bins></binning><properties_list><distance><atom_position atom="Cu1" /><atom_position atom="Cu1,(1,0,0)" /></distance></properties_list><output><gnuplot file_name="histo" /></output></histogram>-->
+      <!--<scatterplot><properties_list><atom_position atom="Cu1" /></properties_list></scatterplot>-->
+      <!--<statistic><properties_list><atom_position atom="Cu1" /><atom_position atom="Cu1,(1,0,0)" /></properties_list></statistic>-->
+      <!--<structure_scatterplot chemical_units_list="CU"><conditions_list><cu_condition chemical_units_list="CU,(1,0,0)" /></conditions_list><unit_cell_output>unit_cell.vtk</unit_cell_output></structure_scatterplot>-->
+    </analyses_list>
+  </analysis>
+</input>
