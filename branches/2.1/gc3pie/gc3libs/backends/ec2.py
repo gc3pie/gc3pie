@@ -429,7 +429,7 @@ class EC2Lrms(LRMS):
                     pkey = paramiko.RSAKey.from_private_key_file(keyfile)
                     # we need PyCrypto for computing the alternate AWS digest
                     with open(keyfile, 'r') as keydata:
-                        key_for_aws_digest = Crypto.Publickey.RSA.importKey(keydata)
+                        key_for_aws_digest = Crypto.PublicKey.RSA.importKey(keydata)
                 except paramiko.PasswordRequiredException:
                     raise RuntimeError(
                         "Key %s is encripted with a password. Please, use"
