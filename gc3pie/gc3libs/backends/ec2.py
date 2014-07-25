@@ -320,7 +320,6 @@ class EC2Lrms(LRMS):
         if self._conn is not None:
             return
 
-
         args = {'aws_access_key_id': self.ec2_access_key,
                 'aws_secret_access_key': self.ec2_secret_key,
                 }
@@ -465,8 +464,7 @@ class EC2Lrms(LRMS):
             self._setup_security_groups()
             args['security_groups'] = [self.security_group_name]
 
-        # FIXME: we should add check/creation of proper security
-        # groups
+        # FIXME: we should add check/creation of proper security groups
         gc3libs.log.debug("Create new VM using image id `%s`", image_id)
         try:
             reservation = self._conn.run_instances(image_id, **args)
