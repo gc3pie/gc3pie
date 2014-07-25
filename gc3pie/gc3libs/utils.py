@@ -388,9 +388,9 @@ class Enum(frozenset):
 
     Finally, enumeration labels can also be iterated upon::
 
-      >>> for a in Animal: print a
-      DOG
+      >>> for a in sorted(Animal): print a
       CAT
+      DOG
     """
     def __new__(cls, *args):
         return frozenset.__new__(cls, args)
