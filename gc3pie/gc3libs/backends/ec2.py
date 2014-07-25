@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2012, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2014, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -22,6 +22,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
+import hashlib
 import os
 import re
 import paramiko
@@ -45,7 +46,7 @@ from gc3libs.exceptions import RecoverableError, UnrecoverableError, \
     ConfigurationError, LRMSSkipSubmissionToNextIteration, UnrecoverableAuthError
 import gc3libs.url
 from gc3libs import Run
-from gc3libs.utils import same_docstring_as
+from gc3libs.utils import same_docstring_as, insert_char_every_n_chars
 from gc3libs.backends import LRMS
 from gc3libs.session import Session
 from gc3libs.persistence import Persistable
@@ -435,9 +436,17 @@ class EC2Lrms(LRMS):
                                      "RSA key nor a DSS key" % self.public_key)
 
             # Check key fingerprint
-            localkey_fingerprint = str.join(
-                ':', (i.encode('hex') for i in pkey.get_fingerprint()))
-            if localkey_fingerprint != keypairs[self.keypair_name].fingerprint:
+            localkey_fingerprints = [
+                # Usual SSH key fingerprint, computed like `ssh-keygen -l -f`
+                # This is used, e.g., by OpenStack's EC2 compatibility layer.
+                str.join(':', (i.encode('hex') for i in pkey.get_fingerprint())),
+                # Amazon EC2 computes the key fingerprint in a
+                # different way, see http://blog.jbrowne.com/?p=23 and
+                # https://gist.github.com/jtriley/7270594 for details.
+                insert_char_every_n_chars(
+                    hashlib.md5(pkey.publickey().exportKey('DER')).hexdigest(), ':', 2),
+            ]
+            if keypairs[self.keypair_name].fingerprint not in localkey_fingerprints:
                 gc3libs.log.error(
                     "Keypair `%s` is present but has different fingerprint: "
                     "%s != %s. Aborting!" % (
