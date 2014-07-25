@@ -587,6 +587,12 @@ def ifelse(test, if_true, if_false):
         return if_false
 
 
+# original source: https://gist.github.com/jtriley/7270594
+def insert_char_every_n_chars(string, char='\n', every=64):
+    return char.join(
+        string[i:i + every] for i in xrange(0, len(string), every))
+
+
 def irange(start, stop, step=1):
     """
     Iterate over all values greater or equal than `start` and less than `stop`.

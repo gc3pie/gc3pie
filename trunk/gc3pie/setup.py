@@ -98,8 +98,6 @@ setuptools.setup(
         'boto==2.9.4',
         'python-novaclient==2.15',
         # paramiko and pycrypto are required for SSH operations
-        # ("pycrypto" is actually a dependency of Paramiko, but
-        # setuptools apparently does not process dependencies recursively)
         'paramiko==1.13',
         'pycrypto==2.6.1',
         # prettytable -- format tabular text output
