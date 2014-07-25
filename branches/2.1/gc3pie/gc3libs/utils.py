@@ -1400,11 +1400,11 @@ def update_parameter_in_file(path, var_in, new_val, regex_in):
     '''
     Updates a parameter value in a parameter file using predefined regular
     expressions in `_loop_regexps`.
-    
-    :param path: Full path to the parameter file. 
-    :param var_in: The variable to modify. 
-    :param new_val: The updated parameter value. 
-    :param regex: Name of the regular expression that describes the format of the parameter file. 
+
+    :param path: Full path to the parameter file.
+    :param var_in: The variable to modify.
+    :param new_val: The updated parameter value.
+    :param regex: Name of the regular expression that describes the format of the parameter file.
     '''
     _loop_regexps = {
         'bar-separated':(r'([a-z]+[\s\|]+)'
