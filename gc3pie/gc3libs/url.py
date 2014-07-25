@@ -3,7 +3,7 @@
 """
 Utility classes and methods for dealing with URLs.
 """
-# Copyright (C) 2011, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2014, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -339,7 +339,7 @@ class UrlKeyDict(dict):
     Differently from `dict`, initialization from keyword arguments
     alone is *not* supported:
 
-        >>> d3 = UrlKeyDict(foo='foo', bar='bar') # doctest: +ELLIPSIS
+        >>> d3 = UrlKeyDict(foo='foo') # doctest: +ELLIPSIS
         Traceback (most recent call last):
             ...
         TypeError: __init__() got an unexpected keyword argument 'foo'
