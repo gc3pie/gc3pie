@@ -22,6 +22,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
+import hashlib
 import os
 import re
 import paramiko
@@ -39,6 +40,7 @@ except ImportError:
         " was found. Please, install `boto` with `pip install boto`"
         " or `easy_install boto` and try again, or update your"
         " configuration file.")
+import Crypto
 
 # GC3Pie imports
 import gc3libs
@@ -47,7 +49,7 @@ from gc3libs.exceptions import RecoverableError, UnrecoverableError, \
     MaximumCapacityReached, UnrecoverableAuthError, TransportError
 import gc3libs.url
 from gc3libs import Run
-from gc3libs.utils import mkdir, same_docstring_as
+from gc3libs.utils import mkdir, same_docstring_as, insert_char_every_n_chars
 from gc3libs.backends import LRMS
 from gc3libs.backends.vmpool import VMPool, InstanceNotFound
 from gc3libs.session import Session
@@ -348,16 +350,46 @@ class EC2Lrms(LRMS):
         return vm
 
     @staticmethod
-    def __str_fingerprint(pkey):
+    def __pubkey_ssh_fingerprint(privkey):
         """
-        Print key fingerprint like SSH commands do.
+        Compute SSH public key fingerprint like `ssh-keygen -l -f`.
 
         We need to convert the key fingerprint from Paramiko's
         internal representation to this colon-separated hex format
         because that's the way the fingerprint is returned from the
         EC2 API.
         """
-        return str.join(':', (i.encode('hex') for i in pkey.get_fingerprint()))
+        return str.join(':', (i.encode('hex') for i in privkey.get_fingerprint()))
+
+    @staticmethod
+    def __pubkey_ssh_fingerprint(privkey):
+        """
+        Compute SSH public key fingerprint like `ssh-keygen -l -f`.
+
+        Return a string representation of the key fingerprint in
+        colon-separated hex format (just like OpenSSH commands print
+        it to the terminal).
+
+        Argument `privkey` is a `paramiko.pkey.PKey` object.
+        """
+        return str.join(':', (i.encode('hex') for i in privkey.get_fingerprint()))
+
+    @staticmethod
+    def __pubkey_aws_fingerprint(privkeypath, reader=Crypto.PublicKey.RSA.importKey):
+        """
+        Compute SSH public key fingerprint like AWS EC2 does.
+
+        Return a string representation of the key fingerprint in
+        colon-separated hex format (just like OpenSSH commands print
+        it to the terminal).
+
+        Argument `privkeypath` is the filesystem path to a file
+        containing the private key data.
+        """
+        with open(privkeypath, 'r') as keydata:
+            pubkey = reader(keydata).publickey()
+            return insert_char_every_n_chars(
+                hashlib.md5(pubkey.exportKey('DER')).hexdigest(), ':', 2)
 
     def _have_keypair(self, ec2_key):
         """
@@ -370,7 +402,10 @@ class EC2Lrms(LRMS):
         # try with SSH agent first
         gc3libs.log.debug("Checking if keypair is registered in SSH agent...")
         agent = paramiko.Agent()
-        fingerprints_from_agent = [ self.__str_fingerprint(k) for k in agent.get_keys() ]
+        fingerprints_from_agent = [
+            self.__pubkey_ssh_fingerprint(privkey)
+            for privkey in agent.get_keys()
+        ]
         if ec2_key.fingerprint in fingerprints_from_agent:
             gc3libs.log.debug("Found remote key fingerprint in SSH agent.")
             return True
@@ -386,19 +421,30 @@ class EC2Lrms(LRMS):
                 " but `%s` was found instead. Continuing anyway.",
                 self.public_key)
 
-        pkey = None
-        for format, reader in [
-                ('DSS', paramiko.DSSKey.from_private_key_file),
-                ('RSA', paramiko.RSAKey.from_private_key_file),
+        privkey = None
+        local_fingerprints = [ ]
+        for format, privkey_reader, pubkey_reader in [
+                ('DSS', paramiko.DSSKey.from_private_key_file, Crypto.PublicKey.DSA.importKey),
+                ('RSA', paramiko.RSAKey.from_private_key_file, Crypto.PublicKey.RSA.importKey),
                 ]:
             try:
                 gc3libs.log.debug(
                     "Trying to load key file `%s` as SSH %s key...",
                     keyfile, format)
-                pkey = reader(keyfile)
+                privkey = privkey_reader(keyfile)
                 gc3libs.log.info(
                     "Successfully loaded key file `%s` as SSH %s key.",
                     keyfile, format)
+                # compute public key fingerprints, for comparing them with the remote one
+                localkey_fingerprints = [
+                    # Usual SSH key fingerprint, computed like `ssh-keygen -l -f`
+                    # This is used, e.g., by OpenStack's EC2 compatibility layer.
+                    self.__pubkey_ssh_fingerprint(privkey),
+                    # Amazon EC2 computes the key fingerprint in a
+                    # different way, see http://blog.jbrowne.com/?p=23 and
+                    # https://gist.github.com/jtriley/7270594 for details.
+                    self.__pubkey_aws_fingerprint(keyfile, pubkey_reader),
+                ]
             ## PasswordRequiredException < SSHException so we must check this first
             except paramiko.PasswordRequiredException:
                 gc3libs.log.warning(
@@ -413,20 +459,19 @@ class EC2Lrms(LRMS):
                     keyfile, format, ex)
                 # try with next format
                 continue
-        if pkey is None:
+        if privkey is None:
             raise ValueError("Public key `%s` is neither a valid"
                              " RSA key nor a DSS key" % self.public_key)
 
         # check key fingerprint
-        localkey_fingerprint = self.__str_fingerprint(pkey)
-        if localkey_fingerprint != ec2_key.fingerprint:
+        if local_fingerprints and ec2_key.fingerprint not in localkey_fingerprints:
             raise UnrecoverableAuthError(
                 "Keypair `%s` exists but has different fingerprint than local one:"
-                " local public key file `%s` has fingerprint `%s`,"
+                " local public key file `%s` has fingerprint(s) `%s`,"
                 " whereas EC2 API reports fingerprint `%s`. Aborting!" % (
                     self.public_key,
                     self.keypair_name,
-                    localkey_fingerprint,
+                    str.join('/', localkey_fingerprints),
                     ec2_key.fingerprint,
                 ),
                 do_log=True)
