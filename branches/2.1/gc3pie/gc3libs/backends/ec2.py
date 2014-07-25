@@ -39,6 +39,7 @@ except ImportError:
         " was found. Please, install `boto` with `pip install boto`"
         " or `easy_install boto` and try again, or update your"
         " configuration file.")
+import Crypto
 
 # GC3Pie imports
 import gc3libs
@@ -413,6 +414,9 @@ class EC2Lrms(LRMS):
                     self.public_key)
             try:
                 pkey = paramiko.DSSKey.from_private_key_file(keyfile)
+                # AWS does not allow DSA keys, so no point in
+                # computing the alternate digest
+                key_for_aws_digest = None
             except paramiko.PasswordRequiredException:
                 raise RuntimeError(
                     "Key %s is encripted with a password. Please, use"
@@ -423,6 +427,9 @@ class EC2Lrms(LRMS):
                                   " %s", keyfile, ex)
                 try:
                     pkey = paramiko.RSAKey.from_private_key_file(keyfile)
+                    # we need PyCrypto for computing the alternate AWS digest
+                    with open(keyfile, 'r') as keydata:
+                        key_for_aws_digest = Crypto.Publickey.RSA.importKey(keydata)
                 except paramiko.PasswordRequiredException:
                     raise RuntimeError(
                         "Key %s is encripted with a password. Please, use"
@@ -439,12 +446,17 @@ class EC2Lrms(LRMS):
                 # Usual SSH key fingerprint, computed like `ssh-keygen -l -f`
                 # This is used, e.g., by OpenStack's EC2 compatibility layer.
                 str.join(':', (i.encode('hex') for i in pkey.get_fingerprint())),
-                # Amazon EC2 computes the key fingerprint in a
-                # different way, see http://blog.jbrowne.com/?p=23 and
-                # https://gist.github.com/jtriley/7270594 for details.
-                insert_char_every_n_chars(
-                    hashlib.md5(pkey.publickey().exportKey('DER')).hexdigest(), ':', 2),
             ]
+            if key_for_aws_digest:
+                localkey_fingerprints.append(
+                    # Amazon EC2 computes the key fingerprint in a
+                    # different way, see http://blog.jbrowne.com/?p=23 and
+                    # https://gist.github.com/jtriley/7270594 for details.
+                    insert_char_every_n_chars(
+                        hashlib.md5(key_for_aws_digest
+                                    .publickey()
+                                    .exportKey('DER')).hexdigest(), ':', 2),
+                )
             if keypairs[self.keypair_name].fingerprint not in localkey_fingerprints:
                 gc3libs.log.error(
                     "Keypair `%s` is present but has different fingerprint: "
