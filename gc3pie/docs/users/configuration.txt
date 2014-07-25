@@ -48,9 +48,9 @@ part.
 
 The following sections are used by the GC3Apps/GC3Utils programs:
 
-  - ``[DEFAULT]`` -- this is for global settings.
-  - `[auth/{name}]`:file: -- these are for settings related to identity/authentication (identifying yourself to clusters & grids).
-  - `[resource/{name}]`:file: -- these are for settings related to a specific computing resource (cluster, grid, etc.)
+- ``[DEFAULT]`` -- this is for global settings.
+- `[auth/{name}]`:file: -- these are for settings related to identity/authentication (identifying yourself to clusters & grids).
+- `[resource/{name}]`:file: -- these are for settings related to a specific computing resource (cluster, grid, etc.)
 
 Sections with other names are allowed but will be ignored.
 
@@ -58,13 +58,19 @@ Sections with other names are allowed but will be ignored.
 The ``DEFAULT`` section
 -----------------------
 
-The ``[DEFAULT]`` section is optional.
+Values defined in the ``[DEFAULT]`` section will be inserted in
+*any other section* (unless they are explicitly overridden).
+For example, the following will add a ``debug=1`` line to any section
+in the configuration file::
 
-Values defined in the ``[DEFAULT]`` section can be used to insert
-values in other sections, using the ``%(name)s`` syntax.  See
-documentation of the `Python SafeConfigParser
+    [DEFAULT]
+    debug=1
+
+See documentation of the `Python SafeConfigParser
 <http://docs.python.org/library/configparser.html>`_ object at
-http://docs.python.org/library/configparser.html for an example.
+http://docs.python.org/library/configparser.html for an explanation.
+
+The ``[DEFAULT]`` section is optional.
 
 
 ``auth`` sections

@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -99,9 +97,9 @@ label by string value:</p>
 </pre></div>
 </div>
 <p>Finally, enumeration labels can also be iterated upon:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">Animal</span><span class="p">:</span> <span class="k">print</span> <span class="n">a</span>
-<span class="go">DOG</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">Animal</span><span class="p">):</span> <span class="k">print</span> <span class="n">a</span>
 <span class="go">CAT</span>
+<span class="go">DOG</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -579,7 +577,7 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2ba29663e1e0&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2ba798301150&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
@@ -603,13 +601,14 @@ indented <cite>step</cite> spaces from the enclosing dictionary.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.progressive_number">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><em>qty=None</em>, <em>id_filename='/home/antonio/.gc3/next_id.txt'</em><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><em>qty=None</em>, <em>id_filename='/home/rmurri/.gc3/next_id.txt'</em><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a positive integer, whose value is guaranteed to
 be monotonically increasing across different invocations
 of this function, and also across separate instances of the
 calling program.</p>
 <p>Example:</p>
-<div class="highlight-python"><pre>(create a temporary directory to avoid bug #)</pre>
+<div class="highlight-python"><div class="highlight"><pre>(create a temporary directory to avoid bug #)
+</pre></div>
 </div>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span><span class="o">,</span> <span class="nn">os</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
@@ -654,7 +653,7 @@ seconds) while trying to acquire the lock, or raise a
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raise :</th><td class="field-body">LockTimeout, IOError, OSError</td>
+<tr class="field-odd field"><th class="field-name">Raise:</th><td class="field-body">LockTimeout, IOError, OSError</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A positive integer number, monotonically increasing with
 every call.  A list of such numbers if argument <cite>qty</cite> is a
@@ -983,7 +982,7 @@ If the file does not exist, it is created.</p>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

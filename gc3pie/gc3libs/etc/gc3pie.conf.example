@@ -88,7 +88,6 @@ debug = 0
 #  pbs            resource is a TORQUE/OpenPBS cluster, accessed via qsub/qstat over SSH
 #  shellcmd       run jobs on the local computer
 #  ec2+<subtype>  run jobs on VMs created on a cloud with EC2-compatible APIs
-#  openstack+<subtype>  run jobs on VMs created on a cloud with OpenStack APIs
 #
 # Every resource/*** section must reference a valid auth/*** section.
 # Resources of `arc0` type can only reference voms-proxy/grid-proxy
@@ -105,8 +104,9 @@ debug = 0
 #    * max_cores_per_job: Maximum number of CPU cores that a job can request; 
 #            a resource will be dropped during the brokering process if a job 
 #            requests more cores than this.
-#    * max_memory_per_core: Max amount of memory that a job can request
-#    * max_walltime: Maximum job running time
+#    * max_memory_per_core: Max amount of memory (expressed in GBs) 
+#      	     that a job can request
+#    * max_walltime: Maximum job running time (in hours)
 #
 #    * ``prologue``: Used only when ``type`` is ``pbs``, ``lsf``,
 #       ``slurm`` or ``sge``. The content of the `prologue` script will
@@ -152,8 +152,8 @@ time_cmd=/usr/bin/time
 max_cores=2
 max_cores_per_job=2
 # adjust the following to match the features of your local computer
-max_memory_per_core=2 GB
-max_walltime=2 hours
+max_memory_per_core=2
+max_walltime=2
 architecture=x64_64
 # When True, the shellcmd backend will discover the actual
 # architecture, the number of cores and the total memory of the
@@ -173,8 +173,8 @@ architecture=x64_64
 # name = gc3
 # arc_ldap = ldap://idgc3grid01.uzh.ch:2135/o=grid/mds-vo-name=local
 # max_cores_per_job = 256
-# max_memory_per_core = 2 GB
-# max_walltime = 99999 hours
+# max_memory_per_core = 2
+# max_walltime = 99999
 # max_cores = 320
 # architecture = x86_64
 
@@ -188,8 +188,8 @@ architecture=x64_64
 # auth = smscg
 # arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
 # max_cores_per_job = 256
-# max_memory_per_core = 2 GB
-# max_walltime = 24 hours
+# max_memory_per_core = 2
+# max_walltime = 24
 # ncores = 8000
 # architecture = i686, x86_64
 
@@ -205,8 +205,8 @@ architecture=x64_64
 # architecture = x86_64
 # max_cores = 4096
 # max_cores_per_job = 1024
-# max_memory_per_core = 3 GB
-# max_walltime = 72 hours
+# max_memory_per_core = 3
+# max_walltime = 72
 # # see http://gridengine.info/2005/11/04/immediate-accounting-data-flushing
 # # if you need to lower this
 # accounting_delay = 15
@@ -230,8 +230,8 @@ architecture=x64_64
 # architecture = x86_64
 # max_cores = 8192
 # max_cores_per_job = 1024
-# max_memory_per_core = 3 GB
-# max_walltime = 72 hours
+# max_memory_per_core = 3
+# max_walltime = 72
 # # you can specify alternate paths to the LSF commands, e.g., to use
 # # wrapper scripts or to specify addtional options; GC3Pie will *append*
 # # the standard arguments to what you specify here
@@ -257,24 +257,6 @@ architecture=x64_64
 # 
 # ec2_secret_key =
 
-# [auth/hobbes]
-# type = openstack
-#
-# If `os_username` is empty, then the `OS_USERNAME` environment
-# variable will be used, if any.
-# 
-# os_username =
-#
-# If `os_password` is empty, then the `OS_PASSWORD` environment
-# variable will be used, if any.
-# 
-# os_password =
-#
-# If `os_project_name` is empty, then the `OS_TENANT_NAME` environment
-# variable will be used, if any.
-#
-# os_project_name =
-
 # Images created by the GC3 team have a `gc3-user` account by default.
 #
 # [auth/gc3user_ssh]
@@ -282,53 +264,6 @@ architecture=x64_64
 # username = gc3-user
 
 # [resource/hobbes]
-# enabled = yes
-# auth = hobbes
-#
-# This resource will create a new VM for each submitted job, and a
-# resource associated to the VM. These subresources define the way we
-# access the VM. It is usually a `shellcmd` backend with `ssh`
-# transport, but in the future this may change.
-#
-# The `type` option defines which backend we want to use for the
-# subresource. The syntax is:
-#
-# openstack+`subresourcetype`
-#
-# where `subresourcetype` is any valid resource type. However, we
-# currently only support `shellcmd`.
-# 
-# type = openstack+shellcmd
-
-# If `os_auth_url` is empty, then the `OS_AUTH_URL` environment variable
-# is will be used. 
-# 
-# os_auth_url = http://cloud.gc3.uzh.ch:5000/v2.0
-
-# OpenStack Region to use.
-#
-# os_region = nova
-
-# Maximum number of VM running at the same time
-# 
-# vm_pool_max_size = 
-
-# Operating System memory overhead for each VM.
-# This value will be used to compute the memory availability of a given 
-# flavor when matching it with the application memory requirements:
-#
-# flavor.memory - vm_os_overhead >= application.requested_memory
-#
-# This should guarantee that the actual available memory of a given VM will
-# satisfy the application requirements.
-# 
-# vm_os_overhead = 512 MiB
-
-### **Note:** You also need to copy here the contents of the "VM AUTHENTICATION"
-### and "CLOUD SECURITY" sections below!
-
-
-# [resource/ec2hobbes]
 # enabled = yes
 # auth = ec2hobbes
 #
@@ -451,7 +386,7 @@ architecture=x64_64
 # Values currently used by the resource broker of GC3Pie.
 #
 # max_cores_per_job = 8
-# max_memory_per_core = 2 GB
-# max_walltime = 8 hours
+# max_memory_per_core = 2
+# max_walltime = 8
 # max_cores = 32
 # architecture = x86_64

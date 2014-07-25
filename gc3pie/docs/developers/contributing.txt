@@ -230,6 +230,23 @@ configuration files. However, if you feel that the environments can be
       tox -r
 
 
+Running tests on Python 2.5
++++++++++++++++++++++++++++
+
+Python 2.5 lacks SSL support, which is now activated by default in
+``pip`` and ``distutils``.  As a result, ``tox`` will not be able to
+download dependecies and fail.
+
+To work around this issue, use the following invocation of the test
+runner:
+
+        env PIP_INSECURE=1 tox -e py25
+
+The workaround comes -of course- at the expense of a security risk:
+you might be downloading and executing Python code from a rogue PyPI
+server...
+
+
 Organizing tests
 ~~~~~~~~~~~~~~~~
 

@@ -45,8 +45,3 @@ script::
    When you want to run ``ggeotop`` again, you need to run the
    ``ggeotop_util clean test/data/public_test`` *without* the
    ``--simulate`` option, to remove the output files.
-
-   ``ggeotop`` supports also a resource with a shared filesystem
-   thus avoids to compress input data and copy them forth and back.
-   Use the option ``-S`` for running ggeotop on a resource with 
-   shared filesystem.

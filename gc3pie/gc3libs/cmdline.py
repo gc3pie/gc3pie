@@ -2,7 +2,7 @@
 #
 #   cmdline.py -- Prototypes for GC3Libs-based scripts
 #
-#   Copyright (C) 2010, 2011, 2012, 2014 GC3, University of Zurich
+#   Copyright (C) 2010, 2011, 2012 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -878,7 +878,7 @@ class SessionBasedScript(_Script):
         if 'task' in task:
             # RetryableTask
             self._fix_output_dir(task.task, name)
-
+            
 
 
     def new_tasks(self, extra):
@@ -984,15 +984,14 @@ class SessionBasedScript(_Script):
         # ensure we display enough decimal digits in percentages when
         # running a large number of jobs; see Issue 308 for a more
         # detailed descrition of the problem
-        if total > 0:
-            precision = max(1, math.log10(total) - 1)
-            fmt = '(%%.%df%%%%)' % precision
-            for state in sorted(stats.keys()):
-                table.add_row([
-                        state,
-                        "%d/%d" % (stats[state], total),
-                        fmt % (100.00 * stats[state] / total)
-                        ])
+        precision = max(1, math.log10(total) - 1)
+        fmt = '(%%.%df%%%%)' % precision
+        for state in sorted(stats.keys()):
+            table.add_row([
+                    state,
+                    "%d/%d" % (stats[state], total),
+                    fmt % (100.00 * stats[state] / total)
+                    ])
         output.write(str(table))
         output.write("\n")
 
@@ -1185,7 +1184,7 @@ class SessionBasedScript(_Script):
                        " and start a new session afresh.  Any information about previous jobs is lost.")
 
         # 3. script execution control
-        self.add_param("-C", "--continuous", "--watch",
+        self.add_param("-C", "--continuous",
                        type=positive_int, dest="wait", default=0,
                        metavar="NUM",
                        help="Keep running, monitoring jobs and possibly submitting new ones or"
@@ -1350,11 +1349,10 @@ class SessionBasedScript(_Script):
         ## create an `Engine` instance to manage the job list
         self._controller = self.make_task_controller()
 
-        ## the main loop, at long last!
+        # ...now do a first round of submit/update/retrieve
         self.before_main_loop()
         rc = 13 # Keep in sync with `_Script.run()` method
         try:
-            # do a first round of submit/update/retrieve...
             rc = self._main_loop()
             if self.params.wait > 0:
                 self.log.info("sleeping for %d seconds..." % self.params.wait)
@@ -1365,7 +1363,6 @@ class SessionBasedScript(_Script):
                     # interrupts in the breaks.  Ugly, but works...
                     for x in xrange(self.params.wait):
                         time.sleep(1)
-                    # ...and now repeat the submit/update/retrieve
                     rc = self._main_loop()
         except KeyboardInterrupt: # gracefully intercept Ctrl+C
             sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
@@ -1398,8 +1395,18 @@ class SessionBasedScript(_Script):
           the script, so be careful.
 
         Invocation of this method should return a numeric exitcode,
-        that will be used as the scripts' exitcode.  See
-        `_main_loop_exitcode` for an explanation.
+        that will be used as the scripts' exitcode.  As stated in the
+        `SessionBasedScript`, the exitcode is a bitfield; only the 4
+        least-significant bits are used, with the following meaning:
+
+           ===  ============================================================
+           Bit  Meaning
+           ===  ============================================================
+             0  Set if a fatal error occurred: the script could not complete
+             1  Set if there are jobs in `FAILED` state
+             2  Set if there are jobs in `RUNNING` or `SUBMITTED` state
+             3  Set if there are jobs in `NEW` state
+           ===  ============================================================
         """
         # advance all jobs
         self._controller.progress()
@@ -1407,7 +1414,8 @@ class SessionBasedScript(_Script):
         self.every_main_loop()
         # print results to user
         print ("Status of jobs in the '%s' session: (at %s)"
-               % (self.session.name, time.strftime('%X, %x')))
+               % (os.path.basename(self.params.session),
+                  time.strftime('%X, %x')))
         # summary
         stats = self._controller.stats()
         total = stats['total']
@@ -1424,32 +1432,10 @@ class SessionBasedScript(_Script):
         else:
             if self.params.session is not None:
                 print ("  There are no tasks in session '%s'."
-                       % self.session.name)
+                       % self.params.session)
             else:
                 print ("  No tasks in this session.")
         # compute exitcode based on the running status of jobs
-        return self._main_loop_exitcode(stats)
-
-    def _main_loop_exitcode(self, stats):
-        """
-        Compute the exit code for the `_main` function.
-        (And, hence, for the whole `SessionBasedScript`.)
-
-        The exitcode is a bitfield; only the 4 least-significant bits
-        are used, with the following meaning:
-
-           ===  ============================================================
-           Bit  Meaning
-           ===  ============================================================
-             0  Set if a fatal error occurred: the script could not complete
-             1  Set if there are jobs in `FAILED` state
-             2  Set if there are jobs in `RUNNING` or `SUBMITTED` state
-             3  Set if there are jobs in `NEW` state
-           ===  ============================================================
-
-        Override this method if you need to alter the termination
-        condition for a `SessionBasedScript`.
-        """
         rc = 0
         if stats['failed'] > 0:
             rc |= 2

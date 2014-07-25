@@ -36,7 +36,7 @@ import gc3libs.authentication
 from gc3libs.compat._collections import defaultdict
 import gc3libs.utils
 
-from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds, MiB
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.utils import defproperty
 
 
@@ -80,11 +80,7 @@ def _parse_architecture(arch_str):
 def _legacy_parse_duration(duration_str):
     try:
         # old-style config: integral number of hours
-        val = int(duration_str)*hours
-        gc3libs.log.warning("'max_walltime' should always have a " \
-                             "valid unit format (e.g. '24 hours'). Using "\
-                             "default unit: hours")
-        return val
+        return int(duration_str)*hours
     except ValueError:
         # apply `Duration` parsing rules; if this fails, users will
         # see the error message from the `Duration` parser.
@@ -93,28 +89,12 @@ def _legacy_parse_duration(duration_str):
 def _legacy_parse_memory(memory_str):
     try:
         # old-style config: integral number of GBs
-        val = int(memory_str)*GB
-        gc3libs.log.warning("'max_memory_per_core' should always have a " \
-                             "valid unit format (e.g. '2 GB'). Using "\
-                             "default unit: GB")
-        return val
+        return int(memory_str)*GB
     except ValueError:
         # apply usual quantity parsing rules; if this fails, users
         # will see the error message from the `Memory`/`Quantity` parser.
         return Memory(memory_str)
 
-def _legacy_parse_os_overhead(os_overhead_str):
-    try:
-        # old-style config: integral number of MiBs
-        val = int(os_overhead_str)*MiB
-        gc3libs.log.warning("'vm_os_overhead' should always have a " \
-                             "valid unit format (e.g. '512 MiB'). Using "\
-                             "default unit: MiB")
-        return val
-    except ValueError:
-        # apply usual quantity parsing rules; if this fails, users
-        # will see the error message from the `Memory`/`Quantity` parser.
-        return Memory(os_overhead_str)
 
 ## the main class of this module
 
@@ -326,6 +306,12 @@ class Configuration(gc3libs.utils.Struct):
                 config_items = dict(parser.items(sectname))
                 auths[name].update(config_items)
                 auths[name]['name'] = name
+                if __debug__:
+                    gc3libs.log.debug(
+                        "Config._parse(): Auth '%s' defined by: %s.",
+                        name, str.join(', ', [
+                            ("%s=%r" % (k,v)) for k,v in sorted(auths[name].iteritems())
+                            ]))
 
             elif  sectname.startswith('resource/'):
                 # handle resource section
@@ -424,7 +410,6 @@ class Configuration(gc3libs.utils.Struct):
         'max_cores_per_job':   int,
         'max_memory_per_core': _legacy_parse_memory,
         'max_walltime':        _legacy_parse_duration,
-        'vm_os_overhead':      _legacy_parse_os_overhead,
         }
 
 
@@ -585,9 +570,6 @@ class Configuration(gc3libs.utils.Struct):
             elif resdict['type'].split('+')[0] == gc3libs.Default.EC2_LRMS:
                 from gc3libs.backends.ec2 import EC2Lrms
                 cls = EC2Lrms
-            elif resdict['type'].split('+')[0] == gc3libs.Default.OPENSTACK_LRMS:
-                from gc3libs.backends.openstack import OpenStackLrms
-                cls = OpenStackLrms
             else:
                 raise gc3libs.exceptions.ConfigurationError(
                     "Unknown resource type '%s'" % resdict['type'])

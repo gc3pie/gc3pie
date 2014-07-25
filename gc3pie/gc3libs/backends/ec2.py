@@ -32,7 +32,6 @@ import time
 try:
     import boto
     import boto.ec2.regioninfo
-    import boto.exception
 except ImportError:
     from gc3libs.exceptions import ConfigurationError
     raise ConfigurationError(
@@ -45,60 +44,191 @@ import Crypto
 # GC3Pie imports
 import gc3libs
 from gc3libs.exceptions import RecoverableError, UnrecoverableError, \
-    ConfigurationError, LRMSSkipSubmissionToNextIteration, \
-    MaximumCapacityReached, UnrecoverableAuthError, TransportError
+    ConfigurationError, LRMSSkipSubmissionToNextIteration, UnrecoverableAuthError
 import gc3libs.url
 from gc3libs import Run
-from gc3libs.utils import mkdir, same_docstring_as, insert_char_every_n_chars
+from gc3libs.utils import same_docstring_as, insert_char_every_n_chars
 from gc3libs.backends import LRMS
-from gc3libs.backends.vmpool import VMPool, InstanceNotFound
 from gc3libs.session import Session
 from gc3libs.persistence import Persistable
 
 available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
 
-# example Boto error message:
-#     <Response><Errors><Error><Code>TooManyInstances</Code><Message>Quota exceeded for ram: Requested 8000, but already used 16000 of 16384 ram</Message></Error></Errors><RequestID>req-c219213b-88d2-42dc-a3ab-10ac80aa7df7</RequestID></Response>
-#
-_BOTO_ERRMSG_RE = re.compile(r'<Code>(?P<code>[A-Za-z0-9]+)</Code><Message>(?P<message>.*)</Message>', re.X)
 
-class EC2VMPool(VMPool):
+class VMPool(Persistable):
     """
-    Specific implementation of VMPool
+    Will hold a list of VMs. Will persiste a list of vm ids.
+
+       >>> vmpool = VMPool('pool', None)
+       >>> vmpool._vm_ids
+       set([])
+       >>> vmpool._vms
+       {}
+
+    save VMPool to disk
+
+       >>> from tempfile import mkdtemp
+       >>> tmpdir = mkdtemp()
+       >>> s = Session(tmpdir)
+       >>> s.add(vmpool)
+       'pool'
+       >>> vmpool._vms['x'] = 'xxx'
+       >>> vmpool._vm_ids.add('x')
+       >>> s.save(vmpool)
+       'pool'
+
+    Standard representation of a VMPool is its vm ids:
+
+       >>> vmpool
+       ['x']
+
+    while string representation is:
+
+       >>> str(vmpool)
+       "VMPool('pool') : ['x']"
+
+       >>> len(vmpool)
+       1
+
+    load the saved VMPool object from disk
+
+       >>> s2 = Session(tmpdir)
+       >>> vmpool2 = s2.load('pool')
+
+    the internal dictionary msut be empty
+
+       >>> vmpool2._vms
+       {}
+
+   while the list of VM ids should be there.
+
+       >>> vmpool2._vm_ids
+       set(['x')
+       >>> 'x' in vmpool2
+       True
+
+    Check if `del` works:
+
+       >>> vmpool2._vms['x'] = 'xxx'
+       >>> vmpool2._vms
+       {'x': 'xxx'}
+       >>> del vmpool2['x']
+       >>> vmpool2._vms
+       {}
+       >>> vmpool2._vm_ids
+       set([])
+
+    cleanup
+
+       >>> import shutil
+       >>> shutil.rmtree(tmpdir)
     """
-    def _get_instance(self, vm_id):
-        # contact EC2 API to get VM info
+
+    def __init__(self, name, ec2_connection):
+        self.persistent_id = name
+        self.conn = ec2_connection
+        self._vms = {}
+        self._vm_ids = set()
+        self.changed = False
+
+    def __repr__(self):
+        return self._vm_ids.__repr__()
+
+    def __str__(self):
+        return "VMPool('%s') : %s" % (self.persistent_id, self._vm_ids)
+
+    def __len__(self):
+        return len(self._vm_ids)
+
+    def __getstate__(self):
+        # Only save persistent_id and list of IDs, do not save VM
+        # objects.
+        state = self.__dict__.copy()
+        state['_vms'] = dict()
+        state['conn'] = None
+        return state
+
+    def add_vm(self, vm):
+        """
+        Add a vm object to the list of VMs.
+        """
+        self._vm_ids.add(vm.id)
+        self._vms[vm.id] = vm
+        self.changed = True
+
+    def remove_vm(self, vm_id):
+        """
+        Remove VM with id `vm_id` from the list of known VMs. No
+        connection to the EC2 endpoint is performed.
+        """
+        if vm_id in self._vms:
+            del self._vms[vm_id]
+        if vm_id in self._vm_ids:
+            self._vm_ids.remove(vm_id)
+        self.changed = True
+
+    def get_vm(self, vm_id):
+        """
+        Return the VM object with id `vm_id`. If it is found in the
+        local cache, that object is returned. Otherwise a new VM
+        object is searched from the EC2 endpoint.
+        """
+        if vm_id in self._vms:
+            return self._vms[vm_id]
+
+        if not self.conn:
+            raise UnrecoverableError(
+                "No connection object found in `VMPool`")
         try:
             reservations = self.conn.get_all_instances(instance_ids=[vm_id])
-        except boto.exception.EC2ResponseError, err:
-            # scrape actual error kind and message out of the
-            # exception; we do this mostly for sensible logging, but
-            # could be an actual improvement to Boto to provide
-            # different exception classes based on the <Code>
-            # element...
-            # XXX: is there a more robust way of doing this?
-            match = _BOTO_ERRMSG_RE.search(str(err))
-            if match:
-                raise UnrecoverableError(
-                    "Error getting info on VM %s: EC2ResponseError/%s: %s"
-                    % (vm_id, match.group('code'), match.group('message')),
-                    do_log=True)
-            else:
-                # fall back to normal reporting...
-                raise UnrecoverableError(
-                    "Error getting VM %s: %s" % (vm_id, err),
-                    do_log=True)
+        except boto.exception.EC2ResponseError, ex:
+            gc3libs.log.error(
+                "Error getting VM %s: %s", vm_id, ex)
+            raise UnrecoverableError(
+                "Error getting VM %s: %s" % (vm_id, ex))
         if not reservations:
-            raise InstanceNotFound(
-                "No instance with id %s has been found." % vm_id)
+            raise UnrecoverableError(
+                "Instance with id %s has not found." % vm_id)
 
         instances = dict((i.id, i) for i in reservations[0].instances
                          if reservations)
         if vm_id not in instances:
             raise UnrecoverableError(
-                "No instance with id %s has been found." % vm_id)
+                "Instance with id %s has not found." % vm_id)
+        vm = instances[vm_id]
+        self._vms[vm_id] = vm
+        if vm_id not in self._vm_ids:
+            self._vm_ids.add(vm_id)
+            self.changed = True
+        return vm
 
-        return instances[vm_id]
+    def get_all_vms(self):
+        """
+        Get all known VMs.
+        """
+        return [self.get_vm(vm_id) for vm_id in self._vm_ids]
+
+    def __iter__(self):
+        """
+        Iterate over the list of known VM ids.
+        """
+        # We need to create a new list because the _vm_ids set may be
+        # updated during iteration.
+        return iter(list(self._vm_ids))
+
+    def __getitem__(self, vm_id):
+        """
+        Return the VM with id `vm_id`.
+
+        x.__getitem__(vm_id) <==> x.get_vm(vm_id)
+        """
+        return self.get_vm(vm_id)
+
+    def __delitem__(self, vm_id):
+        """
+        x.__delitem__(self, vm_id) <==> x.remove_vm(vm_id)
+        """
+        return self.remove_vm(vm_id)
 
 
 class EC2Lrms(LRMS):
@@ -141,22 +271,18 @@ class EC2Lrms(LRMS):
         self.region = ec2_region
 
         # Mapping of job.ec2_instance_id => LRMS
-        self.subresources = {}
+        self.resources = {}
 
         auth = self._auth_fn()
         self.ec2_access_key = auth.ec2_access_key
         self.ec2_secret_key = auth.ec2_secret_key
-        if ec2_url is None:
-            ec2_url = os.getenv('EC2_URL')
-        if ec2_url is None:
-            raise gc3libs.exceptions.InvalidArgument(
-                "Cannot connect to the EC2 API:"
-                " No 'EC2_URL' environment variable defined,"
-                " and no 'ec2_url' argument passed to the EC2 backend.")
-        self.ec2_url = gc3libs.url.Url(ec2_url)
+        if ec2_url:
+            self.ec2_url = gc3libs.url.Url(ec2_url)
+        else:
+            self.ec2_url = os.getenv('EC2_URL')
 
         # Keypair names can only contain alphanumeric chars!
-        if re.match(r'.*\W.*', keypair_name):
+        if re.match('.*\W.*', keypair_name):
             raise ConfigurationError(
                 "Keypair name `%s` is invalid: keypair names can only contain "
                 "alphanumeric chars: [a-zA-Z0-9_]" % keypair_name)
@@ -165,7 +291,6 @@ class EC2Lrms(LRMS):
         self.image_id = image_id
         self.image_name = image_name
         self.instance_type = instance_type
-        self._instance_type_specs = {}
         self.user_data = user_data
 
         self._parse_security_group()
@@ -174,11 +299,9 @@ class EC2Lrms(LRMS):
         # `self.subresource_args` is used to create subresources
         self.subresource_args = extra_args
         self.subresource_args['type'] = self.subresource_type
-        self.subresource_args['architecture'] = self['architecture']
-        self.subresource_args['max_cores'] = self['max_cores']
-        self.subresource_args['max_cores_per_job'] = self['max_cores_per_job']
-        self.subresource_args['max_memory_per_core'] = self['max_memory_per_core']
-        self.subresource_args['max_walltime'] = self['max_walltime']
+        for key in ['architecture', 'max_cores', 'max_cores_per_job',
+                    'max_memory_per_core', 'max_walltime']:
+            self.subresource_args[key] = self[key]
         # ShellcmdLrms by default trusts the configuration, instead of
         # checking the real amount of memory and number of cpus, but
         # we need the real values instead.
@@ -190,12 +313,6 @@ class EC2Lrms(LRMS):
                 "No `image_id` or `image_name` has been specified in the"
                 " configuration file.")
 
-        # helper for creating sub-resources
-        self._cfgobj = gc3libs.config.Configuration(
-            *gc3libs.Default.CONFIG_FILE_LOCATIONS,
-            auto_enable_auth=True)
-
-
     def _connect(self):
         """
         Connect to the EC2 endpoint and check that the required
@@ -204,16 +321,14 @@ class EC2Lrms(LRMS):
         if self._conn is not None:
             return
 
-        args = {
-            'aws_access_key_id':     self.ec2_access_key,
-            'aws_secret_access_key': self.ec2_secret_key,
-        }
+        args = {'aws_access_key_id': self.ec2_access_key,
+                'aws_secret_access_key': self.ec2_secret_key,
+                }
 
         if self.ec2_url:
             region = boto.ec2.regioninfo.RegionInfo(
                 name=self.region,
-                endpoint=self.ec2_url.hostname,
-            )
+                endpoint=self.ec2_url.hostname)
             args['region'] = region
             args['port'] = self.ec2_url.port
             args['host'] = self.ec2_url.hostname
@@ -222,24 +337,22 @@ class EC2Lrms(LRMS):
                 args['is_secure'] = False
 
         self._conn = boto.connect_ec2(**args)
-        # Set up the VMPool persistent class. This has been delayed
-        # until here because otherwise self._conn is None
-        pooldir = os.path.join(os.path.expandvars(EC2Lrms.RESOURCE_DIR),
-                               'vmpool', self.name)
-        self._vmpool = EC2VMPool(pooldir, self._conn)
 
-        try:
-            all_images = self._conn.get_all_images()
-        except boto.exception.EC2ResponseError as ex:
-            if ex.status == 404:
-                # NotFound, probaly the endpoint is wrong
-                raise RuntimeError(
-                    "Unable to contact the EC2 endpoint at `%s`. Please, "
-                    "verify that the URL in the configuration file is "
-                    "correct." % (self.ec2_url,))
-            raise RuntimeError(
-                "Unknown error while connecting to the EC2 endpoint `%s`: "
-                "%s" % (self.ec2_url, ex))
+        # Set up the VMPool persistent class This has been delied
+        # until here because otherwise self._conn is None
+        self._session = Session(
+            os.path.expanduser(os.path.expandvars(EC2Lrms.RESOURCE_DIR)))
+        vmpoolid = 'vmpool:%s' % self.name
+        if vmpoolid in self._session.list_ids():
+            # Recover the list of available vm ids
+            self._vms = self._session.load(vmpoolid)
+            self._vms.conn = self._conn
+        else:
+            # Create a new VMPool object
+            self._vms = VMPool(vmpoolid, self._conn)
+            self._session.add(self._vms)
+
+        all_images = self._conn.get_all_images()
         if self.image_id:
             if self.image_id not in [i.id for i in all_images]:
                 raise RuntimeError(
@@ -271,11 +384,9 @@ class EC2Lrms(LRMS):
         """
         self._connect()
 
-        args = {
-            'key_name':  self.keypair_name,
-            'min_count': 1,
-            'max_count': 1
-        }
+        args = {'key_name':  self.keypair_name,
+                'min_count': 1,
+                'max_count': 1}
         if instance_type:
             args['instance_type'] = instance_type
 
@@ -292,53 +403,103 @@ class EC2Lrms(LRMS):
             # exists but have different fingerprint
             self._import_keypair()
         else:
-            self._have_keypair(keypairs[self.keypair_name])
+            keyfile = self.public_key
+            if keyfile.endswith('.pub'):
+                keyfile = keyfile[:-4]
+            else:
+                gc3libs.log.warning(
+                    "Option `public_key` in configuration file should contain"
+                    " the path to a public key file (with `.pub` ending),"
+                    " but '%s' was found instead. Continuing anyway.",
+                    self.public_key)
+            try:
+                pkey = paramiko.DSSKey.from_private_key_file(keyfile)
+                # AWS does not allow DSA keys, so no point in
+                # computing the alternate digest
+                key_for_aws_digest = None
+            except paramiko.PasswordRequiredException:
+                raise RuntimeError(
+                    "Key %s is encripted with a password. Please, use"
+                    " an unencrypted key or --prefereably-- use `ssh-agent`"
+                    % keyfile)
+            except paramiko.SSHException, ex:
+                gc3libs.log.debug("File `%s` is not a valid DSS private key:"
+                                  " %s", keyfile, ex)
+                try:
+                    pkey = paramiko.RSAKey.from_private_key_file(keyfile)
+                    # we need PyCrypto for computing the alternate AWS digest
+                    with open(keyfile, 'r') as keydata:
+                        key_for_aws_digest = Crypto.PublicKey.RSA.importKey(keydata)
+                except paramiko.PasswordRequiredException:
+                    raise RuntimeError(
+                        "Key %s is encripted with a password. Please, use"
+                        " an unencrypted key or --preferably-- use `ssh-agent`"
+                        % keyfile)
+                except paramiko.SSHException, ex:
+                    gc3libs.log.debug("File `%s` is not a valid RSA private "
+                                      "key: %s", keyfile, ex)
+                    raise ValueError("Public key `%s` is neither a valid "
+                                     "RSA key nor a DSS key" % self.public_key)
+
+            # Check key fingerprint
+            localkey_fingerprints = [
+                # Usual SSH key fingerprint, computed like `ssh-keygen -l -f`
+                # This is used, e.g., by OpenStack's EC2 compatibility layer.
+                str.join(':', (i.encode('hex') for i in pkey.get_fingerprint())),
+            ]
+            if key_for_aws_digest:
+                localkey_fingerprints.append(
+                    # Amazon EC2 computes the key fingerprint in a
+                    # different way, see http://blog.jbrowne.com/?p=23 and
+                    # https://gist.github.com/jtriley/7270594 for details.
+                    insert_char_every_n_chars(
+                        hashlib.md5(key_for_aws_digest
+                                    .publickey()
+                                    .exportKey('DER')).hexdigest(), ':', 2),
+                )
+            if keypairs[self.keypair_name].fingerprint not in localkey_fingerprints:
+                gc3libs.log.error(
+                    "Keypair `%s` is present but has different fingerprint: "
+                    "%s != %s. Aborting!" % (
+                        self.keypair_name,
+                        localkey_fingerprint,
+                        keypairs[self.keypair_name].fingerprint))
+                raise UnrecoverableError(
+                    "Keypair `%s` is present but has different fingerprint: "
+                    "%s != %s. Aborting!" % (
+                        self.keypair_name,
+                        localkey_fingerprint,
+                        keypairs[self.keypair_name].fingerprint))
 
         # Setup security groups
         if 'security_group_name' in self:
             self._setup_security_groups()
             args['security_groups'] = [self.security_group_name]
 
-        # FIXME: we should add check/creation of proper security
-        # groups
+        # FIXME: we should add check/creation of proper security groups
         gc3libs.log.debug("Create new VM using image id `%s`", image_id)
         try:
             reservation = self._conn.run_instances(image_id, **args)
-        except boto.exception.EC2ResponseError, err:
-            # scrape actual error kind and message out of the
-            # exception; we do this mostly for sensible logging, but
-            # could be an actual improvement to Boto to provide
-            # different exception classes based on the <Code>
-            # element...
-            # XXX: is there a more robust way of doing this?
-            match = _BOTO_ERRMSG_RE.search(str(err))
-            if match:
-                raise UnrecoverableError(
-                    "Error starting instance: EC2ResponseError/%s: %s"
-                    % (match.group('code'), match.group('message')))
-            else:
-                # fall back to normal reporting...
-                raise UnrecoverableError("Error starting instance: %s" % err)
         except Exception, ex:
-            raise UnrecoverableError("Error starting instance: %s" % ex)
+            raise UnrecoverableError("Error starting instance: %s" % str(ex))
         vm = reservation.instances[0]
-        self._vmpool.add_vm(vm)
+        self._vms.add_vm(vm)
         gc3libs.log.info(
             "VM with id `%s` has been created and is in %s state.",
             vm.id, vm.state)
+
         return vm
 
-    def _get_subresource(self, vm):
+    def _get_remote_resource(self, vm):
         """
-        Return the resource associated to the virtual machine `vm`.
+        Return the resource associated to the virtual machine with
+        `vm`.
 
         Updates the internal list of available resources if needed.
-
         """
-        if vm.id not in self.subresources:
-            self.subresources[vm.id] = self._make_subresource(
-                vm.id, vm.preferred_ip)
-        return self.subresources[vm.id]
+        if vm.id not in self.resources:
+            self.resources[vm.id] = self._make_resource(vm.public_dns_name)
+        return self.resources[vm.id]
 
     def _get_vm(self, vm_id):
         """
@@ -346,161 +507,42 @@ class EC2Lrms(LRMS):
         is no such instance with that id.
         """
         self._connect()
-        vm = self._vmpool.get_vm(vm_id)
+        vm = self._vms.get_vm(vm_id)
+        self._session.save(self._vms)
+        # self._session.save_all()
         return vm
-
-    @staticmethod
-    def __pubkey_ssh_fingerprint(privkey):
-        """
-        Compute SSH public key fingerprint like `ssh-keygen -l -f`.
-
-        We need to convert the key fingerprint from Paramiko's
-        internal representation to this colon-separated hex format
-        because that's the way the fingerprint is returned from the
-        EC2 API.
-        """
-        return str.join(':', (i.encode('hex') for i in privkey.get_fingerprint()))
-
-    @staticmethod
-    def __pubkey_ssh_fingerprint(privkey):
-        """
-        Compute SSH public key fingerprint like `ssh-keygen -l -f`.
-
-        Return a string representation of the key fingerprint in
-        colon-separated hex format (just like OpenSSH commands print
-        it to the terminal).
-
-        Argument `privkey` is a `paramiko.pkey.PKey` object.
-        """
-        return str.join(':', (i.encode('hex') for i in privkey.get_fingerprint()))
-
-    @staticmethod
-    def __pubkey_aws_fingerprint(privkeypath, reader=Crypto.PublicKey.RSA.importKey):
-        """
-        Compute SSH public key fingerprint like AWS EC2 does.
-
-        Return a string representation of the key fingerprint in
-        colon-separated hex format (just like OpenSSH commands print
-        it to the terminal).
-
-        Argument `privkeypath` is the filesystem path to a file
-        containing the private key data.
-        """
-        with open(privkeypath, 'r') as keydata:
-            pubkey = reader(keydata).publickey()
-            return insert_char_every_n_chars(
-                hashlib.md5(pubkey.exportKey('DER')).hexdigest(), ':', 2)
-
-    def _have_keypair(self, ec2_key):
-        """
-        Check if the given SSH key is available locally.
-
-        Try to locate the given SSH key first among the keys loaded
-        into a running ``ssh-agent`` (if any), then in the key file
-        given in the ``public_key`` configuration key.
-        """
-        # try with SSH agent first
-        gc3libs.log.debug("Checking if keypair is registered in SSH agent...")
-        agent = paramiko.Agent()
-        fingerprints_from_agent = [
-            self.__pubkey_ssh_fingerprint(privkey)
-            for privkey in agent.get_keys()
-        ]
-        if ec2_key.fingerprint in fingerprints_from_agent:
-            gc3libs.log.debug("Found remote key fingerprint in SSH agent.")
-            return True
-
-        # else, try to load from file
-        keyfile = self.public_key
-        if keyfile.endswith('.pub'):
-            keyfile = keyfile[:-4]
-        else:
-            gc3libs.log.warning(
-                "Option `public_key` in configuration file should contain"
-                " the path to a public key file (with `.pub` ending),"
-                " but `%s` was found instead. Continuing anyway.",
-                self.public_key)
-
-        privkey = None
-        local_fingerprints = [ ]
-        for format, privkey_reader, pubkey_reader in [
-                ('DSS', paramiko.DSSKey.from_private_key_file, Crypto.PublicKey.DSA.importKey),
-                ('RSA', paramiko.RSAKey.from_private_key_file, Crypto.PublicKey.RSA.importKey),
-                ]:
-            try:
-                gc3libs.log.debug(
-                    "Trying to load key file `%s` as SSH %s key...",
-                    keyfile, format)
-                privkey = privkey_reader(keyfile)
-                gc3libs.log.info(
-                    "Successfully loaded key file `%s` as SSH %s key.",
-                    keyfile, format)
-                # compute public key fingerprints, for comparing them with the remote one
-                localkey_fingerprints = [
-                    # Usual SSH key fingerprint, computed like `ssh-keygen -l -f`
-                    # This is used, e.g., by OpenStack's EC2 compatibility layer.
-                    self.__pubkey_ssh_fingerprint(privkey),
-                    # Amazon EC2 computes the key fingerprint in a
-                    # different way, see http://blog.jbrowne.com/?p=23 and
-                    # https://gist.github.com/jtriley/7270594 for details.
-                    self.__pubkey_aws_fingerprint(keyfile, pubkey_reader),
-                ]
-            ## PasswordRequiredException < SSHException so we must check this first
-            except paramiko.PasswordRequiredException:
-                gc3libs.log.warning(
-                    "Key %s is encripted with a password, so we cannot check if it"
-                    " matches the remote keypair (maybe you should start `ssh-agent`?)."
-                    " Continuing without consistency check with remote fingerprint.",
-                    keyfile)
-                return False
-            except paramiko.SSHException, ex:
-                gc3libs.log.debug(
-                    "File `%s` is not a valid %s private key: %s",
-                    keyfile, format, ex)
-                # try with next format
-                continue
-        if privkey is None:
-            raise ValueError("Public key `%s` is neither a valid"
-                             " RSA key nor a DSS key" % self.public_key)
-
-        # check key fingerprint
-        if local_fingerprints and ec2_key.fingerprint not in localkey_fingerprints:
-            raise UnrecoverableAuthError(
-                "Keypair `%s` exists but has different fingerprint than local one:"
-                " local public key file `%s` has fingerprint(s) `%s`,"
-                " whereas EC2 API reports fingerprint `%s`. Aborting!" % (
-                    self.public_key,
-                    self.keypair_name,
-                    str.join('/', localkey_fingerprints),
-                    ec2_key.fingerprint,
-                ),
-                do_log=True)
 
     def _import_keypair(self):
         """
         Create a new keypair and import the public key defined in the
         configuration file.
         """
-        with open(os.path.expanduser(self.public_key)) as fd:
-            try:
-                key_material = fd.read()
-                imported_key = self._conn.import_key_pair(
-                    self.keypair_name, key_material)
-                gc3libs.log.info(
-                    "Successfully imported key `%s`"
-                    " with fingerprint `%s` as keypair `%s`",
-                    imported_key.name, imported_key.fingerprint, self.keypair_name)
-            except Exception, ex:
-                raise UnrecoverableError("Error importing keypair %s: %s"
-                                         % (self.keypair_name, ex))
+        fd = open(os.path.expanduser(self.public_key))
+        try:
+            key_material = fd.read()
+            imported_key = self._conn.import_key_pair(
+                self.keypair_name, key_material)
 
-    def _make_subresource(self, id, remote_ip):
+            gc3libs.log.info(
+                "Successfully imported key `%s` with fingerprint `%s`"
+                " as keypair `%s`" % (imported_key.name,
+                                      imported_key.fingerprint,
+                                      self.keypair_name))
+        except Exception, ex:
+            fd.close()
+            raise UnrecoverableError("Error importing keypair %s: %s"
+                                     % (self.keypair_name, ex))
+
+    def _make_resource(self, remote_ip):
         """
         Create a resource associated to the instance with `remote_ip`
         ip using configuration file parameters.
         """
-        gc3libs.log.debug(
-            "Creating remote ShellcmdLrms resource for ip %s", remote_ip)
+        if not remote_ip:
+            raise ValueError(
+                "_make_resource: `remote_ip` must be a valid IP or hostname.")
+        gc3libs.log.info("Creating remote ShellcmdLrms resource for ip %s",
+                         remote_ip)
         args = self.subresource_args.copy()
         args['frontend'] = remote_ip
         args['transport'] = "ssh"
@@ -508,10 +550,12 @@ class EC2Lrms(LRMS):
         if args['keyfile'].endswith('.pub'):
             args['keyfile'] = args['keyfile'][:-4]
         args['ignore_ssh_host_keys'] = True
-        args['name'] = "%s@%s" % (id, self.name)
+        args['name'] = "%s@%s" % (remote_ip, self.name)
         args['auth'] = args['vm_auth']
-        args['ssh_timeout'] = 7
-        resource = self._cfgobj._make_resource(args)
+        cfg = gc3libs.config.Configuration(
+            *gc3libs.Default.CONFIG_FILE_LOCATIONS,
+            **{'auto_enable_auth': True})
+        resource = cfg._make_resource(args)
         return resource
 
     def _parse_security_group(self):
@@ -527,12 +571,12 @@ class EC2Lrms(LRMS):
                 gc3libs.log.warning("Invalid rule specification in"
                                     " `security_group_rules`: %s" % rule)
                 continue
-            self.security_group_rules.append({
-                'ip_protocol': rulesplit[0],
-                'from_port':   int(rulesplit[1]),
-                'to_port':     int(rulesplit[2]),
-                'cidr_ip':     rulesplit[3],
-            })
+            self.security_group_rules.append(
+                {'ip_protocol': rulesplit[0],
+                 'from_port':   int(rulesplit[1]),
+                 'to_port':     int(rulesplit[2]),
+                 'cidr_ip':     rulesplit[3],
+                 })
 
     def _setup_security_groups(self):
         """
@@ -576,12 +620,11 @@ class EC2Lrms(LRMS):
             security_group = groups[self.security_group_name]
             current_rules = []
             for rule in security_group.rules:
-                rule_dict = {
-                    'ip_protocol':  rule.ip_protocol,
-                    'from_port':    int(rule.from_port),
-                    'to_port':      int(rule.to_port),
-                    'cidr_ip':      str(rule.grants[0]),
-                }
+                rule_dict = {'ip_protocol':  rule.ip_protocol,
+                             'from_port':    int(rule.from_port),
+                             'to_port':      int(rule.to_port),
+                             'cidr_ip':      str(rule.grants[0]),
+                             }
                 current_rules.append(rule_dict)
 
             for new_rule in self.security_group_rules:
@@ -625,7 +668,7 @@ class EC2Lrms(LRMS):
 
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
-        resource = self._get_subresource(self._get_vm(app.ec2_instance_id))
+        resource = self._get_remote_resource(self._get_vm(app.ec2_instance_id))
         return resource.cancel_job(app)
 
     @same_docstring_as(LRMS.get_resource_status)
@@ -639,17 +682,17 @@ class EC2Lrms(LRMS):
 
         self._connect()
         # Update status of known VMs
-        for vm_id in self._vmpool:
+        for vm_id in self._vms:
             try:
-                vm = self._vmpool.get_vm(vm_id)
+                vm = self._vms.get_vm(vm_id)
             except UnrecoverableError, ex:
                 gc3libs.log.warning(
                     "Removing stale information on VM `%s`. It has probably"
                     " been deleted from outside GC3Pie.", vm_id)
-                self._vmpool.remove_vm(vm_id)
+                self._vms.remove_vm(vm_id)
                 continue
 
-            vm.update()
+            state = vm.update()
             if vm.state == 'pending':
                 # If VM is still in pending state, skip creation of
                 # the resource
@@ -660,40 +703,24 @@ class EC2Lrms(LRMS):
                     "VM with id `%s` is in ERROR state."
                     " Terminating it!", vm.id)
                 vm.terminate()
-                self._vmpool.remove_vm(vm.id)
+                self._vms.remove_vm(vm.id)
             elif vm.state == 'terminated':
                 gc3libs.log.info(
-                    "VM `%s` in TERMINATED state. It has probably been terminated"
+                    "VM %s in TERMINATED state. It has probably been terminated"
                     " from outside GC3Pie. Removing it from the list of VM.",
                     vm.id)
-                self._vmpool.remove_vm(vm.id)
+                self._vms.remove_vm(vm.id)
             elif vm.state in ['shutting-down', 'stopped']:
                 # The VM has probably ben stopped or shut down from
                 # outside GC3Pie.
                 gc3libs.log.error(
-                    "VM with id `%s` is in terminal state `%s`.", vm.id, vm.state)
+                    "VM with id `%s` is in terminal state.", vm.id)
 
             # Get or create a resource associated to the vm
-            resource = self._get_subresource(vm)
+            resource = self._get_remote_resource(vm)
+
             try:
                 resource.get_resource_status()
-            except TransportError, ex:
-                for ip in [vm.public_dns_name, vm.private_ip_address]:
-                    if vm.preferred_ip == ip:
-                        continue
-                    vm.preferred_ip = ip
-                    resource.frontend = ip
-                    gc3libs.log.info(
-                        "Connection error. Trying with secondary IP address %s",
-                        vm.preferred_ip)
-                    try:
-                        resource.get_resource_status()
-                        break
-                    except Exception, ex:
-                        gc3libs.log.info(
-                            "Ignoring error while updating resource %s. "
-                            "The corresponding VM may not be ready yet. Error: %s",
-                            resource.name, ex)
             except Exception, ex:
                 # XXX: Actually, we should try to identify the kind of
                 # error we are getting. For instance, if the
@@ -705,49 +732,23 @@ class EC2Lrms(LRMS):
                     "Ignoring error while updating resource %s. "
                     "The corresponding VM may not be ready yet. Error: %s",
                     resource.name, ex)
-            if resource.updated:
-                # Update also the instance_type specs, if not
-                # already updated
-                if not self._instance_type_specs:
-                    specs = self._instance_type_specs
-                    specs['architecture'] = resource['architecture']
-                    specs['max_cores'] = resource['max_cores']
-                    specs['max_cores_per_job'] = resource['max_cores_per_job']
-                    specs['max_memory_per_core'] = resource['total_memory']
-                    self.update(specs)
-
-        self._vmpool.update()
+        # Save the list of VMs, in case it has been updated.
+        self._session.save(self._vms)
+        # self._session.save_all()
         return self
 
     @same_docstring_as(LRMS.get_results)
-    def get_results(self, app, download_dir, overwrite=False, changed_only=True):
-        subresource = self._get_subresource(self._get_vm(app.ec2_instance_id))
-        return subresource.get_results(app, download_dir,
-                                    ignore_nonexisting=False,
-                                    overwrite=overwrite,
-                                    changed_only=changed_only)
+    def get_results(self, job, download_dir, overwrite=False):
+        resource = self._get_remote_resource(self._get_vm(job.ec2_instance_id))
+        return resource.get_results(job, download_dir, overwrite=False)
 
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
-        if app.ec2_instance_id not in self.subresources:
-            try:
-                self.subresources[app.ec2_instance_id] = self._get_subresource(
-                    self._get_vm(app.ec2_instance_id))
-            except InstanceNotFound, ex:
-                gc3libs.log.error(
-                    "Changing state of task '%s' to TERMINATED since EC2 "
-                    "instance '%s' does not exist anymore.",
-                    app.execution.lrms_jobid, app.ec2_instance_id)
-                app.execution.state = Run.State.TERMINATED
-                raise ex
-            except UnrecoverableError, ex:
-                gc3libs.log.error(
-                    "Changing state of task '%s' to UNKNOWN because of "
-                    "an EC2 error.", app.execution.lrms_jobid)
-                app.execution.state = Run.State.UNKNOWN
-                raise ex
+        if app.ec2_instance_id not in self.resources:
+            self.resources[app.ec2_instance_id] = self._get_remote_resource(
+                self._get_vm(app.ec2_instance_id))
 
-        return self.subresources[app.ec2_instance_id].update_job_state(app)
+        return self.resources[app.ec2_instance_id].update_job_state(app)
 
     def submit_job(self, job):
         """
@@ -789,40 +790,24 @@ class EC2Lrms(LRMS):
         #     http://code.google.com/p/gc3pie/issues/detail?id=386
         self.get_resource_status()
 
-        pending_vms = set(vm.id for vm in self._vmpool.get_all_vms()
+        pending_vms = set(vm.id for vm in self._vms.get_all_vms()
                           if vm.state == 'pending')
 
         image_id = self.get_image_id_for_job(job)
         instance_type = self.get_instance_type_for_job(job)
-        # Check that we can actually submit to a flavor like this
-        # XXX: this check shouldn't be done by the Engine???
-        if self._instance_type_specs:
-            specs = self._instance_type_specs
-            max_mem = specs['max_memory_per_core']
-            max_cpus = specs['max_cores_per_job']
-            if (job.requested_memory is not None and
-                job.requested_memory > max_mem) \
-                or (job.requested_cores is not None and
-                    job.requested_cores > max_cpus):
-                raise gc3libs.exceptions.LRMSSubmitError(
-                    "EC2 flavor %s does not have enough memory/cpus "
-                    "to run application %s" % (
-                        self.instance_type, job.jobname))
-
         # First of all, try to submit to one of the subresources.
-        for vm_id, resource in self.subresources.items():
+        for vm_id, resource in self.resources.items():
             if not resource.updated:
                 # The VM is probably still booting, let's skip to the
                 # next one and add it to the list of "pending" VMs.
                 pending_vms.add(vm_id)
-                continue
             try:
                 # Check that the required image id and instance type
                 # are correct
                 vm = self._get_vm(vm_id)
                 if vm.image_id != image_id or vm.instance_type != instance_type:
                     continue
-                resource.submit_job(job)
+                ret = resource.submit_job(job)
                 job.ec2_instance_id = vm_id
                 job.changed = True
                 gc3libs.log.info(
@@ -838,37 +823,41 @@ class EC2Lrms(LRMS):
         if not pending_vms:
             # No pending VM, and no resource available. Create a new VM
             if not self.vm_pool_max_size \
-                    or len(self._vmpool) < self.vm_pool_max_size:
+                    or len(self._vms) < self.vm_pool_max_size:
                 user_data = self.get_user_data_for_job(job)
                 vm = self._create_instance(image_id,
                                            instance_type=instance_type,
                                            user_data=user_data)
                 pending_vms.add(vm.id)
 
-                self._vmpool.add_vm(vm)
+                self._vms.add_vm(vm)
+                self._session.save(self._vms)
+                # self._session.save_all()
             else:
-                raise MaximumCapacityReached(
+                gc3libs.log.warning(
                     "Already running the maximum number of VM on resource %s:"
-                    " %d VMs started, but max %d allowed by configuration."
-                    % (self.name, len(self._vmpool), self.vm_pool_max_size),
-                    do_log=True)
+                    " %d >= %d.",
+                    self.name, len(self._vms), self.vm_pool_max_size)
+                raise RecoverableError(
+                    "Already running the maximum number of VM on resource %s:"
+                    " %d >= %d." % self.name, len(self._vms), self.vm_pool_max_size)
 
         # If we reached this point, we are waiting for a VM to be
         # ready, so delay the submission until we wither can submit to
-        # one of the available resources or until all the VMs are
+        # one of the available resources or untile all the VMs are
         # ready.
-        gc3libs.log.debug(
-            "No available resource was found, but some VM is still in"
-            " `pending` state. Waiting until the next iteration before"
-            " creating a new VM. Pending VM ids: %s", pending_vms)
+        gc3libs.log.info(
+            "No available resource was found, but some VM is still in "
+            "`pending` state. Waiting until the next iteration before "
+            "creating a new VM. Pending VM ids: %s",
+            str.join(', ', pending_vms))
         raise LRMSSkipSubmissionToNextIteration(
-            "Delaying submission until some of the VMs currently pending"
-            " is ready. Pending VM ids: %s"
-            % str.join(', ', pending_vms))
+            "Delaying submission until some of the VMs currently pending "
+            "is ready. Pending VM ids: %s" % str.join(', ', pending_vms))
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
-        resource = self._get_subresource(
+        resource = self._get_remote_resource(
             self._get_vm(app.ec2_instance_id))
         return resource.peek(app, remote_filename, local_file, offset, size)
 
@@ -899,7 +888,7 @@ class EC2Lrms(LRMS):
 
         # freeing the resource from the application is now needed as
         # the same instanc may run multiple applications
-        resource = self._get_subresource(self._get_vm(app.ec2_instance_id))
+        resource = self._get_remote_resource(self._get_vm(app.ec2_instance_id))
         resource.free(app)
 
         # FIXME: current approach in terminating running instances:
@@ -911,9 +900,10 @@ class EC2Lrms(LRMS):
             vm = self._get_vm(app.ec2_instance_id)
             gc3libs.log.info("VM instance %s at %s is no longer needed."
                              " Terminating.", vm.id, vm.public_dns_name)
-            del self.subresources[vm.id]
+            del self.resources[vm.id]
             vm.terminate()
-            del self._vmpool[vm.id]
+            del self._vms[vm.id]
+            self._session.save(self._vms)
             # self._session.save_all()
 
     @same_docstring_as(LRMS.close)
@@ -927,7 +917,7 @@ class EC2Lrms(LRMS):
             return
         # Update status of VMs and remote resources
         self.get_resource_status()
-        for vm_id, resource in self.subresources.items():
+        for vm_id, resource in self.resources.items():
             if resource.updated and not resource.job_infos:
                 vm = self._get_vm(vm_id)
                 gc3libs.log.warning(
@@ -935,8 +925,9 @@ class EC2Lrms(LRMS):
                     "You may need to terminate it manually.",
                     vm.id, vm.public_dns_name)
                 vm.terminate()
-                del self._vmpool[vm.id]
+                del self._vms[vm.id]
             resource.close()
+        self._session.save(self._vms)
         # self._session.save_all()
 
 

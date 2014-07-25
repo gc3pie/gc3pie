@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -171,29 +169,34 @@ able to run only the failing test, but we strongly suggest you to run
 <p>In order to have the <cite>nosetests</cite> program, you need to install <cite>nose_</cite>
 in your current environment <strong>and</strong> gc3pie must be installed in
 develop mode:</p>
-<div class="highlight-python"><pre>pip install nose
-python setup.py develop</pre>
+<div class="highlight-python"><div class="highlight"><pre>pip install nose
+python setup.py develop
+</pre></div>
 </div>
 <p>Then, from the top level directory, run the tests with:</p>
-<div class="highlight-python"><pre>nose -c nose.cfg</pre>
+<div class="highlight-python"><div class="highlight"><pre>nose -c nose.cfg
+</pre></div>
 </div>
 <p>Nose will then crawl the directory tree looking for available
 tests. You can also specify a subset of the available sets, by:</p>
 <ul>
 <li><p class="first">specifying the directory from which nose should start looking for tests:</p>
-<div class="highlight-python"><pre># Run only backend-related tests
-nose -c nose.cfg gc3libs/backends</pre>
+<div class="highlight-python"><div class="highlight"><pre># Run only backend-related tests
+nose -c nose.cfg gc3libs/backends
+</pre></div>
 </div>
 </li>
 <li><p class="first">specifying the file containing the tests you want to run:</p>
-<div class="highlight-python"><pre># Run only tests contained in a specific file
-nose -c nose.cfg gc3libs/tests/test_session.py</pre>
+<div class="highlight-python"><div class="highlight"><pre># Run only tests contained in a specific file
+nose -c nose.cfg gc3libs/tests/test_session.py
+</pre></div>
 </div>
 </li>
 <li><p class="first">specifying the id of the test (you need to run nose at least one to
 know which id is assigned to each test):</p>
-<div class="highlight-python"><pre># Run only test number 123
-nose -c nose.cfg 123</pre>
+<div class="highlight-python"><div class="highlight"><pre># Run only test number 123
+nose -c nose.cfg 123
+</pre></div>
 </div>
 </li>
 </ul>
@@ -207,7 +210,8 @@ the test results.</p>
 <p>You don&#8217;t need to have <cite>tox</cite> installed in the virtual environment you
 use to develop gc3pie, you can create a new virtual environment and
 install <cite>tox</cite> on it with:</p>
-<div class="highlight-python"><pre>pip install tox</pre>
+<div class="highlight-python"><div class="highlight"><pre>pip install tox
+</pre></div>
 </div>
 <p>Running <a class="reference external" href="http://tox.testrun.org/latest/">tox</a> is straightforward; just type <tt class="docutils literal"><span class="pre">tox</span></tt> on the command-line
 in GC3Pie&#8217;s top level source directory.</p>
@@ -215,14 +219,15 @@ in GC3Pie&#8217;s top level source directory.</p>
 Python versions from 2.4 to 2.7 (inclusive).  If you want to run tests
 only for a specific version of python, for instance Python 2.6, use
 the <tt class="docutils literal"><span class="pre">-e</span></tt> option:</p>
-<div class="highlight-python"><pre>tox -e py26
+<div class="highlight-python"><div class="highlight"><pre>tox -e py26
 [...]
 Ran 118 tests in 14.168s
 
 OK (SKIP=9)
 __________________________________________________________ [tox summary] ___________________________________________________________
 [TOX] py26: commands succeeded
-[TOX] congratulations :)</pre>
+[TOX] congratulations :)
+</pre></div>
 </div>
 <p>(See section <a class="reference internal" href="#skipping-tests">skipping tests</a> for a discussion about how and when to
 define skipped tests.)</p>
@@ -233,7 +238,8 @@ configuration files. However, if you feel that the environments can be
 <em>unclean</em>, you can clean up everything by:</p>
 <ol class="arabic">
 <li><p class="first">deleting all the <tt class="docutils literal"><span class="pre">*.pyc</span></tt> file in your source tree:</p>
-<div class="highlight-python"><pre>find . -name '*.pyc' -delete</pre>
+<div class="highlight-python"><div class="highlight"><pre>find . -name &#39;*.pyc&#39; -delete
+</pre></div>
 </div>
 </li>
 <li><p class="first">deleting and recreating tox virtual environments:</p>
@@ -242,6 +248,19 @@ configuration files. However, if you feel that the environments can be
 </div>
 </li>
 </ol>
+</div>
+<div class="section" id="running-tests-on-python-2-5">
+<h4>Running tests on Python 2.5<a class="headerlink" href="#running-tests-on-python-2-5" title="Permalink to this headline">¶</a></h4>
+<p>Python 2.5 lacks SSL support, which is now activated by default in
+<tt class="docutils literal"><span class="pre">pip</span></tt> and <tt class="docutils literal"><span class="pre">distutils</span></tt>.  As a result, <tt class="docutils literal"><span class="pre">tox</span></tt> will not be able to
+download dependecies and fail.</p>
+<p>To work around this issue, use the following invocation of the test
+runner:</p>
+<blockquote>
+<div>env PIP_INSECURE=1 tox -e py25</div></blockquote>
+<p>The workaround comes -of course- at the expense of a security risk:
+you might be downloading and executing Python code from a rogue PyPI
+server...</p>
 </div>
 </div>
 <div class="section" id="organizing-tests">
@@ -458,7 +477,8 @@ write in the first place.)</p>
 </li>
 <li><p class="first">When calling methods or functions that accept both positional and
 optional arguments like:</p>
-<div class="highlight-python"><pre>def foo(a, b, key1=defvalue1, key2=defvalue2):</pre>
+<div class="highlight-python"><div class="highlight"><pre>def foo(a, b, key1=defvalue1, key2=defvalue2):
+</pre></div>
 </div>
 <p>always specify the argument name for optional arguments, which means
 <strong>do not call</strong>:</p>
@@ -547,11 +567,12 @@ that enables automatic documentation for the module. For the module
 <tt class="file docutils literal"><span class="pre">core.py</span></tt>, for example, automatic documentation is enabled by
 a file <tt class="file docutils literal"><span class="pre">docs/programmers/api/gc3libs/core.txt</span></tt> with the
 following content:</p>
-<div class="highlight-python"><pre>`gc3libs.core`
+<div class="highlight-python"><div class="highlight"><pre>`gc3libs.core`
 ==============
 
 .. automodule:: gc3libs.core
-     :members:</pre>
+     :members:
+</pre></div>
 </div>
 </li>
 <li><p class="first">Execute the script <tt class="file docutils literal"><span class="pre">docs/programmers/api/makehier.sh</span></tt>, which
@@ -592,6 +613,7 @@ answer promptly.</p>
 <li><a class="reference internal" href="#running-the-tests">Running the tests</a><ul>
 <li><a class="reference internal" href="#running-tests-with-nosetests">Running tests with <cite>nosetests</cite></a></li>
 <li><a class="reference internal" href="#running-multiple-tests">Running multiple tests</a></li>
+<li><a class="reference internal" href="#running-tests-on-python-2-5">Running tests on Python 2.5</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#organizing-tests">Organizing tests</a></li>
@@ -657,7 +679,7 @@ answer promptly.</p>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

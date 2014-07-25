@@ -19,7 +19,7 @@ in core Python, namely:
   this indicates a bug in the software.
 
 """
-# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -36,7 +36,7 @@ in core Python, namely:
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.1.5 version (SVN $Revision$)'
 
 
 import gc3libs
@@ -115,7 +115,6 @@ class AuthError(Error):
     """
     pass
 
-
 class RecoverableAuthError(AuthError, RecoverableError):
     pass
 
@@ -174,15 +173,6 @@ class InternalError(Error):
     that do not depend on the library client code.  For instance, when
     a response string gotten from an external command cannot be parsed
     as expected.
-    """
-    pass
-
-class AuxiliaryCommandError(InternalError):
-    """
-    Raised when some external command that we depend upon has failed.
-
-    For instance, we might need to list processes on a remote machine
-    but ``ps aux`` does not run because of insufficient privileges.
     """
     pass
 
@@ -257,25 +247,15 @@ class LRMSError(Error):
     pass
 
 
-class LRMSSubmitError(LRMSError):
+class LRMSSubmitError(Error):
     pass
 
-
-class LRMSSkipSubmissionToNextIteration(LRMSSubmitError, RecoverableError):
+class LRMSSkipSubmissionToNextIteration(RecoverableError):
     """
-    An elastic resource has initiated adapting for a new task.
-    Although we cannot submit the task right now, it *will* be
-    accepted in the (not too distant) future.
+    Tells the Engine to skip submission of a job until the next
+    iteration.
     """
     pass
-
-
-class MaximumCapacityReached(LRMSSubmitError, RecoverableError):
-    """
-    Indicates that a resource is full and cannot run any more jobs.
-    """
-    pass
-
 
 class NoConfigurationFile(FatalError):
     """

@@ -341,7 +341,6 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
         self.warhol_dir = warhol_dir
         self.grayscaled_image = grayscaled_image
         self.application_name = 'warholize'
-        self.jobname = extra_args.get('jobname', 'GrayScaleConvertApplication')
 
         arguments = [
             'convert',
@@ -511,7 +510,6 @@ class CreateLutApplication(ApplicationWithCachedResults):
         self.lutfile = os.path.basename(output_file)
         self.working_dir = working_dir
         self.application_name = 'warholize'
-        self.jobname = 'CreateLutApplication'
         gc3libs.log.info("Creating lut file %s from %s using "
                          "colors: %s" % (
             self.lutfile, input_image, str.join(", ", colors)))

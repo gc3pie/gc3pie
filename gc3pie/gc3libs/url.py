@@ -33,10 +33,10 @@ import gc3libs.compat.urlparse as urlparse
 class Url(tuple):
     """
     Represent a URL as a named-tuple object.  This is an immutable
-    object that cannot be changed after creation.  
+    object that cannot be changed after creation.
 
     The following read-only attributes are defined on objects of class `Url`.
-    
+
     =========   =====   ===================================  ====================
     Attribute   Index   Value                                Value if not present
     =========   =====   ===================================  ====================
@@ -173,7 +173,7 @@ class Url(tuple):
         except ValueError:
             raise AttributeError("'%s' object has no attribute '%s'"
                                  % (self.__class__.__name__, name))
-    
+
 
     def __getnewargs__(self):
         """Support pickling/unpickling `Url` class objects."""
@@ -214,7 +214,7 @@ class Url(tuple):
             url = '//' + (self.netloc or '') + url
         if self.scheme:
             url = self.scheme + ':' + url
-        return url    
+        return url
 
 
     def __eq__(self, other):
@@ -231,7 +231,7 @@ class Url(tuple):
           True
           >>> u == Url('http://example.org/')
           False
-          
+
           >>> u == str(u)
           True
           >>> u == '/tmp/foo'
@@ -243,7 +243,7 @@ class Url(tuple):
 
           >>> u == 42
           False
-        
+
         """
         try:
             # The `tuple.__eq__` call can only be used if both `self`
@@ -255,14 +255,14 @@ class Url(tuple):
         except ValueError, ex:
             # `other` is not a URL and cannot be made into one
             return False
-    
+
     def __ne__(self, other):
         """
         The opposite of `__eq__`.
         """
         return not self.__eq__(other)
-    
-    
+
+
     def adjoin(self, relpath):
         """
         Return a new `Url`, constructed by appending `relpath` to the
@@ -285,7 +285,7 @@ class Url(tuple):
             >>> u3 = u2.adjoin('/evenmore')
             >>> str(u3)
             'http://www.example.org/data/moredata/evenmore'
-        
+
         """
         if relpath.startswith('/'):
             relpath = relpath[1:]
@@ -293,7 +293,7 @@ class Url(tuple):
                    path=os.path.join((self.path or '/'), relpath),
                    hostname=self.hostname, port=self.port,
                    username=self.username, password=self.password)
-    
+
 
 class UrlKeyDict(dict):
     """

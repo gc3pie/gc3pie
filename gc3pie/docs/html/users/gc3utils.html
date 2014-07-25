@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -114,17 +112,18 @@ completely delete it.</p>
 </dl>
 <p>For instance, if you want to check the status of the main tasks of a
 session, just run:</p>
-<div class="highlight-python"><pre>$ gsession list SESSION_DIRECTORY
+<div class="highlight-python"><div class="highlight"><pre>$ gsession list SESSION_DIRECTORY
 +--------------------------------+---------------------------+-------+---------------------------------+
 | JobID                          | Job name                  | State | Info                            |
 +--------------------------------+---------------------------+-------+---------------------------------+
 | ParallelTaskCollection.1140527 | ParallelTaskCollection-N1 | NEW   | NEW at Fri Feb 22 16:39:34 2013 |
-+--------------------------------+---------------------------+-------+---------------------------------+</pre>
++--------------------------------+---------------------------+-------+---------------------------------+
+</pre></div>
 </div>
 <p>This command will only show the <em>top-level tasks</em>, e.g. the main tasks
 created by the GC3 script. If you want to see <strong>all</strong> the tasks
 related to the session run the command with the option <tt class="docutils literal"><span class="pre">-r</span></tt>:</p>
-<div class="highlight-python"><pre>$ gsession list SESSION_DIRECTORY -r
+<div class="highlight-python"><div class="highlight"><pre>$ gsession list SESSION_DIRECTORY -r
 +-----------------------------------------+---------------------------+------------+----------------------------------------+
 | JobID                                   | Job name                  | State      | Info                                   |
 +-----------------------------------------+---------------------------+------------+----------------------------------------+
@@ -140,47 +139,53 @@ related to the session run the command with the option <tt class="docutils liter
 |         CreateLutApplication.1140536    |                           | NEW        |                                        |
 |       TricolorizeImage.1140537          | TricolorizeImage          | NEW        |                                        |
 |         CreateLutApplication.1140538    |                           | NEW        |                                        |
-+-----------------------------------------+---------------------------+------------+----------------------------------------+</pre>
++-----------------------------------------+---------------------------+------------+----------------------------------------+
+</pre></div>
 </div>
 <p>To have the full history of the session run <cite>gsession log</cite>:</p>
-<div class="highlight-python"><pre>$ gsession log SESSION_DIRECTORY
-Feb 22 16:39:01 GrayScaleConvertApplication.1140529: Submitting to 'hobbes' at Fri Feb 22 16:39:01 2013
+<div class="highlight-python"><div class="highlight"><pre>$ gsession log SESSION_DIRECTORY
+Feb 22 16:39:01 GrayScaleConvertApplication.1140529: Submitting to &#39;hobbes&#39; at Fri Feb 22 16:39:01 2013
 Feb 22 16:39:08 GrayScaleConvertApplication.1140529: RUNNING
 Feb 22 16:39:08 GrayScaleConvertApplication.1140529: SUBMITTED
-Feb 22 16:39:08 GrayScaleConvertApplication.1140529: Submitted to 'hobbes' at Fri Feb 22 16:39:08 2013
+Feb 22 16:39:08 GrayScaleConvertApplication.1140529: Submitted to &#39;hobbes&#39; at Fri Feb 22 16:39:08 2013
 Feb 22 16:39:08 WarholizeWorkflow.1140528: SUBMITTED
 Feb 22 16:39:24 GrayScaleConvertApplication.1140529: TERMINATING
 Feb 22 16:39:25 WarholizeWorkflow.1140528: RUNNING
 Feb 22 16:39:25 ParallelTaskCollection.1140527: RUNNING
-Feb 22 16:39:25 GrayScaleConvertApplication.1140529: Final output downloaded to 'Warholized.lena.jpg'
+Feb 22 16:39:25 GrayScaleConvertApplication.1140529: Final output downloaded to &#39;Warholized.lena.jpg&#39;
 Feb 22 16:39:25 GrayScaleConvertApplication.1140529: TERMINATED
 Feb 22 16:39:34 WarholizeWorkflow.1140528: NEW
 Feb 22 16:39:34 ParallelTaskCollection.1140527: NEW
-Feb 22 16:39:34 WarholizeWorkflow.1140528: RUNNING</pre>
+Feb 22 16:39:34 WarholizeWorkflow.1140528: RUNNING
+</pre></div>
 </div>
 <p>To abort a session, run the <cite>gsession abort</cite> command:</p>
-<div class="highlight-python"><pre>$ gsession abort SESSION_DIRECTORY</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ gsession abort SESSION_DIRECTORY
+</pre></div>
 </div>
 <p>This will kill all the running jobs and retrieve the results of the
 terminated jobs, but will leave the session directory untouched. To
 also delete the session directory, run <cite>gsession delete</cite>:</p>
-<div class="highlight-python"><pre>$ gsession delete SESSION_DIRECTORY</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ gsession delete SESSION_DIRECTORY
+</pre></div>
 </div>
 </div>
 <div class="section" id="gstat-monitor-the-status-of-submitted-jobs">
 <h2><a class="toc-backref" href="#id3"><strong class="command">gstat</strong>: monitor the status of submitted jobs</a><a class="headerlink" href="#gstat-monitor-the-status-of-submitted-jobs" title="Permalink to this headline">¶</a></h2>
 <p>To see the status of all the jobs you have submitted, use the
 <strong class="command">gstat</strong> command.  Typing:</p>
-<div class="highlight-python"><pre>gstat -s SESSION</pre>
+<div class="highlight-python"><div class="highlight"><pre>gstat -s SESSION
+</pre></div>
 </div>
 <p>will print to the screen a table like the following:</p>
-<div class="highlight-python"><pre>Job ID    Status
+<div class="highlight-python"><div class="highlight"><pre>Job ID    Status
 ====================
 job.12    TERMINATED
 job.15    SUBMITTED
 job.16    RUNNING
 job.17    RUNNING
-job.23    NEW</pre>
+job.23    NEW
+</pre></div>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -242,15 +247,16 @@ output and error stream.</p>
 long-running computation as <em>job.16</em> and you know from <strong class="command">gstat</strong> that
 it got into <tt class="docutils literal"><span class="pre">RUNNING</span></tt> state; then to take a peek at what this job is
 doing, you issue the following command:</p>
-<div class="highlight-python"><pre>gtail job.16</pre>
+<div class="highlight-python"><div class="highlight"><pre>gtail job.16
+</pre></div>
 </div>
 <p>This would produce the following output, from which you can deduce how
 far <a class="reference external" href="http://www.msg.ameslab.gov/gamess/">GAMESS</a> has progressed into the computation:</p>
-<div class="highlight-python"><pre>RECOMMEND NRAD ABOVE  50 FOR ZETA'S ABOVE 1E+4
+<div class="highlight-python"><div class="highlight"><pre>RECOMMEND NRAD ABOVE  50 FOR ZETA&#39;S ABOVE 1E+4
 
-RECOMMEND NRAD ABOVE  75 FOR ZETA'S ABOVE 1E+5
+RECOMMEND NRAD ABOVE  75 FOR ZETA&#39;S ABOVE 1E+5
 
-RECOMMEND NRAD ABOVE 125 FOR ZETA'S ABOVE 1E+6
+RECOMMEND NRAD ABOVE 125 FOR ZETA&#39;S ABOVE 1E+6
 
 DFT IS SWITCHED OFF, PERFORMING PURE SCF UNTIL SWOFF THRESHOLD IS REACHED.
 
@@ -263,12 +269,14 @@ ITER EX DEM     TOTAL ENERGY        E CHANGE  DENSITY CHANGE    DIIS ERROR
 
   2  1  0    -1081.1910665431    -2.1713885141   0.056618918   0.105322104
 
-  3  2  0    -1081.2658345285    -0.0747679855   0.019565324   0.044813607</pre>
+  3  2  0    -1081.2658345285    -0.0747679855   0.019565324   0.044813607
+</pre></div>
 </div>
 <p>By default, <strong class="command">gtail</strong> only outputs the last 10 lines of a job
 output/error stream. To see more, use the command line option <tt class="docutils literal"><span class="pre">-n</span></tt>;
 for example, to see the last 25 lines of the output, issue the command:</p>
-<div class="highlight-python"><pre>gtail -n 25 job.16</pre>
+<div class="highlight-python"><div class="highlight"><pre>gtail -n 25 job.16
+</pre></div>
 </div>
 <p>The command <strong class="command">gtail</strong> is especially useful for long computations: you
 can see how far a job has gotten and, e.g., cancel it if it&#8217;s gotten
@@ -283,7 +291,8 @@ update it as time passes, until you hit Ctrl+C to interrupt it.</p>
 <p>To cancel a running job, you can use the command <strong class="command">gkill</strong>.  For
 instance, to cancel <em>job.16</em>, you would type the following command
 into the terminal:</p>
-<div class="highlight-python"><pre>gkill job.16</pre>
+<div class="highlight-python"><div class="highlight"><pre>gkill job.16
+</pre></div>
 </div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
@@ -297,10 +306,12 @@ into the terminal:</p>
 <p>Once a job has reached <tt class="docutils literal"><span class="pre">RUNNING</span></tt> status (check with <strong class="command">gstat</strong>),
 you can retrieve its output files with the <strong class="command">gget</strong> command.  For
 instance, to download the output files of <em>job.15</em> you would use:</p>
-<div class="highlight-python"><pre>gget job.15</pre>
+<div class="highlight-python"><div class="highlight"><pre>gget job.15
+</pre></div>
 </div>
 <p>This command will print out a message like:</p>
-<div class="highlight-python"><pre>Job results successfully retrieved in '/path/to/some/directory'</pre>
+<div class="highlight-python"><div class="highlight"><pre>Job results successfully retrieved in &#39;/path/to/some/directory&#39;
+</pre></div>
 </div>
 <p>If you are not running the <strong class="command">gget</strong> command on your computer, but
 rather on a shared front-end like <cite>ocikbgtw</cite>, you can copy+paste the
@@ -308,7 +319,8 @@ path within quotes to the <a class="reference external" href="http://kb.iu.edu/d
 usual workstation.  For example, you can run the following command in
 a terminal on your computer to get the output files back to your
 workstation:</p>
-<div class="highlight-python"><pre>sftp ocikbgtw:'/path/to/some/directory'</pre>
+<div class="highlight-python"><div class="highlight"><pre>sftp ocikbgtw:&#39;/path/to/some/directory&#39;
+</pre></div>
 </div>
 <p>This will take you to the directory where the output files have been stored.</p>
 </div>
@@ -318,7 +330,8 @@ workstation:</p>
 need to use the <strong class="command">gclean</strong> command for that.</p>
 <p>Just call the <strong class="command">gclean</strong> command followed by the job identifier
 <em>job.NNN</em>.  For example:</p>
-<div class="highlight-python"><pre>gclean job.23</pre>
+<div class="highlight-python"><div class="highlight"><pre>gclean job.23
+</pre></div>
 </div>
 <p>In normal operation, you can only remove jobs that are in the
 <tt class="docutils literal"><span class="pre">TERMINATED</span></tt> status; if you want to force <strong class="command">gclean</strong> to remove a job
@@ -332,7 +345,8 @@ was running went unexpectedly down), you can re-submit it with the
 <strong class="command">gresub</strong> command.</p>
 <p>Just call <strong class="command">gresub</strong>  followed by the job identifier
 <em>job.NNN</em>.  For example:</p>
-<div class="highlight-python"><pre>gresub job.42</pre>
+<div class="highlight-python"><div class="highlight"><pre>gresub job.42
+</pre></div>
 </div>
 <p>Resubmitting a job that is not in a terminal state (i.e.,
 <tt class="docutils literal"><span class="pre">TERMINATED</span></tt>) results in the job being killed (as with <strong class="command">gkill</strong>)
@@ -344,7 +358,7 @@ a job is in, check it with <strong class="command">gstat</strong>.</p>
 <p>The <strong class="command">gservers</strong> command prints out information about the configured resources.
 For each resource, a summary of the information recorded in the configuration
 file and the current resource status is printed.  For example:</p>
-<div class="highlight-python"><pre>$ gservers
+<div class="highlight-python"><div class="highlight"><pre>$ gservers
 +----------------------------------------------------------------+
 |                     smscg                                      |
 +================================================================+
@@ -359,7 +373,8 @@ file and the current resource status is printed.  For example:</p>
 |          Max cores per job / max_cores_per_job   256           |
 | Max memory per core (MB) / max_memory_per_core   2000          |
 |  Max walltime per job (minutes) / max_walltime   1440          |
-+----------------------------------------------------------------+</pre>
++----------------------------------------------------------------+
+</pre></div>
 </div>
 <p>The meaning of the printed fields is as follows:</p>
 <ul class="simple">
@@ -408,22 +423,24 @@ the details about a job; the <strong class="command">ginfo</strong> command does
 all the details that GC3Utils know about a single job.</p>
 <p>For instance, to print out detailed information about <cite>job.13</cite> in
 session <cite>TEST1</cite>, you would type:</p>
-<div class="highlight-python"><pre>ginfo -s TEST1 job.13</pre>
+<div class="highlight-python"><div class="highlight"><pre>ginfo -s TEST1 job.13
+</pre></div>
 </div>
 <p>For a job in <tt class="docutils literal"><span class="pre">RUNNING</span></tt> or <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> state, only little
 information is known: basically, where the job is running, and when it
 was started:</p>
-<div class="highlight-python"><pre>$ ginfo -s XXX job.13
+<div class="highlight-python"><div class="highlight"><pre>$ ginfo -s XXX job.13
 job.13
     execution_targets: hera.wsl.ch
     log:
         SUBMITTED at Wed Mar  7 17:40:07 2012
-        Submitted to 'smscg' at Wed Mar  7 17:40:07 2012
+        Submitted to &#39;smscg&#39; at Wed Mar  7 17:40:07 2012
     lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/593513311384071771546195
     resource_name: smscg
     state_last_changed: 1331138407.33
     timestamp:
-        SUBMITTED: 1331138407.33</pre>
+        SUBMITTED: 1331138407.33
+</pre></div>
 </div>
 <p>If you omit the job number, information about <em>all</em> jobs in the
 session will be printed.</p>
@@ -432,16 +449,16 @@ inner working. Nonetheless, <strong class="command">ginfo</strong> output is def
 you should include in any report about a misbehaving job!</p>
 <p>For a finished job, the information is more complete and can include
 error messages in case the job has failed:</p>
-<div class="highlight-python"><pre>$ ginfo -s TEST1 job.13
+<div class="highlight-python"><div class="highlight"><pre>$ ginfo -s TEST1 job.13
 job.13
     cores: 1
     download_dir: /home/rmurri/gc3/gc3pie.googlecode.com/gc3pie/gc3apps/gamess/exam01
     execution_targets: idgc3grid01.uzh.ch
     log:
         SUBMITTED at Wed Mar  7 15:52:37 2012
-        Submitted to 'idgc3grid01' at Wed Mar  7 15:52:37 2012
+        Submitted to &#39;idgc3grid01&#39; at Wed Mar  7 15:52:37 2012
         TERMINATING at Wed Mar  7 15:54:52 2012
-        Final output downloaded to '/home/rmurri/gc3/gc3pie.googlecode.com/gc3pie/gc3apps/gamess/exam01'
+        Final output downloaded to &#39;/home/rmurri/gc3/gc3pie.googlecode.com/gc3pie/gc3apps/gamess/exam01&#39;
         TERMINATED at Wed Mar  7 15:54:53 2012
         Execution of gamess terminated normally wed mar  7 15:52:42 2012
     lrms_jobid: gsiftp://idgc3grid01.uzh.ch:2811/jobs/2938713311319571678156670
@@ -458,12 +475,13 @@ job.13
         TERMINATING: 1331132092.74
     used_cputime: 0
     used_memory: 492019
-    used_walltime: 60</pre>
+    used_walltime: 60
+</pre></div>
 </div>
 <p>With option <tt class="docutils literal"><span class="pre">-v</span></tt>, <strong class="command">ginfo</strong> output is even more verbose and complete,
 and includes information about the application itself, the input and
 output files, plus some backend-specific information:</p>
-<div class="highlight-python"><pre>$ ginfo -c -s TEST1 job.13
+<div class="highlight-python"><div class="highlight"><pre>$ ginfo -c -s TEST1 job.13
 job.13
     application_tag: gamess
     arguments: exam01.inp
@@ -478,7 +496,7 @@ job.13
         execution_targets: hera.wsl.ch
         log:
             SUBMITTED at Wed Mar  7 17:40:07 2012
-            Submitted to 'smscg' at Wed Mar  7 17:40:07 2012
+            Submitted to &#39;smscg&#39; at Wed Mar  7 17:40:07 2012
         lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/593513311384071771546195
         resource_name: smscg
         state_last_changed: 1331138407.33
@@ -504,7 +522,8 @@ job.13
     stdin: None
     stdout: exam01.out
     tags: APPS/CHEM/GAMESS-2010
-    verno: None</pre>
+    verno: None
+</pre></div>
 </div>
 </div>
 <div class="section" id="gcloud-manage-vms-created-by-the-ec2-backend">
@@ -513,7 +532,7 @@ job.13
 by the EC2 backend.</p>
 <p>To show a list of VMs currently running on the EC2 resources correctly
 configured run:</p>
-<div class="highlight-python"><pre>$ gcloud list
+<div class="highlight-python"><div class="highlight"><pre>$ gcloud list
 ====================================
 VMs running on EC2 resource `hobbes`
 ====================================
@@ -522,7 +541,8 @@ VMs running on EC2 resource `hobbes`
 |     id     |  state  |   public ip   | Nr. of jobs |   image id   | keypair |
 +------------+---------+---------------+-------------+--------------+---------+
 | i-0000053e | running | 130.60.193.45 |      1      | ami-00000035 | antonio |
-+------------+---------+---------------+-------------+--------------+---------+</pre>
++------------+---------+---------------+-------------+--------------+---------+
+</pre></div>
 </div>
 <p>This command will show various information, if available, including
 the number of jobs currently running (or in <cite>TERMINATED</cite> state) on
@@ -531,7 +551,8 @@ not used by any of yours script and you can safely terminate it.</p>
 <p>If you want to terminate a VM run the <cite>gcloud terminate</cite> command. In
 this case, however, you also have to specify the name of the resource
 with the option <tt class="docutils literal"><span class="pre">-r</span></tt>, and the ID of the VM you want to terminate:</p>
-<div class="highlight-python"><pre>$ gcloud terminate -r hobbes i-0000053e</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ gcloud terminate -r hobbes i-0000053e
+</pre></div>
 </div>
 <p>An empty output is a signal that the VM has been terminated.</p>
 <p>The <cite>EC2</cite> backend keeps track of all the VM it created, so that if a
@@ -544,7 +565,7 @@ if the command succeeds then the VM will never be used by the EC2
 backend. Please note also that after running <cite>gcloud forget</cite>, the VM
 will not be shown in the output of <cite>gcloud list</cite>:</p>
 <p>The following example will explain the behavior:</p>
-<div class="highlight-python"><pre>$ gcloud list -r hobbes
+<div class="highlight-python"><div class="highlight"><pre>$ gcloud list -r hobbes
 
 ====================================
 VMs running on EC2 resource `hobbes`
@@ -554,30 +575,34 @@ VMs running on EC2 resource `hobbes`
 |     id     |  state  |   public ip   | Nr. of jobs |   image id   | keypair |
 +------------+---------+---------------+-------------+--------------+---------+
 | i-00000540 | pending | 130.60.193.45 |     N/A     | ami-00000035 | antonio |
-+------------+---------+---------------+-------------+--------------+---------+</pre>
++------------+---------+---------------+-------------+--------------+---------+
+</pre></div>
 </div>
 <p>then we run <cite>gcloud forget</cite>:</p>
-<div class="highlight-python"><pre>$ gcloud forget  -r hobbes i-00000540</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ gcloud forget  -r hobbes i-00000540
+</pre></div>
 </div>
 <p>and we run again <cite>gcloud list</cite>:</p>
-<div class="highlight-python"><pre>$ gcloud list -r hobbes
+<div class="highlight-python"><div class="highlight"><pre>$ gcloud list -r hobbes
 
 ====================================
 VMs running on EC2 resource `hobbes`
 ====================================
 
-  no known VMs are currently running on this resource.</pre>
+  no known VMs are currently running on this resource.
+</pre></div>
 </div>
 <p>You can also create a new VM using the default settings using the
 <cite>gcloud run</cite> command. In this case too you have to specify the <tt class="docutils literal"><span class="pre">-r</span></tt>
 command line option. The output of this command contains some basic
 information about the created VM:</p>
-<div class="highlight-python"><pre>$ gcloud run -r hobbes
+<div class="highlight-python"><div class="highlight"><pre>$ gcloud run -r hobbes
 +------------+---------+---------------------------------------------+-------------+--------------+---------+
 |     id     |  state  |                  public ip                  | Nr. of jobs |   image id   | keypair |
 +------------+---------+---------------------------------------------+-------------+--------------+---------+
 | i-00000541 | pending | server-4e68ebc4-ea52-45ff-82d0-79699300b323 |     N/A     | ami-00000035 | antonio |
-+------------+---------+---------------------------------------------+-------------+--------------+---------+</pre>
++------------+---------+---------------------------------------------+-------------+--------------+---------+
+</pre></div>
 </div>
 <p>Please note that while the VM is still in <cite>pending</cite> state, the value
 of the <cite>public ip</cite> field may be meaningless. A successive run of <cite>gcloud
@@ -653,7 +678,7 @@ list</cite> should show you the correct <cite>public ip</cite>.</p>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

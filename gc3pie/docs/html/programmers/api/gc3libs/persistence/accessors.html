@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -69,7 +67,7 @@
 <p>Accessors for object attributes and container items.</p>
 <dl class="data">
 <dt id="gc3libs.persistence.accessors.GET">
-<tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GET</tt><em class="property"> = &lt;gc3libs.persistence.accessors.GetValue object at 0x51546a8&gt;</em><a class="headerlink" href="#gc3libs.persistence.accessors.GET" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GET</tt><em class="property"> = &lt;gc3libs.persistence.accessors.GetValue object at 0x2ba79f3d9c90&gt;</em><a class="headerlink" href="#gc3libs.persistence.accessors.GET" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constant identity getter.</p>
 <p>Use this for better readability (e.g., <cite>GET[0]</cite> instead of
 <cite>GetValue()[0]</cite>).</p>
@@ -77,7 +75,7 @@
 
 <dl class="class">
 <dt id="gc3libs.persistence.accessors.GetAttributeValue">
-<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetAttributeValue</tt><big>(</big><em>attr</em>, <em>xform=&lt;function &lt;lambda&gt; at 0x528a578&gt;</em>, <em>default=&lt;object object at 0x4b08bb0&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetAttributeValue" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetAttributeValue</tt><big>(</big><em>attr</em>, <em>xform=&lt;function &lt;lambda&gt; at 0x2ba79f09a230&gt;</em>, <em>default=&lt;object object at 0x2ba79f182510&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetAttributeValue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return an accessor function for the given attribute.</p>
 <p>An instance of <cite>GetAttributeValue</cite> is a callable that, given any
 object, returns the value of its attribute <cite>attr</cite>, whose name is
@@ -131,7 +129,7 @@ see), to access objects in deeply-nested data structures; see
 
 <dl class="class">
 <dt id="gc3libs.persistence.accessors.GetItemValue">
-<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetItemValue</tt><big>(</big><em>place</em>, <em>xform=&lt;function &lt;lambda&gt; at 0x528a6e0&gt;</em>, <em>default=&lt;object object at 0x4b08bb0&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetItemValue" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetItemValue</tt><big>(</big><em>place</em>, <em>xform=&lt;function &lt;lambda&gt; at 0x2ba79f09a758&gt;</em>, <em>default=&lt;object object at 0x2ba79f182510&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetItemValue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return accessor function for the given item in a sequence.</p>
 <p>An instance of <cite>GetItemValue</cite> is a callable that, given any
 sequence/container object, returns the value of the item at its
@@ -195,7 +193,7 @@ returned accessor function computes <cite>xform(obj)[idx]</cite> instead of
 
 <dl class="class">
 <dt id="gc3libs.persistence.accessors.GetOnly">
-<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetOnly</tt><big>(</big><em>only</em>, <em>xform=&lt;function &lt;lambda&gt; at 0x528a848&gt;</em>, <em>default=&lt;object object at 0x4b08bb0&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetOnly" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetOnly</tt><big>(</big><em>only</em>, <em>xform=&lt;function &lt;lambda&gt; at 0x2ba79ea8fed8&gt;</em>, <em>default=&lt;object object at 0x2ba79f182510&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetOnly" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply accessor function to members of a certain class; return a
 default value otherwise.</p>
 <p>The <cite>GetOnly</cite> accessor performs just like <cite>GetValue</cite>, but is
@@ -221,7 +219,7 @@ value is returned:</p>
 
 <dl class="class">
 <dt id="gc3libs.persistence.accessors.GetValue">
-<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetValue</tt><big>(</big><em>default=&lt;object object at 0x4b08bb0&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetValue" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetValue</tt><big>(</big><em>default=&lt;object object at 0x2ba79f182510&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetValue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provide easier compositional syntax for <cite>GetAttributeValue</cite> and <cite>GetItemValue</cite>.</p>
 <p>Instances of <cite>GetAttributeValue</cite> and <cite>GetItemValue</cite> can be composed by
 passing one as <cite>xform</cite> parameter to the other; however, this
@@ -328,7 +326,7 @@ return default value otherwise.</p>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
