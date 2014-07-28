@@ -505,7 +505,7 @@ class ArcLrms(LRMS):
         # temporary location.
         with tempdir(suffix='.d', dir=download_dir) as tmp_download_dir:
 
-           log.debug("Downloading %s output into temporary location '%s' ...",
+            log.debug("Downloading %s output into temporary location '%s' ...",
                       app, tmp_download_dir)
             try:
                 jftpc = arclib.JobFTPControl()
