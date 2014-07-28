@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -245,8 +243,8 @@ the <cite>Store</cite> instance associated with this session.</p>
 the <cite>Store</cite> instance associated with this session.</p>
 <p>The object is <em>not</em> added to the session, nor is session
 meta-data updated:</p>
-<div class="highlight-python"><pre># create an empty session
-&gt;&gt;&gt; import tempfile; tmpdir = tempfile.mktemp(dir='.')
+<div class="highlight-python"><div class="highlight"><pre># create an empty session
+&gt;&gt;&gt; import tempfile; tmpdir = tempfile.mktemp(dir=&#39;.&#39;)
 &gt;&gt;&gt; session = Session(tmpdir)
 &gt;&gt;&gt; 0 == len(session)
 True
@@ -262,7 +260,8 @@ True
 # do cleanup
 &gt;&gt;&gt; session.destroy()
 &gt;&gt;&gt; os.path.exists(session.path)
-False</pre>
+False
+</pre></div>
 </div>
 </dd></dl>
 
@@ -347,7 +346,7 @@ session has sarted.</p>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

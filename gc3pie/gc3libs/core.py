@@ -19,7 +19,7 @@ Top-level interface to Grid functionality.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 2110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.2.1 version (SVN $Revision$)'
 __date__ = '$Date$'
 
 

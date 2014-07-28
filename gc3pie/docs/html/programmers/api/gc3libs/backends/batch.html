@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -129,9 +127,39 @@ contents of the script(s) merged together.</p>
 <dl class="method">
 <dt id="gc3libs.backends.batch.BatchSystem.get_results">
 <tt class="descname">get_results</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.batch.BatchSystem.get_results" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve job output files into local directory <cite>download_dir</cite>
-(which must already exists).  Will not overwrite existing
-files, unless the optional argument <cite>overwrite</cite> is <cite>True</cite>.</p>
+<dd><p>Retrieve job output files into local directory <cite>download_dir</cite>.</p>
+<p>Directory <cite>download_dir</cite> must already exists.</p>
+<p>If optional 3rd argument <cite>overwrite</cite> is <tt class="docutils literal"><span class="pre">False</span></tt> (default),
+then existing files within <cite>download_dir</cite> (or subdirectories
+thereof) will <em>not</em> be altered in any way.</p>
+<p>If <cite>overwrite</cite> is instead <tt class="docutils literal"><span class="pre">True</span></tt>, then the (optional) 4th
+argument <cite>changed_only</cite> determines what files are overwritten:</p>
+<ul class="simple">
+<li>if <cite>changed_only</cite> is <tt class="docutils literal"><span class="pre">True</span></tt> (default), then only files for
+which the source has a different size or has been modified
+more recently than the destination are copied;</li>
+<li>if <cite>changed_only</cite> is <tt class="docutils literal"><span class="pre">False</span></tt>, then <em>all</em> files in <cite>source</cite>
+will be copied into <cite>destination</cite>, unconditionally.</li>
+</ul>
+<p>Output files that do not exist in <cite>download_dir</cite> will be
+copied, independently of the <cite>overwrite</cite> and <cite>changed_only</cite>
+settings.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>job</strong> (<em>Task</em>) &#8211; the <tt class="xref py py-class docutils literal"><span class="pre">Task</span></tt> instance whose output should be retrieved</li>
+<li><strong>download_dir</strong> (<em>str</em>) &#8211; path to download files into</li>
+<li><strong>overwrite</strong> (<em>bool</em>) &#8211; if <cite>False</cite>, do not download files that already exist</li>
+<li><strong>changed_only</strong> (<em>bool</em>) &#8211; if both this and <cite>overwrite</cite> are <cite>True</cite>, only overwrite
+those files such that the source is newer or different in
+size than the destination.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -141,13 +169,18 @@ files, unless the optional argument <cite>overwrite</cite> is <cite>True</cite>.
 remote file <cite>remote_filename</cite> and write them into
 <cite>local_file</cite>.  If <cite>size</cite> is <cite>None</cite> (default), then snarf
 contents of remote file from <cite>offset</cite> unto the end.</p>
+<p>First argument <cite>remote_filename</cite> is the path to a file
+relative to the remote job &#8220;sandbox&#8221;.</p>
 <p>Argument <cite>local_file</cite> is either a local path name (string), or
 a file-like object supporting a <cite>.write()</cite> method.  If
 <cite>local_file</cite> is a path name, it is created if not existent,
-otherwise overwritten.</p>
-<p>Argument <cite>remote_filename</cite> is the name of a file in the remote job
-&#8220;sandbox&#8221;.</p>
-<p>Any exception raised by operations will be passed through.</p>
+otherwise overwritten.  In any case, upon exit from this
+procedure, the stream will be positioned just after the
+written bytes.</p>
+<p>Fourth optional argument <cite>offset</cite> is the offset from the start
+of the file.  If <cite>offset</cite> is negative, it is interpreted as an
+offset from the <em>end</em> of the remote file.</p>
+<p>Any exception raised by operations will be re-raised to the caller.</p>
 </dd></dl>
 
 <dl class="method">
@@ -237,7 +270,7 @@ to commonly used default STDOUT/STDERR file names (e.g.,
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

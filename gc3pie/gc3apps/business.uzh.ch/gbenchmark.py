@@ -42,7 +42,7 @@ Important: All benchmark have to be executed on the same hardware in order to
 provide consistent benchmark results.
 """
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.2.1 version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2014-03-14:

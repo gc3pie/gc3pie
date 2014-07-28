@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -69,14 +67,13 @@
 <p>Top-level interface to Grid functionality.</p>
 <dl class="class">
 <dt id="gc3libs.core.Core">
-<em class="property">class </em><tt class="descclassname">gc3libs.core.</tt><tt class="descname">Core</tt><big>(</big><em>cfg</em><big>)</big><a class="headerlink" href="#gc3libs.core.Core" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.core.</tt><tt class="descname">Core</tt><big>(</big><em>cfg</em>, <em>matchmaker=&lt;gc3libs.core.MatchMaker object at 0x2ae539670b90&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.core.Core" title="Permalink to this definition">¶</a></dt>
 <dd><p>Core operations: submit, update state, retrieve (a
 snapshot of) output, cancel job.</p>
 <p>Core operations are <em>blocking</em>, i.e., they return only after the
 operation has successfully completed, or an error has been detected.</p>
-<p>Operations are always performed by a <cite>Core</cite> object.
-<cite>Core</cite> implements an overlay Grid on the resources
-specified in the configuration file.</p>
+<p>Operations are always performed by a <cite>Core</cite> object.  <cite>Core</cite> implements
+an overlay Grid on the resources specified in the configuration file.</p>
 <dl class="method">
 <dt id="gc3libs.core.Core.add">
 <tt class="descname">add</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.core.Core.add" title="Permalink to this definition">¶</a></dt>
@@ -94,15 +91,26 @@ e.g. LRMS</p>
 
 <dl class="method">
 <dt id="gc3libs.core.Core.fetch_output">
-<tt class="descname">fetch_output</tt><big>(</big><em>app</em>, <em>download_dir=None</em>, <em>overwrite=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.core.Core.fetch_output" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve output into local directory <cite>app.output_dir</cite>;
-optional argument <cite>download_dir</cite> overrides this.</p>
+<tt class="descname">fetch_output</tt><big>(</big><em>app</em>, <em>download_dir=None</em>, <em>overwrite=False</em>, <em>changed_only=True</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.core.Core.fetch_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve output into local directory <cite>app.output_dir</cite>.</p>
+<p>Optional argument <cite>download_dir</cite> overrides the download location.</p>
 <p>The download directory is created if it does not exist.  If it
 already exists, and the optional argument <cite>overwrite</cite> is
-<cite>False</cite> (default), it is renamed with a <cite>.NUMBER</cite> suffix and a
-new empty one is created in its place.  Otherwise, if
-&#8216;overwrite` is <cite>True</cite>, files are downloaded over the ones
-already present.</p>
+<tt class="docutils literal"><span class="pre">False</span></tt> (default), it is renamed with a <cite>.NUMBER</cite> suffix and
+a new empty one is created in its place.  Otherwise, if
+&#8216;overwrite` is <tt class="docutils literal"><span class="pre">True</span></tt>, files are downloaded over the ones
+already present; in this case, the <cite>changed_only</cite> argument
+controls which files are overwritten:</p>
+<ul class="simple">
+<li>if <cite>changed_only</cite> is <tt class="docutils literal"><span class="pre">True</span></tt> (default), then only files for
+which the source has a different size or has been modified
+more recently than the destination are copied;</li>
+<li>if <cite>changed_only</cite> is <tt class="docutils literal"><span class="pre">False</span></tt>, then <em>all</em> files in <cite>source</cite>
+will be copied into <cite>destination</cite>, unconditionally.</li>
+</ul>
+<p>Source files that do not exist at <cite>destination</cite> will be
+copied, independently of the <cite>overwrite</cite> and <cite>changed_only</cite>
+settings.</p>
 <p>If the task is in TERMINATING state, the state is changed to
 <cite>TERMINATED</cite>, attribute <tt class="xref py py-attr docutils literal"><span class="pre">output_dir</span></tt> is set to the
 absolute path to the directory where files were downloaded,
@@ -115,7 +123,7 @@ of the states <cite>NEW</cite> or <cite>SUBMITTED</cite>; an
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.OutputNotAvailableError</cite> if no
+<tr class="field-odd field"><th class="field-name">Raise:</th><td class="field-body"><cite>gc3libs.exceptions.OutputNotAvailableError</cite> if no
 output can be fetched from the remote job (e.g., the
 Application/Task object is in <cite>NEW</cite> or <cite>SUBMITTED</cite>
 state, indicating the remote job has not started
@@ -138,7 +146,7 @@ will be raised in this case.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.InvalidOperation</cite> if <cite>app.execution.state</cite>
+<tr class="field-odd field"><th class="field-name">Raise:</th><td class="field-body"><cite>gc3libs.exceptions.InvalidOperation</cite> if <cite>app.execution.state</cite>
 differs from <cite>Run.State.TERMINATED</cite>.</td>
 </tr>
 </tbody>
@@ -203,20 +211,36 @@ boolean indicating whether the resources should be kept
 
 <dl class="method">
 <dt id="gc3libs.core.Core.submit">
-<tt class="descname">submit</tt><big>(</big><em>app</em>, <em>resubmit=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.core.Core.submit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Submit a job running an instance of the given <cite>app</cite>.  Upon
-successful submission, call the <cite>submitted</cite> method on the
-<cite>app</cite> object.</p>
+<tt class="descname">submit</tt><big>(</big><em>app</em>, <em>resubmit=False</em>, <em>targets=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.core.Core.submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit a job running an instance of the given task <cite>app</cite>.</p>
+<p>Upon successful submission, call the <cite>submitted</cite> method on the
+<cite>app</cite> object.  If <cite>targets</cite> are given, submission of the task
+is attempted to the resources in the order given; the <cite>submit</cite>
+method returns after the first successful attempt.  If
+<cite>targets</cite> is <tt class="docutils literal"><span class="pre">None</span></tt> (default), a brokering procedure is run
+to determine the best resource among the configured ones.</p>
 <p>At the beginning of the submission process, the
 <cite>app.execution</cite> state is reset to <tt class="docutils literal"><span class="pre">NEW</span></tt>; if submission is
-successfull, the task will be in <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> or <tt class="docutils literal"><span class="pre">RUNNING</span></tt>
+successful, the task will be in <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> or <tt class="docutils literal"><span class="pre">RUNNING</span></tt>
 state when this call returns.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.InputFileError</cite> if an input file
-does not exist or cannot otherwise be read.</td>
+<tr class="field-odd field"><th class="field-name">Raise:</th><td class="field-body"><p class="first"><cite>gc3libs.exceptions.InputFileError</cite> if an input file
+does not exist or cannot otherwise be read.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>app</strong> (<em>Task</em>) &#8211; A GC3Pie <tt class="xref py py-class docutils literal"><span class="pre">Task</span></tt> instance to be submitted.</li>
+<li><strong>resubmit</strong> &#8211; If <tt class="docutils literal"><span class="pre">True</span></tt>, submit task regardless of its execution state;
+if <tt class="docutils literal"><span class="pre">False</span></tt> (default), submission is a no-op if task is not
+in <tt class="docutils literal"><span class="pre">NEW</span></tt> state.</li>
+<li><strong>targets</strong> (<em>list</em>) &#8211; A list of <cite>Resource`s to submit the task to; resources are
+tried in the order given.  If ``None`</cite> (default), perform
+brokering among all the configured resources.</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
@@ -235,12 +259,12 @@ appropriate handler method on the application/task object.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.InvalidArgument</cite> in case one of
+<tr class="field-odd field"><th class="field-name">Raise:</th><td class="field-body"><cite>gc3libs.exceptions.InvalidArgument</cite> in case one of
 the passed <cite>Application</cite> or <cite>Task</cite> objects is
 invalid. This can stop updating the state of other
 objects in the argument list.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raise :</th><td class="field-body"><cite>gc3libs.exceptions.ConfigurationError</cite> if the
+<tr class="field-even field"><th class="field-name">Raise:</th><td class="field-body"><cite>gc3libs.exceptions.ConfigurationError</cite> if the
 configuration of this <cite>Core</cite> object is invalid or
 otherwise inconsistent (e.g., a resource references a
 non-existing auth section).</td>
@@ -261,7 +285,7 @@ set to <cite>True</cite> if the update operation succeeded, or <cite>False</cite
 
 <dl class="class">
 <dt id="gc3libs.core.Engine">
-<em class="property">class </em><tt class="descclassname">gc3libs.core.</tt><tt class="descname">Engine</tt><big>(</big><em>controller</em>, <em>tasks=</em><span class="optional">[</span><span class="optional">]</span>, <em>store=None</em>, <em>can_submit=True</em>, <em>can_retrieve=True</em>, <em>max_in_flight=0</em>, <em>max_submitted=0</em>, <em>output_dir=None</em>, <em>fetch_output_overwrites=False</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">gc3libs.core.</tt><tt class="descname">Engine</tt><big>(</big><em>controller</em>, <em>tasks=</em>, <span class="optional">[</span><span class="optional">]</span><em>store=None</em>, <em>can_submit=True</em>, <em>can_retrieve=True</em>, <em>max_in_flight=0</em>, <em>max_submitted=0</em>, <em>output_dir=None</em>, <em>fetch_output_overwrites=False</em>, <em>scheduler=&lt;gc3libs.core.scheduler object at 0x2ae5391992d0&gt;</em>, <em>retrieve_running=False</em>, <em>retrieve_overwrites=False</em>, <em>retrieve_changed_only=True</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine" title="Permalink to this definition">¶</a></dt>
 <dd><p>Submit tasks in a collection, and update their state until a
 terminal state is reached. Specifically:</p>
 <blockquote>
@@ -297,13 +321,31 @@ task&#8217;s <cite>permanent_id</cite>.</dd>
 <dd>Default value to pass as the <cite>overwrite</cite> argument to
 <a class="reference internal" href="#gc3libs.core.Core.fetch_output" title="gc3libs.core.Core.fetch_output"><tt class="xref py py-meth docutils literal"><span class="pre">Core.fetch_output()</span></tt></a> when retrieving results of a
 terminated task.</dd>
+<dt><cite>scheduler</cite></dt>
+<dd>A factory function for creating objects that conform to the
+<cite>Scheduler</cite> interface to control task submission; see the
+<a class="reference internal" href="#gc3libs.core.Scheduler" title="gc3libs.core.Scheduler"><tt class="xref py py-class docutils literal"><span class="pre">Scheduler</span></tt></a> documentation for details.  The default
+value implements a first-come first-serve algorithm: tasks are
+submitted in the order they have been added to the <cite>Engine</cite>.</dd>
+<dt><cite>retrieve_running</cite></dt>
+<dd>If <tt class="docutils literal"><span class="pre">True</span></tt>, snapshot output from RUNNING jobs at every
+invocation of <a class="reference internal" href="#gc3libs.core.Engine.progress" title="gc3libs.core.Engine.progress"><tt class="xref py py-meth docutils literal"><span class="pre">progress()</span></tt></a></dd>
+<dt><cite>retrieve_overwrites</cite></dt>
+<dd>If <tt class="docutils literal"><span class="pre">True</span></tt>, overwrite files in the output directory of any
+job (as opposed to moving destination away and downloading a
+fresh copy). See <a class="reference internal" href="#gc3libs.core.Core.fetch_output" title="gc3libs.core.Core.fetch_output"><tt class="xref py py-meth docutils literal"><span class="pre">Core.fetch_output()</span></tt></a> for details.</dd>
+<dt><cite>retrieve_changed_only</cite></dt>
+<dd>If both this and <cite>overwrite</cite> are <tt class="docutils literal"><span class="pre">True</span></tt>, then only changed
+files are downloaded. See <a class="reference internal" href="#gc3libs.core.Core.fetch_output" title="gc3libs.core.Core.fetch_output"><tt class="xref py py-meth docutils literal"><span class="pre">Core.fetch_output()</span></tt></a> for
+details.</dd>
 </dl>
 </div></blockquote>
 <p>Any of the above can also be set by passing a keyword argument to
 the constructor (assume <tt class="docutils literal"><span class="pre">g</span></tt> is a <a class="reference internal" href="#gc3libs.core.Core" title="gc3libs.core.Core"><tt class="xref py py-class docutils literal"><span class="pre">Core</span></tt></a> instance):</p>
-<div class="highlight-python"><pre>| &gt;&gt;&gt; e = Engine(g, can_submit=False)
+<div class="highlight-python"><div class="highlight"><pre>| &gt;&gt;&gt; e = Engine(g, can_submit=False)
 | &gt;&gt;&gt; e.can_submit
-| False</pre>
+| False
+</pre></div>
 </div>
 <dl class="method">
 <dt id="gc3libs.core.Engine.add">
@@ -322,12 +364,13 @@ e.g. LRMS</p>
 
 <dl class="method">
 <dt id="gc3libs.core.Engine.fetch_output">
-<tt class="descname">fetch_output</tt><big>(</big><em>task</em>, <em>output_dir=None</em>, <em>overwrite=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.fetch_output" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">fetch_output</tt><big>(</big><em>task</em>, <em>output_dir=None</em>, <em>overwrite=False</em>, <em>changed_only=True</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.fetch_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Enqueue task for later output retrieval.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p>FIXME</p>
-<p class="last">The <cite>output_dir</cite> and <cite>overwrite</cite> parameters are currently ignored.</p>
+<p class="last">The <cite>output_dir</cite>, <cite>overwrite</cite>, and <cite>changed_only</cite> parameters
+are currently ignored.</p>
 </div>
 </dd></dl>
 
@@ -413,10 +456,13 @@ whose class is not contained in <cite>only</cite> are ignored.
 
 <dl class="method">
 <dt id="gc3libs.core.Engine.submit">
-<tt class="descname">submit</tt><big>(</big><em>task</em>, <em>resubmit=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.submit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Submit <cite>task</cite> at the next invocation of <cite>perform</cite>.</p>
+<tt class="descname">submit</tt><big>(</big><em>task</em>, <em>resubmit=False</em>, <em>targets=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.core.Engine.submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit <cite>task</cite> at the next invocation of <cite>progress</cite>.</p>
 <p>The <cite>task</cite> state is reset to <tt class="docutils literal"><span class="pre">NEW</span></tt> and then added to the
 collection of managed tasks.</p>
+<p>The <cite>targets</cite> argument is only present for interface
+compatiblity with <a class="reference internal" href="#gc3libs.core.Core.submit" title="gc3libs.core.Core.submit"><tt class="xref py py-meth docutils literal"><span class="pre">Core.submit()</span></tt></a> but is otherwise
+ignored.</p>
 </dd></dl>
 
 <dl class="method">
@@ -428,6 +474,101 @@ particular, no state-change handlers are called as a result of
 calling this method.</p>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.core.MatchMaker">
+<em class="property">class </em><tt class="descclassname">gc3libs.core.</tt><tt class="descname">MatchMaker</tt><a class="headerlink" href="#gc3libs.core.MatchMaker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select and sort resources for attempting submission of a <cite>Task</cite>.</p>
+<p>A match-making algorithm must implement two methods:</p>
+<ul class="simple">
+<li><cite>filter</cite>: given a task and a list of resources, return the list
+of resources that the given task could be submitted to.</li>
+<li><cite>rank</cite>: given a task and a list of resources, return a list of
+resources sorted in preference order, i.e., submission of the
+given task will be attempted to the first returned resource,
+then the next one, etc.</li>
+</ul>
+<p>This class implements the default match-making algorithm in
+GC3Pie, which operates as follows:</p>
+<ul class="simple">
+<li><em>filter phase:</em> if <cite>task</cite> has a <cite>compatible_resources</cite> method (as
+instances of <tt class="xref py py-class docutils literal"><span class="pre">Application</span></tt> do), retain only those
+resources where it evaluates to <tt class="docutils literal"><span class="pre">True</span></tt>.  Otherwise, return the
+resources list unchanged.</li>
+<li><em>rank phase:</em> sort resources according to the task&#8217;s
+<cite>rank_resources</cite> method, or retain the given order if task does
+not define such method.</li>
+</ul>
+<dl class="method">
+<dt id="gc3libs.core.MatchMaker.filter">
+<tt class="descname">filter</tt><big>(</big><em>task</em>, <em>resources</em><big>)</big><a class="headerlink" href="#gc3libs.core.MatchMaker.filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the subset of resources to which <cite>task</cite> could be submitted to.</p>
+<p>Note that the result subset could be empty (no resource can
+accomodate task&#8217;s requirements).</p>
+<p>The default implementation uses the task&#8217;s
+<cite>compatible_resources</cite> method to retain only the resources
+that satisfy the task&#8217;s requirements.  If <cite>task</cite> does not
+provide such a method, the resource list is returned
+unchanged.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.core.MatchMaker.rank">
+<tt class="descname">rank</tt><big>(</big><em>task</em>, <em>resources</em><big>)</big><a class="headerlink" href="#gc3libs.core.MatchMaker.rank" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort the list of <cite>resources</cite> in the preferred order for submitting <cite>task</cite>.</p>
+<p>Unless overridden in a derived class, this calls the task&#8217;s
+<cite>rank_resources</cite> method to sort the list.  If the task does
+not provide such a method, the resources list is returned
+unchanged.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.core.Scheduler">
+<em class="property">class </em><tt class="descclassname">gc3libs.core.</tt><tt class="descname">Scheduler</tt><big>(</big><em>tasks</em>, <em>resources</em><big>)</big><a class="headerlink" href="#gc3libs.core.Scheduler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instances of the <cite>Scheduler</cite> class are used in
+<a class="reference internal" href="#gc3libs.core.Engine.progress" title="gc3libs.core.Engine.progress"><tt class="xref py py-meth docutils literal"><span class="pre">Engine.progress()</span></tt></a> to determine what tasks (among those in
+<cite>Run.State.NEW</cite> state) are to be submitted.</p>
+<p>A <cite>Scheduler</cite> object must implement <em>both</em> the <a class="reference external" href="http://docs.python.org/2/library/stdtypes.html#typecontextmanager">context</a> protocol
+<em>and</em> the <a class="reference external" href="http://stackoverflow.com/questions/9884132/understanding-pythons-iterator-iterable-and-iteration-protocols-what-exact">iterator</a> protocol.</p>
+<p>The way a <cite>Scheduler</cite> instance is actually used within <cite>Engine</cite> is
+as follows:</p>
+<ol class="arabic simple" start="0">
+<li>A <cite>Scheduler</cite> instance is created, passing it two arguments: a
+list of tasks in <tt class="docutils literal"><span class="pre">NEW</span></tt> state, and a dictionary of configured
+resources (keys are resource names, values are actual resource
+objects).</li>
+<li>When a new submission cycle starts, the <tt class="xref py py-meth docutils literal"><span class="pre">__enter__()</span></tt>
+method is called.</li>
+<li>The <cite>Engine</cite> iterates by repeatedly calling the <tt class="xref py py-meth docutils literal"><span class="pre">next()</span></tt>
+method to receive tasks to be submitted.  The <tt class="xref py py-meth docutils literal"><span class="pre">send()</span></tt> and
+<tt class="xref py py-meth docutils literal"><span class="pre">throw()</span></tt> methods are used to notify the scheduler of the
+outcome of the submission attempt.</li>
+<li>When the submission cycle ends, the <tt class="xref py py-meth docutils literal"><span class="pre">__exit__()</span></tt> method is called.</li>
+</ol>
+<p>The <cite>Scheduler.schedule</cite> generator is the heart of the submission
+process and has basically complete control over it.  It is
+initialized with the list of tasks in <tt class="docutils literal"><span class="pre">NEW</span></tt> state, and the list
+of configured resources.  The <tt class="xref py py-meth docutils literal"><span class="pre">next()</span></tt> method should yield
+pairs <em>(task index, resource name)</em>, where the <em>task index</em> is the
+position of the task to be submitted next in the given list, and
+&#8211;similarly&#8211; the <em>resource name</em> is the name of the resource to
+which the task should be submitted.</p>
+<p>For each pair yielded, submission of that task to the selected
+resource is attempted; the state of the task object after
+submission is sent back (via the <tt class="xref py py-meth docutils literal"><span class="pre">send()</span></tt> method) to the
+<cite>Scheduler</cite> instance; if an exception is raised, that exception is
+thrown (via the <tt class="xref py py-meth docutils literal"><span class="pre">throw()</span></tt> method) into the scheduler object
+instead.  Submission stops when the <cite>next()</cite> call raises a
+<cite>StopIteration</cite> exception.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.core.scheduler">
+<em class="property">class </em><tt class="descclassname">gc3libs.core.</tt><tt class="descname">scheduler</tt><big>(</big><em>fn</em><big>)</big><a class="headerlink" href="#gc3libs.core.scheduler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorate a generator function for use as a <a class="reference internal" href="#gc3libs.core.Scheduler" title="gc3libs.core.Scheduler"><tt class="xref py py-class docutils literal"><span class="pre">Scheduler</span></tt></a> object.</p>
 </dd></dl>
 
 </div>
@@ -484,7 +625,7 @@ calling this method.</p>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
