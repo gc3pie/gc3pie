@@ -503,7 +503,7 @@ class ArcLrms(LRMS):
         # directory, make a temporary directory for downloading files;
         # then move files to their final destination and delete the
         # temporary location.
-        with (suffix='.d', dir=download_dir) as tmp_download_dir:
+        with tempdir(suffix='.d', dir=download_dir) as tmp_download_dir:
 
            log.debug("Downloading %s output into temporary location '%s' ...",
                       app, tmp_download_dir)
