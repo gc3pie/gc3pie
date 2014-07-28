@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -68,13 +66,13 @@
 <span id="gc3libs-optimizer-dif-evolution"></span><h1><cite>gc3libs.optimizer.dif_evolution</cite><a class="headerlink" href="#module-gc3libs.optimizer.dif_evolution" title="Permalink to this headline">¶</a></h1>
 <p>This module implements a global optimization algorithm called Differential
 Evolution.</p>
-<p>Consider the following optimization problem: <span class="math">min ~ f(\mathbf{x}) ~~ s.t.
-~~ \mathbf{x} \in D</span>, where <span class="math">D \in \mathbb{R}^d</span> and <span class="math">f: D
-\mapsto \mathbb{R}</span>. Class <a class="reference internal" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm" title="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm"><tt class="xref py py-class docutils literal"><span class="pre">DifferentialEvolutionAlgorithm</span></tt></a> solves this
+<p>Consider the following optimization problem: <img class="math" src="../../../../_images/math/b6bdb41327986eca49c7baa87e96b3aa38172819.png" alt="min ~ f(\mathbf{x}) ~~ s.t.
+~~ \mathbf{x} \in D"/>, where <img class="math" src="../../../../_images/math/26cd5bb493afb6844103c48256a005f9bf1fb031.png" alt="D \in \mathbb{R}^d"/> and <img class="math" src="../../../../_images/math/679d13c2c3bfcda7d0d9d539d8e9801040eada0a.png" alt="f: D
+\mapsto \mathbb{R}"/>. Class <a class="reference internal" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm" title="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm"><tt class="xref py py-class docutils literal"><span class="pre">DifferentialEvolutionAlgorithm</span></tt></a> solves this
 optimization problem using the differential evolution algorithm. No further
-assumptions on the function <span class="math">f</span> are needed. Thus it can be non-convex,
+assumptions on the function <img class="math" src="../../../../_images/math/0001d02b63ede2fe3219e05a7cd09c82ae6298b6.png" alt="f"/> are needed. Thus it can be non-convex,
 noisy etc.</p>
-<p>The domain <span class="math">D</span> is implicitly specified by passing the function
+<p>The domain <img class="math" src="../../../../_images/math/9dfa31437b58c0473299320aa638151cd88cf61b.png" alt="D"/> is implicitly specified by passing the function
 <tt class="xref py py-func docutils literal"><span class="pre">filtern_fn()</span></tt> to <a class="reference internal" href="#gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm" title="gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm"><tt class="xref py py-class docutils literal"><span class="pre">DifferentialEvolutionAlgorithm</span></tt></a>.</p>
 <p>Some information related to Differential Evolution can be found in the following papers:</p>
 <ol class="arabic simple">
@@ -245,7 +243,7 @@ with lowest corresponding value.</p>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -98,33 +96,37 @@ traceback.  (See section <a class="reference internal" href="#what-is-a-python-t
 in the code that lead to a specific error condition.</p>
 <p>Tracebacks always look like this one (the number of lines printed, the
 files involved and the actual error message will, of course, vary):</p>
-<div class="highlight-python"><pre>Traceback (most recent call last):
- File "/home/mpackard/gc3pie/bin/gsub", line 9, in &lt;module&gt;
-   load_entry_point('gc3pie==1.0rc7', 'console_scripts', 'gsub')()
- File "/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/frontend.py", line 137, in main
+<div class="highlight-python"><div class="highlight"><pre>Traceback (most recent call last):
+ File &quot;/home/mpackard/gc3pie/bin/gsub&quot;, line 9, in &lt;module&gt;
+   load_entry_point(&#39;gc3pie==1.0rc7&#39;, &#39;console_scripts&#39;, &#39;gsub&#39;)()
+ File &quot;/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/frontend.py&quot;, line 137, in main
    import gc3utils.commands
- File "/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/commands.py", line 31, in &lt;module&gt;
+ File &quot;/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/commands.py&quot;, line 31, in &lt;module&gt;
    import cli.app
- File "/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/app.py", line 37, in &lt;module&gt;
+ File &quot;/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/app.py&quot;, line 37, in &lt;module&gt;
    from cli.util import ifelse, ismethodof
- File "/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/util.py", line 28, in &lt;module&gt;
+ File &quot;/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/util.py&quot;, line 28, in &lt;module&gt;
    BaseStringIO = StringIO.StringIO
-AttributeError: 'module' object has no attribute 'StringIO'</pre>
+AttributeError: &#39;module&#39; object has no attribute &#39;StringIO&#39;
+</pre></div>
 </div>
 <p>Let&#8217;s analyize how a traceback is formed, top to bottom.</p>
 <p>A traceback is <em>always</em> started by the line:</p>
-<div class="highlight-python"><pre>Traceback (most recent call last):</pre>
+<div class="highlight-python"><div class="highlight"><pre>Traceback (most recent call last):
+</pre></div>
 </div>
 <p>Then follow a number of line pairs like this one:</p>
-<div class="highlight-python"><pre>File "/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/frontend.py", line 137, in main
-  import gc3utils.commands</pre>
+<div class="highlight-python"><div class="highlight"><pre>File &quot;/home/mpackard/gc3pie/lib/python2.5/site-packages/gc3pie-1.0rc7-py2.5.egg/gc3utils/frontend.py&quot;, line 137, in main
+  import gc3utils.commands
+</pre></div>
 </div>
 <p>The first line shows the file name and the line number where the
 program stopped; the second line displays the instruction that Python
 was executing when the error occurred.  <em>We shall always omit this
 part of the traceback in the listings below.</em></p>
 <p>Finally, the traceback ends with the error message on the <em>last</em> line:</p>
-<div class="highlight-python"><pre>AttributeError: 'module' object has no attribute 'StringIO'</pre>
+<div class="highlight-python"><div class="highlight"><pre>AttributeError: &#39;module&#39; object has no attribute &#39;StringIO&#39;
+</pre></div>
 </div>
 <p>Just look up this error message in the section headers below; if you
 cannot find any relevant section, please write to the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing
@@ -141,16 +143,17 @@ the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups
 <div class="section" id="attributeerror-args">
 <h3><a class="toc-backref" href="#id5">AttributeError: args</a><a class="headerlink" href="#attributeerror-args" title="Permalink to this headline">¶</a></h3>
 <p>This error is signaled by a traceback like the following:</p>
-<div class="highlight-python"><pre>   Traceback (most recent call last):
+<div class="highlight-python"><div class="highlight"><pre>   Traceback (most recent call last):
      ...
-     File "/opt/nordugrid/lib/python2.4/site-packages/arclib.py",
+     File &quot;/opt/nordugrid/lib/python2.4/site-packages/arclib.py&quot;,
 line 1146, in &lt;lambda&gt;
        __getattr__ = lambda self, name: _swig_getattr(self,
 CertificateError, name)
-     File "/opt/nordugrid/lib/python2.4/site-packages/arclib.py",
+     File &quot;/opt/nordugrid/lib/python2.4/site-packages/arclib.py&quot;,
 line 54, in _swig_getattr
        raise AttributeError(name)
-   AttributeError: args</pre>
+   AttributeError: args
+</pre></div>
 </div>
 <p>This is due to a version mismatch between the Python interpreter and
 the NorduGrid ARClib; it&#8217;s really the same issue as in <a class="reference internal" href="#importerror-site-packages-arclib-so-undefined-symbol-py-initmodule4">ImportError:
@@ -160,12 +163,13 @@ which see for a discussion and remedies.</p>
 <div class="section" id="attributeerror-module-object-has-no-attribute-stringio">
 <h3><a class="toc-backref" href="#id6">AttributeError: <cite>module</cite> object has no attribute <cite>StringIO</cite></a><a class="headerlink" href="#attributeerror-module-object-has-no-attribute-stringio" title="Permalink to this headline">¶</a></h3>
 <p>This error:</p>
-<div class="highlight-python"><pre>Traceback (most recent call last):
+<div class="highlight-python"><div class="highlight"><pre>Traceback (most recent call last):
  ...
- File "/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/util.py",
+ File &quot;/home/mpackard/gc3pie/lib/python2.5/site-packages/pyCLI-2.0.2-py2.5.egg/cli/util.py&quot;,
 line 28, in &lt;module&gt;
    BaseStringIO = StringIO.StringIO
-AttributeError: 'module' object has no attribute 'StringIO'</pre>
+AttributeError: &#39;module&#39; object has no attribute &#39;StringIO&#39;
+</pre></div>
 </div>
 <p>is due to a conflicts of the <a class="reference external" href="pycli">pyCLI library</a> (prior to version 2.0.3) and the
 <a class="reference external" href="python-stats">Debian/Ubuntu package *python-stats*</a></p>
@@ -179,9 +183,10 @@ AttributeError: 'module' object has no attribute 'StringIO'</pre>
 <div class="section" id="distributionnotfound">
 <h3><a class="toc-backref" href="#id7">DistributionNotFound</a><a class="headerlink" href="#distributionnotfound" title="Permalink to this headline">¶</a></h3>
 <p>If you get this error:</p>
-<div class="highlight-python"><pre>Traceback (most recent call last):
+<div class="highlight-python"><div class="highlight"><pre>Traceback (most recent call last):
     ...
-pkg_resources.DistributionNotFound: gc3pie==1.0rc2</pre>
+pkg_resources.DistributionNotFound: gc3pie==1.0rc2
+</pre></div>
 </div>
 <p>It usually means that you didn&#8217;t run <tt class="docutils literal"><span class="pre">source</span> <span class="pre">../bin/activate;</span>
 <span class="pre">./setup.py</span> <span class="pre">develop</span></tt> when upgrading GC3Pie.</p>
@@ -190,11 +195,12 @@ pkg_resources.DistributionNotFound: gc3pie==1.0rc2</pre>
 <div class="section" id="ftpcontrolerror-server-responded-file-unavailable">
 <h3><a class="toc-backref" href="#id8">FTPControlError: Server responded: File unavailable.</a><a class="headerlink" href="#ftpcontrolerror-server-responded-file-unavailable" title="Permalink to this headline">¶</a></h3>
 <p>Sample error traceback:</p>
-<div class="highlight-python"><pre>Traceback (most recent call last):
+<div class="highlight-python"><div class="highlight"><pre>Traceback (most recent call last):
   ...
-  File "/opt/nordugrid/lib/python2.5/site-packages/arclib.py", line 1405, in Download
+  File &quot;/opt/nordugrid/lib/python2.5/site-packages/arclib.py&quot;, line 1405, in Download
     def Download(self, *args): return _arclib.FTPControl_Download(self, *args)
-arclib.FTPControlError: Server responded: File unavailable.</pre>
+arclib.FTPControlError: Server responded: File unavailable.
+</pre></div>
 </div>
 <p>This error happens when trying to view a non-existent file with the
 <strong class="command">gtail</strong> command; see <a class="reference external" href="http://code.google.com/p/gc3pie/issues/detail?id=111">Issue 111</a> for details.</p>
@@ -208,11 +214,12 @@ report to the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;go
 <div class="section" id="importerror-site-packages-arclib-so-undefined-symbol-py-initmodule4">
 <h3><a class="toc-backref" href="#id9">ImportError: <tt class="docutils literal"><span class="pre">.../site-packages/_arclib.so</span></tt>: undefined symbol: <tt class="docutils literal"><span class="pre">Py_InitModule4</span></tt></a><a class="headerlink" href="#importerror-site-packages-arclib-so-undefined-symbol-py-initmodule4" title="Permalink to this headline">¶</a></h3>
 <p>This error:</p>
-<div class="highlight-python"><pre>Traceback (most recent call last):
+<div class="highlight-python"><div class="highlight"><pre>Traceback (most recent call last):
   ...
-  File ".../site-packages/arclib.py", line 17, in swig_import_helper
+  File &quot;.../site-packages/arclib.py&quot;, line 17, in swig_import_helper
     import _arclib
-ImportError: .../site-packages/_arclib.so: undefined symbol: Py_InitModule4</pre>
+ImportError: .../site-packages/_arclib.so: undefined symbol: Py_InitModule4
+</pre></div>
 </div>
 <p>Is due to a mismatch of the Python version and the NorduGrid ARClib
 library: it occurs when the <tt class="file docutils literal"><span class="pre">arclib</span></tt> library has been compiled
@@ -234,23 +241,26 @@ instructions.</p>
 <div class="section" id="importerror-no-module-named-pstats">
 <h3><a class="toc-backref" href="#id10">ImportError: No module named <tt class="docutils literal"><span class="pre">pstats</span></tt></a><a class="headerlink" href="#importerror-no-module-named-pstats" title="Permalink to this headline">¶</a></h3>
 <p>This error only occurs on Debian and Ubuntu GNU/Linux:</p>
-<div class="highlight-python"><pre>Traceback (most recent call last):
-File ".../pyCLI-2.0.2-py2.6.egg/cli/util.py", line 19, in &lt;module&gt;
+<div class="highlight-python"><div class="highlight"><pre>Traceback (most recent call last):
+File &quot;.../pyCLI-2.0.2-py2.6.egg/cli/util.py&quot;, line 19, in &lt;module&gt;
    import pstats
-ImportError: No module named pstats</pre>
+ImportError: No module named pstats
+</pre></div>
 </div>
 <p>To solve the issue: install the <cite>*python-profiler* package &lt;python-profiler&gt;</cite>:</p>
-<div class="highlight-python"><pre>apt-get install python-profiler # as `root` user</pre>
+<div class="highlight-python"><div class="highlight"><pre>apt-get install python-profiler # as `root` user
+</pre></div>
 </div>
 </div>
 <div class="section" id="noresources-could-not-initialize-any-computational-resource-please-check-log-and-configuration-file">
 <h3><a class="toc-backref" href="#id11">NoResources: Could not initialize any computational resource - please check log and configuration file.</a><a class="headerlink" href="#noresources-could-not-initialize-any-computational-resource-please-check-log-and-configuration-file" title="Permalink to this headline">¶</a></h3>
 <p>This error:</p>
-<div class="highlight-python"><pre>Traceback (most recent call last):
+<div class="highlight-python"><div class="highlight"><pre>Traceback (most recent call last):
   ...
-  File ".../src/gc3libs/core.py", line 150, in submit
-    raise gc3libs.exceptions.NoResources("Could not initialize any computational resource"
-gc3libs.exceptions.NoResources: Could not initialize any computational resource - please check log and configuration file.</pre>
+  File &quot;.../src/gc3libs/core.py&quot;, line 150, in submit
+    raise gc3libs.exceptions.NoResources(&quot;Could not initialize any computational resource&quot;
+gc3libs.exceptions.NoResources: Could not initialize any computational resource - please check log and configuration file.
+</pre></div>
 </div>
 <p>can have two different causes:</p>
 <ol class="arabic simple">
@@ -262,9 +272,10 @@ gc3libs.exceptions.NoResources: Could not initialize any computational resource 
 <h3><a class="toc-backref" href="#id12">Terminate called after throwing an instance of <tt class="docutils literal"><span class="pre">LdapQueryError</span></tt></a><a class="headerlink" href="#terminate-called-after-throwing-an-instance-of-ldapqueryerror" title="Permalink to this headline">¶</a></h3>
 <p>This error has been reported after some days of running the
 <strong class="command">gcodeml</strong> script with the ARC backend:</p>
-<div class="highlight-python"><pre>terminate called after throwing an instance of 'LdapQueryError'
+<div class="highlight-python"><div class="highlight"><pre>terminate called after throwing an instance of &#39;LdapQueryError&#39;
  what():  Thread creation in ParallelLdapQueries failed
-Aborted</pre>
+Aborted
+</pre></div>
 </div>
 <p>We believe this is a <a class="reference external" href="http://bugzilla.nordugrid.org/show_bug.cgi?id=2830">bug in the ARC libraries</a>, but not much
 information is known at the moment.  So, if you see an instance of
@@ -273,10 +284,11 @@ this, please get in touch via the <a class="reference external" href="mailto:gc3
 <div class="section" id="valueerror-i-o-operation-on-closed-file">
 <h3><a class="toc-backref" href="#id13">ValueError: I/O operation on closed file</a><a class="headerlink" href="#valueerror-i-o-operation-on-closed-file" title="Permalink to this headline">¶</a></h3>
 <p>Sample error traceback (may be repeated multiple times over):</p>
-<div class="highlight-python"><pre>Traceback (most recent call last):
-  File "/usr/lib/python2.5/logging/__init__.py", line 750, in emit
+<div class="highlight-python"><div class="highlight"><pre>Traceback (most recent call last):
+  File &quot;/usr/lib/python2.5/logging/__init__.py&quot;, line 750, in emit
     self.stream.write(fs % msg)
-ValueError: I/O operation on closed file</pre>
+ValueError: I/O operation on closed file
+</pre></div>
 </div>
 <p>This is discussed in <a class="reference external" href="http://code.google.com/p/gc3pie/issues/detail?id=182">Issue 182</a>; a fix have been committed to
 release 1.0, so if you are seeing this error, you are running a
@@ -356,7 +368,7 @@ pre-release version of GC3Pie and should <a class="reference internal" href="ins
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
