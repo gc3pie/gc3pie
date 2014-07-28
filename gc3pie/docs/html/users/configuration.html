@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -216,12 +214,13 @@ not set this option to &#8220;true&#8221; unless you understand the implications
 configure GC3Pie for using <a class="reference external" href="http://www.switch.ch/aai">SWITCHaai</a> <a class="reference external" href="http://www.switch.ch/grid/slcs/index.html">SLCS</a> services to generate a
 certificate and a <a class="reference external" href="http://vdt.cs.wisc.edu/components/voms.html">VOMS</a> proxy to access the Swiss National Distributed
 Computing Infrastructure <a class="reference external" href="http://www.smscg.ch/">SMSCG</a>:</p>
-<div class="highlight-python"><pre>[auth/smscg]
+<div class="highlight-python"><div class="highlight"><pre>[auth/smscg]
 type = voms-proxy
 cert_renewal_method = slcs
 aai_username = &lt;aai_user_name&gt; # SWITCHaai/Shibboleth user name
 idp= uzh.ch
-vo = smscg</pre>
+vo = smscg
+</pre></div>
 </div>
 <p><em>Example 2.</em> The following configuration sections are used to set up
 two different accounts, that GC3Pie programs can use.  Which account
@@ -239,10 +238,11 @@ should be used on which computational resource is defined in the
 <p><em>Example 3.</em> The following configuration section is used to access an
 EC2 resource (access and
 secret keys are of course invalid :)):</p>
-<div class="highlight-python"><pre>[auth/hobbes]
+<div class="highlight-python"><div class="highlight"><pre>[auth/hobbes]
 type=ec2
 ec2_access_key=1234567890qwertyuiopasdfghjklzxc
-ec2_secret_key=cxzlkjhgfdsapoiuytrewq0987654321</pre>
+ec2_secret_key=cxzlkjhgfdsapoiuytrewq0987654321
+</pre></div>
 </div>
 </div>
 </div>
@@ -609,8 +609,9 @@ ami-id.</p>
 <li><p class="first"><tt class="docutils literal"><span class="pre">&lt;application&gt;_image_id</span></tt>: you can override the default image id
 for a specific application by defining an entry in the
 configuration file for that specific application. For example:</p>
-<div class="highlight-python"><pre>image_id=ami-00000048
-gc_gps_image_id=ami-0000002a</pre>
+<div class="highlight-python"><div class="highlight"><pre>image_id=ami-00000048
+gc_gps_image_id=ami-0000002a
+</pre></div>
 </div>
 <p>will use the image <tt class="docutils literal"><span class="pre">ami-0000002a</span></tt> for <tt class="docutils literal"><span class="pre">gc_gps</span></tt> and image
 <tt class="docutils literal"><span class="pre">ami-00000048</span></tt> for all other applications.</p>
@@ -626,7 +627,8 @@ security group.</p>
 </li>
 <li><p class="first"><tt class="docutils literal"><span class="pre">security_group_rules</span></tt>: comma separated list of security rules
 the <tt class="docutils literal"><span class="pre">security_group</span></tt> must have. Each rule is in the form:</p>
-<div class="highlight-python"><pre>PROTOCOL:PORT_RANGE_START:PORT_RANGE_END:IP_NETWORK</pre>
+<div class="highlight-python"><div class="highlight"><pre>PROTOCOL:PORT_RANGE_START:PORT_RANGE_END:IP_NETWORK
+</pre></div>
 </div>
 <p>where:</p>
 <ul class="simple">
@@ -640,7 +642,8 @@ concept of <em>port</em>.</li>
 </ul>
 <p>For instance, to allow access to the virtual machine from <em>any</em>
 machine in the internet you can use:</p>
-<div class="highlight-python"><pre>tcp:22:22:0.0.0.0/0</pre>
+<div class="highlight-python"><div class="highlight"><pre>tcp:22:22:0.0.0.0/0
+</pre></div>
 </div>
 <p>Please note that in order to be able to access the created virtual
 machines GC3Pie <strong>needs</strong> to be able to connect via ssh, so the
@@ -655,9 +658,10 @@ the number of virtual machines GC3Pie will spawn.</p>
 <li><p class="first"><tt class="docutils literal"><span class="pre">user_data</span></tt>: the <em>content</em> of a script that will run after the
 startup of the machine. For instance, to automatically upgrade a
 ubuntu machine after startup you can use:</p>
-<div class="highlight-python"><pre>user_data=#!/bin/bash
+<div class="highlight-python"><div class="highlight"><pre>user_data=#!/bin/bash
   aptitude -y update
-  aptitude -y safe-upgrade</pre>
+  aptitude -y safe-upgrade
+</pre></div>
 </div>
 <p>Please note that if you need to span over multiple lines you have
 to indent the lines after <tt class="docutils literal"><span class="pre">user_data</span></tt>, as any indented line in a
@@ -667,9 +671,10 @@ previous line.</p>
 <li><p class="first"><tt class="docutils literal"><span class="pre">&lt;application&gt;_user_data</span></tt>: you can override the default userdata
 for a specific application by defining an entry in the
 configuration file for that specific application. For example:</p>
-<div class="highlight-python"><pre># user_data=
+<div class="highlight-python"><div class="highlight"><pre># user_data=
 warholize_user_data = #!/bin/bash
-  aptitude update &amp;&amp; aptitude -y install imagemagick</pre>
+  aptitude update &amp;&amp; aptitude -y install imagemagick
+</pre></div>
 </div>
 <p>will install <cite>imagemagick</cite> only for the <cite>warholize</cite> application.</p>
 </li>
@@ -681,7 +686,7 @@ warholize_user_data = #!/bin/bash
 <p><em>Example 1.</em> This configuration stanza defines a resource <tt class="docutils literal"><span class="pre">smscg</span></tt>
 representing the whole <a class="reference external" href="http://www.smscg.ch/">SMSCG</a> infrastructure, accessed through the ARC
 (version 0.8.x) middleware:</p>
-<div class="highlight-python"><pre>[resource/smscg]
+<div class="highlight-python"><div class="highlight"><pre>[resource/smscg]
 # A whole ARC-based Grid
 type = arc0
 auth = &lt;voms_auth_name&gt;
@@ -692,13 +697,14 @@ max_cores_per_job = 256
 max_memory_per_core = 3
 max_walltime = 9999
 ncores = 1200
-architecture = x86_64, i686</pre>
+architecture = x86_64, i686
+</pre></div>
 </div>
 <p><em>Example 2.</em> This configuration stanza shows how to access a single
 cluster through the ARC middleware (version 1.x) using the name
 <tt class="docutils literal"><span class="pre">idgc3grid01</span></tt> (which is also the internet host name of the cluster
 front-end):</p>
-<div class="highlight-python"><pre>[resource/idgc3grid01]
+<div class="highlight-python"><div class="highlight"><pre>[resource/idgc3grid01]
 # A single cluster, accessed through the ARC middleware
 type = arc
 auth = &lt;auth_name&gt; # pick a ``voms`` type auth
@@ -708,27 +714,29 @@ arc_ldap = ldap://idgc3grid01.uzh.ch:2135/mds-vo-name=local,o=grid
 max_cores_per_job = 32
 max_memory_per_core = 2
 max_walltime = 12
-ncores = 80</pre>
+ncores = 80
+</pre></div>
 </div>
 <p><em>Example 3.</em> This configuration stanza defines a resource to submit
 jobs to the <a class="reference external" href="http://gridengine.org/blog/2011/11/23/what-now/">Grid Engine</a> cluster whose front-end host is
 <tt class="docutils literal"><span class="pre">ocikbpra.uzh.ch</span></tt>:</p>
-<div class="highlight-python"><pre>[resource/ocikbpra]
-# A single SGE cluster, accessed by SSH'ing to the front-end node
+<div class="highlight-python"><div class="highlight"><pre>[resource/ocikbpra]
+# A single SGE cluster, accessed by SSH&#39;ing to the front-end node
 type = sge
-auth = &lt;auth_name&gt; # pick an ``ssh`` type auth, e.g., "ssh1"
+auth = &lt;auth_name&gt; # pick an ``ssh`` type auth, e.g., &quot;ssh1&quot;
 transport = ssh
 frontend = ocikbpra.uzh.ch
 gamess_location = /share/apps/gamess
 max_cores_per_job = 80
 max_memory_per_core = 2
 max_walltime = 2
-ncores = 80</pre>
+ncores = 80
+</pre></div>
 </div>
 <p><em>Example 4.</em> This configuration stanza defines a resource to submit
 jobs on virtual machines that will be automatically started by GC3Pie
 on <a class="reference external" href="http://www.gc3.uzh.ch/infrastructure/hobbes">Hobbes</a>, the private OpenStack cloud of the University of Zurich:</p>
-<div class="highlight-python"><pre>[resource/hobbes]
+<div class="highlight-python"><div class="highlight"><pre>[resource/hobbes]
 enabled=yes
 type=ec2+shellcmd
 ec2_url=http://hobbes.gc3.uzh.ch:8773/services/Cloud
@@ -758,7 +766,8 @@ security_group_rules=tcp:22:22:0.0.0.0/0, icmp:-1:-1:0.0.0.0/0
 vm_pool_max_size = 8
 user_data=
 warholize_user_data = #!/bin/bash
-    aptitude update &amp;&amp; aptitude install -u imagemagick</pre>
+    aptitude update &amp;&amp; aptitude install -u imagemagick
+</pre></div>
 </div>
 </div>
 </div>
@@ -860,7 +869,7 @@ file.</p>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

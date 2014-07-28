@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -26,7 +24,7 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
-    <link rel="next" title="Installation of GC3Pie" href="install.html" />
+    <link rel="next" title="User-visible changes across releases" href="NEWS.html" />
     <link rel="prev" title="Welcome to GC3Pie documentation!" href="../index.html" />
  
 <script type="text/javascript">
@@ -47,7 +45,7 @@
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="install.html" title="Installation of GC3Pie"
+          <a href="NEWS.html" title="User-visible changes across releases"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="../index.html" title="Welcome to GC3Pie documentation!"
@@ -69,6 +67,33 @@ how to run <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>T
 <h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="NEWS.html">User-visible changes across releases</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="NEWS.html#gc3pie-2-2-0">GC3Pie 2.2.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="NEWS.html#new-features">New features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="NEWS.html#changes-to-command-line-utilities">Changes to command-line utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="NEWS.html#important-bug-fixes">Important bug fixes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="NEWS.html#gc3pie-2-1-0">GC3Pie 2.1.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="NEWS.html#new-features-and-incompatible-changes">New features and incompatible changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="NEWS.html#id1">Changes to command-line utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="NEWS.html#gc3pie-2-0">GC3Pie 2.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="NEWS.html#id2">New features and incompatible changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="NEWS.html#configuration-file-changes">Configuration file changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="NEWS.html#id3">Changes to command-line utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="NEWS.html#api-changes">API changes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="NEWS.html#gc3pie-1-0">GC3Pie 1.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="NEWS.html#id4">Configuration file changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="NEWS.html#command-line-utilities-changes">Command-line utilities changes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="NEWS.html#gc3pie-0-10">GC3Pie 0.10</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation of GC3Pie</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="install.html#quick-start">Quick start</a></li>
 <li class="toctree-l2"><a class="reference internal" href="install.html#non-standard-installation-options">Non-standard installation options</a></li>
@@ -209,9 +234,7 @@ how to run <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>T
   <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">User Documentation</a><ul>
-<li><a class="reference internal" href="#table-of-contents">Table of Contents</a><ul>
-</ul>
-</li>
+<li><a class="reference internal" href="#table-of-contents">Table of Contents</a></li>
 </ul>
 </li>
 </ul>
@@ -220,8 +243,8 @@ how to run <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>T
   <p class="topless"><a href="../index.html"
                         title="previous chapter">Welcome to GC3Pie documentation!</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="install.html"
-                        title="next chapter">Installation of GC3Pie</a></p>
+  <p class="topless"><a href="NEWS.html"
+                        title="next chapter">User-visible changes across releases</a></p>
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="../search.html" method="get">
@@ -249,7 +272,7 @@ how to run <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>T
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="install.html" title="Installation of GC3Pie"
+          <a href="NEWS.html" title="User-visible changes across releases"
              >next</a> |</li>
         <li class="right" >
           <a href="../index.html" title="Welcome to GC3Pie documentation!"
@@ -260,7 +283,7 @@ how to run <a class="reference internal" href="gc3apps/index.html#gc3apps"><em>T
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

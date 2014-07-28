@@ -35,7 +35,7 @@ Option paramenters consist of:
                           will be re-deployed on the reference appliances.
 """
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.2.0 version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2013-12-30:

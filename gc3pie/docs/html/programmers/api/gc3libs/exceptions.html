@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -95,6 +93,14 @@ As an example, for arc backends, this error is raised when the parsing of the Ap
 <dd><p>Base class for Auth-related errors.</p>
 <p>Should <em>never</em> be instanciated: create a specific error class
 describing the actual error condition.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.AuxiliaryCommandError">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">AuxiliaryCommandError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.AuxiliaryCommandError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when some external command that we depend upon has failed.</p>
+<p>For instance, we might need to list processes on a remote machine
+but <tt class="docutils literal"><span class="pre">ps</span> <span class="pre">aux</span></tt> does not run because of insufficient privileges.</p>
 </dd></dl>
 
 <dl class="exception">
@@ -222,14 +228,21 @@ the passed argument does not match expectations.</p>
 <dl class="exception">
 <dt id="gc3libs.exceptions.LRMSSkipSubmissionToNextIteration">
 <em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">LRMSSkipSubmissionToNextIteration</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.LRMSSkipSubmissionToNextIteration" title="Permalink to this definition">¶</a></dt>
-<dd><p>Tells the Engine to skip submission of a job until the next
-iteration.</p>
+<dd><p>An elastic resource has initiated adapting for a new task.
+Although we cannot submit the task right now, it <em>will</em> be
+accepted in the (not too distant) future.</p>
 </dd></dl>
 
 <dl class="exception">
 <dt id="gc3libs.exceptions.LoadError">
 <em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">LoadError</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.LoadError" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raised upon errors loading a job from the persistent storage.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="gc3libs.exceptions.MaximumCapacityReached">
+<em class="property">exception </em><tt class="descclassname">gc3libs.exceptions.</tt><tt class="descname">MaximumCapacityReached</tt><big>(</big><em>msg</em>, <em>do_log=False</em><big>)</big><a class="headerlink" href="#gc3libs.exceptions.MaximumCapacityReached" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates that a resource is full and cannot run any more jobs.</p>
 </dd></dl>
 
 <dl class="exception">
@@ -372,7 +385,7 @@ in <cite>except</cite> clauses to exclude &#8220;try again&#8221; situations.</p
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

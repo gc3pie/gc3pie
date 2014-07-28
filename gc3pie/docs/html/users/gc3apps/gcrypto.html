@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -124,7 +122,8 @@ empty contents.</p>
 <li><p class="first">Divide the initial parameter range, given in the command-line,
 into chunks taking the <tt class="docutils literal"><span class="pre">-J</span></tt> value as a reference. So
 from a coomand line argument like the following:</p>
-<div class="highlight-python"><pre>$ gcrypto  800000000 1200000000 1000 -J 200</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ gcrypto  800000000 1200000000 1000 -J 200
+</pre></div>
 </div>
 <p><strong class="command">gcrypto</strong> will generate an initial chunks of 200 jobs
 starting from the initial range 800000000 incrementing of 1000.
@@ -217,26 +216,29 @@ three mandatory arguments:</p>
 <p><strong>Example 1.</strong> The following command-line invocation uses
 <strong class="command">gcrypto</strong> to run <tt class="docutils literal"><span class="pre">gnfs-cmd</span></tt> on the parameter set ranging from
 800000000 to 1200000000 with an increment of 1000.</p>
-<div class="highlight-python"><pre>$ gcrypto 800000000 1200000000 1000</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ gcrypto 800000000 1200000000 1000
+</pre></div>
 </div>
 <p>In this case <strong class="command">gcrypto</strong> will use the default values for
 determine the chunks size from the default value of the <tt class="docutils literal"><span class="pre">-J</span></tt>
 option (default value is 50 simulatenous jobs).</p>
 <p><strong>Example 2.</strong></p>
-<div class="highlight-python"><pre>$ gcrypto --session SAMPLE_SESSION -c 4 -w 4 -m 8 800000000 1200000000 1000</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ gcrypto --session SAMPLE_SESSION -c 4 -w 4 -m 8 800000000 1200000000 1000
+</pre></div>
 </div>
 <p>In this example, job information is stored into session
 <tt class="docutils literal"><span class="pre">SAMPLE_SESSION</span></tt> (see the documentation of the <tt class="docutils literal"><span class="pre">--session</span></tt> option
 in <a class="reference internal" href="intro.html#session-based-script"><em>Introduction to session-based scripts</em></a>).  The command above creates the jobs,
 submits them, and finally prints the following status report:</p>
-<div class="highlight-python"><pre>Status of jobs in the 'SAMPLE_SESSION' session: (at 10:53:46, 02/28/12)
+<div class="highlight-python"><div class="highlight"><pre>Status of jobs in the &#39;SAMPLE_SESSION&#39; session: (at 10:53:46, 02/28/12)
 NEW   0/50    (0.0%)
 RUNNING   0/50    (0.0%)
 STOPPED   0/50    (0.0%)
 SUBMITTED   50/50   (100.0%)
 TERMINATED   0/50    (0.0%)
 TERMINATING   0/50    (0.0%)
-total   50/50   (100.0%)</pre>
+total   50/50   (100.0%)
+</pre></div>
 </div>
 <p>Note that the status report counts the number of <em>jobs in the
 session</em>, not the total number of jobs that would correspond to the
@@ -247,7 +249,7 @@ being monitored;</p>
 all jobs have finished running and the output files have been
 correctly retrieved.  On successful completion, the command given in
 <em>example 2.</em> above, would print:</p>
-<div class="highlight-python"><pre>Status of jobs in the 'SAMPLE_SESSION' session: (at 11:05:50, 02/28/12)
+<div class="highlight-python"><div class="highlight"><pre>Status of jobs in the &#39;SAMPLE_SESSION&#39; session: (at 11:05:50, 02/28/12)
 NEW   0/400k    (0.0%)
 RUNNING   0/400k    (0.0%)
 STOPPED   0/400k    (0.0%)
@@ -255,7 +257,8 @@ SUBMITTED   0/400k    (0.0%)
 TERMINATED   50/400k   (100.0%)
 TERMINATING   0/400k    (0.0%)
 ok   400k/400k   (100.0%)
-total   400k/400k   (100.0%)</pre>
+total   400k/400k   (100.0%)
+</pre></div>
 </div>
 <p>Each job will be named after the parameter range it has computed (e.g.
 800001000, 800002000, ... ) (you could see this by passing
@@ -296,7 +299,8 @@ with an increment of 1000, submitting 200 jobs simultaneously each of
 them requesting 4 computing cores, 8GB of memory and 4 hours of
 <a class="reference internal" href="../../glossary.html#term-walltime"><em class="xref std std-term">wall-clock time</em></a>, one can use the following
 command-line invocation:</p>
-<div class="highlight-python"><pre>$ gcrypto -s example -C 120 -J 200 -c 4 -w 4 -m 8 800000000 1200000000 1000</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ gcrypto -s example -C 120 -J 200 -c 4 -w 4 -m 8 800000000 1200000000 1000
+</pre></div>
 </div>
 <p>The <tt class="docutils literal"><span class="pre">-s</span> <span class="pre">example</span></tt> option tells <strong class="command">gcrypto</strong> to store
 information about the computational jobs in the <tt class="docutils literal"><span class="pre">example.jobs</span></tt>
@@ -306,15 +310,17 @@ every 120 seconds; output from finished jobs is retrieved and new jobs
 are submitted at the same interval.</p>
 <p>The above command will start by printing a status report like the
 following:</p>
-<div class="highlight-python"><pre>Status of jobs in the 'example.csv' session:
-SUBMITTED   1/1 (100.0%)</pre>
+<div class="highlight-python"><div class="highlight"><pre>Status of jobs in the &#39;example.csv&#39; session:
+SUBMITTED   1/1 (100.0%)
+</pre></div>
 </div>
 <p>It will continue printing an updated status report every 120 seconds
 until the requested parameter range has been computed.</p>
 <p>In GC3Pie terminology when a job is finished and its output has been
 successfully retrieved, the job is marked as <tt class="docutils literal"><span class="pre">TERMINATED</span></tt>:</p>
-<div class="highlight-python"><pre>Status of jobs in the 'example.csv' session:
-TERMINATED   1/1 (100.0%)</pre>
+<div class="highlight-python"><div class="highlight"><pre>Status of jobs in the &#39;example.csv&#39; session:
+TERMINATED   1/1 (100.0%)
+</pre></div>
 </div>
 </div>
 </div>
@@ -328,13 +334,16 @@ session execution.</p>
 <p>To cancel a running job, you can use the command <strong class="command">gkill</strong>.  For
 instance, to cancel <em>job.16</em>, you would type the following command
 into the terminal:</p>
-<div class="highlight-python"><pre>gkill job.16</pre>
+<div class="highlight-python"><div class="highlight"><pre>gkill job.16
+</pre></div>
 </div>
 <p>or:</p>
-<div class="highlight-python"><pre>gkill -s example job.16</pre>
+<div class="highlight-python"><div class="highlight"><pre>gkill -s example job.16
+</pre></div>
 </div>
 <p>gkill could also be used to cancel jobs in  a given state</p>
-<div class="highlight-python"><pre>gkill -s example -l UNKNOWN</pre>
+<div class="highlight-python"><div class="highlight"><pre>gkill -s example -l UNKNOWN
+</pre></div>
 </div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
@@ -350,18 +359,19 @@ the details about a job; the <strong class="command">ginfo</strong> command does
 all the details that GC3Utils know about a single job.</p>
 <p>For instance, to print out detailed information about <cite>job.13</cite> in
 session <cite>example</cite>, you would type</p>
-<div class="highlight-python"><pre>ginfo -s example job.13</pre>
+<div class="highlight-python"><div class="highlight"><pre>ginfo -s example job.13
+</pre></div>
 </div>
 <p>For a job in <tt class="docutils literal"><span class="pre">RUNNING</span></tt> or <tt class="docutils literal"><span class="pre">SUBMITTED</span></tt> state, only little
 information is known: basically, where the job is running, and when it
 was started:</p>
-<div class="highlight-python"><pre>$ ginfo -s example job.13
+<div class="highlight-python"><div class="highlight"><pre>$ ginfo -s example job.13
 job.13
     cores: 2
     execution_targets: hera.wsl.ch
     log:
         SUBMITTED at Tue May 15 09:52:05 2012
-        Submitted to 'wsl' at Tue May 15 09:52:05 2012
+        Submitted to &#39;wsl&#39; at Tue May 15 09:52:05 2012
         RUNNING at Tue May 15 10:07:39 2012
     lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/116613370683251353308673
     lrms_jobname: LACAL_800001000
@@ -376,7 +386,8 @@ job.13
         SUBMITTED: 1337068325.26
     unknown_iteration: 0
     used_cputime: 1380
-    used_memory: 3382706</pre>
+    used_memory: 3382706
+</pre></div>
 </div>
 <p>If you omit the job number, information about <em>all</em> jobs in the
 session will be printed.</p>
@@ -385,7 +396,7 @@ inner working. Nonetheless, <strong class="command">ginfo</strong> output is def
 you should include in any report about a misbehaving job!</p>
 <p>For a finished job, the information is more complete and can include
 error messages in case the job has failed:</p>
-<div class="highlight-python"><pre>$ ginfo -c -s example job.13
+<div class="highlight-python"><div class="highlight"><pre>$ ginfo -c -s example job.13
 job.13
     _arc0_state_last_checked: 1337069259.18
     _exitcode: 0
@@ -396,9 +407,9 @@ job.13
     execution_targets: hera.wsl.ch
     log:
         SUBMITTED at Tue May 15 09:52:04 2012
-        Submitted to 'wsl' at Tue May 15 09:52:04 2012
+        Submitted to &#39;wsl&#39; at Tue May 15 09:52:04 2012
         TERMINATING at Tue May 15 10:07:39 2012
-        Final output downloaded to '/data/crypto/results/example.out/8000001000'
+        Final output downloaded to &#39;/data/crypto/results/example.out/8000001000&#39;
         TERMINATED at Tue May 15 10:07:43 2012
     lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/11441337068324584585032
     lrms_jobname: LACAL_800001000
@@ -415,12 +426,13 @@ job.13
     unknown_iteration: 0
     used_cputime: 360
     used_memory: 3366977
-    used_walltime: 300</pre>
+    used_walltime: 300
+</pre></div>
 </div>
 <p>With option <tt class="docutils literal"><span class="pre">-v</span></tt>, <strong class="command">ginfo</strong> output is even more verbose and complete,
 and includes information about the application itself, the input and
 output files, plus some backend-specific information:</p>
-<div class="highlight-python"><pre>$ ginfo -c -s example job.13
+<div class="highlight-python"><div class="highlight"><pre>$ ginfo -c -s example job.13
 job.13
   arguments: 800000800, 100, 2, input.tgz
   changed: False
@@ -437,9 +449,9 @@ job.13
       execution_targets: hera.wsl.ch
       log:
           SUBMITTED at Tue May 15 09:52:04 2012
-          Submitted to 'wsl' at Tue May 15 09:52:04 2012
+          Submitted to &#39;wsl&#39; at Tue May 15 09:52:04 2012
           TERMINATING at Tue May 15 10:07:39 2012
-          Final output downloaded to '/data/crypto/results/example.out/8000001000'
+          Final output downloaded to &#39;/data/crypto/results/example.out/8000001000&#39;
           TERMINATED at Tue May 15 10:07:43 2012
       lrms_jobid: gsiftp://hera.wsl.ch:2811/jobs/11441337068324584585032
       lrms_jobname: LACAL_800001000
@@ -475,7 +487,8 @@ job.13
   stderr: None
   stdin: None
   stdout: gcrypto.log
-  tags: APPS/CRYPTO/LACAL-1.0</pre>
+  tags: APPS/CRYPTO/LACAL-1.0
+</pre></div>
 </div>
 </div>
 </div>
@@ -552,7 +565,7 @@ job.13
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
