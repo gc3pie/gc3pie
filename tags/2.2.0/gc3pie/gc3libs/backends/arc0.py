@@ -20,7 +20,7 @@ Job control on ARC0 resources.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = '2.2.0 version (SVN $Revision$)'
+__version__ = 'development version (SVN $Revision$)'
 
 
 import sys
@@ -503,7 +503,7 @@ class ArcLrms(LRMS):
         # directory, make a temporary directory for downloading files;
         # then move files to their final destination and delete the
         # temporary location.
-        with tempdir(suffix='.d', dir=download_dir) as tmp_download_dir:
+        with (suffix='.d', dir=download_dir) as tmp_download_dir:
 
            log.debug("Downloading %s output into temporary location '%s' ...",
                       app, tmp_download_dir)
