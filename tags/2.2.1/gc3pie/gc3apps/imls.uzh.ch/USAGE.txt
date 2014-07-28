@@ -1,0 +1,85 @@
+Basic invocation
+----------------
+
+-1. Start the SSH agent::
+
+        eval $(ssh-agent -s)
+        ssh-add
+
+   You will be asked for a password, which is the one for
+   the SSH key file "Tinri".
+
+0. Activate the GC3Pie environment::
+
+        . /Users/tinria/gc3pie/bin/activate
+
+   If it worked, the shell prompt line should start with the string
+   "(gc3pie)".
+
+1. Create a file `simulations.csv`, that lists the "SimNo" of
+   simulations to run, one per line.
+
+2. Run the script to start a session:
+
+        gcelljunction simulations.csv -s TEST -l -C 60
+
+   In case the compiled matlab code is present locally, put this compiled
+   file in the same folder where gcelljunction is run and run the script as
+   follows:
+
+        gcelljunction -x ./tricellular_junctions -l -C 60 -s
+        TEST simulations.csv
+
+   For running more than 50 simulations simultaneously, add:
+   --max-running 100
+
+   Meaning of the options:
+
+   * `simulations.csv`: the file created in step 1.;
+
+   * `-s TEST`: (optional) specify session name, for grouping different independent set of jobs;
+
+   * `-l`: list all jobs by name;
+
+   * `-C 60`: update frequency in seconds.
+
+   You can interrupt the script at any time by pressing Ctrl+C
+
+   At every cycle (see update frequency above), a snapshot of the
+   output of all RUNNING jobs will be downloaded; only new files or
+   files that have changed w.r.t. the local copy will be downloaded.
+   Output from the simulations is downloaded into a folder named
+   `tricellular_junctions_SIMNO#1`.
+
+
+How to
+------
+
+* Kill all jobs in a session::
+
+        gsession abort TEST
+
+  where `TEST` is the session name as specified with the `-s` option
+  to `gcelljunction`.
+
+* Kill a single simulation::
+
+        gkill -s TEST GCellJunctionTask.NNN
+
+   where:
+
+   *  `NNN` is the number listed in the "JobID" column of the `gcelljunction` report (e.g., "GCellJunctionTask.67399");
+   * `TEST` is the session name as specified with the `-s` option to `gcelljunction`.
+
+* Download the current full output of *all* simulations::
+
+        gget -s TEST -A -f -c
+
+   To download the output of a *single* simulation, use this instead::
+
+        gget -s TEST -f -c GCellJunctionTask.NNN
+
+   where:
+
+   *  `NNN` is the number listed in the "JobID" column of the `gcelljunction` report (e.g., "GCellJunctionTask.67399");
+   * `TEST` is the session name as specified with the `-s` option to `gcelljunction`.
