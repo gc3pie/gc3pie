@@ -1,0 +1,4 @@
+R CMD BATCH --no-save --no-restore '--args pos=5 realizations=7 snr=1 mast.h=0.5 sd.mast.o=0' ./src/processit.R ./out/screen.out
+R CMD BATCH --no-save --no-restore '--args pos=7 realizations=7 snr=1 mast.h=0.5 sd.mast.o=0' ./src/processit.R ./out/screen.out
+R CMD BATCH --no-save --no-restore '--args pos=14 realizations=7 snr=1 mast.h=0.5 sd.mast.o=0' ./src/processit.R ./out/screen.out
+R CMD BATCH --no-save --no-restore '--args pos=15 realizations=7 snr=1 mast.h=0.5 sd.mast.o=0' ./src/processit.R ./out/screen.out

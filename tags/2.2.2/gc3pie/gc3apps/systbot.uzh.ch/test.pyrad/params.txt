@@ -1,0 +1,44 @@
+@@################        pyRAD input file, version 1.60      ###############@@
+./                                      ## 1. Working directory
+$HOME/input/*.fastq                     ## 2. location of .fastq input files (not needed if line 18)
+./barcodes.txt                          ## 3. location of barcode file (not needed if line 18)
+@PYRAD@/usearch6.0.307_i86linux32       ## 4. command (or path) to call usearch
+TGCAG                                   ## 5. cut site after cut (e.g., C|TGCAG -> TGCAG), can list second cut for ddRAD (TGCAG,AATTC)
+1                                       ## 6. n processors to use in parallel
+5                                       ## 7. Mindepth: minimum depth of coverage for a cluster
+4                                       ## 8. NQual: max # low quality (def. Q<20) bases in raw reads (can change Q on line 20)
+@WCLUST@                                ## 9. Wclust: clustering threshold as a decimal
+0                                       ## 10. Overlap: Single-end RAD, ddRAD or non-overlapping GBS (0), check overlap in paired ddRAD or GBS = 1.
+4                                       ## 11. MinCov: min samples in a final locus (across sample clusters)
+3                                       ## 12. MaxSharedH: max n samples that can have shared heterozygosity at a site (paralog detection)
+c90d5m4p3                               ## 13. prefix name for final output
+=================================================================================================
+                                             ## 15.optional: only execute on subset of data (for steps 2+)
+                                             ## 16.optional: add-on taxa, see documentation (comma separated - no spaces)
+                                             ## 17.optional: exclude taxa (comma separated - no spaces), only for step 7
+@@INPUT@/*              	             ## 18.optional: Location of pre-sorted data (used in step 2), use '@' if already stripped
+                                             ## 19.optional: max n mismatches in barcode during sorting (def. 1)
+                                             ## 20.optional: MinPh: min Phred Quality score (offset -33) default 20
+0                                            ## 21.optional: FILTER: filtering for CUT/Barcode/Adapters (0=nofilter/1=default/2=stricter)
+                                             ## 22.optional: a priori E,H (default 0.001,0.01 if not estimated)
+                                             ## 23.optional: maxN: max number of Ns in a consensus seq (default 3)
+                                             ## 24.optional: maxH: max number of heterozygous sites in a consensus seq (default 3)
+                                             ## 25.optional: random number seed (default 112233)
+                                             ## 26.optional: trim N bases from right end of consensus seqs (default=0)
+                                             ## 27.optional: maxHaplos: only allow N haplotypes in consensus seqs (default=2=diploid)
+                                             ## 28.optional: maxSNPs: max number of variable sites in final locus (default 100)
+                                             ## 29.optional: command to call muscle (default = muscle)
+                                             ## 30.optional: Paired: paired-end data (default 0), for paired gbs or ddRAD, not normal RAD
+                                             ## 31.optional: clustprefix for hierarchical clustering (ex: a,b,c)
+                                             ## 32.optional: min hits for each clustprefix (ex: 4,4,4)
+                                             ## 33.optional: maxIndels: max number indels in within sample cluster (def. 3)
+                                             ## 34.optional: allow consensus base calling on clusters with mindepth below statistical limit (def. 0)
+                                             ## 35.optional: allow overhang ends (left,right) of seqs with diff. lengths in step 7 (def. 0,0)
+                                             ## 36.optional: addtional output formats: a,e,n,s,u (see documentation)
+                                             ## 37.optional: minimum overlap of reverse comp. gbs clusters (def. .50)
+                                             ## 38.optional: analyze trimmed (short fragment) reads separate (default 0)
+                                             ## 39.optional: minimum length of filtered step 2 seqs (default/min = 36)
+                                             ## 40.optional: 1 for output error locations (default 0), big files.
+                                             ## 41.optional: max within-sample stack size (int), default is max(500,mean+2*SD)
+
+

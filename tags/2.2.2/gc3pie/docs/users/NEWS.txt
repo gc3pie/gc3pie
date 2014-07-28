@@ -1,0 +1,198 @@
+.. Hey Emacs, this is -*- rst -*-
+
+   This file follows reStructuredText markup syntax; see
+   http://docutils.sf.net/rst.html for more information.
+
+.. include:: ../global.inc
+
+
+.. _news:
+
+--------------------------------------
+ User-visible changes across releases
+--------------------------------------
+
+.. highlights::
+
+  This is a list of user-visible changes worth mentioning. In each new
+  release, items are added to the top of the file and identify the version
+  they pertain to.
+
+.. NOTE TO AUTHORS:
+
+  Don’t discard old items; leave them in the file after the newer
+  items. This way, a user upgrading from any previous version can see
+  what is new.
+
+  See also: https://www.gnu.org/prep/standards/html_node/NEWS-File.html
+  (from whence the above quote was taken)
+
+
+.. contents::
+
+
+GC3Pie 2.2.0
+============
+
+New features
+------------
+
+* New ``openstack`` backend for running jobs on ephemeral VMs on
+  OpenStack-compatible IaaS cloud systems.  This is preferred over the
+  OpenStack EC2 compatibility layer.
+* New configurable scheduler for GC3Pie's `Engine`:class:
+* Session-based scripts can now snapshot the output of RUNNING jobs at
+  every cycle.
+* ARC backends are now deprecated: they will be removed in the next
+  major version of GC3Pie.
+* The ``pbs`` backend can now handle also Altair's PBSPro.
+
+Changes to command-line utilities
+---------------------------------
+
+* ``gget``: New option `-A` to download output files of *all* tasks in a session.
+* ``gget``: New option ``-c``/``--changed-only`` to only download
+  files that have apparently changed remotely.
+* The GC3Apps collection has been enriched with several new applications.
+
+Important bug fixes
+-------------------
+
+* Working directory for remote jobs using the ``shellcmd`` backend is
+  now stored in ``/var/tmp`` instead of ``/tmp``, which should allow
+  results to be retrieved even after a reboot of the remote machine.
+
+
+GC3Pie 2.1.0
+============
+
+New features and incompatible changes
+-------------------------------------
+
+* GC3Pie now requires Python 2.6 or above to run.
+* New ``ec2`` backend for running jobs on ephemeral VMs on
+  EC2-compatible IaaS cloud systems.
+* New package `gc3libs.optimizer` to find local optima of functions
+  that can be computed through a job.  Currently only implements the
+  "Differential Evolution" algorithm, but the framework is generic
+  enough to plug any genetic algorithm.
+* New configuration options ``prolog_content`` and ``epilog_content``,
+  to allow execute oneliners before or after the command without
+  having to create an auxiliary file.
+* New ``resourcedir`` option for ``shellcmd`` resources. This is used
+  to modify the default value for the directory containing job
+  informations.
+
+Changes to command-line utilities
+---------------------------------
+
+* New command ``gcloud`` to interface with cloud-based VMs that were
+  spawned by GC3Pie to run jobs.
+* Table output now uses a different formatting (we use Python's
+  `prettytable` package instead of the `texttable` package that we
+  were using before, due to Py3 compatibility).
+
+
+
+GC3Pie 2.0
+==========
+
+New features and incompatible changes
+-------------------------------------
+
+* GC3Pie can now run on MacOSX.
+* A session now has a configurable storage location, which can be a
+  directory on the filesystem (FilesystemStore, the default so far) or
+  can be a table in an SQL database (of any kind supported by
+  SQLAlchemy).
+* New ARC1 backend to use ARC resources through the new NorduGrid 1.x library API.
+* New backend "subprocess": execute applications as local processes.
+* New backends for running on various batch-queueing systems: SLURM, LSF, PBS.
+* Implement recursive upload and download of directories if they are
+  specified in an `Application`'s `input` or `output` attribute.
+* New execution state `TERMINATING`: task objects are in this state when execution is finished remotely, but the task output has not yet been retrieved.
+* Reorganize documentation and move it to http://gc3pie.readthedocs.org/
+* Script logging is now controlled by a single configuration file `.gc3/gc3utils.log.conf`
+* Session-based scripts now print WARNING messages to STDERR by default (previously, only ERROR messages were logged).
+* Add caching to ARC backends, to reduce the number of network queries.
+* Use GNU ".~NUMBER~" format for backup directories.
+
+Configuration file changes
+--------------------------
+
+* Rename ARC0 resource type to `arc0`
+
+Changes to command-line utilities
+---------------------------------
+
+* New `gsession` command to manage sessions.
+* The ``glist`` command was renamed to ``gservers``
+* The ``gsub`` and ``gnotify`` commands were removed.
+* The ``PATH`` tag no longer gets any special treatment in
+  session-based scripts ``--output`` processing.
+* ``ginfo``: New option ``--tabular`` to print information in table format.
+* ``gkill``: New option `-A`/`--all` to remove all jobs in a session.
+* Use the `rungms` script to execute GAMESS.
+
+API changes
+-----------
+
+* Module ``gc3libs.dag`` has been renamed to ``gc3libs.workflow``.
+* API changes in `gc3libs.cmdline.SessionBasedScript`:class: allow
+  `new_tasks()` in `SessionBasedScript` instances to return `Task`
+  instances instead of quadruples.
+* Interpret `Application.requested_memory` as the *total* memory for the job.
+* the ``Resource`` and ``LRMS`` objects were merged
+* the ``gc3libs.scheduler`` module has been removed; its functionality is now incorporated in the ``Application`` class.
+* configuration-related code moved into `gc3libs.config` module
+* removed the application registry.
+* New package `gc3libs.compat` to provide 3rd-party functionality that is not present in all supported versions of Python.
+* Implement `gc3libs.ANY_OUTPUT` to retrieve the full contents of the output directory, whatever it is.
+* New `RetryableTask` class to wrap a task and re-submit it on failure until some specified condition is met.
+
+
+GC3Pie 1.0
+==========
+
+Configuration file changes
+--------------------------
+
+* Renamed configuration file to ``gc3pie.conf``: the file
+  ``gc3utils.conf`` will no longer be read!
+* SGE clusters must now have ``type = sge`` in the configuration file
+  (instead of ``type = ssh-sge``)
+* All computational resource must have an ``architecture = ...`` line;
+  see the ConfigurationFile wiki page for details
+* Probably more changes than it's worth to list here: check your
+  configuration against the configuration_ page!
+
+Command-line utilities changes
+------------------------------
+
+* GC3Utils and GC3Apps (``grosetta``/``ggamess``/etc.) now all accept
+  a ``-s``/``--session`` option for locating the job storage
+  directory: this allows grouping jobs into folders instead of
+  shoveling them all into ``~/.gc3/jobs``.
+* GC3Apps: replaced option ``-t``/``--table`` with
+  ``-l``/``--states``. The new option prints a table of submitted jobs
+  in addition to the summary stats; if a comma-separated list of job
+  states follows the option, only job in those states are printed.
+* Command ``gstat`` will now print a summary of the job states if the
+  list is too long to fit on screen; use the -v option to get the full
+  job listing regardless of its length.
+* Command ``gstat`` can now print information on jobs in a certain
+  state only; see help text for option ``--state``
+* Removed ``-l`` option from ginfo; use ``-v`` instead.
+* GC3Utils: all commands accepting multiple job IDs on the command
+  line, now exit with the number of errors/failures occurred. Since
+  exit codes are practically limited to 7 bits, exit code 126 means
+  that more than 125 failures happened.
+
+
+GC3Pie 0.10
+===========
+
+* First release for public use outside of GC3_
+
+
+.. _gc3: http://www.gc3.uzh.ch/
