@@ -674,12 +674,19 @@ class Application(Task):
       processor architecture.
 
     `environment`
-      a list of pairs `(name, value)`: the
-      environment variable whose name is given by the contents of
-      the string `name` will be defined as the content of string
-      `value` (i.e., as if "export name=value" was executed prior
-      to starting the application).  Alternately, one can pass in
-      a list of strings of the form "name=value".
+      a dictionary defining environment variables and the values to
+      give them in the task execution setting.  Keys of the dictionary
+      are environmental variables names, and dictionary values define
+      the corresponding variable content.  Both keys and values must
+      be strings or convertible to string.
+
+      For example, to run the application in an environment where the
+      variable ``LC_ALL`` has the value ``C`` and the variable ``HZ``
+      has the value ``100``, one would use::
+
+        Application(...,
+          environment={'LC_ALL':'C', 'HZ':100},
+          ...)
 
     `output_base_url`
       if not `None`, this is prefixed to all output files (except
@@ -854,9 +861,8 @@ class Application(Task):
                 "Architecture must be either '%s' or '%s'"
                 % (Run.Arch.X86_32, Run.Arch.X86_64))
 
-        self.environment = extra_args.pop('environment', dict())
-        self.environment = dict(Application._to_env_pair(x)
-                                for x in self.environment.items())
+        self.environment = dict((str(k), str(v))
+                                for k,v in extra_args.pop('environment', dict()).items())
 
         self.join = extra_args.pop('join', False)
         self.stdin = extra_args.pop('stdin', None)
@@ -899,7 +905,6 @@ class Application(Task):
             elif str(jobname)[0] in string.digits:
                 jobname = "GC3Pie.%s" % jobname
             extra_args['jobname'] = jobname
-
         # task setup; creates the `.execution` attribute as well
         Task.__init__(self, **extra_args)
 
@@ -907,15 +912,6 @@ class Application(Task):
         #     gc3libs.log.debug("outputs[%s]=%s", repr(k), repr(v))
         # for k,v in self.inputs.iteritems():
         #     gc3libs.log.debug("inputs[%s]=%s", repr(k), repr(v))
-
-
-    @staticmethod
-    def _to_env_pair(val):
-        if isinstance(val, tuple):
-            return val
-        else:
-            # assume `val` is a string
-            return tuple(val.split('=', 1))
 
 
     @staticmethod
