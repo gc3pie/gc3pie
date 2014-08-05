@@ -3,7 +3,7 @@
 """
 Job control on SGE clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -23,6 +23,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
+from collections import defaultdict
 import datetime
 import os
 import posixpath
@@ -367,6 +368,7 @@ class LsfLrms(batch.BatchSystem):
                  # these are inherited from `BatchSystem`
                  frontend, transport,
                  # these are specific to this backend
+                 lsf_continuation_line_prefix_length=None,
                  # (Note that optional arguments to the `BatchSystem` class, e.g.:
                  #     keyfile=None, accounting_delay=15,
                  # are collected into `extra_args` and should not be explicitly
@@ -388,6 +390,11 @@ class LsfLrms(batch.BatchSystem):
         self._bjobs = self._get_command('bjobs')
         self._bkill = self._get_command('bkill')
         self._lshosts = self._get_command('lshosts')
+
+        if lsf_continuation_line_prefix_length is not None:
+            self._CONTINUATION_LINE_START = ' ' * lsf_continuation_line_prefix_length
+        else:
+            self._CONTINUATION_LINE_START = None
 
 
     def _submit_command(self, app):
@@ -440,21 +447,24 @@ class LsfLrms(batch.BatchSystem):
     _unsuccessful_exit_re = re.compile(r'Exited with exit code (?P<exit_status>[0-9]+).', re.M)
     _cpu_time_re = re.compile(r'The CPU time used is (?P<cputime>[0-9]+(\.[0-9]+)?) seconds', re.M)
 
-    _CONTINUATION_LINE_START = '                     '
-
-    @staticmethod
-    def _parse_stat_output(stdout):
+    def _parse_stat_output(self, stdout):
         # LSF `bjobs -l` uses a LDIF-style continuation lines, wherein
         # a line is truncated at 79 characters and continues upon the
         # next one; continuation lines start with a fixed amount of
-        # whitespace.  Join continuation lines, so that we can work on
-        # a single block of text.
+        # whitespace.  However, the amount of whitespace varies with
+        # LSF release and possibly other factors, so we need to guess
+        # or have users configure it...
+        if self._CONTINUATION_LINE_START is None:
+            self._CONTINUATION_LINE_START = ' ' * self._guess_continuation_line_prefix_len(stdout)
+
+        # Join continuation lines, so that we can work on a single
+        # block of text.
         lines = [ ]
         for line in stdout.split('\n'):
             if len(line) == 0:
                 continue
-            if line.startswith(LsfLrms._CONTINUATION_LINE_START):
-                lines[-1] += line[len(LsfLrms._CONTINUATION_LINE_START):]
+            if line.startswith(self._CONTINUATION_LINE_START):
+                lines[-1] += line[len(self._CONTINUATION_LINE_START):]
             else:
                 lines.append(line)
 
@@ -479,6 +489,40 @@ class LsfLrms(batch.BatchSystem):
                     jobstatus.exit_status = int(match.group('exit_status'))
         assert 'state' in jobstatus
         return jobstatus
+
+    @staticmethod
+    def _guess_continuation_line_prefix_len(stdout):
+        """
+        Guess the most likely length of the initial run of spaces in
+        continuation lines in `bjobs` output.
+
+        The euristics is rather crude: we count how many spaces are at
+        the beginning of each line, and take the value with most
+        occurrences.
+
+        Since, in addition, LSF's `bjobs` output contains also
+        scheduling parameters and other differently-formatted reports,
+        we only consider lines that contain a ``<`` or a ``>``
+        character to be valid continuation lines -- any other line is
+        just discarded.
+
+        This is necessary as the amount of whitespace at the beginning
+        of lines seems to vary with LSF version and/or some other
+        parameter.
+        """
+        # count occurrences of each prefix length
+        occurrences = defaultdict(int)
+        for line in stdout.split('\n'):
+            if '<' not in line and '>' not in line:
+                continue
+            # FIXME: incorrect result if LSF mixes TABs and spaces
+            ws_length = len(line) - len(line.lstrip())
+            occurrences[ws_length] += 1
+        # now find the length that has the max occurrences
+        max_occurrences = max(occurrences.values())
+        for length, count in occurrences.items():
+            if count == max_occurrences:
+                return length
 
     _TIMESTAMP_FMT = '%a %b %d %H:%M:%S' # e.g., 'Mon Oct  8 12:04:56 2012'
 
