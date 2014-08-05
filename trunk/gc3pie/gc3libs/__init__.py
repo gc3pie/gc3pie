@@ -1212,9 +1212,13 @@ class Application(Task):
 
         Hence, to get a UNIX shell command-line, just concatenate the
         elements of the list, separating them with spaces.
-
         """
-        return self.arguments[:]
+        if self.environment:
+            return (['/usr/bin/env']
+                    + ["%s=%s" for k,v in self.environment.items()]
+                    + self.arguments[:])
+        else:
+            return self.arguments[:]
 
 
     def qsub_sge(self, resource, **extra_args):
