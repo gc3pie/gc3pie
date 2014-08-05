@@ -8,7 +8,7 @@ collection.
 This is mainly used for testing and didactic purpouses, don't use it
 on a production environment!
 """
-# Copyright (C) 2012, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2014, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -35,7 +35,7 @@ import shlex
 import gc3libs
 import gc3libs.exceptions
 from gc3libs import Application, Run
-from gc3libs.cmdline import SessionBasedScript
+from gc3libs.cmdline import SessionBasedScript, nonnegative_int
 from gc3libs.workflow import TaskCollection
 from gc3libs.workflow import ParallelTaskCollection, SequentialTaskCollection
 
@@ -70,17 +70,23 @@ class GRunScript(SessionBasedScript):
 
     Mainly used for testing purposes.
     """
-    version = '1.0'
+    version = '1.1'
     def setup_options(self):
-        self.add_param('--parallel', default=0, action="store", type=int,
-                       help='How many times the command line must be executed in parallel')
-        self.add_param('--sequential', default=0, action="store", type=int,
-                       help='How many times the command line must be executed in sequential')
+        """Add options specific to this session-based script."""
+        self.add_param('--parallel', metavar="COUNT",
+                       action="store", default=0, type=nonnegative_int,
+                       help='Execute the command line this many times in parallel')
+        self.add_param('--sequential', metavar="COUNT",
+                       action="store", default=0, type=nonnegative_int,
+                       help='Execute the command line this many times in a sequence')
 
-    def new_tasks(self, extra):
-        gc3libs.log.debug("Arguments: %s" % str(self.params.args))
+    def parse_args(self):
+        if not self.params.parallel and not self.params.sequential:
+            raise RuntimeError("You must specify either --parallel or --sequential.")
         if self.params.parallel and self.params.sequential:
             raise RuntimeError("You can either use --parallel or --sequential, not both")
+
+    def new_tasks(self, extra):
         appextra = extra.copy()
         del appextra['output_dir']
 
