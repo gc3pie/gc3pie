@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011-2013, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2014, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -33,7 +33,7 @@ import gc3libs.config
 from gc3libs.backends.lsf import LsfLrms
 from gc3libs.quantity import Duration, hours, minutes, seconds, Memory, GB, MB, kB
 
-from nose.tools import assert_equal
+from nose.tools import assert_equal, raises
 
 _datetime_date = None
 
@@ -97,6 +97,8 @@ architecture=x86_64
 bsub = /usr/local/bin/bsub -R lustre
 bjobs = /usr/local/bin/bjobs
 lshosts = /usr/local/sbin/lshosts # comments are ignored!
+
+lsf_continuation_line_prefix_length = 12
 """)
     f.close()
 
@@ -109,8 +111,20 @@ lshosts = /usr/local/sbin/lshosts # comments are ignored!
     assert_equal(b._bjobs,   '/usr/local/bin/bjobs')
     assert_equal(b._lshosts, '/usr/local/sbin/lshosts')
 
+    assert_equal(b._CONTINUATION_LINE_START, 12 * ' ')
+
+
 def test_bjobs_output_done1():
-    jobstatus = LsfLrms._parse_stat_output("""
+    lsf = LsfLrms(name='test',
+                  architecture=gc3libs.Run.Arch.X86_64,
+                  max_cores=1,
+                  max_cores_per_job=1,
+                  max_memory_per_core=1*GB,
+                  max_walltime=1*hours,
+                  auth=None, # ignored if `transport` is `local`
+                  frontend='localhost',
+                  transport='local')
+    jobstatus = lsf._parse_stat_output("""
 Job <131851>, Job Name <ChromaExtractShort>, User <wwolski>, Project <default>,
                      Status <DONE>, Queue <pub.8h>, Job Priority <50>, Command
                      <ChromatogramExtractor -in /cluster/scratch/malars/openswa
@@ -149,7 +163,16 @@ Tue Jul 24 10:05:45: Done successfully. The CPU time used is 2.1 seconds.
 
 
 def test_bjobs_output_done2():
-    jobstatus = LsfLrms._parse_stat_output("""
+    lsf = LsfLrms(name='test',
+                  architecture=gc3libs.Run.Arch.X86_64,
+                  max_cores=1,
+                  max_cores_per_job=1,
+                  max_memory_per_core=1*GB,
+                  max_walltime=1*hours,
+                  auth=None, # ignored if `transport` is `local`
+                  frontend='localhost',
+                  transport='local')
+    jobstatus = lsf._parse_stat_output("""
 Job <726659>, Job Name <Application>, User <wwolski>, Project <default>, Status
                       <DONE>, Queue <pub.8h>, Job Priority <50>, Command <FileM
                      erger -in /IMSB/users/wwolski/gc3pieScripts/split_napedro_
@@ -250,8 +273,60 @@ Mon Jul 30 15:12:56: Done successfully. The CPU time used is 1.7 seconds.
     assert_equal(jobstatus.exit_status, 0)
 
 
+def test_bjobs_output_done3():
+    lsf = LsfLrms(name='test',
+                  architecture=gc3libs.Run.Arch.X86_64,
+                  max_cores=1,
+                  max_cores_per_job=1,
+                  max_memory_per_core=1*GB,
+                  max_walltime=1*hours,
+                  auth=None, # ignored if `transport` is `local`
+                  frontend='localhost',
+                  transport='local')
+    jobstatus = lsf._parse_stat_output("""
+Job <2073>, Job Name <GRunApplication.0>, User <markmon>, Project <default>, St
+                          atus <EXIT>, Queue <normal>, Command <sh -c inputfile
+                          .txt>
+Mon Aug  4 12:28:51 2014: Submitted from host <pa64.dri.edu>, CWD <$HOME/.gc3pi
+                          e_jobs/lrms_job.5gDDxlxcty>, Specified CWD <$HOME/.gc
+                          3pie_jobs/lrms_job.5gDDxlxcty/.>, Output File (overwr
+                          ite) <stdout.txt>, Error File (overwrite) <stderr.txt
+                          >, Requested Resources <rusage[mem=2000]>, Login Shel
+                          l </bin/sh>;
+
+ RUNLIMIT
+ 480.0 min of pa54.dri.edu
+Mon Aug  4 12:28:51 2014: Started on <pa54.dri.edu>, Execution Home </home/mark
+                          mon>, Execution CWD </home/markmon/.gc3pie_jobs/lrms_
+                          job.5gDDxlxcty/.>;
+Mon Aug  4 12:28:51 2014: Exited with exit code 127. The CPU time used is 0.1 s
+                          econds.
+Mon Aug  4 12:28:51 2014: Completed <exit>.
+
+ SCHEDULING PARAMETERS:
+           r15s   r1m  r15m   ut      pg    io   ls    it    tmp    swp    mem
+ loadSched   -     -     -     -       -     -    -     -     -      -      -
+ loadStop    -     -     -     -       -     -    -     -     -      -      -
+
+ RESOURCE REQUIREMENT DETAILS:
+ Combined: select[type == local] order[r15s:pg] rusage[mem=2000.00]
+ Effective: select[type == local] order[r15s:pg] rusage[mem=2000.00]
+""")
+    assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
+    assert_equal(jobstatus.exit_status, 127)
+
+
 def test_bjobs_output_exit_nonzero():
-    jobstatus = LsfLrms._parse_stat_output("""
+    lsf = LsfLrms(name='test',
+                  architecture=gc3libs.Run.Arch.X86_64,
+                  max_cores=1,
+                  max_cores_per_job=1,
+                  max_memory_per_core=1*GB,
+                  max_walltime=1*hours,
+                  auth=None, # ignored if `transport` is `local`
+                  frontend='localhost',
+                  transport='local')
+    jobstatus = lsf._parse_stat_output("""
 Job <132286>, User <wwolski>, Project <default>, Status <EXIT>, Queue <pub.1h>,
                      Job Priority <50>, Command <./x.sh>, Share group charged <
                      /lsf_biol_all/lsf_biol_other/wwolski>
@@ -276,6 +351,95 @@ Tue Jul 24 10:26:53: Completed <exit>.
 """)
     assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
     assert_equal(jobstatus.exit_status, 42)
+
+
+@raises(AssertionError)
+def test_bjobs_incorrect_prefix_length():
+    lsf = LsfLrms(name='test',
+                  architecture=gc3libs.Run.Arch.X86_64,
+                  max_cores=1,
+                  max_cores_per_job=1,
+                  max_memory_per_core=1*GB,
+                  max_walltime=1*hours,
+                  auth=None, # ignored if `transport` is `local`
+                  frontend='localhost',
+                  transport='local',
+                  lsf_continuation_line_prefix_length=7)
+    jobstatus = lsf._parse_stat_output("""
+Job <2073>, Job Name <GRunApplication.0>, User <markmon>, Project <default>, St
+                          atus <EXIT>, Queue <normal>, Command <sh -c inputfile
+                          .txt>
+Mon Aug  4 12:28:51 2014: Submitted from host <pa64.dri.edu>, CWD <$HOME/.gc3pi
+                          e_jobs/lrms_job.5gDDxlxcty>, Specified CWD <$HOME/.gc
+                          3pie_jobs/lrms_job.5gDDxlxcty/.>, Output File (overwr
+                          ite) <stdout.txt>, Error File (overwrite) <stderr.txt
+                          >, Requested Resources <rusage[mem=2000]>, Login Shel
+                          l </bin/sh>;
+
+ RUNLIMIT
+ 480.0 min of pa54.dri.edu
+Mon Aug  4 12:28:51 2014: Started on <pa54.dri.edu>, Execution Home </home/mark
+                          mon>, Execution CWD </home/markmon/.gc3pie_jobs/lrms_
+                          job.5gDDxlxcty/.>;
+Mon Aug  4 12:28:51 2014: Exited with exit code 127. The CPU time used is 0.1 s
+                          econds.
+Mon Aug  4 12:28:51 2014: Completed <exit>.
+
+ SCHEDULING PARAMETERS:
+           r15s   r1m  r15m   ut      pg    io   ls    it    tmp    swp    mem
+ loadSched   -     -     -     -       -     -    -     -     -      -      -
+ loadStop    -     -     -     -       -     -    -     -     -      -      -
+
+ RESOURCE REQUIREMENT DETAILS:
+ Combined: select[type == local] order[r15s:pg] rusage[mem=2000.00]
+ Effective: select[type == local] order[r15s:pg] rusage[mem=2000.00]
+""")
+    assert 'state' not in jobstatus
+
+
+def test_bjobs_correct_explicit_prefix_length():
+    lsf = LsfLrms(name='test',
+                  architecture=gc3libs.Run.Arch.X86_64,
+                  max_cores=1,
+                  max_cores_per_job=1,
+                  max_memory_per_core=1*GB,
+                  max_walltime=1*hours,
+                  auth=None, # ignored if `transport` is `local`
+                  frontend='localhost',
+                  transport='local',
+                  lsf_continuation_line_prefix_length=26)
+    jobstatus = lsf._parse_stat_output("""
+Job <2073>, Job Name <GRunApplication.0>, User <markmon>, Project <default>, St
+                          atus <EXIT>, Queue <normal>, Command <sh -c inputfile
+                          .txt>
+Mon Aug  4 12:28:51 2014: Submitted from host <pa64.dri.edu>, CWD <$HOME/.gc3pi
+                          e_jobs/lrms_job.5gDDxlxcty>, Specified CWD <$HOME/.gc
+                          3pie_jobs/lrms_job.5gDDxlxcty/.>, Output File (overwr
+                          ite) <stdout.txt>, Error File (overwrite) <stderr.txt
+                          >, Requested Resources <rusage[mem=2000]>, Login Shel
+                          l </bin/sh>;
+
+ RUNLIMIT
+ 480.0 min of pa54.dri.edu
+Mon Aug  4 12:28:51 2014: Started on <pa54.dri.edu>, Execution Home </home/mark
+                          mon>, Execution CWD </home/markmon/.gc3pie_jobs/lrms_
+                          job.5gDDxlxcty/.>;
+Mon Aug  4 12:28:51 2014: Exited with exit code 127. The CPU time used is 0.1 s
+                          econds.
+Mon Aug  4 12:28:51 2014: Completed <exit>.
+
+ SCHEDULING PARAMETERS:
+           r15s   r1m  r15m   ut      pg    io   ls    it    tmp    swp    mem
+ loadSched   -     -     -     -       -     -    -     -     -      -      -
+ loadStop    -     -     -     -       -     -    -     -     -      -      -
+
+ RESOURCE REQUIREMENT DETAILS:
+ Combined: select[type == local] order[r15s:pg] rusage[mem=2000.00]
+ Effective: select[type == local] order[r15s:pg] rusage[mem=2000.00]
+""")
+    assert 'state' in jobstatus
+    assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
+    assert_equal(jobstatus.exit_status, 127)
 
 
 def test_bacct_done0():

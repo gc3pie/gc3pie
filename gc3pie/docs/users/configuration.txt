@@ -426,6 +426,17 @@ are used by the LSF backend:
 
   * ``lshosts``: get info on available resources.
 
+LSF commands use a weird formatting: lines longer than 79 characters
+are wrapped around, and the continuation line starts with a long run
+of spaces.  The length of this run of whitespace seems to vary with
+LSF version; GC3Pie is normally able to auto-detect it, but there can
+be a few unlikely cases where it cannot.  If this ever happens, the
+following configuration option is here to help:
+
+  * ``lsf_continuation_line_prefix_length``: length (in characters) of
+    the whitespace prefix of continuation lines in ``bjobs`` output.
+    This setting is normally not needed.
+
 
 ``slurm`` resources
 ~~~~~~~~~~~~~~~~~~~
