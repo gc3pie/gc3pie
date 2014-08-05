@@ -524,27 +524,31 @@ class LsfLrms(batch.BatchSystem):
             if count == max_occurrences:
                 return length
 
-    _TIMESTAMP_FMT = '%a %b %d %H:%M:%S' # e.g., 'Mon Oct  8 12:04:56 2012'
+    _TIMESTAMP_FMT_WITH_YEAR = '%a %b %d %H:%M:%S %Y' # e.g., 'Mon Oct  8 12:04:56 2012'
+    _TIMESTAMP_FMT_NO_YEAR   = '%a %b %d %H:%M:%S'    # e.g., 'Mon Oct  8 12:04:56'
 
     @staticmethod
     def _parse_timespec(ts):
         """Parse a timestamp as it appears in LSF bjobs/bacct logs."""
+        # try "with year" format first, as it has all the info we need
         try:
-            # XXX: I couldn't find examples of LSF output that
-            # contain a year spec, so we do the following: if the
-            # month in the timespec is less than or equal to the
-            # current month, the timestamp is for an event occurred
-            # during this year; if it's in a month later than the
-            # current one, the timestamp refers to an event occurred
-            # in the *past* year.
+            return datetime.datetime.strptime(ts, LsfLrms._TIMESTAMP_FMT_WITH_YEAR)
+        except ValueError:
+            pass # ignore and try again without year
+        try:
+            # XXX: since we do not have a year, we resort to the
+            # following heuristics: if the month in the timespec is
+            # less than or equal to the current month, the timestamp
+            # is for an event occurred during this year; if it's in a
+            # month later than the current one, the timestamp refers
+            # to an event occurred in the *past* year.
             today = datetime.date.today()
             # XXX: datetime.strptime() only available starting Py 2.5
-            tm = time.strptime(ts, LsfLrms._TIMESTAMP_FMT)
+            tm = time.strptime(ts, LsfLrms._TIMESTAMP_FMT_NO_YEAR)
             if tm[1] <= today.month:
-                return datetime.datetime(today.year, *(time.strptime(ts, LsfLrms._TIMESTAMP_FMT)[1:6]))
+                return datetime.datetime(today.year, *(tm[1:6]))
             else:
-                return datetime.datetime(today.year-1,
-                                         *(time.strptime(ts, LsfLrms._TIMESTAMP_FMT)[1:6]))
+                return datetime.datetime(today.year-1, *(tm[1:6]))
         except ValueError, err:
             gc3libs.log.error(
                 "Cannot parse '%s' as an LSF timestamp: %s: %s",
