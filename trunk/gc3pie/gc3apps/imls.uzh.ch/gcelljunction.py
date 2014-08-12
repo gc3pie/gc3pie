@@ -19,7 +19,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Front-end script for runniung multiple `tricellular_junction` instances.
+Front-end script for running multiple `tricellular_junction` instances.
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gcelljunction --help`` for program usage instructions.
@@ -213,6 +213,7 @@ newly-created jobs so that this limit is never exceeded.
                 except (OSError, IOError), ex:
                     self.log.warning("Cannot open input file '%s': %s: %s",
                                      path, ex.__class__.__name__, str(ex))
+                    continue
                 for lineno, line in enumerate(inputfile):
                     line = line.strip()
                     # ignore blank and comment lines (those that start with '#')
