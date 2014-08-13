@@ -41,7 +41,6 @@ from gc3libs.utils import Struct, sh_quote_unsafe, defproperty
 from gc3libs.backends import LRMS
 from gc3libs.quantity import Memory, kB, MB, GB
 
-
 def _make_remote_and_local_path_pair(transport, job, remote_relpath,
                                      local_root_dir, local_relpath):
     """
@@ -419,13 +418,12 @@ ReturnCode=%x"""
             exit_code, stdout, stderr = self.transport.execute_command('nproc')
             max_cores = int(stdout)
 
-            fd = self.transport.open('/proc/meminfo', 'r')
-            # Get the amount of total memory from /proc/meminfo
-            self.total_memory = self.max_memory_per_core
-            for line in fd:
-                if line.startswith('MemTotal'):
-                    self.total_memory = int(line.split()[1]) * Memory.KiB
-                    break
+            # get the amount of total memory from /proc/meminfo
+            with self.transport.open('/proc/meminfo', 'r') as fd:
+                for line in fd:
+                    if line.startswith('MemTotal'):
+                        self.total_memory = int(line.split()[1]) * Memory.KiB
+                        break
 
         elif self.running_kernel == 'Darwin':
             exit_code, stdout, stderr = self.transport.execute_command(
@@ -438,15 +436,15 @@ ReturnCode=%x"""
 
         if max_cores != self.max_cores:
             log.info(
-                "`max_cores` value on resource %s mismatch: configuration"
-                "file says `%d` while it's actually `%d`. Updating current "
-                "value.", self.name, self.max_cores, max_cores)
+                "Mismatch of value `max_cores` on resource '%s': configuration"
+                " file says `max_cores=%d` while it's actually `%d`."
+                " Updating current value.", self.name, self.max_cores, max_cores)
             self.max_cores = max_cores
 
         if self.total_memory != self.max_memory_per_core:
             log.info(
-                "mismatch of value `max_memory_per_core` on resource %s:"
-                " configuration file says `%s` while it's actually `%s`."
+                "Mismatch of value `max_memory_per_core` on resource %s:"
+                " configuration file says `max_memory_per_core=%s` while it's actually `%s`."
                 " Updating current value.",
                 self.name,
                 self.max_memory_per_core,
@@ -535,7 +533,7 @@ ReturnCode=%x"""
         used_memory = sum(map(self._filter_memory, jobs.values()))
         # in case `jobs.values()` is the empty list, the `sum()`
         # built-in returns (built-in) integer `0`, which is why we can
-        # use the `is`operator for this comparison ;-)
+        # use the `is` operator for this comparison ;-)
         if used_memory is 0:
             return 0*MB
         else:
@@ -553,8 +551,8 @@ ReturnCode=%x"""
         used_memory = self._compute_used_memory(self.job_infos)
         self.available_memory = self.total_memory - used_memory
         self.updated = True
-        log.debug("Recovered resource information from files in %s: "
-                  "available memory: %s, used memory: %s",
+        log.debug("Recovered resource information from files in %s:"
+                  " available memory: %s, memory used by jobs: %s",
                   self.resource_dir,
                   self.available_memory.to_str('%g%s', unit=Memory.MB, conv=float),
                   used_memory.to_str('%g%s', unit=Memory.MB, conv=float))
