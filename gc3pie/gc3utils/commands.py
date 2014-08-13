@@ -657,6 +657,14 @@ released once the output files have been fetched.
                                             changed_only=self.params.changed_only)
                     if app.changed:
                         self.session.store.replace(app.persistent_id, app)
+                    # `fetch_output` is by default a no-op on tasks:
+                    # try to detect this and skip all the messaging
+                    # below (and also retry the directory, in case we
+                    # have an Application with the same download
+                    # destination)
+                    if not os.path.exists(app_download_dir):
+                        continue
+                    # avoid downloading files twice -- see above
                     download_dirs.add(app_download_dir)
                 else:
                     self.log.debug("Output directory '%s' already visited,"
