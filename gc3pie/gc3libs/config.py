@@ -3,7 +3,7 @@
 """
 Deal with GC3Pie configuration files.
 """
-# Copyright (C) 2012, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2014, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -425,6 +425,9 @@ class Configuration(gc3libs.utils.Struct):
         'max_memory_per_core': _legacy_parse_memory,
         'max_walltime':        _legacy_parse_duration,
         'vm_os_overhead':      _legacy_parse_os_overhead,
+        # LSF-specific
+        'lsf_continuation_line_prefix_length':
+                               int,
         }
 
 
