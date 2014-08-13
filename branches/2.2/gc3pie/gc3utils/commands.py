@@ -652,7 +652,7 @@ released once the output files have been fetched.
                 # wrap an application (e.g., `RetryableTask`)
                 if app_download_dir not in download_dirs:
                     self._core.fetch_output(app,
-                                            output_dir=self.params.download_dir,
+                                            download_dir=app_download_dir,
                                             overwrite=self.params.overwrite,
                                             changed_only=self.params.changed_only)
                     if app.changed:
