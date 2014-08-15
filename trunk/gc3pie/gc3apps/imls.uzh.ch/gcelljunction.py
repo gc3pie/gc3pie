@@ -27,6 +27,7 @@ See the output of ``gcelljunction --help`` for program usage instructions.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+* 2014-08-15: Add option to restart jobs from saved data.
 * 2014-07-17: Snapshot output of RUNNING jobs at every cycle.
 * 2014-03-10: Report on task progress in the "info" line.
 * 2014-03-03: Initial release, forked off the ``gmhc_coev`` sources.
@@ -57,6 +58,7 @@ from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript
 from gc3libs.compat._collections import defaultdict
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
+from gc3libs.utils import string_to_boolean
 from gc3libs.workflow import RetryableTask
 
 
@@ -70,7 +72,7 @@ class GCellJunctionApplication(Application):
 
     application_name = 'tricellular_junction'
 
-    def __init__(self, sim_no, executable=None, **extra_args):
+    def __init__(self, sim_no, executable=None, restart=None, **extra_args):
         self.sim_no = sim_no
         wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
                                        "gc3libs/etc/gcelljunction_wrapper.sh")
@@ -81,6 +83,7 @@ class GCellJunctionApplication(Application):
         extra_args.setdefault('requested_walltime',     60*Duration.days)
         # command-line parameters to pass to the tricellular_junction_* program
         self.sim_no = sim_no
+        program_opts = [ sim_no ]
         if executable is not None:
             # use the specified executable
             exename = os.path.basename(executable)
@@ -91,26 +94,72 @@ class GCellJunctionApplication(Application):
             # assume one is installed in the VM
             executable_name = 'tricellular_junctions'
             exe_opts = [ ]
+        self.restart = restart
+        if self.restart:
+            assert len(self.restart) == 3
+            seqno, inputs['restart_data.mat'], inputs['restart_data4.mat'] = self.restart
+            program_opts += [ 1, seqno ]
+        else:
+            program_opts += [ 0, 0 ]
         Application.__init__(
             self,
-            arguments=['./' + os.path.basename(wrapper_sh)] + exe_opts + [ '--', sim_no ],
+            arguments=['./' + os.path.basename(wrapper_sh)] + exe_opts + [ '--' ] + program_opts,
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
             stdout = 'tricellular_junctions.log',
             join=True,
             **extra_args)
 
+    def terminated(self):
+        restart = self.find_restart_data(self.output_dir)
+        if restart:
+            self.restart = restart
+
+    @staticmethod
+    def find_restart_data(output_dir):
+        data_dir = os.path.join(output_dir, 'data')
+        if os.path.isdir(data_dir):
+            # find the latest output file
+            entries = [ name
+                        for name in os.listdir(data_dir)
+                        if name.startswith('junction_') and name.endswith('.mat') ]
+            latest = None
+            latest_idx = 0
+            for name in entries:
+                idx = int(name[len('junction_'):-len('.mat')])
+                if latest:
+                    if idx > latest_idx:
+                        latest = name
+                        latest_idx = idx
+            assert latest is not None
+            restart_data_file = os.path.join(data_dir, latest)
+            restart_data_seqno = latest_idx
+        else:
+            restart_data_file = None
+            restart_data_seqno = None
+
+        data4_dir = os.path.join(output_dir, 'data4')
+        if os.path.isdir(data4_dir):
+            restart_data4_file = os.path.join(data4_dir, 'junctions.mat')
+            if not os.path.exists(restart_data4_file):
+                restart_data4_file = None
+
+        if restart_data_file and restart_data4_file:
+            return (restart_data_seqno, restart_data_file, restart_data4_file)
+        else:
+            return None
+
 
 class GCellJunctionTask(RetryableTask, gc3libs.utils.Struct):
     """
     Retry execution of a `GCellJunctionApplication` if it fails.
     """
-    def __init__(self, sim_no, executable=None, **extra_args):
+    def __init__(self, sim_no, executable=None, restart=None, **extra_args):
         self.sim_no = sim_no
         RetryableTask.__init__(
             self,
             # actual computational job
-            GCellJunctionApplication(sim_no, executable, **extra_args),
+            GCellJunctionApplication(sim_no, executable, restart, **extra_args),
             # keyword arguments
             **extra_args)
 
@@ -221,10 +270,14 @@ newly-created jobs so that this limit is never exceeded.
                     if len(line) == 0 or line.startswith('#'):
                         continue
                     try:
-                        sim_no = int(line)
+                        parts = re.split("\s*[ ,]\s*", line)
+                        sim_no = int(parts[0])
+                        if len(parts) == 2:
+                            restart = string_to_boolean(parts[1])
                     except ValueError:
                         self.log.error("Wrong format in line %d of file '%s':"
                                        " need 1 integer value (`SimNo`),"
+                                       " and -optionally- a flag to restart,"
                                        " but actually got '%s'."
                                        " Ignoring input line, fix it and re-run.",
                                        lineno+1, path, line)
@@ -236,12 +289,19 @@ newly-created jobs so that this limit is never exceeded.
                     already = len([ task for task in self.session if task.sim_no == sim_no ])
                     kwargs = extra.copy()
                     base_output_dir = kwargs.pop('output_dir', self.params.output)
-                    jobname=('%s#%d' % (basename, already+1))
+                    jobname = ('%s#%d' % (basename, already+1))
+                    output_dir = os.path.join(base_output_dir, jobname)
+                    if os.path.isdir(output_dir):
+                        self.log.debug("Looking for restart files in directory '%s' ...", output_dir)
+                        restart = GCellJunctionApplication.find_restart_data(output_dir)
+                    else:
+                        restart = None
                     yield GCellJunctionTask(
                         sim_no,
                         executable=self.params.executable,
+                        restart=restart,
                         jobname=jobname,
-                        output_dir=os.path.join(base_output_dir, jobname),
+                        output_dir=output_dir,
                         **kwargs)
 
             else:
