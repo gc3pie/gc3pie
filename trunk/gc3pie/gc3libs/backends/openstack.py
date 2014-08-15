@@ -634,7 +634,7 @@ class OpenStackLrms(LRMS):
                 # The VM has probably ben stopped or shut down from
                 # outside GC3Pie.
                 gc3libs.log.error(
-                    "VM with id `%s` is in permanent state `%s`.", vm.id, vm.state)
+                    "VM with id `%s` is in permanent state `%s`.", vm.id, vm.status)
                 continue
 
             # Get or create a resource associated to the vm
