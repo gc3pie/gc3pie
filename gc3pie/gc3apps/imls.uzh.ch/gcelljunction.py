@@ -27,8 +27,9 @@ See the output of ``gcelljunction --help`` for program usage instructions.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
-  2014-03-03:
-    * Initial release, forked off the ``gmhc_coev`` sources.
+* 2014-07-17: Snapshot output of RUNNING jobs at every cycle.
+* 2014-03-10: Report on task progress in the "info" line.
+* 2014-03-03: Initial release, forked off the ``gmhc_coev`` sources.
 """
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
