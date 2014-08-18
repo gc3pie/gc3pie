@@ -97,8 +97,9 @@ class GCellJunctionApplication(Application):
         self.restart = restart
         if self.restart:
             assert len(self.restart) == 3
-            seqno, inputs['restart_data.mat'], inputs['restart_data4.mat'] = self.restart
-            program_opts += [ 1, seqno ]
+            program_opts += [ 1, self.restart[0] ]
+            inputs[self.restart[1]] = 'restart_data.mat'
+            inputs[self.restart[2]] = 'restart_data4.mat'
         else:
             program_opts += [ 0, 0 ]
         Application.__init__(
