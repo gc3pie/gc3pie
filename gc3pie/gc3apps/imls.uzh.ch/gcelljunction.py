@@ -127,10 +127,9 @@ class GCellJunctionApplication(Application):
             latest_idx = 0
             for name in entries:
                 idx = int(name[len('junction_'):-len('.mat')])
-                if latest:
-                    if idx > latest_idx:
-                        latest = name
-                        latest_idx = idx
+                if (latest is None) or (idx > latest_idx):
+                    latest = name
+                    latest_idx = idx
             assert latest is not None
             restart_data_file = os.path.join(data_dir, latest)
             restart_data_seqno = latest_idx
