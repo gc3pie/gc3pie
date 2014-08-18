@@ -231,7 +231,7 @@ newly-created jobs so that this limit is never exceeded.
                        dest="executable", default=None,
                        help="Path to the `tricellular_junctions` executable file.")
         # change default for the memory/walltime options
-        self.actions['memory_per_core'].default = 4*Memory.GB
+        self.actions['memory_per_core'].default = 3*Memory.GB
         self.actions['wctime'].default = '60 days'
 
 
