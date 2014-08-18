@@ -163,6 +163,10 @@ class GCellJunctionTask(RetryableTask, gc3libs.utils.Struct):
             # keyword arguments
             **extra_args)
 
+    def retry(self):
+        """Never resubmit a task."""
+        return False
+
     _CHECK_LINES = 5
     def update_state(self, **extra_args):
         super(GCellJunctionTask, self).update_state(**extra_args)
