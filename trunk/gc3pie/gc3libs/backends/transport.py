@@ -584,12 +584,12 @@ class SshTransport(Transport):
             else:
                 raise gc3libs.exceptions.TransportError(
                     "Could not stat() file '%s' on host '%s': %s: %s"
-                    % (source, self.remote_frontend,
+                    % (path, self.remote_frontend,
                        err.__class__.__name__, str(err)))
         except Exception, err:
             raise gc3libs.exceptions.TransportError(
                 "Could not stat() file '%s' on host '%s': %s: %s"
-                % (source, self.remote_frontend,
+                % (path, self.remote_frontend,
                    err.__class__.__name__, str(err)))
 
     @same_docstring_as(Transport.get_remote_username)
@@ -717,7 +717,7 @@ class SshTransport(Transport):
         except Exception, err:
             raise gc3libs.exceptions.TransportError(
                 "Could not stat() file '%s' on host '%s': %s: %s"
-                % (source, self.remote_frontend,
+                % (path, self.remote_frontend,
                    err.__class__.__name__, str(err)))
 
     @same_docstring_as(Transport.open)
@@ -981,7 +981,7 @@ class LocalTransport(Transport):
         except Exception, err:
             raise gc3libs.exceptions.TransportError(
                 "Could not stat() file '%s' on host localhost: %s: %s"
-                % (source, err.__class__.__name__, str(err)))
+                % (path, err.__class__.__name__, str(err)))
 
     @same_docstring_as(Transport.open)
     def open(self, source, mode, bufsize=0):
