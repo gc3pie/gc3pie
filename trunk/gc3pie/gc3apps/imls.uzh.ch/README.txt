@@ -51,4 +51,4 @@ Preparation of the VM image to run the "Tricellular Junction" code
 #. Check that you can run it; the following should start the
    simulation, which you can stop after ~2000 steps::
 
-        tricellular_junction -1
+        tricellular_junction -2 0 0
