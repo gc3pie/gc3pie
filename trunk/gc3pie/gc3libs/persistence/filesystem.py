@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011-2012, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2014, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -140,8 +140,8 @@ class FilesystemStore(Store):
                 % (filename))
         if str(obj.persistent_id) != str(id_):
             raise gc3libs.exceptions.LoadError(
-                "Retrieved persistent ID '%s' does not match given ID '%s'"
-                % (obj.persistent_id, id_))
+                "Retrieved persistent ID '%s' %s does not match given ID '%s' %s"
+                % (obj.persistent_id, type(obj.persistent_id), id_, type(id_)))
         return obj
 
     @same_docstring_as(Store.remove)
