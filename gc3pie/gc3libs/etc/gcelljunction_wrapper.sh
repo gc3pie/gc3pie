@@ -28,7 +28,7 @@ version='SVN $Revision$'
 ## defaults
 
 exe="$HOME/bin/tricellular_junctions"
-mcr_root=/usr/local/MATLAB/R2012a
+mcr_root=${MATLABROOT:-/usr/local/MATLAB/R2012a}
 
 
 ## helper functions
