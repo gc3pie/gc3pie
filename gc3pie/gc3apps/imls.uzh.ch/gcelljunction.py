@@ -278,6 +278,8 @@ newly-created jobs so that this limit is never exceeded.
                         sim_no = int(parts[0])
                         if len(parts) == 2:
                             restart = string_to_boolean(parts[1])
+                        else:
+                            restart = False
                     except ValueError:
                         self.log.error("Wrong format in line %d of file '%s':"
                                        " need 1 integer value (`SimNo`),"
@@ -295,7 +297,7 @@ newly-created jobs so that this limit is never exceeded.
                     base_output_dir = kwargs.pop('output_dir', self.params.output)
                     jobname = ('%s#%d' % (basename, already+1))
                     output_dir = os.path.join(base_output_dir, jobname)
-                    if os.path.isdir(output_dir):
+                    if restart and os.path.isdir(output_dir):
                         self.log.debug("Looking for restart files in directory '%s' ...", output_dir)
                         restart = GCellJunctionApplication.find_restart_data(output_dir)
                     else:
