@@ -76,7 +76,7 @@ import gc3libs.utils
 from gc3libs.quantity import Memory, kB, MB, MiB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
-BENCHMARKS=['infomap-python', 'infomap-cpp', 'infomap-r']
+BENCHMARKS=['infomap-python', 'infomap-cpp', 'infomap-r', 'lprop-python', 'lprop-r', 'lprop-cpp', 'leadingeigenvector-python', 'leadingeigenvector-r', 'leadingeigenvector-cpp', 'edgebetweenness-r', 'fastgreedy-r', 'multilevel-r', 'optimalmodularity-r', 'spinglass-r', 'walktrap-r', 'edgebetweenness-python', 'fastgreedy-python', 'leadingeigenvector-python', 'multilevel-python', 'optimalmodularity-python', 'spinglass-python', 'walktrap-python', 'edgebetweenness-cpp', 'fastgreedy-cpp', 'leadingeigenvector-cpp', 'multilevel-cpp', 'optimalmodularity-cpp', 'spinglass-cpp', 'walktrap-cpp']
 
 ## custom application class
 class GbenchmarkApplication(Application):
@@ -85,7 +85,7 @@ class GbenchmarkApplication(Application):
     """
     application_name = 'benchmark'
     
-    def __init__(self, network_data_file, **extra_args):
+    def __init__(self, network_data_file, run_script, **extra_args):
 
         self.output_dir = extra_args['output_dir']
 
@@ -93,18 +93,16 @@ class GbenchmarkApplication(Application):
 
         network_data_filename = os.path.basename(network_data_file)
         inputs[network_data_file] = network_data_filename
+        inputs[run_script] = os.path.basename(run_script)
 
         # adding wrapper main script
         gbenchmark_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
-                                                  "gc3libs/etc/gbenchmark_%s_wrapper.sh" % extra_args["benchmark_name"])
+                                                  "gc3libs/etc/gbenchmark_wrapper.sh")
 
         inputs[gbenchmark_wrapper_sh] = "gbenchmark_wrapper.sh"
 
-        arguments = "./gbenchmark_wrapper.sh -b %s ./%s" % (extra_args["benchmark_type"], network_data_filename)
+        arguments = "./gbenchmark_wrapper.sh -d -b %s -r %s ./%s " % (extra_args["benchmark_type"], os.path.basename(run_script), network_data_filename)
 
-        # Allocate as many cores as available on the nodes reserved
-        # by the 'benchmark' flavor.
-        # extra_args.setdefault('requested_cores', 8)
         extra_args['requested_cores'] = 8
 
         Application.__init__(
@@ -118,12 +116,13 @@ class GbenchmarkApplication(Application):
             **extra_args)
 
 class GbenchmarkTask(RetryableTask):
-    def __init__(self, network_data_file, **extra_args):
+    def __init__(self, network_data_file, run_script, **extra_args):
         RetryableTask.__init__(
             self,
             # actual computational job
             GbenchmarkApplication(
-                network_data_file, 
+                network_data_file,
+                run_script,
                 **extra_args),
             **extra_args
             )
@@ -170,7 +169,11 @@ class GbenchmarkScript(SessionBasedScript):
                        dest="benchmarks", default="Infomap",
                        help="Comma separated list of benchmarks that " \
                        " should be executed. " \
-                       "Available benchmarks: [infomap].")
+                       "Available benchmarks: [infomap] [lprop].")
+
+        self.add_param("-R", "--run_script", metavar="[STRING]", 
+                       dest="run_script", default=None,
+                       help="Execution script for the given benchmark")
 
     def setup_args(self):
 
@@ -187,6 +190,12 @@ class GbenchmarkScript(SessionBasedScript):
             raise gc3libs.exceptions.InvalidUsage(
                 "Invalid path to network data: '%s'. File not found"
                 % self.params.network_path)
+
+        # Verify execution script
+        if not os.path.isfile(self.params.run_script):
+            raise gc3libs.exceptions.InvalidUsage(
+                "Invalid path to execution script: '%s'. File not found"
+                % self.params.run_script)
 
         # Verify the selected benchmark
         _benchmarks = [benchmark.strip().lower() for benchmark in 
@@ -249,6 +258,7 @@ class GbenchmarkScript(SessionBasedScript):
 
                 tasks.append(GbenchmarkTask(
                     input_file,
+                    os.path.abspath(self.params.run_script),
                     **extra_args))
 
         return tasks
