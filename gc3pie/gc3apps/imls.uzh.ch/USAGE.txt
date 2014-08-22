@@ -51,6 +51,10 @@ Basic invocation
    Output from the simulations is downloaded into a folder named
    `tricellular_junctions_SIMNO#1`.
 
+   For running on Hydra:
+   gcelljunction -l -C 60 -s session --max-running 20 -r hydra
+   17_restart_test.csv -vvv 
+
 
 How to
 ------
@@ -83,3 +87,12 @@ How to
 
    *  `NNN` is the number listed in the "JobID" column of the `gcelljunction` report (e.g., "GCellJunctionTask.67399");
    * `TEST` is the session name as specified with the `-s` option to `gcelljunction`.
+
+Delete instances:
+gcloud list
+gcloud terminate id
+example id: c0d10cc7-e92b-4746-8786-f3c0326fe780
+
+Get info about SimNo - GCellJunctionTask.number:
+ginfo -s SESSION_NAME -v -p sim_no
+
