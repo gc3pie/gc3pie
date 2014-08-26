@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<ROWSET>
+<ROW>
+<FIELD1>90370</FIELD1>
+<PostId>1452591025</PostId>
+<ThreadID>2792612725</ThreadID>
+<UserID>109368425</UserID>
+<TimeStamp>2014-06-24T22:42:49</TimeStamp>
+<Upvotes>4</Upvotes>
+<Downvotes>6</Downvotes>
+<Flagged>0</Flagged>
+<Approved>1</Approved>
+<Deleted>0</Deleted>
+<Replies>NULL</Replies>
+<ReplyTo>NULL</ReplyTo>
+<Content>I don't like this.</Content>
+</ROW>
+<ROW>
+<FIELD1>90371</FIELD1>
+<PostId>1452591631</PostId>
+<ThreadID>2792612725</ThreadID>
+<UserID>37248763</UserID>
+<TimeStamp>2014-06-24T22:43:09</TimeStamp>
+<Upvotes>6</Upvotes>
+<Downvotes>0</Downvotes>
+<Flagged>0</Flagged>
+<Approved>1</Approved>
+<Deleted>0</Deleted>
+<Replies>NULL</Replies>
+<ReplyTo>NULL</ReplyTo>
+<Content>I like this.</Content>
+</ROW>
+<ROW>
+<FIELD1>90372</FIELD1>
+<PostId>1452591631</PostId>
+<ThreadID>2792612725</ThreadID>
+<UserID>37248763</UserID>
+<TimeStamp>2014-06-24T22:43:09</TimeStamp>
+<Upvotes>6</Upvotes>
+<Downvotes>0</Downvotes>
+<Flagged>0</Flagged>
+<Approved>1</Approved>
+<Deleted>0</Deleted>
+<Replies>NULL</Replies>
+<ReplyTo>NULL</ReplyTo>
+<Content>I don't care.</Content>
+</ROW>
+</ROWSET>
