@@ -76,7 +76,7 @@ import gc3libs.utils
 from gc3libs.quantity import Memory, kB, MB, MiB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
-BENCHMARKS=['infomap-python', 'infomap-cpp', 'infomap-r', 'lprop-python', 'lprop-r', 'lprop-cpp', 'leadingeigenvector-python', 'leadingeigenvector-r', 'leadingeigenvector-cpp', 'edgebetweenness-r', 'fastgreedy-r', 'multilevel-r', 'optimalmodularity-r', 'spinglass-r', 'walktrap-r', 'edgebetweenness-python', 'fastgreedy-python', 'leadingeigenvector-python', 'multilevel-python', 'optimalmodularity-python', 'spinglass-python', 'walktrap-python', 'edgebetweenness-cpp', 'fastgreedy-cpp', 'leadingeigenvector-cpp', 'multilevel-cpp', 'optimalmodularity-cpp', 'spinglass-cpp', 'walktrap-cpp']
+BENCHMARKS=['infomap-python', 'infomap-cpp', 'infomap-r', 'lprop-python', 'lprop-r', 'lprop-cpp', 'leadingeigenvector-python', 'leadingeigenvector-r', 'leadingeigenvector-cpp', 'edgebetweenness-r', 'fastgreedy-r', 'multilevel-r', 'optimalmodularity-r', 'spinglass-r', 'walktrap-r', 'edgebetweenness-python', 'fastgreedy-python', 'multilevel-python', 'optimalmodularity-python', 'spinglass-python', 'walktrap-python', 'edgebetweenness-cpp', 'fastgreedy-cpp', 'multilevel-cpp', 'optimalmodularity-cpp', 'spinglass-cpp', 'walktrap-cpp']
 
 ## custom application class
 class GbenchmarkApplication(Application):
