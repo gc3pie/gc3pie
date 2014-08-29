@@ -136,6 +136,7 @@ case $BENCHMARK in
 	else
 	    # Compile passed script
 	    echo "Compiling ${RUN_SCRIPT}... "
+	    export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 	    g++ ${RUN_SCRIPT} -I/usr/local/include/igraph/ -ligraph -o run_benchmark
 	    if [ $? -ne 0 ]; then
 		echo "Compilation failed"
