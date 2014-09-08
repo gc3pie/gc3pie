@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 #
-#   gweight.py -- Front-end script for evaluating R-based 'weight'
-#   function over a large dataset.
+#   gnlp.py -- Front-end script for evaluating CoreNLP Sentiments
+#   over a large dataset.
 #
-#   Copyright (C) 2011, 2012 GC3, University of Zurich
+#   Copyright (C) 2014, 2015 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or
 #   modify
@@ -52,6 +52,10 @@ Input parameters consists of:
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2014-09-05:
+  * Added parsing of output file
+  * Merging all results into single XML
+  * Added <Sentiment> tag for results
   2014-08-14:
   * Initial version
 """
@@ -69,9 +73,11 @@ import os
 import sys
 import time
 import tempfile
+import re
 
 import shutil
-# import csv
+from xml.etree import cElementTree as ET
+from xml.etree.ElementTree import Element, SubElement, Comment, tostring
 
 from pkg_resources import Requirement, resource_filename
 
@@ -82,6 +88,13 @@ from gc3libs.cmdline import SessionBasedScript, executable_file
 import gc3libs.utils
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
+
+
+XML_HEADER = """<?xml version="1.0"?>
+<ROWSET>
+"""
+XML_FOOTER = "</ROWSET>"
+
 
 ## custom application class
 class GnlpApplication(Application):
@@ -97,16 +110,27 @@ class GnlpApplication(Application):
 
         inputs[input_data] = "./input.txt"
 
-        arguments = 'java -cp "$CORENLP/*" edu.stanford.nlp.sentiment.SentimentPipeline -file input.txt'
+        # adding wrapper main script
+        gnlp_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
+                                              "gc3libs/etc/gnlp_wrapper.py")
+
+        inputs[gnlp_wrapper_sh] = "./wrapper.py"
+
+        arguments = "./wrapper.py ./input.txt ./output.txt"
+
+        outputs = dict()
+        outputs['./output.txt'] = extra_args['output_file']
 
         Application.__init__(
             self,
             arguments = arguments,
             inputs = inputs,
-            outputs = [],
+            outputs = outputs,
             stdout = 'gnlp.log',
             stderr = 'gnlp.err',
+            executables = "./wrapper.py",
             **extra_args)
+
 
 class GnlpScript(SessionBasedScript):
     """
@@ -185,15 +209,17 @@ class GnlpScript(SessionBasedScript):
             extra_args['index_chunk'] = str(index_chunk)
 
             extra_args['jobname'] = jobname
+
+            extra_args['output_file'] = 'result.xml'
             
-            extra_args['output_dir'] = self.params.output
+            extra_args['output_dir'] = os.path.abspath(self.params.output)
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', jobname)
 
             self.log.debug("Creating Application for index : %d - %d" %
-                           (index_chunk, (index_chunk + self.params.chunk_size)))
+                           (last_index,index_chunk))
 
             tasks.append(GnlpApplication(
                     input_file,
@@ -201,6 +227,35 @@ class GnlpScript(SessionBasedScript):
 
         return tasks
 
+    def after_main_loop(self):
+        """
+        Merge all result files together
+        Then clean up tmp files.
+        Format of output file: 
+        FiledID@<Sentiments>..</Sentiments>
+        e.g.
+        296@<Sentiments>Neutral</Sentiments>
+        This means that the <Sentiments> tag should be added to the XML element
+        corresponding to <Filed1>296</Field1>
+        """
+
+        # Open Session result file
+        try:
+            with open('./result.xml','w+') as fd:
+                # Write header
+                fd.write(XML_HEADER)
+
+                for task in self.session:
+                    if isinstance(task,GnlpApplication) and task.execution.returncode == 0:
+                        with open(os.path.join(task.output_dir,task.output_file),'r') as fin:
+                            for line in fin:
+                                if line.strip() in ['<?xml version="1.0"?>','<ROWSET>','</ROWSET>']:
+                                    continue
+                                fd.write(line)
+
+                fd.write(XML_FOOTER)
+        except OSError, osx:
+            gc3libs.log.error("Failed while merging results. Error %s", str(osx))
 
     def _generate_chunked_files_and_list(self, file_to_chunk, chunk_size=1000):
         """
@@ -211,12 +266,6 @@ class GnlpScript(SessionBasedScript):
         e.g. ('/tmp/chunk2800.xml,2800) for the chunk segment that goes
         from 2800 to (2800 + chunk_size)
         """
-
-        header = """<?xml version="1.0"?>
-<ROWSET>
-"""
-
-        footer = """</ROWSET>"""
 
         index = 0
         chunk = []
@@ -247,12 +296,12 @@ class GnlpScript(SessionBasedScript):
                         if index % chunk_size == 0:
                             if fout:
                                 # Close existing file and create a new one
-                                fout.write(footer)
+                                fout.write(XML_FOOTER)
                                 fout.close()
                                 chunk.append((fout.name, index))
                             # Create new chunk file
                             fout = open(os.path.join(chunk_files_dir,"input-%d" % index),"w")
-                            fout.write(header)
+                            fout.write(XML_HEADER)
                         index += 1
 
                     fout.write(line)
@@ -279,3 +328,84 @@ class GnlpScript(SessionBasedScript):
                                           "Message %s" % osx.message)
 
         return chunk
+
+
+#     def _generate_chunked_files_and_list(self, file_to_chunk, chunk_size=1000):
+#         """
+#         Takes a file_name as input and a defined chunk size
+#         ( uses 1000 as default )
+#         returns a list of filenames 1 for each chunk created and a corresponding
+#         index reference
+#         e.g. ('/tmp/chunk2800.xml,2800) for the chunk segment that goes
+#         from 2800 to (2800 + chunk_size)
+#         """
+
+#         header = """<?xml version="1.0"?>
+# <ROWSET>
+# """
+
+#         footer = """</ROWSET>"""
+
+#         index = 0
+#         chunk = []
+#         fout = None
+#         failure = False
+#         chunk_files_dir = os.path.join(self.session.path,"tmp")
+
+#         # creating 'chunk_files_dir'
+#         if not(os.path.isdir(chunk_files_dir)):
+#             try:
+#                 os.mkdir(chunk_files_dir)
+#             except OSError, osx:
+#                 gc3libs.log.error("Failed while creating tmp folder %s. " % chunk_files_dir +
+#                                   "Error %s." % str(osx) +
+#                                   "Using default '/tmp'")
+#                 chunk_files_dir = "/tmp"
+
+#         try:
+#             # Read XML from file
+#             tree = ET.parse(file_to_chunk)
+#             root = tree.getroot()
+
+#             for row in list(root):
+#                 if index % chunk_size == 0:
+#                     # Close existing chunk_file and create a new one
+#                     if fout:
+#                         fout.close()
+#                         chunk.append((fout.name, index))
+#                     fout = open(os.path.join(chunk_files_dir,"input-%d" % index),"w")
+#                 index += 1
+
+#                 field = row.find('FIELD1').text
+#                 content = row.find('Content').text
+#                 fout.write("%s\n%s\n" % (field,content))
+
+#             fout.close()
+#             chunk.append((fout.name, index))
+
+#         except OSError, osx:
+#             gc3libs.log.critical("Failed while creating chunk files." +
+#                                  "Error %s", (str(osx)))
+#             failure = True
+#         finally:
+#             if failure:
+#                 # Cleanup
+#                 del root
+#                 del tree
+
+#                 # remove all tmp file created
+#                 gc3libs.log.info("Could not generate full chunk list. "
+#                                  "Removing all existing tmp files... ")
+#                 for (cfile, index) in chunk:
+#                     try:
+#                         os.remove(cfile)
+#                     except OSError, osx:
+#                         gc3libs.log.error("Failed while removing " +
+#                                           "tmp file %s. " +
+#                                           "Message %s" % osx.message)
+
+#         # Cleanup
+#         del root
+#         del tree
+
+#         return chunk
