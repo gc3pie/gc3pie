@@ -202,7 +202,6 @@ class GnlpScript(SessionBasedScript):
                                                                               self.params.chunk_size):
 
             jobname = "gnlp-%d-%d" % (last_index,index_chunk)
-            last_index = index_chunk
 
             extra_args = extra.copy()
 
@@ -224,6 +223,9 @@ class GnlpScript(SessionBasedScript):
             tasks.append(GnlpApplication(
                     input_file,
                     **extra_args))
+
+            last_index = index_chunk
+
 
         return tasks
 
@@ -328,84 +330,3 @@ class GnlpScript(SessionBasedScript):
                                           "Message %s" % osx.message)
 
         return chunk
-
-
-#     def _generate_chunked_files_and_list(self, file_to_chunk, chunk_size=1000):
-#         """
-#         Takes a file_name as input and a defined chunk size
-#         ( uses 1000 as default )
-#         returns a list of filenames 1 for each chunk created and a corresponding
-#         index reference
-#         e.g. ('/tmp/chunk2800.xml,2800) for the chunk segment that goes
-#         from 2800 to (2800 + chunk_size)
-#         """
-
-#         header = """<?xml version="1.0"?>
-# <ROWSET>
-# """
-
-#         footer = """</ROWSET>"""
-
-#         index = 0
-#         chunk = []
-#         fout = None
-#         failure = False
-#         chunk_files_dir = os.path.join(self.session.path,"tmp")
-
-#         # creating 'chunk_files_dir'
-#         if not(os.path.isdir(chunk_files_dir)):
-#             try:
-#                 os.mkdir(chunk_files_dir)
-#             except OSError, osx:
-#                 gc3libs.log.error("Failed while creating tmp folder %s. " % chunk_files_dir +
-#                                   "Error %s." % str(osx) +
-#                                   "Using default '/tmp'")
-#                 chunk_files_dir = "/tmp"
-
-#         try:
-#             # Read XML from file
-#             tree = ET.parse(file_to_chunk)
-#             root = tree.getroot()
-
-#             for row in list(root):
-#                 if index % chunk_size == 0:
-#                     # Close existing chunk_file and create a new one
-#                     if fout:
-#                         fout.close()
-#                         chunk.append((fout.name, index))
-#                     fout = open(os.path.join(chunk_files_dir,"input-%d" % index),"w")
-#                 index += 1
-
-#                 field = row.find('FIELD1').text
-#                 content = row.find('Content').text
-#                 fout.write("%s\n%s\n" % (field,content))
-
-#             fout.close()
-#             chunk.append((fout.name, index))
-
-#         except OSError, osx:
-#             gc3libs.log.critical("Failed while creating chunk files." +
-#                                  "Error %s", (str(osx)))
-#             failure = True
-#         finally:
-#             if failure:
-#                 # Cleanup
-#                 del root
-#                 del tree
-
-#                 # remove all tmp file created
-#                 gc3libs.log.info("Could not generate full chunk list. "
-#                                  "Removing all existing tmp files... ")
-#                 for (cfile, index) in chunk:
-#                     try:
-#                         os.remove(cfile)
-#                     except OSError, osx:
-#                         gc3libs.log.error("Failed while removing " +
-#                                           "tmp file %s. " +
-#                                           "Message %s" % osx.message)
-
-#         # Cleanup
-#         del root
-#         del tree
-
-#         return chunk
