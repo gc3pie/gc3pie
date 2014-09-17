@@ -31,3 +31,35 @@ conventions::
 When all the jobs are done, the _results_ directory will contains one
 result folder for each combination of ``model`` and ``data``.
 
+Running ``gminarevix`` on login.gc3.uzh.ch
+==========================================
+
+* Log-in on the head node
+    $ ssh <username>@login.gc3.uzh.ch
+
+* Run gminarevix on all available data
+    $ srun screen -L `which gminarevix` Wishart,SVJJ data/ -C 60 -o data.results
+
+This will launch a ``screen`` session where gminarevix will run continuously.
+
+## How to detach from a running ``screen`` session ?
+
+Type Ctrl-A Ctrl-D to detach
+
+## How to attach on a running ``screen`` session ?
+
+At the prompt run
+    $ screen -r
+
+## How to terminate a running ``screen`` session
+
+Once attached to the running ``screen`` session, type Ctrl-C
+
+Note: this command will terminate the running session and will also
+close the related execution of ``gminarevix``.
+In order to restart the ``gminarevix`` execution you just need to
+re-run the same ``srun`` command.
+
+
+
+
