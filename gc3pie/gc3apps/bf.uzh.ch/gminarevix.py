@@ -103,13 +103,13 @@ class GminarevixApplication(Application):
 
         arguments += "%s ./data/%s" % (model_name, data_name)
 
-        if extra_args.haskey('requested_cores'):
+        if extra_args.has_key('requested_cores'):
             extra_args['requested_cores'] = max(MODELS_SPECS[model_name]['requested_cores'],
                                                 extra_args['requested_cores'])
         else:
             extra_args['requested_cores'] = MODELS_SPECS[model_name]['requested_cores']
 
-        if extra_args.haskey('requested_memory'):
+        if extra_args.has_key('requested_memory'):
             extra_args['requested_memory'] = max(MODELS_SPECS[model_name]['requested_memory'],
                                                  extra_args['requested_memory'])
         else:
