@@ -68,7 +68,7 @@ from gc3libs.quantity import Memory, kB, MB, MiB, GB, Duration, hours, minutes, 
 from gc3libs.workflow import RetryableTask
 
 # Resource requirements depending on Model type (only # cores)
-MODELS_SPECS = {'Wishart': {'requested_cores': 8, 'requested_memory': Memory(16*GB)}, 
+MODELS_SPECS = {'Wishart': {'requested_cores': 8, 'requested_memory': Memory(12*GB)}, 
                 'SVJJ': {'requested_cores': 16, 'requested_memory': Memory(32*GB)}}
 
 ## custom application class
