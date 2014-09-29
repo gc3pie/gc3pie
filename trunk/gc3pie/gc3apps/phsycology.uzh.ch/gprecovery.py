@@ -79,6 +79,8 @@ class GprecoveryApplication(Application):
 
         self.output_dir = extra_args['output_dir']
 
+        self.result_dir = extra_args['result_dir']
+
         inputs = dict()
         outputs = dict()
 
@@ -90,8 +92,8 @@ class GprecoveryApplication(Application):
         else:
             arguments = "par_recovery "
 
-        output_filename = "ParRecovery_Genmodel%s_.mat" % str(model_index)
-        outputs[output_filename] = os.path.join(self.output_dir, output_filename)
+        self.output_filename = "ParRecovery_Genmodel%s_.mat" % str(model_index)
+        outputs[self.output_filename] = os.path.join(self.result_dir, "ParRecovery_Genmodel%s_%s.mat" % (str(model_index),extra_args['repetition']))
 
         arguments += "%s %s" % (str(model_index), str(seed))
 
@@ -103,6 +105,8 @@ class GprecoveryApplication(Application):
             stdout = 'gprecovery.log',
             join=True,
             **extra_args)
+
+
 
 class GprecoveryScript(SessionBasedScript):
     """
@@ -218,12 +222,17 @@ class GprecoveryScript(SessionBasedScript):
                     extra_args['run_binary'] = self.params.run_binary
 
                 extra_args['jobname'] = jobname
+                extra_args['repetition'] = repeat
+
+                extra_args['result_dir'] = self.params.output
+                extra_args['result_dir'] = extra_args['output_dir'].replace('NAME', self.params.session)
 
                 extra_args['output_dir'] = self.params.output
                 extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', str(model))
                 extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', str(model))
                 extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', str(model))
                 extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', str(model))
+
 
                 tasks.append(GprecoveryApplication(
                     model,
