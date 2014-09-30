@@ -69,7 +69,8 @@ from gc3libs.workflow import RetryableTask
 
 # Resource requirements depending on Model type (only # cores)
 MODELS_SPECS = {'Wishart': {'requested_cores': 8, 'requested_memory': Memory(12*GB)}, 
-                'SVJJ': {'requested_cores': 16, 'requested_memory': Memory(32*GB)}}
+                'SVJJ': {'requested_cores': 16, 'requested_memory': Memory(32*GB)},
+                'SV2F': {'requested_cores': 8, 'requested_memory': Memory(12*GB)}}
 
 ## custom application class
 class GminarevixApplication(Application):
@@ -79,10 +80,10 @@ class GminarevixApplication(Application):
     'run_binary' option.
     Binary takes a single 'model_name' and a data folder containing 1 structure_data
     in .mat format.
-    Output will be written in 'data' folder (this is hardoded in the Matlab
+    Output will be written in 'data' folder (this is hardcoded in the Matlab
     differential evolutionary alghorithm.
     """
-    application_name = 'matlab_mcr'
+    application_name = 'matlab-mcr'
     
     def __init__(self, model_name, structure_data, **extra_args):
 
