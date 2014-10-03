@@ -298,7 +298,7 @@ class GnlpScript(SessionBasedScript):
             with open(file_to_chunk,'r') as fin:
                 for line in fin:
                     # Ignore header and ROWSET
-                    if line.strip() in ['<?xml version="1.0"?>','<ROWSET>']:
+                    if line.strip() in ['<?xml version="1.0"?>','<ROWSET>','']:
                         # Ignore and continue
                         continue
                 
@@ -313,7 +313,8 @@ class GnlpScript(SessionBasedScript):
                             fout = open(os.path.join(chunk_files_dir,"input-%d" % index),"w")
                             fout.write(XML_HEADER)
                         index += 1
-
+                    if not fout:    
+                        fout = open(os.path.join(chunk_files_dir,"input-%d" % index),"w")
                     fout.write(line)
                     
             # Just close the current fout file if needed

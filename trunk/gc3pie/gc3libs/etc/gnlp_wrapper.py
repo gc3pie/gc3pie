@@ -8,8 +8,8 @@ from xml.etree import cElementTree as ET
 from xml.etree.ElementTree import Element, SubElement, Comment, tostring
 
 SENTIMENTS = ['neutral','negative','very negative','positive','very positive']
-FIELD = "POSTID"
-CONTENT = "CONTENT"
+FIELD = "Field1"
+CONTENT = "Content"
 
 
 def Usage():
@@ -64,7 +64,7 @@ def RunParser(input,output):
     sentiment = ""
 
     for line in [l.strip() for l in stdout.split('\n')]:
-        if line[3:].isdigit():
+        if line.isdigit():
             if row:
                 child = SubElement(row,"Sentiment")
                 child.tail = "\n"
