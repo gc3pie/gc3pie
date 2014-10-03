@@ -8,6 +8,9 @@ from xml.etree import cElementTree as ET
 from xml.etree.ElementTree import Element, SubElement, Comment, tostring
 
 SENTIMENTS = ['neutral','negative','very negative','positive','very positive']
+FIELD = "POSTID"
+CONTENT = "CONTENT"
+
 
 def Usage():
     print ("Usage: wrapper.py <input_file> <output_file>")
@@ -27,8 +30,8 @@ def RunParser(input,output):
 
         # Generate simplified version of the input XML file
         for row in list(root):
-            field = row.find('FIELD1').text
-            content = (row.find('Content').text).encode('utf8')
+            field = row.find(FIELD).text
+            content = (row.find(CONTENT).text).encode('utf8')
             fd.write("%s\n%s\n" % (field,content))
 
         fd.close()
@@ -61,14 +64,14 @@ def RunParser(input,output):
     sentiment = ""
 
     for line in [l.strip() for l in stdout.split('\n')]:
-        if line.isdigit():
+        if line[3:].isdigit():
             if row:
                 child = SubElement(row,"Sentiment")
                 child.tail = "\n"
                 child.text = sentiment[1:]
                 sentiment = ""
             index = line
-            row = root.find("./ROW/[FIELD1='%s']" % index)
+            row = root.find("./ROW/[%s='%s']" % (FIELD,index))
         elif line.lower() in SENTIMENTS:
             sentiment += ",%s" % line
 

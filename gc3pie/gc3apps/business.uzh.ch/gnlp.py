@@ -168,7 +168,14 @@ class GnlpScript(SessionBasedScript):
     def setup_options(self):
         self.add_param("-k", "--chunk", metavar="[NUM]",
                        dest="chunk_size", default="1000",
-                       help="How to split the .XML input data set.")
+                       help="How to split the .XML input data set. "
+                       "Default: 1000")
+
+        self.add_param("--result-file", metavar="[STRING]", 
+                       dest="result_file", default='result.xml',
+                       help="Name of the result file generated as the aggregation"
+                       " of all results from each chunked execution. "
+                       "Default: result.xml")
 
     def setup_args(self):
 
@@ -209,7 +216,8 @@ class GnlpScript(SessionBasedScript):
 
             extra_args['jobname'] = jobname
 
-            extra_args['output_file'] = 'result.xml'
+            # extra_args['output_file'] = 'result.xml'
+            extra_args['output_file'] = self.params.result_file
             
             extra_args['output_dir'] = os.path.abspath(self.params.output)
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
@@ -243,7 +251,7 @@ class GnlpScript(SessionBasedScript):
 
         # Open Session result file
         try:
-            with open('./result.xml','w+') as fd:
+            with open(self.params.result_file,'w+') as fd:
                 # Write header
                 fd.write(XML_HEADER)
 
