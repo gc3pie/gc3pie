@@ -8,7 +8,7 @@
 .. _gnlp:
 
 The ``input/`` directory contains the reference data:
-``small.xml``
+``input.xml``
 
 -----------------------
 Execution requirements
@@ -18,18 +18,7 @@ A valid input file will have the following XML structure:
 <?xml version="1.0"?>
 <ROWSET>
 <ROW>
-  <FIELD1>
   <PostId>
-  <ThreadID>
-  <UserID>
-  <TimeStamp>
-  <Upvotes>
-  <Downvotes>
-  <Flagged>
-  <Approved>
-  <Deleted>
-  <Replies>
-  <ReplyTo>
   <Content>
 </ROW>
 </ROWSET>
@@ -49,7 +38,7 @@ Testing :command:`gnlp`
 
 To launch a :command:`gnlp` use the following syntax::
 
-    $ python gnlp.py input/small.xml -k [chunk_size]
+    $ python gnlp.py input/input.xml -k [chunk_size]
 
 The :command:`gnlp` takes as input argument an xml file.
 
@@ -68,7 +57,7 @@ Invocation of :command:`gnlp` follows the usual session-based script
 conventions::
 
     $ python ../gnlp.py -s <TEST_SESSION_NAME> -C 120 -vvv
-    ./input/small.xml -o ./results -k 2
+    ./input/input.xml -o ./results -k 2
 
 When all the jobs are done, the _results_ directory will contain
 the merged result file.
