@@ -134,4 +134,4 @@ $    ./pylit warholize.txt warholize.py
 
 .. _`Literate Programming`: http://en.wikipedia.org/wiki/Literate_programming
 
-.. _`PyLit Homepage`: http://pylit.berlios.de/index.html
+.. _`PyLit Homepage`: https://github.com/gmilde/PyLit
