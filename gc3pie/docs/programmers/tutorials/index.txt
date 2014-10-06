@@ -118,12 +118,12 @@ both parallel and sequential tasks.
 The tutorial itself contains the complete source code of the
 application (cfr. `Literate Programming`_ on Wikipedia), so that you
 will be able to test/modify it and produce a working ``warholize.py``
-script by downloading **pylit** from the `PyLit Homepage`_ and running
-the following command on the
-``gc3pie/docs/gc3libs/tutorial/warholize.txt`` file, from whitin the
-svn tree of GC3Pie::
+script by downloading the ``pylit.py``:file: script from the `PyLit
+Homepage`_ and running the following command on the
+``gc3pie/docs/programmers/tutorials/warholize/warholize.txt`` file,
+from within the SVN tree of GC3Pie::
 
-$    ./pylit warholize.txt warholize.py
+  $ ./pylit warholize.txt warholize.py
 
 
 .. toctree::
