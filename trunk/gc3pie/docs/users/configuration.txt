@@ -21,6 +21,8 @@ configuration files at startup:
   * system-wide one located at :file:``/etc/gc3/gc3pie.conf``, and
   * a user-private one at :file:``~/.gc3/gc3pie.conf``.
 
+Both files are optional, but at least one of them must exist.
+
 Both files use the same format. The system-wide one is read first, so
 that users can override the system-level configuration in their private file.
 Configuration data from corresponding sections in the two
