@@ -147,7 +147,7 @@ auth=noauth
 transport=local
 # where the GNU `time` command is located; 
 # the default is fine on almost any Linux distribution.
-time_cmd=/usr/bin/time
+#time_cmd=/usr/bin/time
 # max_cores sets a limit on the number of cuncurrently-running jobs
 max_cores=2
 max_cores_per_job=2
