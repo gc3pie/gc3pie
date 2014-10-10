@@ -104,7 +104,9 @@ is_absolute_path () {
 short_opts='dhv'
 long_opts='debug,help,verbose'
 
-if [ "x$(getopt -T)" != 'x--' ]; then
+getopt -T > /dev/null
+rc=$?
+if [ "$rc" -eq 4 ]; then
     # GNU getopt
     args=$(getopt --name "$me" --shell sh -l "$long_opts" -o "$short_opts" -- "$@")
     if [ $? -ne 0 ]; then
