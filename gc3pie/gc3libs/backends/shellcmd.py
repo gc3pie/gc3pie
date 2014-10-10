@@ -694,11 +694,11 @@ ReturnCode=%x"""
         # Check if spooldir is a valid directory
         if not self.spooldir:
             ex, stdout, stderr = self.transport.execute_command(
-                "echo $TMPDIR")
-            if ex != 0 or not stdout.strip() or not stdout[0] == '/':
+                'cd "$TMPDIR" && pwd')
+            if ex != 0 or stdout.strip()=='' or not stdout[0]=='/':
                 log.debug(
-                    "Unable to recover a valid absolute path for spooldir. "
-                    "Using `/var/tmp`")
+                    "Unable to recover a valid absolute path for spooldir."
+                    " Using `/var/tmp`.")
                 self.spooldir = '/var/tmp'
             else:
                 self.spooldir = stdout.strip()
