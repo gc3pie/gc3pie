@@ -361,15 +361,16 @@ ReturnCode=%x"""
 
         # XXX: it is actually necessary to create the folder
         # as a separate step
-        try:
-            log.info('Creating resource file directory: %s ...',
-                     self.resource_dir)
-            self.transport.makedirs(self.resource_dir)
-        except Exception, ex:
-            log.error("Failed creating resource directory '%s':"
-                      " %s: %s", resource_dir, type(ex), str(ex))
-            # cannot continue
-            raise
+        if not self.transport.exists(self.resource_dir):
+            try:
+                log.info('Creating resource file directory: %s ...',
+                         self.resource_dir)
+                self.transport.makedirs(self.resource_dir)
+            except Exception, ex:
+                log.error("Failed creating resource directory '%s':"
+                          " %s: %s", resource_dir, type(ex), str(ex))
+                # cannot continue
+                raise
 
         exit_code, stdout, stderr = self.transport.execute_command('uname -m')
         arch = gc3libs.config._parse_architecture(stdout)
