@@ -354,19 +354,20 @@ ReturnCode=%x"""
         """
         self.transport.connect()
 
-        # This is supposed to spit out the ful path on the remote end
+        # expand env variables in the `resource_dir` setting
         exit_code, stdout, stderr = self.transport.execute_command(
-            "echo %s" % sh_quote_unsafe(self.cfg_resourcedir))
-
+            'echo %s' % sh_quote_unsafe(self.cfg_resourcedir))
         self.resource_dir = stdout.strip()
+
         # XXX: it is actually necessary to create the folder
         # as a separate step
-        log.info('Creating resource file directory: %s ...', self.resource_dir)
         try:
+            log.info('Creating resource file directory: %s ...',
+                     self.resource_dir)
             self.transport.makedirs(self.resource_dir)
         except Exception, ex:
-            log.error("Failed creating resource directory: %s. Error "
-                      "type: %s. Message: %s", resource_dir, type(ex), str(ex))
+            log.error("Failed creating resource directory '%s':"
+                      " %s: %s", resource_dir, type(ex), str(ex))
             # cannot continue
             raise
 
