@@ -758,16 +758,16 @@ ReturnCode=%x"""
         redirection_arguments = ''
         if app.stdin is not None:
             stdin = open(app.stdin, 'r')
-            redirection_arguments += " < %s" % app.stdin
+            redirection_arguments += " <%s" % app.stdin
 
         if app.stdout is not None:
-            redirection_arguments += " > %s" % app.stdout
+            redirection_arguments += " >%s" % app.stdout
 
         if app.join:
             redirection_arguments += " 2>&1"
         else:
             if app.stderr is not None:
-                redirection_arguments += " 2> %s" % app.stderr
+                redirection_arguments += " 2>%s" % app.stderr
 
         ## set up environment
         env_arguments = ''
