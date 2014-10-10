@@ -785,8 +785,8 @@ ReturnCode=%x"""
             try:
                 self.transport.makedirs(wrapper_dir)
             except:
-                log.error("Failed while creating remote folder "+
-                          "%s" % wrapper_dir)
+                log.error("Failed creating remote folder '%s'"
+                          % wrapper_dir)
                 self.free(app)
                 raise
 
@@ -805,7 +805,7 @@ ReturnCode=%x"""
             wrapper_script = self.transport.open(
                 wrapper_script_fname, 'w')
             wrapper_script.write("""#!/bin/sh
-echo $$ > %s
+echo $$ >%s
 cd %s
 exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
 """ % (pidfilename, execdir, self.time_cmd,
