@@ -388,7 +388,7 @@ class Task(Persistable, Struct):
         retrieved; if this operation is successfull, state is advanced
         to `TERMINATED`.
 
-        oNCE the job reaches `TERMINATED` state, the return code
+        Once the job reaches `TERMINATED` state, the return code
         (stored also in `.returncode`) is returned; if the job is not
         yet in `TERMINATED` state, calling `progress` returns `None`.
 
