@@ -242,11 +242,14 @@ newly-created jobs so that this limit is never exceeded.
             dates = date_and_sampling[0]
             sampling = date_and_sampling[1:]
             extra_args = extra.copy()
-            # identify job uniquely
-            basename = str.join('_', [GmbsimApplication.application_name]
-                                + [ (param +'='+ repr_as_R(locals()[param]))
-                                    for param in ('dates', 'sampling',
-                                                  'isolation', 'detection') ])
+            # identify job uniquely -- replace forward slashes as this
+            # will be part of a directory/file name
+            basename = (str
+                        .join('_', [GmbsimApplication.application_name]
+                              + [ (param +'='+ repr_as_R(locals()[param]))
+                                  for param in ('dates', 'sampling',
+                                                'isolation', 'detection') ])
+                        .replace('/', 'over'))
 
             # prepare job(s) to submit
             already = len([ task for task in self.session
