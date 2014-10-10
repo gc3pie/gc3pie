@@ -725,7 +725,7 @@ ReturnCode=%x"""
             remote_path = posixpath.join(execdir, remote_path)
             remote_parent = os.path.dirname(remote_path)
             try:
-                if remote_parent not in ['', '.'] and not self.trasport.exists(remote_parent):
+                if remote_parent not in ['', '.'] and not self.transport.exists(remote_parent):
                     log.debug("Making remote directory '%s'", remote_parent)
                     self.transport.makedirs(remote_parent)
                 log.debug("Transferring file '%s' to '%s'",
