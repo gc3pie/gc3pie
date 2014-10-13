@@ -38,7 +38,7 @@ import uuid
 import gc3libs
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
-from gc3libs.utils import ifelse, same_docstring_as
+from gc3libs.utils import ifelse, same_docstring_as, sh_quote_safe
 import gc3libs.backends.transport
 
 # Define some commonly used functions
@@ -447,8 +447,8 @@ class BatchSystem(LRMS):
 
             # Submit it
             exit_code, stdout, stderr = self.transport.execute_command(
-                "/bin/sh -c 'cd %s && %s %s'"
-                % (ssh_remote_folder, sub_cmd, script_filename))
+                "/bin/sh -c %s" % sh_quote_safe(
+                    'cd %s && %s %s' % (ssh_remote_folder, sub_cmd, script_filename)))
 
             if exit_code != 0:
                 raise gc3libs.exceptions.LRMSError(

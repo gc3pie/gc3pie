@@ -406,9 +406,10 @@ class LsfLrms(batch.BatchSystem):
         prologue = self.get_prologue_script(app)
         epilogue = self.get_epilogue_script(app)
         if prologue or epilogue:
-            return (str.join(' ', sub_argv), str.join(' ', app_argv))
+            return (sh_quote_safe_cmdline(sub_argv),
+                    sh_quote_unsafe_cmdline(app_argv))
         else:
-            return (str.join(' ', sub_argv + app_argv), '')
+            return (sh_quote_unsafe_cmdline(sub_argv + app_argv), '')
 
     def _parse_submit_output(self, bsub_output):
         """Parse the ``bsub`` output for the local jobid."""

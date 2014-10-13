@@ -3,7 +3,7 @@
 """
 Job control on SLURM clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2012-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -42,7 +42,7 @@ from gc3libs.quantity import Memory, bytes, kB, MB, GB
 from gc3libs.quantity import Duration, seconds, minutes, hours
 import gc3libs.backends.transport as transport
 import gc3libs.utils as utils  # first, to_bytes
-from gc3libs.utils import same_docstring_as
+from gc3libs.utils import same_docstring_as, sh_quote_safe_cmdline, sh_quote_unsafe_cmdline
 
 
 # environmental variables:
@@ -192,7 +192,8 @@ class SlurmLrms(batch.BatchSystem):
     #
     def _submit_command(self, app):
         sbatch_argv, app_argv = app.sbatch(self)
-        return (str.join(' ', sbatch_argv), str.join(' ', app_argv))
+        return (sh_quote_safe_cmdline(sbatch_argv),
+                sh_quote_unsafe_cmdline(app_argv))
 
     # stat cmd: squeue --noheader --format='%i^%T^%u^%U^%r^%R'  -j jobid1,jobid2,...
     #   %i: job id
