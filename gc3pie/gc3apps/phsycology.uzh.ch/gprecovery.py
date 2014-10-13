@@ -83,17 +83,19 @@ class GprecoveryApplication(Application):
 
         inputs = dict()
         outputs = dict()
+        executables = []
 
-        if extra_args.has_key('run_binary'):
-            # inputs['./par_recovery'] = os.path.abspath(extra_args['run_binary'])
+        if 'run_binary' in extra_args:
             inputs[os.path.abspath(extra_args['run_binary'])] = './par_recovery'
-
             arguments = "./par_recovery "
+            executables.append('./par_recovery')
         else:
             arguments = "par_recovery "
 
-        self.output_filename = "ParRecovery_Genmodel%s_.mat" % str(model_index)
-        outputs[self.output_filename] = os.path.join(self.result_dir, "ParRecovery_Genmodel%s_%s.mat" % (str(model_index),extra_args['repetition']))
+        # self.output_filename = "ParRecovery_Genmodel%s_.mat" % str(model_index)
+        # outputs[self.output_filename] = os.path.join(self.result_dir, "ParRecovery_Genmodel%s_%s.mat" % (str(model_index),extra_args['repetition']))
+        self.output_filename = "ParRecovery_Genmodel%s_%s.mat" % (str(model_index),extra_args['repetition'])
+        outputs["ParRecovery_Genmodel%s_.mat" % str(model_index)] = self.output_filename
 
         arguments += "%s %s" % (str(model_index), str(seed))
 
@@ -104,8 +106,20 @@ class GprecoveryApplication(Application):
             outputs = outputs,
             stdout = 'gprecovery.log',
             join=True,
+            executables = executables,
             **extra_args)
 
+
+    def terminated(self):
+        """
+        Move output file in 'result_dir'
+        """
+        if os.path.isfile(os.path.join(self.output_dir,self.output_filename)):
+            shutil.move(os.path.join(self.output_dir,self.output_filename),
+                             os.path.join(self.result_dir,self.output_filename))
+        else:
+            gc3libs.log.error("Expected output file %s not found." 
+                              % os.path.join(self.output_dir,self.output_filename))
 
 
 class GprecoveryScript(SessionBasedScript):
@@ -160,6 +174,10 @@ class GprecoveryScript(SessionBasedScript):
                        help="Repeat all simulation [repeat] times. "
                        " Default: 1 (no repeat).")
 
+        self.add_param("-S", "--store_results", type=str, metavar="[STRING]", 
+                       dest="store_results", default=None,
+                       help="Location where all results will be aggregated. "
+                       "Default: (session folder).")
 
     def parse_args(self):
         """
@@ -192,10 +210,12 @@ class GprecoveryScript(SessionBasedScript):
                     gc3libs.log.error("Model %s not in valid range. "
                                       "Range: %s" % (self.params.models,
                                                      str(MODELS_SPECS)))
+
         except ValueError:
             raise gc3libs.exceptions.InvalidUsage(
                 "Invalid argument '%s', use on of the following formats: "
                 " INT:INT | INT,INT,INT,..,INT | INT " % (models,))
+
 
     def new_tasks(self, extra):
         """
@@ -224,8 +244,13 @@ class GprecoveryScript(SessionBasedScript):
                 extra_args['jobname'] = jobname
                 extra_args['repetition'] = repeat
 
-                extra_args['result_dir'] = self.params.output
-                extra_args['result_dir'] = extra_args['output_dir'].replace('NAME', self.params.session)
+                if self.params.store_results:
+                    if not os.path.isdir(self.params.store_results):
+                        os.makedirs(self.params.store_results)
+                    extra_args['result_dir'] = self.params.store_results
+                else:
+                    extra_args['result_dir'] = self.params.output
+                    extra_args['result_dir'] = extra_args['result_dir'].replace('NAME', self.params.session)
 
                 extra_args['output_dir'] = self.params.output
                 extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', str(model))
