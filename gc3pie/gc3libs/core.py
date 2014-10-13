@@ -277,12 +277,9 @@ an overlay Grid on the resources specified in the configuration file.
             if input_ref.scheme == 'file':
                 # Local file, check existence before proceeding
                 if not os.path.exists(input_ref.path):
-                    gc3libs.log.error("Failed while checking Application local input "
-                                      "reference: '%s'. Not found", input_ref.path)
-                    raise gc3libs.exceptions.UnrecoverableDataStagingError("Failed while checking "
-                                                                           "Application "
-                                                                           "local input reference: "
-                                                                           " '%s'. Not found" % input_ref.path)
+                    raise gc3libs.exceptions.UnrecoverableDataStagingError(
+                        "Input file '%s' does not exist" % input_ref.path,
+                        do_log=True)
 
         if targets is not None:
             assert len(targets) > 0
