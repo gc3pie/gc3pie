@@ -124,7 +124,7 @@ class GmbsimApplication(Application):
         self.ni = ni
         self.nt = nt
         # provide defaults for envelope requests
-        extra_args.setdefault('requested_cores',        1)
+        extra_args.setdefault('requested_cores',        4)
         extra_args.setdefault('requested_memory',       1*GB)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
         extra_args.setdefault('requested_walltime',     2*hours)
