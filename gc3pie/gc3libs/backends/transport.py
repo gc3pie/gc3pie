@@ -452,8 +452,21 @@ class SshTransport(Transport):
                     # hosts" database file. This is needed for EC2
                     # backends in order to fix issue 389, but
                     # introduces a security risk in normal situations,
-                    # thus the check is enabled by default.
-                    self.ssh.load_system_host_keys()
+                    # thus the check is enabled by default. However,
+                    # Paramiko can fail to parse `~/.ssh/known_hosts`
+                    # (seen on MacOSX) and then raise an
+                    # `SSHException` which causes the whole block to
+                    # fail.  So, ignore any errors raised by this line
+                    # and hope for the best.
+                    try:
+                        self.ssh.load_system_host_keys()
+                    except paramiko.SSHException, err:
+                        gc3libs.log.warning(
+                            "Could not read 'known hosts' SSH keys (%s: %s)."
+                            " I'm ignoring the error and continuing anyway,"
+                            " but this may mean trouble later on."
+                            % (err.__class__.__name__, err))
+                        pass
                 else:
                     gc3libs.log.info("Ignoring ssh host key file.")
 
