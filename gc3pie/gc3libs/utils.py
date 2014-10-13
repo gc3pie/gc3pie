@@ -1120,6 +1120,20 @@ def sh_quote_safe(text):
     return ("'%s'" % text.replace("'", r"'\''"))
 
 
+def sh_quote_safe_cmdline(args):
+    """
+    Single-quote a list of strings for passing to the shell as a
+    command.  Return the list of quoted arguments concatenated and
+    separated by spaces.
+
+    Examples::
+
+      >>> sh_quote_safe_cmdline(['sh', '-c', 'echo c(1,2,3)'])
+      "'sh' '-c' 'echo c(1,2,3)'"
+    """
+    return str.join(' ', (sh_quote_safe(arg) for arg in args))
+
+
 _DQUOTE_RE = re.compile(r'(\\*)"')
 """Regular expression for escaping double quotes in strings."""
 
@@ -1141,6 +1155,21 @@ def sh_quote_unsafe(text):
 
     """
     return ('"%s"' % _DQUOTE_RE.sub(r'\1\1\"', text))
+
+
+def sh_quote_unsafe_cmdline(args):
+    """
+    Double-quote a list of strings for passing to the shell as a
+    command.  Return the list of quoted arguments concatenated and
+    separated by spaces.
+
+    Examples::
+
+      >>> sh_quote_unsafe_cmdline(['sh', '-c', 'echo $HOME'])
+      '"sh" "-c" "echo $HOME"'
+
+    """
+    return str.join(' ', (sh_quote_unsafe(arg) for arg in args))
 
 
 # see http://stackoverflow.com/questions/31875/is-there-a-simple-elegant-way-to-define-singletons-in-python/1810391#1810391
