@@ -33,6 +33,7 @@ import stat
 import sys
 import tempfile
 import time
+import uuid
 
 import gc3libs
 from gc3libs import log, Run
@@ -411,9 +412,7 @@ class BatchSystem(LRMS):
             sub_cmd, aux_script = self._submit_command(app)
             if aux_script != '':
                 # create temporary script name
-                # XXX: The `uuid` module is available from Py 2.5 onwards
-                script_filename = ('./script.%x.sh'
-                                   % random.randint(0, sys.maxint))
+                script_filename = ('./script.%s.sh' % uuid.uuid4())
                 # save script to a temporary file and submit that one instead
                 local_script_file = tempfile.NamedTemporaryFile()
                 local_script_file.write('#!/bin/sh\n')
