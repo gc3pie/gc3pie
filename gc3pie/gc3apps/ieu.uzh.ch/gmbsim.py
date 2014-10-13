@@ -144,7 +144,10 @@ class GmbsimApplication(Application):
                             extra_args['requested_cores'], # nc
                         )]),
             inputs = inputs,
-            outputs = gc3libs.ANY_OUTPUT,
+            outputs = [
+                'dclone_design_test_fits.Rdata',
+                self.application_name + '.log',
+            ],
             stdout = self.application_name + '.log',
             join=True,
             **extra_args)
