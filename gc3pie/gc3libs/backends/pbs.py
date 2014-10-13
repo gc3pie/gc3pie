@@ -41,7 +41,7 @@ import gc3libs.exceptions
 from gc3libs.quantity import Memory, kB, MB, GB
 from gc3libs.quantity import Duration, seconds, minutes, hours
 import gc3libs.utils as utils  # first, to_bytes
-from gc3libs.utils import same_docstring_as
+from gc3libs.utils import same_docstring_as, sh_quote_safe_cmdline, sh_quote_unsafe_cmdline
 
 import transport
 
@@ -240,7 +240,8 @@ class PbsLrms(batch.BatchSystem):
         qsub_argv, app_argv = app.qsub_pbs(self)
         if self.queue is not None:
             qsub_argv += ['-q', ('%s' % self.queue)]
-        return (str.join(' ', qsub_argv), "cd $PBS_O_WORKDIR; " + str.join(' ', app_argv) + '\n')
+        return (sh_quote_safe_cmdline(qsub_argv),
+                'cd "$PBS_O_WORKDIR"; ' + sh_quote_unsafe(app_argv))
 
     def _stat_command(self, job):
         return "%s %s | grep ^%s" % (

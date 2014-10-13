@@ -3,7 +3,7 @@
 """
 Job control on SGE clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2009-2013 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -44,7 +44,7 @@ import gc3libs.exceptions
 from gc3libs.quantity import Memory, kB, MB, GB
 from gc3libs.quantity import Duration, hours, minutes, seconds
 import gc3libs.utils
-from gc3libs.utils import same_docstring_as
+from gc3libs.utils import same_docstring_as, sh_quote_safe_cmdline, sh_quote_unsafe_cmdline
 import transport
 import batch
 
@@ -381,7 +381,8 @@ class SgeLrms(batch.BatchSystem):
 
     def _submit_command(self, app):
         sub_argv, app_argv = app.qsub_sge(self)
-        return (str.join(' ', sub_argv), str.join(' ', app_argv))
+        return (sh_quote_safe_cmdline(sub_argv),
+                sh_quote_unsafe_cmdline(app_argv))
 
     def _parse_submit_output(self, output):
         """Parse the ``qsub`` output for the local jobid."""
