@@ -193,9 +193,11 @@ newly-created jobs so that this limit is never exceeded.
         self.add_param("-t", "-nt", "--thin", "--thinning", metavar="NUM",
                        dest="nt", default=1,
                        help="Execute NUM iterations for JAGS thinning.")
-        # change default for the memory/walltime options
+        # change default for the core/memory/walltime options
         self.actions['memory_per_core'].default = 1*Memory.GB
         self.actions['wctime'].default = '2 hours'
+        self.actions['ncores'].default = 4
+
 
 
     def setup_args(self):
