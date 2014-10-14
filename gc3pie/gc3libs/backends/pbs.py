@@ -241,7 +241,7 @@ class PbsLrms(batch.BatchSystem):
         if self.queue is not None:
             qsub_argv += ['-q', ('%s' % self.queue)]
         return (sh_quote_safe_cmdline(qsub_argv),
-                'cd "$PBS_O_WORKDIR"; ' + sh_quote_unsafe(app_argv))
+                'cd "$PBS_O_WORKDIR"; ' + sh_quote_unsafe_cmdline(app_argv))
 
     def _stat_command(self, job):
         return "%s %s | grep ^%s" % (
