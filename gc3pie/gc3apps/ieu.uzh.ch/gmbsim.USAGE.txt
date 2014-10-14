@@ -1,0 +1,106 @@
+Basic invocation
+----------------
+
+0. Start the SSH agent::
+
+        eval $(ssh-agent -s)
+        ssh-add
+
+
+1. Activate the GC3Pie environment::
+
+        source /Users/molliebrooks1/gc3pie/bin/activate
+
+   If it worked, the shell prompt line should start with the string
+   "(gc3pie)".
+
+2. Create files `sampling.csv`, `isolation.csv`, `detection.csv` with
+   the data according to the samples::
+
+        # example sampling.csv
+        #
+        #wkdays,    nPops, nDays, obs per day
+        "c(1,4)",   5,     8*7,   2/7
+        "c(1,2)",   5,     8*7,   2/7
+        "c(1,3,5)", 4,     6*7+3, 3/7
+        "c(1,2,3)", 4,     6*7+2, 3/7
+        "1:4",      10,    2*7,   4/7
+        "1:4",      5,     4*7,   4/7
+        "1:5",      8,     2*7,   5/7
+        "1:5",      4,     4*7,   5/7
+        "1:7",      5,     2*7+2, 7/7
+        "1:7",      4,     2*7+6, 7/7
+
+        # example isolation.csv
+        #
+        #transition, stage duration, fecundity, reprod
+        80*3,        200*4,          150,       150
+        0,           0,              150,       150
+
+        # example detection.csv
+        #
+        # first 6 cols are stage specific detection probs, last column 1=with replacement, 2=harvesting
+        0.25,  0.25,  0.25,  0.25,  0.99,  0.99,  1
+        0.25,  0.25,  0.25,  0.25,  0.25,  0.25,  1
+        #0.10,  0.10,  0.10,  0.10,  0.25,  0.25,  1
+        #0.10,  0.10,  0.10,  0.10,  0.10,  0.10,  1
+        #0.50,  0.50,  0.50,  0.50,  0.50,  0.50,  1
+
+
+   Blank lines and lines that start with a hash sign `#` are ignored
+   so they can be used for comments.
+
+
+3. Run the script to start a session:
+
+        gmbsim.py 10 sampling.csv isolation.csv detection.csv sim_run_dclone_design_test.R weird_dates_sdur.R -s TEST -C 600 -r cloud
+
+   For running more than 50 simulations simultaneously, add:
+   --max-running 100
+
+   Meaning of the options:
+
+   * `10` is the number of replicates of each simulation;
+
+   * `sampling.csv` to `detection.csv`: the files created in step 2.;
+
+   * `-s TEST`: (optional) specify session name, for grouping different independent set of jobs;
+
+   * `-C 600`: update frequency in seconds -- set this to roughly the duration of a simulation;
+
+   * `-r cloud`: send all jobs to the cloud; use `-r localhost` to send all jobs to the laptop instead;
+
+   You can interrupt the script at any time by pressing Ctrl+C
+
+
+How to
+------
+
+* Kill all jobs in a session::
+
+        gsession abort TEST
+
+  where `TEST` is the session name as specified with the `-s` option
+  to `gmbsim.py`.
+
+* Kill a single simulation::
+
+        gkill -s TEST GmbsimApplication.NNN
+
+   where:
+
+   *  `NNN` is the number listed in the "JobID" column of the `gmbsim.py` report (e.g., "GmbsimApplication.67399");
+   * `TEST` is the session name as specified with the `-s` option to `gmbsim.py`.
+
+* Download the current full output of *all* simulations::
+
+        gget -s TEST -A -f -c
+
+   To download the output of a *single* simulation, use this instead::
+
+        gget -s TEST -f -c GmbsimApplication.NNN
+
+   where:
+
+   *  `NNN` is the number listed in the "JobID" column of the `gmbsim.py` report (e.g., "GmbsimApplication.67399");
+   * `TEST` is the session name as specified with the `-s` option to `gmbsim.py`.
