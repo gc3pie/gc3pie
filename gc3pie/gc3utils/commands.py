@@ -105,15 +105,15 @@ force removal of a job regardless.
         else:
             args = self.params.args
             if len(args) == 0:
-                self.log.warning("No job IDs given on command line: nothing to do."
-                                 " Type '%s --help' for usage help."
-                                 # if we were called with an absolute path,
-                                 # presume the command has been found by the
-                                 # shell through PATH and just print the command name,
-                                 # otherwise print the exact path name.
-                                 % utils.ifelse(os.path.isabs(sys.argv[0]),
-                                                os.path.basename(sys.argv[0]),
-                                                sys.argv[0]))
+                self.log.warning(
+                    "No job IDs given on command line: nothing to do."
+                    " Type '%s --help' for usage help."
+                    # if we were called with an absolute path,
+                    # presume the command has been found by the
+                    # shell through PATH and just print the command name,
+                    # otherwise print the exact path name.
+                    % (os.path.basename(sys.argv[0]) if os.path.isabs(sys.argv[0])
+                       else sys.argv[0]))
 
         failed = 0
         for jobid in args:
@@ -176,7 +176,7 @@ force removal of a job regardless.
                 continue
 
         # exit code is practically limited to 7 bits ...
-        return utils.ifelse(failed < 127, failed, 126)
+        return min(failed, 126)
 
 
 class cmd_ginfo(_BaseCmd):
@@ -323,7 +323,7 @@ GC3Libs internals.
             print(table)
         failed = len(self.params.args) - ok
         # exit code is practically limited to 7 bits ...
-        return utils.ifelse(failed < 127, failed, 126)
+        return min(failed, 126)
 
 
 class cmd_gresub(_BaseCmd):
@@ -356,15 +356,15 @@ is canceled before re-submission.
             raise RuntimeError('Session %s not found' % self.params.session)
 
         if len(self.params.args) == 0:
-            self.log.error("No job IDs given on command line: nothing to do."
-                           " Type '%s --help' for usage help."
-                           # if we were called with an absolute path,
-                           # presume the command has been found by the
-                           # shell through PATH and just print the command name,
-                           # otherwise print the exact path name.
-                           % utils.ifelse(os.path.isabs(sys.argv[0]),
-                                          os.path.basename(sys.argv[0]),
-                                          sys.argv[0]))
+            self.log.error(
+                "No job IDs given on command line: nothing to do."
+                " Type '%s --help' for usage help."
+                # if we were called with an absolute path,
+                # presume the command has been found by the
+                # shell through PATH and just print the command name,
+                # otherwise print the exact path name.
+                % (os.path.basename(sys.argv[0]) if os.path.isabs(sys.argv[0])
+                   else sys.argv[0]))
 
         if self.params.resource_name:
             self._select_resources(self.params.resource_name)
@@ -399,7 +399,7 @@ is canceled before re-submission.
                                jobid, ex.__class__.__name__, str(ex))
 
         # exit code is practically limited to 7 bits ...
-        return utils.ifelse(failed < 127, failed, 126)
+        return min(failed, 126)
 
 
 class cmd_gstat(_BaseCmd):
@@ -575,7 +575,7 @@ Print job state.
         # *should* have run, i.e., the number of arguments we were passed.
         failed = len(self.params.args) - tot
         # exit code is practically limited to 7 bits ...
-        return utils.ifelse(failed < 127, failed, 126)
+        return min(failed, 126)
 
 
 class cmd_gget(_BaseCmd):
@@ -620,15 +620,15 @@ released once the output files have been fetched.
         else:
             args = self.params.args
             if len(args) == 0:
-                self.log.error("No job IDs given on command line: nothing to do."
-                               " Type '%s --help' for usage help."
-                               # if we were called with an absolute path,
-                               # presume the command has been found by the
-                               # shell through PATH and just print the command name,
-                               # otherwise print the exact path name.
-                               % utils.ifelse(os.path.isabs(sys.argv[0]),
-                                              os.path.basename(sys.argv[0]),
-                                              sys.argv[0]))
+                self.log.error(
+                    "No job IDs given on command line: nothing to do."
+                    " Type '%s --help' for usage help."
+                    # if we were called with an absolute path,
+                    # presume the command has been found by the
+                    # shell through PATH and just print the command name,
+                    # otherwise print the exact path name.
+                    % (os.path.basename(sys.argv[0]) if os.path.isabs(sys.argv[0])
+                       else sys.argv[0]))
 
         failed = 0
         download_dirs = set()
@@ -684,7 +684,7 @@ released once the output files have been fetched.
                 continue
 
         # exit code is practically limited to 7 bits ...
-        return utils.ifelse(failed < 127, failed, 126)
+        return min(failed, 126)
 
 
 class cmd_gkill(_BaseCmd):
@@ -719,15 +719,15 @@ error occurred.
         else:
             args = self.params.args
             if len(args) == 0:
-                self.log.warning("No job IDs given on command line: nothing to do."
-                                 " Type '%s --help' for usage help."
-                                 # if we were called with an absolute path,
-                                 # presume the command has been found by the
-                                 # shell through PATH and just print the command name,
-                                 # otherwise print the exact path name.
-                                 % utils.ifelse(os.path.isabs(sys.argv[0]),
-                                                os.path.basename(sys.argv[0]),
-                                                sys.argv[0]))
+                self.log.warning(
+                    "No job IDs given on command line: nothing to do."
+                    " Type '%s --help' for usage help."
+                    # if we were called with an absolute path,
+                    # presume the command has been found by the
+                    # shell through PATH and just print the command name,
+                    # otherwise print the exact path name.
+                    % (os.path.basename(sys.argv[0]) if os.path.isabs(sys.argv[0])
+                       else sys.argv[0]))
 
         failed = 0
         for jobid in args:
@@ -754,7 +754,7 @@ error occurred.
                 continue
 
         # exit code is practically limited to 7 bits ...
-        return utils.ifelse(failed < 127, failed, 126)
+        return min(failed, 126)
 
 
 class cmd_gtail(_BaseCmd):
@@ -787,15 +787,15 @@ as more lines are written to the given stream.
             raise RuntimeError('Session %s not found' % self.params.session)
 
         if len(self.params.args) == 0:
-            self.log.error("No job IDs given on command line: nothing to do."
-                           " Type '%s --help' for usage help."
-                           # if we were called with an absolute path,
-                           # presume the command has been found by the
-                           # shell through PATH and just print the command name,
-                           # otherwise print the exact path name.
-                           % utils.ifelse(os.path.isabs(sys.argv[0]),
-                                        os.path.basename(sys.argv[0]),
-                                        sys.argv[0]))
+            self.log.error(
+                "No job IDs given on command line: nothing to do."
+                " Type '%s --help' for usage help."
+                # if we were called with an absolute path,
+                # presume the command has been found by the
+                # shell through PATH and just print the command name,
+                # otherwise print the exact path name.
+                % (os.path.basename(sys.argv[0]) if os.path.isabs(sys.argv[0])
+                   else sys.argv[0]))
 
         if self.params.stderr:
             stream = 'stderr'
@@ -841,7 +841,7 @@ as more lines are written to the given stream.
                 failed += 1
 
         # exit code is practically limited to 7 bits ...
-        return utils.ifelse(failed < 127, failed, 126)
+        return min(failed, 126)
 
 class cmd_gservers(_BaseCmd):
     """
