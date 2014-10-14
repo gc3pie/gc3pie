@@ -9,7 +9,7 @@ Basic invocation
 
 1. Activate the GC3Pie environment::
 
-        source /Users/molliebrooks1/gc3pie/bin/activate
+        source $HOME/gc3pie/bin/activate
 
    If it worked, the shell prompt line should start with the string
    "(gc3pie)".
@@ -75,6 +75,14 @@ Basic invocation
 
 How to
 ------
+
+* Update `gmbsim` code to latest version::
+
+        cd $HOME/gc3pie
+        source bin/activate
+        cd src/
+        svn up
+
 
 * Kill all jobs in a session::
 
