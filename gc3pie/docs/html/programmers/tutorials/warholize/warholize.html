@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -134,7 +132,8 @@ others):</p>
 called with options <tt class="docutils literal"><span class="pre">--help</span></tt> or <tt class="docutils literal"><span class="pre">--version</span></tt>, which are
 automatically added by GC3Pie.</p>
 <p>The way we want to use our script is straightforward:</p>
-<div class="highlight-python"><pre>$  warholize.py inputfile [inputfiles ...]</pre>
+<div class="highlight-python"><div class="highlight"><pre>$  warholize.py inputfile [inputfiles ...]
+</pre></div>
 </div>
 <p>and this will create a directory <tt class="docutils literal"><span class="pre">Warholized.&lt;inputfile&gt;</span></tt> in which
 there will be a file called <tt class="docutils literal"><span class="pre">warhol_&lt;inputfile&gt;</span></tt> containing the
@@ -283,7 +282,8 @@ the next step, and we return the current state, which will be
 <p><cite>GrayScaleConvertApplication</cite> is the application responsible to
 convert to grayscale the input image. The command we want to execute
 is:</p>
-<div class="highlight-python"><pre>$    convert -colorspace gray &lt;input_image&gt; grayscaled_&lt;input_image&gt;</pre>
+<div class="highlight-python"><div class="highlight"><pre>$    convert -colorspace gray &lt;input_image&gt; grayscaled_&lt;input_image&gt;
+</pre></div>
 </div>
 <p>To create a generic application we create a class which inherit from
 <cite>gc3libs.Application</cite> and we usually only need to customize the
@@ -448,7 +448,8 @@ output of the first job:</p>
 <p>The <cite>CreateLutApplication</cite> is again an application which inherits from
 <cite>gc3libs.Application</cite>. The command we want to execute is something
 like:</p>
-<div class="highlight-python"><pre>$    convert -size 1x1 xc:&lt;color1&gt; xc:&lt;color2&gt; xc:&lt;color3&gt; +append -resize 256x1! &lt;output_file.miff&gt;</pre>
+<div class="highlight-python"><div class="highlight"><pre>$    convert -size 1x1 xc:&lt;color1&gt; xc:&lt;color2&gt; xc:&lt;color3&gt; +append -resize 256x1! &lt;output_file.miff&gt;
+</pre></div>
 </div>
 <p>This will basically create an image 256x1 pixels big, made of a
 gradient using all the listed colors. The code will look like:</p>
@@ -484,7 +485,8 @@ gradient using all the listed colors. The code will look like:</p>
 </div>
 <p>Similarly, the  <cite>ApplyLutApplication</cite> application will run the
 following command:</p>
-<div class="highlight-python"><pre>$    convert grayscaled_&lt;input_image&gt; &lt;lutfile.N.miff&gt; -clut grayscaled_&lt;input_image&gt;.&lt;N&gt;</pre>
+<div class="highlight-python"><div class="highlight"><pre>$    convert grayscaled_&lt;input_image&gt; &lt;lutfile.N.miff&gt; -clut grayscaled_&lt;input_image&gt;.&lt;N&gt;
+</pre></div>
 </div>
 <p>This command will apply the LUT to the grayscaled image: it will
 modify the grayscaled image by <cite>coloring</cite> a generic pixel with a
@@ -539,7 +541,8 @@ integer and <tt class="docutils literal"><span class="pre">&lt;input_image&gt;</
 application, <cite>MergeImagesApplication</cite>, will produce a
 <tt class="docutils literal"><span class="pre">warhol_&lt;input_image&gt;</span></tt> image by merging all of them using the
 command:</p>
-<div class="highlight-python"><pre>$    montage grayscaled_&lt;input_image&gt;.* -tile 3x3 -geometry +5+5 -background white warholized_&lt;input_image&gt;</pre>
+<div class="highlight-python"><div class="highlight"><pre>$    montage grayscaled_&lt;input_image&gt;.* -tile 3x3 -geometry +5+5 -background white warholized_&lt;input_image&gt;
+</pre></div>
 </div>
 <p>Now it should be easy to write such application:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">re</span>
@@ -607,7 +610,8 @@ session (<cite>gstat</cite>, <cite>ginfo</cite>...)</p>
 which can be found in the <cite>miscelaneous</cite> section of the <a class="reference external" href="http://sipi.usc.edu/database/?volume=misc">Signal and
 Image Processing Institute</a> page. Download the image, rename it as
 <tt class="docutils literal"><span class="pre">lena.tiff</span></tt> and run the following command:</p>
-<div class="highlight-python"><pre>$    ./warholize.py -C 1 lena.tiff --copies 9</pre>
+<div class="highlight-python"><div class="highlight"><pre>$    ./warholize.py -C 1 lena.tiff --copies 9
+</pre></div>
 </div>
 <p>(add <tt class="docutils literal"><span class="pre">-r</span> <span class="pre">localhost</span></tt> if your gc3pie.conf script support it and you
 want to test it locally).</p>
@@ -689,7 +693,7 @@ will be created.</p>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
