@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -28,7 +26,7 @@
     <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
     <link rel="up" title="User Documentation" href="index.html" />
     <link rel="next" title="Configuration File" href="configuration.html" />
-    <link rel="prev" title="User Documentation" href="index.html" />
+    <link rel="prev" title="User-visible changes across releases" href="NEWS.html" />
  
 <script type="text/javascript">
   var _gaq = _gaq || [];
@@ -51,7 +49,7 @@
           <a href="configuration.html" title="Configuration File"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="User Documentation"
+          <a href="NEWS.html" title="User-visible changes across releases"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">User Documentation</a> &raquo;</li> 
@@ -74,10 +72,12 @@ system. (However, the script should work on MacOSX as well, provided
 you follow the preparation steps outlined in the &#8220;MacOSX installation&#8221;
 section below.)</p>
 <p>To install GC3Pie just type this at your terminal prompt:</p>
-<div class="highlight-python"><pre>sh -c "$(wget -O- http://gc3pie.googlecode.com/svn/install.sh)"</pre>
+<div class="highlight-python"><div class="highlight"><pre>sh -c &quot;$(wget -O- http://gc3pie.googlecode.com/svn/install.sh)&quot;
+</pre></div>
 </div>
 <p>If <cite>wget</cite> is not installed in your computer, you should use <cite>curl</cite> instead:</p>
-<div class="highlight-python"><pre>sh -c "$(curl -s http://gc3pie.googlecode.com/svn/install.sh)"</pre>
+<div class="highlight-python"><div class="highlight"><pre>sh -c &quot;$(curl -s http://gc3pie.googlecode.com/svn/install.sh)&quot;
+</pre></div>
 </div>
 <p>The above command creates a directory <tt class="file docutils literal"><span class="pre">$HOME/gc3pie</span></tt> and installs
 the latest release of GC3Pie and all its dependencies into it.</p>
@@ -92,11 +92,13 @@ the problem.</p>
 to the standard behavior.  In order to use these options, you have to:</p>
 <ol class="arabic">
 <li><p class="first">download the installation script into a file named <tt class="file docutils literal"><span class="pre">install.sh</span></tt>:</p>
-<div class="highlight-python"><pre>wget http://gc3pie.googlecode.com/svn/install.sh</pre>
+<div class="highlight-python"><div class="highlight"><pre>wget http://gc3pie.googlecode.com/svn/install.sh
+</pre></div>
 </div>
 </li>
 <li><p class="first">run the command:</p>
-<div class="highlight-python"><pre>sh ./install.sh [options]</pre>
+<div class="highlight-python"><div class="highlight"><pre>sh ./install.sh [options]
+</pre></div>
 </div>
 <p>replacing the string <tt class="docutils literal"><span class="pre">[options]</span></tt> with the actual options you want
 to pass to the script.</p>
@@ -153,12 +155,14 @@ conflict with system-level packages.</li>
 <ul>
 <li><p class="first">On Debian/Ubuntu, install packages: <tt class="docutils literal"><span class="pre">subversion</span></tt>,
 <tt class="docutils literal"><span class="pre">python-dev</span></tt>, <tt class="docutils literal"><span class="pre">python-profiler</span></tt> and the C/C++ compiler:</p>
-<div class="highlight-python"><pre>apt-get install subversion python-dev python-profiler gcc g++</pre>
+<div class="highlight-python"><div class="highlight"><pre>apt-get install subversion python-dev python-profiler gcc g++
+</pre></div>
 </div>
 </li>
 <li><p class="first">On CentOS5, install packages <tt class="docutils literal"><span class="pre">subversion</span></tt> and <tt class="docutils literal"><span class="pre">python-devel</span></tt>
 and the C/C++ compiler:</p>
-<div class="highlight-python"><pre>yum install subversion python-devel gcc gcc-c++</pre>
+<div class="highlight-python"><div class="highlight"><pre>yum install subversion python-devel gcc gcc-c++
+</pre></div>
 </div>
 </li>
 <li><p class="first">On other Linux distributions, you will need to install:</p>
@@ -186,20 +190,23 @@ instructions for installing it at:</p>
 </li>
 <li><p class="first">If <a class="reference external" href="http://pypi.python.org/pypi/virtualenv/1.7">virtualenv</a> is not already installed on your system,
 get the Python package and install it:</p>
-<div class="highlight-python"><pre>wget http://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.7.tar.gz
+<div class="highlight-python"><div class="highlight"><pre>wget http://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.7.tar.gz
 tar -xzf virtualenv-1.7.tar.gz &amp;&amp; rm virtualenv-1.7.tar.gz
-cd virtualenv-1.7/</pre>
+cd virtualenv-1.7/
+</pre></div>
 </div>
 <p>If you are installing as <cite>root</cite>, the following command is all you
 need:</p>
-<div class="highlight-python"><pre>python setup.py install</pre>
+<div class="highlight-python"><div class="highlight"><pre>python setup.py install
+</pre></div>
 </div>
 <p>If instead you are installing as a normal, unprivileged user,
 things get more complicated:</p>
-<div class="highlight-python"><pre>export PYTHONPATH=$HOME/lib64/python:$HOME/lib/python:$PYTHONPATH
+<div class="highlight-python"><div class="highlight"><pre>export PYTHONPATH=$HOME/lib64/python:$HOME/lib/python:$PYTHONPATH
 export PATH=$PATH:$HOME/bin
 mkdir -p $HOME/lib/python
-python setup.py install --home $HOME</pre>
+python setup.py install --home $HOME
+</pre></div>
 </div>
 <p>You will also <em>have to</em> add the two <cite>export</cite> lines above to the:</p>
 <ul class="simple">
@@ -208,15 +215,17 @@ python setup.py install --home $HOME</pre>
 </ul>
 <p>In any case, once <cite>virtualenv</cite> has been installed, you can exit
 its directory and remove it:</p>
-<div class="highlight-python"><pre>cd ..
-rm -rf virtualenv-1.7</pre>
+<div class="highlight-python"><div class="highlight"><pre>cd ..
+rm -rf virtualenv-1.7
+</pre></div>
 </div>
 </li>
 <li><p class="first">Create a virtualenv to host the GC3Pie installation, and <tt class="docutils literal"><span class="pre">cd</span></tt>
 into it:</p>
-<div class="highlight-python"><pre>virtualenv --system-site-packages $HOME/gc3pie
+<div class="highlight-python"><div class="highlight"><pre>virtualenv --system-site-packages $HOME/gc3pie
 cd $HOME/gc3pie/
-source bin/activate</pre>
+source bin/activate
+</pre></div>
 </div>
 <p>In this step and in the following ones, the directory
 <tt class="docutils literal"><span class="pre">$HOME/gc3pie</span></tt> is going to be the installation folder of GC3Pie.
@@ -226,14 +235,16 @@ writable by your Linux account will be OK.</p>
 install GC3Pie into <tt class="docutils literal"><span class="pre">/opt/gc3pie</span></tt> instead.</p>
 </li>
 <li><p class="first">Check-out the <tt class="docutils literal"><span class="pre">gc3pie</span></tt> files in a <tt class="docutils literal"><span class="pre">src/</span></tt> directory:</p>
-<div class="highlight-python"><pre>svn co http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie src</pre>
+<div class="highlight-python"><div class="highlight"><pre>svn co http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie src
+</pre></div>
 </div>
 </li>
 <li><p class="first">Install the <tt class="docutils literal"><span class="pre">gc3pie</span></tt> in &#8220;develop&#8221; mode, so any modification
 pulled from subversion is immediately reflected in the running environment:</p>
-<div class="highlight-python"><pre>cd src/
+<div class="highlight-python"><div class="highlight"><pre>cd src/
 env CC=gcc ./setup.py develop
-cd .. # back into the `gc3pie` directory</pre>
+cd .. # back into the `gc3pie` directory
+</pre></div>
 </div>
 <p>This will place all the GC3Pie command into the <tt class="docutils literal"><span class="pre">gc3pie/bin/</span></tt>
 directory.</p>
@@ -243,15 +254,16 @@ of jobs from a few selected applications.  These scripts are not
 installed by default because not everyone needs them.</p>
 <p>Run the following commands to install the driver scripts for the
 applications you need:</p>
-<div class="highlight-python"><pre># if you are insterested in GAMESS, do the following
-ln -s '../src/gc3apps/gamess/ggamess.py' bin/ggamess
+<div class="highlight-python"><div class="highlight"><pre># if you are insterested in GAMESS, do the following
+ln -s &#39;../src/gc3apps/gamess/ggamess.py&#39; bin/ggamess
 
 # if you are insterested in Rosetta, do the following
-ln -s '../src/gc3apps/rosetta/gdocking.py' bin/gdocking
-ln -s '../src/gc3apps/rosetta/grosetta.py' bin/grosetta
+ln -s &#39;../src/gc3apps/rosetta/gdocking.py&#39; bin/gdocking
+ln -s &#39;../src/gc3apps/rosetta/grosetta.py&#39; bin/grosetta
 
 # if you are insterested in Codeml, do the following
-ln -s '../src/gc3apps/codeml/gcodeml.py' bin/gcodeml</pre>
+ln -s &#39;../src/gc3apps/codeml/gcodeml.py&#39; bin/gcodeml
+</pre></div>
 </div>
 </li>
 <li><p class="first">Before you can actually run the GC3Pie, you need to have a
@@ -317,7 +329,7 @@ To do this simply uncomment the following lines:</p>
 </pre></div>
 </div>
 <p>and you should see the following output appear on your screen:</p>
-<div class="highlight-python"><pre>Usage: gc3utils COMMAND [options]
+<div class="highlight-python"><div class="highlight"><pre>Usage: gc3utils COMMAND [options]
 
 Command `gc3utils` is a unified front-end to computing resources.
 You can get more help on a specific sub-command by typing::
@@ -330,7 +342,8 @@ where command is one of these:
   list
   resub
   stat
-  tail</pre>
+  tail
+</pre></div>
 </div>
 <p>If you get some errors, do not despair!  The <cite>GC3Pie users
 mailing-list &lt;gc3pie&#64;googlegroups.com&gt;</cite> is there to help you :-)</p>
@@ -351,7 +364,8 @@ report to the <cite>GC3Pie users mailing-list
 &lt;mailto:gc3pie.googlegroups.com&gt;</cite>.)</p>
 </li>
 <li><p class="first">Move the <tt class="file docutils literal"><span class="pre">$HOME/gc3pie</span></tt> directory to another location, e.g.:</p>
-<div class="highlight-python"><pre>mv $HOME/gc3pie $HOME/gc3pie.OLD</pre>
+<div class="highlight-python"><div class="highlight"><pre>mv $HOME/gc3pie $HOME/gc3pie.OLD
+</pre></div>
 </div>
 </li>
 <li><p class="first">Reinstall GC3Pie using the quick-install script (top of this page).</p>
@@ -367,17 +381,20 @@ in the code repository:</p>
 <li><p class="first"><strong class="command">cd</strong> to the directory containing the GC3Pie virtualenv;
 assuming it is named <tt class="docutils literal"><span class="pre">gc3pie</span></tt> as in the above installation
 instructions, you can issue the commands:</p>
-<div class="highlight-python"><pre>cd $HOME/gc3pie # use '/opt/gc3pie' if root</pre>
+<div class="highlight-python"><div class="highlight"><pre>cd $HOME/gc3pie # use &#39;/opt/gc3pie&#39; if root
+</pre></div>
 </div>
 </li>
 <li><p class="first">Activate the virtualenv:</p>
-<div class="highlight-python"><pre>source bin/activate</pre>
+<div class="highlight-python"><div class="highlight"><pre>source bin/activate
+</pre></div>
 </div>
 </li>
 <li><p class="first">Upgrade the <cite>gc3pie</cite> source and run the <tt class="file docutils literal"><span class="pre">setup.py</span></tt> script again:</p>
-<div class="highlight-python"><pre>cd src
+<div class="highlight-python"><div class="highlight"><pre>cd src
 svn up
-env CC=gcc ./setup.py develop</pre>
+env CC=gcc ./setup.py develop
+</pre></div>
 </div>
 </li>
 </ol>
@@ -427,9 +444,10 @@ read online at:</p>
 <p>If you installed GC3Pie manually, or if you installed it using the
 <tt class="docutils literal"><span class="pre">install.sh</span></tt> script with the <tt class="docutils literal"><span class="pre">--develop</span></tt> option, you can also
 access a local copy of the documentation from the sources:</p>
-<div class="highlight-python"><pre>cd $HOME/gc3pie # or wherever the gc3pie virtualenv is installed
+<div class="highlight-python"><div class="highlight"><pre>cd $HOME/gc3pie # or wherever the gc3pie virtualenv is installed
 cd src/docs
-make html</pre>
+make html
+</pre></div>
 </div>
 <p>Note that you need the Python package <a class="reference external" href="http://sphinx.pocoo.org/">Sphinx</a>
 in order to build the documentation locally.</p>
@@ -456,8 +474,8 @@ in order to build the documentation locally.</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="index.html"
-                        title="previous chapter">User Documentation</a></p>
+  <p class="topless"><a href="NEWS.html"
+                        title="previous chapter">User-visible changes across releases</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="configuration.html"
                         title="next chapter">Configuration File</a></p>
@@ -491,7 +509,7 @@ in order to build the documentation locally.</p>
           <a href="configuration.html" title="Configuration File"
              >next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="User Documentation"
+          <a href="NEWS.html" title="User-visible changes across releases"
              >previous</a> |</li>
         <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
           <li><a href="index.html" >User Documentation</a> &raquo;</li> 
@@ -500,7 +518,7 @@ in order to build the documentation locally.</p>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

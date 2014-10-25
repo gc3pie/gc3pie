@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -157,12 +155,20 @@ possible values.  The default value <cite>None</cite> means that any
 architecture is valid, i.e., there are no requirements on the
 processor architecture.</dd>
 <dt><cite>environment</cite></dt>
-<dd>a list of pairs <cite>(name, value)</cite>: the
-environment variable whose name is given by the contents of
-the string <cite>name</cite> will be defined as the content of string
-<cite>value</cite> (i.e., as if &#8220;export name=value&#8221; was executed prior
-to starting the application).  Alternately, one can pass in
-a list of strings of the form &#8220;name=value&#8221;.</dd>
+<dd><p class="first">a dictionary defining environment variables and the values to
+give them in the task execution setting.  Keys of the dictionary
+are environmental variables names, and dictionary values define
+the corresponding variable content.  Both keys and values must
+be strings or convertible to string.</p>
+<p>For example, to run the application in an environment where the
+variable <tt class="docutils literal"><span class="pre">LC_ALL</span></tt> has the value <tt class="docutils literal"><span class="pre">C</span></tt> and the variable <tt class="docutils literal"><span class="pre">HZ</span></tt>
+has the value <tt class="docutils literal"><span class="pre">100</span></tt>, one would use:</p>
+<div class="last highlight-python"><div class="highlight"><pre>Application(...,
+  environment={&#39;LC_ALL&#39;:&#39;C&#39;, &#39;HZ&#39;:100},
+  ...)
+</pre></div>
+</div>
+</dd>
 <dt><cite>output_base_url</cite></dt>
 <dd>if not <cite>None</cite>, this is prefixed to all output files (except
 stdout and stderr, which are always retrieved), so, for instance,
@@ -286,8 +292,8 @@ elements of the list, separating them with spaces.</p>
 
 <dl class="method">
 <dt id="gc3libs.Application.fetch_output">
-<tt class="descname">fetch_output</tt><big>(</big><em>download_dir</em>, <em>overwrite</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Application.fetch_output" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calls the corresponding method of the controller.</p>
+<tt class="descname">fetch_output</tt><big>(</big><em>download_dir</em>, <em>overwrite</em>, <em>changed_only</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Application.fetch_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call the corresponding method of the controller.</p>
 </dd></dl>
 
 <dl class="method">
@@ -344,7 +350,7 @@ submission options.</p>
 <tt class="descname">rank_resources</tt><big>(</big><em>resources</em><big>)</big><a class="headerlink" href="#gc3libs.Application.rank_resources" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sort the given resources in order of preference.</p>
 <p>By default, less-loaded resources come first;
-see <cite>_cmp_resources</cite>.</p>
+see <tt class="xref py py-meth docutils literal"><span class="pre">_cmp_resources()</span></tt>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -745,7 +751,7 @@ an exception <tt class="xref py py-class docutils literal"><span class="pre">Tas
 
 <dl class="method">
 <dt id="gc3libs.Task.fetch_output">
-<tt class="descname">fetch_output</tt><big>(</big><em>output_dir=None</em>, <em>overwrite=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Task.fetch_output" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">fetch_output</tt><big>(</big><em>output_dir=None</em>, <em>overwrite=False</em>, <em>changed_only=True</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Task.fetch_output" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieve the outputs of the computational job associated with
 this task into directory <cite>output_dir</cite>, or, if that is <cite>None</cite>,
 into the directory whose path is stored in instance attribute
@@ -816,14 +822,14 @@ lifecycle. In detail:</p>
 <p>When the job reaches <cite>TERMINATING</cite> state, the output is
 retrieved; if this operation is successfull, state is advanced
 to <cite>TERMINATED</cite>.</p>
-<p>oNCE the job reaches <cite>TERMINATED</cite> state, the return code
+<p>Once the job reaches <cite>TERMINATED</cite> state, the return code
 (stored also in <cite>.returncode</cite>) is returned; if the job is not
 yet in <cite>TERMINATED</cite> state, calling <cite>progress</cite> returns <cite>None</cite>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raises :</th><td class="field-body">exception <tt class="xref py py-class docutils literal"><span class="pre">UnexpectedStateError</span></tt> if the
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body">exception <tt class="xref py py-class docutils literal"><span class="pre">UnexpectedStateError</span></tt> if the
 associated job goes into state <cite>STOPPED</cite> or <cite>UNKNOWN</cite></td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">final returncode, or <cite>None</cite> if the execution
@@ -855,7 +861,7 @@ classes to implement additional behavior.</p>
 
 <dl class="method">
 <dt id="gc3libs.Task.submit">
-<tt class="descname">submit</tt><big>(</big><em>resubmit=False</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Task.submit" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">submit</tt><big>(</big><em>resubmit=False</em>, <em>targets=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.Task.submit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Start the computational job associated with this <cite>Task</cite> instance.</p>
 </dd></dl>
 
@@ -1032,7 +1038,7 @@ automatically.</p>
 
     <div class="footer">
         &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
