@@ -253,10 +253,10 @@ class GprecoveryScript(SessionBasedScript):
                     extra_args['result_dir'] = extra_args['result_dir'].replace('NAME', self.params.session)
 
                 extra_args['output_dir'] = self.params.output
-                extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', str(model))
-                extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', str(model))
-                extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', str(model))
-                extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', str(model))
+                extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', '%s.%s' % (str(model),str(repeat)))
+                extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', '%s.%s' % (str(model),str(repeat)))
+                extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', '%s.%s' % (str(model),str(repeat)))
+                extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', '%s.%s' % (str(model),str(repeat)))
 
 
                 tasks.append(GprecoveryApplication(
