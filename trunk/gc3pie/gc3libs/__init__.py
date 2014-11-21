@@ -900,9 +900,16 @@ class Application(Task):
             # integer. SGE does not allow job names to start with a
             # number, so add a prefix...
             if len(jobname) == 0:
-                gc3libs.log.warning("Empty string passed as jobname to %s", self)
-                jobname = "GC3Pie.%s.%s" % (self.__class__.__name__, id(self))
-            elif str(jobname)[0] in string.digits:
+                gc3libs.log.warning(
+                    "Empty string passed as jobname to %s,"
+                    " generating UUID job name", self)
+                jobname = ("GC3Pie.%s.%s"
+                           % (self.__class__.__name__, uuid.uuid4()))
+            elif str(jobname)[0] not in string.letters:
+                gc3libs.log.warning(
+                    "Supplied job name `%s` for %s does not start"
+                    " with a letter; changing it to `GC3Pie.%s`"
+                    % (jobname, self, jobname))
                 jobname = "GC3Pie.%s" % jobname
             extra_args['jobname'] = jobname
         # task setup; creates the `.execution` attribute as well
