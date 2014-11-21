@@ -198,7 +198,7 @@ def cat(*args, **extra_args):
     try:
         output.write('')
     except:
-        output = open(output, ifelse(append==True, 'a', 'w'))
+        output = open(output, ('a' if append==True else 'w'))
     for arg in args:
         # ensure `arg` is a file-like object, opened in read-mode
         try:
