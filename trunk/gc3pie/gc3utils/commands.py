@@ -42,7 +42,7 @@ import multiprocessing as mp
 ## 3rd party modules
 import cli  # pyCLI
 import cli.app
-import parsedatetime
+from parsedatetime.parsedatetime import Calendar
 
 ## local modules
 from gc3libs import Application, Run
@@ -1120,191 +1120,149 @@ To get detailed info on a specific command, run:
 
 class cmd_gselect(_BaseCmd):
     """
-Select job IDs based on specific criteria
+Print IDs of jobs that match the specified criteria.
+The criteria specified by command-line options will be
+AND'ed together, i.e., a job must satisfy all of them
+in order to be selected.
     """
+
     def setup_args(self):
         # No positional arguments allowed
         pass
 
     def setup_options(self):
         self.add_param(
-            '-l',
-            '--state',
-            help="Accepts a comma separated list of states. It will select all the jobs in one of the specified states. Valid states are: %s" % str.join(", ", (state.lower() for state in Run.State)),
-            )
-
-        # Regexp options
-        self.regexp_names = ['name', 'jobid', ]
-        for re_name in self.regexp_names:
-            self.add_param(
-                '--%s' % re_name,
-                dest='regexp_%s' % re_name,
-                metavar='REGEXP',
-                help="Select jobs with %s which matches the supplied REGEXP (case insensitive)." % (re_name),
-                )
-
+            '--error-message', '--errmsg', metavar='REGEXP',
+            help=("Select jobs such that a line in their error output (STDERR)"
+            " file matches the given regular expression pattern."),
+        )
         self.add_param(
-            '--submitted-after',
-            metavar='DATE',
-            help="Select jobs sumitted after the specified date",
+            '--input-file', metavar='FILENAME',
+            help=("Select jobs with input file FILENAME"
+                  " (only the file name is considered, not the full path)."),
             )
         self.add_param(
-            '--submitted-before',
-            metavar='DATE',
-            help="Select jobs sumitted before the specified date",
+            '--jobname', '--job-name', metavar='REGEXP',
+            dest='jobname', default='',
+            help=("Select jobs whose name matches the supplied"
+                  " regular expression (case insensitive).")
+    )
+        self.add_param(
+            '--jobid', '--job-id', metavar='REGEXP',
+            dest='jobid', default='',
+            help=("Select jobs whose ID matches the supplied"
+                  " regular expression (case insensitive).")
+        )
+        self.add_param(
+            '-l', '--state', '--states',
+            dest='states', default=None,
+            help=("Select all jobs in one of the specified states (comma-separated list)."
+                  " Valid states are: %s" % str.join(", ", sorted(Run.State))),
             )
         self.add_param(
-            '--input-file',
-            metavar='FILE',
-            help="Select jobs which with input file FILE (only the filename is considered, not the full path).",
+            '--output-file', metavar='FILENAME',
+            help=("Select jobs with output file FILENAME"
+                  " (only the file name is considered, not the full path)."),
             )
         self.add_param(
-            '--output-file',
-            metavar='FILE',
-            help="Select jobs which with output file FILE (only the filename is considered, not the full path).",
+            '--output-message', '--outmsg', metavar='REGEXP',
+            help=("Select jobs such that a line in their main output (STDOUT)"
+            " file matches the given regular expression pattern."),
+        )
+        self.add_param(
+            '--successful', '--ok',
+            action='store_true', dest='successful', default=False,
+            help="Select jobs with non-zero exit code."
+            )
+        self.add_param(
+            '--submitted-after', metavar='DATE',
+            help="Select jobs submitted after the specified date.",
+            )
+        self.add_param(
+            '--submitted-before', metavar='DATE',
+            help="Select jobs submitted before the specified date.",
+            )
+        self.add_param(
+            '--unsuccessful', '--failed',
+            action='store_true', dest='unsuccessful', default=False,
+            help="Select jobs with non-zero exit code."
             )
 
     def parse_args(self):
-        # Parse regexp(s)
-        for option in self.regexp_names:
-            re_name = "regexp_%s" % option
-            re_attribute = getattr(self.params, re_name)
-            if re_attribute:
-                try:
-                    setattr(self.params, re_name, re.compile(".*%s.*" % re_attribute, re.I))
-                except re.error, ex:
-                    raise gc3libs.exceptions.InvalidUsage(
-                        "Regexp `%s` for option `--%s` is invalid: %s" % (
-                            re_attribute, option, str(ex)))
+        # --successful, --unsuccessful
+        if self.params.successful and self.params.unsuccessful:
+            raise gc3libs.exceptions.InvalidUsage(
+                " Please use only one of the two options:"
+                " `--successful` or `--unsuccessful`.")
 
-        # parse state(s)
-        if self.params.state:
-            self.states = set((i.upper() for i in self.params.state.split(',')))
+        # --jobname, --job-name
+        try:
+            self.jobname_re = re.compile(self.params.jobname, re.I)
+        except re.error, err:
+            raise gc3libs.exceptions.InvalidUsage(
+                "Regexp `%s` for option `--job-name` is invalid: %s"
+                % (self.params.jobname, err))
+
+        # --jobid, --job-id
+        try:
+            self.jobid_re = re.compile(self.params.jobid, re.I)
+        except re.error, err:
+            raise gc3libs.exceptions.InvalidUsage(
+                "Regexp `%s` for option `--job-id` is invalid: %s"
+                % (self.params.jobid, err))
+
+        # --state
+        if self.params.states is not None:
+            self.allowed_states = set(i.upper() for i in self.params.state.split(','))
             invalid = self.states.difference(Run.State)
             if invalid:
                 raise gc3libs.exceptions.InvalidUsage(
                     "Invalid state(s): %s" % str.join(", ", invalid))
+        else:
+            self.allowed_states = set(Run.State)
 
-        # parse date(s)
+        # --submitted-after, --submitted-before
         self.submission_start = None
 
+        # NOTE: short-cut `if self.params.submitted:` will *not* work here, as
+        # the empty string is a valid value -- only `None` indicates that the
+        # option was not given
         if self.params.submitted_after is not None:
             if self.params.submitted_after == '':
-                gc3libs.log.warning("Empty date as argument of --submitted-after will be interpreted as `now`")
+                gc3libs.log.warning("Empty date as argument of --submitted-after will be interpreted as 'now'")
 
             try:
                 self.submission_start = time.mktime(
-                    parsedatetime.Calendar().parse(
-                        self.params.submitted_after)[0])
-                # We always match comparing start and end date, so we
-                # need a fake end date which will always be valid, and
-                # we will replace it later in case an end date was
-                # provided from command line
-                self.submission_end = time.mktime(
-                    parsedatetime.Calendar().parse('31 Dec 9999')[0])
-
+                    Calendar().parse(self.params.submitted_after)[0])
             except Exception, ex:
                 raise gc3libs.exceptions.InvalidUsage(
-                    "Invalid value `%s` for --submitted-after argument: %s" % (self.params.submitted_after, str(ex)))
+                    "Invalid value `%s` for --submitted-after argument: %s"
+                    % (self.params.submitted_after, str(ex)))
 
+        else: # no `--submitted-after` option
+            # a starting date is always needed; if user did not specify one,
+            # then choose the beginning of time
+            self.submission_start = 0.0
+
+        # NOTE: short-cut `if self.params.submitted_before:` will *not* work
+        # here, as the empty string is a valid value -- only `None` indicates
+        # that the option was not given
         if self.params.submitted_before is not None:
             if self.params.submitted_before == '':
                 gc3libs.log.warning(
-                    "Empty date as argument of --submitted-before will be interpreted as `now`")
-
+                    "Empty date as argument of --submitted-before will be interpreted as 'now'")
             try:
                 self.submission_end = time.mktime(
-                    parsedatetime.Calendar().parse(
-                        self.params.submitted_before)[0])
-                if not self.submission_start:
-                    # We always match comparing start and end date, so
-                    # we need a fake start date in case it has not
-                    # been provided from the command line
-                    self.submission_start = time.mktime(
-                        parsedatetime.Calendar().parse('1 Jan 1978')[0])
-
-            except Exception, ex:
+                    Calendar().parse(self.params.submitted_before)[0])
+            except Exception, err:
                 raise gc3libs.exceptions.InvalidUsage(
-                    "Invalid value `%s` for --submitted-before argument: %s" % (self.params.submitted_before, str(ex)))
+                    "Invalid value `%s` for --submitted-before argument: %s"
+                    % (self.params.submitted_before, err))
 
-    def filter_by_regexp(self, job_list, regexp, attribute='jobname'):
-        """
-        Filter `job_list` by selecting only the jobs which attribute
-        `attribute` match the supplied regexp.
-
-        Returns an updated job list.
-        """
-        # I know this could be written in one line but it would be
-        # quite harder to read.
-        matching_jobs = []
-        for job in job_list:
-            try:
-                attrvalue = getattr(job, attribute)
-            except:
-                continue
-            if regexp.match(attrvalue):
-                matching_jobs.append(job)
-        return matching_jobs
-
-    def filter_by_state(self, job_list):
-        """
-        Filter `job_list` by selecting only the jobs which
-        match the desired state(s).
-
-        Returns an updated job list.
-        """
-        matching_jobs = []
-        for job in job_list:
-            if job.execution.state in self.states:
-                matching_jobs.append(job)
-        return matching_jobs
-
-    def filter_by_iofile(self, job_list, ifile=None, ofile=None):
-        """
-        Filter `job_list` based on the *basename* of their input or
-        output files. It will return any file which matches both
-        `ifile` and `ofile`.
-
-        Returns an updated job list.
-        """
-        matching_jobs = []
-        for job in job_list:
-            try:
-                inputs = [os.path.basename(url.path) for url in job.inputs]
-            except AttributeError:
-                inputs = []
-            try:
-                outputs = [os.path.basename(file) for file in job.outputs]
-            except AttributeError:
-                inputs = []
-            toadd = True
-            if ifile and ifile not in inputs:
-                toadd = False
-            if ofile and ofile not in outputs:
-                toadd = False
-            if toadd:
-                matching_jobs.append(job)
-        return matching_jobs
-
-
-    def filter_by_submission_date(self, job_list):
-        """
-        Filter `job_list` by submission date. Only job which have been
-        submitted within the range specified by command line will be
-        selected.
-
-        Returns an updated job list.
-        """
-        matching_jobs = []
-        for job in job_list.iteritems():
-            submission_time = job.execution.timestamp.get(Run.State.SUBMITTED)
-            if not submission_time:
-                # ShellCmd backend does not support `SUBMITTED` status:
-                submission_time = job.execution.timestamp.get(Run.State.RUNNING)
-
-            if submission_time is not None and submission_time <= self.submission_end and submission_time >= self.submission_start:
-                matching_jobs.append(job)
-        return matching_jobs
+        else: # no `--submitted-before` option
+            # an ending date is always needed; if user did not specify one,
+            # then choose the end of (UNIX) time
+            self.submission_end = float(sys.maxint)
 
     def main(self):
         try:
@@ -1312,39 +1270,202 @@ Select job IDs based on specific criteria
             self.store = self.session.store
         except gc3libs.exceptions.InvalidArgument, ex:
             # session not found?
-            raise RuntimeError('Session %s not found' % self.params.session)
+            raise RuntimeError("Session `%s` not found" % self.params.session)
 
         # Load tasks from the store
         current_jobs = [self.store.load(jobid) for jobid in self.store.list()]
 
-        # Filter by regexp(s)
-        if self.params.regexp_name:
-            current_jobs = self.filter_by_regexp(current_jobs,
-                                                 self.params.regexp_name,
-                                                 attribute='jobname',
-                                                 )
+        # pipeline of checks to perform; more expensive checks should come last
+        # so they look at less jobs (do I long for LISP? Oh yes I do...)
+        criteria = [
+            # condition  # check function          # additional arguments
+            (True, self.filter_by_jobname,         (self.jobname_re,)),
+            (True, self.filter_by_jobid,           (self.jobid_re,)),
+            (True, self.filter_by_state,           (self.allowed_states,)),
+            (self.params.successful,
+                   self.filter_successful,         ()),
+            (self.params.unsuccessful,
+                   self.filter_unsuccessful,       ()),
+            (True, self.filter_by_submission_date, (self.submission_start, self.submission_end)),
+            (True, self.filter_by_iofile,          (self.params.input_file, self.params.output_file)),
+            (self.params.error_message,
+                   self.filter_by_errmsg,          (self.params.error_message,)),
+            (self.params.output_message,
+                   self.filter_by_outmsg,          (self.params.output_message,)),
+        ]
+        for cond, fn, args in criteria:
+            if cond:
+                current_jobs = fn(current_jobs, *args)
+                if not current_jobs:
+                    break
 
-        if self.params.regexp_jobid:
-            current_jobs = self.filter_by_regexp(current_jobs,
-                                                 self.params.regexp_jobid,
-                                                 attribute='persistent_id',
-                                                 )
-
-        # Filter by state
-        if self.params.state:
-            current_jobs = self.filter_by_state(current_jobs)
-
-        # Filter by submission date
-        if self.submission_start:
-            current_jobs = self.filter_by_submission_date(current_jobs)
-
-        current_jobs = self.filter_by_iofile(current_jobs,
-                                             self.params.input_file,
-                                             self.params.output_file)
-
-        # Print remaining job IDs
+        # Print remaining job IDs, if any
         if current_jobs:
-            print str.join(" ", [str(job.persistent_id) for job in current_jobs])
+            print(str.join('\n',
+                           (str(job.persistent_id) for job in current_jobs)))
+        else:
+            gc3libs.log.info("No jobs match the specified conditions.")
+
+    @staticmethod
+    def _filter_by_regexp(job_list, regexp, attribute):
+        """
+        Return list of items in `job_list` whose attribute
+        named `attribute` matches the supplied (non-anchored) regexp.
+
+        Jobs that do not possess an attribute with the specified name do *not*
+        match.
+        """
+        # I know this could be written in one line but it would be
+        # quite harder to read.
+        matching_jobs = []
+        for job in job_list:
+            try:
+                attrvalue = getattr(job, attribute)
+            except AttributeError:
+                continue
+            if regexp.search(attrvalue):
+                matching_jobs.append(job)
+        return matching_jobs
+
+    @staticmethod
+    def filter_by_exitcode(job_list, codes):
+        """
+        Return list of tasks in `job_list` whose exit code
+        is one of the given codes.
+
+        If `codes` is empty, then return `job_list` unchanged.
+        """
+        if codes:
+            return [job for job in job_list if job.execution.exitcode in codes]
+        else:
+            return job_list
+
+    @staticmethod
+    def filter_by_errmsg(job_list, msg):
+        """
+        Return list of tasks in `job_list` such that string `msg` occurs in the
+        STDERR log file.
+        """
+        return [ job for job in job_list
+                 if (hasattr(job, 'output_dir')
+                     and utils.occurs(msg,
+                                      os.path.join(job.output_dir,
+                                                   (job.stdout if job.join else job.stderr)))) ]
+
+    @staticmethod
+    def filter_by_iofile(job_list, ifile=None, ofile=None):
+        """
+        Return list of items in `job_list` such that the `ifile` matches the
+        *base name* of any input file, *and* `ofile` matches the base name of
+        any output file.  If either one of `ifile` or `ofile` is ``None``, the
+        corresponding check is turned off.
+        """
+        matching_jobs = []
+        for job in job_list:
+            # XXX: I'm unsure why the `try/except` blocks below are there: if
+            # there is any error --i.e., Application object does not have a
+            # `.inputs` or input URL does not have a `.path` attribute-- then
+            # the involved objects are corrupted and we should rather abort
+            # quickly than turn off checks and continue ...
+            try:
+                # `Application.inputs` is a `UrlKeyDict`
+                inputs = [os.path.basename(url.path) for url in job.inputs]
+            except AttributeError, err:
+                gc3libs.log.error(
+                    "Invalid input file data in task %s: %s."
+                    " I'm turning off input file checks for this task",
+                    job, err)
+                inputs = []
+            try:
+                # `Application.inputs` is a `UrlValueDict`, so keys are simple paths
+                outputs = [os.path.basename(file) for file in job.outputs]
+            except AttributeError, err:
+                gc3libs.log.error(
+                    "Invalid output file data in task %s: %s."
+                    " I'm turning off output file checks for this task",
+                    job, err)
+                outputs = []
+            matching = True
+            if ifile and ifile not in inputs:
+                matching = False
+            if ofile and ofile not in outputs:
+                matching = False
+            if matching:
+                matching_jobs.append(job)
+        return matching_jobs
+
+    @staticmethod
+    def filter_by_jobid(job_list, regexp):
+        """
+        Return list of items in `job_list` whose ID (i.e., the `.persistent_id`
+        attribute) matches the supplied regexp.  Jobs that do not have a
+    `.persistent_id` attribute do *not* match.
+        """
+        return cmd_gselect._filter_by_regexp(job_list, regexp, 'persistent_id')
+
+    @staticmethod
+    def filter_by_jobname(job_list, regexp):
+        """
+        Return list of items in `job_list` whose `.jobname` attribute matches the
+        supplied regexp.  Jobs that do not have a `jobname` attribute do *not*
+        match.
+        """
+        return cmd_gselect._filter_by_regexp(job_list, regexp, 'jobname')
+
+    @staticmethod
+    def filter_by_outmsg(job_list, msg):
+        """
+        Return list of tasks in `job_list` such that string `msg` occurs in the
+        STDOUT log file.
+        """
+        return [ job for job in job_list
+                 if (hasattr(job, 'output_dir')
+                     and utils.occurs(msg, os.path.join(job.output_dir, job.stdout))) ]
+
+    @staticmethod
+    def filter_successful(job_list):
+        """
+        Return list of tasks from `job_list` that were successfully terminated.
+        """
+        return [ job for job in job_list
+                 if job.execution.returncode == 0 ]
+
+    @staticmethod
+    def filter_by_state(job_list, states):
+        """
+        Return list of elements in `job_list` whose state
+        is one of the given states.
+        """
+        return [ job for job in job_list if job.execution.state in states ]
+
+    @staticmethod
+    def filter_unsuccessful(job_list):
+        """
+        Return list of tasks from `job_list` that were unsuccessfully terminated.
+        """
+        return [ job for job in job_list
+                 if job.execution.returncode != 0 ]
+
+    @staticmethod
+    def filter_by_submission_date(job_list, start, end):
+        """
+        Return list of items in `job_list` which have been
+        submitted within the range specified by `start` and `end`.
+        """
+        matching_jobs = []
+        for job in job_list:
+            submission_time = job.execution.timestamp.get(Run.State.SUBMITTED, None)
+            if submission_time is None:
+                # Jobs run by the ShellCmd backend transition directly to
+                # RUNNING; use that timestamp if available.
+                submission_time = job.execution.timestamp.get(Run.State.RUNNING, None)
+
+            if (submission_time is not None
+                and submission_time <= end
+                and submission_time >= start):
+                matching_jobs.append(job)
+        return matching_jobs
+
 
 class cmd_gcloud(_BaseCmd):
     """
