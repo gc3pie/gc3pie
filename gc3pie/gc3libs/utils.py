@@ -516,6 +516,7 @@ def first(seq):
         pass
     raise TypeError("Argument to `first()` method needs to be iterator or sequence.")
 
+
 def fgrep(literal, filename):
     """
     Iterate over all lines in a file that contain the `literal` string.
@@ -524,6 +525,7 @@ def fgrep(literal, filename):
         for line in file:
             if literal in line:
                 yield line
+
 
 def from_template(template, **extra_args):
     """
@@ -561,6 +563,17 @@ def getattr_nested(obj, name):
     else:
         first, rest = name.split('.', 1)
         return getattr_nested(getattr(obj, first), rest)
+
+
+def grep(pattern, filename):
+    """
+    Iterate over all lines in a file that match the `pattern` regular expression.
+    """
+    rx = re.compile(pattern)
+    with open(filename, 'r') as file:
+        for line in file:
+            if rx.search(line):
+                yield line
 
 
 def ifelse(test, if_true, if_false):
@@ -855,6 +868,19 @@ def move_recursively(src, dst, overwrite=False, changed_only=True):
         movetree(src, dst, overwrite, changed_only)
     else:
         movefile(src, dst, overwrite, changed_only)
+
+
+def occurs(pattern, filename):
+    """
+    Return ``True`` if any line in `filename` matches regular expression
+    `pattern`.
+    """
+    try:
+        # look for the first match -- if one is found, we're done
+        grep(pattern, filename).next()
+        return True
+    except StopIteration:
+        return False
 
 
 def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
