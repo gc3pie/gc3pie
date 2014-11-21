@@ -1055,13 +1055,8 @@ def read_contents(path):
       >>> os.remove(tmpfile)
 
     """
-    # XXX: this really calls for the `with:` statement...
-    try:
-        stream = open(path, 'r')
+    with open(path, 'r') as stream:
         return stream.read()
-    finally:
-        if 'stream' in locals():
-            stream.close()
 
 
 def safe_repr(obj):
