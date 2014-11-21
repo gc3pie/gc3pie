@@ -556,14 +556,15 @@ def from_template(template, **extra_args):
 
 def getattr_nested(obj, name):
     """
-    Like Python's `getattr`, but perform a recursive lookup if `name` contains any dots.
+    Like Python's `getattr`, but perform a recursive lookup if `name` contains
+    any dots.
     """
     dots = name.count('.')
     if dots == 0:
         return getattr(obj, name)
     else:
         first, rest = name.split('.', 1)
-        return getattr(getattr(obj, first), rest)
+        return getattr_nested(getattr(obj, first), rest)
 
 
 def ifelse(test, if_true, if_false):
