@@ -170,6 +170,34 @@ def configure_logger(
         logging.raiseExceptions = False
 
 
+UNIGNORE_ERRORS = set(os.environ.get('GC3PIE_NO_CATCH_ERRORS', '').split(','))
+if 'ALL' in UNIGNORE_ERRORS:
+    UNIGNORE_ALL_ERRORS = True
+else:
+    UNIGNORE_ALL_ERRORS = False
+
+def error_ignored(*ctx):
+    """
+    Return ``True`` if no object in list `ctx` matches the contents of the
+    ``GC3PIE_NO_CATCH_ERRORS`` environment variable.
+
+    Note that the list of un-ignored errors is determined when the `gc3libs`
+    module is initially loaded and is thus insensitive to changes in the
+    environment that happen afterwards.
+
+    The calling interface is so designed, that a list of keywords describing -or
+    related- to the error are passed; if any of them has been mentioned in the
+    environment variable ``GC3PIE_NO_CATCH_ERRORS`` then this function returns
+    ``False`` -- i.e., the error is never ignored by GC3Pie and always
+    propagated to the top-level handler.
+    """
+    if UNIGNORE_ALL_ERRORS:
+        return False
+    else:
+        return (0 == len(UNIGNORE_ERRORS.intersection(set(str(word).lower()
+                                                          for word in ctx))))
+
+
 ## Task and Application classes
 #
 

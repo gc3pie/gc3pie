@@ -672,10 +672,13 @@ class GC3UtilsScript(_Script):
             try:
                 yield self.session.load(jobid)
             except Exception, ex:
+                # Exempted from GC3Pie's `error_ignored()` policy as there
+                # is explicit control via the `ignore_failures` parameter
                 if ignore_failures:
-                    gc3libs.log.error("Could not retrieve job '%s' (%s: %s). Ignoring.",
-                                      jobid, ex.__class__.__name__, str(ex),
-                                      exc_info=(self.params.verbose > 2))
+                    gc3libs.log.error(
+                        "Could not retrieve job '%s' (%s: %s). Ignoring.",
+                        jobid, ex.__class__.__name__, ex,
+                        exc_info=(self.params.verbose > 2))
                     continue
                 else:
                     raise

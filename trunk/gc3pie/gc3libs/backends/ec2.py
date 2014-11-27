@@ -567,10 +567,29 @@ class EC2Lrms(LRMS):
                         rule, self.security_group_name)
                     security_group.authorize(**rule)
                 except Exception, ex:
-                    gc3libs.log.info("Ignoring error adding rule %s to"
-                                     " security group %s: %s", str(rule),
-                                     self.security_group_name, str(ex))
-
+                    if gc3libs.error_ignored(
+                            # context:
+                            # - module
+                            'ec2',
+                            # - class
+                            'EC2Lrms',
+                            # - method
+                            'setup_security_groups',
+                            # - actual error class
+                            ex.__class__.__name__,
+                            # - additional keywords
+                            'setup',
+                            'security',
+                            'network',
+                            'cloud',
+                    ):
+                        gc3libs.log.info(
+                            "Ignoring error adding rule %s"
+                            " to security group %s: %s",
+                            rule, self.security_group_name, ex)
+                    else:
+                        # propagate exception to caller
+                        raise
         else:
             # Check if the security group has all the rules we want
             security_group = groups[self.security_group_name]
@@ -690,21 +709,42 @@ class EC2Lrms(LRMS):
                         resource.get_resource_status()
                         break
                     except Exception, ex:
-                        gc3libs.log.info(
-                            "Ignoring error while updating resource %s. "
-                            "The corresponding VM may not be ready yet. Error: %s",
+                        # XXX: I'm exempting this from the GC3Pie
+                        # `error_ignored()` policy, since this is a kind of
+                        # "expected" error -- it *will* happen if the VM has
+                        # not booted up yet or if we're hunting for the correct
+                        # address.
+                        gc3libs.log.debug(
+                            "Ignoring error in updating resource %s: %s"
+                            " The corresponding VM may not be ready yet.",
                             resource.name, ex)
             except Exception, ex:
-                # XXX: Actually, we should try to identify the kind of
+                # FIXME: Actually, we should try to identify the kind of
                 # error we are getting. For instance, if the
                 # configuration options `username` is wrong, we will
                 # create VMs but we will never be able to submit jobs
                 # to them, thus causing an increasing number of
                 # useless VMs created on the cloud.
-                gc3libs.log.info(
-                    "Ignoring error while updating resource %s. "
-                    "The corresponding VM may not be ready yet. Error: %s",
-                    resource.name, ex)
+                if gc3libs.error_ignored(
+                        # context:
+                        # - module
+                        'ec2',
+                        # - class
+                        'EC2Lrms',
+                        # - method
+                        'get_resource_status',
+                        # - actual error class
+                        ex.__class__.__name__,
+                        # - additional keywords
+                        'vm',
+                ):
+                    gc3libs.log.info(
+                        "Ignoring error in updating resource %s: %s"
+                        "The corresponding VM may not be ready yet.",
+                        resource.name, ex)
+                else:
+                    # propagate exception to caller
+                    raise
             if resource.updated:
                 # Update also the instance_type specs, if not
                 # already updated
@@ -830,9 +870,25 @@ class EC2Lrms(LRMS):
                     resource.name)
                 return job
             except gc3libs.exceptions.LRMSSubmitError, ex:
-                gc3libs.log.debug(
-                    "Ignoring error while submit to resource %s: %s. ",
-                    resource.name, str(ex))
+                if gc3libs.error_ignored(
+                        # context:
+                        # - module
+                        'ec2',
+                        # - class
+                        'EC2Lrms',
+                        # - method
+                        'submit_job',
+                        # - actual error class
+                        ex.__class__.__name__,
+                        # - additional keywords
+                        'submit',
+                ):
+                    gc3libs.log.debug(
+                        "Ignoring error in submitting to resource %s: %s. ",
+                        resource.name, ex)
+                else:
+                    # propagate exception to caller
+                    raise
 
         # Couldn't submit to any resource.
         if not pending_vms:

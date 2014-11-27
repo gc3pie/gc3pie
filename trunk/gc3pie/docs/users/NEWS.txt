@@ -31,6 +31,18 @@
 .. contents::
 
 
+GC3Pie 2.3.0
+============
+
+Incompatible changes
+--------------------
+
+* The environment variable ``GC3PIE_NO_CATCH_ERRORS`` now can specify a list of
+  patterns to selectively unignore unexpected/generic errors in the code.  As
+  this feature should only be used in debugging code, we allow ourselves to
+  break backwards compatibility.
+
+
 GC3Pie 2.2.0
 ============
 

@@ -305,7 +305,7 @@ class OpenStackLrms(LRMS):
                 # Ignore any error here, as we can get information on
                 # the subresources when we connect to it.
                 gc3libs.log.info(
-                    "Ignoring error while setting max_cores_per_job/max_memory"
+                    "Ignoring error in setting max_cores_per_job/max_memory"
                     " values for new subresource %s based on flavor: %s",
                     self.subresources[vm.id].name, ex)
         return self.subresources[vm.id]
@@ -645,8 +645,8 @@ class OpenStackLrms(LRMS):
                 # TODO: get all the IPs and try with all of them to connect.
                 # Start with preferred_ip if defined
                 gc3libs.log.info(
-                    "Ignoring error while updating resource '%s'. "
-                    "Trying other IPs. Error: %s", subresource.name, ex)
+                    "Ignoring error in updating resource '%s': %s."
+                    " Trying other IPs.", subresource.name, ex)
                 for ip in sum(vm.networks.values(), []):
                     if vm.preferred_ip == ip:
                         continue
@@ -660,8 +660,8 @@ class OpenStackLrms(LRMS):
                         break
                     except Exception, ex:
                         gc3libs.log.info(
-                            "Ignoring error while updating resource '%s'. "
-                            "The corresponding VM may not be ready yet. Error: %s",
+                            "Ignoring error in updating resource '%s': %s."
+                            " The corresponding VM may not be ready yet.",
                             subresource.name, ex)
                 # Unable to connect to the VM using any IP.  Ensure
                 # this resource is considered "pending" as we couldn't
@@ -674,10 +674,29 @@ class OpenStackLrms(LRMS):
                 # create VMs but we will never be able to submit jobs
                 # to them, thus causing an increasing number of
                 # useless VMs created on the cloud.
-                gc3libs.log.info(
-                    "Ignoring error while updating resource '%s'. "
-                    "The corresponding VM may not be ready yet. Error: %s",
-                    subresource.name, ex)
+                if gc3libs.error_ignored(
+                        # context:
+                        # - module
+                        'openstack',
+                        # - class
+                        'OpenStackLrms',
+                        # - method
+                        'get_resource_status',
+                        # - actual error class
+                        ex.__class__.__name__,
+                        # - additional keywords
+                        'resource',
+                        'status',
+                        'update',
+                        'vm',
+                ):
+                    gc3libs.log.info(
+                        "Ignoring error while updating resource '%s'. "
+                        "The corresponding VM may not be ready yet. Error: %s",
+                        subresource.name, ex)
+                else:
+                    # propagate exception back to caller
+                    raise
         self._vmpool.update()
         return self
 
@@ -816,9 +835,25 @@ class OpenStackLrms(LRMS):
                     subresource.name)
                 return job
             except (LRMSSubmitError, InstanceNotFound), ex:
-                gc3libs.log.debug(
-                    "Ignoring error in submitting to resource '%s': %s",
-                    subresource.name, str(ex))
+                if gc3libs.error_ignored(
+                        # context:
+                        # - module
+                        'openstack',
+                        # - class
+                        'OpenStackLrms',
+                        # - method
+                        'submit_job',
+                        # - actual error class
+                        ex.__class__.__name__,
+                        # - additional keywords
+                        'submit',
+                ):
+                    gc3libs.log.debug(
+                        "Ignoring error in submitting to resource '%s': %s",
+                        subresource.name, ex)
+                else:
+                    # propagate error back to caller
+                    raise
 
         # Couldn't submit to any resource.
         if not pending_vms:

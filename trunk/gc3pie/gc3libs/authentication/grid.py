@@ -459,8 +459,27 @@ class GridAuth(object):
         if arc_flavour == Default.ARC0_LRMS:
             try:
                 cert = arclib.Certificate(arclib.PROXY)
-            except Exception, e:
-                gc3libs.log.warning("Ignoring error while checking Voms certificate: %s" % str(e))
+            except Exception, err:
+                if gc3libs.error_ignored(
+                        # context:
+                        # - module
+                        'grid',
+                        # - class
+                        'GridAuth',
+                        # - method
+                        'is_voms',
+                        # - actual error class
+                        ex.__class__.__name__,
+                        # - additional keywords
+                        'auth',
+                        'voms',
+                ):
+                    gc3libs.log.warning(
+                        "Ignoring error in checking VOMS certificate: %s",
+                        err)
+                else:
+                    # propagate exception back to caller
+                    raise
                 return False
             if cert.GetSN().endswith('proxy'):
                 # non RFC compliant proxy
@@ -481,7 +500,7 @@ class GridAuth(object):
                     # non RFC compliant proxy
                     gc3libs.log.error("Proxy not in RFC compliant format")
                     return False
-                
+
                 if not userconfig.CACertificatesDirectory():
                     cadir = gc3libs.Default.CERTIFICATE_AUTHORITIES_DIR
                 else:
