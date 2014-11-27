@@ -476,10 +476,12 @@ an overlay Grid on the resources specified in the configuration file.
                     # propagate generic exceptions for debugging purposes
                     raise
                 else:
-                    gc3libs.log.warning("Ignored error in Core.update_job_state(): %s", str(ex))
+                    gc3libs.log.warning(
+                        "Ignored error in Core.update_job_state(): %s", str(ex))
                     # print again with traceback at a higher log level
-                    gc3libs.log.debug("Ignored error in Core.update_job_state(): %s: %s",
-                                      ex.__class__.__name__, str(ex), exc_info=True)
+                    gc3libs.log.debug(
+                        "Ignored error in Core.update_job_state(): %s: %s",
+                        ex.__class__.__name__, str(ex), exc_info=True)
                     continue
 
     def __update_task(self, tasks, **extra_args):
@@ -1224,9 +1226,10 @@ class Engine(object):
                 # this...
                 raise
             except Exception, x:
-                gc3libs.log.error("Ignoring error in updating state of task '%s': %s: %s"
-                                  % (task, x.__class__.__name__, str(x)),
-                                  exc_info=True)
+                gc3libs.log.error(
+                    "Ignoring error in updating state of task '%s': %s: %s",
+                    task, x.__class__.__name__, str(x),
+                    exc_info=True)
         # remove tasks that transitioned to other states
         for index in reversed(transitioned):
             del self._in_flight[index]
@@ -1255,11 +1258,12 @@ class Engine(object):
                     # propagate generic exceptions for debugging purposes
                     raise
                 else:
-                    gc3libs.log.error("Ignored error in killing task '%s': %s: %s",
-                                      task, x.__class__.__name__, str(x))
+                    gc3libs.log.error(
+                        "Ignored error in killing task '%s': %s: %s",
+                        task, x.__class__.__name__, str(x))
                     # print again with traceback info at a higher log level
-                    gc3libs.log.debug("Ignored error in killing task '%s': %s: %s",
-                                      task, x.__class__.__name__, str(x), exc_info=True)
+                    gc3libs.log.debug(
+                        "(Original error traceback follows.)", exc_info=True)
         # remove tasks that transitioned to other states
         for index in reversed(transitioned):
             del self._to_kill[index]
@@ -1365,11 +1369,12 @@ class Engine(object):
                                             overwrite=self.retrieve_overwrites,
                                             changed_only=self.retrieve_changed_only)
                 except gc3libs.exceptions.UnrecoverableDataStagingError, ex:
-                    gc3libs.log.error("Error in fetching output of task '%s',"
-                                      " will mark it as TERMINATED"
-                                      " (with error exit code %d): %s: %s",
-                                      task, posix.EX_IOERR,
-                                      ex.__class__.__name__, str(ex), exc_info=True)
+                    gc3libs.log.error(
+                        "Error in fetching output of task '%s',"
+                        " will mark it as TERMINATED"
+                        " (with error exit code %d): %s: %s",
+                        task, posix.EX_IOERR,
+                        ex.__class__.__name__, str(ex), exc_info=True)
                     task.execution.returncode = (Run.Signals.DataStagingFailure,
                                                  posix.EX_IOERR)
                     task.execution.state = Run.State.TERMINATED
@@ -1383,8 +1388,7 @@ class Engine(object):
                             "Ignored error in fetching output of task '%s': %s: %s",
                             task, x.__class__.__name__, str(x))
                         gc3libs.log.debug(
-                            "Ignored error in fetching output of task '%s': %s: %s",
-                            task, x.__class__.__name__, str(x), exc_info=True)
+                            "(Original error traceback follows.)", exc_info=True)
                 if task.execution.state == Run.State.TERMINATED:
                     self._terminated.append(task)
                     self._core.free(task)
@@ -1398,7 +1402,6 @@ class Engine(object):
 
     def stats(self, only=None):
         """
-
         Return a dictionary mapping each state name into the count of
         tasks in that state. In addition, the following keys are defined:
 
@@ -1411,7 +1414,6 @@ class Engine(object):
         If the optional argument `only` is not None, tasks whose
         whose class is not contained in `only` are ignored.
         : param tuple only: Restrict counting to tasks of these classes.
-
         """
         if only:
             gc3libs.log.debug(
@@ -1482,7 +1484,8 @@ class Engine(object):
 
 
     def submit(self, task, resubmit=False, targets=None, **extra_args):
-        """Submit `task` at the next invocation of `progress`.
+        """
+        Submit `task` at the next invocation of `progress`.
 
         The `task` state is reset to ``NEW`` and then added to the
         collection of managed tasks.

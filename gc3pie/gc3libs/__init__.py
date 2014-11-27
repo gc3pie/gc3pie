@@ -112,6 +112,67 @@ from gc3libs.url import UrlKeyDict, UrlValueDict
 from gc3libs.utils import defproperty, deploy_configuration_file, Enum, History, Struct, safe_repr
 
 
+# when used in the `output` attribute of an application,
+# it stands for "fetch the whole contents of the remote
+# directory"
+ANY_OUTPUT = '*'
+
+
+## utility functions
+#
+
+def configure_logger(
+        level=logging.ERROR,
+        name=None,
+        format=(os.path.basename(sys.argv[0])
+                + ': [%(asctime)s] %(levelname)-8s: %(message)s'),
+        datefmt='%Y-%m-%d %H:%M:%S'):
+    """
+    Configure the ``gc3.gc3libs`` logger.
+
+    Arguments `level`, `format` and `datefmt` set the corresponding
+    arguments in the `logging.basicConfig()` call.
+
+    If a user configuration file exists in file NAME.log.conf in the
+    ``Default.RCDIR`` directory (usually ``~/.gc3``), it is read and
+    used for more advanced configuration; if it does not exist, then a
+    sample one is created.
+    """
+    if name is None:
+        name = os.path.basename(sys.argv[0])
+    log_conf = os.path.join(Default.RCDIR, name + '.log.conf')
+    logging.basicConfig(level=level, format=format, datefmt=datefmt)
+    deploy_configuration_file(log_conf, "logging.conf.example")
+    logging.config.fileConfig(log_conf, {
+        'RCDIR': Default.RCDIR,
+        'HOMEDIR': os.path.expandvars('$HOME'),
+        })
+    log = logging.getLogger("gc3.gc3libs")
+    log.setLevel(level)
+    log.propagate = 1
+    # Up to Python 2.5, the `logging` library disables all existing
+    # loggers upon reconfiguration, and fails to re-create them when
+    # getLogger() is called again.  We work around this the hard way:
+    # using an undocumented internal variable, ignore errors, and hope
+    # for the best.
+    try:
+        log.disabled = 0
+    except:
+        pass
+    # due to a bug in Python 2.4.x (see
+    # https://bugzilla.redhat.com/show_bug.cgi?id=573782 )
+    # we need to disable `logging` reporting of exceptions.
+    try:
+        version_info = sys.version_info
+    except AttributeError:
+        version_info = (1, 5) # 1.5 or earlier
+    if version_info < (2, 5):
+        logging.raiseExceptions = False
+
+
+## Task and Application classes
+#
+
 class Task(Persistable, Struct):
     """
     Mix-in class implementing a facade for job control.
@@ -537,58 +598,6 @@ class Task(Persistable, Struct):
         """
         pass
 
-def configure_logger(level=logging.ERROR,
-                     name=None,
-                     format=(os.path.basename(sys.argv[0])
-                             + ': [%(asctime)s] %(levelname)-8s: %(message)s'),
-                     datefmt='%Y-%m-%d %H:%M:%S'):
-    """
-    Configure the ``gc3.gc3libs`` logger.
-
-    Arguments `level`, `format` and `datefmt` set the corresponding
-    arguments in the `logging.basicConfig()` call.
-
-    If a user configuration file exists in file NAME.log.conf in the
-    ``Default.RCDIR`` directory (usually ``~/.gc3``), it is read and
-    used for more advanced configuration; if it does not exist, then a
-    sample one is created.
-    """
-    if name is None:
-        name = os.path.basename(sys.argv[0])
-    log_conf = os.path.join(Default.RCDIR, name + '.log.conf')
-    logging.basicConfig(level=level, format=format, datefmt=datefmt)
-    deploy_configuration_file(log_conf, "logging.conf.example")
-    logging.config.fileConfig(log_conf, {
-        'RCDIR': Default.RCDIR,
-        'HOMEDIR': os.path.expandvars('$HOME'),
-        })
-    log = logging.getLogger("gc3.gc3libs")
-    log.setLevel(level)
-    log.propagate = 1
-    # Up to Python 2.5, the `logging` library disables all existing
-    # loggers upon reconfiguration, and fails to re-create them when
-    # getLogger() is called again.  We work around this the hard way:
-    # using an undocumented internal variable, ignore errors, and hope
-    # for the best.
-    try:
-        log.disabled = 0
-    except:
-        pass
-    # due to a bug in Python 2.4.x (see
-    # https://bugzilla.redhat.com/show_bug.cgi?id=573782 )
-    # we need to disable `logging` reporting of exceptions.
-    try:
-        version_info = sys.version_info
-    except AttributeError:
-        version_info = (1, 5) # 1.5 or earlier
-    if version_info < (2, 5):
-        logging.raiseExceptions = False
-
-
-# when used in the `output` attribute of an application,
-# it stands for "fetch the whole contents of the remote
-# directory"
-ANY_OUTPUT = '*'
 
 class Application(Task):
     """
