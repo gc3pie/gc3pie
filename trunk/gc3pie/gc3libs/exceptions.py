@@ -168,7 +168,7 @@ class InputFileError(FatalError):
     pass
 
 
-class InternalError(Error):
+class InternalError(Error, AssertionError):
     """
     Raised when some function cannot fulfill its duties, for reasons
     that do not depend on the library client code.  For instance, when
