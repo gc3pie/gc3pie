@@ -338,7 +338,7 @@ class SequentialTaskCollection(TaskCollection):
         if self._current_task is None:
             # it's either NEW or TERMINATED, no update
             assert self.execution.state in [ Run.State.NEW, Run.State.TERMINATED ]
-            pass
+            return self.execution.state
         else:
             # update state of current task
             task = self.tasks[self._current_task]
@@ -347,22 +347,34 @@ class SequentialTaskCollection(TaskCollection):
                               self._current_task, task.execution.state)
         # set state based on the state of current task
         if (self._current_task == 0
-            and task.execution.state in [ Run.State.NEW, Run.State.SUBMITTED ]):
-            self.execution.state = task.execution.state
+            and task.execution.state in [
+                Run.State.NEW,
+                Run.State.SUBMITTED,
+            ]):
+            # avoid state flapping back to NEW if it's already SUBMITTED
+            if self.execution.state == Run.State.NEW:
+                self.execution.state = task.execution.state
         elif (task.execution.state == Run.State.TERMINATED):
             nxt = self.next(self._current_task)
             if nxt in Run.State:
                 self.execution.state = nxt
-                if self.execution.state not in [ Run.State.STOPPED,
-                                                 Run.State.TERMINATED ]:
+                if self.execution.state not in [
+                        Run.State.STOPPED,
+                        Run.State.TERMINATED
+                ]:
                     self._current_task += 1
-                    self.changed = True
-                    next_task = self.tasks[self._current_task]
-                    next_task.attach(self._controller)
-                    self.submit(resubmit=True)
             else:
                 # `nxt` must be a valid index into `self.tasks`
+                assert 0 <= nxt < len(self.tasks)
                 self._current_task = nxt
+            # submit next task, unless TERMINATED or STOPPED
+            if self.execution.state not in [
+                    Run.State.STOPPED,
+                    Run.State.TERMINATED
+            ]:
+                self.changed = True
+                next_task = self.tasks[self._current_task]
+                next_task.attach(self._controller)
                 self.submit(resubmit=True)
         else:
             self.execution.state = Run.State.RUNNING

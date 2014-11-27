@@ -33,15 +33,15 @@ from gc3libs import Application, Run, configure_logger, create_engine
 from gc3libs.workflow import SequentialTaskCollection
 
 loglevel = logging.ERROR
-configure_logger(loglevel, "test_isse_335")
+configure_logger(loglevel, "test_issue_335")
 
 class MySequentialCollection(SequentialTaskCollection):
+    def __init__(self, *args, **kwargs):
+        SequentialTaskCollection.__init__(self, *args, **kwargs)
+        self.next_called_n_times = 0
     def next(self, x):
-        """ensure that the next() is called only once per task."""
-        if not hasattr(self, 'next_called_n_times'):
-            self.next_called_n_times = 1
-        else:
-            self.next_called_n_times += 1
+        """count times next() is called"""
+        self.next_called_n_times += 1
         return SequentialTaskCollection.next(self, x)
 
 class test_issue_335(object):
@@ -72,33 +72,34 @@ resourcedir = %s
         fp.write(CONF_FILE % self.resourcedir)
         fp.close()
 
-    def test_issue(self):
-        """Test that SequentialTasksCollection goes in terminated state when all of its tasks are in TERMINATED state."""
-        self.ptasks = 5
-        task = MySequentialCollection(
-            [
+    def test_issue_335(self):
+        """Test that SequentialTasksCollection goes in TERMINATED state when all of its tasks are in TERMINATED state."""
+        num_tasks_in_seq = 5
+        seq = MySequentialCollection([
                 Application(
                     ['echo','test1'],
                     [],[],
-                    os.path.join(self.tmpdir, 'test.%d.d' % i)) for i in range(self.ptasks)
-                ]
-            )
+                    os.path.join(self.tmpdir, 'test.%d.d' % i))
+                for i in range(num_tasks_in_seq)
+            ])
         engine = create_engine(self.cfgfile, auto_enable_auth=True)
-        engine.add(task)
+        engine.add(seq)
         while True:
             engine.progress()
-
-            if len([t for t in task.tasks if t.execution.state == Run.State.TERMINATED]) == self.ptasks:
+            if (len([task for task in seq.tasks
+                    if task.execution.state == Run.State.TERMINATED])
+                == num_tasks_in_seq):
                 engine.progress()
-                assert_equal(task.execution.state, Run.State.TERMINATED)
+                # check that final SequentialCollection state is TERMINATED
+                assert_equal(seq.execution.state, Run.State.TERMINATED)
                 break
-        assert_equal(task.next_called_n_times, self.ptasks)
+        # check that next() has been called once per each task
+        assert_equal(seq.next_called_n_times, num_tasks_in_seq)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
 
-    
 if "__main__" == __name__:
     import nose
     nose.runmodule()
