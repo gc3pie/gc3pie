@@ -314,7 +314,7 @@ class Session(list):
         except Exception, err:
             gc3libs.log.warning(
                 "Ignoring '%s' error that occurred in removing file '%s': %s",
-                err.__class__.__name__, index_csv, str(err))
+                err.__class__.__name__, index_csv, err)
 
         gc3libs.log.info("Successfully converted old-style session"
                          " to new-style session directory '%s'", self.path)
@@ -358,8 +358,24 @@ class Session(list):
             try:
                 self.tasks[task_id] = self.store.load(task_id)
             except Exception, err:
-                gc3libs.log.warning(
-                    "Ignoring error from loading '%s': %s", task_id, str(err))
+                if gc3libs.error_ignored(
+                        # context:
+                        # - module
+                        'session',
+                        # - class
+                        'Session',
+                        # - method
+                        'load',
+                        # - actual error class
+                        ex.__class__.__name__,
+                        # - additional keywords
+                        'persistence',
+                ):
+                    gc3libs.log.warning(
+                        "Ignoring error from loading '%s': %s", task_id, err)
+                else:
+                    # propagate exception back to caller
+                    raise
 
     def destroy(self):
         """
