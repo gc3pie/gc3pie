@@ -1363,17 +1363,15 @@ in order to be selected.
         """
         matching_jobs = []
         for job in job_list:
-            # XXX: I'm unsure why the `try/except` blocks below are there: if
-            # there is any error --i.e., Application object does not have a
-            # `.inputs` or input URL does not have a `.path` attribute-- then
-            # the involved objects are corrupted and we should rather abort
-            # quickly than turn off checks and continue ...
+            # generic `Task` objects might not have `.inputs` or `.outputs`,
+            # but they will be freely mixed with `Application` objects in a
+            # session,xxxx so ignore errors here
             try:
                 # `Application.inputs` is a `UrlKeyDict`
                 inputs = [os.path.basename(url.path) for url in job.inputs]
             except AttributeError, err:
-                gc3libs.log.error(
-                    "Invalid input file data in task %s: %s."
+                gc3libs.log.debug(
+                    "No input file data in task %s: %s."
                     " I'm turning off input file checks for this task",
                     job, err)
                 inputs = []
@@ -1381,8 +1379,8 @@ in order to be selected.
                 # `Application.inputs` is a `UrlValueDict`, so keys are simple paths
                 outputs = [os.path.basename(file) for file in job.outputs]
             except AttributeError, err:
-                gc3libs.log.error(
-                    "Invalid output file data in task %s: %s."
+                gc3libs.log.debug(
+                    "No output file data in task %s: %s."
                     " I'm turning off output file checks for this task",
                     job, err)
                 outputs = []
