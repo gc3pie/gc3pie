@@ -1375,7 +1375,7 @@ class Engine(object):
                         # - method
                         'progress',
                         # - actual error class
-                        ex.__class__.__name__,
+                        err.__class__.__name__,
                         # - additional keywords
                         'state',
                         'update',
