@@ -67,10 +67,10 @@ link_particles <- function(particle.data, jar.particlelinker, traj_out.dir, link
 
 args <- commandArgs(trailingOnly = TRUE)
 
-if(length(args)!=3){
-  print("Usage: Rscript --vanilla ParticleLinker.R <data_file> <particlelinker_jar_folder> <result_folder>")
+if(length(args)!=4){
+  print("Usage: Rscript --vanilla ParticleLinker.R <data_file> <particlelinker_jar_folder> <result_folder> <memory allocation>")
 }
 
-cat("Using arguments: data_file: ",args[1]," particleliker_jar_file: ",args[2], " result folder: ",args[3],"\n")
+cat("Using arguments: data_file: ",args[1]," particleliker_jar_file: ",args[2], " result folder: ",args[3]," memory allocation: ",args[4]," \n")
 
-link_particles(args[1], args[2], args[3], linkrange = 3, disp = 15, start_vid = 1, memory = 1024)
+link_particles(args[1], args[2], args[3], linkrange = 3, disp = 15, start_vid = 1, memory = args[4])

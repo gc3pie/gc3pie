@@ -95,8 +95,14 @@ class GVideoTrackingApplication(Application):
         if 'jarfile' in extra_args:
             inputs[os.path.abspath(extra_args["jarfile"])] = "ParticleLinker.jar"
 
+        if 'requested_memory' in extra_args:
+            memory = extra_args['requested_memory'].amount(Memory.MB)
+        else:
+            gc3libs.log.warning("Requested memory not set. Using default 1MB")
+            memory = 1000 
+
         # Rscript --vanilla s3it_articleLinker.R trj_out/data00422.ijout.txt jar/ParticleLinker.jar result
-        arguments = "Rscript --vanilla ParticleLinker.R %s ParticleLinker.jar result" % os.path.basename(video_file)
+        arguments = "Rscript --vanilla ParticleLinker.R %s ParticleLinker.jar result %s" % (os.path.basename(video_file),memory)
 
         inputs[video_file] = os.path.basename(video_file)
 
