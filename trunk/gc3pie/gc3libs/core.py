@@ -1483,7 +1483,7 @@ class Engine(object):
                                                  posix.EX_IOERR)
                     task.execution.state = Run.State.TERMINATED
                     task.changed = True
-                except Exception, err:
+                except Exception, ex:
                     if gc3libs.error_ignored(
                             # context:
                             # - module
@@ -1493,13 +1493,13 @@ class Engine(object):
                             # - method
                             'progress',
                             # - actual error class
-                            err.__class__.__name__,
+                            ex.__class__.__name__,
                             # - additional keywords
                             'fetch_output',
                     ):
                         gc3libs.log.error(
                             "Ignored error in fetching output of task '%s': %s: %s",
-                            task, err.__class__.__name__, err)
+                            task, ex.__class__.__name__, ex)
                         gc3libs.log.debug(
                             "(Original traceback follows.)",
                             exc_info=True)

@@ -367,7 +367,7 @@ class Session(list):
                         # - method
                         'load',
                         # - actual error class
-                        ex.__class__.__name__,
+                        err.__class__.__name__,
                         # - additional keywords
                         'persistence',
                 ):
