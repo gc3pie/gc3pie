@@ -92,10 +92,6 @@ class GscrApplication(Application):
         # Check if binary to be executed is provided as part of input arguments
         if 'run_binary' in extra_args:
             inputs[os.path.abspath(extra_args["run_binary"])] = "estimate_DCM.m"
-            # arguments = "./estimate_DCM "
-            # executables.append("./estimate_DCM")
-        # else:
-        #     arguments = "estimate_DCM "
 
         arguments = "matlab -nodesktop -nosplash -nodisplay -r \"estimate_DCM " \
                     "%s %s results;quit;\"" % (os.path.basename(param_file),
@@ -106,8 +102,6 @@ class GscrApplication(Application):
 
         # Set output
         outputs['results/'] = 'results/'
-        # arguments += "%s %s" % (os.path.basename(param_file), 
-        #                         os.path.basename(data_file))
 
         Application.__init__(
             self,
@@ -205,7 +199,6 @@ class GscrScript(SessionBasedScript):
 
         for (param,data,dcm_index) in self.pair_param_data(self.params.params,self.params.data):
 
-            # XXX: need to find a more compact name
             jobname = "SCR-%d" % (dcm_index)
             
             extra_args = extra.copy()
@@ -249,13 +242,16 @@ class GscrScript(SessionBasedScript):
         data_files = dict()
 
         for data_file in os.listdir(data):
-            index = re.findall(r'\d+',os.path.basename(data_file))[0]
-            data_files[index] = os.path.join(data,data_file)
+            if os.path.isfile(os.path.join(data,data_file)) and \
+            re.findall(r'\d+',os.path.basename(data_file)) :
+                index = re.findall(r'\d+',os.path.basename(data_file))[0]
+                data_files[index] = os.path.join(data,data_file)
 
         processes = []
 
         for param_file in os.listdir(param):
-            if param_file.endswith('.mat'):
+            if param_file.endswith('.mat') and \
+               re.findall(r'\d+',os.path.basename(param_file)):
                 # Valid Matlab parameter file found
                 # DCM_s24_can_159e-4Hz_bi_depth2_newVBA.mat
                 index = re.findall(r'\d+',os.path.basename(param_file))[0]
@@ -269,7 +265,8 @@ class GscrScript(SessionBasedScript):
                                       data_files[index],
                                       int(index)))
                 else:
-                    gc3libs.log.error("No data file associated to ginve index %d", index)
+                    gc3libs.log.error("No data file associated to: %s index: %s" %
+                                      (param_file, index))
 
         return processes
     
