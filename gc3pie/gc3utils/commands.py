@@ -1213,8 +1213,8 @@ in order to be selected.
 
         # --state
         if self.params.states is not None:
-            self.allowed_states = set(i.upper() for i in self.params.state.split(','))
-            invalid = self.states.difference(Run.State)
+            self.allowed_states = set(i.upper() for i in self.params.states.split(','))
+            invalid = self.allowed_states.difference(Run.State)
             if invalid:
                 raise gc3libs.exceptions.InvalidUsage(
                     "Invalid state(s): %s" % str.join(", ", invalid))
