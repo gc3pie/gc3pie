@@ -1189,27 +1189,44 @@ in order to be selected.
             )
 
     def parse_args(self):
+        self.criteria = []
+
         # --successful, --unsuccessful
         if self.params.successful and self.params.unsuccessful:
             raise gc3libs.exceptions.InvalidUsage(
                 " Please use only one of the two options:"
                 " `--successful` or `--unsuccessful`.")
 
+        if self.params.successful:
+            self.criteria.append(
+                (self.params.successful, self.filter_successful, ()))
+
+        if self.params.unsuccessful:
+            self.criteria.append(
+                (self.params.unsuccessful, self.filter_unsuccessful, ()))
+
         # --jobname, --job-name
-        try:
-            self.jobname_re = re.compile(self.params.jobname, re.I)
-        except re.error, err:
-            raise gc3libs.exceptions.InvalidUsage(
-                "Regexp `%s` for option `--job-name` is invalid: %s"
-                % (self.params.jobname, err))
+        if self.params.jobname:
+            try:
+                self.jobname_re = re.compile(self.params.jobname, re.I)
+                self.criteria.append(
+                    (True, self.filter_by_jobname, (self.jobname_re,)))
+            except re.error, err:
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Regexp `%s` for option `--job-name` is invalid: %s"
+                    % (self.params.jobname, err))
 
         # --jobid, --job-id
-        try:
-            self.jobid_re = re.compile(self.params.jobid, re.I)
-        except re.error, err:
-            raise gc3libs.exceptions.InvalidUsage(
-                "Regexp `%s` for option `--job-id` is invalid: %s"
-                % (self.params.jobid, err))
+        if self.params.jobid:
+            try:
+                self.jobid_re = re.compile(self.params.jobid, re.I)
+                self.criteria.append(
+                    (True, self.filter_by_jobid, (self.jobid_re,)))
+
+            except re.error, err:
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Regexp `%s` for option `--job-id` is invalid: %s"
+                    % (self.params.jobid, err))
 
         # --state
         if self.params.states is not None:
@@ -1218,8 +1235,9 @@ in order to be selected.
             if invalid:
                 raise gc3libs.exceptions.InvalidUsage(
                     "Invalid state(s): %s" % str.join(", ", invalid))
-        else:
-            self.allowed_states = set(Run.State)
+
+            self.criteria.append(
+                (True, self.filter_by_state, (self.allowed_states,)))
 
         # --submitted-after, --submitted-before
         self.submission_start = None
@@ -1264,6 +1282,32 @@ in order to be selected.
             # then choose the end of (UNIX) time
             self.submission_end = float(sys.maxint)
 
+        self.criteria.append(
+            (True, self.filter_by_submission_date,
+             (self.submission_start, self.submission_end)))
+
+        # --input-file
+        if self.params.input_file:
+            self.criteria.append(
+                (self.params.input_file or self.params.output_file,
+                 self.filter_by_iofile,
+                 (self.params.input_file, self.params.output_file)))
+        
+        # --error-message
+        if self.params.error_message:
+            self.criteria.append(
+                (self.params.error_message,
+                 self.filter_by_errmsg, 
+                 (self.params.error_message,)))
+
+        # --output-message
+        if self.params.output_message:
+            self.criteria.append(
+                (self.params.output_message,
+                 self.filter_by_outmsg,
+                 (self.params.output_message,)))
+
+
     def main(self):
         try:
             self.session = Session(self.params.session, create=False)
@@ -1277,24 +1321,7 @@ in order to be selected.
 
         # pipeline of checks to perform; more expensive checks should come last
         # so they look at less jobs (do I long for LISP? Oh yes I do...)
-        criteria = [
-            # condition  # check function          # additional arguments
-            (True, self.filter_by_jobname,         (self.jobname_re,)),
-            (True, self.filter_by_jobid,           (self.jobid_re,)),
-            (True, self.filter_by_state,           (self.allowed_states,)),
-            (self.params.successful,
-                   self.filter_successful,         ()),
-            (self.params.unsuccessful,
-                   self.filter_unsuccessful,       ()),
-            (True, self.filter_by_submission_date, (self.submission_start, self.submission_end)),
-            (self.params.input_file or self.params.output_file,
-                   self.filter_by_iofile,          (self.params.input_file, self.params.output_file)),
-            (self.params.error_message,
-                   self.filter_by_errmsg,          (self.params.error_message,)),
-            (self.params.output_message,
-                   self.filter_by_outmsg,          (self.params.output_message,)),
-        ]
-        for cond, fn, args in criteria:
+        for cond, fn, args in self.criteria:
             if cond:
                 current_jobs = fn(current_jobs, *args)
                 if not current_jobs:
