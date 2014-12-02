@@ -459,7 +459,7 @@ class GridAuth(object):
         if arc_flavour == Default.ARC0_LRMS:
             try:
                 cert = arclib.Certificate(arclib.PROXY)
-            except Exception, err:
+            except Exception, ex:
                 if gc3libs.error_ignored(
                         # context:
                         # - module
@@ -476,7 +476,7 @@ class GridAuth(object):
                 ):
                     gc3libs.log.warning(
                         "Ignoring error in checking VOMS certificate: %s",
-                        err)
+                        ex)
                 else:
                     # propagate exception back to caller
                     raise
