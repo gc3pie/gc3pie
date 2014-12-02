@@ -1457,10 +1457,12 @@ in order to be selected.
             if submission_time is None:
                 # Jobs run by the ShellCmd backend transition directly to
                 # RUNNING; use that timestamp if available.
-                submission_time = job.execution.timestamp.get(Run.State.RUNNING, None)
+                #
+                # Since jobs in NEW state will not have any timestamp
+                # at all, set the default to 0.0.
+                submission_time = job.execution.timestamp.get(Run.State.RUNNING, 0.0)
 
-            if (submission_time is not None
-                and submission_time <= end
+            if (submission_time <= end
                 and submission_time >= start):
                 matching_jobs.append(job)
         return matching_jobs
