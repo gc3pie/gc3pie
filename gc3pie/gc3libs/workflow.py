@@ -390,7 +390,7 @@ class SequentialTaskCollection(TaskCollection):
             self.execution.state = Run.State.RUNNING
         # 5. this shouldn't happen!
         else:
-            raise InternalError(
+            raise gc3libs.exceptions.InternalError(
                 "Unhandled task state `%s`"
                 " in SequentialTaskCollection.update_state()"
                 % task.execution.state
