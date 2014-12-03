@@ -237,14 +237,20 @@ class GscrScript(SessionBasedScript):
         for each .m extract index
         find corresponding data file in 'data'
         return triple: [param_file, data_file, index]
+        Agreed filename structures and string pattern:
+        param: DCM_s[index]_can_159e-4Hz_bi_depth2_newVBA.mat
+        data: tscr_HRA_1_[index].mat
+        pattern: match the first number occourrance in param file with the
+        last number occurrance in data file.
         """
         # Generate index of data files
+        # Data file example: tscr_HRA_1_12.mat
         data_files = dict()
 
         for data_file in os.listdir(data):
             if os.path.isfile(os.path.join(data,data_file)) and \
             re.findall(r'\d+',os.path.basename(data_file)) :
-                index = re.findall(r'\d+',os.path.basename(data_file))[0]
+                index = re.findall(r'\d+',os.path.basename(data_file))[-1]
                 data_files[index] = os.path.join(data,data_file)
 
         processes = []
