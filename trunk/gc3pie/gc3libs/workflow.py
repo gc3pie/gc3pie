@@ -384,6 +384,8 @@ class SequentialTaskCollection(TaskCollection):
             self.execution.state = Run.State.STOPPED
         # 4. if task is running or terminating, keep on running
         elif task.execution.state in [
+                Run.State.NEW,
+                Run.State.SUBMITTED,
                 Run.State.RUNNING,
                 Run.State.TERMINATING,
         ]:
