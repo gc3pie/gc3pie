@@ -96,7 +96,7 @@ class GVideoTrackingApplication(Application):
             inputs[os.path.abspath(extra_args["jarfile"])] = "ParticleLinker.jar"
 
         if 'requested_memory' in extra_args:
-            memory = extra_args['requested_memory'].amount(Memory.MB)
+            memory = int(extra_args['requested_memory'].amount(Memory.MB))
         else:
             gc3libs.log.warning("Requested memory not set. Using default 1MB")
             memory = 1000 
