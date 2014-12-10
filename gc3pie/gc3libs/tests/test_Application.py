@@ -25,7 +25,7 @@ __version__ = '$Revision$'
 from nose.tools import raises
 from nose.plugins.skip import SkipTest
 
-from gc3libs import Application, Run
+from gc3libs import Application
 import gc3libs.exceptions
 
 
@@ -75,7 +75,7 @@ def test_wrong_type_arguments():
 
     @raises(gc3libs.exceptions.InvalidArgument, ValueError)
     def _create_app(tmp):
-        app = Application(**_tmpma)
+        Application(**_tmpma)
         raise SkipTest("FIXME invalid arguments")
 
     for k, v in {
@@ -98,7 +98,7 @@ def test_valid_invocation():
           'outputs': ['o1', 'o2'],
           'output_dir': '/tmp',
           }
-    app = Application(**ma)
+    Application(**ma)
 
 
 @raises(gc3libs.exceptions.InvalidValue)

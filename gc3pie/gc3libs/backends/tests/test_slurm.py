@@ -290,8 +290,8 @@ username=NONEXISTENT
         # Job done. qstat doesn't find it, tracejob should.
         self.transport.expected_answer['squeue'] = squeue_recently_completed()
         # XXX: alternatively:
-        #self.transport.expected_answer['squeue'] = squeue_notfound()
-        #self.transport.expected_answer['sacct'] = sacct_done()
+        # self.transport.expected_answer['squeue'] = squeue_notfound()
+        # self.transport.expected_answer['sacct'] = sacct_done()
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.TERMINATING)
 
@@ -301,7 +301,7 @@ username=NONEXISTENT
         self.transport.expected_answer['sbatch'] = correct_submit()
         self.core.submit(app)
         self.transport.expected_answer['squeue'] = squeue_notfound()
-        #self.transport.expected_answer['sacct'] = sacct_done_parallel()
+        # self.transport.expected_answer['sacct'] = sacct_done_parallel()
         self.transport.expected_answer['env'] = sacct_done_parallel()
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.TERMINATING)
@@ -344,7 +344,7 @@ username=NONEXISTENT
         self.transport.expected_answer['sbatch'] = correct_submit()
         self.core.submit(app)
         self.transport.expected_answer['squeue'] = squeue_notfound()
-        #self.transport.expected_answer['sacct'] = sacct_done_bad_timestamps()
+        # self.transport.expected_answer['sacct'] = sacct_done_bad_timestamps()
         self.transport.expected_answer['env'] = sacct_done_bad_timestamps()
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.TERMINATING)

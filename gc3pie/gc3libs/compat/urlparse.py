@@ -12,11 +12,11 @@ __all__ = ["urlparse", "urlunparse", "urljoin", "urldefrag",
 import sys as _sys
 if _sys.version >= (2, 5):
     # urlparse objects have attribute access since v2.5
-    from .urlparse import *
+    from .urlparse import *  # noqa
 
 else:
     # use the source from Python 2.7 (SVN r87331):
-    # http://svn.python.org/view/python/branches/release27-maint/Lib/urlparse.py?view=markup
+    # http://svn.python.org/view/python/branches/release27-maint/Lib/urlparse.py?view=markup  # noqa
 
     # A classification of schemes ('' means apply by default)
     uses_relative = ['ftp', 'http', 'gopher', 'nntp', 'imap',
@@ -214,11 +214,15 @@ else:
         return urlunsplit((scheme, netloc, url, query, fragment))
 
     def urlunsplit(data):
-        """Combine the elements of a tuple as returned by urlsplit() into a
-        complete URL as a string. The data argument can be any five-item iterable.
-        This may result in a slightly different, but equivalent URL, if the URL that
-        was parsed originally had unnecessary delimiters (for example, a ? with an
-        empty query; the RFC states that these are equivalent)."""
+        """
+        Combine the elements of a tuple as returned by urlsplit() into a
+        complete URL as a string. The data argument can be any
+        five-item iterable.  This may result in a slightly different,
+        but equivalent URL, if the URL that was parsed originally had
+        unnecessary delimiters (for example, a ? with an empty query;
+        the RFC states that these are equivalent).
+
+        """
         scheme, netloc, url, query, fragment = data
         if netloc or (scheme and scheme in uses_netloc and url[:2] != '//'):
             if url and url[:1] != '/':
@@ -298,11 +302,11 @@ else:
         else:
             return url, ''
 
-    # unquote method for parse_qs and parse_qsl
-    # Cannot use directly from urllib as it would create a circular reference
-    # because urllib uses urlparse methods (urljoin).  If you update this function,
-    # update it also in urllib.  This code duplication does not existin in
-    # Python3.
+    # unquote method for parse_qs and parse_qsl Cannot use directly
+    # from urllib as it would create a circular reference because
+    # urllib uses urlparse methods (urljoin).  If you update this
+    # function, update it also in urllib.  This code duplication does
+    # not existin in Python3.
 
     _hexdig = '0123456789ABCDEFabcdef'
     _hextochr = dict((a + b, chr(int(a + b, 16)))

@@ -22,12 +22,10 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
-from nose.tools import raises
-from nose.plugins.skip import SkipTest
+from nose.tools import raises, assert_false
 
-from gc3libs import Application, Run, Task
+from gc3libs import Application
 from gc3libs.workflow import RetryableTask
-import gc3libs.exceptions
 
 
 class TestApplication(Application):
@@ -58,7 +56,7 @@ def test_persisted_change():
     task.update_state()
 
     # We expect task.changed to be true
-    assert(task.changed == False)
+    assert_false(task.changed)
 
 if "__main__" == __name__:
     import nose

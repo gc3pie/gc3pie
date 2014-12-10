@@ -192,7 +192,7 @@ class TestVMPool(object):
         self.pool2.update()
         assert 'c' in self.pool2
         # cannot test the following without a connection:
-        #assert_equal(self.pool2['c'], vm3)
+        # assert_equal(self.pool2['c'], vm3)
 
     def test_update_remove(self):
         # clone pool2

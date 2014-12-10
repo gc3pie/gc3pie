@@ -24,14 +24,12 @@ __version__ = '$Revision$'
 
 # stdlib imports
 import os
-import pickle
 import shutil
 import tempfile
 
 # 3rd party imports
 from nose.plugins.skip import SkipTest
 from nose.tools import raises, assert_equal
-from nose import with_setup
 
 try:
     import sqlalchemy
@@ -152,11 +150,11 @@ class MyStagedTaskCollection(gc3libs.workflow.StagedTaskCollection):
         return Task()
 
 
-def _run_generic_tests(store):
-    _generic_persistence_test(store)
-    _generic_nested_persistence_test(store)
-    _generic_persist_classes_with_slots(store)
-    _save_different_objects_separated(store)
+# def _run_generic_tests(store):
+#     _generic_persistence_test(store)
+#     _generic_nested_persistence_test(store)
+#     _generic_persist_classes_with_slots(store)
+#     _save_different_objects_separated(store)
 
 
 class GenericStoreChecks(object):
@@ -307,7 +305,8 @@ class GenericStoreChecks(object):
             MyChunkedParameterSweep(1, 20, 1, 5),
             gc3libs.workflow.RetryableTask(Task()),
         ]:
-            check_task.description = "Test that Task-like `%s` class is stored correctly" % obj.__class__.__name__
+            check_task.description = "Test that Task-like `%s` class is stored" \
+                                     " correctly" % obj.__class__.__name__
             yield check_task, obj
 
 
@@ -525,14 +524,13 @@ class ExtraSqlChecks(object):
         # if this query does not error out, the column is defined
         q = sql.select([sqlfunc.count(self.store.t_store.c.extra)]).distinct()
         results = self.conn.execute(q)
-        # self.c.execute("select distinct count(extra) from %s" % self.store.table_name)
         rows = results.fetchall()
         assert_equal(len(rows), 1)
 
         # create and save an object
         obj = SimplePersistableObject('an object')
         obj.foo = SimplePersistableObject('an attribute')
-        id_ = db.save(obj)
+        id_ = self.store.save(obj)
 
         # check that the value has been saved
         q = sql.select([self.store.t_store.c.extra]).where(
@@ -554,10 +552,14 @@ class TestSqliteStore(SqlStoreChecks):
         # skip SQLite tests if no SQLite module present (Py 2.4)
         try:
             import sqlite3
+            # pep8 complains if an imported module is not used
+            assert sqlite3 is not None
         except ImportError:
             # SQLAlchemy uses `pysqlite2` on Py 2.4
             try:
                 import pysqlite2
+                # pep8 complains if an imported module is not used
+                assert pysqlite2 is not None
             except ImportError:
                 raise SkipTest("No SQLite module installed.")
 
@@ -590,10 +592,14 @@ class TestSqliteStoreWithAlternateTable(TestSqliteStore):
         # skip SQLite tests if no SQLite module present (Py 2.4)
         try:
             import sqlite3
+            # pep8 complains if an imported module is not used
+            assert sqlite3 is not None
         except ImportError:
             # SQLAlchemy uses `pysqlite2` on Py 2.4
             try:
                 import pysqlite2
+                # pep8 complains if an imported module is not used
+                assert pysqlite2 is not None
             except ImportError:
                 raise SkipTest("No SQLite module installed.")
 
@@ -616,6 +622,8 @@ class TestMysqlStore(SqlStoreChecks):
         # we skip MySQL tests if no MySQLdb module is present
         try:
             import MySQLdb
+            # pep8 complains if an imported module is not used
+            assert MySQLdb is not None
         except:
             raise SkipTest("MySQLdb module not installed.")
 

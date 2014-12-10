@@ -163,7 +163,7 @@ def qdel_failed_acl(jobid=123):
     out = ""
     return (159, out, err)
 
-#import gc3libs.Run.State as State
+# import gc3libs.Run.State as State
 State = gc3libs.Run.State
 
 

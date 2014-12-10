@@ -28,7 +28,6 @@ import shutil
 import tempfile
 
 from nose.tools import assert_true, assert_false, assert_equal, raises
-from nose.tools import set_trace
 from nose.plugins.skip import SkipTest
 
 import sqlalchemy
@@ -307,10 +306,13 @@ class TestSqliteSession(StubForSqlSession):
         # skip SQLite tests if no SQLite module present (Py 2.4)
         try:
             import sqlite3
+            assert sqlite3 is not None  # pep8 complains if we don't use it :)
         except ImportError:
             # SQLAlchemy uses `pysqlite2` on Py 2.4
             try:
                 import pysqlite2
+                # pep8 complains if we don't use an ipmorted module
+                assert pysqlite2 is not None
             except ImportError:
                 raise SkipTest("No SQLite module installed.")
 
@@ -333,6 +335,7 @@ class TestMysqlSession(StubForSqlSession):
         # we skip MySQL tests if no MySQLdb module is present
         try:
             import MySQLdb
+            assert MySQLdb is not None  # pep8 complains if we don't use it :)
         except:
             raise SkipTest("MySQLdb module not installed.")
 
