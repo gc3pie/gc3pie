@@ -389,6 +389,7 @@ class SequentialTaskCollection(TaskCollection):
                 Run.State.SUBMITTED,
                 Run.State.RUNNING,
                 Run.State.TERMINATING,
+                Run.State.UNKNOWN,
         ]:
             self.execution.state = Run.State.RUNNING
         # 5. this shouldn't happen!
