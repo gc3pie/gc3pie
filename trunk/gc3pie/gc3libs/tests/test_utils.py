@@ -22,15 +22,8 @@ Test for classes and functions in the `utils` module.
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-# stdlib imports
-import os
-import sys
-import unittest
-
 # 3rd party imports
-from nose.tools import assert_true, assert_false, assert_equal, raises
-from nose.tools import set_trace
-from nose.plugins.skip import SkipTest
+from nose.tools import assert_equal, raises
 
 # GC3Pie imports
 import gc3libs.exceptions
@@ -60,7 +53,9 @@ class TestYieldAtNext(object):
     def test_YieldAtNext_throw(self):
         def generator_yield_throw():
             try:
-                val = (yield 2)
+                # XXX: why do we need val = yield syntax here?
+                # val = (yield 2)
+                yield 2
             except RuntimeError:
                 yield 'exception caught'
         g = gc3libs.utils.YieldAtNext(generator_yield_throw())

@@ -48,12 +48,9 @@ Exceptions:
             NotMyLock - File was locked but not by the current thread/process
 """
 
-import sys
 import socket
 import os
 import threading
-import time
-import urllib
 import warnings
 
 # Work with PEP8 and non-PEP8 versions of threading module.

@@ -13,7 +13,6 @@
     """
 
 import os
-import sys
 import errno
 import time
 
@@ -42,8 +41,8 @@ class PIDLockFile(LockBase):
         # pid lockfiles don't support threaded operation, so always force
         # False as the threaded arg.
         LockBase.__init__(self, path, False)
-        dirname = os.path.dirname(self.lock_file)
-        basename = os.path.split(self.path)[-1]
+        # dirname = os.path.dirname(self.lock_file)
+        # basename = os.path.split(self.path)[-1]
         self.unique_name = self.path
 
     def read_pid(self):
@@ -171,7 +170,7 @@ def write_pid_to_pidfile(pidfile_path):
     #   example, if crond was process number 25, /var/run/crond.pid
     #   would contain three characters: two, five, and newline.
 
-    pid = os.getpid()
+    # pid = os.getpid()
     line = "%(pid)d\n" % vars()
     pidfile.write(line)
     pidfile.close()

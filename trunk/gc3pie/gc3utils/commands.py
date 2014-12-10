@@ -1797,7 +1797,7 @@ To get detailed info on a specific command, run:
             vms = res._vmpool.get_all_vms()
             # draw title to separate output from different resources
             title = "VMs running on Cloud resource `%s` of type" \
-            " %s" % (res.name, res.type)
+                    " %s" % (res.name, res.type)
             separator = ('=' * len(title))
 
             # Acquire the lock before printing

@@ -21,7 +21,6 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-import sys
 import logging
 import os
 import shutil
@@ -78,7 +77,8 @@ resourcedir = %s
         fp.close()
 
     def test_issue_335(self):
-        """Test that SequentialTasksCollection goes in TERMINATED state when all of its tasks are in TERMINATED state."""
+        """Test that SequentialTasksCollection goes in TERMINATED state when
+        all of its tasks are in TERMINATED state."""
         num_tasks_in_seq = 5
         seq = MySequentialCollection([
             Application(

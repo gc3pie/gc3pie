@@ -27,7 +27,7 @@ import tempfile
 import re
 
 # nose
-from nose.tools import istest, nottest, raises, assert_equal
+from nose.tools import raises, assert_equal
 
 try:
     from nose.tools import assert_is_instance
@@ -139,7 +139,7 @@ def import_invalid_conf(confstr, **extra_args):
 
 @raises(gc3libs.exceptions.ConfigurationError)
 def read_invalid_conf(confstr, **extra_args):
-    """`merge_file` raises a `ConfigurationError` exception on invalid input."""
+    """`merge_file` raises a `ConfigurationError` exception on invalid input"""
     tmpfile = _setup_config_file(confstr)
     cfg = gc3libs.config.Configuration()
     try:
@@ -239,14 +239,15 @@ seq = 3
 
 @raises(gc3libs.exceptions.NoConfigurationFile)
 def test_no_valid_config1():
-    """Test that `Configuration.load` raises an exception if called with no arguments"""
+    """`Configuration.load` raises an exception if called with no arguments"""
     cfg = gc3libs.config.Configuration()
     cfg.load()
 
 
 @raises(gc3libs.exceptions.NoConfigurationFile)
 def test_no_valid_config2():
-    """Test that `Configuration.load` raises an exception if none of the arguments is a valid config file"""
+    """Test that `Configuration.load` raises an exception if none of the
+    arguments is a valid config file"""
     f1 = _setup_config_file("INVALID INPUT")
     f2 = _setup_config_file("INVALID INPUT")
     cfg = gc3libs.config.Configuration()
@@ -290,8 +291,11 @@ architecture = ${arch}
     for arch, result in test_cases:
         # display complete title for each generated test case
         _check_parse_arch.description = (
-            test_valid_architectures.__doc__ + (': %s -> %s' % (str(arch), str(result))))
-        yield (_check_parse_arch, config_template.substitute(arch=arch), result)
+            test_valid_architectures.__doc__ +
+            (': %s -> %s' % (str(arch), str(result))))
+        yield (_check_parse_arch,
+               config_template.substitute(arch=arch),
+               result)
 
 
 def _check_parse_arch(confstr, result):
@@ -302,7 +306,9 @@ def _check_parse_arch(confstr, result):
 
 
 def test_invalid_architectures():
-    """Test that invalid architecture strings are rejected with `ConfigurationError`"""
+    """Invalid arch. strings should be rejected with `ConfigurationError`
+
+    """
     test_cases = [
         '96bits', '31-BITS', 'amd65', 'xyzzy'
     ]
@@ -314,8 +320,9 @@ architecture = ${arch}
         # display complete title for each generated test case
         _check_parse_arch.description = (
             test_invalid_architectures.__doc__ + (': %s' % arch))
-        yield (raises(gc3libs.exceptions.ConfigurationError)(_check_parse_arch),
-               config_template.substitute(arch=arch), 'should not be used')
+        yield (raises(
+            gc3libs.exceptions.ConfigurationError)(_check_parse_arch),
+            config_template.substitute(arch=arch), 'should not be used')
 
 
 def test_mandatory_configuration_options():
@@ -342,7 +349,8 @@ architecture = x86_64
         bad_conf = str.join('\n', lines[:omit] + lines[omit + 1:])
         # display meaningful test name with `nosetests -v`
         _check_bad_conf.description = (
-            test_mandatory_configuration_options.__doc__ + (" (omit '%s')" % lines[omit]))
+            test_mandatory_configuration_options.__doc__ +
+            (" (omit '%s')" % lines[omit]))
         yield _check_bad_conf, bad_conf
 
 
@@ -429,7 +437,8 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
 
         self.cfg = gc3libs.config.Configuration(cfgfname)
         # self.resources = self.cfg.make_resources()
-        # assert_equal(resources['test']['prologue'], 'scripts/shellcmd_pre.sh')
+        # assert_equal(resources['test']['prologue'],
+        #              'scripts/shellcmd_pre.sh')
 
     def tearDown(self):
         for dirname in self.files_to_remove:
@@ -448,7 +457,8 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
                              v)
 
     def test_pbs_prologue_and_epilogue_contents(self):
-        """Test that prologue and epilogue scripts are correctly inserted into the submission script"""
+        """Prologue and epilogue scripts are inserted in the submission script
+        """
         # Ugly hack. We have to list the job dirs to check which one
         # is the new one.
         jobdir = os.path.expanduser('~/.gc3pie_jobs')
@@ -460,7 +470,7 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
         self.core.select_resource('testpbs')
         try:
             self.core.submit(app)
-        except Exception as ex:
+        except Exception:
             # it is normal to have an error since we don't probably
             # run a pbs server in this machine.
             pass
@@ -480,7 +490,9 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
         scriptfname = os.path.join(newjobdir, (os.listdir(newjobdir)[0]))
         scriptfile = open(scriptfname)
         assert re.match(
-            "#!/bin/sh.*# prologue file `.*` BEGIN.*echo prologue.*# prologue file END.*/bin/true.*# epilogue file `.*` BEGIN.*echo epilogue.*# epilogue file END",
+            "#!/bin/sh.*# prologue file `.*` BEGIN.*echo prologue.*# prologue"
+            " file END.*/bin/true.*# epilogue file `.*` BEGIN.*echo epilogue"
+            ".*# epilogue file END",
             scriptfile.read(),
             re.DOTALL | re.M)
         scriptfile.close()
