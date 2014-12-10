@@ -23,23 +23,22 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 # stdlib imports
-import os
 import shutil
-import sys
 import tempfile
 
 # 3rd party imports
 from nose.tools import assert_equal, assert_false, assert_true, raises
 
 # local imports
-from gc3libs.backends.ec2 import VMPool, EC2Lrms
+from gc3libs.backends.ec2 import VMPool
 import gc3libs.exceptions
 
 
 class _MockVM(object):
+
     def __init__(self, id, **extra):
         self.id = id
-        for k,v in extra.iteritems():
+        for k, v in extra.iteritems():
             setattr(self, k, v)
 
 
@@ -97,7 +96,7 @@ class TestVMPool(object):
             # test add
             pool.add_vm(vm)
             assert_true(VM_ID in pool)
-            assert_equal(len(pool), L+1)
+            assert_equal(len(pool), L + 1)
             # test remove
             pool.remove_vm(VM_ID)
             assert_false(VM_ID in pool)
@@ -111,7 +110,7 @@ class TestVMPool(object):
             # test add
             pool.add_vm(vm)
             assert_true(VM_ID in pool)
-            assert_equal(len(pool), L+1)
+            assert_equal(len(pool), L + 1)
             # test delete
             del pool[VM_ID]
             assert_false(VM_ID in pool)
@@ -168,22 +167,22 @@ class TestVMPool(object):
         self.pool0.save()
 
         pool = VMPool(self.pool0.path, None)
-        assert_equal(pool.name,      self.pool0.name)
-        assert_equal(pool.conn,      None)
+        assert_equal(pool.name, self.pool0.name)
+        assert_equal(pool.conn, None)
         assert_equal(pool._vm_cache, {})
-        assert_equal(pool._vm_ids,   self.pool0._vm_ids)
+        assert_equal(pool._vm_ids, self.pool0._vm_ids)
 
     def test_save_then_load_nonempty_vmpool(self):
         self.pool2.save()
 
         pool = VMPool(self.pool2.path, None)
-        assert_equal(pool.name,      self.pool2.name)
+        assert_equal(pool.name, self.pool2.name)
         # the list of VM ids should have been persisted ...
-        assert_equal(pool._vm_ids,   self.pool2._vm_ids)
+        assert_equal(pool._vm_ids, self.pool2._vm_ids)
         # ... but the VM cache is now empty
         assert_equal(pool._vm_cache, {})
         # ...and so is the connection
-        assert_equal(pool.conn,      None)
+        assert_equal(pool.conn, None)
 
     def test_update(self):
         # clone pool2

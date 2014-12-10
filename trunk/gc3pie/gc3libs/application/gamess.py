@@ -33,6 +33,7 @@ import re
 
 
 class GamessApplication(gc3libs.Application):
+
     """
     Specialized `Application` object to submit computational jobs running GAMESS-US.
 
@@ -74,11 +75,12 @@ class GamessApplication(gc3libs.Application):
             input_file_name,
             str(extra_args.get('verno') or ""),
             str(extra_args.get('requested_cores') or "")
-            ]
+        ]
         if 'extbas' in extra_args:
-           other_input_files += extra_args['extbas']
-           arguments.extend(['--extbas', os.path.basename(extra_args['extbas'])])
-        #set job name
+            other_input_files += extra_args['extbas']
+            arguments.extend(
+                ['--extbas', os.path.basename(extra_args['extbas'])])
+        # set job name
         extra_args['jobname'] = input_file_name_sans
         # issue WARNING about memory handling
         if 'requested_memory' in extra_args:
@@ -90,16 +92,19 @@ class GamessApplication(gc3libs.Application):
                 extra_args['requested_memory'])
         # build generic `Application` obj
         gc3libs.Application.__init__(self,
-                                     arguments = arguments,
-                                     inputs = [ inp_file_path ] + list(other_input_files),
-                                     outputs = [ output_file_name ],
-                                     join = True,
+                                     arguments=arguments,
+                                     inputs=[inp_file_path] +
+                                     list(other_input_files),
+                                     outputs=[output_file_name],
+                                     join=True,
                                      # needed by `ggamess`
-                                     inp_file_path = inp_file_path,
+                                     inp_file_path=inp_file_path,
                                      **extra_args)
 
-    _termination_re = re.compile(r'EXECUTION \s+ OF \s+ GAMESS \s+ TERMINATED \s+-?(?P<gamess_outcome>NORMALLY|ABNORMALLY)-?'
-                                 r'|ddikick.x: .+ (exited|quit) \s+ (?P<ddikick_outcome>gracefully|unexpectedly)', re.X)
+    _termination_re = re.compile(
+        r'EXECUTION \s+ OF \s+ GAMESS \s+ TERMINATED \s+-?(?P<gamess_outcome>NORMALLY|ABNORMALLY)-?'
+        r'|ddikick.x: .+ (exited|quit) \s+ (?P<ddikick_outcome>gracefully|unexpectedly)',
+        re.X)
 
     def terminated(self):
         """
@@ -130,7 +135,10 @@ class GamessApplication(gc3libs.Application):
         else:
             output_filename = os.path.join(
                 output_dir,
-                os.path.splitext(os.path.basename(self.inp_file_path))[0] + '.out')
+                os.path.splitext(
+                    os.path.basename(
+                        self.inp_file_path))[0] +
+                '.out')
         if not os.path.exists(output_filename):
             # no output file, override exit code if it indicates success
             if self.execution.exitcode == os.EX_OK:
@@ -138,7 +146,7 @@ class GamessApplication(gc3libs.Application):
         else:
             # output file exists, start with pessimistic default and
             # override if we find a "success" keyword
-            self.execution.exitcode = os.EX_SOFTWARE # internal software error
+            self.execution.exitcode = os.EX_SOFTWARE  # internal software error
             gc3libs.log.debug("Trying to read GAMESS termination status"
                               " off output file '%s' ..." % output_filename)
             output_file = open(output_filename, 'r')
@@ -161,7 +169,7 @@ class GamessApplication(gc3libs.Application):
                         # setting the exitcode to EX_OK even if GAMESS didn't run at
                         # all, but `ddikick` does not flag it as an error. (Not sure
                         # this can actually happen, but better err on the safe side.)
-                        #elif match.group('ddikick_outcome') == 'gracefully':
+                        # elif match.group('ddikick_outcome') == 'gracefully':
                         #    gc3libs.log.info('Setting exit code to 0')
                         #    self.execution.exitcode = 0
                         break
@@ -173,9 +181,9 @@ class GamessApplication(gc3libs.Application):
             output_file.close()
 
 
-
 class GamessAppPotApplication(GamessApplication,
                               gc3libs.application.apppot.AppPotApplication):
+
     """
     Specialized `AppPotApplication` object to submit computational
     jobs running GAMESS-US.
@@ -209,7 +217,7 @@ class GamessAppPotApplication(GamessApplication,
         extra_args.setdefault('application_tag', "gamess")
         extra_args.setdefault('tags', list())
         extra_args['tags'].insert(0, "APPS/CHEM/GAMESS-APPPOT-0.11.11.08")
-        if extra_args.has_key('extbas') and extra_args['extbas'] is not None:
+        if 'extbas' in extra_args and extra_args['extbas'] is not None:
             other_input_files += extra_args['extbas']
             arguments.extend(['--extbas', os.path.basename(extbas)])
         # set job name
@@ -222,21 +230,21 @@ class GamessAppPotApplication(GamessApplication,
             # we cannot use the empty string instead because `apppot-start`
             # cannot detect it from the kernel command line, so we have to
             # hard-code default values here...
-            arguments = [
+            arguments=[
                 "localgms",
                 input_file_name,
                 str(extra_args.get('verno') or "00"),
                 str(extra_args.get('requested_cores') or "")
-                ],
-            inputs = [ inp_file_path ] + list(other_input_files),
-            outputs = [ output_file_name ],
-            join = True,
+            ],
+            inputs=[inp_file_path] + list(other_input_files),
+            outputs=[output_file_name],
+            join=True,
             # needed by `ggamess`
-            inp_file_path = inp_file_path,
+            inp_file_path=inp_file_path,
             **extra_args)
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

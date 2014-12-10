@@ -44,8 +44,8 @@ import gc3libs
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 
 
-
 class SequentialDriver(object):
+
     """Drives an optimization using `opt_algorithm` on the local machine.
 
     The user-supplied :func:`target_fun` computes target values for the
@@ -54,21 +54,28 @@ class SequentialDriver(object):
     :param opt_algorithm: Evolutionary algorithm instance that conforms to
                           :class:`optimizer.EvolutionaryAlgorithm
                           <gc3libs.optimizer.EvolutionaryAlgorithm>`.
-                         
+
     :param target_fn: Function to evaluate a population and return the corresponding values.
     :param path_to_stage_dir: Directory in which to perform the optimization.
     :param cur_pop_file: Filename under which the population is stored in the
                          current iteration dir. The population is discarded
                          if no file is specified.
     :param logger: Configured logger to use.
-    
+
     :param str fmt: ``%``-format string to use (e.g., ``%12.8f``) to print
                      values at each step of the algorithm. If `None` (default), this verbose
                      report is not generated, as it might be time-consuming for large population
                      sizes.
     """
 
-    def __init__(self, opt_algorithm, target_fn, path_to_stage_dir = os.getcwd(), cur_pop_file=None, logger=None, fmt=None):
+    def __init__(
+            self,
+            opt_algorithm,
+            target_fn,
+            path_to_stage_dir=os.getcwd(),
+            cur_pop_file=None,
+            logger=None,
+            fmt=None):
         self.path_to_stage_dir = path_to_stage_dir
         self.opt_algorithm = opt_algorithm
         self.target_fn = target_fn
@@ -79,7 +86,6 @@ class SequentialDriver(object):
             self.logger = logging.getLogger('gc3.gc3libs')
         self.fmt = fmt
 
-
     def de_opt(self):
         '''
         Drives optimization until convergence or `itermax` is reached.
@@ -89,12 +95,17 @@ class SequentialDriver(object):
         has_converged = False
         while not has_converged and self.opt_algorithm.cur_iter <= self.opt_algorithm.itermax:
             # Save current population
-            self.iteration_folder = os.path.join(self.path_to_stage_dir, 'iter_' + str(self.opt_algorithm.cur_iter))
+            self.iteration_folder = os.path.join(
+                self.path_to_stage_dir, 'iter_' + str(self.opt_algorithm.cur_iter))
             if self.cur_pop_file:
                 if not os.path.isdir(self.iteration_folder):
                     os.mkdir(self.iteration_folder)
-                np.savetxt(os.path.join(self.iteration_folder, self.cur_pop_file),
-                           new_pop, delimiter = ' ')
+                np.savetxt(
+                    os.path.join(
+                        self.iteration_folder,
+                        self.cur_pop_file),
+                    new_pop,
+                    delimiter=' ')
             # EVALUATE TARGET #
             new_vals = self.target_fn(new_pop)
             if self.fmt:
@@ -103,13 +114,18 @@ class SequentialDriver(object):
                     self.opt_algorithm.cur_iter)
                 tb = PrettyTable()
                 for i in range(new_pop.shape[1]):
-                    tb.add_column(("X_%d" % i), [(self.fmt % x) for x in new_pop[:,i]])
+                    tb.add_column(
+                        ("X_%d" %
+                         i), [
+                            (self.fmt %
+                             x) for x in new_pop[
+                                :, i]])
                 tb.add_column("Y", [(self.fmt % y) for y in new_vals])
                 for line in tb.get_string().split('\n'):
                     self.logger.info(line)
-            #if __debug__:
+            # if __debug__:
                 #self.logger.debug('x -> f(x)')
-                #for x, fx in zip(new_pop, new_vals):
+                # for x, fx in zip(new_pop, new_vals):
                     #self.logger.debug('%s -> %s' % (x.tolist(), fx))
             self.opt_algorithm.update_opt_state(new_pop, new_vals)
             # create output
@@ -118,8 +134,8 @@ class SequentialDriver(object):
         self.logger.debug('exiting ' + __name__)
 
 
-
 class ParallelDriver(SequentialTaskCollection):
+
     """Drives an optimization using `opt_algorithm` on the grid.
 
     At each iteration an instance of :class:`ComputeTargetVals` uses
@@ -163,7 +179,7 @@ class ParallelDriver(SequentialTaskCollection):
     :class:`~gc3libs.workflow.ParallelTaskCollection` that manages each single
     :class:`~gc3libs.Application` until completion. The structure of GC3Libs
     objects employed can be summarized as follows::
-    
+
          SequentialTaskCollection
                    |
                    v
@@ -175,11 +191,11 @@ class ParallelDriver(SequentialTaskCollection):
 
     """
 
-    def __init__(self, jobname = '', path_to_stage_dir = '',
-                 opt_algorithm = None, task_constructor = None,
-                 extract_value_fn = (lambda app: app.value),
+    def __init__(self, jobname='', path_to_stage_dir='',
+                 opt_algorithm=None, task_constructor=None,
+                 extract_value_fn=(lambda app: app.value),
                  cur_pop_file = '',
-                 **extra_args ):
+                 **extra_args):
 
         gc3libs.log.debug('entering ParallelDriver.__init__')
 
@@ -197,14 +213,15 @@ class ParallelDriver(SequentialTaskCollection):
             self.opt_algorithm.pop, self.jobname, self.opt_algorithm.cur_iter,
             path_to_stage_dir, self.cur_pop_file, task_constructor)
 
-        SequentialTaskCollection.__init__(self,  [initial_task], **extra_args)
+        SequentialTaskCollection.__init__(self, [initial_task], **extra_args)
 
     def next(self, done):
         gc3libs.log.debug('entering ParallelDriver.next(%d)', done)
 
         # feed back results from the evaluation just completed
         new_pop = self.new_pop
-        new_vals = [ self.extract_value_fn(task) for task in self.tasks[done].tasks ]
+        new_vals = [self.extract_value_fn(task)
+                    for task in self.tasks[done].tasks]
         self.opt_algorithm.update_opt_state(new_pop, new_vals)
 
         self.changed = True
@@ -224,11 +241,14 @@ class ParallelDriver(SequentialTaskCollection):
             # prepare next evaluation
             self.new_pop = self.opt_algorithm.evolve()
             self.add(
-                    ComputeTargetVals(
-                    self.new_pop, self.jobname, self.opt_algorithm.cur_iter,
-                    self.path_to_stage_dir, self.cur_pop_file, self.task_constructor))
+                ComputeTargetVals(
+                    self.new_pop,
+                    self.jobname,
+                    self.opt_algorithm.cur_iter,
+                    self.path_to_stage_dir,
+                    self.cur_pop_file,
+                    self.task_constructor))
             return gc3libs.Run.State.RUNNING
-
 
     def __str__(self):
         return self.jobname
@@ -236,20 +256,22 @@ class ParallelDriver(SequentialTaskCollection):
     # Adjustments for pickling
     # def __getstate__(self):
     #     state = Task.__getstate__(self)
-    #     # Check that there are no functions in state.
-    #     #for attr in ['opt_algorithm']:
-    #         ## 'task_constructor', 'extract_value_fn', 'tasks',
-    #         #del state[attr]
-    #    # state = None
+    # Check that there are no functions in state.
+    # for attr in ['opt_algorithm']:
+    # 'task_constructor', 'extract_value_fn', 'tasks',
+    # del state[attr]
+    # state = None
     #     return state
 
     # def __setstate__(self, state):
-    #     # restore _grid, etc.
+    # restore _grid, etc.
     #     Task.__setstate__(self, state)
-    #     # restore loggers
-    #     #self._setup_logging()
+    # restore loggers
+    # self._setup_logging()
+
 
 class ComputeTargetVals(ParallelTaskCollection):
+
     """
     :class:`gc3libs.workflow.ParallelTaskCollection` to evaluate the current
     `pop` using the user-supplied :func:`task_constructor`.
@@ -274,14 +296,14 @@ class ComputeTargetVals(ParallelTaskCollection):
     def __str__(self):
         return self.jobname
 
-
     def __init__(self, pop, jobname, iteration, path_to_stage_dir,
                  cur_pop_file, task_constructor, **extra_args):
 
         gc3libs.log.debug('entering ComputeTargetVals.__init__')
 
         # Set up initial variables and set the correct methods.
-        self.jobname = jobname + '-' + 'compute_target_vals' + '-' + str(iteration)
+        self.jobname = jobname + '-' + \
+            'compute_target_vals' + '-' + str(iteration)
         self.iteration = iteration
 
         self.path_to_stage_dir = path_to_stage_dir
@@ -295,14 +317,13 @@ class ComputeTargetVals(ParallelTaskCollection):
         # Log activity
         cDate = datetime.date.today()
         cTime = datetime.datetime.time(datetime.datetime.now())
-        date_string = '%04d--%02d--%02d--%02d--%02d--%02d' % (cDate.year,
-                                                cDate.month, cDate.day, cTime.hour,
-                                                cTime.minute, cTime.second)
+        date_string = '%04d--%02d--%02d--%02d--%02d--%02d' % (
+            cDate.year, cDate.month, cDate.day, cTime.hour, cTime.minute, cTime.second)
         gc3libs.log.debug('Establishing parallel task on %s', date_string)
 
         # Enter an iteration specific folder
-        self.iteration_folder = os.path.join(self.path_to_stage_dir,
-                                            'Iteration-' + str(self.iteration))
+        self.iteration_folder = os.path.join(
+            self.path_to_stage_dir, 'Iteration-' + str(self.iteration))
         try:
             os.mkdir(self.iteration_folder)
         except OSError:
@@ -311,7 +332,7 @@ class ComputeTargetVals(ParallelTaskCollection):
         # save pop to file
         if cur_pop_file:
             np.savetxt(os.path.join(self.iteration_folder, cur_pop_file),
-                       pop, delimiter = ' ')
+                       pop, delimiter=' ')
 
         self.tasks = [
             task_constructor(pop_mem, self.iteration_folder) for pop_mem in pop

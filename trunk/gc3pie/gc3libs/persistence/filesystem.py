@@ -32,13 +32,15 @@ from gc3libs.utils import same_docstring_as
 import gc3libs.url
 
 from gc3libs.persistence.idfactory import IdFactory
-from gc3libs.persistence.serialization import DEFAULT_PROTOCOL, make_pickler, make_unpickler
-from gc3libs.persistence.store import Store, Persistable
+from gc3libs.persistence.serialization import (DEFAULT_PROTOCOL, make_pickler,
+                                               make_unpickler)
+from gc3libs.persistence.store import Store
 
 
-## persist objects in a filesystem directory
+# persist objects in a filesystem directory
 
 class FilesystemStore(Store):
+
     """
     Save and load objects in a given directory.  Uses Python's
     standard `pickle` module to serialize objects onto files.
@@ -64,6 +66,7 @@ class FilesystemStore(Store):
     Any extra keyword arguments are ignored for compatibility with
     `SqlStore`.
     """
+
     def __init__(self,
                  directory=gc3libs.Default.JOBS_DIR,
                  idfactory=IdFactory(),
@@ -92,7 +95,7 @@ class FilesystemStore(Store):
             obj = unpickler.load()
             src.close()
             return obj
-        except Exception, ex:
+        except Exception:
             if src is not None:
                 try:
                     src.close()
@@ -103,17 +106,18 @@ class FilesystemStore(Store):
     @same_docstring_as(Store.load)
     def load(self, id_):
         filename = os.path.join(self._directory, id_)
-        #gc3libs.log.debug("Loading object from file '%s' ...", filename)
+        # gc3libs.log.debug("Loading object from file '%s' ...", filename)
 
         if not os.path.exists(filename):
-            raise gc3libs.exceptions.LoadError("No '%s' file found in directory '%s'"
-                                   % (id_, self._directory))
+            raise gc3libs.exceptions.LoadError(
+                "No '%s' file found in directory '%s'"
+                % (id_, self._directory))
 
         # XXX: this should become `with src = ...:` as soon as we stop
         # supporting Python 2.4
         try:
             obj = self._load_from_file(filename)
-        except Exception, ex:
+        except Exception as ex:
             gc3libs.log.warning("Failed loading file '%s': %s: %s",
                                 filename, ex.__class__.__name__, str(ex),
                                 exc_info=True)
@@ -124,7 +128,7 @@ class FilesystemStore(Store):
                     old_copy)
                 try:
                     obj = self._load_from_file(old_copy)
-                except Exception, ex:
+                except Exception as ex:
                     sys.excepthook(* sys.exc_info())
                     raise gc3libs.exceptions.LoadError(
                         "Failed retrieving object from file '%s': %s: %s"
@@ -136,12 +140,15 @@ class FilesystemStore(Store):
                     % (filename, ex.__class__.__name__, str(ex)))
         if not hasattr(obj, 'persistent_id'):
             raise gc3libs.exceptions.LoadError(
-                "Invalid format in file '%s': missing 'persistent_id' attribute"
-                % (filename))
+                "Invalid format in file '%s': missing 'persistent_id'"
+                " attribute" % (filename))
         if str(obj.persistent_id) != str(id_):
             raise gc3libs.exceptions.LoadError(
-                "Retrieved persistent ID '%s' %s does not match given ID '%s' %s"
-                % (obj.persistent_id, type(obj.persistent_id), id_, type(id_)))
+                "Retrieved persistent ID '%s' %s does not match given ID"
+                " '%s' %s" % (obj.persistent_id,
+                              type(obj.persistent_id),
+                              id_,
+                              type(id_)))
         return obj
 
     @same_docstring_as(Store.remove)
@@ -167,12 +174,12 @@ class FilesystemStore(Store):
         destination file is kept intact in case dumping `obj` fails.
         """
         filename = os.path.join(self._directory, id_)
-        #gc3libs.log.debug("Storing job '%s' into file '%s'", obj, filename)
+        # gc3libs.log.debug("Storing job '%s' into file '%s'", obj, filename)
 
         if not os.path.exists(self._directory):
             try:
                 os.makedirs(self._directory)
-            except Exception, ex:
+            except Exception as ex:
                 # raise same exception but add context message
                 gc3libs.log.error("Could not create jobs directory '%s': %s"
                                   % (self._directory, str(ex)))
@@ -197,7 +204,7 @@ class FilesystemStore(Store):
                 os.remove(backup)
             except:
                 pass  # ignore errors
-        except Exception, ex:
+        except Exception as ex:
             gc3libs.log.error("Error saving job '%s' to file '%s': %s: %s",
                               obj, filename, ex.__class__.__name__, ex)
             if tgt is not None:
@@ -233,7 +240,7 @@ def make_filesystemstore(url, *args, **extra_args):
     return FilesystemStore(url.path, *args, **extra_args)
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

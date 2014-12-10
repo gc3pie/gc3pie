@@ -41,6 +41,7 @@ except:
     # use our own implementation, in case `itertools` does not (yet)
     # provide the set-product
     class SetProductIterator(object):
+
         """Iterate over all elements in a cartesian product.
 
         Argument `factors` is a sequence, all whose items are sequences
@@ -62,11 +63,12 @@ except:
           >>> list(SetProductIterator([1, 2], [1, 2]))
           [[1, 1], [2, 1], [1, 2], [2, 2]]
         """
+
         def __init__(self, *factors):
             self.__closed = False
             self.__factors = factors
             self.__L = len(factors)
-            self.__M = [ len(s)-1 for s in factors ]
+            self.__M = [len(s) - 1 for s in factors]
             self.__m = [0] * self.__L
             self.__i = 0
 
@@ -83,8 +85,8 @@ except:
             else:
                 if self.__i < self.__L:
                     # will return element corresponding to current multi-index
-                    result = [ s[self.__m[i]]
-                               for (i,s) in enumerate(self.__factors) ]
+                    result = [s[self.__m[i]]
+                              for (i, s) in enumerate(self.__factors)]
                     # advance multi-index
                     i = 0
                     while (i < self.__L):
@@ -104,6 +106,7 @@ except:
 
 
 class Template(object):
+
     """
     A template object is a pair `(obj, keywords)`.  Methods are
     provided to substitute the keyword values into `obj`, and to
@@ -116,6 +119,7 @@ class Template(object):
     into the template) or `False` if it should be discarded.
     The default validator passes any combination of keywords/values.
     """
+
     def __init__(self, template,
                  validator=(lambda kws: True), **extra_args):
         self._template = template
@@ -143,7 +147,8 @@ class Template(object):
             try:
                 return self._template.substitute(**keywords)
             except AttributeError:
-                return string.Template(str(self._template)).safe_substitute(keywords)
+                return string.Template(
+                    str(self._template)).safe_substitute(keywords)
         else:
             raise ValueError("Invalid substitution values in template.")
 
@@ -157,10 +162,9 @@ class Template(object):
         """
         return str.join('', ["Template(",
                              str.join(', ', [repr(self._template)] +
-                                      [ ("%s=%s" % (k,v))
-                                        for k,v in self._keywords.items() ]),
+                                      [("%s=%s" % (k, v))
+                                       for k, v in self._keywords.items()]),
                              ')'])
-
 
     def expansions(self, **keywords):
         """
@@ -258,12 +262,14 @@ def expansions(obj, **extra_args):
 
     """
     if isinstance(obj, dict):
-        keys = tuple(obj.keys()) # fix a key order
-        for items in SetProductIterator(*[ list(expansions(obj[keys[i]], **extra_args))
-                                           for i in range(len(keys)) ]):
+        keys = tuple(obj.keys())  # fix a key order
+        for items in SetProductIterator(
+                *[list(expansions(obj[keys[i]], **extra_args))
+                  for i in range(len(keys))]):
             yield dict((keys[i], items[i]) for i in range(len(keys)))
     elif isinstance(obj, tuple):
-        for items in SetProductIterator(*[ list(expansions(u, **extra_args)) for u in obj ]):
+        for items in SetProductIterator(
+                *[list(expansions(u, **extra_args)) for u in obj]):
             yield tuple(items)
     elif isinstance(obj, list):
         for item in obj:
@@ -276,8 +282,7 @@ def expansions(obj, **extra_args):
         yield obj
 
 
-
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

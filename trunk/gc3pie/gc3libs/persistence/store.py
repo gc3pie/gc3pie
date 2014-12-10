@@ -28,6 +28,7 @@ from gc3libs.url import Url
 
 
 class Store(object):
+
     """
     Interface for storing and retrieving objects on permanent storage.
 
@@ -91,6 +92,7 @@ class Store(object):
 
 
 class Persistable(object):
+
     """
     A mix-in class to mark that an object should be persisted by its ID.
 
@@ -98,6 +100,7 @@ class Persistable(object):
     when a container holding a reference to it is saved.
 
     """
+
     def __init__(self, *args, **kwargs):
         # ensure object will be saved next time Store.save() is invoked
         self.changed = True
@@ -109,8 +112,7 @@ class Persistable(object):
             return super(Persistable, self).__str__()
 
 
-
-## registration mechanism
+# registration mechanism
 
 _registered_store_ctors = {}
 
@@ -175,7 +177,8 @@ def make_store(uri, *args, **extra_args):
         # hard-code schemes that are supported by GC3Pie itself
         if uri.scheme == 'file':
             import gc3libs.persistence.filesystem
-            return gc3libs.persistence.filesystem.make_filesystemstore(uri, *args, **extra_args)
+            return gc3libs.persistence.filesystem.make_filesystemstore(
+                uri, *args, **extra_args)
         elif uri.scheme in [
                 # XXX: list all supported SQLAlchemy back-ends
                 'firebird',
@@ -184,23 +187,26 @@ def make_store(uri, *args, **extra_args):
                 'oracle',
                 'postgres',
                 'sqlite',
-                ]:
+        ]:
             import gc3libs.persistence.sql
-            return gc3libs.persistence.sql.make_sqlstore(uri, *args, **extra_args)
+            return gc3libs.persistence.sql.make_sqlstore(
+                uri, *args, **extra_args)
         else:
             try:
-                return _registered_store_ctors[uri.scheme](uri, *args, **extra_args)
+                return _registered_store_ctors[
+                    uri.scheme](uri, *args, **extra_args)
             except KeyError:
                 gc3libs.log.error(
-                    "Unknown URL scheme '%s' in `gc3libs.persistence.make_store`:"
+                    "Unknown URL scheme '%s' in"
+                    " `gc3libs.persistence.make_store`:"
                     " has never been registered.", uri.scheme)
                 raise
-    except Exception, ex:
+    except Exception as ex:
         gc3libs.log.error("Error constructing store for URL '%s': %s: %s",
                           str(uri), ex.__class__.__name__, str(ex))
         raise
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

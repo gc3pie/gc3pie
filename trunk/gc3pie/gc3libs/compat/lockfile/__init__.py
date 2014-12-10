@@ -67,7 +67,9 @@ __all__ = ['Error', 'LockError', 'LockTimeout', 'AlreadyLocked',
            'LinkLockFile', 'MkdirLockFile', 'SQLiteLockFile',
            'LockBase']
 
+
 class Error(Exception):
+
     """
     Base class for other exceptions.
 
@@ -78,7 +80,9 @@ class Error(Exception):
     """
     pass
 
+
 class LockError(Error):
+
     """
     Base class for error arising from attempts to acquire the lock.
 
@@ -89,7 +93,9 @@ class LockError(Error):
     """
     pass
 
+
 class LockTimeout(LockError):
+
     """Raised when lock creation fails within a user-defined period of time.
 
     >>> try:
@@ -99,7 +105,9 @@ class LockTimeout(LockError):
     """
     pass
 
+
 class AlreadyLocked(LockError):
+
     """Some other thread/process is locking the file.
 
     >>> try:
@@ -109,7 +117,9 @@ class AlreadyLocked(LockError):
     """
     pass
 
+
 class LockFailed(LockError):
+
     """Lock file creation failed for some other reason.
 
     >>> try:
@@ -119,7 +129,9 @@ class LockFailed(LockError):
     """
     pass
 
+
 class UnlockError(Error):
+
     """
     Base class for errors arising from attempts to release the lock.
 
@@ -130,7 +142,9 @@ class UnlockError(Error):
     """
     pass
 
+
 class NotLocked(UnlockError):
+
     """Raised when an attempt is made to unlock an unlocked file.
 
     >>> try:
@@ -140,7 +154,9 @@ class NotLocked(UnlockError):
     """
     pass
 
+
 class NotMyLock(UnlockError):
+
     """Raised when an attempt is made to unlock a file someone else locked.
 
     >>> try:
@@ -150,8 +166,11 @@ class NotMyLock(UnlockError):
     """
     pass
 
+
 class LockBase:
+
     """Base class for platform-specific lock classes."""
+
     def __init__(self, path, threaded=True):
         """
         >>> lock = LockBase('somefile')
@@ -230,6 +249,7 @@ class LockBase:
         """
         self.release()
 
+
 def _fl_helper(cls, mod, *args, **kwds):
     warnings.warn("Import from %s module instead of lockfile package" % mod,
                   DeprecationWarning, stacklevel=2)
@@ -243,15 +263,17 @@ def _fl_helper(cls, mod, *args, **kwds):
         kwds["threaded"] = True
     return cls(*args, **kwds)
 
+
 def LinkFileLock(*args, **kwds):
     """Factory function provided for backwards compatibility.
 
     Do not use in new code.  Instead, import LinkLockFile from the
     lockfile.linklockfile module.
     """
-    import linklockfile
+    from . import linklockfile
     return _fl_helper(linklockfile.LinkLockFile, "lockfile.linklockfile",
                       *args, **kwds)
+
 
 def MkdirFileLock(*args, **kwds):
     """Factory function provided for backwards compatibility.
@@ -259,9 +281,10 @@ def MkdirFileLock(*args, **kwds):
     Do not use in new code.  Instead, import MkdirLockFile from the
     lockfile.mkdirlockfile module.
     """
-    import mkdirlockfile
+    from . import mkdirlockfile
     return _fl_helper(mkdirlockfile.MkdirLockFile, "lockfile.mkdirlockfile",
                       *args, **kwds)
+
 
 def SQLiteFileLock(*args, **kwds):
     """Factory function provided for backwards compatibility.
@@ -269,16 +292,15 @@ def SQLiteFileLock(*args, **kwds):
     Do not use in new code.  Instead, import SQLiteLockFile from the
     lockfile.mkdirlockfile module.
     """
-    import sqlitelockfile
+    from . import sqlitelockfile
     return _fl_helper(sqlitelockfile.SQLiteLockFile, "lockfile.sqlitelockfile",
                       *args, **kwds)
 
 if hasattr(os, "link"):
-    import linklockfile as _llf
+    from . import linklockfile as _llf
     LockFile = _llf.LinkLockFile
 else:
-    import mkdirlockfile as _mlf
+    from . import mkdirlockfile as _mlf
     LockFile = _mlf.MkdirLockFile
 
 FileLock = LockFile
-

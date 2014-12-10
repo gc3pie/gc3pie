@@ -25,14 +25,8 @@ __version__ = 'development version (SVN $Revision$)'
 
 # stdlib imports
 import datetime
-from getpass import getuser
 import math
-import os
-import posixpath
-import random
 import re
-import sys
-import tempfile
 import time
 
 from gc3libs.compat._collections import defaultdict
@@ -42,14 +36,14 @@ from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
 from gc3libs.quantity import Memory, kB, MB, GB
-from gc3libs.quantity import Duration, hours, minutes, seconds
+from gc3libs.quantity import seconds
 import gc3libs.utils
-from gc3libs.utils import same_docstring_as, sh_quote_safe_cmdline, sh_quote_unsafe_cmdline
-import transport
-import batch
+from gc3libs.utils import (same_docstring_as, sh_quote_safe_cmdline,
+                           sh_quote_unsafe_cmdline)
+from . import batch
 
 
-## auxiliary functions
+# auxiliary functions
 
 def _int_floor(val):
     """Return `val` rounded to nearest integer towards 0."""
@@ -60,8 +54,8 @@ def _to_duration(val):
     """Convert a floating point number of seconds to a
     `gc3libs.quantity.Duration` value."""
     try:
-        return float(val)*seconds
-    except Exception, err:
+        return float(val) * seconds
+    except Exception as err:
         gc3libs.log.warning(
             "Grid Engine backend:"
             " Cannot interpret '%s' as a duration (time unit: seconds):"
@@ -76,15 +70,15 @@ def _to_memory(val):
     try:
         unit = val[-1]
         if unit in ['G', 'g']:
-            return float(val[:-2])*GB
+            return float(val[:-2]) * GB
         elif unit in ['M', 'm']:
-            return float(val[:-2])*MB
+            return float(val[:-2]) * MB
         elif unit in ['K', 'k']:
-            return float(val[:-2])*kB
+            return float(val[:-2]) * kB
         else:
             # SGE's default is bytes
-            return float(val)*Memory.B
-    except Exception, err:
+            return float(val) * Memory.B
+    except Exception:
         gc3libs.log.warning("Grid Engine backend: Cannot interpret '%s' "
                             "as a MEMORY value.", val)
         return None
@@ -92,29 +86,29 @@ def _to_memory(val):
 # `_convert` is a `dict` instance, mapping key names to functions
 # that parse a value from a string into a Python native type.
 _convert = {
-    'slots':          int,
-    'slots_used':     int,
-    'slots_resv':     int,
-    'slots_total':    int,
-    'load_avg':       float,
-    'load_short':     float,
-    'load_medium':    float,
-    'load_long':      float,
-    'np_load_avg':    float,
-    'np_load_short':  float,
+    'slots': int,
+    'slots_used': int,
+    'slots_resv': int,
+    'slots_total': int,
+    'load_avg': float,
+    'load_short': float,
+    'load_medium': float,
+    'load_long': float,
+    'np_load_avg': float,
+    'np_load_short': float,
     'np_load_medium': float,
-    'np_load_long':   float,
-    'num_proc':       _int_floor,  # SGE considers `num_proc` a
-                                   # floating-point value...
-    'swap_free':      gc3libs.utils.to_bytes,
-    'swap_total':     gc3libs.utils.to_bytes,
-    'swap_used':      gc3libs.utils.to_bytes,
-    'mem_free':       gc3libs.utils.to_bytes,
-    'mem_used':       gc3libs.utils.to_bytes,
-    'mem_total':      gc3libs.utils.to_bytes,
-    'virtual_free':   gc3libs.utils.to_bytes,
-    'virtual_used':   gc3libs.utils.to_bytes,
-    'virtual_total':  gc3libs.utils.to_bytes,
+    'np_load_long': float,
+    'num_proc': _int_floor,  # SGE considers `num_proc` a
+    # floating-point value...
+    'swap_free': gc3libs.utils.to_bytes,
+    'swap_total': gc3libs.utils.to_bytes,
+    'swap_used': gc3libs.utils.to_bytes,
+    'mem_free': gc3libs.utils.to_bytes,
+    'mem_used': gc3libs.utils.to_bytes,
+    'mem_total': gc3libs.utils.to_bytes,
+    'virtual_free': gc3libs.utils.to_bytes,
+    'virtual_used': gc3libs.utils.to_bytes,
+    'virtual_total': gc3libs.utils.to_bytes,
 }
 
 
@@ -130,7 +124,7 @@ def _parse_asctime(val):
         # XXX: replace with datetime.strptime(...) in Python 2.5+
         return datetime.datetime(
             *(time.strptime(val, '%a %b %d %H:%M:%S %Y')[0:6]))
-    except Exception, err:
+    except Exception as err:
         gc3libs.log.error(
             "Cannot parse '%s' as a SGE-format time stamp: %s: %s",
             val, err.__class__.__name__, str(err))
@@ -143,7 +137,7 @@ def parse_qstat_f(qstat_output):
     and return a `dict` instance, mapping each queue name to its attributes.
     """
     # a job report line starts with a numeric job ID
-    _job_line_re = re.compile(r'^[0-9]+ \s+', re.X)
+    # _job_line_re = re.compile(r'^[0-9]+ \s+', re.X)
     # queue report header line starts with queuename@hostname
     _queue_header_re = re.compile(
         r'^([a-z0-9\._-]+)@([a-z0-9\.-]+) \s+ ([BIPCTN]+) '
@@ -253,14 +247,14 @@ def parse_qhost_f(qhost_output):
         n += 1
         if n < 3:
             continue
-        # property lines start with TAB
-        if line.startswith(' '):
+        if not line.startswith(' '):
+            # host lines begin at column 0
+            hostname = line.split(' ')[0]
+        else:
+            # property lines start with TAB
             key, value = line.split('=')
             ignored, key = key.split(':')
             result[hostname][key] = _parse_value(key, value)
-        # host lines begin at column 0
-        else:
-            hostname = line.split(' ')[0]
     return result
 
 
@@ -341,6 +335,7 @@ Regex for extracting the job number and name from Grid Engine's `qsub` output.
 
 
 class SgeLrms(batch.BatchSystem):
+
     """
     Job control on SGE clusters (possibly by connecting via SSH to a
     submit node).
@@ -357,7 +352,8 @@ class SgeLrms(batch.BatchSystem):
                  frontend, transport,
                  # these are specific to the SGE class
                  default_pe=None,
-                 # (Note that optional arguments to the `BatchSystem` class, e.g.:
+                 # (Note that optional arguments to the `BatchSystem` class,
+                 # e.g.:
                  #     keyfile=None, accounting_delay=15,
                  # are collected into `extra_args` and should not be explicitly
                  # spelled out in this signature.)
@@ -422,20 +418,20 @@ class SgeLrms(batch.BatchSystem):
         # |              |                       |
         # |              |                       |
         #   ... common backend attrs (see Issue 78) ...
-        'slots':         ('cores',               int),
-        'exit_status':   ('exitcode',            int),
-        'cpu':           ('used_cpu_time',       _to_duration),
-        'ru_wallclock':  ('duration',            _to_duration),
-        'maxvmem':       ('max_used_memory',     _to_memory),
+        'slots': ('cores', int),
+        'exit_status': ('exitcode', int),
+        'cpu': ('used_cpu_time', _to_duration),
+        'ru_wallclock': ('duration', _to_duration),
+        'maxvmem': ('max_used_memory', _to_memory),
         #   ... SGE-only attrs ...
-        'end_time':      ('sge_completion_time', _parse_asctime),
-        'failed':        ('sge_failed',          int),
-        'granted_pe':    ('sge_granted_pe',      str),
-        'hostname':      ('sge_hostname',        str),
-        'jobname':       ('sge_jobname',         str),
-        'qname':         ('sge_queue',           str),
-        'qsub_time':     ('sge_submission_time', _parse_asctime),
-        'start_time':    ('sge_start_time',      _parse_asctime), }
+        'end_time': ('sge_completion_time', _parse_asctime),
+        'failed': ('sge_failed', int),
+        'granted_pe': ('sge_granted_pe', str),
+        'hostname': ('sge_hostname', str),
+        'jobname': ('sge_jobname', str),
+        'qname': ('sge_queue', str),
+        'qsub_time': ('sge_submission_time', _parse_asctime),
+        'start_time': ('sge_start_time', _parse_asctime), }
 
     def _parse_acct_output(self, stdout):
         jobstatus = dict()
@@ -456,7 +452,7 @@ class SgeLrms(batch.BatchSystem):
             except KeyError:
                 # no conversion by default -- keep it a string
                 jobstatus['sge_' + key] = value
-            except (ValueError, TypeError), err:
+            except (ValueError, TypeError) as err:
                 log.error(
                     "Cannot parse value '%s' for qacct parameter '%s': %s: %s",
                     value, key, err.__class__.__name__, str(err))
@@ -481,7 +477,7 @@ class SgeLrms(batch.BatchSystem):
                 raise gc3libs.exceptions.LRMSError(
                     "SGE backend failed executing '%s':"
                     "exit code: %d; stdout: '%s'; stderr: '%s'." %
-                    (_command, exit_code, stdout, stderr))
+                    (_command, exit_code, qstat_stdout, stderr))
 
             _command = ("%s -F -U %s" % (self._qstat, self._username))
             log.debug("Running `%s`...", _command)
@@ -492,7 +488,7 @@ class SgeLrms(batch.BatchSystem):
                 raise gc3libs.exceptions.LRMSError(
                     "SGE backend failed executing '%s':"
                     "exit code: %d; stdout: '%s'; stderr: '%s'." %
-                    (_command, exit_code, stdout, stderr))
+                    (_command, exit_code, qstat_F_stdout, stderr))
 
             (total_running, self.queued, self.user_run, self.user_queued) \
                 = count_jobs(qstat_stdout, self._username)
@@ -513,13 +509,13 @@ class SgeLrms(batch.BatchSystem):
                      )
             return self
 
-        except Exception, ex:
+        except Exception as ex:
             log.error("Error querying remote LRMS, see debug log for details.")
             log.debug("Error querying LRMS: %s: %s",
                       ex.__class__.__name__, str(ex))
             raise
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

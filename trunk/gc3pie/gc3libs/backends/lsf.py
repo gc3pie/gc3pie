@@ -25,26 +25,17 @@ __version__ = 'development version (SVN $Revision$)'
 
 from collections import defaultdict
 import datetime
-import os
-import posixpath
-import random
 import re
-import sys
-import tempfile
 import time
-
-from gc3libs.compat._collections import defaultdict
 
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
-from gc3libs.quantity import Duration, hours, minutes, seconds, Memory, GB, MB, kB, bytes
-import gc3libs.utils as utils # first, to_bytes
-from gc3libs.utils import *
+from gc3libs.quantity import Duration, seconds, Memory, GB, MB, kB, bytes
+import gc3libs.utils
+from gc3libs.utils import sh_quote_safe_cmdline, sh_quote_unsafe_cmdline
 
-import transport
-
-import batch
+from . import batch
 
 # Examples of LSF commands output used to build this backend:
 # $ bsub -W 00:10 -n 1 -R "rusage[mem=1800]" < script.sh
@@ -58,41 +49,41 @@ import batch
 # note: script must be fed as STDIN
 #
 # [gloessa@brutus2 test_queue]$ bjobs 473713
-# JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
-# 473713  gloessa PEND  pub.1h     brutus2                 TM-T       Oct 19 17:10
-#
-# $ bjobs 473713
-# JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
-# 473713  gloessa RUN   pub.1h     brutus2     a6128       TM-T       Oct 19 17:10
-# [gloessa@brutus2 test_queue]$ bjobs -l 473713
-#
-# Job <473713>, Job Name <TM-T>, User <gloessa>, Project <default>, Status <RUN>,
-#                       Queue <pub.1h>, Job Priority <50>, Command <#!/bin/sh;#;#
-#                      ;echo 'sequential test job';echo $OMP_NUM_THREADS;echo '$T
-#                      URBODIR: '$TURBODIR;sysname;which dscf;echo '$TMPDIR: '$TM
-#                      PDIR; echo 'parallel test job';export OMP_NUM_THREADS=2;ec
-#                      ho $OMP_NUM_THREADS;echo '$TURBODIR: '$TURBODIR;sysname;wh
-#                      ich dscf;echo '$TMPDIR: '$TMPDIR; sleep 300>, Share group
-#                      charged </lsf_cfour/gloessa>
-# Wed Oct 19 17:10:27: Submitted from host <brutus2>, CWD <$HOME/test_queue>, Out
-#                      put File <lsf.o%J>, Requested Resources <order[-r1m] span[
-#                      ptile=1] same[model] rusage[mem=1800,xs=1]>, Specified Hos
-#                      ts <thin+7>, <single+5>, <shared+3>, <parallel+1>;
-#
-#  RUNLIMIT
-#  10.0 min of a6128
-# Wed Oct 19 17:11:02: Started on <a6128>, Execution Home </cluster/home/chab/glo
-#                      essa>, Execution CWD </cluster/home/chab/gloessa/test_queu
-#                      e>;
-# Wed Oct 19 17:12:10: Resource usage collected.
-#                      MEM: 5 Mbytes;  SWAP: 201 Mbytes;  NTHREAD: 5
-#                      PGID: 23177;  PIDs: 23177 23178 23182 23259
+# JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME   # noqa
+# 473713  gloessa PEND  pub.1h     brutus2                 TM-T       Oct 19 17:10  # noqa
+# noqa
+# $ bjobs 473713                                                                    # noqa
+# JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME   # noqa
+# 473713  gloessa RUN   pub.1h     brutus2     a6128       TM-T       Oct 19 17:10  # noqa
+# [gloessa@brutus2 test_queue]$ bjobs -l 473713                                     # noqa
+# noqa
+# Job <473713>, Job Name <TM-T>, User <gloessa>, Project <default>, Status <RUN>,   # noqa
+# Queue <pub.1h>, Job Priority <50>, Command <#!/bin/sh;#;#   # noqa
+# ;echo 'sequential test job';echo $OMP_NUM_THREADS;echo '$T   # noqa
+# URBODIR: '$TURBODIR;sysname;which dscf;echo '$TMPDIR: '$TM   # noqa
+# PDIR; echo 'parallel test job';export OMP_NUM_THREADS=2;ec   # noqa
+# ho $OMP_NUM_THREADS;echo '$TURBODIR: '$TURBODIR;sysname;wh   # noqa
+# ich dscf;echo '$TMPDIR: '$TMPDIR; sleep 300>, Share group    # noqa
+# charged </lsf_cfour/gloessa>                                 # noqa
+# Wed Oct 19 17:10:27: Submitted from host <brutus2>, CWD <$HOME/test_queue>, Out   # noqa
+# put File <lsf.o%J>, Requested Resources <order[-r1m] span[   # noqa
+# ptile=1] same[model] rusage[mem=1800,xs=1]>, Specified Hos   # noqa
+# ts <thin+7>, <single+5>, <shared+3>, <parallel+1>;           # noqa
+# noqa
+# RUNLIMIT                                                                         # noqa
+# 10.0 min of a6128                                                                # noqa
+# Wed Oct 19 17:11:02: Started on <a6128>, Execution Home </cluster/home/chab/glo   # noqa
+# essa>, Execution CWD </cluster/home/chab/gloessa/test_queu   # noqa
+# e>;                                                          # noqa
+# Wed Oct 19 17:12:10: Resource usage collected.                                    # noqa
+# MEM: 5 Mbytes;  SWAP: 201 Mbytes;  NTHREAD: 5                # noqa
+# PGID: 23177;  PIDs: 23177 23178 23182 23259                  # noqa
 #
 #
 #  SCHEDULING PARAMETERS:
-#            r15s   r1m  r15m   ut      pg    io   ls    it    tmp    swp    mem
-#  loadSched   -     -     -     -       -     -    -     -     -      -      -
-#  loadStop    -     -     -     -       -     -    -     -     -      -      -
+#            r15s   r1m  r15m   ut      pg    io   ls    it    tmp    swp   mem
+#  loadSched   -     -     -     -       -     -    -     -     -      -     -
+#  loadStop    -     -     -     -       -     -    -     -     -      -     -
 #
 #           scratch      xs       s       m       l      xl      sp
 #  loadSched     -       -       -       -       -       -       -
@@ -102,13 +93,13 @@ import batch
 # Job <473713> is being terminated
 #
 # $ bjobs -W -w 473713
-# JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME  PROJ_NAME CPU_USED MEM SWAP PIDS START_TIME FINISH_TIME
-# 473713  gloessa EXIT  pub.1h     brutus2     a6128       TM-T       10/19-17:10:27 default    000:00:00.12 5208   206312 23177,23178,23182,23259 10/19-17:11:02 10/19-17:14:49
+# JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME  PROJ_NAME CPU_USED MEM SWAP PIDS START_TIME FINISH_TIME  # noqa
+# 473713  gloessa EXIT  pub.1h     brutus2     a6128       TM-T       10/19-17:10:27 default    000:00:00.12 5208   206312 23177,23178,23182,23259 10/19-17:11:02 10/19-17:14:49    # noqa
 #
-# # STAT would be DONE if not killed
+# STAT would be DONE if not killed
 # $ bjobs 473713
-# JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
-# 473713  gloessa EXIT  pub.1h     brutus2     a6128       TM-T       Oct 19 17:10
+# JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME  # noqa
+# 473713  gloessa EXIT  pub.1h     brutus2     a6128       TM-T       Oct 19 17:10  # noqa
 #
 # $ bacct 473713
 #
@@ -119,7 +110,7 @@ import batch
 #   - executed on all hosts.
 #   - submitted to all queues.
 #   - accounted on all service classes.
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 #
 # SUMMARY:      ( time unit: second )
 #  Total number of done jobs:       0      Total number of exited jobs:     1
@@ -257,7 +248,7 @@ import batch
 # aa_r_hpc      Numeric   Dec   ansys academic hpc licenses
 # msi_tokenr    Numeric   Dec   msi tokens
 # gpu           Numeric   Dec   nodes with 1,2,3... GPUs
-# ddadb         Numeric   Dec   number of connections that ddadb.ethz.ch can handle
+# ddadb         Numeric   Dec   number of connections that ddadb.ethz.ch can handle    # noqa
 #
 # TYPE_NAME
 # UNKNOWN_AUTO_DETECT
@@ -340,22 +331,24 @@ import batch
 
 _bsub_jobid_re = re.compile(r'^Job <(?P<jobid>\d+)> is submitted', re.I)
 
-# Job <850088>, Job Name <GdemoSimpleApp>, User <smaffiol>, Project <default>, Status <EXIT>, Queue <normal>, Command <./script.62b626ca7ad5acaf_01.sh>, Share group charged </smaffiol>
-# Wed Jul 11 14:11:10: Submitted from host <globus.vital-it.ch>, CWD <$HOME>, Output File (overwrite) <stdout.log>, Re-runnable, Login Shell </bin/sh>;
-# Wed Jul 11 14:11:47: Started on <cpt157>, Execution Home </home/smaffiol>, Execution CWD </home/smaffiol>;
-# Wed Jul 11 14:11:48: Exited with exit code 127. The CPU time used is 0.1 seconds.
+# Job <850088>, Job Name <GdemoSimpleApp>, User <smaffiol>, Project <default>, Status <EXIT>, Queue <normal>, Command <./script.62b626ca7ad5acaf_01.sh>, Share group charged </smaffiol>  # noqa
+# Wed Jul 11 14:11:10: Submitted from host <globus.vital-it.ch>, CWD <$HOME>, Output File (overwrite) <stdout.log>, Re-runnable, Login Shell </bin/sh>;  # noqa
+# Wed Jul 11 14:11:47: Started on <cpt157>, Execution Home </home/smaffiol>, Execution CWD </home/smaffiol>;  # noqa
+# Wed Jul 11 14:11:48: Exited with exit code 127. The CPU time used is 0.1 seconds.  # noqa
 # Wed Jul 11 14:11:48: Completed <exit>.
 
 _bjobs_long_re = re.compile(
     '(?P<end_time>[a-zA-Z]+\s+[a-zA-Z]+\s+\d+\s+\d+:\d+:\d+):\s+'
     'Exited with exit code (?P<exit_status>\d+)[^0-9]+'
     'The CPU time used is (?P<used_cpu_time>[0-9\.]+)\s+'
-    )
+)
 
 
 class LsfLrms(batch.BatchSystem):
-    """
-    Job control on LSF clusters (possibly by connecting via SSH to a submit node).
+
+    """Job control on LSF clusters (possibly by connecting via SSH to a
+    submit node).
+
     """
 
     _batchsys_name = 'LSF'
@@ -364,12 +357,13 @@ class LsfLrms(batch.BatchSystem):
                  # this are inherited from the base LRMS class
                  architecture, max_cores, max_cores_per_job,
                  max_memory_per_core, max_walltime,
-                 auth, # ignored if `transport` is 'local'
+                 auth,  # ignored if `transport` is 'local'
                  # these are inherited from `BatchSystem`
                  frontend, transport,
                  # these are specific to this backend
                  lsf_continuation_line_prefix_length=None,
-                 # (Note that optional arguments to the `BatchSystem` class, e.g.:
+                 # (Note that optional arguments to the `BatchSystem` class,
+                 # e.g.:
                  #     keyfile=None, accounting_delay=15,
                  # are collected into `extra_args` and should not be explicitly
                  # spelled out in this signature.)
@@ -392,10 +386,10 @@ class LsfLrms(batch.BatchSystem):
         self._lshosts = self._get_command('lshosts')
 
         if lsf_continuation_line_prefix_length is not None:
-            self._CONTINUATION_LINE_START = ' ' * lsf_continuation_line_prefix_length
+            self._CONTINUATION_LINE_START = ' ' \
+                * lsf_continuation_line_prefix_length
         else:
             self._CONTINUATION_LINE_START = None
-
 
     def _submit_command(self, app):
         # LSF's `bsub` allows one to submit scripts and binaries with
@@ -423,30 +417,34 @@ class LsfLrms(batch.BatchSystem):
 
     @staticmethod
     def _lsf_state_to_gc3pie_state(stat):
-        log.debug("Translating LSF's `bjobs` status '%s' to gc3libs.Run.State ...", stat)
+        log.debug("Translating LSF's `bjobs` status '%s' to"
+                  " gc3libs.Run.State ...", stat)
         try:
             return {
-            # LSF 'stat' mapping:
-                'PEND'  : Run.State.SUBMITTED,
-                'RUN'   : Run.State.RUNNING,
-                'PSUSP' : Run.State.STOPPED,
-                'USUSP' : Run.State.STOPPED,
-                'SSUSP' : Run.State.STOPPED,
+                # LSF 'stat' mapping:
+                'PEND': Run.State.SUBMITTED,
+                'RUN': Run.State.RUNNING,
+                'PSUSP': Run.State.STOPPED,
+                'USUSP': Run.State.STOPPED,
+                'SSUSP': Run.State.STOPPED,
                 # DONE = successful termination
-                'DONE'  : Run.State.TERMINATING,
+                'DONE': Run.State.TERMINATING,
                 # EXIT = job was killed / exit forced
-                'EXIT'  : Run.State.TERMINATING,
+                'EXIT': Run.State.TERMINATING,
                 # ZOMBI = job "killed" and unreachable
-                'ZOMBI' : Run.State.TERMINATING,
-                'UNKWN' : Run.State.UNKNOWN,
-                }[stat]
+                'ZOMBI': Run.State.TERMINATING,
+                'UNKWN': Run.State.UNKNOWN,
+            }[stat]
         except KeyError:
-            log.warning("Unknown LSF job status '%s', returning `UNKNOWN`", stat)
+            log.warning(
+                "Unknown LSF job status '%s', returning `UNKNOWN`", stat)
             return Run.State.UNKNOWN
 
     _status_re = re.compile(r'Status <(?P<state>[A-Z]+)>', re.M)
-    _unsuccessful_exit_re = re.compile(r'Exited with exit code (?P<exit_status>[0-9]+).', re.M)
-    _cpu_time_re = re.compile(r'The CPU time used is (?P<cputime>[0-9]+(\.[0-9]+)?) seconds', re.M)
+    _unsuccessful_exit_re = re.compile(
+        r'Exited with exit code (?P<exit_status>[0-9]+).', re.M)
+    _cpu_time_re = re.compile(
+        r'The CPU time used is (?P<cputime>[0-9]+(\.[0-9]+)?) seconds', re.M)
 
     def _parse_stat_output(self, stdout):
         # LSF `bjobs -l` uses a LDIF-style continuation lines, wherein
@@ -456,11 +454,12 @@ class LsfLrms(batch.BatchSystem):
         # LSF release and possibly other factors, so we need to guess
         # or have users configure it...
         if self._CONTINUATION_LINE_START is None:
-            self._CONTINUATION_LINE_START = ' ' * self._guess_continuation_line_prefix_len(stdout)
+            self._CONTINUATION_LINE_START = ' ' \
+                * self._guess_continuation_line_prefix_len(stdout)
 
         # Join continuation lines, so that we can work on a single
         # block of text.
-        lines = [ ]
+        lines = []
         for line in stdout.split('\n'):
             if len(line) == 0:
                 continue
@@ -525,17 +524,20 @@ class LsfLrms(batch.BatchSystem):
             if count == max_occurrences:
                 return length
 
-    _TIMESTAMP_FMT_WITH_YEAR = '%a %b %d %H:%M:%S %Y' # e.g., 'Mon Oct  8 12:04:56 2012'
-    _TIMESTAMP_FMT_NO_YEAR   = '%a %b %d %H:%M:%S'    # e.g., 'Mon Oct  8 12:04:56'
+    # e.g., 'Mon Oct  8 12:04:56 2012'
+    _TIMESTAMP_FMT_WITH_YEAR = '%a %b %d %H:%M:%S %Y'
+    # e.g., 'Mon Oct  8 12:04:56'
+    _TIMESTAMP_FMT_NO_YEAR = '%a %b %d %H:%M:%S'
 
     @staticmethod
     def _parse_timespec(ts):
         """Parse a timestamp as it appears in LSF bjobs/bacct logs."""
         # try "with year" format first, as it has all the info we need
         try:
-            return datetime.datetime.strptime(ts, LsfLrms._TIMESTAMP_FMT_WITH_YEAR)
+            return datetime.datetime.strptime(
+                ts, LsfLrms._TIMESTAMP_FMT_WITH_YEAR)
         except ValueError:
-            pass # ignore and try again without year
+            pass  # ignore and try again without year
         try:
             # XXX: since we do not have a year, we resort to the
             # following heuristics: if the month in the timespec is
@@ -549,8 +551,8 @@ class LsfLrms(batch.BatchSystem):
             if tm[1] <= today.month:
                 return datetime.datetime(today.year, *(tm[1:6]))
             else:
-                return datetime.datetime(today.year-1, *(tm[1:6]))
-        except ValueError, err:
+                return datetime.datetime(today.year - 1, *(tm[1:6]))
+        except ValueError as err:
             gc3libs.log.error(
                 "Cannot parse '%s' as an LSF timestamp: %s: %s",
                 ts, err.__class__.__name__, err)
@@ -563,13 +565,19 @@ class LsfLrms(batch.BatchSystem):
             return Memory(int(m[:-1]), unit=GB)
         elif unit == 'M':
             return Memory(int(m[:-1]), unit=MB)
-        elif unit in ['K', 'k']: # XXX: not sure which one is used
+        elif unit in ['K', 'k']:  # XXX: not sure which one is used
             return Memory(int(m[:-1]), unit=kB)
         else:
             # XXX: what does LSF use as a default?
             return Memory(int(m), unit=bytes)
 
-    _RESOURCE_USAGE_RE = re.compile(r'^\s+ CPU_T \s+ WAIT \s+ TURNAROUND \s+ STATUS \s+ HOG_FACTOR \s+ MEM \s+ SWAP', re.X)
+    _RESOURCE_USAGE_RE = re.compile(r'^\s+ CPU_T \s+ '
+                                    'WAIT \s+ '
+                                    'TURNAROUND \s+ '
+                                    'STATUS \s+ '
+                                    'HOG_FACTOR \s+ '
+                                    'MEM \s+ '
+                                    'SWAP', re.X)
     _EVENT_RE = re.compile(
         r'^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)'
         ' \s+ (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
@@ -586,35 +594,39 @@ class LsfLrms(batch.BatchSystem):
                 timestamp = line.split(': ')[0]
                 event = match.group('event')
                 if event == 'Submitted':
-                    data['lsf_submission_time'] = LsfLrms._parse_timespec(timestamp)
+                    data['lsf_submission_time'] = \
+                        LsfLrms._parse_timespec(timestamp)
                 elif event == 'Dispatched':
-                    data['lsf_start_time'] = LsfLrms._parse_timespec(timestamp)
+                    data['lsf_start_time'] = \
+                        LsfLrms._parse_timespec(timestamp)
                 elif event == 'Completed':
-                    data['lsf_completion_time'] = LsfLrms._parse_timespec(timestamp)
+                    data['lsf_completion_time'] = \
+                        LsfLrms._parse_timespec(timestamp)
                 continue
             match = LsfLrms._RESOURCE_USAGE_RE.match(line)
             if match:
                 # actual resource usage is on next line
                 rusage = lines.next()
-                cpu_t, wait, turnaround, status, hog_factor, mem, swap = rusage.split()
+                cpu_t, wait, turnaround, status, hog_factor, mem, swap = \
+                    rusage.split()
                 # common backend attrs (see Issue 78)
                 if 'lsf_completion_time' in data and 'lsf_start_time' in data:
-                    data['duration'] = Duration(data['lsf_completion_time'] - data['lsf_start_time'])
+                    data['duration'] = Duration(
+                        data['lsf_completion_time'] - data['lsf_start_time'])
                 else:
                     # XXX: what should we use for jobs that did not run at all?
                     data['duration'] = Duration(0, unit=seconds)
                 data['used_cpu_time'] = Duration(float(cpu_t), unit=seconds)
-                data['max_used_memory'] = LsfLrms._parse_memspec(mem) + LsfLrms._parse_memspec(swap)
+                data['max_used_memory'] = LsfLrms._parse_memspec(mem)\
+                    + LsfLrms._parse_memspec(swap)
                 # the resource usage line is the last interesting line
                 break
         return data
 
-
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._bkill, jobid))
 
-
-    @cache_for(gc3libs.Default.ARC_CACHE_TIME)
+    @gc3libs.utils.cache_for(gc3libs.Default.ARC_CACHE_TIME)
     @LRMS.authenticated
     def get_resource_status(self):
         """
@@ -638,7 +650,8 @@ class LsfLrms(batch.BatchSystem):
             # lhost output format:
             # ($nodeid,$OStype,$model,$cpuf,$ncpus,$maxmem,$maxswp)
             _command = ('%s -w' % self._lshosts)
-            exit_code, stdout, stderr = self.transport.execute_command(_command)
+            exit_code, stdout, stderr = self.transport.execute_command(
+                _command)
             if exit_code != 0:
                 # cannot continue
                 raise gc3libs.exceptions.LRMSError(
@@ -651,28 +664,30 @@ class LsfLrms(batch.BatchSystem):
                 # Remove Header
                 lhosts_output.pop(0)
             else:
-                lhosts_output = [ ]
+                lhosts_output = []
 
             # compute self.total_slots
             self.max_cores = 0
             for line in lhosts_output:
-                # HOST_NAME      type    model  cpuf ncpus maxmem maxswp server RESOURCES
-                (hostname, h_type, h_model, h_cpuf, h_ncpus) = line.strip().split()[0:5]
+                # HOST_NAME      type    model  cpuf ncpus maxmem maxswp server RESOURCES  # noqa
+                (hostname, h_type, h_model, h_cpuf, h_ncpus) = \
+                    line.strip().split()[0:5]
                 try:
-                    self.max_cores +=  int(h_ncpus)
+                    self.max_cores += int(h_ncpus)
                 except ValueError:
                     # h_ncpus == '-'
                     pass
 
-            # Run `bjobs -u all -w` to get information about the jobs for a given
-            # user used to compute `running_jobs`, `self.queued`,
-            # `self.user_run` and `self.user_queued`.
+            # Run `bjobs -u all -w` to get information about the jobs
+            # for a given user used to compute `running_jobs`,
+            # `self.queued`, `self.user_run` and `self.user_queued`.
             #
             # bjobs output format:
-            # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
+            # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME  # noqa
             _command = ('%s -u all -w' % self._bjobs)
             log.debug("Runing `%s`... ", _command)
-            exit_code, stdout, stderr = self.transport.execute_command(_command)
+            exit_code, stdout, stderr = \
+                self.transport.execute_command(_command)
             if exit_code != 0:
                 # cannot continue
                 raise gc3libs.exceptions.LRMSError(
@@ -685,7 +700,7 @@ class LsfLrms(batch.BatchSystem):
                 # Remove Header
                 bjobs_output.pop(0)
             else:
-                bjobs_output = [ ]
+                bjobs_output = []
 
             # user runing/queued
             used_cores = 0
@@ -693,10 +708,12 @@ class LsfLrms(batch.BatchSystem):
             self.user_queued = 0
             self.user_run = 0
 
-            queued_statuses = ['PEND', 'PSUSP', 'USUSP', 'SSUSP', 'WAIT', 'ZOMBI']
+            queued_statuses = ['PEND', 'PSUSP', 'USUSP',
+                               'SSUSP', 'WAIT', 'ZOMBI']
             for line in bjobs_output:
-                # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
-                (jobid, user, stat, queue, from_h, exec_h) = line.strip().split()[0:6]
+                # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME  # noqa
+                (jobid, user, stat, queue, from_h, exec_h) = \
+                    line.strip().split()[0:6]
                 # to compute the number of cores allocated per each job
                 # we use the output format of EXEC_HOST field
                 # e.g.: 1*cpt178:2*cpt151
@@ -726,7 +743,7 @@ class LsfLrms(batch.BatchSystem):
 
             return self
 
-        except Exception, ex:
+        except Exception as ex:
             # self.transport.close()
             log.error("Error querying remote LRMS, see debug log for details.")
             log.debug("Error querying LRMS: %s: %s",
@@ -734,7 +751,7 @@ class LsfLrms(batch.BatchSystem):
             raise
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

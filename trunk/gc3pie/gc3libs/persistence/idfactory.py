@@ -43,14 +43,16 @@ def _Id_make_comparison_function(op):
                           (str(other._prefix), other._seqno))
             except AttributeError:
                 # fall back to safe comparison as `str`
-                gc3libs.log.debug("Wrong job ID: comparing '%s' (%s) with '%s' (%s)"
-                                  % (self, type(self), other, type(other)))
+                gc3libs.log.debug(
+                    "Wrong job ID: comparing '%s' (%s) with '%s' (%s)"
+                    % (self, type(self), other, type(other)))
                 return op(str(self), str(other))
         return cmp_fn
     return decorate
 
 
 class Id(str):
+
     """
     An automatically-generated "unique identifier" (a string-like object).
     The unique object identifier has the form "PREFIX.NNN"
@@ -102,11 +104,13 @@ class Id(str):
 
 
 class IdFactory(object):
+
     """
     Automatically generate a "unique identifier" (of class `Id`).
     Object identifiers are temporally unique: no identifier will
     (ever) be re-used, even in different invocations of the program.
     """
+
     def __init__(self, prefix=None, next_id_fn=None, id_class=Id):
         """
         Construct an `IdFactory` instance whose `new` method returns
@@ -152,15 +156,17 @@ class IdFactory(object):
 
 
 class JobIdFactory(IdFactory):
+
     """
     Override :class:`IdFactory` behavior and generate IDs starting with a
     lowercase ``job`` prefix.
     """
+
     def __init__(self, next_id_fn=None):
         IdFactory.__init__(self, 'job', next_id_fn)
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

@@ -24,14 +24,13 @@ __version__ = '$Revision$'
 import datetime
 import os
 import shutil
-import sys
 import tempfile
 
 import gc3libs
 import gc3libs.core
 import gc3libs.config
 from gc3libs.backends.lsf import LsfLrms
-from gc3libs.quantity import Duration, hours, minutes, seconds, Memory, GB, MB, kB
+from gc3libs.quantity import Duration, hours, Memory, GB
 
 from nose.tools import assert_equal, raises
 
@@ -39,27 +38,36 @@ _datetime_date = None
 
 files_to_remove = []
 
+
 def setUpModule():
-    """Mock the `datetime.date.today()` outcome in order to make the LSF parsing independent from the testing date."""
+    """Mock the `datetime.date.today()` outcome in order to make the LSF
+    parsing independent from the testing date."""
     # save the original `datetime.date` to restore it in `tearDownModule()`
     import datetime
     global _datetime_date
     _datetime_date = datetime.date
     # mock features of `datetime.date.today()` that are actually used
     # in `LsfLrms._parse_date()`
+
     class MockDate(object):
+
         def __init__(self, real):
             self.__date = real
+
         def __getattr__(self, name):
             return getattr(self.__date, name)
+
         def __call__(self, *args, **kwargs):
             return self.__date(*args, **kwargs)
     datetime.date = MockDate(datetime.date)
+
     class Today(object):
+
         def __init__(self):
             self.year = 2012
             self.month = 12
     datetime.date.today = Today
+
 
 def tearDownModule():
     # restore the original `datetime.date`
@@ -71,6 +79,7 @@ def tearDownModule():
             shutil.rmtree(fname)
         else:
             os.remove(fname)
+
 
 def test_get_command():
     (fd, tmpfile) = tempfile.mkstemp()
@@ -108,7 +117,7 @@ lsf_continuation_line_prefix_length = 12
 
     assert_equal(b.bsub, ['/usr/local/bin/bsub', '-R', 'lustre'])
 
-    assert_equal(b._bjobs,   '/usr/local/bin/bjobs')
+    assert_equal(b._bjobs, '/usr/local/bin/bjobs')
     assert_equal(b._lshosts, '/usr/local/sbin/lshosts')
 
     assert_equal(b._CONTINUATION_LINE_START, 12 * ' ')
@@ -119,9 +128,9 @@ def test_bjobs_output_done1():
                   architecture=gc3libs.Run.Arch.X86_64,
                   max_cores=1,
                   max_cores_per_job=1,
-                  max_memory_per_core=1*GB,
-                  max_walltime=1*hours,
-                  auth=None, # ignored if `transport` is `local`
+                  max_memory_per_core=1 * GB,
+                  max_walltime=1 * hours,
+                  auth=None,  # ignored if `transport` is `local`
                   frontend='localhost',
                   transport='local')
     jobstatus = lsf._parse_stat_output("""
@@ -167,9 +176,9 @@ def test_bjobs_output_done2():
                   architecture=gc3libs.Run.Arch.X86_64,
                   max_cores=1,
                   max_cores_per_job=1,
-                  max_memory_per_core=1*GB,
-                  max_walltime=1*hours,
-                  auth=None, # ignored if `transport` is `local`
+                  max_memory_per_core=1 * GB,
+                  max_walltime=1 * hours,
+                  auth=None,  # ignored if `transport` is `local`
                   frontend='localhost',
                   transport='local')
     jobstatus = lsf._parse_stat_output("""
@@ -278,9 +287,9 @@ def test_bjobs_output_done3():
                   architecture=gc3libs.Run.Arch.X86_64,
                   max_cores=1,
                   max_cores_per_job=1,
-                  max_memory_per_core=1*GB,
-                  max_walltime=1*hours,
-                  auth=None, # ignored if `transport` is `local`
+                  max_memory_per_core=1 * GB,
+                  max_walltime=1 * hours,
+                  auth=None,  # ignored if `transport` is `local`
                   frontend='localhost',
                   transport='local')
     jobstatus = lsf._parse_stat_output("""
@@ -321,9 +330,9 @@ def test_bjobs_output_exit_nonzero():
                   architecture=gc3libs.Run.Arch.X86_64,
                   max_cores=1,
                   max_cores_per_job=1,
-                  max_memory_per_core=1*GB,
-                  max_walltime=1*hours,
-                  auth=None, # ignored if `transport` is `local`
+                  max_memory_per_core=1 * GB,
+                  max_walltime=1 * hours,
+                  auth=None,  # ignored if `transport` is `local`
                   frontend='localhost',
                   transport='local')
     jobstatus = lsf._parse_stat_output("""
@@ -359,9 +368,9 @@ def test_bjobs_incorrect_prefix_length():
                   architecture=gc3libs.Run.Arch.X86_64,
                   max_cores=1,
                   max_cores_per_job=1,
-                  max_memory_per_core=1*GB,
-                  max_walltime=1*hours,
-                  auth=None, # ignored if `transport` is `local`
+                  max_memory_per_core=1 * GB,
+                  max_walltime=1 * hours,
+                  auth=None,  # ignored if `transport` is `local`
                   frontend='localhost',
                   transport='local',
                   lsf_continuation_line_prefix_length=7)
@@ -402,9 +411,9 @@ def test_bjobs_correct_explicit_prefix_length():
                   architecture=gc3libs.Run.Arch.X86_64,
                   max_cores=1,
                   max_cores_per_job=1,
-                  max_memory_per_core=1*GB,
-                  max_walltime=1*hours,
-                  auth=None, # ignored if `transport` is `local`
+                  max_memory_per_core=1 * GB,
+                  max_walltime=1 * hours,
+                  auth=None,  # ignored if `transport` is `local`
                   frontend='localhost',
                   transport='local',
                   lsf_continuation_line_prefix_length=26)
@@ -487,9 +496,12 @@ SUMMARY:      ( time unit: second )
     assert_equal(acct['max_used_memory'], Memory('227MB'))
     # timestamps
     year = datetime.date.today().year
-    assert_equal(acct['lsf_submission_time'], datetime.datetime(year, 10, 8, 17, 7, 54))
-    assert_equal(acct['lsf_start_time'],      datetime.datetime(year, 10, 8, 17, 8, 44))
-    assert_equal(acct['lsf_completion_time'], datetime.datetime(year, 10, 8, 17, 9, 51))
+    assert_equal(acct['lsf_submission_time'],
+                 datetime.datetime(year, 10, 8, 17, 7, 54))
+    assert_equal(acct['lsf_start_time'],
+                 datetime.datetime(year, 10, 8, 17, 8, 44))
+    assert_equal(acct['lsf_completion_time'],
+                 datetime.datetime(year, 10, 8, 17, 9, 51))
 
 
 def test_bacct_done1():
@@ -535,9 +547,12 @@ SUMMARY:      ( time unit: second )
     assert_equal(acct['max_used_memory'], Memory('37MB'))
     # timestamps
     year = datetime.date.today().year
-    assert_equal(acct['lsf_submission_time'], datetime.datetime(year, 10, 8, 17,  8, 54))
-    assert_equal(acct['lsf_start_time'],      datetime.datetime(year, 10, 8, 17, 10,  1))
-    assert_equal(acct['lsf_completion_time'], datetime.datetime(year, 10, 8, 17, 10,  7))
+    assert_equal(acct['lsf_submission_time'],
+                 datetime.datetime(year, 10, 8, 17, 8, 54))
+    assert_equal(acct['lsf_start_time'],
+                 datetime.datetime(year, 10, 8, 17, 10, 1))
+    assert_equal(acct['lsf_completion_time'],
+                 datetime.datetime(year, 10, 8, 17, 10, 7))
 
 
 def test_bacct_killed():
@@ -583,30 +598,32 @@ SUMMARY:      ( time unit: second )
     assert_equal(acct['max_used_memory'], Memory('35MB'))
     # timestamps
     year = datetime.date.today().year
-    assert_equal(acct['lsf_submission_time'], datetime.datetime(year, 10, 5, 17, 49, 35))
-    assert_equal(acct['lsf_start_time'],      datetime.datetime(year, 10, 5, 17, 50, 35))
-    assert_equal(acct['lsf_completion_time'], datetime.datetime(year, 10, 5, 17, 51, 30))
-
+    assert_equal(acct['lsf_submission_time'],
+                 datetime.datetime(year, 10, 5, 17, 49, 35))
+    assert_equal(acct['lsf_start_time'],
+                 datetime.datetime(year, 10, 5, 17, 50, 35))
+    assert_equal(acct['lsf_completion_time'],
+                 datetime.datetime(year, 10, 5, 17, 51, 30))
 
 
 # LSF incorporates resource usage information in a job's output;
 # the job's output is a copy of the email that the LSF system
 # sends to the user that submitted a job.
-################################################################################################
+###############################################################################
 # Sender: LSF System <lsfadmin@cpt086>
 # Subject: Job 943186: <md5sum XXX/x.sh> Done
 #
-# Job <md5sum XXX/x.sh> was submitted from host <frt> by user <rmurri> in cluster <prdclst>.
-# Job was executed on host(s) <cpt086>, in queue <normal>, as user <rmurri> in cluster <prdclst>.
-# </home/rmurri> was used as the home directory.
-# </home/rmurri> was used as the working directory.
-# Started at Mon Oct  8 17:23:30 2012
-# Results reported at Mon Oct  8 17:23:31 2012
+# Job <md5sum XXX/x.sh> was submitted from host <frt> by user <rmurri>
+# in cluster <prdclst>.  Job was executed on host(s) <cpt086>, in
+# queue <normal>, as user <rmurri> in cluster <prdclst>.
+# </home/rmurri> was used as the home directory.  </home/rmurri> was
+# used as the working directory.  Started at Mon Oct 8 17:23:30 2012
+# Results reported at Mon Oct 8 17:23:31 2012
 #
 # Your job looked like:
 #
 # ------------------------------------------------------------
-# # LSBATCH: User input
+# LSBATCH: User input
 # md5sum XXX/x.sh
 # ------------------------------------------------------------
 #
@@ -624,7 +641,7 @@ SUMMARY:      ( time unit: second )
 # The output (if any) follows:
 #
 # b7f9d9c86469aa8b57c19af14bf80af9  XXX/x.sh
-################################################################################################
+###############################################################################
 
 
 if __name__ == "__main__":

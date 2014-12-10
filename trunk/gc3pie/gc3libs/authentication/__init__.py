@@ -21,11 +21,11 @@ Authentication support for the GC3Libs.
 __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
-import sys
-
 import gc3libs.exceptions
 
+
 class Auth(object):
+
     """
     A mish-mash of authorization functions.
 
@@ -62,14 +62,14 @@ class Auth(object):
         part, which is also hard-coded in the auth classes, and should not be.
     """
     types = {}
+
     def __init__(self, config, auto_enable):
         self.auto_enable = auto_enable
-        self.__auths = { }
+        self.__auths = {}
         self._config = config
-        self._ctors = { }
+        self._ctors = {}
         for auth_name, auth_params in self._config.iteritems():
             self._ctors[auth_name] = Auth.types[auth_params['type']]
-
 
     def add_params(self, **params):
         """
@@ -81,7 +81,6 @@ class Auth(object):
         """
         for auth_name, auth_params in self._config.iteritems():
             auth_params.update(params)
-
 
     def get(self, auth_name, **kwargs):
         """
@@ -108,8 +107,8 @@ class Auth(object):
             try:
                 params = self._config[auth_name].copy()
                 params.update(kwargs)
-                a =  self._ctors[auth_name](**dict(params))
-            except (AssertionError, AttributeError), ex:
+                a = self._ctors[auth_name](**dict(params))
+            except (AssertionError, AttributeError) as ex:
                 a = gc3libs.exceptions.ConfigurationError(
                     "Missing required configuration parameters"
                     " in auth section '%s': %s" % (auth_name, str(ex)))
@@ -125,12 +124,13 @@ class Auth(object):
             if self.auto_enable:
                 try:
                     a.enable()
-                except gc3libs.exceptions.RecoverableAuthError, x:
+                except gc3libs.exceptions.RecoverableAuthError as x:
                     raise
-                except gc3libs.exceptions.UnrecoverableAuthError, x:
-                    gc3libs.log.debug("Got exception while enabling auth '%s',"
-                                      " will remember for next invocations:"
-                                      " %s: %s" % (auth_name, x.__class__.__name__, x))
+                except gc3libs.exceptions.UnrecoverableAuthError as x:
+                    gc3libs.log.debug(
+                        "Got exception while enabling auth '%s',"
+                        " will remember for next invocations:"
+                        " %s: %s" % (auth_name, x.__class__.__name__, x))
                     a = x
             else:
                 a = gc3libs.exceptions.UnrecoverableAuthError(
@@ -140,21 +140,22 @@ class Auth(object):
         self.__auths[auth_name] = a
         return a
 
-
     @staticmethod
     def register(auth_type, ctor):
         Auth.types[auth_type] = ctor
 
 
 class NoneAuth(object):
+
     """Auth proxy to use when no auth is needed."""
+
     def __init__(self, **auth):
         try:
             # test validity
             assert auth['type'] == 'none', (
                 "Configuration error. Unknown type: %s. Valid type: none"
                 % auth.type)
-        except AssertionError, x:
+        except AssertionError as x:
             raise gc3libs.exceptions.ConfigurationError(
                 'Erroneous configuration parameter: %s' % str(x))
 
@@ -176,7 +177,7 @@ import gc3libs.authentication.ssh
 import gc3libs.authentication.ec2
 import gc3libs.authentication.openstack
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

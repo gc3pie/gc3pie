@@ -29,6 +29,7 @@ import gc3libs.exceptions
 
 
 class EC2Auth(object):
+
     def __init__(self, **auth):
         self.__dict__.update(auth)
         try:
@@ -36,7 +37,7 @@ class EC2Auth(object):
             assert auth['type'] == 'ec2', \
                 "Configuration error. Unknown type; %s. Valid type: ec2" \
                 % auth.type
-        except AssertionError, x:
+        except AssertionError as x:
             raise gc3libs.exceptions.ConfigurationError(
                 'Erroneous configuration parameter: %s' % str(x))
 
@@ -52,10 +53,10 @@ class EC2Auth(object):
                     "Configuration error. Missing mandatory " \
                     "`ec2_secret_key` key"
 
-        except AssertionError, x:
+        except AssertionError as x:
             raise gc3libs.exceptions.ConfigurationError(
                 'Erroneous configuration parameter: %s' % str(x))
-        
+
         # Strip quotes from ec2_*_key in case someone put it in the
         # configuration file
         auth['ec2_secret_key'] = auth['ec2_secret_key'].strip('"').strip("'")
@@ -71,7 +72,7 @@ class EC2Auth(object):
 
 Auth.register('ec2', EC2Auth)
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

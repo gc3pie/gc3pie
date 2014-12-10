@@ -5,7 +5,7 @@ has it.
 """
 
 try:
-    from functools import *
+    from .functools import *
 except ImportError:
     pass
 

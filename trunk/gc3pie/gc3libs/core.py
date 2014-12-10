@@ -26,10 +26,8 @@ __date__ = '$Date$'
 from fnmatch import fnmatch
 import os
 import posix
-import re
 import sys
 import time
-import ConfigParser
 import tempfile
 import warnings
 warnings.simplefilter("ignore")
@@ -39,16 +37,12 @@ from gc3libs.compat._collections import defaultdict
 import gc3libs
 import gc3libs.debug
 from gc3libs import Application, Run, Task
-from gc3libs.backends.sge import SgeLrms
-from gc3libs.backends.pbs import PbsLrms
-from gc3libs.backends.lsf import LsfLrms
-from gc3libs.backends.shellcmd import ShellcmdLrms
-from gc3libs.authentication import Auth
 import gc3libs.exceptions
 import gc3libs.utils as utils
 
 
 class MatchMaker(object):
+
     """Select and sort resources for attempting submission of a `Task`.
 
     A match-making algorithm must implement two methods:
@@ -94,8 +88,9 @@ class MatchMaker(object):
         # keep only compatible resources
         try:
             compatible_resources = task.compatible_resources(resources)
-            gc3libs.log.debug('Task compatiblity check returned %d matching resources',
-                              len(compatible_resources))
+            gc3libs.log.debug(
+                'Task compatiblity check returned %d matching resources',
+                len(compatible_resources))
         except AttributeError:
             # XXX: should we require that len(resources) > 0?
             compatible_resources = resources
@@ -103,7 +98,8 @@ class MatchMaker(object):
 
     def rank(self, task, resources):
         """
-        Sort the list of `resources` in the preferred order for submitting `task`.
+        Sort the list of `resources` in the preferred order for submitting
+        `task`.
 
         Unless overridden in a derived class, this calls the task's
         `rank_resources` method to sort the list.  If the task does
@@ -119,6 +115,7 @@ class MatchMaker(object):
 
 
 class Core:
+
     """Core operations: submit, update state, retrieve (a
 snapshot of) output, cancel job.
 
@@ -129,6 +126,7 @@ Operations are always performed by a `Core` object.  `Core` implements
 an overlay Grid on the resources specified in the configuration file.
 
     """
+
     def __init__(self, cfg, matchmaker=MatchMaker()):
         # init auths
         self.auto_enable_auth = cfg.auto_enable_auth
@@ -142,7 +140,6 @@ an overlay Grid on the resources specified in the configuration file.
         # init matchmaker
         self.matchmaker = matchmaker
 
-
     def get_backend(self, name):
         try:
             return self.resources[name]
@@ -150,7 +147,6 @@ an overlay Grid on the resources specified in the configuration file.
             raise gc3libs.exceptions.InvalidResourceName(
                 "Cannot find computational resource '%s'" %
                 name)
-
 
     def select_resource(self, match):
         """
@@ -176,7 +172,6 @@ an overlay Grid on the resources specified in the configuration file.
                     lrms.enabled = False
         return len(self.resources)
 
-
     def free(self, app, **extra_args):
         """
         Free up any remote resources used for the execution of `app`.
@@ -190,8 +185,9 @@ an overlay Grid on the resources specified in the configuration file.
         :raise: `gc3libs.exceptions.InvalidOperation` if `app.execution.state`
                 differs from `Run.State.TERMINATED`.
         """
-        assert isinstance(app, Task), \
-            "Core.free: passed an `app` argument which is not a `Task` instance."
+        assert isinstance(
+            app, Task), "Core.free: passed an `app` argument which" \
+            " is not a `Task` instance."
         if isinstance(app, Application):
             return self.__free_application(app, **extra_args)
         else:
@@ -200,15 +196,17 @@ an overlay Grid on the resources specified in the configuration file.
 
     def __free_application(self, app, **extra_args):
         """Implementation of `free` on `Application` objects."""
-        if app.execution.state not in [ Run.State.TERMINATING, Run.State.TERMINATED ]:
+        if app.execution.state not in [
+                Run.State.TERMINATING, Run.State.TERMINATED]:
             raise gc3libs.exceptions.InvalidOperation(
                 "Attempting to free resources of job '%s',"
                 " which is in non-terminal state." % app)
 
-        auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
+        # auto_enable_auth = extra_args.get(
+        #     'auto_enable_auth', self.auto_enable_auth)
 
         if hasattr(app.execution, 'resource_name'):
-            lrms =  self.get_backend(app.execution.resource_name)
+            lrms = self.get_backend(app.execution.resource_name)
             lrms.free(app)
         else:
             gc3libs.log.debug(
@@ -219,7 +217,6 @@ an overlay Grid on the resources specified in the configuration file.
     def __free_task(self, task, **extra_args):
         """Implementation of `free` on generic `Task` objects."""
         return task.free(**extra_args)
-
 
     def submit(self, app, resubmit=False, targets=None, **extra_args):
         """Submit a job running an instance of the given task `app`.
@@ -251,10 +248,12 @@ an overlay Grid on the resources specified in the configuration file.
           brokering among all the configured resources.
 
         """
-        assert isinstance(app, Task), \
-            "Core.submit: passed an `app` argument which is not a `Task` instance."
+        assert isinstance(
+            app, Task), "Core.submit: passed an `app` argument" \
+            "which is not a `Task` instance."
         if isinstance(app, Application):
-            return self.__submit_application(app, resubmit, targets, **extra_args)
+            return self.__submit_application(
+                app, resubmit, targets, **extra_args)
         else:
             # must be a `Task` instance
             return self.__submit_task(app, resubmit, targets, **extra_args)
@@ -264,7 +263,8 @@ an overlay Grid on the resources specified in the configuration file.
 
         gc3libs.log.debug("Submitting %s ..." % str(app))
 
-        auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
+        # auto_enable_auth = extra_args.get(
+        #     'auto_enable_auth', self.auto_enable_auth)
 
         job = app.execution
         if resubmit:
@@ -283,21 +283,24 @@ an overlay Grid on the resources specified in the configuration file.
 
         if targets is not None:
             assert len(targets) > 0
-        else: # targets is None
-            enabled_resources = [ r for r in self.resources.itervalues() if r.enabled ]
+        else:  # targets is None
+            enabled_resources = [
+                r for r in self.resources.itervalues() if r.enabled]
             if len(enabled_resources) == 0:
                 raise gc3libs.exceptions.NoResources(
                     "Could not initialize any computational resource"
                     " - please check log and configuration file.")
 
             # decide which resource to use
-            compatible_resources = self.matchmaker.filter(app, enabled_resources)
+            compatible_resources = self.matchmaker.filter(
+                app, enabled_resources)
             if 0 == len(compatible_resources):
                 raise gc3libs.exceptions.NoResources(
-                    "No available resource can accomodate the application requirements")
+                    "No available resource can accomodate the application"
+                    " requirements")
             gc3libs.log.debug(
-                "Application compatibility check returned %d matching resources",
-                len(compatible_resources))
+                "Application compatibility check returned %d matching"
+                " resources", len(compatible_resources))
 
             if len(compatible_resources) <= 1:
                 # shortcut: no brokering to do, just use what we've got
@@ -313,24 +316,29 @@ an overlay Grid on the resources specified in the configuration file.
                             % r.name)
                         r.get_resource_status()
                         updated_resources.append(r)
-                    except Exception, err:
-                        # ignore errors in update, assume resource has a problem
-                        # and just drop it
-                        gc3libs.log.error("Cannot update status of resource '%s', dropping it."
-                                          " See log file for details."
-                                          % r.name)
-                        gc3libs.log.debug("Got error from get_resource_status(): %s: %s",
-                                          err.__class__.__name__, str(err), exc_info=True)
+                    except Exception as err:
+                        # ignore errors in update, assume resource has
+                        # a problem and just drop it
+                        gc3libs.log.error(
+                            "Cannot update status of resource '%s', dropping"
+                            " it. See log file for details." %
+                            r.name)
+                        gc3libs.log.debug(
+                            "Got error from get_resource_status(): %s: %s",
+                            err.__class__.__name__,
+                            str(err),
+                            exc_info=True)
 
                 if len(updated_resources) == 0:
                     raise gc3libs.exceptions.LRMSSubmitError(
-                        "No computational resource found reachable during update!"
-                        " Aborting submission of task '%s'" % app)
+                        "No computational resource found reachable during"
+                        " update! Aborting submission of task '%s'" %
+                        app)
 
                 # sort resources according to Application's preferences
                 targets = self.matchmaker.rank(app, updated_resources)
 
-        exs = [ ]
+        exs = []
         # after brokering we have a sorted list of valid resource
         for resource in targets:
             gc3libs.log.debug("Attempting submission to resource '%s'..."
@@ -339,12 +347,12 @@ an overlay Grid on the resources specified in the configuration file.
                 job.timestamp[Run.State.NEW] = time.time()
                 job.info = ("Submitting to '%s'" % (resource.name,))
                 resource.submit_job(app)
-            except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration, ex:
+            except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration as ex:
                 gc3libs.log.info(
                     "Submission of job %s delayed" % app)
                 # Just raise the exception
                 raise
-            except Exception, ex:
+            except Exception as ex:
                 gc3libs.log.info(
                     "Error in submitting job to resource '%s': %s: %s",
                     resource.name, ex.__class__.__name__, str(ex),
@@ -374,7 +382,6 @@ an overlay Grid on the resources specified in the configuration file.
         extra_args.setdefault('auto_enable_auth', self.auto_enable_auth)
         task.submit(resubmit, **extra_args)
 
-
     def update_job_state(self, *apps, **extra_args):
         """
         Update state of all applications passed in as arguments.
@@ -397,27 +404,39 @@ an overlay Grid on the resources specified in the configuration file.
                 non-existing auth section).
 
         """
-        self.__update_application((app for app in apps if isinstance(app, Application)), **extra_args)
-        self.__update_task((app for app in apps if not isinstance(app, Application)), **extra_args)
+        self.__update_application(
+            (app for app in apps if isinstance(
+                app,
+                Application)),
+            **extra_args)
+        self.__update_task(
+            (app for app in apps if not isinstance(
+                app,
+                Application)),
+            **extra_args)
 
     def __update_application(self, apps, **extra_args):
         """Implementation of `update_job_state` on `Application` objects."""
         update_on_error = extra_args.get('update_on_error', False)
-        auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
+        # auto_enable_auth = extra_args.get(
+        #     'auto_enable_auth', self.auto_enable_auth)
 
         for app in apps:
             state = app.execution.state
             old_state = state
-            gc3libs.log.debug("About to update state of application: %s (currently: %s)", app, state)
+            gc3libs.log.debug(
+                "About to update state of application: %s (currently: %s)",
+                app,
+                state)
             try:
-                if state not in [ Run.State.NEW,
-                                  Run.State.TERMINATING,
-                                  Run.State.TERMINATED,
-                                  ]:
+                if state not in [Run.State.NEW,
+                                 Run.State.TERMINATING,
+                                 Run.State.TERMINATED,
+                                 ]:
                     lrms = self.get_backend(app.execution.resource_name)
                     try:
                         state = lrms.update_job_state(app)
-                    except Exception, ex:
+                    except Exception as ex:
                         gc3libs.log.debug(
                             "Error getting status of application '%s': %s: %s",
                             app, ex.__class__.__name__, str(ex), exc_info=True)
@@ -430,19 +449,25 @@ an overlay Grid on the resources specified in the configuration file.
                         app.changed = True
                         # set log information accordingly
                         if (app.execution.state == Run.State.TERMINATING
-                            and app.execution.returncode is not None
-                            and app.execution.returncode != 0):
+                                and app.execution.returncode is not None
+                                and app.execution.returncode != 0):
                             # there was some error, try to explain
-                            app.execution.info = ("Execution failed on resource: %s" % app.execution.resource_name)
+                            app.execution.info = (
+                                "Execution failed on resource: %s" %
+                                app.execution.resource_name)
                             signal = app.execution.signal
                             if signal in Run.Signals:
-                                app.execution.info = ("Abnormal termination: %s" % signal)
+                                app.execution.info = (
+                                    "Abnormal termination: %s" % signal)
                             else:
                                 if os.WIFSIGNALED(app.execution.returncode):
-                                    app.execution.info = ("Remote job terminated by signal %d" % signal)
+                                    app.execution.info = (
+                                        "Remote job terminated by signal %d" %
+                                        signal)
                                 else:
-                                    app.execution.info = ("Remote job exited with code %d"
-                                                          % app.execution.exitcode)
+                                    app.execution.info = (
+                                        "Remote job exited with code %d" %
+                                        app.execution.exitcode)
 
                     if state != Run.State.UNKNOWN or update_on_error:
                         app.execution.state = state
@@ -463,15 +488,19 @@ an overlay Grid on the resources specified in the configuration file.
                 app.changed = True
                 continue
 
-
-            except gc3libs.exceptions.InvalidResourceName, irn:
-                # could be the corresponding LRMS has been removed because of an unrecoverable error
-                # mark application as state UNKNOWN
-                gc3libs.log.warning("Failed while retrieving resource %s from core.Detailed Error message: %s" % (app.execution.resource_name, str(irn)))
+            except gc3libs.exceptions.InvalidResourceName as irn:
+                # could be the corresponding LRMS has been removed
+                # because of an unrecoverable error mark application
+                # as state UNKNOWN
+                gc3libs.log.warning(
+                    "Failed while retrieving resource %s from core.Detailed"
+                    " Error message: %s" %
+                    (app.execution.resource_name, str(irn)))
                 continue
 
-            # XXX: Re-enabled the catch-all clause otherwise the loop stops at the first erroneous iteration
-            except Exception, ex:
+            # XXX: Re-enabled the catch-all clause otherwise the loop stops at
+            # the first erroneous iteration
+            except Exception as ex:
                 if gc3libs.error_ignored(
                         # context:
                         # - module
@@ -498,10 +527,10 @@ an overlay Grid on the resources specified in the configuration file.
     def __update_task(self, tasks, **extra_args):
         """Implementation of `update_job_state` on generic `Task` objects."""
         for task in tasks:
-            assert isinstance(task, Task), \
-                   "Core.update_job_state: passed an argument which is not a `Task` instance."
+            assert isinstance(
+                task, Task), "Core.update_job_state: passed an argument" \
+                " which is not a `Task` instance."
             task.update_state()
-
 
     def fetch_output(self, app, download_dir=None,
                      overwrite=False, changed_only=True, **extra_args):
@@ -545,23 +574,28 @@ an overlay Grid on the resources specified in the configuration file.
                 state, indicating the remote job has not started
                 running).
         """
-        assert isinstance(app, Task), \
-            "Core.fetch_output: passed an `app` argument which is not a `Task` instance."
+        assert isinstance(
+            app, Task), "Core.fetch_output: passed an `app` argument " \
+            "which is not a `Task` instance."
         if isinstance(app, Application):
-            self.__fetch_output_application(app, download_dir, overwrite, changed_only, **extra_args)
+            self.__fetch_output_application(
+                app, download_dir, overwrite, changed_only, **extra_args)
         else:
             # generic `Task` object
-            self.__fetch_output_task(app, download_dir, overwrite, changed_only, **extra_args)
+            self.__fetch_output_task(
+                app, download_dir, overwrite, changed_only, **extra_args)
 
-    def __fetch_output_application(self, app, download_dir, overwrite, changed_only, **extra_args):
+    def __fetch_output_application(
+            self, app, download_dir, overwrite, changed_only, **extra_args):
         """Implementation of `fetch_output` on `Application` objects."""
         job = app.execution
-        if job.state in [ Run.State.NEW, Run.State.SUBMITTED ]:
+        if job.state in [Run.State.NEW, Run.State.SUBMITTED]:
             raise gc3libs.exceptions.OutputNotAvailableError(
                 "Output not available: '%s' currently in state '%s'"
                 % (app, app.execution.state))
 
-        auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
+        # auto_enable_auth = extra_args.get(
+        #     'auto_enable_auth', self.auto_enable_auth)
 
         # determine download dir
         download_dir = app._get_download_dir(download_dir)
@@ -573,9 +607,12 @@ an overlay Grid on the resources specified in the configuration file.
                     os.makedirs(download_dir)
             else:
                 utils.mkdir_with_backup(download_dir)
-        except Exception, ex:
-            gc3libs.log.error("Failed creating download directory '%s': %s: %s",
-                              download_dir, ex.__class__.__name__, str(ex))
+        except Exception as ex:
+            gc3libs.log.error(
+                "Failed creating download directory '%s': %s: %s",
+                download_dir,
+                ex.__class__.__name__,
+                str(ex))
             raise
 
         # download job output
@@ -585,7 +622,7 @@ an overlay Grid on the resources specified in the configuration file.
             # clear previous data staging errors
             if job.signal == Run.Signals.DataStagingFailure:
                 job.signal = 0
-        except gc3libs.exceptions.InvalidResourceName, ex:
+        except gc3libs.exceptions.InvalidResourceName as ex:
             gc3libs.log.warning(
                 "No such resource '%s': %s"
                 % (app.execution.resource_name, str(ex)))
@@ -595,17 +632,17 @@ an overlay Grid on the resources specified in the configuration file.
                 raise ex
             else:
                 return
-        except gc3libs.exceptions.RecoverableDataStagingError, rex:
+        except gc3libs.exceptions.RecoverableDataStagingError as rex:
             job.info = ("Temporary failure when retrieving results: %s."
                         " Ignoring error, try again." % str(rex))
             return
-        except gc3libs.exceptions.UnrecoverableDataStagingError, ex:
+        except gc3libs.exceptions.UnrecoverableDataStagingError as ex:
             job.signal = Run.Signals.DataStagingFailure
             ex = app.fetch_output_error(ex)
             if isinstance(ex, Exception):
                 job.info = ("No output could be retrieved: %s" % str(ex))
                 raise ex
-        except Exception, ex:
+        except Exception as ex:
             ex = app.fetch_output_error(ex)
             if isinstance(ex, Exception):
                 raise ex
@@ -621,18 +658,17 @@ an overlay Grid on the resources specified in the configuration file.
             gc3libs.log.debug("Final output of '%s' retrieved" % str(app))
         return Task.fetch_output(app, download_dir)
 
-
-    def __fetch_output_task(self, task, download_dir, overwrite, changed_only, **extra_args):
+    def __fetch_output_task(
+            self, task, download_dir, overwrite, changed_only, **extra_args):
         """Implementation of `fetch_output` on generic `Task` objects."""
-        return task.fetch_output(download_dir, overwrite, changed_only, **extra_args)
-
+        return task.fetch_output(
+            download_dir, overwrite, changed_only, **extra_args)
 
     def get_resources(self, **extra_args):
         """
         Return list of resources configured into this `Core` instance.
         """
-        return [ lrms for lrms in self.resources.itervalues() ]
-
+        return [lrms for lrms in self.resources.itervalues()]
 
     def kill(self, app, **extra_args):
         """
@@ -642,8 +678,9 @@ an overlay Grid on the resources specified in the configuration file.
         entails canceling the job with the remote execution system;
         terminating a job in the NEW or TERMINATED state is a no-op.
         """
-        assert isinstance(app, Task), \
-            "Core.kill: passed an `app` argument which is not a `Task` instance."
+        assert isinstance(
+            app, Task), "Core.kill: passed an `app` argument which is not"\
+            " a `Task` instance."
         if isinstance(app, Application):
             self.__kill_application(app, **extra_args)
         else:
@@ -652,7 +689,8 @@ an overlay Grid on the resources specified in the configuration file.
     def __kill_application(self, app, **extra_args):
         """Implementation of `kill` on `Application` objects."""
         job = app.execution
-        auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
+        # auto_enable_auth = extra_args.get(
+        #     'auto_enable_auth', self.auto_enable_auth)
         try:
             lrms = self.get_backend(job.resource_name)
             lrms.cancel_job(app)
@@ -661,8 +699,11 @@ an overlay Grid on the resources specified in the configuration file.
             # attribute.
             if job.state != Run.State.NEW:
                 raise
-        except gc3libs.exceptions.InvalidResourceName, irn:
-            gc3libs.log.warning("Failed while retrieving resource %s from core.Detailed Error message: %s" % (app.execution.resource_name, str(irn)))
+        except gc3libs.exceptions.InvalidResourceName as irn:
+            gc3libs.log.warning(
+                "Failed while retrieving resource %s from core.Detailed"
+                " Error message: %s" %
+                (app.execution.resource_name, str(irn)))
         gc3libs.log.debug(
             "Setting task '%s' status to TERMINATED"
             " and returncode to SIGCANCEL", app)
@@ -671,7 +712,7 @@ an overlay Grid on the resources specified in the configuration file.
         # which may raise an error -- ignore them, but log nonetheless
         try:
             job.state = Run.State.TERMINATED
-        except Exception, ex:
+        except Exception as ex:
             if gc3libs.error_ignored(
                     # context:
                     # - module
@@ -699,7 +740,6 @@ an overlay Grid on the resources specified in the configuration file.
         extra_args.setdefault('auto_enable_auth', self.auto_enable_auth)
         task.kill(**extra_args)
 
-
     def peek(self, app, what='stdout', offset=0, size=None, **extra_args):
         """
         Download `size` bytes (at `offset` bytes from the start) from
@@ -715,10 +755,12 @@ an overlay Grid on the resources specified in the configuration file.
         relevant section of the job's standard output resp. standard
         error should be downloaded.
         """
-        assert isinstance(app, Task), \
-            "Core.peek: passed an `app` argument which is not a `Task` instance."
+        assert isinstance(
+            app, Task), "Core.peek: passed an `app` argument which is" \
+            " not a `Task` instance."
         if isinstance(app, Application):
-            return self.__peek_application(app, what, offset, size, **extra_args)
+            return self.__peek_application(
+                app, what, offset, size, **extra_args)
         else:
             return self.__peek_task(app, what, offset, size, **extra_args)
 
@@ -729,8 +771,9 @@ an overlay Grid on the resources specified in the configuration file.
         elif what == 'stderr':
             remote_filename = app.stderr
         else:
-            raise Error("File name requested to `Core.peek` must be"
-                        " 'stdout' or 'stderr', not '%s'" % what)
+            raise gc3libs.exceptions.Error(
+                "File name requested to `Core.peek` must be"
+                " 'stdout' or 'stderr', not '%s'" % what)
 
         # Check if local data available
         job = app.execution
@@ -740,9 +783,11 @@ an overlay Grid on the resources specified in the configuration file.
             local_file = open(filename, 'r')
         else:
             # Get authN
-            auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
+            # auto_enable_auth = extra_args.get(
+            #     'auto_enable_auth', self.auto_enable_auth)
             lrms = self.get_backend(job.resource_name)
-            local_file = tempfile.NamedTemporaryFile(suffix='.tmp', prefix='gc3libs.')
+            local_file = tempfile.NamedTemporaryFile(
+                suffix='.tmp', prefix='gc3libs.')
             lrms.peek(app, remote_filename, local_file, offset, size)
             local_file.flush()
             local_file.seek(0)
@@ -753,26 +798,26 @@ an overlay Grid on the resources specified in the configuration file.
         """Implementation of `peek` on generic `Task` objects."""
         return task.peek(what, offset, size, **extra_args)
 
-
     def update_resources(self, **extra_args):
         """
         Update the state of resources configured into this `Core` instance.
 
-        Each resource object in the returned list will have its `updated` attribute
-        set to `True` if the update operation succeeded, or `False` if it failed.
+        Each resource object in the returned list will have its `updated`
+        attribute set to `True` if the update operation succeeded, or `False`
+        if it failed.
         """
         for lrms in self.resources.itervalues():
             try:
                 if not lrms.enabled:
                     continue
-                auto_enable_auth = extra_args.get('auto_enable_auth', self.auto_enable_auth)
+                # auto_enable_auth = extra_args.get(
+                #     'auto_enable_auth', self.auto_enable_auth)
                 resource = lrms.get_resource_status()
                 resource.updated = True
-            except Exception, ex:
+            except Exception as ex:
                 gc3libs.log.error("Got error while updating resource '%s': %s."
                                   % (lrms.name, str(ex)))
                 lrms.updated = False
-
 
     def close(self):
         """
@@ -782,8 +827,7 @@ an overlay Grid on the resources specified in the configuration file.
         for lrms in self.resources.itervalues():
             lrms.close()
 
-
-    ## compatibility with the `Engine` interface
+    # compatibility with the `Engine` interface
 
     def add(self, task):
         """
@@ -792,7 +836,6 @@ an overlay Grid on the resources specified in the configuration file.
         no sense in the synchronous/blocking semantics implemented by `Core`.
         """
         pass
-
 
     def remove(self, task):
         """
@@ -804,6 +847,7 @@ an overlay Grid on the resources specified in the configuration file.
 
 
 class Scheduler(object):
+
     """
     Instances of the `Scheduler` class are used in
     `Engine.progress`:meth: to determine what tasks (among those in
@@ -812,8 +856,8 @@ class Scheduler(object):
     A `Scheduler` object must implement *both* the context_ protocol
     *and* the iterator_ protocol.
 
-    .. _context:  http://docs.python.org/2/library/stdtypes.html#typecontextmanager
-    .. _iterator: http://stackoverflow.com/questions/9884132/understanding-pythons-iterator-iterable-and-iteration-protocols-what-exact
+    .. _context:  http://goo.gl/SvWWyw
+    .. _iterator: http://goo.gl/ue2zje
 
     The way a `Scheduler` instance is actually used within `Engine` is
     as follows:
@@ -905,10 +949,11 @@ class Scheduler(object):
 
 
 class scheduler(object):
+
     """
     Decorate a generator function for use as a `Scheduler`:class: object.
     """
-    __slots__ = [ '_fn', '_gen' ]
+    __slots__ = ['_fn', '_gen']
 
     def __init__(self, fn):
         self._fn = fn
@@ -917,7 +962,7 @@ class scheduler(object):
         self._gen = self._fn(*args, **kwargs)
         return self
 
-    ## proxy generator protocol methods
+    # proxy generator protocol methods
 
     def __iter__(self):
         return self
@@ -934,7 +979,7 @@ class scheduler(object):
     def close(self):
         self._gen.close()
 
-    ## add context protocol methods
+    # add context protocol methods
 
     def __enter__(self):
         return self
@@ -968,13 +1013,14 @@ def first_come_first_serve(tasks, resources, matchmaker=MatchMaker()):
         # now try submission of the task to each resource until one succeeds
         for target in targets:
             try:
-                result = yield (task_idx, target.name)
+                # result = yield (task_idx, target.name)
+                yield (task_idx, target.name)
             except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration:
                 # this is not a real error: the resource is adapting
                 # for the task and will actually accept it sometime in
                 # the future, so continue with next task
                 break
-            except Exception, err:
+            except Exception as err:
                 # note error condition but continue with next resource
                 gc3libs.log.debug(
                     "Scheduler ignored error in submitting task '%s': %s: %s",
@@ -997,13 +1043,15 @@ def _contained(elt, lst):
 
 
 class Engine(object):
+
     """
     Submit tasks in a collection, and update their state until a
     terminal state is reached. Specifically:
 
       * tasks in `NEW` state are submitted;
 
-      * the state of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state is updated;
+      * the state of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state
+        is updated;
 
       * when a task reaches `TERMINATED` state, its output is downloaded.
 
@@ -1129,7 +1177,6 @@ class Engine(object):
         self.retrieve_overwrites = retrieve_overwrites
         self.retrieve_changed_only = retrieve_changed_only
 
-
     def add(self, task):
         """
         Add `task` to the list of tasks managed by this Engine.
@@ -1139,7 +1186,9 @@ class Engine(object):
         state = task.execution.state
         if Run.State.NEW == state:
             queue = self._new
-        elif state in [Run.State.SUBMITTED, Run.State.RUNNING, Run.State.UNKNOWN]:
+        elif state in [Run.State.SUBMITTED,
+                       Run.State.RUNNING,
+                       Run.State.UNKNOWN]:
             queue = self._in_flight
         elif Run.State.STOPPED == state:
             queue = self._stopped
@@ -1148,7 +1197,8 @@ class Engine(object):
         elif Run.State.TERMINATED == state:
             queue = self._terminated
         else:
-            raise AssertionError("Unhandled state '%s' in gc3libs.core.Engine." % state)
+            raise AssertionError(
+                "Unhandled state '%s' in gc3libs.core.Engine." % state)
         if not _contained(task, queue):
             queue.append(task)
             task.attach(self)
@@ -1158,7 +1208,9 @@ class Engine(object):
         state = task.execution.state
         if Run.State.NEW == state:
             self._new.remove(task)
-        elif Run.State.SUBMITTED == state or Run.State.RUNNING == state or Run.State.UNKNOWN == state:
+        elif (Run.State.SUBMITTED == state or
+                Run.State.RUNNING == state or
+                Run.State.UNKNOWN == state):
             self._in_flight.remove(task)
         elif Run.State.STOPPED == state:
             self._stopped.remove(task)
@@ -1167,9 +1219,9 @@ class Engine(object):
         elif Run.State.TERMINATED == state:
             self._terminated.remove(task)
         else:
-            raise AssertionError("Unhandled state '%s' in gc3libs.core.Engine." % state)
+            raise AssertionError(
+                "Unhandled state '%s' in gc3libs.core.Engine." % state)
         task.detach()
-
 
     def progress(self):
         """
@@ -1178,7 +1230,8 @@ class Engine(object):
 
           * tasks in `NEW` state are submitted;
 
-          * the state of tasks in `SUBMITTED`, `RUNNING`, `STOPPED` or `UNKNOWN` state is updated;
+          * the state of tasks in `SUBMITTED`, `RUNNING`, `STOPPED` or
+            `UNKNOWN` state is updated;
 
           * when a task reaches `TERMINATING` state, its output is downloaded.
 
@@ -1202,8 +1255,6 @@ class Engine(object):
         # update status of SUBMITTED/RUNNING tasks before launching
         # new ones, otherwise we would be checking the status of
         # some tasks twice...
-        #gc3libs.log.debug("Engine.progress: updating status of tasks [%s]"
-        #                  % str.join(', ', [str(task) for task in self._in_flight]))
         transitioned = []
         for index, task in enumerate(self._in_flight):
             try:
@@ -1218,17 +1269,19 @@ class Engine(object):
                     if isinstance(task, Application):
                         currently_submitted += 1
                         currently_in_flight += 1
-                # elif state == Run.State.RUNNING or state == Run.State.UNKNOWN:
+                # elif state == Run.State.RUNNING or state ==
+                # Run.State.UNKNOWN:
                 elif state == Run.State.RUNNING:
                     if isinstance(task, Application):
                         currently_in_flight += 1
                     if self.can_retrieve and self.retrieve_running:
                         # try to get output
                         try:
-                            self._core.fetch_output(task,
-                                                    overwrite=self.retrieve_overwrites,
-                                                    changed_only=self.retrieve_changed_only)
-                        except Exception, err:
+                            self._core.fetch_output(
+                                task,
+                                overwrite=self.retrieve_overwrites,
+                                changed_only=self.retrieve_changed_only)
+                        except Exception as err:
                             if gc3libs.error_ignored(
                                     # context:
                                     # - module
@@ -1254,20 +1307,23 @@ class Engine(object):
                                 # propagate exceptions for debugging purposes
                                 raise
                 elif state == Run.State.STOPPED:
-                    transitioned.append(index) # task changed state, mark as to remove
+                    # task changed state, mark as to remove
+                    transitioned.append(index)
                     self._stopped.append(task)
                 elif state == Run.State.TERMINATING:
-                    transitioned.append(index) # task changed state, mark as to remove
+                    # task changed state, mark as to remove
+                    transitioned.append(index)
                     self._terminating.append(task)
                 elif state == Run.State.TERMINATED:
-                    transitioned.append(index) # task changed state, mark as to remove
+                    # task changed state, mark as to remove
+                    transitioned.append(index)
                     self._terminated.append(task)
             except gc3libs.exceptions.ConfigurationError:
                 # Unrecoverable; no sense in continuing -- pass
                 # immediately on to client code and let it handle
                 # this...
                 raise
-            except Exception, err:
+            except Exception as err:
                 if gc3libs.error_ignored(
                         # context:
                         # - module
@@ -1283,8 +1339,11 @@ class Engine(object):
                         'update',
                 ):
                     gc3libs.log.error(
-                        "Ignoring error in updating state of task '%s': %s: %s",
-                        task, err.__class__.__name__, err,
+                        "Ignoring error in updating state of task '%s':"
+                        " %s: %s",
+                        task,
+                        err.__class__.__name__,
+                        err,
                         exc_info=True)
                 else:
                     # propagate exception to caller
@@ -1294,8 +1353,6 @@ class Engine(object):
             del self._in_flight[index]
 
         # execute kills and update count of submitted/in-flight tasks
-        #gc3libs.log.debug("Engine.progress: killing tasks [%s]"
-        #                  % str.join(', ', [str(task) for task in self._to_kill]))
         transitioned = []
         for index, task in enumerate(self._to_kill):
             try:
@@ -1312,7 +1369,7 @@ class Engine(object):
                         currently_in_flight -= 1
                 self._terminated.append(task)
                 transitioned.append(index)
-            except Exception, err:
+            except Exception as err:
                 if gc3libs.error_ignored(
                         # context:
                         # - module
@@ -1343,8 +1400,6 @@ class Engine(object):
         # update state of STOPPED tasks; again need to make before new
         # submissions, because it can alter the count of in-flight
         # tasks.
-        #gc3libs.log.debug("Engine.progress: updating status of stopped tasks [%s]"
-        #                  % str.join(', ', [str(task) for task in self._stopped]))
         transitioned = []
         for index, task in enumerate(self._stopped):
             try:
@@ -1358,14 +1413,17 @@ class Engine(object):
                         if task.execution.state == Run.State.SUBMITTED:
                             currently_submitted += 1
                     self._in_flight.append(task)
-                    transitioned.append(index) # task changed state, mark as to remove
+                    # task changed state, mark as to remove
+                    transitioned.append(index)
                 elif state == Run.State.TERMINATING:
                     self._terminating.append(task)
-                    transitioned.append(index) # task changed state, mark as to remove
+                    # task changed state, mark as to remove
+                    transitioned.append(index)
                 elif state == Run.State.TERMINATED:
                     self._terminated.append(task)
-                    transitioned.append(index) # task changed state, mark as to remove
-            except Exception, err:
+                    # task changed state, mark as to remove
+                    transitioned.append(index)
+            except Exception as err:
                 if gc3libs.error_ignored(
                         # context:
                         # - module
@@ -1394,11 +1452,14 @@ class Engine(object):
             del self._stopped[index]
 
         # now try to submit NEW tasks
-        #gc3libs.log.debug("Engine.progress: submitting new tasks [%s]"
+        # gc3libs.log.debug("Engine.progress: submitting new tasks [%s]"
         #                  % str.join(', ', [str(task) for task in self._new]))
         transitioned = []
-        if self.can_submit and currently_submitted < limit_submitted and currently_in_flight < limit_in_flight:
-            with self.scheduler(self._new, self._core.resources.values()) as _sched:
+        if (self.can_submit and
+                currently_submitted < limit_submitted and
+                currently_in_flight < limit_in_flight):
+            with self.scheduler(self._new,
+                                self._core.resources.values()) as _sched:
                 # wrap the original generator object so that `send`
                 # and `throw` do not yield a value -- we only get new
                 # stuff from the call to the `next` method in the `for
@@ -1407,7 +1468,8 @@ class Engine(object):
                 for task_index, resource_name in sched:
                     task = self._new[task_index]
                     resource = self._core.resources[resource_name]
-                    # try to submit; go to SUBMITTED if successful, FAILED if not
+                    # try to submit; go to SUBMITTED if successful, FAILED if
+                    # not
                     try:
                         self._core.submit(task, targets=[resource])
                         if self._store:
@@ -1422,18 +1484,23 @@ class Engine(object):
                             currently_in_flight += 1
 
                         sched.send(task.execution.state)
-                    except Exception, err1:
+                    except Exception as err1:
                         # record the error in the task's history
                         task.execution.history(
-                            "Submission to resource '%s' failed: %s: %s"
-                            % (resource.name, err1.__class__.__name__, str(err1)))
+                            "Submission to resource '%s' failed: %s: %s" %
+                            (resource.name,
+                             err1.__class__.__name__,
+                             str(err1)))
                         gc3libs.log.error(
-                            "Got error in submitting task '%s', informing scheduler: %s: %s",
-                            task, err1.__class__.__name__, str(err1))
+                            "Got error in submitting task '%s', informing"
+                            " scheduler: %s: %s",
+                            task,
+                            err1.__class__.__name__,
+                            str(err1))
                         # inform scheduler and let it handle it
                         try:
                             sched.throw(* sys.exc_info())
-                        except Exception, err2:
+                        except Exception as err2:
                             if gc3libs.error_ignored(
                                     # context:
                                     # - module
@@ -1449,41 +1516,46 @@ class Engine(object):
                                     'submit',
                             ):
                                 gc3libs.log.debug(
-                                    "Ignored error in submitting task '%s': %s: %s",
-                                    task, err2.__class__.__name__, err2, exc_info=True)
+                                    "Ignored error in submitting task '%s':"
+                                    " %s: %s",
+                                    task,
+                                    err2.__class__.__name__,
+                                    err2,
+                                    exc_info=True)
                             else:
                                 # propagate exceptions for debugging purposes
                                 raise
                     # enforce Engine limits
-                    if currently_submitted >= limit_submitted or currently_in_flight >= limit_in_flight:
+                    if (currently_submitted >= limit_submitted
+                            or currently_in_flight >= limit_in_flight):
                         break
         # remove tasks that transitioned to SUBMITTED state
         for index in reversed(transitioned):
             del self._new[index]
 
         # finally, retrieve output of finished tasks
-        #gc3libs.log.debug("Engine.progress: fetching output of tasks [%s]"
-        #                  % str.join(', ', [str(task) for task in self._terminating]))
         if self.can_retrieve:
             transitioned = []
             for index, task in enumerate(self._terminating):
                 # try to get output
                 try:
-                    self._core.fetch_output(task,
-                                            overwrite=self.retrieve_overwrites,
-                                            changed_only=self.retrieve_changed_only)
-                except gc3libs.exceptions.UnrecoverableDataStagingError, ex:
+                    self._core.fetch_output(
+                        task,
+                        overwrite=self.retrieve_overwrites,
+                        changed_only=self.retrieve_changed_only)
+                except gc3libs.exceptions.UnrecoverableDataStagingError as ex:
                     gc3libs.log.error(
                         "Error in fetching output of task '%s',"
                         " will mark it as TERMINATED"
                         " (with error exit code %d): %s: %s",
                         task, posix.EX_IOERR,
                         ex.__class__.__name__, str(ex), exc_info=True)
-                    task.execution.returncode = (Run.Signals.DataStagingFailure,
-                                                 posix.EX_IOERR)
+                    task.execution.returncode = (
+                        Run.Signals.DataStagingFailure,
+                        posix.EX_IOERR)
                     task.execution.state = Run.State.TERMINATED
                     task.changed = True
-                except Exception, ex:
+                except Exception as ex:
                     if gc3libs.error_ignored(
                             # context:
                             # - module
@@ -1498,8 +1570,11 @@ class Engine(object):
                             'fetch_output',
                     ):
                         gc3libs.log.error(
-                            "Ignored error in fetching output of task '%s': %s: %s",
-                            task, ex.__class__.__name__, ex)
+                            "Ignored error in fetching output of task '%s':"
+                            " %s: %s",
+                            task,
+                            ex.__class__.__name__,
+                            ex)
                         gc3libs.log.debug(
                             "(Original traceback follows.)",
                             exc_info=True)
@@ -1515,7 +1590,6 @@ class Engine(object):
             # remove tasks for which final output has been retrieved
             for index in reversed(transitioned):
                 del self._terminating[index]
-
 
     def stats(self, only=None):
         """
@@ -1534,11 +1608,12 @@ class Engine(object):
         """
         if only:
             gc3libs.log.debug(
-                "Engine.stats: Restricting to object of class '%s'", only.__name__)
+                "Engine.stats: Restricting to object of class '%s'",
+                only.__name__)
         result = defaultdict(lambda: 0)
         if only:
             result[Run.State.NEW] = len([task for task in self._new
-                                                       if isinstance(task, only)])
+                                         if isinstance(task, only)])
         else:
             result[Run.State.NEW] = len(self._new)
         for task in self._in_flight:
@@ -1558,13 +1633,15 @@ class Engine(object):
             state = task.execution.state
             result[state] += 1
         if only:
-            result[Run.State.TERMINATING] += len([task for task in self._terminating
-                                                               if isinstance(task, only)])
+            _terminating = [task for task in self._terminating
+                            if isinstance(task, only)]
+            result[Run.State.TERMINATING] += len(_terminating)
         else:
             result[Run.State.TERMINATING] += len(self._terminating)
         if only:
-            result[Run.State.TERMINATED] += len([task for task in self._terminated
-                                                               if isinstance(task, only)])
+            _terminated = [task for task in self._terminated
+                           if isinstance(task, only)]
+            result[Run.State.TERMINATED] += len(_terminated)
         else:
             result[Run.State.TERMINATED] += len(self._terminated)
 
@@ -1575,10 +1652,6 @@ class Engine(object):
             if task.execution.returncode == 0:
                 result['ok'] += 1
             else:
-                # gc3libs.log.debug(
-                #     "Task '%s' failed: return code %s (signal %s, exitcode %s)"
-                #     % (task, task.execution.returncode,
-                #        task.execution.signal, task.execution.exitcode))
                 result['failed'] += 1
         result['total'] = (result[Run.State.NEW]
                            + result[Run.State.SUBMITTED]
@@ -1589,7 +1662,6 @@ class Engine(object):
                            + result[Run.State.UNKNOWN])
         return result
 
-
     # implement a Core-like interface, so `Engine` objects can be used
     # as substitutes for `Core`.
 
@@ -1598,7 +1670,6 @@ class Engine(object):
         Proxy for `Core.free`, which see.
         """
         self._core.free(task)
-
 
     def submit(self, task, resubmit=False, targets=None, **extra_args):
         """
@@ -1616,7 +1687,6 @@ class Engine(object):
             task.execution.state = Run.State.NEW
         return self.add(task)
 
-
     def update_job_state(self, *tasks, **extra_args):
         """
         Return list of *current* states of the given tasks.  States
@@ -1625,7 +1695,6 @@ class Engine(object):
         calling this method.
         """
         pass
-
 
     def fetch_output(self, task, output_dir=None,
                      overwrite=False, changed_only=True, **extra_args):
@@ -1639,20 +1708,17 @@ class Engine(object):
         """
         self.add(task)
 
-
     def kill(self, task, **extra_args):
         """
         Schedule a task for killing on the next `progress` run.
         """
         self._to_kill.append(task)
 
-
     def peek(self, task, what='stdout', offset=0, size=None, **extra_args):
         """
         Proxy for `Core.peek` (which see).
         """
         return self._core.peek(task, what, offset, size, **extra_args)
-
 
     def close(self):
         """

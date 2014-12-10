@@ -27,17 +27,19 @@ import getpass
 import tempfile
 
 # Nose imports
-from nose.tools import assert_true, assert_false, assert_equal, raises, set_trace
+from nose.tools import assert_true, assert_equal, raises
 from nose.plugins.skip import SkipTest
 
 # GC3 imports
 from gc3libs.backends import transport
 from gc3libs.exceptions import TransportError
 
+
 class StubForTestTransport:
 
     def extraSetup(self):
-        (exitcode, tmpdir, stderror) = self.transport.execute_command('mktemp -d /tmp/test_transport.XXXXXXXXX')
+        (exitcode, tmpdir, stderror) = self.transport.execute_command(
+            'mktemp -d /tmp/test_transport.XXXXXXXXX')
         self.tmpdir = tmpdir.strip()
 
     def tearDown(self):
@@ -86,7 +88,7 @@ class StubForTestTransport:
         remotefile = os.path.join(self.tmpdir, 'unauth')
         fd = self.transport.open(remotefile, 'w+')
         fd.close()
-        
+
         self.transport.chmod(remotefile, 0000)
 
         try:
@@ -120,34 +122,44 @@ class StubForTestTransport:
     def test_open_failure_nonexistent_file(self):
         fd = self.transport.open(
             os.path.join(self.tmpdir, 'nonexistent'), 'r')
+        # This line is to make pep8 happy
+        assert fd is False
 
     @raises(TransportError)
     def test_open_failure_unauthorized(self):
         fd = self.transport.open('/proc/kcore', 'r')
+        # This line is to make pep8 happy
+        assert fd is False
 
     @raises(TransportError)
     def test_remove_failure(self):
         self.transport.remove(
             os.path.join(self.tmpdir, 'nonexistent'))
 
+
 class TestLocalTransport(StubForTestTransport):
+
     def setUp(self):
         self.transport = transport.LocalTransport()
         self.transport.connect()
         StubForTestTransport.extraSetup(self)
 
 
-
 class TestSshTransport(StubForTestTransport):
+
     def setUp(self):
-        self.transport = transport.SshTransport('localhost', ignore_ssh_host_keys=True)
+        self.transport = transport.SshTransport('localhost',
+                                                ignore_ssh_host_keys=True)
         try:
             self.transport.connect()
         except TransportError:
-            raise SkipTest("Unable to connect to localhost via ssh. Please enable passwordless authentication to localhost in order to pass this test.")
+            raise SkipTest(
+                "Unable to connect to localhost via ssh. Please enable "
+                "passwordless authentication to localhost in order to pass "
+                "this test.")
         StubForTestTransport.extraSetup(self)
 
-## main: run tests
+# main: run tests
 
 if __name__ == "__main__":
     import nose

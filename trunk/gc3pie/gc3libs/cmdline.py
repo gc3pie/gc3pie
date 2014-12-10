@@ -41,24 +41,22 @@ __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 
-## stdlib modules
-import csv
+# stdlib modules
 import fnmatch
 import logging
 import math
 import os
 import os.path
-import re
 import sys
 from prettytable import PrettyTable
 import time
 
-## 3rd party modules
+# 3rd party modules
 import cli  # pyCLI
 import cli.app
 import cli._ext.argparse as argparse
 
-## interface to Gc3libs
+# interface to Gc3libs
 import gc3libs
 from gc3libs.compat import lockfile
 import gc3libs.config
@@ -67,12 +65,12 @@ import gc3libs.exceptions
 import gc3libs.persistence
 import gc3libs.utils
 import gc3libs.url
-from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
+from gc3libs.quantity import Memory, GB, Duration, hours
 from gc3libs.session import Session
 
 
-## types for command-line parsing; see
-## http://docs.python.org/dev/library/argparse.html#type
+# types for command-line parsing; see
+# http://docs.python.org/dev/library/argparse.html#type
 
 def nonnegative_int(num):
     """This function raise an ArgumentTypeError if `num` is a negative
@@ -113,7 +111,7 @@ def nonnegative_int(num):
     >>> nonnegative_int('ThisWillRaiseAnException') # doctest:+ELLIPSIS
     Traceback (most recent call last):
         ...
-    ArgumentTypeError: 'ThisWillRaiseAnException' is not a non-negative integer number.
+    ArgumentTypeError: 'ThisWillRaiseAnException' is not a non-negative ...
 
     """
     try:
@@ -183,7 +181,7 @@ def positive_int(num):
     >>> positive_int('ThisWillRaiseAnException') # doctest:+ELLIPSIS
     Traceback (most recent call last):
         ...
-    ArgumentTypeError: 'ThisWillRaiseAnException' is not a positive integer number.
+    ArgumentTypeError: 'ThisWillRaiseAnException' is not a positive integer ...
 
     """
     try:
@@ -226,9 +224,10 @@ def valid_directory(path):
     return path
 
 
-## script classes
+# script classes
 
 class _Script(cli.app.CommandLineApp):
+
     """
     Base class for GC3Libs scripts.
 
@@ -242,9 +241,9 @@ class _Script(cli.app.CommandLineApp):
     """
 
     ##
-    ## CUSTOMIZATION METHODS
+    # CUSTOMIZATION METHODS
     ##
-    ## The following are meant to be freely customized in derived scripts.
+    # The following are meant to be freely customized in derived scripts.
     ##
 
     def setup_args(self):
@@ -278,12 +277,12 @@ class _Script(cli.app.CommandLineApp):
         pass
 
     ##
-    ## pyCLI INTERFACE METHODS
+    # pyCLI INTERFACE METHODS
     ##
-    ## The following methods adapt the behavior of the
-    ## `SessionBasedScript` class to the interface expected by pyCLI
-    ## applications.  Think twice before overriding them, and read
-    ## the pyCLI docs before :-)
+    # The following methods adapt the behavior of the
+    # `SessionBasedScript` class to the interface expected by pyCLI
+    # applications.  Think twice before overriding them, and read
+    # the pyCLI docs before :-)
     ##
     def __init__(self, **extra_args):
         """
@@ -326,7 +325,8 @@ class _Script(cli.app.CommandLineApp):
             if self.__doc__ is not None:
                 extra_args['description'] = self.__doc__
             else:
-                raise AssertionError("Missing required parameter 'description'.")
+                raise AssertionError(
+                    "Missing required parameter 'description'.")
 
         # allow overriding command-line options in subclasses
         def argparser_factory(*args, **kwargs):
@@ -337,8 +337,11 @@ class _Script(cli.app.CommandLineApp):
 
         self.argparser_factory = argparser_factory
         # init superclass
-        extra_args.setdefault('name',
-                      os.path.splitext(os.path.basename(sys.argv[0]))[0])
+        extra_args.setdefault(
+            'name',
+            os.path.splitext(
+                os.path.basename(
+                    sys.argv[0]))[0])
         extra_args.setdefault('reraise', Exception)
         cli.app.CommandLineApp.__init__(self, **extra_args)
         # provide some defaults
@@ -364,21 +367,23 @@ class _Script(cli.app.CommandLineApp):
         GC3Utils scripts should probably override `setup_args`:meth:
         and `setup_options`:meth: to modify command-line parsing.
         """
-        ## setup of base classes
+        # setup of base classes
         cli.app.CommandLineApp.setup(self)
 
-        self.add_param("-v", "--verbose",
-                       action="count",
-                       dest="verbose",
-                       default=0,
-                       help="Print more detailed information about the program's activity."
-                       " Increase verbosity each time this option is encountered on the"
-                       " command line."
-                       )
+        self.add_param(
+            "-v",
+            "--verbose",
+            action="count",
+            dest="verbose",
+            default=0,
+            help="Print more detailed information about the program's"
+            " activity. Increase verbosity each time this option is"
+            " encountered on the command line.")
 
         self.add_param("--config-files",
                        action="store",
-                       default=str.join(',', gc3libs.Default.CONFIG_FILE_LOCATIONS),
+                       default=str.join(
+                           ',', gc3libs.Default.CONFIG_FILE_LOCATIONS),
                        help="Comma separated list of configuration files",
                        )
         return
@@ -394,17 +399,21 @@ class _Script(cli.app.CommandLineApp):
         ignored, after which they start to lower the level of messages
         sent to standard error output.
         """
-        ## finish setup
+        # finish setup
         self.setup_options()
         self.setup_args()
 
-        ## parse command-line
+        # parse command-line
         cli.app.CommandLineApp.pre_run(self)
 
-        ## setup GC3Libs logging
-        loglevel = max(1, logging.WARNING - 10 * max(0, self.params.verbose - self.verbose_logging_threshold))
-        gc3libs.configure_logger(loglevel, "gc3utils") # alternate: self.name
-        self.log = logging.getLogger('gc3.gc3utils')  # alternate: ('gc3.' + self.name)
+        # setup GC3Libs logging
+        loglevel = max(1, logging.WARNING -
+                       10 *
+                       max(0, self.params.verbose -
+                           self.verbose_logging_threshold))
+        gc3libs.configure_logger(loglevel, "gc3utils")  # alternate: self.name
+        # alternate: ('gc3.' + self.name)
+        self.log = logging.getLogger('gc3.gc3utils')
         self.log.setLevel(loglevel)
         self.log.propagate = True
         self.log.info("Starting %s at %s; invoked as '%s'",
@@ -435,22 +444,25 @@ class _Script(cli.app.CommandLineApp):
         """
         try:
             return cli.app.CommandLineApp.run(self)
-        except gc3libs.exceptions.InvalidUsage, ex:
-            # Fatal errors do their own printing, we only add a short usage message
-            sys.stderr.write("Type '%s --help' to get usage help.\n" % self.name)
+        except gc3libs.exceptions.InvalidUsage as ex:
+            # Fatal errors do their own printing, we only add a short usage
+            # message
+            sys.stderr.write(
+                "Type '%s --help' to get usage help.\n" % self.name)
             return 64  # EX_USAGE in /usr/include/sysexits.h
         except KeyboardInterrupt:
-            sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
+            sys.stderr.write(
+                "%s: Exiting upon user request (Ctrl+C)\n" % self.name)
             return 13
-        except SystemExit, ex:
+        except SystemExit as ex:
             #  sys.exit() has been called in `post_run()`.
             raise
         # the following exception handlers put their error message
         # into `msg` and the exit code into `rc`; the closing stanza
         # tries to log the message and only outputs it to stderr if
         # this fails
-        except lockfile.Error, ex:
-            exc_info = sys.exc_info()
+        except lockfile.Error as ex:
+            # exc_info = sys.exc_info()
             msg = ("Error manipulating the lock file (%s: %s)."
                    " This likely points to a filesystem error"
                    " or a stale process holding the lock."
@@ -462,9 +474,9 @@ class _Script(cli.app.CommandLineApp):
                         self.name, str.join(' ', sys.argv[1:]))
             else:
                 msg %= (ex.__class__.__name__, str(ex), self.name, '')
-            rc = 1
-        except AssertionError, ex:
-            exc_info = sys.exc_info()
+            # rc = 1
+        except AssertionError as ex:
+            # exc_info = sys.exc_info()
             msg = ("BUG: %s\n"
                    "Please send an email to gc3pie@googlegroups.com"
                    " including any output you got by running '%s -vvvv %s'."
@@ -473,62 +485,72 @@ class _Script(cli.app.CommandLineApp):
                 msg %= (str(ex), self.name, str.join(' ', sys.argv[1:]))
             else:
                 msg %= (str(ex), self.name, '')
-            rc = 1
-        except cli.app.Abort, ex:
+            # rc = 1
+        except cli.app.Abort as ex:
             msg = "%s: %s" % (ex.__class__.__name__, str(ex))
-            rc = ex.status
-        except EnvironmentError, ex:
+            # rc = ex.status
+        except EnvironmentError as ex:
             msg = "%s: %s" % (ex.__class__.__name__, str(ex))
-            rc = os.EX_IOERR # 74 (see: /usr/include/sysexits.h )
-        except Exception, ex:
+            # rc = os.EX_IOERR  # 74 (see: /usr/include/sysexits.h )
+        except Exception as ex:
             if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
                 # propagate generic exceptions for debugging purposes
                 raise
             else:
                 # generic error exit
                 msg = "%s: %s" % (ex.__class__.__name__, str(ex))
-                rc = 1
+                # rc = 1
         # output error message and -maybe- backtrace...
         try:
-            self.log.critical(msg,
-                              exc_info=(self.params.verbose > self.verbose_logging_threshold + 2))
+            self.log.critical(
+                msg,
+                exc_info=(
+                    self.params.verbose > self.verbose_logging_threshold +
+                    2))
         except:
             # no logging setup, output to stderr
             sys.stderr.write("%s: FATAL ERROR: %s\n" % (self.name, msg))
-            # be careful here as `self.params` might not have been properly constructed yet
-            if ('verbose' in self.params and self.params.verbose > self.verbose_logging_threshold + 2):
+            # be careful here as `self.params` might not have been properly
+            # constructed yet
+            if ('verbose' in self.params and self.params.verbose >
+                    self.verbose_logging_threshold + 2):
                 sys.excepthook(* sys.exc_info())
         # ...and exit
         return 1
 
     ##
-    ## INTERNAL METHODS
+    # INTERNAL METHODS
     ##
-    ## The following methods are for internal use; they can be
-    ## overridden and customized in derived classes, although there
-    ## should be no need to do so.
+    # The following methods are for internal use; they can be
+    # overridden and customized in derived classes, although there
+    # should be no need to do so.
     ##
 
-    def _make_config(self,
-                     config_file_locations=gc3libs.Default.CONFIG_FILE_LOCATIONS,
-                     **extra_args):
+    def _make_config(
+            self,
+            config_file_locations=gc3libs.Default.CONFIG_FILE_LOCATIONS,
+            **extra_args):
         """
-        Return a `gc3libs.config.Configuration`:class: instance configured by parsing
-        the configuration file(s) located at `config_file_locations`.
-        Order of configuration files matters: files read last
-        overwrite settings from previously-read ones; list the most
-        specific configuration files last.
+        Return a `gc3libs.config.Configuration`:class: instance configured
+        by parsing the configuration file(s) located at
+        `config_file_locations`.  Order of configuration files
+        matters: files read last overwrite settings from
+        previously-read ones; list the most specific configuration
+        files last.
 
         Any additional keyword arguments are passed unchanged to the
         `gc3libs.config.Configuration`:class: constructor.  In
         particular, the `auto_enable_auth` parameter for the
         `Configuration` constructor is `True` if not set differently
         here as a keyword argument.
+
         """
         # ensure a configuration file exists in the most specific location
         for location in reversed(config_file_locations):
-            if os.access(os.path.dirname(location), os.W_OK | os.X_OK) \
-                    and not gc3libs.utils.deploy_configuration_file(location, "gc3pie.conf.example"):
+            if (os.access(os.path.dirname(location),
+                          os.W_OK | os.X_OK) and not
+                    gc3libs.utils.deploy_configuration_file(
+                        location, "gc3pie.conf.example")):
                 # warn user
                 self.log.warning(
                     "No configuration file '%s' was found;"
@@ -537,7 +559,8 @@ class _Script(cli.app.CommandLineApp):
         # set defaults
         extra_args.setdefault('auto_enable_auth', True)
         try:
-            return gc3libs.config.Configuration(*config_file_locations, **extra_args)
+            return gc3libs.config.Configuration(
+                *config_file_locations, **extra_args)
         except:
             self.log.error("Failed loading config file(s) from '%s'",
                            str.join("', '", config_file_locations))
@@ -571,6 +594,7 @@ class _Script(cli.app.CommandLineApp):
 
 
 class GC3UtilsScript(_Script):
+
     """
     Base class for GC3Utils scripts.
 
@@ -587,9 +611,9 @@ class GC3UtilsScript(_Script):
     """
 
     ##
-    ## CUSTOMIZATION METHODS
+    # CUSTOMIZATION METHODS
     ##
-    ## The following are meant to be freely customized in derived scripts.
+    # The following are meant to be freely customized in derived scripts.
     ##
 
     def setup_args(self):
@@ -600,10 +624,11 @@ class GC3UtilsScript(_Script):
         job ID; actual processing of the IDs is done in
         `parse_args`:meth:
         """
-        self.add_param('args',
-                       nargs='*',
-                       metavar='JOBID',
-                       help="Job ID string identifying the jobs to operate upon.")
+        self.add_param(
+            'args',
+            nargs='*',
+            metavar='JOBID',
+            help="Job ID string identifying the jobs to operate upon.")
 
     def parse_args(self):
         if hasattr(self.params, 'args') and '-' in self.params.args:
@@ -612,12 +637,12 @@ class GC3UtilsScript(_Script):
             self.params.args.extend(sys.stdin.read().split())
 
     ##
-    ## pyCLI INTERFACE METHODS
+    # pyCLI INTERFACE METHODS
     ##
-    ## The following methods adapt the behavior of the
-    ## `SessionBasedScript` class to the interface expected by pyCLI
-    ## applications.  Think twice before overriding them, and read
-    ## the pyCLI docs before :-)
+    # The following methods adapt the behavior of the
+    # `SessionBasedScript` class to the interface expected by pyCLI
+    # applications.  Think twice before overriding them, and read
+    # the pyCLI docs before :-)
     ##
 
     def __init__(self, **extra_args):
@@ -630,9 +655,9 @@ class GC3UtilsScript(_Script):
         GC3Utils scripts should probably override `setup_args`:meth:
         and `setup_options`:meth: to modify command-line parsing.
         """
-        ## setup of base classes (creates the argparse stuff)
+        # setup of base classes (creates the argparse stuff)
         _Script.setup(self)
-        ## local additions
+        # local additions
         self.add_param("-s",
                        "--session",
                        action="store",
@@ -645,15 +670,15 @@ class GC3UtilsScript(_Script):
         Perform parsing of standard command-line options and call into
         `parse_args()` to do non-optional argument processing.
         """
-        ## base class parses command-line
+        # base class parses command-line
         _Script.pre_run(self)
 
     ##
-    ## INTERNAL METHODS
+    # INTERNAL METHODS
     ##
-    ## The following methods are for internal use; they can be
-    ## overridden and customized in derived classes, although there
-    ## should be no need to do so.
+    # The following methods are for internal use; they can be
+    # overridden and customized in derived classes, although there
+    # should be no need to do so.
     ##
 
     def _get_jobs(self, job_ids, ignore_failures=True):
@@ -671,7 +696,7 @@ class GC3UtilsScript(_Script):
         for jobid in job_ids:
             try:
                 yield self.session.load(jobid)
-            except Exception, ex:
+            except Exception as ex:
                 # Exempted from GC3Pie's `error_ignored()` policy as there
                 # is explicit control via the `ignore_failures` parameter
                 if ignore_failures:
@@ -685,6 +710,7 @@ class GC3UtilsScript(_Script):
 
 
 class SessionBasedScript(_Script):
+
     """
     Base class for ``grosetta``/``ggamess``/``gcodeml`` and like scripts.
     Implements a long-running script to submit and manage a large number
@@ -735,9 +761,9 @@ class SessionBasedScript(_Script):
     """
 
     ##
-    ## CUSTOMIZATION METHODS
+    # CUSTOMIZATION METHODS
     ##
-    ## The following are meant to be freely customized in derived scripts.
+    # The following are meant to be freely customized in derived scripts.
     ##
 
     def setup_args(self):
@@ -800,20 +826,25 @@ class SessionBasedScript(_Script):
 
         See also: `new_tasks`:meth:
         """
-        ## default creation arguments
+        # default creation arguments
         self.extra.setdefault('requested_cores', self.params.ncores)
         self.extra.setdefault('requested_memory',
-                            self.params.ncores * self.params.memory_per_core)
+                              self.params.ncores * self.params.memory_per_core)
         self.extra.setdefault('requested_walltime', self.params.walltime)
-        # XXX: assumes `make_directory_path` substitutes ``NAME`` with `jobname`; keep in sync!
-        self.extra.setdefault('output_dir',
-                              self.make_directory_path(self.params.output, 'NAME'))
+        # XXX: assumes `make_directory_path` substitutes ``NAME`` with
+        # `jobname`; keep in sync!
+        self.extra.setdefault(
+            'output_dir',
+            self.make_directory_path(
+                self.params.output,
+                'NAME'))
 
-        ## build job list
+        # build job list
         new_jobs = list(self.new_tasks(self.extra.copy()))
         # pre-allocate Job IDs
         if len(new_jobs) > 0:
-            # XXX: can't we just make `reserve` part of the `IdFactory` contract?
+            # XXX: can't we just make `reserve` part of the `IdFactory`
+            # contract?
             try:
                 self.session.store.idfactory.reserve(len(new_jobs))
             except AttributeError:
@@ -826,42 +857,54 @@ class SessionBasedScript(_Script):
         for n, item in enumerate(new_jobs):
             if isinstance(item, tuple):
                 if not warning_on_old_style_given:
-                    self.log.warning("Using old-style new tasks list; please update the code!")
+                    self.log.warning(
+                        "Using old-style new tasks list; please update"
+                        " the code!")
                     warning_on_old_style_given = True
                 # build Task for (jobname, classname, args, kwargs)
                 jobname, cls, args, kwargs = item
                 if jobname in existing_job_names:
                     continue
                 kwargs.setdefault('jobname', jobname)
-                kwargs.setdefault('output_dir',
-                                  self.make_directory_path(self.params.output, jobname))
-                kwargs.setdefault('requested_cores',    self.extra['requested_cores'])
-                kwargs.setdefault('requested_memory',   self.extra['requested_memory'])
-                kwargs.setdefault('requested_walltime', self.extra['requested_walltime'])
+                kwargs.setdefault(
+                    'output_dir',
+                    self.make_directory_path(
+                        self.params.output,
+                        jobname))
+                kwargs.setdefault(
+                    'requested_cores', self.extra['requested_cores'])
+                kwargs.setdefault(
+                    'requested_memory', self.extra['requested_memory'])
+                kwargs.setdefault(
+                    'requested_walltime', self.extra['requested_walltime'])
                 # create a new `Task` object
                 try:
                     task = cls(*args, **kwargs)
-                except Exception, ex:
+                except Exception as ex:
                     self.log.error("Could not create job '%s': %s."
                                    % (jobname, str(ex)), exc_info=__debug__)
                     continue
                     # XXX: should we raise an exception here?
-                    #raise AssertionError("Could not create job '%s': %s: %s"
-                    #                     % (jobname, ex.__class__.__name__, str(ex)))
+                    # raise AssertionError(
+                    #        "Could not create job '%s': %s: %s"
+                    #        % (jobname, ex.__class__.__name__, str(ex)))
 
             elif isinstance(item, gc3libs.Task):
                 task = item
                 if 'jobname' not in task:
-                    task.jobname = ("%s-N%d" % (task.__class__.__name__, n+1))
+                    task.jobname = (
+                        "%s-N%d" % (task.__class__.__name__, n + 1))
 
             else:
                 raise gc3libs.exceptions.InternalError(
                     "SessionBasedScript.process_args got %r (%s),"
-                    " but was expecting a gc3libs.Task instance" % (item, type(item)))
+                    " but was expecting a gc3libs.Task instance" %
+                    (item, type(item)))
 
             # patch output_dir if it's not changed from the default,
             # or if it's not defined (e.g., TaskCollection)
-            if 'output_dir' not in task or task.output_dir == self.extra['output_dir']:
+            if 'output_dir' not in task or task.output_dir == self.extra[
+                    'output_dir']:
                 # user did not change the `output_dir` default, expand it now
                 self._fix_output_dir(task, task.jobname)
 
@@ -881,8 +924,6 @@ class SessionBasedScript(_Script):
         if 'task' in task:
             # RetryableTask
             self._fix_output_dir(task.task, name)
-
-
 
     def new_tasks(self, extra):
         """
@@ -927,13 +968,16 @@ class SessionBasedScript(_Script):
                                    1 + self.instances_per_file,
                                    self.instances_per_job):
                     if self.instances_per_job > 1:
-                        yield ("%s.%d--%s" % (gc3libs.utils.basename_sans(path),
-                                              seqno,
-                                              min(seqno + self.instances_per_job - 1,
-                                                  self.instances_per_file)),
-                               self.application, [path], extra.copy())
+                        yield (
+                            "%s.%d--%s" % (
+                                gc3libs.utils.basename_sans(path),
+                                seqno,
+                                min(seqno + self.instances_per_job - 1,
+                                    self.instances_per_file)),
+                            self.application, [path], extra.copy())
                     else:
-                        yield ("%s.%d" % (gc3libs.utils.basename_sans(path), seqno),
+                        yield ("%s.%d" % (gc3libs.utils.basename_sans(path),
+                                          seqno),
                                self.application, [path], extra.copy())
             else:
                 yield (gc3libs.utils.basename_sans(path),
@@ -956,9 +1000,12 @@ class SessionBasedScript(_Script):
         In addition, any other attribute created during initialization
         and command-line parsing is of course available.
         """
-        return gc3libs.core.Engine(self._core, self.session, self.session.store,
-                                   max_submitted=self.params.max_running,
-                                   max_in_flight=self.params.max_running)
+        return gc3libs.core.Engine(
+            self._core,
+            self.session,
+            self.session.store,
+            max_submitted=self.params.max_running,
+            max_in_flight=self.params.max_running)
 
     def print_summary_table(self, output, stats):
         """
@@ -992,14 +1039,15 @@ class SessionBasedScript(_Script):
             fmt = '(%%.%df%%%%)' % precision
             for state in sorted(stats.keys()):
                 table.add_row([
-                        state,
-                        "%d/%d" % (stats[state], total),
-                        fmt % (100.00 * stats[state] / total)
-                        ])
+                    state,
+                    "%d/%d" % (stats[state], total),
+                    fmt % (100.00 * stats[state] / total)
+                ])
         output.write(str(table))
         output.write("\n")
 
-    def print_tasks_table(self, output=sys.stdout, states=gc3libs.Run.State, only=object):
+    def print_tasks_table(
+            self, output=sys.stdout, states=gc3libs.Run.State, only=object):
         """
         Output a text table to stream `output`, giving details about
         tasks in the given states.
@@ -1018,7 +1066,8 @@ class SessionBasedScript(_Script):
 
         :param output: An output stream (file-like object)
         :param states: List of states (`Run.State` items) to consider.
-        :param   only: Root class (or tuple of root classes) of tasks to consider.
+        :param   only: Root class (or tuple of root classes) of tasks to
+                       consider.
         """
         table = PrettyTable(['JobID', 'Job name', 'State', 'Info'])
         table.align = 'l'
@@ -1070,12 +1119,12 @@ class SessionBasedScript(_Script):
         pass
 
     ##
-    ## pyCLI INTERFACE METHODS
+    # pyCLI INTERFACE METHODS
     ##
-    ## The following methods adapt the behavior of the
-    ## `SessionBasedScript` class to the interface expected by pyCLI
-    ## applications.  Think twice before overriding them, and read
-    ## the pyCLI docs before :-)
+    # The following methods adapt the behavior of the
+    # `SessionBasedScript` class to the interface expected by pyCLI
+    # applications.  Think twice before overriding them, and read
+    # the pyCLI docs before :-)
     ##
 
     # safeguard against programming errors: if the `application` ctor
@@ -1114,20 +1163,22 @@ class SessionBasedScript(_Script):
         corresponding instance attribute on this Python object.
         """
         self.session = None
-        self.stats_only_for = None  # by default, print stats of all kind of jobs
+        # by default, print stats of all kind of jobs
+        self.stats_only_for = None
         self.instances_per_file = 1
         self.instances_per_job = 1
         self.extra = {}  # extra extra_args arguments passed to `parse_args`
         # use bogus values that should point ppl to the right place
-        self.input_filename_pattern = 'PLEASE SET `input_filename_pattern` IN `SessionBasedScript` CONSTRUCTOR'
+        self.input_filename_pattern = 'PLEASE SET `input_filename_pattern`'
+        'IN `SessionBasedScript` CONSTRUCTOR'
         # catch omission of mandatory `application` ctor param (see above)
         self.application = SessionBasedScript.__unset_application_cls
-        ## init base classes
+        # init base classes
         _Script.__init__(
             self,
             main=self._main,
             **extra_args
-            )
+        )
 
     def setup(self):
         """
@@ -1136,93 +1187,131 @@ class SessionBasedScript(_Script):
         GC3Libs scripts should probably override `setup_args`:meth:
         to modify command-line parsing.
         """
-        ## setup of base classes
+        # setup of base classes
         _Script.setup(self)
 
-        ## add own "standard options"
+        # add own "standard options"
 
         # 1. job requirements
-        self.add_param("-c", "--cpu-cores", dest="ncores",
-                       type=positive_int, default=1,  # 1 core
-                       metavar="NUM",
-                       help="Set the number of CPU cores required for each job (default: %(default)s)."
-                       " NUM must be a whole number."
-                       )
-        self.add_param("-m", "--memory-per-core", dest="memory_per_core",
-                       type=Memory, default=2*GB,  # 2 GB
-                       metavar="GIGABYTES",
-                       help="Set the amount of memory required per execution core; default: %(default)s."
-                       " Specify this as an integral number followed by a unit, e.g.,"
-                       " '512MB' or '4GB'.")
-        self.add_param("-r", "--resource", action="store", dest="resource_name", metavar="NAME",
-                       default=None,
-                       help="Submit jobs to a specific computational resources."
-                       " NAME is a resource name or comma-separated list of such names."
-                       " Use the command `gservers` to list available resources.")
-        self.add_param("-w", "--wall-clock-time", dest="wctime", default='8 hours',
-                       metavar="DURATION",
-                       help="Set the time limit for each job; default is %(default)s."
-                       " Jobs exceeding this limit will be stopped and considered as 'failed'."
-                       " The duration can be expressed as a whole number followed by a time unit,"
-                       " e.g., '3600 s', '60 minutes', '8 hours', or a combination thereof,"
-                       " e.g., '2hours 30minutes'."
-                       )
+        self.add_param(
+            "-c", "--cpu-cores", dest="ncores",
+            type=positive_int, default=1,  # 1 core
+            metavar="NUM",
+            help="Set the number of CPU cores required for each job"
+            " (default: %(default)s). NUM must be a whole number."
+        )
+        self.add_param(
+            "-m", "--memory-per-core", dest="memory_per_core",
+            type=Memory, default=2 * GB,  # 2 GB
+            metavar="GIGABYTES",
+            help="Set the amount of memory required per execution core;"
+            " default: %(default)s. Specify this as an integral number"
+            " followed by a unit, e.g., '512MB' or '4GB'.")
+        self.add_param(
+            "-r",
+            "--resource",
+            action="store",
+            dest="resource_name",
+            metavar="NAME",
+            default=None,
+            help="Submit jobs to a specific computational resources."
+            " NAME is a resource name or comma-separated list of such names."
+            " Use the command `gservers` to list available resources.")
+        self.add_param(
+            "-w",
+            "--wall-clock-time",
+            dest="wctime",
+            default='8 hours',
+            metavar="DURATION",
+            help="Set the time limit for each job; default is %(default)s."
+            " Jobs exceeding this limit will be stopped and considered as"
+            " 'failed'. The duration can be expressed as a whole number"
+            " followed by a time unit, e.g., '3600 s', '60 minutes',"
+            " '8 hours', or a combination thereof, e.g., '2hours 30minutes'.")
 
         # 2. session control
-        self.add_param("-s", "--session", dest="session",
-                       default=os.path.join(os.getcwd(), self.name),
-                       metavar="PATH",
-                       help="Store the session information in the directory at PATH. (Default: '%(default)s')."
-                       " If PATH is an existing directory, it will be used for storing job"
-                       " information, and an index file (with suffix '.csv') will be created"
-                       " in it.  Otherwise, the job information will be stored in a directory"
-                       " named after PATH with a suffix '.jobs' appended, and the index file"
-                       " will be named after PATH with a suffix '.csv' added."
-                       )
+        self.add_param(
+            "-s",
+            "--session",
+            dest="session",
+            default=os.path.join(
+                os.getcwd(),
+                self.name),
+            metavar="PATH",
+            help="Store the session information in the directory at PATH."
+            " (Default: '%(default)s'). If PATH is an existing directory, it"
+            " will be used for storing job information, and an index file"
+            " (with suffix '.csv') will be created in it.  Otherwise, the job"
+            " information will be stored in a directory named after PATH with"
+            " a suffix '.jobs' appended, and the index file"
+            " will be named after PATH with a suffix '.csv' added.")
         self.add_param("-u", "--store-url",
                        action="store",
                        metavar="URL",
                        help="URL of the persistent store to use.")
-        self.add_param("-N", "--new-session", dest="new_session", action="store_true", default=False,
-                       help="Discard any information saved in the session directory (see '--session' option)"
-                       " and start a new session afresh.  Any information about previous jobs is lost.")
+        self.add_param(
+            "-N",
+            "--new-session",
+            dest="new_session",
+            action="store_true",
+            default=False,
+            help="Discard any information saved in the session directory (see"
+            " '--session' option) and start a new session afresh.  Any"
+            " information about previous jobs is lost.")
 
         # 3. script execution control
-        self.add_param("-C", "--continuous", "--watch",
-                       type=positive_int, dest="wait", default=0,
-                       metavar="NUM",
-                       help="Keep running, monitoring jobs and possibly submitting new ones or"
-                       " fetching results every NUM seconds. Exit when all jobs are finished."
-                       )
+        self.add_param(
+            "-C",
+            "--continuous",
+            "--watch",
+            type=positive_int,
+            dest="wait",
+            default=0,
+            metavar="NUM",
+            help="Keep running, monitoring jobs and possibly submitting"
+            " new ones or fetching results every NUM seconds. Exit when"
+            " all jobs are finished.")
         self.add_param("-J", "--max-running",
                        type=positive_int, dest="max_running", default=50,
                        metavar="NUM",
                        help="Set the max NUMber of jobs (default: %(default)s)"
                        " in SUBMITTED or RUNNING state."
                        )
-        self.add_param("-o", "--output", dest="output",
-                       type=valid_directory, default=os.path.join(os.getcwd(), 'NAME'),
-                       metavar='DIRECTORY',
-                       help="Output files from all jobs will be collected in the specified"
-                       " DIRECTORY path; by default, output files are placed in the same"
-                       " directory where the corresponding input file resides.  If the"
-                       " destination directory does not exist, it is created."
-                       " The following strings will be substituted into DIRECTORY,"
-                       " to specify an output location that varies with each submitted job:"
-                       " the string 'NAME' is replaced by the job name;"
-                       " 'DATE' is replaced by the submission date in ISO format (YYYY-MM-DD);"
-                       " 'TIME' is replaced by the submission time formatted as HH:MM."
-                       " 'SESSION' is replaced by the path to the session directory, with a '.out' appended."
-                       )
-        self.add_param("-l", "--state", action="store", nargs='?',
-                       dest="states", default='',
-                       const=str.join(',', gc3libs.Run.State),
-                       help="Print a table of jobs including their status."
-                       " Optionally, restrict output to jobs with a particular STATE or STATES"
-                       " (comma-separated list).  The pseudo-states `ok` and `failed`"
-                       " are also allowed for selecting jobs in TERMINATED state with"
-                       " exitcode 0 or nonzero, resp."
-                       )
+        self.add_param(
+            "-o",
+            "--output",
+            dest="output",
+            type=valid_directory,
+            default=os.path.join(
+                os.getcwd(),
+                'NAME'),
+            metavar='DIRECTORY',
+            help="Output files from all jobs will be collected in the"
+            " specified DIRECTORY path; by default, output files are placed"
+            " in the same directory where the corresponding input file"
+            " resides.  If the destination directory does not exist, it is"
+            " created.  The following strings will be substituted into"
+            " DIRECTORY, to specify an output location that varies with each"
+            " submitted job: the string 'NAME' is replaced by the job name;"
+            " 'DATE' is replaced by the submission date in ISO format"
+            " (YYYY-MM-DD); 'TIME' is replaced by the submission time"
+            " formatted as HH:MM.  'SESSION' is replaced by the path to the"
+            " session directory, with a '.out' appended.")
+        self.add_param(
+            "-l",
+            "--state",
+            action="store",
+            nargs='?',
+            dest="states",
+            default='',
+            const=str.join(
+                ',',
+                gc3libs.Run.State),
+            help="Print a table of jobs including their status."
+            " Optionally, restrict output to jobs with a particular STATE or"
+            " STATES (comma-separated list).  The pseudo-states `ok` and"
+            " `failed` are also allowed for selecting jobs in TERMINATED"
+            " state with exitcode 0 or nonzero, resp.")
         return
 
     def pre_run(self):
@@ -1230,7 +1319,7 @@ class SessionBasedScript(_Script):
         Perform parsing of standard command-line options and call into
         `parse_args()` to do non-optional argument processing.
         """
-        ## call base classes first (note: calls `parse_args()`)
+        # call base classes first (note: calls `parse_args()`)
         _Script.pre_run(self)
         # since it may time quite some time before jobs are created
         # and the first report is displayed, print a startup banner so
@@ -1240,7 +1329,7 @@ class SessionBasedScript(_Script):
               " a more verbose report of activity."
               % (self.name,))
 
-        ## consistency checks
+        # consistency checks
         try:
             # FIXME: backwards-compatibility, remove after 2.0 release
             self.params.walltime = Duration(int(self.params.wctime), hours)
@@ -1248,34 +1337,37 @@ class SessionBasedScript(_Script):
             # cannot convert to `int`, use extended parsing
             self.params.walltime = Duration(self.params.wctime)
 
-        ## determine the session file name (and possibly create an empty index)
+        # determine the session file name (and possibly create an empty index)
         self.session_uri = gc3libs.url.Url(self.params.session)
         if self.params.store_url == 'sqlite':
-            self.params.store_url = ("sqlite:///%s/jobs.db" % self.session_uri.path)
+            self.params.store_url = (
+                "sqlite:///%s/jobs.db" % self.session_uri.path)
         elif self.params.store_url == 'file':
             self.params.store_url = ("file:///%s/jobs" % self.session_uri.path)
-        self.session = self._make_session(self.session_uri.path, self.params.store_url)
+        self.session = self._make_session(
+            self.session_uri.path, self.params.store_url)
 
-        ## keep a copy of the credentials in the session dir
-        self.config.auth_factory.add_params(private_copy_directory=self.session.path)
+        # keep a copy of the credentials in the session dir
+        self.config.auth_factory.add_params(
+            private_copy_directory=self.session.path)
 
         # XXX: ARClib errors out if the download directory already exists, so
         # we need to make sure that each job downloads results in a new one.
         # The easiest way to do so is to append 'NAME' to the `output_dir`
         # (if it's not already there).
-        if (not 'NAME' in self.params.output
-            and not 'ITER' in self.params.output):
+        if ('NAME' not in self.params.output
+                and 'ITER' not in self.params.output):
             self.params.output = os.path.join(self.params.output, 'NAME')
 
-        ## parse the `states` list
+        # parse the `states` list
         self.params.states = self.params.states.split(',')
 
     ##
-    ## INTERNAL METHODS
+    # INTERNAL METHODS
     ##
-    ## The following methods are for internal use; they can be
-    ## overridden and customized in derived classes, although there
-    ## should be no need to do so.
+    # The following methods are for internal use; they can be
+    # overridden and customized in derived classes, although there
+    # should be no need to do so.
     ##
     def _make_session(self, session_uri, store_url):
         """
@@ -1301,7 +1393,7 @@ class SessionBasedScript(_Script):
         :meth:`process_args`, :meth:`parse_args`, :meth:`setup_args`.
         """
 
-        ## zero out the session index if `-N` was given
+        # zero out the session index if `-N` was given
         if self.params.new_session:
             old_jobids = self.session.list_ids()
             if old_jobids:
@@ -1316,28 +1408,37 @@ class SessionBasedScript(_Script):
                     job.attach(self._core)
                     try:
                         job.kill()
-                    except Exception, err:
+                    except Exception as err:
                         self.log.info(
-                            "Got this error while killing old job '%s', ignore it: %s: %s",
-                            job, err.__class__.__name__, str(err))
+                            "Got this error while killing old job '%s',"
+                            " ignore it: %s: %s",
+                            job,
+                            err.__class__.__name__,
+                            str(err))
                     try:
                         job.free()
-                    except Exception, err:
+                    except Exception as err:
                         self.log.info(
-                            "Got this error while cleaning up old job '%s', ignore it: %s: %s",
-                            job, err.__class__.__name__, str(err))
+                            "Got this error while cleaning up old job '%s',"
+                            " ignore it: %s: %s",
+                            job,
+                            err.__class__.__name__,
+                            str(err))
                     job.detach()
                     self.session.remove(jobid)
                     self.log.debug("Removed job '%s' from session.", job)
-                self.log.info("Done cleaning up old session jobs, starting with new one afresh...")
+                self.log.info(
+                    "Done cleaning up old session jobs, starting with new one"
+                    " afresh...")
 
-        ## update session based on command-line args
+        # update session based on command-line args
         if len(self.session) == 0:
             self.process_args()
         else:
             self.log.warning(
-                "Session already exists, some command-line arguments might be ignored."
-                )
+                "Session already exists, some command-line arguments"
+                " might be ignored."
+            )
 
         # save the session list immediately, so newly added jobs will
         # be in it if the script is stopped here
@@ -1346,16 +1447,22 @@ class SessionBasedScript(_Script):
         # obey the ``-r`` command-line option
         if self.params.resource_name:
             self._select_resources(self.params.resource_name)
-            self.log.info("Retained only resources: %s (restricted by command-line option '-r %s')",
-                          str.join(",", [r['name'] for r in self._core.get_resources() if r.enabled]),
-                          self.params.resource_name)
+            self.log.info(
+                "Retained only resources: %s (restricted by command-line"
+                " option '-r %s')",
+                str.join(
+                    ",",
+                    [
+                        r['name'] for r in self._core.get_resources()
+                        if r.enabled]),
+                self.params.resource_name)
 
-        ## create an `Engine` instance to manage the job list
+        # create an `Engine` instance to manage the job list
         self._controller = self.make_task_controller()
 
-        ## the main loop, at long last!
+        # the main loop, at long last!
         self.before_main_loop()
-        rc = 13 # Keep in sync with `_Script.run()` method
+        rc = 13  # Keep in sync with `_Script.run()` method
         try:
             # do a first round of submit/update/retrieve...
             rc = self._main_loop()
@@ -1370,8 +1477,9 @@ class SessionBasedScript(_Script):
                         time.sleep(1)
                     # ...and now repeat the submit/update/retrieve
                     rc = self._main_loop()
-        except KeyboardInterrupt: # gracefully intercept Ctrl+C
-            sys.stderr.write("%s: Exiting upon user request (Ctrl+C)\n" % self.name)
+        except KeyboardInterrupt:  # gracefully intercept Ctrl+C
+            sys.stderr.write(
+                "%s: Exiting upon user request (Ctrl+C)\n" % self.name)
             pass
         self.after_main_loop()
 
@@ -1457,8 +1565,8 @@ class SessionBasedScript(_Script):
         if stats['failed'] > 0:
             rc |= 2
         if stats[gc3libs.Run.State.RUNNING] > 0 \
-               or stats[gc3libs.Run.State.SUBMITTED] > 0 \
-               or stats[gc3libs.Run.State.UNKNOWN]:
+                or stats[gc3libs.Run.State.SUBMITTED] > 0 \
+                or stats[gc3libs.Run.State.UNKNOWN]:
             rc |= 4
         if stats[gc3libs.Run.State.NEW] > 0:
             rc |= 8
@@ -1506,8 +1614,8 @@ class SessionBasedScript(_Script):
                                " adding it to input list" % (path, pattern))
                 inputs.add(path)
             elif ext is not None \
-                     and not path.endswith(ext) \
-                     and os.path.exists(path + ext):
+                    and not path.endswith(ext) \
+                    and os.path.exists(path + ext):
                 self.log.debug("Path '%s' matched extension '%s',"
                                " adding to input list"
                                % (path + ext, ext))

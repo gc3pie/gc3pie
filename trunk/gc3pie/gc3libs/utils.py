@@ -29,10 +29,8 @@ __version__ = 'development version (SVN $Revision$)'
 
 
 import contextlib
-import itertools
 import os
 import os.path
-import posix
 import random
 import re
 import shutil
@@ -57,8 +55,10 @@ try:
     WindowsError = shutil.WindowsError
 except AttributeError:
     class NeverUsedException(Exception):
+
         """this exception should never be raised"""
     WindowsError = NeverUsedException
+
 
 def backup(path):
     """
@@ -96,11 +96,11 @@ def backup(path):
     prefix = os.path.basename(path) + '.~'
     p = len(prefix)
     suffix = 1
-    for name in [ entry for entry in os.listdir(parent_dir)
-                  if (entry.startswith(prefix) and entry.endswith('~')) ]:
+    for name in [entry for entry in os.listdir(parent_dir)
+                 if (entry.startswith(prefix) and entry.endswith('~'))]:
         try:
             n = int(name[p:-1])
-            suffix = max(suffix, n+1)
+            suffix = max(suffix, n + 1)
         except ValueError:
             # ignore non-numeric suffixes
             pass
@@ -194,7 +194,7 @@ def cat(*args, **extra_args):
     try:
         output.write('')
     except:
-        output = open(output, ('a' if append==True else 'w'))
+        output = open(output, ('a' if append else 'w'))
     for arg in args:
         # ensure `arg` is a file-like object, opened in read-mode
         try:
@@ -249,13 +249,14 @@ def copyfile(src, dst, overwrite=False, changed_only=True, link=False):
             if changed_only:
                 sstat = os.stat(src)
                 dstat = os.stat(dst)
-                if (sstat.st_size == dstat.st_size and sstat.st_mtime <= dstat.st_mtime):
+                if (sstat.st_size ==
+                        dstat.st_size and sstat.st_mtime <= dstat.st_mtime):
                     # same size and destination more recent, do not copy
                     return False
         if link:
             try:
                 os.link(src, dst)
-            except OSError, ex:
+            except OSError:
                 # retry with normal copy
                 shutil.copy2(src, dst)
         else:
@@ -296,10 +297,11 @@ def copytree(src, dst, overwrite=False, changed_only=True):
         dstname = os.path.join(dst, name)
         try:
             if os.path.isdir(srcname):
-                errors.extend(copytree(srcname, dstname, overwrite, changed_only))
+                errors.extend(
+                    copytree(srcname, dstname, overwrite, changed_only))
             else:
                 copyfile(srcname, dstname)
-        except (IOError, os.error), why:
+        except (IOError, os.error) as why:
             errors.append((srcname, dstname, why))
     return errors
 
@@ -333,10 +335,9 @@ def count(seq, predicate):
 def defproperty(fn):
     """
     Decorator to define properties with a simplified syntax in Python 2.4.
-    See http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6
-    for details and examples.
+    See http://goo.gl/IoOZ8m for details and examples.
     """
-    p = { 'doc':fn.__doc__ }
+    p = {'doc': fn.__doc__}
     p.update(fn())
     return property(**p)
 
@@ -364,33 +365,41 @@ def deploy_configuration_file(filename, template_filename=None):
         return True
     else:
         try:
-            from pkg_resources import Requirement, resource_filename, DistributionNotFound
+            from pkg_resources import (Requirement, resource_filename,
+                                       DistributionNotFound)
             import shutil
-        except ImportError, err:
+        except ImportError as err:
             raise gc3libs.exceptions.FatalError(
                 "Cannot import required Python modules: %s."
                 " Please check GC3Pie installation instructions at"
-                " http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/install.html"
-                % str(err))
+                " http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/install.html" %  # noqa
+                str(err))
         try:
             # copy sample config file
             if not os.path.exists(dirname(filename)):
                 os.makedirs(dirname(filename))
-            sample_config = resource_filename(Requirement.parse("gc3pie"),
-                                              "gc3libs/etc/" + template_filename)
+            sample_config = resource_filename(
+                Requirement.parse("gc3pie"),
+                "gc3libs/etc/" +
+                template_filename)
             shutil.copyfile(sample_config, filename)
             return False
-        except IOError, err:
+        except IOError as err:
             gc3libs.log.critical("Failed copying configuration file: %s", err)
-            raise gc3libs.exceptions.NoConfigurationFile("No configuration file '%s' was found, and an attempt to create it failed. Aborting." % filename)
-        except DistributionNotFound, ex:
-            raise AssertionError("Cannot access resources for Python package: %s."
-                                 " Installation error?" % str(ex))
+            raise gc3libs.exceptions.NoConfigurationFile(
+                "No configuration file '%s' was found, and an attempt to"
+                " create it failed. Aborting." % filename)
+        except DistributionNotFound as ex:
+            raise AssertionError(
+                "Cannot access resources for Python package: %s."
+                " Installation error?" %
+                str(ex))
 
 
 def dirname(pathname):
     """
-    Same as `os.path.dirname` but return `.` in case of path names with no directory component.
+    Same as `os.path.dirname` but return `.` in case of path names with no
+    directory component.
     """
     # FIXME: figure out if this is a desirable outcome.  i.e. do we
     # want dirname to be empty, or do a pwd and find out what the
@@ -401,9 +410,9 @@ def dirname(pathname):
 
 
 class Enum(frozenset):
+
     """
-    A generic enumeration class.  Inspired by:
-    http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python/2182437#2182437
+    A generic enumeration class.  Inspired by: http://goo.gl/1AL5N0
     with some more syntactic sugar added.
 
     An `Enum` class must be instanciated with a list of strings, that
@@ -434,19 +443,23 @@ class Enum(frozenset):
     """
     def __new__(cls, *args):
         return frozenset.__new__(cls, args)
+
     def __getattr__(self, name):
-            if name in self:
-                    return name
-            else:
-                    raise AttributeError("No '%s' in enumeration '%s'"
-                                         % (name, self.__class__.__name__))
+        if name in self:
+            return name
+        else:
+            raise AttributeError("No '%s' in enumeration '%s'"
+                                 % (name, self.__class__.__name__))
+
     def __setattr__(self, name, value):
-            raise SyntaxError("Cannot assign enumeration values.")
+        raise SyntaxError("Cannot assign enumeration values.")
+
     def __delattr__(self, name):
-            raise SyntaxError("Cannot delete enumeration values.")
+        raise SyntaxError("Cannot delete enumeration values.")
 
 
 class ExponentialBackoff(object):
+
     """Generate waiting times with the `exponential backoff`_ algorithm.
 
     Returned times are in seconds (or fractions thereof); they are
@@ -466,7 +479,7 @@ class ExponentialBackoff(object):
       ...
       0.0 0.0 0.0 0.25 0.15 0.3
 
-    .. _`exponential backoff`: http://en.wikipedia.org/wiki/Exponential_backoff#An_example_of_an_exponential_backoff_algorithm
+    .. _`exponential backoff`: http://goo.gl/PxVICA
 
     """
 
@@ -483,7 +496,7 @@ class ExponentialBackoff(object):
         self.attempt += 1
         if self.attempt > self.max_retries:
             raise StopIteration
-        return self.slot_duration * random.randint(0, 2**self.attempt - 1)
+        return self.slot_duration * random.randint(0, 2 ** self.attempt - 1)
 
     def wait(self):
         """Wait for another while."""
@@ -506,15 +519,16 @@ def first(seq):
       >>> first(sorted(s.keys()))
       'a'
     """
-    try: # try iterator interface
+    try:  # try iterator interface
         return seq.next()
     except AttributeError:
         pass
-    try: # seq is no iterator, try indexed lookup
+    try:  # seq is no iterator, try indexed lookup
         return seq[0]
     except IndexError:
         pass
-    raise TypeError("Argument to `first()` method needs to be iterator or sequence.")
+    raise TypeError(
+        "Argument to `first()` method needs to be iterator or sequence.")
 
 
 def fgrep(literal, filename):
@@ -567,7 +581,8 @@ def getattr_nested(obj, name):
 
 def grep(pattern, filename):
     """
-    Iterate over all lines in a file that match the `pattern` regular expression.
+    Iterate over all lines in a file that match the `pattern` regular
+    expression.
     """
     rx = re.compile(pattern)
     with open(filename, 'r') as file:
@@ -645,7 +660,7 @@ def irange(start, stop, step=1):
         while value < stop:
             yield value
             value += step
-    else: # step < 0
+    else:  # step < 0
         while value > stop:
             yield value
             value += step
@@ -678,7 +693,7 @@ def lock(path, timeout, create=True):
     try:
         lck = lockfile.FileLock(path, threaded=False)
         lck.acquire(timeout=timeout)
-    except Exception, ex:
+    except Exception:
         if created:
             try:
                 os.remove(path)
@@ -689,6 +704,7 @@ def lock(path, timeout, create=True):
 
 
 class History(object):
+
     """
     A list of messages with timestamps and (optional) tags.
 
@@ -698,7 +714,8 @@ class History(object):
       >>> L.append('first message')
       >>> L.append('second one')
 
-    The `last` method returns the text of the last message appended, with its timestamp::
+    The `last` method returns the text of the last message appended, with its
+    timestamp::
 
       >>> L.last().startswith('second one at')
       True
@@ -710,8 +727,9 @@ class History(object):
       first message ...
 
     """
+
     def __init__(self):
-        self._messages = [ ]
+        self._messages = []
 
     def append(self, message, *tags):
         """
@@ -739,10 +757,12 @@ class History(object):
             return self.format_message(self._messages[-1])
 
     def format_message(self, message):
+        """Return a formatted message, appending to the message its timestamp
+        in human readable format.
+
         """
-        Return a formatted message, appending to the message its timestamp in human readable format.
-        """
-        return "%s at %s" % (message[0], time.asctime(time.localtime(message[1])))
+        return "%s at %s" % (
+            message[0], time.asctime(time.localtime(message[1])))
 
     # shortcut for append
     def __call__(self, message, *tags):
@@ -754,11 +774,13 @@ class History(object):
         return iter([self.format_message(record) for record in self._messages])
 
     def __str__(self):
-        """Return all messages texts in a single string, separated by newline characters."""
-        return str.join('\n', [self.format_message(record) for record in self._messages])
+        """Return all messages texts in a single string, separated by newline
+        characters."""
+        return str.join('\n', [self.format_message(record)
+                               for record in self._messages])
 
 
-def mkdir(path, mode=0777):
+def mkdir(path, mode=0o777):
     """
     Like `os.makedirs`, but does not throw an exception if PATH
     already exists.
@@ -767,7 +789,7 @@ def mkdir(path, mode=0777):
         os.makedirs(path, mode)
 
 
-def mkdir_with_backup(path, mode=0777):
+def mkdir_with_backup(path, mode=0o777):
     """
     Like `os.makedirs`, but if `path` already exists and is not empty,
     rename the existing one to a backup name (see the `backup` function).
@@ -820,7 +842,8 @@ def movefile(src, dst, overwrite=False, changed_only=True, link=False):
         if changed_only:
             sstat = os.stat(src)
             dstat = os.stat(dst)
-            if (sstat.st_size == dstat.st_size and sstat.st_mtime <= dstat.st_mtime):
+            if (sstat.st_size ==
+                    dstat.st_size and sstat.st_mtime <= dstat.st_mtime):
                 # same size and destination more recent, do not move
                 return False
     try:
@@ -849,10 +872,11 @@ def movetree(src, dst, overwrite=False, changed_only=True):
         dstname = os.path.join(dst, name)
         try:
             if os.path.isdir(srcname):
-                errors.extend(movetree(srcname, dstname, overwrite, changed_only))
+                errors.extend(
+                    movetree(srcname, dstname, overwrite, changed_only))
             else:
                 movefile(srcname, dstname)
-        except (IOError, os.error), why:
+        except (IOError, os.error) as why:
             errors.append((srcname, dstname, why))
     return errors
 
@@ -883,8 +907,16 @@ def occurs(pattern, filename):
         return False
 
 
-def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
-                only_keys=None, output=sys.stdout, _key_prefix='', _exclude=None):
+def prettyprint(
+        D,
+        indent=0,
+        width=0,
+        maxdepth=None,
+        step=4,
+        only_keys=None,
+        output=sys.stdout,
+        _key_prefix='',
+        _exclude=None):
     """
     Print dictionary instance `D` in a YAML-like format.
     Each output line consists of:
@@ -910,7 +942,7 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
     if _exclude is None:
         _exclude = set()
     _exclude.add(id(D))
-    for k,v in D.iteritems():
+    for k, v in D.iteritems():
         leading_spaces = indent * ' '
         full_name = "%s%s" % (_key_prefix, k)
         if only_keys is not None:
@@ -936,15 +968,16 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
         if id(v) in _exclude:
             continue
         first = str.join('', [leading_spaces, str(k), ': '])
-        if isinstance(v, (dict, UserDict.DictMixin, UserDict.UserDict, OrderedDict)):
+        if isinstance(
+                v, (dict, UserDict.DictMixin, UserDict.UserDict, OrderedDict)):
             if maxdepth is None or maxdepth > 0:
                 if maxdepth is None:
                     depth = None
                 else:
-                    depth = maxdepth-1
+                    depth = maxdepth - 1
                 sstream = StringIO.StringIO()
-                prettyprint(v, indent+step, width, depth, step,
-                            only_keys, sstream, full_name+'.', _exclude)
+                prettyprint(v, indent + step, width, depth, step,
+                            only_keys, sstream, full_name + '.', _exclude)
                 second = sstream.getvalue()
                 sstream.close()
             elif maxdepth == 0:
@@ -954,7 +987,8 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
         else:
             second = str(v)
         # wrap overlong lines, and always wrap if the second part is multi-line
-        if (width > 0 and len(first) + len(second) > width) or ('\n' in second):
+        if (width > 0 and len(first) + len(second)
+                > width) or ('\n' in second):
             first += '\n'
         # indent a multi-line block by indent+step spaces
         if '\n' in second:
@@ -969,10 +1003,10 @@ def prettyprint(D, indent=0, width=0, maxdepth=None, step=4,
             for line in lines:
                 second = str.join('', [
                     second,
-                    ' ' * (indent+step),
+                    ' ' * (indent + step),
                     line.rstrip().expandtabs(step)[dedent:],
                     '\n'
-                    ])
+                ])
         # there can be multiple trailing '\n's, which we remove here
         second = second.rstrip()
         # finally print line(s)
@@ -1038,20 +1072,25 @@ def progressive_number(qty=None,
     """
     assert qty is None or qty > 0, \
         "Argument `qty` must be a positive integer"
-    lck = lock(id_filename, timeout=30, create=True) # XXX: can raise 'LockTimeout'
+    # XXX: can raise 'LockTimeout'
+    lck = lock(id_filename, timeout=30, create=True)
     id_file = open(id_filename, 'r+')
     id = int(id_file.read(8) or "0", 16)
     id_file.seek(0)
     if qty is None:
-        id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % (id+1))
+        id_file.write(
+            "%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally"
+            " by the gc3libs\n" % (id + 1))
     else:
-        id_file.write("%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally by the gc3libs\n" % (id+qty))
+        id_file.write(
+            "%08x -- DO NOT REMOVE OR ALTER THIS FILE: it is used internally"
+            " by the gc3libs\n" % (id + qty))
     id_file.close()
     unlock(lck)
     if qty is None:
-        return id+1
+        return id + 1
     else:
-        return [ (id+n) for n in range(1, qty+1) ]
+        return [(id + n) for n in range(1, qty + 1)]
 
 
 def read_contents(path):
@@ -1101,8 +1140,8 @@ def same_docstring_as(referenced_fn):
     corresponding abstract method in the base class.
     """
     def decorate(f):
-            f.__doc__ = referenced_fn.__doc__
-            return f
+        f.__doc__ = referenced_fn.__doc__
+        return f
     return decorate
 
 
@@ -1113,8 +1152,8 @@ def samefile(path1, path2):
     """
     try:
         return os.path.samefile(path1, path2)
-    except OSError, err:
-        if err.errno == 2: # ENOENT
+    except OSError as err:
+        if err.errno == 2:  # ENOENT
             return False
         else:
             raise
@@ -1155,6 +1194,7 @@ def sh_quote_safe_cmdline(args):
 _DQUOTE_RE = re.compile(r'(\\*)"')
 """Regular expression for escaping double quotes in strings."""
 
+
 def sh_quote_unsafe(text):
     """
     Double-quote a string for passing as argument to a shell command.
@@ -1190,8 +1230,10 @@ def sh_quote_unsafe_cmdline(args):
     return str.join(' ', (sh_quote_unsafe(arg) for arg in args))
 
 
-# see http://stackoverflow.com/questions/31875/is-there-a-simple-elegant-way-to-define-singletons-in-python/1810391#1810391
+# see
+# http://stackoverflow.com/questions/31875/is-there-a-simple-elegant-way-to-define-singletons-in-python/1810391#1810391  # noqa
 class Singleton(object):
+
     """
     Derived classes of `Singleton` can have only one instance in the
     running Python interpreter.
@@ -1204,11 +1246,13 @@ class Singleton(object):
     """
     def __new__(cls, *args, **extra_args):
         if not hasattr(cls, '_instance'):
-            cls._instance = super(Singleton, cls).__new__(cls, *args, **extra_args)
+            cls._instance = super(Singleton, cls).__new__(
+                cls, *args, **extra_args)
         return cls._instance
 
 
 class PlusInfinity(Singleton):
+
     """
     An object that is greater-than any other object.
 
@@ -1259,25 +1303,31 @@ class PlusInfinity(Singleton):
         False
 
     """
+
     def __gt__(self, other):
         if self is other:
             return False
         else:
             return True
+
     def __ge__(self, other):
         return True
+
     def __lt__(self, other):
         return False
+
     def __le__(self, other):
         if self is other:
             return True
         else:
             return False
+
     def __eq__(self, other):
         if self is other:
             return True
         else:
             return False
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -1286,6 +1336,7 @@ class PlusInfinity(Singleton):
 # to make `Struct` inherit from `object` otherwise we loose properties
 # when setting/pickling/unpickling
 class Struct(object, UserDict.DictMixin):
+
     """
     A `dict`-like object, whose keys can be accessed with the usual
     '[...]' lookup syntax, or with the '.' get attribute syntax.
@@ -1317,6 +1368,7 @@ class Struct(object, UserDict.DictMixin):
       3
 
     """
+
     def __init__(self, initializer=None, **extra_args):
         if initializer is not None:
             try:
@@ -1338,8 +1390,10 @@ class Struct(object, UserDict.DictMixin):
     # that `__getitem__`, `__setitem__` and `keys` are defined.
     def __setitem__(self, name, val):
         self.__dict__[name] = val
+
     def __getitem__(self, name):
         return self.__dict__[name]
+
     def keys(self):
         return self.__dict__.keys()
 
@@ -1383,7 +1437,7 @@ def string_to_boolean(word):
       False
 
     """
-    if word.strip().lower() in [ 'true', 'yes', 'on', '1' ]:
+    if word.strip().lower() in ['true', 'yes', 'on', '1']:
         return True
     else:
         return False
@@ -1461,7 +1515,8 @@ def test_file(path, mode, exception=RuntimeError, isdir=False):
         raise exception("Cannot access %s '%s'."
                         % (ifelse(isdir, "directory", "file"), path))
     if isdir and not os.path.isdir(path):
-        raise exception("Expected '%s' to be a directory, but it's not." % path)
+        raise exception(
+            "Expected '%s' to be a directory, but it's not." % path)
     if (mode & os.R_OK) and not os.access(path, os.R_OK):
         raise exception("Cannot read %s '%s'."
                         % (ifelse(isdir, "directory", "file"), path))
@@ -1520,23 +1575,23 @@ def to_bytes(s):
         k = 1000
     # convert the substring of `s` that does not include the suffix
     if unit.isdigit():
-        return int(s[0:(last+1)])
+        return int(s[0:(last + 1)])
     if unit == 'k':
-        return int(float(s[0:last])*k)
+        return int(float(s[0:last]) * k)
     if unit == 'm':
-        return int(float(s[0:last])*k*k)
+        return int(float(s[0:last]) * k * k)
     if unit == 'g':
-        return int(float(s[0:last])*k*k*k)
+        return int(float(s[0:last]) * k * k * k)
     if unit == 't':
-        return int(float(s[0:last])*k*k*k*k)
+        return int(float(s[0:last]) * k * k * k * k)
     if unit == 'p':
-        return int(float(s[0:last])*k*k*k*k*k)
+        return int(float(s[0:last]) * k * k * k * k * k)
     if unit == 'e':
-        return int(float(s[0:last])*k*k*k*k*k*k)
+        return int(float(s[0:last]) * k * k * k * k * k * k)
     if unit == 'z':
-        return int(float(s[0:last])*k*k*k*k*k*k*k)
+        return int(float(s[0:last]) * k * k * k * k * k * k * k)
     if unit == 'y':
-        return int(float(s[0:last])*k*k*k*k*k*k*k*k)
+        return int(float(s[0:last]) * k * k * k * k * k * k * k * k)
 
 
 def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
@@ -1558,7 +1613,7 @@ def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
 
     for f in files:
         part = MIMEBase('application', "octet-stream")
-        part.set_payload( open(f,"rb").read() )
+        part.set_payload(open(f, "rb").read())
         Encoders.encode_base64(part)
         part.add_header('Content-Disposition',
                         'attachment; filename="%s"' % os.path.basename(f))
@@ -1630,22 +1685,23 @@ def update_parameter_in_file(path, var_in, new_val, regex_in):
     Updates a parameter value in a parameter file using predefined regular
     expressions in `_loop_regexps`.
 
-    :param path: Full path to the parameter file.
-    :param var_in: The variable to modify.
+    :param path:    Full path to the parameter file.
+    :param var_in:  The variable to modify.
     :param new_val: The updated parameter value.
-    :param regex: Name of the regular expression that describes the format of the parameter file.
+    :param regex:   Name of the regular expression that describes the format
+                    of the parameter file.
     '''
     _loop_regexps = {
-        'bar-separated':(r'([a-z]+[\s\|]+)'
-                         r'(\w+)' # variable name
-                         r'(\s*[\|]+\s*)' # bars and spaces
-                         r'([\w\s\.,;\[\]\-]+)' # value
-                         r'(\s*)'),
-        'space-separated':(r'(\s*)'
-                           r'(\w+)' # variable name
-                           r'(\s+)' # spaces (filler)
-                           r'([\w\s\.,;\[\]\-]+)' # values
-                           r'(\s*)'), # spaces (filler)
+        'bar-separated': (r'([a-z]+[\s\|]+)'
+                          r'(\w+)'  # variable name
+                          r'(\s*[\|]+\s*)'  # bars and spaces
+                          r'([\w\s\.,;\[\]\-]+)'  # value
+                          r'(\s*)'),
+        'space-separated': (r'(\s*)'
+                            r'(\w+)'  # variable name
+                            r'(\s+)'  # spaces (filler)
+                            r'([\w\s\.,;\[\]\-]+)'  # values
+                            r'(\s*)'),  # spaces (filler)
     }
     isfound = False
     if regex_in in _loop_regexps.keys():
@@ -1653,9 +1709,11 @@ def update_parameter_in_file(path, var_in, new_val, regex_in):
     para_file_in = open(path, 'r')
     para_file_out = open(path + '.tmp', 'w')
     for line in para_file_in:
-        if not line.rstrip(): continue
+        if not line.rstrip():
+            continue
         (a, var, b, old_val, c) = re.match(regex_in, line.rstrip()).groups()
-        gc3libs.log.debug("Read variable '%s' with value '%s' ...", var, old_val)
+        gc3libs.log.debug(
+            "Read variable '%s' with value '%s' ...", var, old_val)
         if var == var_in:
             isfound = True
             upd_val = new_val
@@ -1667,7 +1725,9 @@ def update_parameter_in_file(path, var_in, new_val, regex_in):
     # move new modified content over the old
     os.rename(path + '.tmp', path)
     if not isfound:
-        gc3libs.log.critical('update_parameter_in_file could not find parameter in sepcified file')
+        gc3libs.log.critical(
+            'update_parameter_in_file could not find parameter'
+            ' in sepcified file')
 
 
 def write_contents(path, data):
@@ -1694,6 +1754,7 @@ def write_contents(path, data):
 
 
 class YieldAtNext(object):
+
     """
     Provide an alternate protocol for generators.
 
@@ -1703,7 +1764,7 @@ class YieldAtNext(object):
     subsequent call to the `next` method.
     """
 
-    __slots__ = [ '_generator', '_has_saved', '_saved', '_stop_iteration' ]
+    __slots__ = ['_generator', '_has_saved', '_saved', '_stop_iteration']
 
     def __init__(self, generator):
         self._generator = generator
@@ -1740,7 +1801,7 @@ class YieldAtNext(object):
 
 
 ##
-## Main
+# Main
 ##
 
 if __name__ == '__main__':

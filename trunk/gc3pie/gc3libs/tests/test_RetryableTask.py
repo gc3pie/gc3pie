@@ -29,14 +29,15 @@ from gc3libs import Application, Run, Task
 from gc3libs.workflow import RetryableTask
 import gc3libs.exceptions
 
+
 class TestApplication(Application):
 
     def __init__(self):
         Application.__init__(self,
-                             arguments = [''],
-                             inputs = [],
-                             outputs = [],
-                             output_dir = None)
+                             arguments=[''],
+                             inputs=[],
+                             outputs=[],
+                             output_dir=None)
         self.execution.state = 'TERMINATED'
         self.execution.returncode = 0
         self.changed = False
@@ -44,6 +45,7 @@ class TestApplication(Application):
     def update_state(self):
         # self.changed = False
         pass
+
 
 @raises(AssertionError)
 def test_persisted_change():

@@ -30,6 +30,7 @@ from gc3libs.quantity import MB
 
 
 class AppPotApplication(gc3libs.Application):
+
     """
     Base class for AppPot-hosted applications.
     Provides the same interface as the base `Application`:class:
@@ -54,16 +55,27 @@ class AppPotApplication(gc3libs.Application):
 
     application_name = 'apppot'
 
-    def __init__(self, arguments, inputs, outputs, output_dir,
-                 apppot_img=None, apppot_changes=None, apppot_tag='ENV/APPPOT-0.21',
-                 apppot_extra=[], **extra_args):
+    def __init__(
+            self,
+            arguments,
+            inputs,
+            outputs,
+            output_dir,
+            apppot_img=None,
+            apppot_changes=None,
+            apppot_tag='ENV/APPPOT-0.21',
+            apppot_extra=[],
+            **extra_args):
         # AppPot-specific setup
         apppot_start_args = []
         if apppot_img is not None:
             AppPotApplication._add_to_inputs(inputs, apppot_img, 'apppot.img')
             apppot_start_args += ['--apppot', 'apppot.img']
         if apppot_changes is not None:
-            AppPotApplication._add_to_inputs(inputs, apppot_changes, 'apppot.changes.tar.gz')
+            AppPotApplication._add_to_inputs(
+                inputs,
+                apppot_changes,
+                'apppot.changes.tar.gz')
             apppot_start_args += ['--changes', 'apppot.changes.tar.gz']
         if 'requested_memory' in extra_args:
             apppot_start_args += ['--mem',
@@ -80,12 +92,12 @@ class AppPotApplication(gc3libs.Application):
         if 'tags' in extra_args:
             extra_args['tags'].append(apppot_tag)
         else:
-            extra_args['tags'] = [ apppot_tag ]
+            extra_args['tags'] = [apppot_tag]
 
         # init base class
         gc3libs.Application.__init__(
             self,
-            [ './apppot-start.sh'] + apppot_start_args, # arguments
+            ['./apppot-start.sh'] + apppot_start_args,  # arguments
             inputs, outputs, output_dir, **extra_args)
 
     @staticmethod
@@ -97,9 +109,10 @@ class AppPotApplication(gc3libs.Application):
         if isinstance(inputs, dict):
             inputs[localpath] = remotepath
         elif isinstance(inputs, list):
-            inputs.append( (localpath, remotepath) )
+            inputs.append((localpath, remotepath))
         else:
-            raise TypeError("Unexpected type for `inputs` parameter: need `dict` or `list`.")
+            raise TypeError(
+                "Unexpected type for `inputs` parameter: need `dict` or `list`.")
 
     def xrsl(self, resource):
             # FIXME: for ARC submissions, replace `executable` with
@@ -107,14 +120,14 @@ class AppPotApplication(gc3libs.Application):
             # because otherwise ARC insists that 'apppot-start.sh'
             # should be included in "inputFiles", but it obviously
             # breaks all other submission schemes...
-            original_executable = self.arguments[0]
-            self.arguments[0] = '/$APPPOT_STARTUP'
-            jobdesc = gc3libs.Application.xrsl(self, resource)
-            self.arguments[0] = original_executable
-            return jobdesc
+        original_executable = self.arguments[0]
+        self.arguments[0] = '/$APPPOT_STARTUP'
+        jobdesc = gc3libs.Application.xrsl(self, resource)
+        self.arguments[0] = original_executable
+        return jobdesc
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

@@ -33,6 +33,7 @@ import gc3libs.exceptions
 def test_invalid_invocation():
     Application()
 
+
 def test_mandatory_arguments():
     # check for all mandatory arguments
     ma = {'arguments': ['/bin/true'],
@@ -55,6 +56,7 @@ def test_mandatory_arguments():
         del _tmp[k]
         yield _create_app, _tmp
 
+
 def test_wrong_type_arguments():
     # Things that will raise errors:
     # * unicode arguments
@@ -76,18 +78,19 @@ def test_wrong_type_arguments():
         app = Application(**_tmpma)
         raise SkipTest("FIXME invalid arguments")
 
-    for k,v  in {
+    for k, v in {
         # 'inputs' : ['duplicated', 'duplicated'],
         # duplicated inputs doesnt raise an exception but just a warning
-        'outputs' : ['/should/not/be/absolute'],
+        'outputs': ['/should/not/be/absolute'],
         # 'outputs' : ['duplicated', 'duplicated'],
         # duplicated outputs doesnt raise an exception but just a warning
-        'requested_architecture' : 'FooBar',
-        'requested_cores' : 'one',
-        }.items():
+        'requested_architecture': 'FooBar',
+        'requested_cores': 'one',
+    }.items():
         _tmpma = ma.copy()
         _tmpma[k] = v
         yield _create_app, _tmpma
+
 
 def test_valid_invocation():
     ma = {'arguments': ['/bin/true'],
@@ -97,17 +100,18 @@ def test_valid_invocation():
           }
     app = Application(**ma)
 
+
 @raises(gc3libs.exceptions.InvalidValue)
 def test_io_spec_to_dict_unicode():
     import gc3libs.url
     Application._io_spec_to_dict(
         gc3libs.url.UrlKeyDict, {
-            u'/tmp/\u0246':u'\u0246',
-            '/tmp/b/':'b'},
+            u'/tmp/\u0246': u'\u0246',
+            '/tmp/b/': 'b'},
         True)
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import nose

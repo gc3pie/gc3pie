@@ -35,19 +35,24 @@ from gc3libs.workflow import SequentialTaskCollection
 loglevel = logging.ERROR
 configure_logger(loglevel, "test_issue_335")
 
+
 class MySequentialCollection(SequentialTaskCollection):
+
     def __init__(self, *args, **kwargs):
         SequentialTaskCollection.__init__(self, *args, **kwargs)
         self.next_called_n_times = 0
+
     def next(self, x):
         """count times next() is called"""
         self.next_called_n_times += 1
         return SequentialTaskCollection.next(self, x)
 
+
 class test_issue_335(object):
+
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        CONF_FILE="""
+        CONF_FILE = """
 [auth/dummy]
 type = ssh
 username = dummy
@@ -76,19 +81,19 @@ resourcedir = %s
         """Test that SequentialTasksCollection goes in TERMINATED state when all of its tasks are in TERMINATED state."""
         num_tasks_in_seq = 5
         seq = MySequentialCollection([
-                Application(
-                    ['echo','test1'],
-                    [],[],
-                    os.path.join(self.tmpdir, 'test.%d.d' % i))
-                for i in range(num_tasks_in_seq)
-            ])
+            Application(
+                ['echo', 'test1'],
+                [], [],
+                os.path.join(self.tmpdir, 'test.%d.d' % i))
+            for i in range(num_tasks_in_seq)
+        ])
         engine = create_engine(self.cfgfile, auto_enable_auth=True)
         engine.add(seq)
         while True:
             engine.progress()
             if (len([task for task in seq.tasks
-                    if task.execution.state == Run.State.TERMINATED])
-                == num_tasks_in_seq):
+                     if task.execution.state == Run.State.TERMINATED])
+                    == num_tasks_in_seq):
                 engine.progress()
                 # check that final SequentialCollection state is TERMINATED
                 assert_equal(seq.execution.state, Run.State.TERMINATED)

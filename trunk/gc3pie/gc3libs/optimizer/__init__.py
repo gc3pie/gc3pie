@@ -32,7 +32,7 @@ the driver classes.)
 
 The module is organized as follows:
 
-* :mod:`~gc3libs.optimizer.drivers`: Set of drivers that interface with GC3Libs 
+* :mod:`~gc3libs.optimizer.drivers`: Set of drivers that interface with GC3Libs
   to automatically drive the optimization process following a specified
   algorithm. :class:`~gc3libs.optimizer.drivers.ParallelDriver` is the core of
   the optimization module, performing optimization using an algorithm based on
@@ -93,7 +93,9 @@ import gc3libs.core
 from gc3libs import Application, Run, Task, utils
 from gc3libs.workflow import SequentialTaskCollection, ParallelTaskCollection
 
+
 class EvolutionaryAlgorithm(object):
+
     '''
     Base class for building an evolutionary algorithm for global optimization.
 
@@ -110,7 +112,7 @@ class EvolutionaryAlgorithm(object):
 
     def __init__(self, initial_pop,
                  # criteria for convergence
-                 itermax = 100, dx_conv_crit = None, y_conv_crit = None,
+                 itermax=100, dx_conv_crit=None, y_conv_crit=None,
                  # hooks for "extra" functions, e.g., printg/logging/plotting
                  logger=None, after_update_opt_state=[]):
 
@@ -132,7 +134,6 @@ class EvolutionaryAlgorithm(object):
 
         self.after_update_opt_state = after_update_opt_state
 
-
     def has_converged(self):
         '''
         Checks convergence based on two criteria:
@@ -146,17 +147,19 @@ class EvolutionaryAlgorithm(object):
         # Check `y_conv_crit`
         if self.best_y < self.y_conv_crit:
             converged = True
-            self.logger.info('Converged: self.best_y[%s] < self.y_conv_crit[%s]',
-                             self.best_y, self.y_conv_crit)
+            self.logger.info(
+                'Converged: self.best_y[%s] < self.y_conv_crit[%s]',
+                self.best_y,
+                self.y_conv_crit)
 
         # Check `dx_conv_crit`
         dxs = np.abs(self.pop[:, :] - self.pop[0, :])
         has_dx_converged = (dxs <= self.dx_conv_crit).all()
         if has_dx_converged:
             converged = True
-            self.logger.info('Converged: All population members within `dx_conv_crit` from the first population member. ')
+            self.logger.info(
+                'Converged: All population members within `dx_conv_crit` from the first population member. ')
         return converged
-
 
     def update_opt_state(self, new_pop, new_vals):
         '''
@@ -175,13 +178,16 @@ class EvolutionaryAlgorithm(object):
         # following results in a multi-line log even for moderate-size
         # populations...  You might want to
         # `np.set_printoptions(linewidth=1024)` or so to prevent this.
-        self.logger.debug('Updating optimizer state with new values: %s', str(new_vals))
+        self.logger.debug(
+            'Updating optimizer state with new values: %s',
+            str(new_vals))
 
         # In variable names `best` refers to a population member with the
         # lowest target function value within some group:
 
         # best_x: Coordinates of the best population member since the optimization started.
-        # best_y: Val of the best population member since the optimization started.
+        # best_y: Val of the best population member since the optimization
+        # started.
 
         new_vals = np.array(new_vals)
         # determine the member with the lowest target value
@@ -198,7 +204,10 @@ class EvolutionaryAlgorithm(object):
             self.pop = new_pop
             self.vals = new_vals
 
-        self.logger.debug('Computed best value: %s (at index %d)', self.best_y, best_ix)
+        self.logger.debug(
+            'Computed best value: %s (at index %d)',
+            self.best_y,
+            best_ix)
 
         for fn in self.after_update_opt_state:
             fn(self)
@@ -237,7 +246,7 @@ def populate(create_fn, in_domain=None, max_n_resample=100):
                           indicating each members validity.
     :param int max_n_resample: Maximum number of resamples to be drawn to
                                satisfy :func:`in_domain
-                               
+
     :rtype: list of population members
     '''
     pop = create_fn()
@@ -256,18 +265,26 @@ def populate(create_fn, in_domain=None, max_n_resample=100):
             new_total_filled = min(total_filled + n_pop_valid, n_to_fill)
             n_new_recruits = new_total_filled - total_filled
             ix_new_recruits = np.where(new_pop_valid)[0][0:n_new_recruits]
-            fillin_pop[total_filled:new_total_filled] = new_pop[ix_new_recruits]
+            fillin_pop[
+                total_filled:new_total_filled] = new_pop[ix_new_recruits]
             total_filled = new_total_filled
         if total_filled < n_invalid_orig:
             self.logger.warning(
                 "%d population members are invalid even after re-sampling %d times."
                 "  You might want to increase `max_n_resample`.",
-                (n_invalid_orig - total_filled), max_n_resample)
+                (n_invalid_orig - total_filled),
+                max_n_resample)
         pop[~pop_valid_orig] = fillin_pop
     return pop
 
 
-def draw_population(lower_bds, upper_bds, dim, size, in_domain = None, seed = None):
+def draw_population(
+        lower_bds,
+        upper_bds,
+        dim,
+        size,
+        in_domain=None,
+        seed=None):
     '''
     Draw a random population with the following criteria:
 
@@ -282,6 +299,7 @@ def draw_population(lower_bds, upper_bds, dim, size, in_domain = None, seed = No
     :rtype: list of population members
     '''
     np.random.seed(seed)
-    return populate(create_fn=lambda:(lower_bds + np.random.random_sample( (size, dim) ) * ( upper_bds - lower_bds )),
-                    in_domain=in_domain)
-
+    return populate(create_fn=lambda: (lower_bds +
+                                       np.random.random_sample((size, dim)) *
+                                       (upper_bds -
+                                        lower_bds)), in_domain=in_domain)

@@ -43,6 +43,7 @@ from gc3libs.utils import Struct
 
 
 class _PStruct(Struct, Persistable):
+
     """
     A Persistable+Struct mix-in.
 
@@ -85,7 +86,7 @@ class TestOldstyleConversion:
 
     def setUp(self):
         self.path = tempfile.mktemp(dir='.')
-        self.jobs_dir = os.path.abspath(self.path+'.jobs')
+        self.jobs_dir = os.path.abspath(self.path + '.jobs')
         # create old-style session
         self.index_csv = self.path + '.csv'
         # Load the old store
@@ -95,10 +96,10 @@ class TestOldstyleConversion:
         self.test_task_id = oldstore.save(_PStruct(a=1, b='foo'))
         jobidfile = open(self.index_csv, 'w')
         jobline = {
-            'jobname':       'test',
+            'jobname': 'test',
             'persistent_id': self.test_task_id,
-            'state':         'UNKNOWN',
-            'info':          '', }
+            'state': 'UNKNOWN',
+            'info': '', }
         csv.DictWriter(
             jobidfile,
             ['jobname', 'persistent_id', 'state', 'info'],
@@ -130,6 +131,7 @@ class TestOldstyleConversion:
 
 
 class TestSession(object):
+
     def setUp(self):
         tmpdir = tempfile.mktemp(dir='.')
         self.tmpdir = tmpdir
@@ -161,7 +163,7 @@ class TestSession(object):
         fd_job_ids = open(os.path.join(self.sess.path,
                                        self.sess.INDEX_FILENAME), 'r')
         ids = fd_job_ids.read().split()
-        assert_equal(len(ids),  1)
+        assert_equal(len(ids), 1)
         assert_equal(ids, [str(i) for i in self.sess.tasks])
 
     def test_empty_lines_in_index_file(self):
@@ -180,7 +182,7 @@ class TestSession(object):
         else:
             self.sess = Session(self.sess.path)
         ids = self.sess.list_ids()
-        assert_equal(len(ids),  1)
+        assert_equal(len(ids), 1)
         assert_equal(ids, [str(i) for i in self.sess.tasks])
 
     def test_add_no_flush(self):
@@ -353,7 +355,7 @@ class TestMysqlSession(StubForSqlSession):
         conn = self.sess.store._engine.connect()
         conn.execute("drop table `%s`" % self.tmpdir)
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import nose

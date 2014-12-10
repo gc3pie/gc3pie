@@ -26,6 +26,7 @@ from gc3libs import Application
 
 
 class SimpleScript(SessionBasedScript):
+
     """stupid class"""
     version = '1'
 
@@ -35,7 +36,7 @@ class SimpleScript(SessionBasedScript):
         return [
             # old-style
             ('MyJob',
-               Application,
+             Application,
                [
                    # arguments
                    ('/bin/bash', '-c', 'echo ciao > SimpleScript.stdout'),
@@ -43,7 +44,7 @@ class SimpleScript(SessionBasedScript):
                    [],
                    # outputs
                    ['SimpleScript.stdout'],
-                 ],
+               ],
              dict(output_dir='SimpleScript.out.d', join=True)),
             # new style, with explicit output dir
             Application(
@@ -58,7 +59,7 @@ class SimpleScript(SessionBasedScript):
                 # extra args
                 join=True,
                 **extra
-                ),
+            ),
             # new style, with output dir gotten from `self.extra`
             Application(
                 # arguments
@@ -68,12 +69,12 @@ class SimpleScript(SessionBasedScript):
                 # outputs
                 ['SimpleScript.stdout'],
                 join=True,
-                output_dir = default_output_dir,
+                output_dir=default_output_dir,
                 **extra
-                ),
-            ]
+            ),
+        ]
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     app = SimpleScript()

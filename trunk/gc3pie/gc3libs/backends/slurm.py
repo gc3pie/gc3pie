@@ -24,25 +24,17 @@ __version__ = 'development version (SVN $Revision$)'
 
 
 import datetime
-import os
-import posixpath
-import random
 import re
-import sys
-import tempfile
 import time
-
-from gc3libs.compat._collections import defaultdict
 
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.backends.batch as batch
 import gc3libs.exceptions
 from gc3libs.quantity import Memory, bytes, kB, MB, GB
-from gc3libs.quantity import Duration, seconds, minutes, hours
-import gc3libs.backends.transport as transport
-import gc3libs.utils as utils  # first, to_bytes
-from gc3libs.utils import same_docstring_as, sh_quote_safe_cmdline, sh_quote_unsafe_cmdline
+from gc3libs.quantity import Duration, seconds, minutes, hours, days
+from gc3libs.utils import (same_docstring_as, sh_quote_safe_cmdline,
+                           sh_quote_unsafe_cmdline)
 
 
 # environmental variables:
@@ -65,7 +57,7 @@ from gc3libs.utils import same_docstring_as, sh_quote_safe_cmdline, sh_quote_uns
 #   %r: reason a job is in its current state
 
 
-## data for parsing SLURM commands output
+# data for parsing SLURM commands output
 
 # regexps for extracting relevant strings
 
@@ -92,7 +84,7 @@ _sbatch_jobid_re = re.compile(
 #
 
 
-## code
+# code
 
 def count_jobs(squeue_output, whoami):
     """
@@ -132,6 +124,7 @@ def count_jobs(squeue_output, whoami):
 
 
 class SlurmLrms(batch.BatchSystem):
+
     """
     Job control on SLURM clusters (possibly by connecting via SSH to a
     submit node).
@@ -146,11 +139,11 @@ class SlurmLrms(batch.BatchSystem):
                  auth,  # ignored if `transport` is 'local'
                  # these are inherited from `BatchSystem`
                  frontend, transport,
-                 # these are specific to this backend
-                 # (Note that optional arguments to the `BatchSystem` class, e.g.:
-                 #     keyfile=None, accounting_delay=15,
-                 # are collected into `extra_args` and should not be explicitly
-                 # spelled out in this signature.)
+                 # these are specific to this backend (Note that
+                 # optional arguments to the `BatchSystem` class,
+                 # e.g.: keyfile=None, accounting_delay=15, are
+                 # collected into `extra_args` and should not be
+                 # explicitly spelled out in this signature.)
                  **extra_args):
 
         # init base class
@@ -172,33 +165,45 @@ class SlurmLrms(batch.BatchSystem):
     def _parse_submit_output(self, output):
         return self.get_jobid_from_submit_output(output, _sbatch_jobid_re)
 
-    # submit cmd: sbatch --job-name="jobname" --mem-per-cpu="MBs" --input="filename" --output="filename" --no-requeue -n "number of slots" --cpus-per-task=1 --time="minutes" script.sh
+    # submit cmd: sbatch --job-name="jobname" --mem-per-cpu="MBs" --input="filename" --output="filename" --no-requeue -n "number of slots" --cpus-per-task=1 --time="minutes" script.sh  # noqa
     #
-    # You can only submit scripts with `sbatch`, attempts to directly run a command fail with this error message:
+    # You can only submit scripts with `sbatch`, attempts to directly
+    # run a command fail with this error message:
     #
     #    $ sbatch sleep 180
     #    sbatch: error: This does not look like a batch script.  The first
-    #    sbatch: error: line must start with #! followed by the path to an interpreter.
-    #    sbatch: error: For instance: #!/bin/sh
+    # sbatch: error: line must start with #! followed by the path to an interpreter.  # noqa
+    # sbatch: error: For instance: #!/bin/sh
     #
-    # If the server is not running or unreachable, the following error is displayed:
+    # If the server is not running or unreachable, the following error
+    # is displayed:
     #
     #    $ sbatch -n 1 --no-requeue /tmp/sleep.sh
-    #    sbatch: error: Batch job submission failed: Unable to contact slurm controller (connect failure)
+    # sbatch: error: Batch job submission failed: Unable to contact slurm controller (connect failure)  # noqa
     #
-    # Note: SLURM has a flexible way of assigning CPUs/cores/etc. to a job; here we treat all execution slots as equal and map 1 task to 1 core/thread.
+    # Note: SLURM has a flexible way of assigning CPUs/cores/etc. to a
+    # job; here we treat all execution slots as equal and map 1 task
+    # to 1 core/thread.
     #
-    # Acceptable time formats include "minutes",  "minutes:seconds", "hours:minutes:seconds", "days-hours", "days-hours:minutes" and "days-hours:minutes:seconds".
+    # Acceptable time formats include "minutes", "minutes:seconds",
+    # "hours:minutes:seconds", "days-hours", "days-hours:minutes" and
+    # "days-hours:minutes:seconds".
     #
     def _submit_command(self, app):
         sbatch_argv, app_argv = app.sbatch(self)
         return (sh_quote_safe_cmdline(sbatch_argv),
                 sh_quote_unsafe_cmdline(app_argv))
 
-    # stat cmd: squeue --noheader --format='%i^%T^%u^%U^%r^%R'  -j jobid1,jobid2,...
+    # stat cmd: squeue --noheader --format='%i^%T^%u^%U^%r^%R'  -j jobid1,jobid2,...  # noqa
     #   %i: job id
-    #   %T: Job  state,  extended  form: PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING, FAILED, TIMEOUT, PREEMPTED, and NODE_FAIL.
-    #   %R: For pending jobs: the reason a job is waiting for execution is printed within parenthesis. For terminated jobs with failure: an  explanation  as to why the job failed is printed within parenthesis.  For all other job states: the list of allocate nodes.
+    #   %T: Job state, extended form: PENDING, RUNNING, SUSPENDED,
+    #       CANCELLED, COMPLETING, COMPLETED, CONFIGURING, FAILED,
+    #       TIMEOUT, PREEMPTED, and NODE_FAIL.
+    #   %R: For pending jobs: the reason a job is waiting for
+    #       execution is printed within parenthesis. For terminated
+    #       jobs with failure: an explanation as to why the job failed
+    #       is printed within parenthesis.  For all other job states:
+    #       the list of allocate nodes.
     #   %r: reason a job is in its current state
     #   %u: username of the submitting user
     #   %U: numeric UID of the submitting user
@@ -242,50 +247,57 @@ class SlurmLrms(batch.BatchSystem):
                 jobstatus['state'] = Run.State.UNKNOWN
         return jobstatus
 
-    # acct cmd: sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,eligible,reserved,start,end,exitcode,maxrss,maxvmsize,totalcpu -j JOBID
+    # acct cmd: sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,eligible,reserved,start,end,exitcode,maxrss,maxvmsize,totalcpu -j JOBID  # noqa
     #
     # where:
     #   * jobid:      Job ID
     #   * alloccpus:  Count of allocated processors
     #   * cputimeraw: CPU time in seconds
     #   * elapsed:    Job duration, as [DD-][hh:]mm:ss
-    #   * submit:     Time the job was submitted, as MM/DD-hh:mm:ss (timestamp in UTC) or ISO8601 format depending on compilation option
+    #   * submit:     Time the job was submitted, as MM/DD-hh:mm:ss
+    #                 (timestamp in UTC) or ISO8601 format depending on
+    #                 compilation option
     #   * eligible:   When the job became eligible to run
     #   * reserved:   Difference between `start` and `eligible`
-    #   * start:      Job start time, as MM/DD-hh:mm:ss (timestamp in UTC) or ISO8601 format depending on compilation option
-    #   * end:        Termination time of the job, as MM/DD-hh:mm:ss (timestamp in UTC) or ISO8601 format depending on compilation option
+    #   * start:      Job start time, as MM/DD-hh:mm:ss (timestamp in UTC) or
+    #                 ISO8601 format depending on compilation option
+    #   * end:        Termination time of the job, as MM/DD-hh:mm:ss
+    #                 (timestamp in UTC) or ISO8601 format depending on
+    #                 compilation option
     #   * exitcode:   exit code, ':', killing signal number
     #   * maxrss:     The maximum RSS across all tasks
     #   * maxvmsize:  The maximum virtual memory used across all tasks
-    #   * totalcpu:   Total CPU time used by the job (does not include child processes, if any)
+    #   * totalcpu: Total CPU time used by the job (does not include
+    #               child processes, if any)
     #
     # Examples:
     #
-    #    $ sudo sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,eligible,reserved,start,end,exitcode,maxrss,maxvmsize,totalcpu -j 14
-    #    14|1|10|00:00:10|2012-09-23T23:38:41|2012-09-23T23:38:41|49710-06:28:06|2012-09-23T23:38:31|2012-09-23T23:38:41|0:0|||00:00:00|
+    # $ sudo sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,eligible,reserved,start,end,exitcode,maxrss,maxvmsize,totalcpu -j 14  # noqa
+    # 14|1|10|00:00:10|2012-09-23T23:38:41|2012-09-23T23:38:41|49710-06:28:06|2012-09-23T23:38:31|2012-09-23T23:38:41|0:0|||00:00:00|  # noqa
     #
-    #    $ sudo sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,start,end,exitcode,maxrss,maxvmsize,totalcpu -j 19
-    #    19|1|66|00:01:06|2012-09-24T10:48:34|2012-09-24T10:47:28|2012-09-24T10:48:34|0:0|||00:00:00|
-    #    19.0|1|65|00:01:05|2012-09-24T10:47:29|2012-09-24T10:47:29|2012-09-24T10:48:34|0:0|0|0|00:00:00|
+    # $ sudo sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,start,end,exitcode,maxrss,maxvmsize,totalcpu -j 19  # noqa
+    # 19|1|66|00:01:06|2012-09-24T10:48:34|2012-09-24T10:47:28|2012-09-24T10:48:34|0:0|||00:00:00|      # noqa
+    # 19.0|1|65|00:01:05|2012-09-24T10:47:29|2012-09-24T10:47:29|2012-09-24T10:48:34|0:0|0|0|00:00:00|  # noqa
     #
-    #    $ env SLURM_TIME_FORMAT=standard sacct -S 0901 --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,eligible,reserved,start,end,exitcode,maxrss,maxvmsize,totalcpu
-    #    449002|32|128|00:00:04|2012-09-04T11:09:26|2012-09-04T11:09:38|2012-09-04T11:09:42|0:0|||00:00:00|
-    #    449018|64|1472|00:00:23|2012-09-04T11:18:06|2012-09-04T11:18:24|2012-09-04T11:18:47|0:0|||00:01.452|
-    #    449018.batch|1|23|00:00:23|2012-09-04T11:18:24|2012-09-04T11:18:24|2012-09-04T11:18:47|0:0|7884K|49184K|00:01.452|
-    #    449057|3200|659200|00:03:26|2012-09-04T11:19:45|2012-09-04T11:19:57|2012-09-04T11:23:23|0:0|||00:01.620|
-    #    449057.batch|1|206|00:03:26|2012-09-04T11:19:57|2012-09-04T11:19:57|2012-09-04T11:23:23|0:0|7896K|49184K|00:01.620|
+    # $ env SLURM_TIME_FORMAT=standard sacct -S 0901 --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,eligible,reserved,start,end,exitcode,maxrss,maxvmsize,totalcpu  # noqa
+    # 449002|32|128|00:00:04|2012-09-04T11:09:26|2012-09-04T11:09:38|2012-09-04T11:09:42|0:0|||00:00:00|                  # noqa
+    # 449018|64|1472|00:00:23|2012-09-04T11:18:06|2012-09-04T11:18:24|2012-09-04T11:18:47|0:0|||00:01.452|                # noqa
+    # 449018.batch|1|23|00:00:23|2012-09-04T11:18:24|2012-09-04T11:18:24|2012-09-04T11:18:47|0:0|7884K|49184K|00:01.452|  # noqa
+    # 449057|3200|659200|00:03:26|2012-09-04T11:19:45|2012-09-04T11:19:57|2012-09-04T11:23:23|0:0|||00:01.620|            # noqa
+    # 449057.batch|1|206|00:03:26|2012-09-04T11:19:57|2012-09-04T11:19:57|2012-09-04T11:23:23|0:0|7896K|49184K|00:01.620| # noqa
     #
-    # Warning: the `SLURM_TIME_FORMAT` environment variable influences how the times are reported,
-    # so it should always be set to `standard` to get ISO8601 reporting.  See below for an example
+    # Warning: the `SLURM_TIME_FORMAT` environment variable influences
+    # how the times are reported, so it should always be set to
+    # `standard` to get ISO8601 reporting.  See below for an example
     # of non-standard (SLURM_TIME_FORMAT=relative) report:
     #
-    #    $ sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,eligible,reserved,start,end,exitcode,maxrss,maxvmsize,totalcpu -S 0901
-    #    449002|32|128|00:00:04|4 Sep 11:09|4 Sep 11:09|00:00:12|4 Sep 11:09|4 Sep 11:09|0:0|||00:00:00|
-    #    449018|64|1472|00:00:23|4 Sep 11:18|4 Sep 11:18|00:00:18|4 Sep 11:18|4 Sep 11:18|0:0|||00:01.452|
-    #    449018.batch|1|23|00:00:23|4 Sep 11:18|4 Sep 11:18|00:00:-02|4 Sep 11:18|4 Sep 11:18|0:0|7884K|49184K|00:01.452|
-    #    449057|3200|659200|00:03:26|4 Sep 11:19|4 Sep 11:19|00:00:12|4 Sep 11:19|4 Sep 11:23|0:0|||00:01.620|
-    #    449057.batch|1|206|00:03:26|4 Sep 11:19|4 Sep 11:19|00:00:-02|4 Sep 11:19|4 Sep 11:23|0:0|7896K|49184K|00:01.620|
-    #    449217|3200|0|00:00:00|4 Sep 11:42|4 Sep 11:42|00:00:05|4 Sep 11:43|4 Sep 11:43|0:0|||00:00.720|
+    # $ sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,eligible,reserved,start,end,exitcode,maxrss,maxvmsize,totalcpu -S 0901  # noqa
+    # 449002|32|128|00:00:04|4 Sep 11:09|4 Sep 11:09|00:00:12|4 Sep 11:09|4 Sep 11:09|0:0|||00:00:00|                    # noqa
+    # 449018|64|1472|00:00:23|4 Sep 11:18|4 Sep 11:18|00:00:18|4 Sep 11:18|4 Sep 11:18|0:0|||00:01.452|                  # noqa
+    # 449018.batch|1|23|00:00:23|4 Sep 11:18|4 Sep 11:18|00:00:-02|4 Sep 11:18|4 Sep 11:18|0:0|7884K|49184K|00:01.452|   # noqa
+    # 449057|3200|659200|00:03:26|4 Sep 11:19|4 Sep 11:19|00:00:12|4 Sep 11:19|4 Sep 11:23|0:0|||00:01.620|              # noqa
+    # 449057.batch|1|206|00:03:26|4 Sep 11:19|4 Sep 11:19|00:00:-02|4 Sep 11:19|4 Sep 11:23|0:0|7896K|49184K|00:01.620|  # noqa
+    # 449217|3200|0|00:00:00|4 Sep 11:42|4 Sep 11:42|00:00:05|4 Sep 11:43|4 Sep 11:43|0:0|||00:00.720|                   # noqa
     #
     # If SLURM accounting is disabled (default), then `sacct` outputs
     # an error message:
@@ -294,9 +306,9 @@ class SlurmLrms(batch.BatchSystem):
     #    SLURM accounting storage is disabled
     #
     def _acct_command(self, job):
-        return ('env SLURM_TIME_FORMAT=standard %s --noheader --parsable' \
-                ' --format jobid,exitcode,ncpus,elapsed,totalcpu,' \
-                'submit,start,end,maxrss,maxvmsize -j %s' % \
+        return ('env SLURM_TIME_FORMAT=standard %s --noheader --parsable'
+                ' --format jobid,exitcode,ncpus,elapsed,totalcpu,'
+                'submit,start,end,maxrss,maxvmsize -j %s' %
                 (self._sacct, job.lrms_jobid))
 
     def _parse_acct_output(self, stdout):
@@ -345,8 +357,8 @@ class SlurmLrms(batch.BatchSystem):
                 end = SlurmLrms._parse_timestamp(end)
                 acct['slurm_submission_time'] = min(submit, start)
                 acct['slurm_start_time'] = end  # will be set when
-                                                # looping on tasks,
-                                                # see below
+                # looping on tasks,
+                # see below
                 acct['slurm_completion_time'] = max(submit, start, end)
             else:
                 # common resource usage records (see Issue 78)
@@ -415,7 +427,7 @@ class SlurmLrms(batch.BatchSystem):
         try:
             return datetime.datetime(
                 *(time.strptime(ts, SlurmLrms._TIMEFMT_ISO8601)[0:6]))
-        except ValueError, err:
+        except ValueError as err:
             gc3libs.log.error(
                 "Could not parse '%s' as an SLURM 'standard' (ISO8601)"
                 " timestamp: %s: %s Please set the environment variable"
@@ -485,7 +497,7 @@ class SlurmLrms(batch.BatchSystem):
                      )
             return self
 
-        except Exception, ex:
+        except Exception as ex:
             # self.transport.close()
             log.error("Error querying remote LRMS, see debug log for details.")
             log.debug("Error querying LRMS: %s: %s",
@@ -493,7 +505,7 @@ class SlurmLrms(batch.BatchSystem):
             raise
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

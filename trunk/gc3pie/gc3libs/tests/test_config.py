@@ -34,6 +34,7 @@ try:
 except ImportError:
     # Python 2.6 does not support assert_is_instance()
     from nose.tools import assert_true
+
     def assert_is_instance(obj, cls):
         assert_true(isinstance(obj, cls))
 
@@ -45,6 +46,7 @@ import gc3libs.template
 from gc3libs.quantity import GB, hours
 from gc3libs.backends.shellcmd import ShellcmdLrms
 from gc3libs.quantity import Memory, Duration
+
 
 def _setup_config_file(confstr):
     (fd, name) = tempfile.mkstemp()
@@ -79,20 +81,20 @@ override = False
         assert 'test' in resources
         assert_is_instance(resources['test'], ShellcmdLrms)
         # test types
-        assert_is_instance(resources['test']['name'],         str)
+        assert_is_instance(resources['test']['name'], str)
         assert_is_instance(resources['test']['max_cores_per_job'], int)
         assert_is_instance(resources['test']['max_memory_per_core'], Memory)
         assert_is_instance(resources['test']['max_walltime'], Duration)
-        assert_is_instance(resources['test']['max_cores'],    int)
+        assert_is_instance(resources['test']['max_cores'], int)
         assert_is_instance(resources['test']['architecture'], set)
         # test parsed values
-        assert_equal(resources['test']['name'],            'test')
-        assert_equal(resources['test']['max_cores_per_job'],    2)
-        assert_equal(resources['test']['max_memory_per_core'],  2*GB)
-        assert_equal(resources['test']['max_walltime'],         8*hours)
-        assert_equal(resources['test']['max_cores'],            2)
+        assert_equal(resources['test']['name'], 'test')
+        assert_equal(resources['test']['max_cores_per_job'], 2)
+        assert_equal(resources['test']['max_memory_per_core'], 2 * GB)
+        assert_equal(resources['test']['max_walltime'], 8 * hours)
+        assert_equal(resources['test']['max_cores'], 2)
         assert_equal(resources['test']['architecture'],
-                                           set([Run.Arch.X86_64]))
+                     set([Run.Arch.X86_64]))
     finally:
         os.remove(tmpfile)
 
@@ -107,7 +109,7 @@ def test_invalid_confs():
 [auth/ssh]
 type - ssh
         """,
-        ]
+    ]
     for n, confstr in enumerate(invalid_confs):
         import_invalid_conf.description = (
             test_invalid_confs.__doc__ + (' #%d (load)' % n))
@@ -115,11 +117,12 @@ type - ssh
 
         read_invalid_conf.description = (
             test_invalid_confs.__doc__ + (' #%d (merge_file)' % n))
-        yield read_invalid_conf,   confstr
+        yield read_invalid_conf, confstr
 
         parse_invalid_conf.description = (
             test_invalid_confs.__doc__ + (' #%d (_parse)' % n))
-        yield parse_invalid_conf,  confstr
+        yield parse_invalid_conf, confstr
+
 
 @raises(gc3libs.exceptions.NoConfigurationFile)
 def import_invalid_conf(confstr, **extra_args):
@@ -133,6 +136,7 @@ def import_invalid_conf(confstr, **extra_args):
     assert_equal(len(cfg.resources), 0)
     assert_equal(len(cfg.auths), 0)
 
+
 @raises(gc3libs.exceptions.ConfigurationError)
 def read_invalid_conf(confstr, **extra_args):
     """`merge_file` raises a `ConfigurationError` exception on invalid input."""
@@ -142,6 +146,7 @@ def read_invalid_conf(confstr, **extra_args):
         cfg.merge_file(tmpfile)
     finally:
         os.remove(tmpfile)
+
 
 @raises(gc3libs.exceptions.ConfigurationError)
 def parse_invalid_conf(confstr, **extra_args):
@@ -179,6 +184,7 @@ override = False
 
 
 class TestReadMultiple(object):
+
     def setUp(self):
         self.f1 = _setup_config_file("""
 [resource/localhost]
@@ -255,28 +261,28 @@ def test_valid_architectures():
     """Test that valid architecture strings are parsed correctly"""
     test_cases = [
         # a sample of the architecture strings that we accept
-        ('x86_64',     [gc3libs.Run.Arch.X86_64]),
+        ('x86_64', [gc3libs.Run.Arch.X86_64]),
         ('x86 64-bit', [gc3libs.Run.Arch.X86_64]),
         ('64bits x86', [gc3libs.Run.Arch.X86_64]),
-        ('amd64',      [gc3libs.Run.Arch.X86_64]),
-        ('AMD64',      [gc3libs.Run.Arch.X86_64]),
-        ('intel 64',   [gc3libs.Run.Arch.X86_64]),
-        ('emt64',      [gc3libs.Run.Arch.X86_64]),
-        ('64 bits',    [gc3libs.Run.Arch.X86_64]),
-        ('64-BIT',     [gc3libs.Run.Arch.X86_64]),
+        ('amd64', [gc3libs.Run.Arch.X86_64]),
+        ('AMD64', [gc3libs.Run.Arch.X86_64]),
+        ('intel 64', [gc3libs.Run.Arch.X86_64]),
+        ('emt64', [gc3libs.Run.Arch.X86_64]),
+        ('64 bits', [gc3libs.Run.Arch.X86_64]),
+        ('64-BIT', [gc3libs.Run.Arch.X86_64]),
 
         ('x86 32-bit', [gc3libs.Run.Arch.X86_32]),
         ('32bits x86', [gc3libs.Run.Arch.X86_32]),
-        ('i386',       [gc3libs.Run.Arch.X86_32]),
-        ('i486',       [gc3libs.Run.Arch.X86_32]),
-        ('i586',       [gc3libs.Run.Arch.X86_32]),
-        ('i686',       [gc3libs.Run.Arch.X86_32]),
-        ('32 bits',    [gc3libs.Run.Arch.X86_32]),
-        ('32-bit',     [gc3libs.Run.Arch.X86_32]),
+        ('i386', [gc3libs.Run.Arch.X86_32]),
+        ('i486', [gc3libs.Run.Arch.X86_32]),
+        ('i586', [gc3libs.Run.Arch.X86_32]),
+        ('i686', [gc3libs.Run.Arch.X86_32]),
+        ('32 bits', [gc3libs.Run.Arch.X86_32]),
+        ('32-bit', [gc3libs.Run.Arch.X86_32]),
 
-        ('32bit, 64bit',  [gc3libs.Run.Arch.X86_64, gc3libs.Run.Arch.X86_32]),
+        ('32bit, 64bit', [gc3libs.Run.Arch.X86_64, gc3libs.Run.Arch.X86_32]),
         ('64bit, x86_64', [gc3libs.Run.Arch.X86_64]),
-        ]
+    ]
     config_template = gc3libs.template.Template("""
 [resource/test]
 architecture = ${arch}
@@ -286,6 +292,7 @@ architecture = ${arch}
         _check_parse_arch.description = (
             test_valid_architectures.__doc__ + (': %s -> %s' % (str(arch), str(result))))
         yield (_check_parse_arch, config_template.substitute(arch=arch), result)
+
 
 def _check_parse_arch(confstr, result):
     cfg = gc3libs.config.Configuration()
@@ -298,7 +305,7 @@ def test_invalid_architectures():
     """Test that invalid architecture strings are rejected with `ConfigurationError`"""
     test_cases = [
         '96bits', '31-BITS', 'amd65', 'xyzzy'
-        ]
+    ]
     config_template = gc3libs.template.Template("""
 [resource/test]
 architecture = ${arch}
@@ -329,14 +336,15 @@ architecture = x86_64
 """
     lines = good_conf.split('\n')
     header_ends_at = lines.index("# omit one line below")
-    for omit in range(1+header_ends_at, len(lines)):
+    for omit in range(1 + header_ends_at, len(lines)):
         if lines[omit].strip() == '':
             continue
-        bad_conf = str.join('\n', lines[:omit] + lines[omit+1:])
+        bad_conf = str.join('\n', lines[:omit] + lines[omit + 1:])
         # display meaningful test name with `nosetests -v`
         _check_bad_conf.description = (
             test_mandatory_configuration_options.__doc__ + (" (omit '%s')" % lines[omit]))
         yield _check_bad_conf, bad_conf
+
 
 @raises(TypeError, gc3libs.exceptions.ConfigurationError)
 def _check_bad_conf(conf):
@@ -351,10 +359,13 @@ def _check_bad_conf(conf):
     finally:
         os.remove(tmp)
 
+
 class TestPrologueEpilogueScripts(object):
+
     """
     Test `prologue` and `epilogue` options for batch backends
     """
+
     def setUp(self):
         # setup conf dir and conf file
         self.files_to_remove = []
@@ -400,11 +411,17 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
         fdcfg = open(cfgfname, 'w')
         fdcfg.write(cfgstring)
         fdcfg.close()
-        self.cfg = gc3libs.config.Configuration(cfgfname, auto_enable_auth=True)
+        self.cfg = gc3libs.config.Configuration(
+            cfgfname,
+            auto_enable_auth=True)
 
-        self.scripts = ['prologue', 'epilogue', 'myapp_prologue', 'myapp_epilogue']
+        self.scripts = [
+            'prologue',
+            'epilogue',
+            'myapp_prologue',
+            'myapp_epilogue']
         os.mkdir(os.path.join(self.tmpdir, 'scripts'))
-        for k,v in self.cfg['resources']['test'].iteritems():
+        for k, v in self.cfg['resources']['test'].iteritems():
             if k in self.scripts:
                 scriptfd = open(os.path.join(self.tmpdir, v), 'w')
                 scriptfd.write('echo %s' % k)
@@ -427,8 +444,8 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
                     continue
                 assert os.path.isfile(v)
                 assert os.path.isabs(v)
-                assert_equal( os.path.abspath(v),
-                              v)
+                assert_equal(os.path.abspath(v),
+                             v)
 
     def test_pbs_prologue_and_epilogue_contents(self):
         """Test that prologue and epilogue scripts are correctly inserted into the submission script"""
@@ -443,15 +460,15 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
         self.core.select_resource('testpbs')
         try:
             self.core.submit(app)
-        except Exception, ex:
+        except Exception as ex:
             # it is normal to have an error since we don't probably
             # run a pbs server in this machine.
             pass
 
-        newjobs = [ d for d in os.listdir(jobdir) if d not in jobs]
+        newjobs = [d for d in os.listdir(jobdir) if d not in jobs]
 
         # There must be only one more job...
-        assert_equal( len(newjobs), 1)
+        assert_equal(len(newjobs), 1)
 
         newjobdir = os.path.join(jobdir, newjobs[0])
         self.files_to_remove.append(newjobdir)
@@ -462,7 +479,10 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
         # Check the content of the script file
         scriptfname = os.path.join(newjobdir, (os.listdir(newjobdir)[0]))
         scriptfile = open(scriptfname)
-        assert re.match("#!/bin/sh.*# prologue file `.*` BEGIN.*echo prologue.*# prologue file END.*/bin/true.*# epilogue file `.*` BEGIN.*echo epilogue.*# epilogue file END", scriptfile.read(), re.DOTALL|re.M)
+        assert re.match(
+            "#!/bin/sh.*# prologue file `.*` BEGIN.*echo prologue.*# prologue file END.*/bin/true.*# epilogue file `.*` BEGIN.*echo epilogue.*# epilogue file END",
+            scriptfile.read(),
+            re.DOTALL | re.M)
         scriptfile.close()
 
         # kill the job
@@ -509,8 +529,8 @@ override = False
                     continue
                 assert os.path.isabs(v)
                 assert os.path.isfile(v)
-                assert_equal( os.path.abspath(v),
-                              v)
+                assert_equal(os.path.abspath(v),
+                             v)
 
 
 if __name__ == "__main__":

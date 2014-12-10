@@ -25,30 +25,21 @@ __version__ = 'development version (SVN $Revision$)'
 
 
 import datetime
-import os
-import posixpath
-import random
 import re
-import sys
-import tempfile
 import time
-
-from gc3libs.compat._collections import defaultdict
 
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
-from gc3libs.quantity import Memory, kB, MB, GB
-from gc3libs.quantity import Duration, seconds, minutes, hours
-import gc3libs.utils as utils  # first, to_bytes
-from gc3libs.utils import same_docstring_as, sh_quote_safe_cmdline, sh_quote_unsafe_cmdline
+from gc3libs.quantity import Memory
+from gc3libs.quantity import Duration
+from gc3libs.utils import (same_docstring_as, sh_quote_safe_cmdline,
+                           sh_quote_unsafe_cmdline)
 
-import transport
-
-import batch
+from . import batch
 
 
-## data for parsing PBS commands output
+# data for parsing PBS commands output
 
 # regexps for extracting relevant strings
 
@@ -89,6 +80,7 @@ def _to_memory(val):
 
     Examples::
 
+      >>> from gc3libs.quantity import kB, MB, GB
       >>> _to_memory('44kb') == 44*kB
       True
       >>> _to_memory('12mb') == 12*MB
@@ -103,13 +95,13 @@ def _to_memory(val):
     unit = val[-2:]
     # XXX: check that PBS uses base-2 units
     if unit == 'kb':
-        return int(val[:-2])*Memory.kB
+        return int(val[:-2]) * Memory.kB
     elif unit == 'mb':
-        return int(val[:-2])*Memory.MB
+        return int(val[:-2]) * Memory.MB
     elif unit == 'gb':
-        return int(val[:-2])*Memory.GB
+        return int(val[:-2]) * Memory.GB
     elif unit == 'tb':
-        return int(val[:-2])*Memory.TB
+        return int(val[:-2]) * Memory.TB
     else:
         if val[-1] == 'b':
             # XXX bytes
@@ -117,7 +109,7 @@ def _to_memory(val):
         else:
             # a pure number
             val = int(val)
-        return int(val)*Memory.B
+        return int(val) * Memory.B
 
 
 def _parse_asctime(val):
@@ -125,7 +117,7 @@ def _parse_asctime(val):
         # XXX: replace with datetime.strptime(...) in Python 2.5+
         return datetime.datetime(
             *(time.strptime(val, '%m/%d/%Y %H:%M:%S')[0:6]))
-    except Exception, err:
+    except Exception as err:
         gc3libs.log.error(
             "Cannot parse '%s' as a PBS-format time stamp: %s: %s",
             val, err.__class__.__name__, str(err))
@@ -153,7 +145,7 @@ _tracejob_keyval_mapping = {
     'job_name': ('pbs_jobname', str), }
 
 
-## code
+# code
 
 def count_jobs(qstat_output, whoami):
     """
@@ -174,7 +166,6 @@ def count_jobs(qstat_output, whoami):
     total_queued = 0
     own_running = 0
     own_queued = 0
-    n = 0
     for line in qstat_output.split('\n'):
         log.info("Output line: %s" % line)
         m = _qstat_line_re.match(line)
@@ -194,6 +185,7 @@ def count_jobs(qstat_output, whoami):
 
 
 class PbsLrms(batch.BatchSystem):
+
     """
     Job control on PBS/Torque clusters (possibly by connecting via SSH
     to a submit node).
@@ -210,7 +202,8 @@ class PbsLrms(batch.BatchSystem):
                  frontend, transport,
                  # these are specific to this backend
                  queue=None,
-                 # (Note that optional arguments to the `BatchSystem` class, e.g.:
+                 # (Note that optional arguments to the `BatchSystem` class,
+                 # e.g.:
                  #     keyfile=None, accounting_delay=15,
                  # are collected into `extra_args` and should not be explicitly
                  # spelled out in this signature.)
@@ -340,7 +333,7 @@ class PbsLrms(batch.BatchSystem):
                 raise gc3libs.exceptions.LRMSError(
                     "PBS backend failed executing '%s':"
                     " exit code: %d; stdout: '%s', stderr: '%s'"
-                    % (_command, exit_code, stdout, stderr))
+                    % (_command, exit_code, qstat_stdout, stderr))
 
             log.debug("Computing updated values for total/available slots ...")
             (total_running, self.queued, self.user_run, self.user_queued) \
@@ -364,7 +357,7 @@ class PbsLrms(batch.BatchSystem):
                      )
             return self
 
-        except Exception, ex:
+        except Exception as ex:
             # self.transport.close()
             log.error("Error querying remote LRMS, see debug log for details.")
             log.debug("Error querying LRMS: %s: %s",
@@ -372,7 +365,7 @@ class PbsLrms(batch.BatchSystem):
             raise
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

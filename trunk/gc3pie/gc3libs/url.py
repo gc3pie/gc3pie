@@ -31,15 +31,16 @@ import gc3libs.compat.urlparse as urlparse
 # XXX: rewrite using `collections.namedtuple` when we no longer
 # support 2.4 and 2.5
 class Url(tuple):
+
     """
     Represent a URL as a named-tuple object.  This is an immutable
-    object that cannot be changed after creation.  
+    object that cannot be changed after creation.
 
     The following read-only attributes are defined on objects of class `Url`.
-    
-    =========   =====   ===================================  ====================
-    Attribute   Index   Value                                Value if not present
-    =========   =====   ===================================  ====================
+
+    =========   =====   ===================================  ==================
+    Attribute   Index   Value                                if not present
+    =========   =====   ===================================  ==================
     scheme      0       URL scheme specifier                 empty string
     netloc      1       Network location part                empty string
     path        2       Hierarchical path                    empty string
@@ -48,7 +49,7 @@ class Url(tuple):
     port        5       Port number as integer (if present)  None
     username    6       User name                            None
     password    7       Password                             None
-    =========   =====   ===================================  ====================
+    =========   =====   ===================================  ==================
 
     There are two ways of constructing `Url` objects:
 
@@ -119,11 +120,12 @@ class Url(tuple):
 
       In this form, the `force_abs` parameter is ignored.
 
-    See also: http://docs.python.org/library/urlparse.html#urlparse-result-object
+    See also: http://goo.gl/9WcRvR
     """
-    __slots__ = ( )
+    __slots__ = ()
 
-    _fields = ['scheme', 'netloc', 'path', 'hostname', 'port', 'username', 'password']
+    _fields = ['scheme', 'netloc', 'path',
+               'hostname', 'port', 'username', 'password']
 
     def __new__(cls, urlstring=None, force_abs=True,
                 scheme='file', netloc='', path='',
@@ -139,13 +141,16 @@ class Url(tuple):
                     urlstring.scheme, urlstring.netloc, urlstring.path,
                     urlstring.hostname, urlstring.port,
                     urlstring.username, urlstring.password,
-                    ))
+                ))
             else:
                 # parse `urlstring` and use kwd arguments as default values
                 try:
-                    urldata = urlparse.urlsplit(urlstring, scheme=scheme, allow_fragments=False)
-                    if urldata.scheme == 'file' and not os.path.isabs(urldata.path) and force_abs:
-                        urldata = urlparse.urlsplit('file://' + os.path.abspath(urldata.path))
+                    urldata = urlparse.urlsplit(
+                        urlstring, scheme=scheme, allow_fragments=False)
+                    if urldata.scheme == 'file' and not os.path.isabs(
+                            urldata.path) and force_abs:
+                        urldata = urlparse.urlsplit(
+                            'file://' + os.path.abspath(urldata.path))
                     return tuple.__new__(cls, (
                         urldata.scheme or scheme,
                         urldata.netloc or netloc,
@@ -154,18 +159,18 @@ class Url(tuple):
                         urldata.port or port,
                         urldata.username or username,
                         urldata.password or password,
-                        ))
-                except (ValueError, TypeError, AttributeError), ex:
-                    raise ValueError("Cannot parse string '%s' as a URL: %s: %s"
-                                     % (urlstring, ex.__class__.__name__, str(ex)))
+                    ))
+                except (ValueError, TypeError, AttributeError) as ex:
+                    raise ValueError(
+                        "Cannot parse string '%s' as a URL: %s: %s" %
+                        (urlstring, ex.__class__.__name__, str(ex)))
         else:
             # no `urlstring`, use kwd arguments
             return tuple.__new__(cls, (
                 scheme, netloc, path,
                 hostname, port,
                 username, password,
-                ))
-
+            ))
 
     def __getattr__(self, name):
         try:
@@ -173,21 +178,28 @@ class Url(tuple):
         except ValueError:
             raise AttributeError("'%s' object has no attribute '%s'"
                                  % (self.__class__.__name__, name))
-    
 
     def __getnewargs__(self):
         """Support pickling/unpickling `Url` class objects."""
-        return (None, False, # urlstring, force_abs
-                self.scheme, self.netloc, self.path, self.hostname, self.port, self.username, self.password)
-
+        return (None, False,  # urlstring, force_abs
+                self.scheme, self.netloc, self.path, self.hostname, self.port,
+                self.username, self.password)
 
     def __repr__(self):
         """
-        Return a printed representation of this object, such that `eval(repr(x)) == x`.
+        Return a printed representation of this object, such that
+        `eval(repr(x)) == x`.
         """
-        return ("Url(scheme=%r, netloc=%r, path=%r, hostname=%r, port=%r, username=%r, password=%r)"
-                % (self.scheme, self.netloc, self.path, self.hostname, self.port, self.username, self.password))
-
+        return (
+            "Url(scheme=%r, netloc=%r, path=%r, hostname=%r,"
+            " port=%r, username=%r, password=%r)" %
+            (self.scheme,
+             self.netloc,
+             self.path,
+             self.hostname,
+             self.port,
+             self.username,
+             self.password))
 
     def __str__(self):
         """
@@ -214,8 +226,7 @@ class Url(tuple):
             url = '//' + (self.netloc or '') + url
         if self.scheme:
             url = self.scheme + ':' + url
-        return url    
-
+        return url
 
     def __eq__(self, other):
         """
@@ -231,7 +242,7 @@ class Url(tuple):
           True
           >>> u == Url('http://example.org/')
           False
-          
+
           >>> u == str(u)
           True
           >>> u == '/tmp/foo'
@@ -243,7 +254,7 @@ class Url(tuple):
 
           >>> u == 42
           False
-        
+
         """
         try:
             # The `tuple.__eq__` call can only be used if both `self`
@@ -252,17 +263,16 @@ class Url(tuple):
             return ((isinstance(other, tuple) and tuple.__eq__(self, other))
                     or str(self) == str(other)
                     or tuple.__eq__(self, Url(other)))
-        except ValueError, ex:
+        except ValueError:
             # `other` is not a URL and cannot be made into one
             return False
-    
+
     def __ne__(self, other):
         """
         The opposite of `__eq__`.
         """
         return not self.__eq__(other)
-    
-    
+
     def adjoin(self, relpath):
         """
         Return a new `Url`, constructed by appending `relpath` to the
@@ -285,7 +295,7 @@ class Url(tuple):
             >>> u3 = u2.adjoin('/evenmore')
             >>> str(u3)
             'http://www.example.org/data/moredata/evenmore'
-        
+
         """
         if relpath.startswith('/'):
             relpath = relpath[1:]
@@ -293,9 +303,10 @@ class Url(tuple):
                    path=os.path.join((self.path or '/'), relpath),
                    hostname=self.hostname, port=self.port,
                    username=self.username, password=self.password)
-    
+
 
 class UrlKeyDict(dict):
+
     """
     A dictionary class enforcing that all keys are URLs.
 
@@ -366,16 +377,19 @@ class UrlKeyDict(dict):
         False
 
     """
+
     def __init__(self, iter_or_dict=None, force_abs=False):
         self._force_abs = force_abs
         if iter_or_dict is not None:
             try:
-                # if `iter_or_dict` is a dict-like object, then it has `iteritems()`
-                for k,v in iter_or_dict.iteritems():
+                # if `iter_or_dict` is a dict-like object, then it has
+                # `iteritems()`
+                for k, v in iter_or_dict.iteritems():
                     self[k] = v
             except AttributeError:
-                # then assume `iter_or_dict` is an iterator over (key, value) pairs
-                for k,v in iter_or_dict:
+                # then assume `iter_or_dict` is an iterator over (key, value)
+                # pairs
+                for k, v in iter_or_dict:
                     self[k] = v
 
     def __contains__(self, key):
@@ -386,7 +400,7 @@ class UrlKeyDict(dict):
     def __getitem__(self, key):
         try:
             return dict.__getitem__(self, key)
-        except KeyError, ex:
+        except KeyError as ex:
             # map `key` to a URL and try with that
             try:
                 return dict.__getitem__(self, Url(key, self._force_abs))
@@ -401,6 +415,7 @@ class UrlKeyDict(dict):
 
 
 class UrlValueDict(dict):
+
     """
     A dictionary class enforcing that all values are URLs.
 
@@ -418,8 +433,9 @@ class UrlValueDict(dict):
     Retrieving the value associated with a key always returns the
     URL-type value, regardless of how it was set::
 
-        >>> repr(d[1])
-        "Url(scheme='file', netloc='', path='/tmp/foo', hostname=None, port=None, username=None, password=None)"
+        >>> repr(d[1]) == "Url(scheme='file', netloc='', path='/tmp/foo', " \
+        "hostname=None, port=None, username=None, password=None)"
+        True
 
     Class `UrlValueDict` supports initialization by any of the
     methods that work with a plain `dict` instance::
@@ -454,18 +470,21 @@ class UrlValueDict(dict):
         False
 
     """
+
     def __init__(self, iter_or_dict=None, force_abs=False, **extra_args):
         self._force_abs = force_abs
         if iter_or_dict is not None:
             try:
-                # if `iter_or_dict` is a dict-like object, then it has `iteritems()`
-                for k,v in iter_or_dict.iteritems():
+                # if `iter_or_dict` is a dict-like object, then it has
+                # `iteritems()`
+                for k, v in iter_or_dict.iteritems():
                     self[k] = v
             except AttributeError:
-                # then assume `iter_or_dict` is an iterator over (key, value) pairs
-                for k,v in iter_or_dict:
+                # then assume `iter_or_dict` is an iterator over (key, value)
+                # pairs
+                for k, v in iter_or_dict:
                     self[k] = v
-        for k,v in extra_args.iteritems():
+        for k, v in extra_args.iteritems():
             self[k] = v
 
     def __setitem__(self, key, value):
@@ -475,8 +494,7 @@ class UrlValueDict(dict):
             dict.__setitem__(self, key, value)
 
 
-
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

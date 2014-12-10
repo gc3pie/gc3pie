@@ -26,11 +26,14 @@ import os
 import gc3libs
 from gc3libs.exceptions import UnrecoverableError
 
+
 class InstanceNotFound(UnrecoverableError):
+
     """Specified instance was not found"""
 
 
 class VMPool(object):
+
     """
     Persistable container for a list of VM objects.
 
@@ -139,7 +142,8 @@ class VMPool(object):
         """
         if not hasattr(vm, 'preferred_ip'):
             vm.preferred_ip = ''
-        gc3libs.utils.write_contents(os.path.join(self.path, vm.id), vm.preferred_ip)
+        gc3libs.utils.write_contents(
+            os.path.join(self.path, vm.id), vm.preferred_ip)
         self._vm_ids.add(vm.id)
         self._vm_cache[vm.id] = vm
         self.changed = True
@@ -152,8 +156,8 @@ class VMPool(object):
         if os.path.exists(os.path.join(self.path, vm_id)):
             try:
                 os.remove(os.path.join(self.path, vm_id))
-            except OSError, err:
-                if err.errno == 2: # ENOENT, "No such file or directory"
+            except OSError as err:
+                if err.errno == 2:  # ENOENT, "No such file or directory"
                     # ignore - some other process might have removed it
                     pass
                 else:
@@ -193,7 +197,8 @@ class VMPool(object):
         vm = self._get_instance(vm_id)
         if not hasattr(vm, 'preferred_ip'):
             # read from file
-            vm.preferred_ip = gc3libs.utils.read_contents(os.path.join(self.path, vm.id))
+            vm.preferred_ip = gc3libs.utils.read_contents(
+                os.path.join(self.path, vm.id))
         self._vm_cache[vm_id] = vm
         if vm_id not in self._vm_ids:
             self._vm_ids.add(vm_id)
@@ -211,7 +216,7 @@ class VMPool(object):
             except UnrecoverableError as ex:
                 gc3libs.log.warning(
                     "Cloud resource `%s`: ignoring error while trying to "
-                    "get information on VM wiht id `%s`: %s" \
+                    "get information on VM wiht id `%s`: %s"
                     % (self.name, vm_id, ex))
         return vms
 
@@ -249,7 +254,7 @@ class VMPool(object):
                 self.remove_vm(vm_id)
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

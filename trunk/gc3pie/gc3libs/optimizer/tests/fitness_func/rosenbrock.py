@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 #
 """
-Python implementation of rosenbrock.cpp for tests. 
+Python implementation of rosenbrock.cpp for tests.
 """
 # Copyright (C) 2011, 2012, 2013, GC3, University of Zurich. All rights reserved.
 #
@@ -40,9 +40,9 @@ para_file = open("parameters.in")
 x = float(para_file.readline().split()[1])
 y = float(para_file.readline().split()[1])
 
-fun = 100.0 * (y - x**2)**2 + (1-x)**2
+fun = 100.0 * (y - x ** 2) ** 2 + (1 - x) ** 2
 
-out_file = open("rosenbrock.out",'w')
+out_file = open("rosenbrock.out", 'w')
 out_file.write(str(fun) + '\n')
 
 print "done"

@@ -3,11 +3,19 @@ import os
 import sys
 import errno
 
-from gc3libs.compat.lockfile import (LockBase, LockFailed, NotLocked, NotMyLock, LockTimeout,
-                                     AlreadyLocked)
+from gc3libs.compat.lockfile import (
+    LockBase,
+    LockFailed,
+    NotLocked,
+    NotMyLock,
+    LockTimeout,
+    AlreadyLocked)
+
 
 class MkdirLockFile(LockBase):
+
     """Lock file by creating a directory."""
+
     def __init__(self, path, threaded=True):
         """
         >>> lock = MkdirLockFile('somefile')
@@ -16,10 +24,10 @@ class MkdirLockFile(LockBase):
         LockBase.__init__(self, path, threaded)
         # Lock file itself is a directory.  Place the unique file name into
         # it.
-        self.unique_name  = os.path.join(self.lock_file,
-                                         "%s.%s%s" % (self.hostname,
-                                                      self.tname,
-                                                      self.pid))
+        self.unique_name = os.path.join(self.lock_file,
+                                        "%s.%s%s" % (self.hostname,
+                                                     self.tname,
+                                                     self.pid))
 
     def acquire(self, timeout=None):
         end_time = time.time()
