@@ -488,7 +488,7 @@ class LsfLrms(batch.BatchSystem):
                     log.debug("LSF says: '%s'", match.group(0))
                     jobstatus.exit_status = int(match.group('exit_status'))
         if 'state' not in jobstatus:
-            jobstatus.state = Run.UNKNOWN
+            jobstatus.state = Run.State.UNKNOWN
         return jobstatus
 
     @staticmethod
