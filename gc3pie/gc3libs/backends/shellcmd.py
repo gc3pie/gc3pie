@@ -27,7 +27,6 @@ import cPickle as pickle
 from getpass import getuser
 import os
 import os.path
-import posix
 import posixpath
 import time
 
@@ -36,10 +35,11 @@ import gc3libs
 import gc3libs.exceptions
 import gc3libs.backends.transport
 from gc3libs import log, Run
-from gc3libs.utils import same_docstring_as, samefile, copy_recursively
+from gc3libs.utils import same_docstring_as
 from gc3libs.utils import Struct, sh_quote_unsafe, defproperty
 from gc3libs.backends import LRMS
-from gc3libs.quantity import Memory, kB, MB, GB
+from gc3libs.quantity import Memory, MB
+
 
 def _make_remote_and_local_path_pair(transport, job, remote_relpath,
                                      local_root_dir, local_relpath):
@@ -65,6 +65,7 @@ def _make_remote_and_local_path_pair(transport, job, remote_relpath,
 
 
 class ShellcmdLrms(LRMS):
+
     """Execute an `Application`:class: instance as a local process.
 
     Construction of an instance of `ShellcmdLrms` takes the following
@@ -262,6 +263,7 @@ ReturnCode=%x"""
     @defproperty
     def free_slots():
         """Returns the number of cores free"""
+
         def fget(self):
             """
             Sums the number of corse requested by jobs not in TERM*
@@ -275,7 +277,7 @@ ReturnCode=%x"""
     def cancel_job(self, app):
         try:
             pid = int(app.execution.lrms_jobid)
-        except ValueError, ex:
+        except ValueError:
             raise gc3libs.exceptions.InvalidArgument(
                 "Invalid field `lrms_jobid` in Job '%s':"
                 " expected a number, got '%s' (%s) instead"
@@ -322,7 +324,7 @@ ReturnCode=%x"""
                 self.transport.connect()
                 self.transport.remove_tree(app.execution.lrms_execdir)
                 app.execution.lrms_execdir = None
-        except Exception, ex:
+        except Exception as ex:
             log.warning("Could not remove directory '%s': %s: %s",
                         app.execution.lrms_execdir, ex.__class__.__name__, ex)
 
@@ -339,6 +341,7 @@ ReturnCode=%x"""
     def frontend():
         def fget(self):
             return self._frontend
+
         def fset(self, value):
             self._frontend = value
             self.transport.remote_frontend = value
@@ -366,9 +369,9 @@ ReturnCode=%x"""
                 log.info('Creating resource file directory: %s ...',
                          self.resource_dir)
                 self.transport.makedirs(self.resource_dir)
-            except Exception, ex:
+            except Exception as ex:
                 log.error("Failed creating resource directory '%s':"
-                          " %s: %s", resource_dir, type(ex), str(ex))
+                          " %s: %s", self.resource_dir, type(ex), str(ex))
                 # cannot continue
                 raise
 
@@ -440,14 +443,15 @@ ReturnCode=%x"""
             log.info(
                 "Mismatch of value `max_cores` on resource '%s': configuration"
                 " file says `max_cores=%d` while it's actually `%d`."
-                " Updating current value.", self.name, self.max_cores, max_cores)
+                " Updating current value.", self.name,
+                self.max_cores, max_cores)
             self.max_cores = max_cores
 
         if self.total_memory != self.max_memory_per_core:
             log.info(
                 "Mismatch of value `max_memory_per_core` on resource %s:"
-                " configuration file says `max_memory_per_core=%s` while it's actually `%s`."
-                " Updating current value.",
+                " configuration file says `max_memory_per_core=%s` while it's"
+                " actually `%s`. Updating current value.",
                 self.name,
                 self.max_memory_per_core,
                 self.total_memory.to_str('%g%s', unit=Memory.MB))
@@ -488,7 +492,7 @@ ReturnCode=%x"""
         fp = self.transport.open(fname, 'rb')
         try:
             jobinfo = pickle.load(fp)
-        except Exception, ex:
+        except Exception as ex:
             log.error("Unable to read remote resource file %s: %s",
                       fname, ex)
             raise
@@ -517,13 +521,13 @@ ReturnCode=%x"""
         pidfile = posixpath.join(self.resource_dir, str(pid))
         try:
             self.transport.remove(pidfile)
-        except Exception, ex:
+        except Exception:
             log.error("Ignoring error while deleting file %s", pidfile)
 
     @staticmethod
     def _filter_memory(job):
         if job['requested_memory'] is None or job['terminated']:
-            return 0*MB
+            return 0 * MB
         else:
             return job['requested_memory']
 
@@ -537,7 +541,7 @@ ReturnCode=%x"""
         # built-in returns (built-in) integer `0`, which is why we can
         # use the `is` operator for this comparison ;-)
         if used_memory is 0:
-            return 0*MB
+            return 0 * MB
         else:
             return used_memory
 
@@ -556,7 +560,9 @@ ReturnCode=%x"""
         log.debug("Recovered resource information from files in %s:"
                   " available memory: %s, memory used by jobs: %s",
                   self.resource_dir,
-                  self.available_memory.to_str('%g%s', unit=Memory.MB, conv=float),
+                  self.available_memory.to_str('%g%s',
+                                               unit=Memory.MB,
+                                               conv=float),
                   used_memory.to_str('%g%s', unit=Memory.MB, conv=float))
         return self
 
@@ -631,7 +637,7 @@ ReturnCode=%x"""
                 ShellcmdLrms.WRAPPER_OUTPUT_FILENAME)
             try:
                 wrapper_file = self.transport.open(wrapper_filename, 'r')
-            except Exception, ex:
+            except Exception as ex:
                 self._delete_job_resource_file(pid)
                 log.error("Opening wrapper file %s raised an exception: %s",
                           wrapper_filename, str(ex))
@@ -660,7 +666,7 @@ ReturnCode=%x"""
         # other backends, these updated information are not kept!
         try:
             self.transport.connect()
-        except gc3libs.exceptions.TransportError, ex:
+        except gc3libs.exceptions.TransportError as ex:
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Unable to access shellcmd resource at %s: %s" %
                 (self.frontend, str(ex)))
@@ -685,8 +691,8 @@ ReturnCode=%x"""
                 " %s requested, but only %s available."
                 % (self.name,
                    app.requested_memory.to_str('%g%s', unit=Memory.MB),
-                   available_memory.to_str('%g%s', unit=Memory.MB),
-               ))
+                   available_memory.to_str('%g%s', unit=Memory.MB),)
+            )
 
         log.debug("Executing local command '%s' ...",
                   str.join(" ", app.arguments))
@@ -695,7 +701,7 @@ ReturnCode=%x"""
         if not self.spooldir:
             ex, stdout, stderr = self.transport.execute_command(
                 'cd "$TMPDIR" && pwd')
-            if ex != 0 or stdout.strip()=='' or not stdout[0]=='/':
+            if ex != 0 or stdout.strip() == '' or not stdout[0] == '/':
                 log.debug(
                     "Unable to recover a valid absolute path for spooldir."
                     " Using `/var/tmp`.")
@@ -703,7 +709,7 @@ ReturnCode=%x"""
             else:
                 self.spooldir = stdout.strip()
 
-        ## determine execution directory
+        # determine execution directory
         exit_code, stdout, stderr = self.transport.execute_command(
             "mktemp -d %s " % posixpath.join(
                 self.spooldir, 'gc3libs.XXXXXX'))
@@ -725,7 +731,8 @@ ReturnCode=%x"""
             remote_path = posixpath.join(execdir, remote_path)
             remote_parent = os.path.dirname(remote_path)
             try:
-                if remote_parent not in ['', '.'] and not self.transport.exists(remote_parent):
+                if (remote_parent not in ['', '.']
+                        and not self.transport.exists(remote_parent)):
                     log.debug("Making remote directory '%s'", remote_parent)
                     self.transport.makedirs(remote_parent)
                 log.debug("Transferring file '%s' to '%s'",
@@ -733,7 +740,7 @@ ReturnCode=%x"""
                 self.transport.put(local_path.path, remote_path)
                 # preserve execute permission on input files
                 if os.access(local_path.path, os.X_OK):
-                    self.transport.chmod(remote_path, 0755)
+                    self.transport.chmod(remote_path, 0o755)
             except:
                 log.critical(
                     "Copying input file '%s' to remote host '%s' failed",
@@ -747,17 +754,19 @@ ReturnCode=%x"""
         # link to a file we do not own)
         if app.arguments[0].startswith('./'):
             try:
-                self.transport.chmod(posixpath.join(execdir, app.arguments[0][2:]), 0755)
+                self.transport.chmod(
+                    posixpath.join(execdir, app.arguments[0][2:]),
+                    0o755)
                 # os.chmod(app.arguments[0], 0755)
             except:
                 log.error(
                     "Failed setting execution flag on remote file '%s'",
                     posixpath.join(execdir, app.arguments[0]))
 
-        ## set up redirection
+        # set up redirection
         redirection_arguments = ''
         if app.stdin is not None:
-            stdin = open(app.stdin, 'r')
+            # stdin = open(app.stdin, 'r')
             redirection_arguments += " <%s" % app.stdin
 
         if app.stdout is not None:
@@ -769,7 +778,7 @@ ReturnCode=%x"""
             if app.stderr is not None:
                 redirection_arguments += " 2>%s" % app.stderr
 
-        ## set up environment
+        # set up environment
         env_arguments = ''
         for k, v in app.environment.iteritems():
             env_arguments += "%s=%s; " % (k, v)
@@ -809,9 +818,9 @@ echo $$ >%s
 cd %s
 exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
 """ % (pidfilename, execdir, self.time_cmd,
-       wrapper_output_filename,
-       ShellcmdLrms.TIMEFMT, redirection_arguments,
-       env_arguments, arguments))
+                wrapper_output_filename,
+                ShellcmdLrms.TIMEFMT, redirection_arguments,
+                env_arguments, arguments))
             wrapper_script.close()
         except gc3libs.exceptions.TransportError:
             log.error("Freeing resources used by failed application")
@@ -819,7 +828,7 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
             raise
 
         try:
-            self.transport.chmod(wrapper_script_fname, 0755)
+            self.transport.chmod(wrapper_script_fname, 0o755)
 
             # Execute the script in background
             self.transport.execute_command(wrapper_script_fname, detach=True)
@@ -838,14 +847,14 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
             try:
                 pidfile = self.transport.open(pidfilename, 'r')
                 break
-            except gc3libs.exceptions.TransportError, ex:
+            except gc3libs.exceptions.TransportError as ex:
                 if '[Errno 2]' in str(ex):  # no such file or directory
                     time.sleep(retry)
                     continue
                 else:
                     raise
         if pidfile is None:
-            #XXX: probably self.free(app) should go here as well
+            # XXX: probably self.free(app) should go here as well
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Unable to get PID file of submitted process from"
                 " execution directory `%s`: %s"
@@ -854,7 +863,7 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
         try:
             pid = int(pid)
         except ValueError:
-            #XXX: probably self.free(app) should go here as well
+            # XXX: probably self.free(app) should go here as well
             pidfile.close()
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Invalid pid `%s` in pidfile %s." % (pid, pidfilename))
@@ -917,7 +926,7 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
         The `shellcmd`:mod: backend can only handle ``file`` URLs.
         """
         for url in data_file_list:
-            if not url.scheme in ['file']:
+            if url.scheme not in ['file']:
                 return False
         return True
 
@@ -941,7 +950,7 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
 
         return wrapper_output
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

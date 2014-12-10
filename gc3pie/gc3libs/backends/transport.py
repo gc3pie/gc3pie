@@ -95,8 +95,7 @@ class Transport(object):
 
     def get(self, source, destination, ignore_nonexisting=False,
             overwrite=False, changed_only=True):
-        """
-        Copy remote `source` to local `destination`.
+        """Copy remote `source` to local `destination`.
 
         Permission bits are copied. Both `source` and `destination`
         are path names given as strings.
@@ -135,9 +134,15 @@ class Transport(object):
 
         :param str source: the file or directory to copy
         :param str destination: the destination file or directory
-        :param bool ignore_nonexisting: if `True`, no exceptions will be raised if `source` does not exist
+        :param bool ignore_nonexisting: if `True`, no exceptions will
+                                        be raised if `source` does not exist
         :param bool overwrite: if `True`, overwrite existing destination files
-        :param bool changed_only: if both this and `overwrite` are `True`, only overwrite those files such that the source is newer or different in size than the destination.
+        :param bool changed_only: if both this and `overwrite` are
+                                  `True`, only overwrite those files
+                                  such that the source is newer or
+                                  different in size than the
+                                  destination.
+
         """
         try:
             if self.isdir(source):
@@ -162,7 +167,7 @@ class Transport(object):
                         sst = self.stat(source)
                         dst = os.stat(destination)
                         if (sst.st_size == dst.st_size
-                            and sst.st_mtime <= dst.st_mtime):
+                                and sst.st_mtime <= dst.st_mtime):
                             gc3libs.log.debug(
                                 "Transport.get(): Local file '%s'"
                                 " has same size and modification time as"
@@ -175,9 +180,11 @@ class Transport(object):
                 if not os.path.exists(parent):
                     os.makedirs(parent)
                 self._get_impl(source, destination)
-        except Exception, ex:
+        except Exception as ex:
             # IOError(errno=2) means the remote path is not existing
-            if (ignore_nonexisting and isinstance(ex, IOError) and ex.errno == 2):
+            if (ignore_nonexisting
+                    and isinstance(ex, IOError)
+                    and ex.errno == 2):
                 pass
             else:
                 raise gc3libs.exceptions.TransportError(
@@ -229,7 +236,7 @@ class Transport(object):
             "Abstract method `Transport.listdir()` called - "
             "this should have been defined in a derived class.")
 
-    def makedirs(self, path, mode=0777):
+    def makedirs(self, path, mode=0o777):
         """
         Recursive directory creation function. Makes all
         intermediate-level directories needed to contain the leaf
@@ -277,7 +284,7 @@ class Transport(object):
         try:
             destdir = os.path.dirname(destination)
             self.makedirs(destdir)
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not make directory '%s' on host '%s': %s: %s"
                 % (destdir, self.remote_frontend,
@@ -310,7 +317,7 @@ class Transport(object):
                         sst = os.stat(source)
                         dst = self.stat(destination)
                         if (sst.st_size == dst.st_size
-                            and sst.st_mtime <= dst.st_mtime):
+                                and sst.st_mtime <= dst.st_mtime):
                             gc3libs.log.debug(
                                 "Tranport.put(): Remote file '%s'"
                                 " has same size and modification time as"
@@ -332,7 +339,7 @@ class Transport(object):
                         pass
                     else:
                         raise
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not upload '%s' to '%s' on host '%s': %s: %s"
                 % (source, destination, self.remote_frontend,
@@ -394,7 +401,6 @@ class Transport(object):
 # SSH Transport class
 #
 
-import sys
 import types
 
 import paramiko
@@ -429,7 +435,7 @@ class SshTransport(Transport):
                 hostconfig = ssh_config.lookup(self.remote_frontend)
                 self.keyfile = hostconfig.get('identityfile', None)
                 config_file.close()
-            except IOError, err:
+            except IOError as err:
                 if err.errno == 2:
                     # "No such file or directory" -- ignore error
                     self.keyfile = None
@@ -438,7 +444,6 @@ class SshTransport(Transport):
         else:
             assert type(keyfile) in types.StringTypes
             self.keyfile = keyfile
-
 
     @same_docstring_as(Transport.connect)
     def connect(self):
@@ -460,7 +465,7 @@ class SshTransport(Transport):
                     # and hope for the best.
                     try:
                         self.ssh.load_system_host_keys()
-                    except paramiko.SSHException, err:
+                    except paramiko.SSHException as err:
                         gc3libs.log.warning(
                             "Could not read 'known hosts' SSH keys (%s: %s)."
                             " I'm ignoring the error and continuing anyway,"
@@ -472,8 +477,9 @@ class SshTransport(Transport):
 
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 gc3libs.log.debug(
-                    "Connecting to host '%s' as user '%s' via SSH (timeout %ds)...",
-                    self.remote_frontend, self.username, self.timeout)
+                    "Connecting to host '%s' as user '%s' via SSH "
+                    "(timeout %ds)...", self.remote_frontend,
+                    self.username, self.timeout)
                 self.ssh.connect(self.remote_frontend,
                                  timeout=self.timeout,
                                  username=self.username,
@@ -481,7 +487,7 @@ class SshTransport(Transport):
                                  key_filename=self.keyfile)
                 self.sftp = self.ssh.open_sftp()
                 self._is_open = True
-        except Exception, ex:
+        except Exception as ex:
             gc3libs.log.error(
                 "Could not create ssh connection to %s: %s: %s",
                 self.remote_frontend, ex.__class__.__name__, str(ex))
@@ -518,8 +524,9 @@ class SshTransport(Transport):
                     a = paramiko.Agent()
                     try:
                         running_ssh_agent = a._conn
-                    except AttributeError, ax:
-                        gc3libs.log.warning('Probably running paramiko version <= 1.7.7.2  ... ')
+                    except AttributeError:
+                        gc3libs.log.warning('Probably running paramiko '
+                                            'version <= 1.7.7.2  ... ')
                         running_ssh_agent = a.conn
 
                     if not running_ssh_agent:
@@ -555,7 +562,7 @@ class SshTransport(Transport):
             # check connection first
             self.connect()
             self.sftp.chmod(path, mode)
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Error changing remote path '%s' mode to 0%o: %s: %s"
                 % (path, mode, ex.__class__.__name__, str(ex)))
@@ -580,7 +587,7 @@ class SshTransport(Transport):
                 "Executed command '%s' on host '%s'; exit code: %d"
                 % (command, self.remote_frontend, exitcode))
             return exitcode, stdout, stderr
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Failed executing remote command '%s': %s: %s"
                 % (command, ex.__class__.__name__, str(ex)))
@@ -591,7 +598,7 @@ class SshTransport(Transport):
             self.connect()
             self.sftp.stat(path)
             return True
-        except IOError, err:
+        except IOError as err:
             if err.errno == 2:
                 return False
             else:
@@ -599,7 +606,7 @@ class SshTransport(Transport):
                     "Could not stat() file '%s' on host '%s': %s: %s"
                     % (path, self.remote_frontend,
                        err.__class__.__name__, str(err)))
-        except Exception, err:
+        except Exception as err:
             raise gc3libs.exceptions.TransportError(
                 "Could not stat() file '%s' on host '%s': %s: %s"
                 % (path, self.remote_frontend,
@@ -619,7 +626,7 @@ class SshTransport(Transport):
             self.connect()
             self.sftp.listdir(path)
             return True
-        except IOError, ex:
+        except IOError as ex:
             if ex.errno == 2:
                 return False
             else:
@@ -631,13 +638,13 @@ class SshTransport(Transport):
             # check connection first
             self.connect()
             return self.sftp.listdir(path)
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not list directory '%s' on host '%s': %s: %s"
                 % (path, self.remote_frontend, ex.__class__.__name__, str(ex)))
 
     @same_docstring_as(Transport.makedirs)
-    def makedirs(self, path, mode=0777):
+    def makedirs(self, path, mode=0o777):
         dirs = path.split('/')
         if '..' in dirs:
             raise gc3libs.exceptions.InvalidArgument(
@@ -662,7 +669,7 @@ class SshTransport(Transport):
         gc3libs.log.debug("SshTransport.put(): local source: '%s';"
                           " remote destination: '%s'; remote host: '%s'.",
                           source, destination, self.remote_frontend)
-        self.connect() # ensure connection is up
+        self.connect()  # ensure connection is up
         Transport.put(self, source, destination,
                       ignore_errors, overwrite, changed_only)
 
@@ -678,7 +685,7 @@ class SshTransport(Transport):
         gc3libs.log.debug("SshTranport.get(): remote source %s; "
                           "remote host: %s; local destination: %s.",
                           source, self.remote_frontend, destination)
-        self.connect() # ensure connection is up
+        self.connect()  # ensure connection is up
         Transport.get(self, source, destination,
                       ignore_nonexisting, overwrite, changed_only)
 
@@ -697,7 +704,7 @@ class SshTransport(Transport):
             # check connection first
             self.connect()
             self.sftp.remove(path)
-        except IOError, ex:
+        except IOError as ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not remove '%s' on host '%s': %s: %s"
                 % (path, self.remote_frontend, ex.__class__.__name__, str(ex)))
@@ -716,7 +723,7 @@ class SshTransport(Transport):
             if exit_code != 0:
                 raise Exception("Remote command '%s' failed with code %d: %s"
                                 % (_command, exit_code, stderr))
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not remove tree '%s' on host '%s': %s: %s"
                 % (path, self.remote_frontend,
@@ -727,7 +734,7 @@ class SshTransport(Transport):
         try:
             self.connect()
             return self.sftp.stat(path)
-        except Exception, err:
+        except Exception as err:
             raise gc3libs.exceptions.TransportError(
                 "Could not stat() file '%s' on host '%s': %s: %s"
                 % (path, self.remote_frontend,
@@ -739,7 +746,7 @@ class SshTransport(Transport):
             # check connection first
             self.connect()
             return self.sftp.open(source, mode, bufsize)
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not open file '%s' on host '%s': %s: %s"
                 % (source, self.remote_frontend,
@@ -770,7 +777,6 @@ class SshTransport(Transport):
 #
 
 import subprocess
-import shutil
 
 
 class LocalTransport(Transport):
@@ -795,7 +801,7 @@ class LocalTransport(Transport):
         TransportError if any other Exception is raised
         """
 
-        if (not self._process is None) and (_process.pid == pid):
+        if (self._process is not None) and (self._process.pid == pid):
             return self._process.poll()
         else:
 
@@ -817,10 +823,11 @@ class LocalTransport(Transport):
 
             except IOError:
                 raise
-            except Exception, ex:
-                log.error("Error while trying to read status file. Error"
-                          " type %s. message %s" % (ex.__class__, ex.message))
-                raise gc3libs.exceptions.TransportError(x.message)
+            except Exception as ex:
+                gc3libs.log.error(
+                    "Error while trying to read status file. Error"
+                    " type %s. message %s" % (ex.__class__, ex.message))
+                raise gc3libs.exceptions.TransportError(ex.message)
 
     @same_docstring_as(Transport.connect)
     def connect(self):
@@ -831,7 +838,7 @@ class LocalTransport(Transport):
     def chmod(self, path, mode):
         try:
             os.chmod(path, mode)
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Error changing local path '%s' mode to 0%o: %s: %s"
                 % (path, mode, ex.__class__.__name__, str(ex)))
@@ -847,13 +854,13 @@ class LocalTransport(Transport):
                                         stdout=subprocess.PIPE,
                                         shell=True)
             return _process.pid
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Failed executing command '%s': %s: %s"
                 % (command, ex.__class__.__name__, str(ex)))
 
     def get_pid(self):
-        if not self._process is None:
+        if self._process is not None:
             return self._process.pid
         else:
             return -1
@@ -876,7 +883,7 @@ class LocalTransport(Transport):
                 "Executed local command '%s', got exit status: %d",
                 command, exitcode)
             return exitcode, stdout, stderr
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Failed executing command '%s': %s: %s"
                 % (command, ex.__class__.__name__, str(ex)))
@@ -930,16 +937,16 @@ class LocalTransport(Transport):
 
         try:
             return os.listdir(path)
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not list local directory '%s': %s: %s"
                 % (path, ex.__class__.__name__, str(ex)))
 
     @same_docstring_as(Transport.makedirs)
-    def makedirs(self, path, mode=0777):
+    def makedirs(self, path, mode=0o777):
         try:
             os.makedirs(path, mode)
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.EEXIST:
                 pass
 
@@ -950,7 +957,7 @@ class LocalTransport(Transport):
             "`Transport.put()` called" \
             " on `Transport` instance closed / not yet open"
         Transport.put(self, source, destination,
-                       ignore_errors, overwrite, changed_only)
+                      ignore_errors, overwrite, changed_only)
 
     def _put_impl(self, source, destination):
         """
@@ -967,7 +974,7 @@ class LocalTransport(Transport):
         try:
             gc3libs.log.debug("Removing %s", path)
             return os.remove(path)
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not remove file '%s': %s: %s"
                 % (path, ex.__class__.__name__, str(ex)))
@@ -982,7 +989,7 @@ class LocalTransport(Transport):
             gc3libs.log.debug("LocalTransport.remove_tree():"
                               " removing local directory tree '%s'" % path)
             return shutil.rmtree(path)
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not remove directory tree '%s': %s: %s"
                 % (path, ex.__class__.__name__, str(ex)))
@@ -991,7 +998,7 @@ class LocalTransport(Transport):
     def stat(self, path):
         try:
             return os.stat(path)
-        except Exception, err:
+        except Exception as err:
             raise gc3libs.exceptions.TransportError(
                 "Could not stat() file '%s' on host localhost: %s: %s"
                 % (path, err.__class__.__name__, str(err)))
@@ -1000,7 +1007,7 @@ class LocalTransport(Transport):
     def open(self, source, mode, bufsize=0):
         try:
             return open(source, mode, bufsize)
-        except Exception, ex:
+        except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Could not open file '%s' on host localhost: %s: %s"
                 % (source, ex.__class__.__name__, str(ex)))

@@ -4,6 +4,7 @@
 from distribute_setup import use_setuptools
 use_setuptools()
 
+
 def read_whole_file(path):
     stream = open(path, 'r')
     text = stream.read()
@@ -11,10 +12,11 @@ def read_whole_file(path):
     return text
 
 
-# See http://tox.readthedocs.org/en/latest/example/basic.html#integration-with-setuptools-distribute-test-commands
+# See http://tox.readthedocs.org/en/latest/example/basic.html#integration-with-setuptools-distribute-test-commands # noqa
 # on how to run tox when python setup.py test is run
 from setuptools.command.test import test as TestCommand
 import sys
+
 
 class Tox(TestCommand):
     def finalize_options(self):
@@ -23,7 +25,7 @@ class Tox(TestCommand):
         self.test_suite = True
 
     def run_tests(self):
-        #import here, cause outside the eggs aren't loaded
+        # import here, cause outside the eggs aren't loaded
         import tox
         errno = tox.cmdline(self.test_args)
         sys.exit(errno)
@@ -39,26 +41,28 @@ from setuptools.command import sdist
 del sdist.finders[:]
 
 setuptools.setup(
-    name = "gc3pie",
-    version = "2.2.dev", # see: http://packages.python.org/distribute/setuptools.html
+    name="gc3pie",
+    version="2.2.dev",  # see: http://packages.python.org/distribute/setuptools.html # noqa
 
-    packages = setuptools.find_packages(exclude=['ez_setup']),
+    packages=setuptools.find_packages(exclude=['ez_setup']),
     # metadata for upload to PyPI
-    description = "A Python library and simple command-line frontend for computational job submission to multiple resources.",
-    long_description = read_whole_file('README.txt'),
-    author = "Grid Computing Competence Centre, University of Zurich",
-    author_email = "gc3utils-dev@gc3.lists.uzh.ch",
-    license = "LGPL",
-    keywords = "grid arc globus sge gridengine ssh gamess rosetta batch job",
-    url = "http://gc3pie.googlecode.com/", # project home page
+    description="A Python library and simple command-line frontend for"
+    " computational job submission to multiple resources.",
+    long_description=read_whole_file('README.txt'),
+    author="Grid Computing Competence Centre, University of Zurich",
+    author_email="gc3utils-dev@gc3.lists.uzh.ch",
+    license="LGPL",
+    keywords="grid arc globus sge gridengine ssh gamess rosetta batch job",
+    url="http://gc3pie.googlecode.com/",  # project home page
 
     # see http://pypi.python.org/pypi?%3Aaction=list_classifiers
-    classifiers = [
+    classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)",
+        "License :: OSI Approved :: GNU Library or"
+        " Lesser General Public License (LGPL)",
         "License :: DFSG approved",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python",
@@ -73,7 +77,7 @@ setuptools.setup(
         "Topic :: System :: Distributed Computing",
         ],
 
-    entry_points = {
+    entry_points={
         'console_scripts': [
             # the generic, catch-all script:
             'gc3utils = gc3utils.frontend:main',
@@ -91,10 +95,10 @@ setuptools.setup(
             'gselect = gc3utils.frontend:main',
             'gcloud = gc3utils.frontend:main',
             ],
-       },
+    },
 
     # run-time dependencies
-    install_requires = [
+    install_requires=[
         'boto==2.9.4',
         'python-novaclient==2.15',
         # paramiko and pycrypto are required for SSH operations
@@ -114,10 +118,10 @@ setuptools.setup(
         # 'numpy',
         ],
     # Apparently, this list is read from right to left...
-    tests_require = ['tox'],
-    cmdclass = {'test': Tox},
+    tests_require=['tox'],
+    cmdclass={'test': Tox},
     # additional non-Python files to be bundled in the package
-    package_data = {
+    package_data={
         'gc3libs': [
             'etc/codeml.pl',
             'etc/gc3pie.conf.example',
@@ -126,7 +130,7 @@ setuptools.setup(
             'etc/rosetta.sh',
             ],
     },
-    data_files = [
+    data_files=[
         ('gc3apps', [
             'gc3apps/gc3.uzh.ch/gridrun.py',
             'gc3apps/zods/gzods.py',
@@ -147,5 +151,5 @@ setuptools.setup(
     # `zip_safe` can ease deployment, but is only allowed if the package
     # do *not* do any __file__/__path__ magic nor do they access package data
     # files by file name (use `pkg_resources` instead).
-    zip_safe = True,
+    zip_safe=True,
 )

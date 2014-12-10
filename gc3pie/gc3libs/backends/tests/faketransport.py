@@ -27,7 +27,9 @@ import re
 from gc3libs import log
 from gc3libs.backends.transport import LocalTransport
 
+
 class FakeTransport(LocalTransport):
+
     """
     This class allows you to override responses to specific commands.
 
@@ -52,6 +54,7 @@ class FakeTransport(LocalTransport):
     `Transport.execute_command` module and check that instead; see
     https://code.google.com/p/gc3pie/issues/detail?id=285&q=argv
     """
+
     def __init__(self, expected_answer={}):
         LocalTransport.__init__(self)
         self.expected_answer = expected_answer
@@ -71,7 +74,7 @@ class FakeTransport(LocalTransport):
         # ``foobar`` but again there's no way we can really parse
         # ``sh`` syntax with regexps...)
         " (?P<cmd>[a-z0-9_+-]+)",
-        re.VERBOSE|re.IGNORECASE)
+        re.VERBOSE | re.IGNORECASE)
 
     def execute_command(self, cmdline):
         """
@@ -98,7 +101,7 @@ class FakeTransport(LocalTransport):
         return LocalTransport.execute_command(self, cmdline)
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

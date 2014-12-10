@@ -23,10 +23,13 @@ __version__ = '$Revision$'
 
 from gc3libs.persistence.idfactory import IdFactory
 
+
 class DummyObject(object):
     pass
 
+
 class TestIdFactory(object):
+
     """
     Test the IdFactory class behavior
     """
@@ -39,31 +42,34 @@ class TestIdFactory(object):
             ids.append(idfactory.new(dummy))
         assert len(ids) == len(set(ids))
 
-        # reserve is tested only in order to check if we get an error calling it...
+        # reserve is tested only in order to check if we get an error calling
+        # it...
         idfactory.reserve(5)
 
     def test_custom_next_id(self):
         class next_id(object):
+
             def __init__(self):
                 self.curid = -1
+
             def __call__(self):
                 self.curid += 1
                 return self.curid
-            
-        idfactory = IdFactory(next_id_fn = next_id())
+
+        idfactory = IdFactory(next_id_fn=next_id())
 
         ids = []
         dummy = DummyObject()
         for i in range(10):
             ids.append(idfactory.new(dummy))
-            
+
         assert len(ids) == len(set(ids))
-        
+
         for i in range(len(ids)):
             assert ids[i] == "DummyObject.%d" % i
-            
 
-## main: run tests
+
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

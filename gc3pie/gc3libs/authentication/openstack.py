@@ -29,13 +29,15 @@ import gc3libs.exceptions
 
 
 class OpenStackAuth(object):
+
     def __init__(self, **auth):
         try:
             # test validity
             assert auth['type'] == 'openstack', \
-                "Configuration error. Unknown type; %s. Valid type: openstack" \
+                "Configuration error. Unknown type; %s. " \
+                "Valid type: openstack" \
                 % auth.type
-        except AssertionError, x:
+        except AssertionError as x:
             raise gc3libs.exceptions.ConfigurationError(
                 'Erroneous configuration parameter: %s' % str(x))
 
@@ -44,7 +46,7 @@ class OpenStackAuth(object):
                     ('os_username', 'OS_USERNAME'),
                     ('os_password', 'OS_PASSWORD'),
                     ('os_project_name', 'OS_TENANT_NAME'),
-                    ):
+            ):
                 if key not in auth:
                     auth[key] = os.getenv(var)
                     assert auth[key], \
@@ -53,12 +55,11 @@ class OpenStackAuth(object):
                     # Strip quotes from os_* in case someone put
                     # it in the configuration file
                     auth[key] = auth[key].strip('"').strip("'")
-        except AssertionError, x:
+        except AssertionError as x:
             raise gc3libs.exceptions.ConfigurationError(
                 'Erroneous configuration parameter: %s' % str(x))
 
         self.__dict__.update(auth)
-
 
     def check(self):
         gc3libs.log.debug('Checking auth: OpenStackAuth')
@@ -70,7 +71,7 @@ class OpenStackAuth(object):
 
 Auth.register('openstack', OpenStackAuth)
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

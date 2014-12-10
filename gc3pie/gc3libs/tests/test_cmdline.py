@@ -33,15 +33,19 @@ from nose.tools import assert_true
 import gc3libs.cmdline
 import gc3libs.session
 
+
 class TestScript(cli.test.FunctionalTest):
+
     def __init__(self, *args, **extra_args):
         cli.test.FunctionalTest.__init__(self, *args, **extra_args)
-        self.scriptdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts')
-
+        self.scriptdir = os.path.join(
+            os.path.dirname(
+                os.path.abspath(__file__)),
+            'scripts')
 
     def setUp(self):
         cli.test.FunctionalTest.setUp(self)
-        CONF_FILE="""
+        CONF_FILE = """
 [auth/dummy]
 type = ssh
 username = dummy
@@ -78,57 +82,72 @@ resourcedir = %s
         """
         # XXX: WARNING: This will only work if you have a "localhost"
         # section in gc3pie.conf!!!
-        result = self.run_script('python',
-                                 os.path.join(self.scriptdir, 'simplescript.py'),
-                                 '-C', '1',
-                                 '-s', 'TestOne',
-                                 '--config-files', self.cfgfile,
-                                 '-r', 'localhost')
+        result = self.run_script(
+            'python',
+            os.path.join(
+                self.scriptdir,
+                'simplescript.py'),
+            '-C',
+            '1',
+            '-s',
+            'TestOne',
+            '--config-files',
+            self.cfgfile,
+            '-r',
+            'localhost')
 
-        assert_true(re.match('.*TERMINATED\s+3/3\s+\(100.0+%\).*', result.stdout, re.S))
+        assert_true(
+            re.match(
+                '.*TERMINATED\s+3/3\s+\(100.0+%\).*',
+                result.stdout,
+                re.S))
 
         # FIXME: output dir should be inside session dir
         session_dir = os.path.join(self.env.base_path, 'TestOne')
         assert_true(
             os.path.isdir(
                 os.path.join(self.env.base_path, 'SimpleScript.out.d')
-                )
             )
+        )
         assert_true(
             os.path.isfile(
-                os.path.join(self.env.base_path, 'SimpleScript.out.d', 'SimpleScript.stdout')
-                )
-            )
+                os.path.join(
+                    self.env.base_path,
+                    'SimpleScript.out.d',
+                    'SimpleScript.stdout')))
 
         assert_true(
             os.path.isdir(
                 os.path.join(self.env.base_path, 'SimpleScript.out2.d')
-                )
             )
+        )
         assert_true(
             os.path.isfile(
-                os.path.join(self.env.base_path, 'SimpleScript.out2.d', 'SimpleScript.stdout')
-                )
-            )
+                os.path.join(
+                    self.env.base_path,
+                    'SimpleScript.out2.d',
+                    'SimpleScript.stdout')))
 
         assert_true(
             os.path.isdir(session_dir)
-            )
+        )
 
         assert_true(
             os.path.isfile(
-                os.path.join(session_dir, gc3libs.session.Session.INDEX_FILENAME, )
-                )
-            )
+                os.path.join(
+                    session_dir,
+                    gc3libs.session.Session.INDEX_FILENAME,
+                )))
 
         assert_true(
             os.path.isfile(
-                os.path.join(session_dir, gc3libs.session.Session.STORE_URL_FILENAME, )
-                )
-            )
+                os.path.join(
+                    session_dir,
+                    gc3libs.session.Session.STORE_URL_FILENAME,
+                )))
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import nose

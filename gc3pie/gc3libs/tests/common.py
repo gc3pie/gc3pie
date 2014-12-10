@@ -21,24 +21,27 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+
 def run_my_tests(local_variables):
     errors = 0
     tests = 0
     for i in sorted(local_variables):
-        if not i.startswith('test_'): continue
+        if not i.startswith('test_'):
+            continue
         tests += 1
         try:
             print "%s ... " % i,
             local_variables[i]()
             print "ok"
-        except Exception, e:
+        except Exception as e:
             print "FAIL"
             print "Error in function %s" % i
             print "Exception %s: %s" % (repr(e), e)
-            errors +=1
+            errors += 1
             print
     print
     print "Run %d tests" % tests
-    if errors: print "Errors: %d" % errors
-    else: print "No errors! Good!"
-
+    if errors:
+        print "Errors: %d" % errors
+    else:
+        print "No errors! Good!"

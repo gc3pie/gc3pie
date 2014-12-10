@@ -23,17 +23,14 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
-import errno
 import os
 import shutil
-import sys
 import tempfile
 import time
 
 from nose.tools import raises, assert_equal, assert_not_equal
 
 import gc3libs
-from gc3libs.authentication import Auth
 import gc3libs.config
 import gc3libs.core
 from gc3libs.quantity import Memory
@@ -121,9 +118,9 @@ type=none
         # there's no SUBMITTED state here: jobs go immediately into
         # RUNNING state
         assert_equal(app.execution.state, gc3libs.Run.State.SUBMITTED)
-        assert_equal(self.backend.free_slots,  122)
+        assert_equal(self.backend.free_slots, 122)
         assert_equal(self.backend.user_queued, 0)
-        assert_equal(self.backend.user_run,    1)
+        assert_equal(self.backend.user_run, 1)
 
         # wait until the test job is done, but timeout and raise an error
         # if it takes too much time...
@@ -137,9 +134,9 @@ type=none
             self.core.update_job_state(app)
         try:
             assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
-            assert_equal(self.backend.free_slots,  123)
+            assert_equal(self.backend.free_slots, 123)
             assert_equal(self.backend.user_queued, 0)
-            assert_equal(self.backend.user_run,    0)
+            assert_equal(self.backend.user_run, 0)
         except:
             self.core.fetch_output(app)
             self.core.free(app)
@@ -148,9 +145,9 @@ type=none
         self.core.fetch_output(app)
         try:
             assert_equal(app.execution.state, gc3libs.Run.State.TERMINATED)
-            assert_equal(self.backend.free_slots,  123)
+            assert_equal(self.backend.free_slots, 123)
             assert_equal(self.backend.user_queued, 0)
-            assert_equal(self.backend.user_run,    0)
+            assert_equal(self.backend.user_run, 0)
         except:
             self.core.free(app)
             raise
@@ -174,7 +171,6 @@ type=none
         self.apps_to_kill.append(app)
 
         self.cleanup_file(app.execution.lrms_execdir)
-        pid = app.execution.lrms_jobid
 
         # The wrapper process should die and write the final status
         # and the output to a file, so that `Core` will be able to
@@ -255,7 +251,6 @@ type=none
             waited += WAIT
             self.core.update_job_state(app)
         assert_equal(self.backend.free_slots, cores_before)
-        avail = self.backend.available_memory
         assert_equal(self.backend.available_memory, mem_before)
 
     @raises(gc3libs.exceptions.NoResources)
@@ -381,11 +376,13 @@ type=none
 
         try:
             core1.submit(app)
-            assert_equal(backend1.free_slots, backend1.max_cores - app.requested_cores)
+            assert_equal(backend1.free_slots,
+                         backend1.max_cores - app.requested_cores)
 
             assert_equal(backend2.free_slots, backend2.max_cores)
             backend2.get_resource_status()
-            assert_equal(backend2.free_slots, backend2.max_cores - app.requested_cores)
+            assert_equal(backend2.free_slots,
+                         backend2.max_cores - app.requested_cores)
         finally:
             core1.kill(app)
             core1.free(app)

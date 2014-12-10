@@ -54,6 +54,7 @@ from gc3libs.persistence.filesystem import FilesystemStore
 from gc3libs.persistence.sql import SqlStore
 from gc3libs.url import Url
 
+
 def test_store_ctor_with_extra_arguments():
     """Test if `Store`:class: classess accept extra keyword arguments
     without complaining.
@@ -63,15 +64,18 @@ def test_store_ctor_with_extra_arguments():
     """
     tmpdir = tempfile.mkdtemp()
     args = {
-        'url': 'sqlite:///%s/test.sqlite' % os.path.abspath(tmpdir),
+        'url': 'sqlite:///%s/test.sqlite' %
+        os.path.abspath(tmpdir),
         'table_name': 'store',
         'create': True,
         'directory': tmpdir,
         'idfactory': IdFactory(),
         'protocol': DEFAULT_PROTOCOL,
-        'extra_fields': {sqlalchemy.Column('extra',         sqlalchemy.TEXT())    : lambda x: "test"},
-
-        }
+        'extra_fields': {
+            sqlalchemy.Column(
+                'extra',
+                sqlalchemy.TEXT()): lambda x: "test"},
+    }
 
     def run_test(cls, args):
         cls(**args)
@@ -81,10 +85,12 @@ def test_store_ctor_with_extra_arguments():
         if os.path.exists(tmpdir):
             shutil.rmtree(tmpdir)
 
-## for testing basic functionality we do no need fully-fledged GC3Pie
-## objects; let's define some simple make-do's.
+# for testing basic functionality we do no need fully-fledged GC3Pie
+# objects; let's define some simple make-do's.
+
 
 class SimplePersistableObject(Persistable):
+
     def __init__(self, x):
         self.value = x
 
@@ -93,6 +99,7 @@ class SimplePersistableObject(Persistable):
 
 
 class SimplePersistableList(list, Persistable):
+
     """
     Add a `__dict__` to `list`, so that creating a `persistent_id`
     entry on an instance works.
@@ -106,6 +113,7 @@ class SimpleTask(Task):
 
 
 class NonPersistableClassWithSlots(object):
+
     """
     A class to test that persistence of classes with `__slots__`.
 
@@ -133,11 +141,13 @@ class PersistableClassWithSlots(NonPersistableClassWithSlots):
 
 
 class MyChunkedParameterSweep(gc3libs.workflow.ChunkedParameterSweep):
+
     def new_task(self, param, **extra_args):
         return Task(**extra_args)
 
 
 class MyStagedTaskCollection(gc3libs.workflow.StagedTaskCollection):
+
     def stage0(self):
         return Task()
 
@@ -150,6 +160,7 @@ def _run_generic_tests(store):
 
 
 class GenericStoreChecks(object):
+
     """
     A suite of tests for the generic `gc3libs.persistence.Store` interface.
     """
@@ -295,8 +306,8 @@ class GenericStoreChecks(object):
             gc3libs.workflow.ParallelTaskCollection(tasks=[Task(), Task()]),
             MyChunkedParameterSweep(1, 20, 1, 5),
             gc3libs.workflow.RetryableTask(Task()),
-            ]:
-            check_task.description = "Test that Task-like `%s` class is stored correctly" %  obj.__class__.__name__
+        ]:
+            check_task.description = "Test that Task-like `%s` class is stored correctly" % obj.__class__.__name__
             yield check_task, obj
 
 
@@ -344,7 +355,8 @@ class TestFilesystemStore(GenericStoreChecks):
         also test that files have been created.
         """
         # std checks
-        container_id, obj_id = super(TestFilesystemStore, self).test_disaggregate_persistable_objects()
+        container_id, obj_id = super(
+            TestFilesystemStore, self).test_disaggregate_persistable_objects()
         # check that files exist
         container_file = os.path.join(self.store._directory, str(container_id))
         assert os.path.exists(container_file)
@@ -353,6 +365,7 @@ class TestFilesystemStore(GenericStoreChecks):
 
 
 class SqlStoreChecks(GenericStoreChecks):
+
     """
     Extend `GenericStoreChecks` with additional SQL-related tests.
 
@@ -378,7 +391,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
         q = sql.select([
             self.store.t_store.c.state
-            ]).where(self.store.t_store.c.id == id_)
+        ]).where(self.store.t_store.c.id == id_)
         result = self.conn.execute(q)
         row = result.fetchone()
 
@@ -398,7 +411,7 @@ class SqlStoreChecks(GenericStoreChecks):
 
         q = sql.select([
             self.store.t_store.c.state
-            ]).where(self.store.t_store.c.id == id_)
+        ]).where(self.store.t_store.c.id == id_)
         result = self.conn.execute(q)
         row = result.fetchone()
         assert row[0] == app.execution.state
@@ -406,11 +419,15 @@ class SqlStoreChecks(GenericStoreChecks):
     def test_sql_injection(self):
         """Test if the `SqlStore` class is vulnerable to SQL injection."""
 
-        storetemp = make_store(self.db_url,
+        storetemp = make_store(
+            self.db_url,
             table_name='sql_injection_test',
             extra_fields={
-                sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): GET.extra,
-                })
+                sqlalchemy.Column(
+                    'extra',
+                    sqlalchemy.VARCHAR(
+                        length=128)): GET.extra,
+            })
 
         obj = SimpleTask()
         # obligatory XKCD citation ;-)
@@ -428,11 +445,15 @@ class SqlStoreChecks(GenericStoreChecks):
         """
         # extend the db
         self.conn.execute('alter table `%s` add column extra varchar(256)'
-                       % self.store.table_name)
+                          % self.store.table_name)
 
         # re-build store, as the table list is read upon `__init__`
-        self.store = self._make_store(extra_fields={
-            sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): GET.foo.value,
+        self.store = self._make_store(
+            extra_fields={
+                sqlalchemy.Column(
+                    'extra',
+                    sqlalchemy.VARCHAR(
+                        length=128)): GET.foo.value,
             })
 
         # if this query does not error out, the column is defined
@@ -447,7 +468,8 @@ class SqlStoreChecks(GenericStoreChecks):
         id_ = self.store.save(obj)
 
         # check that the value has been saved
-        q = sql.select([self.store.t_store.c.extra]).where(self.store.t_store.c.id == id_)
+        q = sql.select([self.store.t_store.c.extra]).where(
+            self.store.t_store.c.id == id_)
 
         # Oops, apparently the store.save call will close our
         # connection too.
@@ -462,13 +484,20 @@ class SqlStoreChecks(GenericStoreChecks):
         """
         Test if `SqlStore` reads and writes extra columns.
         """
-        # re-build store with a non-existent extra column; should raise `AssertionError`
+        # re-build store with a non-existent extra column; should raise
+        # `AssertionError`
         raise SkipTest("Feature not supported anymore")
-        self._make_store(extra_fields={
-            sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): (lambda arg: arg.foo.value)})
+        self._make_store(
+            extra_fields={
+                sqlalchemy.Column(
+                    'extra',
+                    sqlalchemy.VARCHAR(
+                        length=128)): (
+                    lambda arg: arg.foo.value)})
 
 
 class ExtraSqlChecks(object):
+
     """
     `SqlStore` that depend on the setup of a non-default table.
     """
@@ -484,8 +513,14 @@ class ExtraSqlChecks(object):
         """
 
         # extend the db
-        self._make_store(self.db_url,
-                         extra_fields={sqlalchemy.Column('extra', sqlalchemy.VARCHAR(length=128)): (lambda arg: arg.foo.value)})
+        self._make_store(
+            self.db_url,
+            extra_fields={
+                sqlalchemy.Column(
+                    'extra',
+                    sqlalchemy.VARCHAR(
+                        length=128)): (
+                    lambda arg: arg.foo.value)})
 
         # if this query does not error out, the column is defined
         q = sql.select([sqlfunc.count(self.store.t_store.c.extra)]).distinct()
@@ -500,7 +535,8 @@ class ExtraSqlChecks(object):
         id_ = db.save(obj)
 
         # check that the value has been saved
-        q = sql.select([self.store.t_store.c.extra]).where(self.store.t_store.c.id == id_)
+        q = sql.select([self.store.t_store.c.extra]).where(
+            self.store.t_store.c.id == id_)
         # self.c.execute("select extra from %s where id=%d"
         #                % (self.store.table_name, id_))
         results = self.conn.execute(q)
@@ -510,6 +546,7 @@ class ExtraSqlChecks(object):
 
 
 class TestSqliteStore(SqlStoreChecks):
+
     """Test SQLite backend."""
 
     @classmethod
@@ -545,6 +582,7 @@ class TestSqliteStore(SqlStoreChecks):
 
 
 class TestSqliteStoreWithAlternateTable(TestSqliteStore):
+
     """Test SQLite backend with a different table name."""
 
     @classmethod

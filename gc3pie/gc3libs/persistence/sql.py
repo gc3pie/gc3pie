@@ -25,8 +25,6 @@ __version__ = '$Revision$'
 
 
 # stdlib imports
-import copy
-import cPickle as pickle
 import cStringIO as StringIO
 import os
 
@@ -34,14 +32,14 @@ import sqlalchemy as sqla
 import sqlalchemy.sql as sql
 
 # GC3Pie interface
-from gc3libs import Task, Run
+from gc3libs import Run
 import gc3libs.exceptions
 import gc3libs.utils
-from gc3libs.utils import same_docstring_as, getattr_nested
+from gc3libs.utils import same_docstring_as
 
 from gc3libs.persistence.idfactory import IdFactory
 from gc3libs.persistence.serialization import make_pickler, make_unpickler
-from gc3libs.persistence.store import Store, Persistable
+from gc3libs.persistence.store import Store
 
 
 def sql_next_id_factory(db):
@@ -72,6 +70,7 @@ def sql_next_id_factory(db):
 
 
 class IntId(int):
+
     def __new__(cls, prefix, seqno):
         return int.__new__(cls, seqno)
 
@@ -80,6 +79,7 @@ class IntId(int):
 
 
 class SqlStore(Store):
+
     """
     Save and load objects in a SQL db, using python's `pickle` module
     to serialize objects into a specific field.
@@ -221,11 +221,13 @@ class SqlStore(Store):
         for column in self.extra_fields:
             try:
                 fields[column] = self.extra_fields[column](obj)
-                gc3libs.log.debug("Writing value '%s' in column '%s' for object '%s'",
-                                  fields[column], column, obj)
-            except Exception, ex:
-                gc3libs.log.warning("Error saving DB column '%s' of object '%s': %s: %s",
-                                    column, obj, ex.__class__.__name__, str(ex))
+                gc3libs.log.debug(
+                    "Writing value '%s' in column '%s' for object '%s'",
+                    fields[column], column, obj)
+            except Exception as ex:
+                gc3libs.log.warning(
+                    "Error saving DB column '%s' of object '%s': %s: %s",
+                    column, obj, ex.__class__.__name__, str(ex))
 
         q = sql.select([self.t_store.c.id]).where(self.t_store.c.id == id_)
         conn = self._engine.connect()
@@ -236,7 +238,8 @@ class SqlStore(Store):
             conn.execute(q)
         else:
             # it's an update
-            q = self.t_store.update().where(self.t_store.c.id == id_).values(**fields)
+            q = self.t_store.update().where(
+                self.t_store.c.id == id_).values(**fields)
             conn.execute(q)
         obj.persistent_id = id_
         if hasattr(obj, 'changed'):
@@ -288,7 +291,8 @@ def make_sqlstore(url, *args, **extra_args):
     """
     assert isinstance(url, gc3libs.url.Url)
     if url.scheme == 'sqlite':
-        # create parent directories: avoid "OperationalError: unable to open database file None None"
+        # create parent directories: avoid "OperationalError: unable to open
+        # database file None None"
         dir = gc3libs.utils.dirname(url.path)
         if not os.path.exists(dir):
             os.makedirs(dir)
@@ -298,7 +302,7 @@ def make_sqlstore(url, *args, **extra_args):
     return SqlStore(str(url), *args, **extra_args)
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

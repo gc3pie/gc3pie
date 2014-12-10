@@ -25,12 +25,13 @@ __version__ = 'development version (SVN $Revision$)'
 import gc3libs
 from gc3libs.compat.functools import wraps
 import gc3libs.exceptions
-from gc3libs.quantity import Memory, kB, MB, GB
-from gc3libs.quantity import Duration, hours, minutes, seconds
+from gc3libs.quantity import Memory
+from gc3libs.quantity import Duration
 import gc3libs.utils
 
 
 class LRMS(gc3libs.utils.Struct):
+
     """Base class for interfacing with a computing resource.
 
     The following construction parameters are also set as instance
@@ -102,6 +103,7 @@ class LRMS(gc3libs.utils.Struct):
     ===================  =====
 
     """
+
     def __init__(self, name,
                  architecture, max_cores, max_cores_per_job,
                  max_memory_per_core, max_walltime, auth=None,
@@ -183,7 +185,8 @@ class LRMS(gc3libs.utils.Struct):
             "Abstract method `LRMS.get_resource_status()` called "
             "- this should have been defined in a derived class.")
 
-    def get_results(self, job, download_dir, overwrite=False, changed_only=True):
+    def get_results(self, job, download_dir,
+                    overwrite=False, changed_only=True):
         """
         Retrieve job output files into local directory `download_dir`.
 
@@ -301,7 +304,7 @@ class LRMS(gc3libs.utils.Struct):
             "- this should have been defined in a derived class.")
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

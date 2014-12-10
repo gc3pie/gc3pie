@@ -34,6 +34,7 @@ from gc3libs.quantity import GB, hours
 
 
 class Square(gc3libs.Application):
+
     """
     Square class, takes a filename containing a list of integer to be squared.
     writes an output containing the square of each of them
@@ -55,21 +56,27 @@ class Square(gc3libs.Application):
         # extra_args.setdefault('stderr', 'stderr.txt')
 
         gc3libs.Application.__init__(self,
-                                     arguments = ["/usr/bin/expr", str(x), "*", str(x)],
-                                     inputs = [],
-                                     outputs = [],
-                                     output_dir = None,
-                                     stdout = "stdout.txt",
-                                     stderr = "stderr.txt",
-                                     # set computational requirements. XXX this is mandatory, thus probably should become part of the Application's signature
-                                     requested_memory = 1*GB,
-                                     requested_cores = 1,
-                                     requested_walltime = 1*hours,
+                                     arguments=[
+                                         "/usr/bin/expr",
+                                         str(x),
+                                         "*",
+                                         str(x)],
+                                     inputs=[],
+                                     outputs=[],
+                                     output_dir=None,
+                                     stdout="stdout.txt",
+                                     stderr="stderr.txt",
+                                     # set computational requirements. XXX this
+                                     # is mandatory, thus probably should
+                                     # become part of the Application's
+                                     # signature
+                                     requested_memory=1 * GB,
+                                     requested_cores=1,
+                                     requested_walltime=1 * hours,
                                      )
 
 
-
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

@@ -29,14 +29,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
-import os
 import cPickle as pickle
-import sys
-
-import gc3libs
-import gc3libs.exceptions
-from gc3libs.utils import same_docstring_as
-import gc3libs.url
 
 from gc3libs.persistence.store import Persistable
 
@@ -57,6 +50,7 @@ def make_unpickler(driver, stream):
 
 
 class _PersistentIdToSave(object):
+
     """Used internally to provide `persistent_id` support to *cPickle*.
 
     This class is needed because:
@@ -67,9 +61,10 @@ class _PersistentIdToSave(object):
     Check the `documentation of Python's *pickle* module`__ for
     details on the differences between *pickle* and *cPickle* modules.
 
-    .. __: http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
+    .. __: http://goo.gl/CCknrT
 
     """
+
     def __init__(self, driver, root):
         self._root = root
         self._driver = driver
@@ -87,6 +82,7 @@ class _PersistentIdToSave(object):
 
 
 class _PersistentLoadExternalId(object):
+
     """Used internally to provide `persistent_id` support to *cPickle*.
 
     This class is needed because:
@@ -97,9 +93,10 @@ class _PersistentLoadExternalId(object):
     Check the `documentation of Python's *pickle* module`__ for
     details on the differences between *pickle* and *cPickle* modules.
 
-    .. __: http://docs.python.org/library/pickle.html#pickling-and-unpickling-external-objects
+    .. __: http://goo.gl/CCknrT
 
     """
+
     def __init__(self, driver):
         self._driver = driver
 

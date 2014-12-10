@@ -27,12 +27,12 @@ import os
 import tempfile
 
 # 3rd party imports
-from nose.tools import assert_equal, assert_false, assert_true, raises, set_trace
+from nose.tools import assert_equal
 
 # local imports
 import gc3libs.config
-from gc3libs.backends.openstack import OpenStackLrms
 import gc3libs.exceptions
+
 
 def _setup_config_file(confstr):
     (fd, name) = tempfile.mkstemp()
@@ -40,6 +40,7 @@ def _setup_config_file(confstr):
     f.write(confstr)
     f.close()
     return name
+
 
 def test_openstack_variables_are_optionals():
     tmpfile = _setup_config_file("""
@@ -79,7 +80,7 @@ security_group_rules=tcp:22:22:0.0.0.0/0, icmp:-1:-1:0.0.0.0/0
 """)
     cfgvalues = ['username', 'password', 'tenant_name', 'auth_url']
     for name in cfgvalues:
-        os.environ['OS_' + name.upper()] =  name
+        os.environ['OS_' + name.upper()] = name
 
     try:
         cfg = gc3libs.config.Configuration(tmpfile)
@@ -87,8 +88,8 @@ security_group_rules=tcp:22:22:0.0.0.0/0, icmp:-1:-1:0.0.0.0/0
         assert 'hobbes' in resources
 
         for name in cfgvalues:
-            assert hasattr(resources['hobbes'], 'os_'+name)
-            assert_equal(getattr(resources['hobbes'], 'os_'+name), name)
+            assert hasattr(resources['hobbes'], 'os_' + name)
+            assert_equal(getattr(resources['hobbes'], 'os_' + name), name)
     finally:
         os.remove(tmpfile)
 
@@ -96,7 +97,7 @@ security_group_rules=tcp:22:22:0.0.0.0/0, icmp:-1:-1:0.0.0.0/0
 class TestOpenStackLrms(object):
     pass
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import nose

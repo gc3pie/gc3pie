@@ -37,7 +37,7 @@ import gc3libs.exceptions
 import gc3libs.utils
 
 
-## test definitions
+# test definitions
 
 class TestYieldAtNext(object):
 
@@ -79,7 +79,7 @@ class TestYieldAtNext(object):
         g.next()
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import nose

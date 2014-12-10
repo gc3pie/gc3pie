@@ -39,10 +39,11 @@ import gc3libs.utils
 from gc3libs import Default
 
 
-## detect ARC version
+# detect ARC version
 
-# ARC's default packages install arclib into /opt/nordugrid/lib/pythonX.Y/site-packages;
-# add this anyway in case users did not set their PYTHONPATH correctly
+# ARC's default packages install arclib into
+# /opt/nordugrid/lib/pythonX.Y/site-packages; add this anyway in case
+# users did not set their PYTHONPATH correctly
 sys.path.append('/opt/nordugrid/lib/python%d.%d/site-packages'
                 % sys.version_info[:2])
 # this is where arc0 libraries are installed from release 11.05
@@ -57,21 +58,24 @@ arc_flavour = None
 try:
     import arclib
     arc_flavour = Default.ARC0_LRMS
-except ImportError, ex:
+except ImportError as ex:
     # gc3libs.log.warning("Could not import ARC0 libraries: %s", str(ex))
     try:
         import arc
         arc_flavour = Default.ARC1_LRMS
-    except ImportError, ex:
+    except ImportError as ex:
         # gc3libs.log.warning("Could not import ARC1 libraries: %s", str(ex))
         pass
 
 
-## random password generator
+# random password generator
 _random_password_letters = string.ascii_letters + string.digits
 
+
 def random_password(length=24):
-  return str.join('', [random.choice(_random_password_letters) for _ in xrange(length)])
+    return str.join('',
+                    [random.choice(_random_password_letters)
+                     for _ in xrange(length)])
 
 
 class GridAuth(object):
@@ -80,14 +84,16 @@ class GridAuth(object):
 
         # check which arc flavor is used
         if not arc_flavour:
-            gc3libs.log.error("Authentication could not be verified. Failed loading any ARC module")
+            gc3libs.log.error("Authentication could not be verified. "
+                              "Failed loading any ARC module")
             # XXX: should stop here ?
         else:
-            gc3libs.log.info("Authentication verified using module '%s'" % arc_flavour.upper())
+            gc3libs.log.info("Authentication verified using module "
+                             "'%s'" % arc_flavour.upper())
 
         try:
             # test validity
-            assert auth['type'] in ['voms-proxy', 'grid-proxy' ], (
+            assert auth['type'] in ['voms-proxy', 'grid-proxy'], (
                 "Configuration error: Unknown type: %s."
                 " Valid types are 'voms-proxy' or 'grid-proxy'"
                 % auth['type'])
@@ -98,13 +104,17 @@ class GridAuth(object):
 
             # read `remember_password` setting; default to 'False'
             if 'remember_password' in auth:
-                auth['remember_password'] = gc3libs.utils.string_to_boolean(auth['remember_password'])
+                auth['remember_password'] = \
+                    gc3libs.utils.string_to_boolean(
+                        auth['remember_password'])
             else:
                 auth['remember_password'] = False
 
             # read `private_cert_copy` setting; default to 'False'
             if 'private_credentials_copy' in auth:
-                auth['private_credentials_copy'] = gc3libs.utils.string_to_boolean(auth['private_credentials_copy'])
+                auth['private_credentials_copy'] = \
+                    gc3libs.utils.string_to_boolean(
+                        auth['private_credentials_copy'])
             else:
                 auth['private_credentials_copy'] = False
             if auth['private_credentials_copy']:
@@ -115,8 +125,8 @@ class GridAuth(object):
                     # reset `private_credentials_copy` as it's useless
                     # w/out the copy directory
                     gc3libs.log.warning(
-                        "auth/%s: 'private_credentials_copy' is set,"
-                        " but no value for 'private_copy_directory' was passed:"
+                        "auth/%s: 'private_credentials_copy' is set, "
+                        "but no value for 'private_copy_directory' was passed:"
                         " the setting is ineffective"
                         " and no private copy will be kept.", auth['name'])
                     auth['private_credentials_copy'] = False
@@ -135,14 +145,15 @@ class GridAuth(object):
 
             self.user_cert_valid = False
             self.proxy_valid = False
-            self._expiration_time = 0 # initially set expiration time way back in the past
+            self._expiration_time = 0  # initially set expiration time
+            # way back in the past
             self._passwd = None
             self._keypass = None
             self.__dict__.update(auth)
 
-        except AssertionError, x:
-            raise gc3libs.exceptions.ConfigurationError('Erroneous configuration parameter: %s' % str(x))
-
+        except AssertionError as x:
+            raise gc3libs.exceptions.ConfigurationError(
+                'Erroneous configuration parameter: %s' % str(x))
 
     def check(self):
         gc3libs.log.debug('Checking auth: GridAuth')
@@ -168,8 +179,9 @@ class GridAuth(object):
 
         if self.private_credentials_copy and self._keypass is None:
             gc3libs.log.warning(
-                "Need to ask password anyway"
-                " because of 'private_credentials_copy=yes' in the config file.")
+                "Need to ask password anyway "
+                "because of 'private_credentials_copy=yes' in the config "
+                "file.")
             # force cert renewal to store password
             self.user_cert_valid = False
         else:
@@ -193,30 +205,36 @@ class GridAuth(object):
 
         return (self.user_cert_valid and self.proxy_valid)
 
-
     def enable(self):
         # User certificate
         new_cert = False
         if not self.user_cert_valid:
-            # Obtain username? Depends on type + cert_renewal_method combination.
+            # Obtain username? Depends on type + cert_renewal_method
+            # combination.
             if self.cert_renewal_method == 'slcs':
-                # Check if aai_username is already set. If not, ask interactively
+                # Check if aai_username is already set. If not, ask
+                # interactively
                 try:
                     self.aai_username
                 except AttributeError:
-                    self.aai_username = raw_input('Insert SWITCHaai username: ')
+                    self.aai_username = raw_input(
+                        'Insert SWITCHaai username: ')
 
                 # Check if idp is already set.  If not, ask interactively
                 try:
                     self.idp
                 except AttributeError:
-                    self.idp = raw_input('Insert SWITCHaai Identity Provider (use the command `slcs-info` to list them): ')
+                    self.idp = raw_input(
+                        'Insert SWITCHaai Identity Provider '
+                        '(use the command `slcs-info` to list them): ')
 
             if self._passwd is not None:
                 shib_passwd = self._passwd
             else:
                 # ask passwd interactively
-                shib_passwd = getpass.getpass('Insert SWITCHaai password for user %s:' % self.aai_username)
+                shib_passwd = getpass.getpass(
+                    'Insert SWITCHaai password for user '
+                    '%s:' % self.aai_username)
 
             if self.private_credentials_copy:
                 key_passwd = random_password()
@@ -232,19 +250,22 @@ class GridAuth(object):
 
         # renew proxy if cert has changed or proxy expired
         if new_cert or not self.proxy_valid:
-            # have to renew proxy, check that we have all needed info and passwd
+            # have to renew proxy, check that we have all needed info
+            # and passwd
             if self.type == 'voms-proxy':
                 # Check if vo is already set.  If not, ask interactively
                 try:
                     self.vo
                 except AttributeError:
-                    self.vo = raw_input('Insert VO name: ' )
+                    self.vo = raw_input('Insert VO name: ')
 
             if self._keypass is not None:
-                # `private_credentials_copy` in effect, use the stored random passwd
+                # `private_credentials_copy` in effect, use the stored
+                # random passwd
                 keypass = self._keypass
             elif self._passwd is not None:
-                # `remember_password` in effect, use the stored SWITCHaai passwd
+                # `remember_password` in effect, use the stored
+                # SWITCHaai passwd
                 keypass = self._passwd
             else:
                 # ask interactively
@@ -274,32 +295,33 @@ class GridAuth(object):
                                         "valid", "invalid")))
         return True
 
-
     def renew_cert(self, shib_passwd, key_passwd):
         if self.cert_renewal_method == 'manual':
             raise gc3libs.exceptions.UnrecoverableAuthError(
-                "User certificate expired and renewal set to 'manual', please renew it.")
+                "User certificate expired and renewal set to 'manual', "
+                "please renew it.")
 
         try:
             cmd = [
                 'slcs-init',
-                '--idp',      self.idp,
-                '--user',     self.aai_username,
-                ]
+                '--idp', self.idp,
+                '--user', self.aai_username,
+            ]
             if self.private_credentials_copy:
                 cmd.extend(['--storedir', self.private_copy_directory])
             p = subprocess.Popen(cmd,
-                                 stdin= subprocess.PIPE,
+                                 stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
             (stdout, stderr) = p.communicate('%s\n%s\n' %
                                              (shib_passwd, key_passwd))
 
-        except OSError, x:
+        except OSError as x:
             if x.errno in [errno.ENOENT, errno.EPERM, errno.EACCES]:
                 raise gc3libs.exceptions.UnrecoverableAuthError(
-                    "Failed running '%s': %s."
-                    " Please verify that it is available on your $PATH and that it actually works."
+                    "Failed running '%s': %s. "
+                    "Please verify that it is available on your $PATH and "
+                    "that it actually works."
                     % (str.join(' ', cmd), str(x)))
             else:
                 # other error; presume it's wrong password or a
@@ -307,14 +329,15 @@ class GridAuth(object):
                 raise gc3libs.exceptions.RecoverableAuthError(
                     "Failed running '%s': %s." % (str.join(' ', cmd), str(x)))
 
-        except Exception, ex:
+        except Exception as ex:
             # Intercept any other Error that subprocess may raise
             gc3libs.log.debug("Unexpected error in GridAuth: %s: %s"
                               % (ex.__class__.__name__, str(ex)))
             raise gc3libs.exceptions.UnrecoverableAuthError(
                 "Error renewing SLCS certificate: %s" % str(ex))
 
-        # `slcs-init` exited with error, assume transient condition (wrong password or so).
+        # `slcs-init` exited with error, assume transient condition
+        # (wrong password or so).
         if p.returncode != 0:
             raise gc3libs.exceptions.RecoverableAuthError(
                 "Error running '%s': %s."
@@ -323,19 +346,21 @@ class GridAuth(object):
 
         gc3libs.log.info('Created new SLCS certificate.')
         if self.private_credentials_copy:
-            os.environ['X509_USER_CERT'] = os.path.join(self.private_copy_directory, 'usercert.pem')
-            os.environ['X509_USER_KEY'] = os.path.join(self.private_copy_directory, 'userkey.pem')
+            os.environ['X509_USER_CERT'] = os.path.join(
+                self.private_copy_directory, 'usercert.pem')
+            os.environ['X509_USER_KEY'] = os.path.join(
+                self.private_copy_directory, 'userkey.pem')
         return True
 
-
     def renew_proxy(self, passwd, _arc_flavour=None):
-        global arc_flavour # module-level param
+        global arc_flavour  # module-level param
         if _arc_flavour is None:
             _arc_flavour = arc_flavour
 
         if _arc_flavour == Default.ARC1_LRMS:
             gc3libs.log.debug(
-                "Proxy support in ARC1 libraries is not yet functional. Falling back to ARC0 method.")
+                "Proxy support in ARC1 libraries is not yet functional. "
+                "Falling back to ARC0 method.")
             return self.renew_proxy(passwd, Default.ARC0_LRMS)
 
         if self.type == 'voms-proxy':
@@ -345,46 +370,58 @@ class GridAuth(object):
             # takes the recorded self.password into account
             gc3libs.log.debug("Executing voms-proxy-destroy ...")
             try:
-                p = subprocess.Popen('voms-proxy-destroy', stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                p = subprocess.Popen('voms-proxy-destroy',
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
                 (stdout, stderr) = p.communicate()
-            except Exception, x:
-                gc3libs.log.error("Got the following error from 'voms-proxy-destroy',"
-                                  " but I'm ignoring it:"
-                                  " %s: %s" % (x.__class__,x.message))
+            except Exception as x:
+                gc3libs.log.error(
+                    "Got the following error from 'voms-proxy-destroy',"
+                    " but I'm ignoring it:"
+                    " %s: %s" % (x.__class__, x.message))
 
             # Try renew voms credential; another interactive command
-            gc3libs.log.debug("Trying to get a new proxy by 'voms-proxy-init' ...")
-            cmd = ['voms-proxy-init', '-valid', '24:00', '-rfc', '-q', '-pwstdin']
+            gc3libs.log.debug(
+                "Trying to get a new proxy by 'voms-proxy-init' ...")
+            cmd = ['voms-proxy-init', '-valid', '24:00',
+                   '-rfc', '-q', '-pwstdin']
             if self.vo is not None:
-                cmd.extend(['-voms', self.vo ])
+                cmd.extend(['-voms', self.vo])
 
         elif self.type == 'grid-proxy':
             assert _arc_flavour == Default.ARC0_LRMS
-            gc3libs.log.debug("Trying to get a new proxy by 'voms-proxy-init' ...")
+            gc3libs.log.debug(
+                "Trying to get a new proxy by 'voms-proxy-init' ...")
             cmd = ['grid-proxy-init', '-valid', '24:00', '-q', '-pwstdin']
 
         if self.private_credentials_copy:
             # XXX: does `grid-proxy-init` support `-out`? do we care?
-            cmd.extend(['-out', os.path.join(self.private_copy_directory, 'proxy.pem')])
+            cmd.extend(['-out', os.path.join(self.private_copy_directory,
+                                             'proxy.pem')])
 
         try:
-            p1 = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            p1 = subprocess.Popen(cmd,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.STDOUT)
             (stdout, stderr) = p1.communicate("%s\n" % passwd)
 
             if p1.returncode != 0:
-                # Cannot use voms-proxy-init return code as validation of the command.
-                # just report the warning
-                gc3libs.log.warning("Command '%s' exited with code %d: %s"
-                                    % (str.join(' ', cmd), p1.returncode, stdout))
+                # Cannot use voms-proxy-init return code as validation
+                # of the command.  just report the warning
+                gc3libs.log.warning(
+                    "Command '%s' exited with code %d: %s"
+                    % (str.join(' ', cmd), p1.returncode, stdout))
 
             if self.private_credentials_copy:
-                os.environ['X509_USER_PROXY'] = os.path.join(self.private_copy_directory, 'proxy.pem')
+                os.environ['X509_USER_PROXY'] = os.path.join(
+                    self.private_copy_directory, 'proxy.pem')
 
-        except ValueError, x:
+        except ValueError as x:
             # FIXME: is this more a programming error ?
             raise gc3libs.exceptions.RecoverableAuthError(str(x))
 
-        except OSError, x:
+        except OSError as x:
             if x.errno in [errno.ENOENT, errno.EPERM, errno.EACCES]:
                 raise gc3libs.exceptions.UnrecoverableAuthError(
                     "Failed running '%s': %s."
@@ -393,9 +430,10 @@ class GridAuth(object):
                     % (str.join(' ', cmd), str(x)))
             else:
                 raise gc3libs.exceptions.UnrecoverableAuthError(
-                    "Unrecoverable error in enabling Grid authentication: %s" % str(x))
+                    "Unrecoverable error in enabling Grid authentication:"
+                    " %s" % str(x))
 
-        except Exception, ex:
+        except Exception as ex:
             # Intercept any other Error that subprocess may raise
             gc3libs.log.debug("Unhandled error in GridAuth: %s: %s"
                               % (ex.__class__.__name__, str(ex)))
@@ -405,7 +443,7 @@ class GridAuth(object):
 
     @staticmethod
     def get_end_time(cert_type):
-        global arc_flavour # module-level constant
+        global arc_flavour  # module-level constant
 
         if arc_flavour == Default.ARC0_LRMS:
             # use ARC libraries
@@ -415,7 +453,8 @@ class GridAuth(object):
                 elif cert_type == "usercert":
                     cert = arclib.Certificate(arclib.USERCERT)
                 else:
-                    raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
+                    raise gc3libs.exceptions.UnrecoverableAuthError(
+                        "Unsupported cert type '%s'" % cert_type)
                 expires = cert.Expires().GetTime()
             except arclib.CertificateError:
                 # ARClib cannot read/access cert, consider it expired
@@ -428,11 +467,14 @@ class GridAuth(object):
                 userconfig = arc.UserConfig()
 
                 if cert_type == "proxy":
-                    cert = arc.Credential(userconfig.ProxyPath(), "", "", "")
+                    cert = arc.Credential(
+                        userconfig.ProxyPath(), "", "", "")
                 elif cert_type == "usercert":
-                    cert = arc.Credential(userconfig.CertificatePath(), "", "", "")
+                    cert = arc.Credential(
+                        userconfig.CertificatePath(), "", "", "")
                 else:
-                    raise UnrecoverableAuthError("Unsupported cert type '%s'" % cert_type)
+                    raise gc3libs.exceptions.UnrecoverableAuthError(
+                        "Unsupported cert type '%s'" % cert_type)
                 expires = cert.GetEndTime().GetTime()
             except arc.CredentialError:
                 # ARClib cannot read/access cert, consider it expired
@@ -440,26 +482,29 @@ class GridAuth(object):
                 return 0
 
         else:
-            # XXX: should this be `AssertionError` instead? (it's a programming bug...)
-            raise UnrecoverableAuthError("Wrong ARC flavour specified '%s'" % str(arc))
+            # XXX: should this be `AssertionError` instead? (it's a
+            # programming bug...)
+            raise gc3libs.exceptions.UnrecoverableAuthError(
+                "Wrong ARC flavour specified '%s'" % str(arc))
 
         if expires < time.time():
             gc3libs.log.info("%s is expired." % cert_type)
             return 0
         else:
-            gc3libs.log.info("%s valid until %s.", cert_type,
-                             time.strftime("%a, %d %b %Y %H:%M:%S (local time)",
-                                           time.localtime(expires)))
+            gc3libs.log.info(
+                "%s valid until %s.", cert_type,
+                time.strftime("%a, %d %b %Y %H:%M:%S (local time)",
+                              time.localtime(expires)))
             return expires
 
     @staticmethod
     def is_voms():
-        global arc_flavour # module-level constant
+        global arc_flavour  # module-level constant
 
         if arc_flavour == Default.ARC0_LRMS:
             try:
                 cert = arclib.Certificate(arclib.PROXY)
-            except Exception, ex:
+            except Exception as ex:
                 if gc3libs.error_ignored(
                         # context:
                         # - module
@@ -509,27 +554,31 @@ class GridAuth(object):
                 vomsdir = os.getenv("X509_VOMS_DIR")
                 if not vomsdir:
                     vomsdir = gc3libs.Default.VOMS_DIR
-                arc.parseVOMSAC(cert, cadir, vomsdir, voms_trust_dn, voms_attributes, True, True)
+                arc.parseVOMSAC(cert, cadir, vomsdir, voms_trust_dn,
+                                voms_attributes, True, True)
                 if voms_attributes.size() > 0:
                     # XXX: for the moment, check only the first entry
                     voms_attribute = voms_attributes[0]
-                    if hasattr(voms_attribute,'voname'):
+                    if hasattr(voms_attribute, 'voname'):
                         # XXX: Assume this is enough ?
-                        gc3libs.log.info("Found valid voms proxy of VOname '%s'" % voms_attribute.voname)
+                        gc3libs.log.info("Found valid voms proxy of VOname "
+                                         "'%s'" % voms_attribute.voname)
                         return True
                 else:
                     # No attributes found
-                    gc3libs.log.error("No voms attributes found. Is it a grid-proxy ?")
+                    gc3libs.log.error(
+                        "No voms attributes found. Is it a grid-proxy ?")
                     return False
-            except Exception, ex:
-                gc3libs.log.error("Exception in ARC1 libraries: %s %s" % (ex.__class__,ex.message))
+            except Exception as ex:
+                gc3libs.log.error("Exception in ARC1 libraries: %s "
+                                  "%s" % (ex.__class__, ex.message))
                 return False
 
 Auth.register('grid-proxy', GridAuth)
 Auth.register('voms-proxy', GridAuth)
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

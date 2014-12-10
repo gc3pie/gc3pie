@@ -28,9 +28,7 @@ import sys
 
 import itertools
 import os
-import shutil
 import time
-import tempfile
 
 sys.path.append('/usr/share/pyshared')
 try:
@@ -42,12 +40,14 @@ except ImportError:
 from gc3libs import log, Run
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
-from gc3libs.quantity import kB, GB, MB, hours, minutes, seconds
-from gc3libs.utils import *
+from gc3libs.quantity import kB, MB, seconds
+from gc3libs.utils import (cache_for, same_docstring_as,
+                           movetree, tempdir, ifelse)
 import gc3libs.url
 
 
 class Arc1Lrms(LRMS):
+
     """
     Manage jobs through ARC's ``libarcclient``.
     """
@@ -89,9 +89,10 @@ class Arc1Lrms(LRMS):
                 try:
                     resource_url = gc3libs.url.Url(arc_ldap)
                     self.frontend = resource_url.hostname
-                except Exception, err:
+                except Exception as err:
                     raise gc3libs.exceptions.ConfigurationError(
-                        "Configuration error: resource '%s' has no valid 'arc_ldap' setting: %s: %s"
+                        "Configuration error: resource '%s' has no valid"
+                        " 'arc_ldap' setting: %s: %s"
                         % (name, err.__class__.__name__, err.message))
             else:
                 self.frontend = None
@@ -107,20 +108,25 @@ class Arc1Lrms(LRMS):
         gc3libs.log.debug("Adding ARC1 service %s for resource '%s' ...",
                           self.arc_ldap, self.name)
 
-        service, arc_version, ldap_host_endpoint = self.arc_ldap.split(':',2)
+        service, arc_version, ldap_host_endpoint = self.arc_ldap.split(':', 2)
         if service == "INDEX":
             # add index service
-            if not self._usercfg.AddServices(["%s:%s" % (arc_version,ldap_host_endpoint)], arc.INDEX):
-                gc3libs.log.error("Could not add INDEX service '%s'", ldap_host_endpoint)
+            if not self._usercfg.AddServices(["%s:%s" % (
+                    arc_version, ldap_host_endpoint)], arc.INDEX):
+                gc3libs.log.error(
+                    "Could not add INDEX service '%s'", ldap_host_endpoint)
         elif service == "COMPUTING":
             # add computing service
-            if not self._usercfg.AddServices(["%s:%s" % (arc_version, ldap_host_endpoint)], arc.COMPUTING):
+            if not self._usercfg.AddServices(["%s:%s" % (arc_version,
+                                                         ldap_host_endpoint)],
+                                             arc.COMPUTING):
                 gc3libs.log.error(
-                    "Could not add COMPUTING service '%s:%s'", arc_version, ldap_host_endpoint)
+                    "Could not add COMPUTING service '%s:%s'",
+                    arc_version, ldap_host_endpoint)
         else:
             gc3libs.log.error(
-                "Unknown ARC Service type '%s'. Valid prefixes are: 'INDEX' and 'COMPUTING'.",
-                self.arc_ldap)
+                "Unknown ARC Service type '%s'. Valid prefixes are: 'INDEX'"
+                " and 'COMPUTING'.", self.arc_ldap)
 
         # XXX: have to check whether and how to handle the arc
         # logging: shall we simply disable it?  some internal logging
@@ -134,22 +140,26 @@ class Arc1Lrms(LRMS):
         # DEBUG: use the following to enable fully verbose ARC1 logging:
         # arc_rootlogger = arc.Logger_getRootLogger()
         # arc_logger = arc.Logger(arc_rootlogger, self.name)
-        # arc_logger_dest = arc.LogStream(sys.stderr) # or open(os.devnull, 'w')
-        # arc_rootlogger.addDestination(arc_logger_dest)
-        # arc_rootlogger.setThreshold(arc.DEBUG) # or .VERBOSE, .INFO, .WARNING, .ERROR
 
-        # # Initialize the required ARC1 components
+        # arc_logger_dest = arc.LogStream(sys.stderr)  # or
+        # open(os.devnull,
+        # 'w')
+
+        # arc_rootlogger.addDestination(arc_logger_dest)
+        # arc_rootlogger.setThreshold(arc.DEBUG)  # or .VERBOSE, .INFO,
+        # .WARNING, .ERROR
+
+        # Initialize the required ARC1 components
         # log.debug('Invoking arc.JobSupervisor')
         # self._jobsupervisor = arc.JobSupervisor(self._usercfg, [])
-        # # XXX: we need to get what 'middleware' each controller can control
+        # XXX: we need to get what 'middleware' each controller can control
         # log.debug('Invoking arc.JobSupervisor.GetJobControllers')
         # self._controllers = self._jobsupervisor.GetJobControllers()
-        # # XXX: can we also create the target ?
+        # XXX: can we also create the target ?
         # log.debug('Invoking arc.TargetGenerator')
         # self._target_generator = arc.TargetGenerator(self._usercfg, 0)
 
         gc3libs.log.info("ARC1 resource '%s' init: OK", self.name)
-
 
     def _get_JobSupervisor_and_JobController(self):
         # Initialize the required ARC1 components
@@ -162,23 +172,23 @@ class Arc1Lrms(LRMS):
         log.debug('Invoking arc.TargetGenerator')
         self._target_generator = arc.TargetGenerator(self._usercfg, 0)
 
-
-
-
     @same_docstring_as(LRMS.cancel_job)
     @LRMS.authenticated
     def cancel_job(self, app):
-        controller, job = self._get_job_and_controller(app.execution.lrms_jobid)
+        controller, job = self._get_job_and_controller(
+            app.execution.lrms_jobid)
         try:
             log.debug("Calling arc.JobController.Cancel(job)")
             if not controller.CancelJob(job):
-                raise gc3libs.exceptions.LRMSError('arc.JobController.Cancel returned False')
-        except Exception, ex:
-            gc3libs.log.error('Failed while killing job. Error type %s, message %s' % (ex.__class__,str(ex)))
-            raise gc3libs.exceptions.LRMSError('Failed while killing job. Error type %s, message %s' % (ex.__class__,str(ex)))
-
-
-
+                raise gc3libs.exceptions.LRMSError(
+                    'arc.JobController.Cancel returned False')
+        except Exception as ex:
+            gc3libs.log.error(
+                'Failed while killing job. Error type %s, message %s'
+                % (ex.__class__, str(ex)))
+            raise gc3libs.exceptions.LRMSError(
+                'Failed while killing job. Error type %s, message %s'
+                % (ex.__class__, str(ex)))
 
     # ARC refreshes the InfoSys every 30 seconds by default;
     # there's no point in querying it more often than this...
@@ -189,7 +199,9 @@ class Arc1Lrms(LRMS):
         """
         # tg = arc.TargetGenerator(self._usercfg, 1)
         # return tg.FoundTargets()
-        # This methodd should spawn the ldapsearch to update the ExecutionTager information
+        #
+        # This methodd should spawn the ldapsearch to update the
+        # ExecutionTager information
         log.debug('Calling arc.TargetGenerator.RetrieveExecutionTargets')
 
         self._get_JobSupervisor_and_JobController()
@@ -202,7 +214,6 @@ class Arc1Lrms(LRMS):
         # for target in execution_targets:
         #     self._execution_targets{target.GridFlavour} = target
         # return self._execution_targets
-
 
     # ARC refreshes the InfoSys every 30 seconds by default;
     # there's no point in querying it more often than this...
@@ -221,14 +232,12 @@ class Arc1Lrms(LRMS):
             log.debug('... controller returned %d jobs' % len(c.GetJobs()))
         return itertools.chain(* [c.GetJobs() for c in self._controllers])
 
-
     def _get_job(self, jobid):
         """Return the ARC `Job` object given its ID (connection URL)."""
         for job in self._iterjobs():
             if job.JobID.str() == jobid:
                 return job
         raise IndexError("No job with ID '%s'" % jobid)
-
 
     def _get_job_and_controller(self, jobid):
         """
@@ -245,14 +254,14 @@ class Arc1Lrms(LRMS):
         self._iterjobs()
 
         for c in self._controllers:
-            log.debug("Calling JobController.GetJobs in get_job_and_controller")
+            log.debug(
+                "Calling JobController.GetJobs in get_job_and_controller")
             jl = c.GetJobs()
             for j in jl:
                 if j.JobID.str() == jobid:
                     # found, clean remote job sessiondir
                     return (c, j)
         raise KeyError("No job found with job ID '%s'" % jobid)
-
 
     @same_docstring_as(LRMS.submit_job)
     @LRMS.authenticated
@@ -267,8 +276,7 @@ class Arc1Lrms(LRMS):
         jobdesclang = "nordugrid:xrsl"
         log.debug("Calling arc.JobDescription.Parse")
         arc.JobDescription.Parse(jd, xrsl, jobdesclang)
-        # JobDescription::Parse(const std::string&, std::list<JobDescription>&, const std::string&, const std::string&) method instead.
-
+        # JobDescription::Parse(const std::string&, std::list<JobDescription>&, const std::string&, const std::string&) method instead.  # noqa
 
         # perform brokering
         log.debug("Calling arc.BrokerLoader")
@@ -290,8 +298,9 @@ class Arc1Lrms(LRMS):
             submitted = target.Submit(self._usercfg, jd, j)
             if not submitted:
                 continue
-            # XXX: this is necessary as the other component of arc library seems to refer to the job.xml file
-            # hopefully will be fixed soon
+            # XXX: this is necessary as the other component of arc
+            # library seems to refer to the job.xml file hopefully
+            # will be fixed soon
             j.WriteJobsToFile(gc3libs.Default.ARC_JOBLIST_LOCATION, [j])
             # save job ID for future reference
             job.lrms_jobid = j.JobID.str()
@@ -301,7 +310,6 @@ class Arc1Lrms(LRMS):
 
         if not submitted and tried == 0:
             raise gc3libs.exceptions.LRMSSubmitError('No ARC targets found')
-
 
     @staticmethod
     def _map_arc1_status_to_gc3pie_state(status):
@@ -349,7 +357,6 @@ class Arc1Lrms(LRMS):
             raise gc3libs.exceptions.UnknownJobState(
                 "Unknown ARC1 job state '%s'" % status.GetGeneralState())
 
-
     # ARC refreshes the InfoSys every 30 seconds by default;
     # there's no point in querying it more often than this...
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
@@ -387,35 +394,39 @@ class Arc1Lrms(LRMS):
         # meaningful exceptions
         try:
             arc_job = self._get_job(job.lrms_jobid)
-        except AttributeError, ex:
+        except AttributeError as ex:
             # `job` has no `lrms_jobid`: object is invalid
             raise gc3libs.exceptions.InvalidArgument(
                 "Job object is invalid: %s" % str(ex))
-        except IndexError, ex:
+        except IndexError as ex:
             # No job found.  This could be caused by the
             # information system not yet updated with the information
             # of the newly submitted job.
             if not hasattr(job, 'state_last_changed'):
-                # XXX: compatibility with running sessions, remove before release
+                # XXX: compatibility with running sessions, remove
+                # before release
                 job.state_last_changed = time.time()
             if not hasattr(job, '_arc1_state_last_checked'):
-                # XXX: compatibility with running sessions, remove before release
+                # XXX: compatibility with running sessions, remove
+                # before release
                 job._arc1_state_last_checked = time.time()
             now = time.time()
             if (job.state == Run.State.SUBMITTED
-                and now - job.state_last_changed < self.lost_job_timeout):
+                    and now - job.state_last_changed < self.lost_job_timeout):
                 # assume the job was recently submitted, hence the
                 # information system knows nothing about it; just
                 # ignore the error and return the object unchanged
                 return job.state
-            elif (job.state in [ Run.State.SUBMITTED, Run.State.RUNNING ]
-                  and now - job._arc1_state_last_checked < self.lost_job_timeout):
+            elif (job.state in [Run.State.SUBMITTED, Run.State.RUNNING]
+                  and now - job._arc1_state_last_checked <
+                  self.lost_job_timeout):
                 # assume transient information system failure;
                 # ignore the error and return object unchanged
                 return job.state
             else:
-                raise  gc3libs.exceptions.UnknownJob(
-                    "No job found corresponding to the ID '%s'" % job.lrms_jobid)
+                raise gc3libs.exceptions.UnknownJob(
+                    "No job found corresponding to the ID '%s'"
+                    % job.lrms_jobid)
         job._arc1_state_last_checked = time.time()
 
         # update status
@@ -423,8 +434,10 @@ class Arc1Lrms(LRMS):
         log.debug("ARC1 job status '%s' mapped to GC3Pie state '%s'",
                   arc_job.State.GetGeneralState(), state)
         if arc_job.ExitCode != -1:
-            job.returncode = gc3libs.Run.shellexit_to_returncode(arc_job.ExitCode)
-        elif state in [Run.State.TERMINATING, Run.State.TERMINATING] and job.returncode is None:
+            job.returncode = gc3libs.Run.shellexit_to_returncode(
+                arc_job.ExitCode)
+        elif state in [Run.State.TERMINATING, Run.State.TERMINATING] \
+                and job.returncode is None:
             # XXX: it seems that ARC does not report the job exit code
             # (at least in some cases); let's make one up based on
             # some crude heuristics
@@ -435,7 +448,8 @@ class Arc1Lrms(LRMS):
             elif (arc_job.RequestedTotalWallTime is not None
                   and arc_job.RequestedTotalWallTime.GetPeriod() != -1
                   and arc_job.UsedTotalWallTime.GetPeriod() != -1
-                  and arc_job.UsedTotalWallTime.GetPeriod() > arc_job.RequestedTotalWallTime.GetPeriod()):
+                  and arc_job.UsedTotalWallTime.GetPeriod() >
+                  arc_job.RequestedTotalWallTime.GetPeriod()):
                 job.log("Job exceeded requested wall-clock time (%d s),"
                         " killed by remote batch system"
                         % arc_job.RequestedTotalWallTime.GetPeriod())
@@ -443,7 +457,8 @@ class Arc1Lrms(LRMS):
             elif (arc_job.RequestedTotalCPUTime is not None
                   and arc_job.RequestedTotalCPUTime.GetPeriod() != -1
                   and arc_job.UsedTotalCPUTime.GetPeriod() != -1
-                  and arc_job.UsedTotalCPUTime.GetPeriod() > arc_job.RequestedTotalCPUTime.GetPeriod()):
+                  and arc_job.UsedTotalCPUTime.GetPeriod() >
+                  arc_job.RequestedTotalCPUTime.GetPeriod()):
                 job.log("Job exceeded requested CPU time (%d s),"
                         " killed by remote batch system"
                         % arc_job.RequestedTotalWallTime.GetPeriod())
@@ -451,10 +466,12 @@ class Arc1Lrms(LRMS):
             # note: arc_job.used_memory is in KiB (!)
             elif (app.requested_memory is not None
                   and arc_job.UsedMainMemory > -1
-                  and arc_job.UsedMainMemory > app.requested_memory.amount(kB)):
+                  and arc_job.UsedMainMemory >
+                  app.requested_memory.amount(kB)):
                 job.log("Job used more memory (%d MB) than requested (%s),"
                         " killed by remote batch system"
-                        % (arc_job.UsedMainMemory / 1024, app.requested_memory.amount(MB)))
+                        % (arc_job.UsedMainMemory / 1024,
+                           app.requested_memory.amount(MB)))
                 job.returncode = (Run.Signals.RemoteError, -1)
             else:
                 # presume everything went well...
@@ -462,15 +479,16 @@ class Arc1Lrms(LRMS):
             # pass
 
         # common job reporting info, see Issue #78 and `Task.update_state`
-        job.duration = gc3libs.utils.ifelse(arc_job.UsedTotalWallTime.GetPeriod() != -1,
-                                            arc_job.UsedTotalWallTime.GetPeriod() * seconds,
-                                            None)
-        job.max_used_memory = gc3libs.utils.ifelse(arc_job.UsedMainMemory != -1,
-                                                   arc_job.UsedMainMemory * kB,
-                                                   None)
-        job.used_cpu_time = gc3libs.utils.ifelse(arc_job.UsedTotalCPUTime.GetPeriod() != -1,
-                                                 arc_job.UsedTotalCPUTime.GetPeriod() * seconds,
-                                                 None)
+        job.duration = ifelse(arc_job.UsedTotalWallTime.GetPeriod() != -1,
+                              arc_job.UsedTotalWallTime.GetPeriod() * seconds,
+                              None)
+        job.max_used_memory = ifelse(arc_job.UsedMainMemory != -1,
+                                     arc_job.UsedMainMemory * kB,
+                                     None)
+        job.used_cpu_time = ifelse(
+            arc_job.UsedTotalCPUTime.GetPeriod() != -1,
+            arc_job.UsedTotalCPUTime.GetPeriod() * seconds,
+            None)
 
         # additional info
         job.arc_original_exitcode = arc_job.ExitCode
@@ -479,10 +497,10 @@ class Arc1Lrms(LRMS):
         job.state = state
         return state
 
-
     @same_docstring_as(LRMS.get_results)
     @LRMS.authenticated
-    def get_results(self, app, download_dir, overwrite=False, changed_only=True):
+    def get_results(self, app, download_dir,
+                    overwrite=False, changed_only=True):
         jobid = app.execution.lrms_jobid
 
         # XXX: can raise encoding/decoding error if `download_dir`
@@ -502,7 +520,7 @@ class Arc1Lrms(LRMS):
                       app, tmp_download_dir)
 
             # Get a list of downloadable files
-            download_file_list = c.GetDownloadFiles(j.JobID);
+            download_file_list = c.GetDownloadFiles(j.JobID)
 
             source_url = arc.URL(j.JobID.str())
             destination_url = arc.URL(tmp_download_dir)
@@ -512,17 +530,19 @@ class Arc1Lrms(LRMS):
 
             errors = 0
             for remote_file in download_file_list:
-                source_url.ChangePath(os.path.join(source_path_prefix,remote_file))
-                destination_url.ChangePath(os.path.join(destination_path_prefix,remote_file))
-                if not c.ARCCopyFile(source_url,destination_url):
+                source_url.ChangePath(
+                    os.path.join(source_path_prefix, remote_file))
+                destination_url.ChangePath(
+                    os.path.join(destination_path_prefix, remote_file))
+                if not c.ARCCopyFile(source_url, destination_url):
                     log.warning("Failed downloading '%s' to '%s'",
                                 source_url.str(), destination_url.str())
                     errors += 1
             if errors > 0:
                 raise gc3libs.exceptions.UnrecoverableDataStagingError(
                     "Failed downloading remote folder of job '%s' into '%s'."
-                    " There were %d errors, reported at the WARNING level in log files."
-                    % (jobid, download_dir, errors))
+                    " There were %d errors, reported at the WARNING level in"
+                    " log files." % (jobid, download_dir, errors))
 
             log.debug("Moving %s output into download location '%s' ...",
                       app, download_dir)
@@ -531,21 +551,22 @@ class Arc1Lrms(LRMS):
             # all done, update application
             app.execution.download_dir = download_dir
 
-
     @same_docstring_as(LRMS.free)
     @LRMS.authenticated
     def free(self, app):
-        controller, job = self._get_job_and_controller(app.execution.lrms_jobid)
+        controller, job = self._get_job_and_controller(
+            app.execution.lrms_jobid)
         log.debug("Calling JobController.CleanJob")
         if not controller.CleanJob(job):
-            log.error("arc1.JobController.CleanJob returned False for ARC job ID '%s'",
-                      app.execution.lrms_jobid)
-        # XXX: this is necessary as the other component of arc library seems to refer to the job.xml file
-        # remove Job from job.xml file
+            log.error("arc1.JobController.CleanJob returned False for ARC"
+                      " job ID '%s'", app.execution.lrms_jobid)
+        # XXX: this is necessary as the other component of arc library
+        # seems to refer to the job.xml file remove Job from job.xml
+        # file
         log.debug("Removing job '%s' from jobfile '%s'",
                   app, gc3libs.Default.ARC_JOBLIST_LOCATION)
-        job.RemoveJobsFromFile(gc3libs.Default.ARC_JOBLIST_LOCATION, [job.IDFromEndpoint])
-
+        job.RemoveJobsFromFile(
+            gc3libs.Default.ARC_JOBLIST_LOCATION, [job.IDFromEndpoint])
 
     @cache_for(gc3libs.Default.ARC_CACHE_TIME)
     @LRMS.authenticated
@@ -582,7 +603,7 @@ class Arc1Lrms(LRMS):
                 + cap_to_0(t.RunningJobs)
                 + cap_to_0(t.StagingJobs)
                 + cap_to_0(t.SuspendedJobs)
-                )
+            )
 
             # free_slots
             free_slots += min(cap_to_0(t.FreeSlots),
@@ -602,18 +623,17 @@ class Arc1Lrms(LRMS):
         self.used_quota = -1
 
         log.debug("Updated resource '%s' status:"
-                          " free slots: %d,"
-                          " own running jobs: %d,"
-                          " own queued jobs: %d,"
-                          " total queued jobs: %d",
-                          self.name,
-                          self.free_slots,
-                          self.user_run,
-                          self.user_queued,
-                          self.queued,
-                          )
-        return self
+                  " free slots: %d,"
+                  " own running jobs: %d,"
+                  " own queued jobs: %d,"
+                  " total queued jobs: %d",
+                  self.name,
+                  self.free_slots,
+                  self.user_run,
+                  self.user_queued,
+                  self.queued)
 
+        return self
 
     @same_docstring_as(LRMS.peek)
     @LRMS.authenticated
@@ -621,21 +641,22 @@ class Arc1Lrms(LRMS):
 
         job = app.execution
 
-        assert job.has_key('lrms_jobid'), \
-            "Missing attribute `lrms_jobid` on `Job` instance passed to `ArcLrms.peek`."
+        assert 'lrms_jobid' in job, \
+            "Missing attribute `lrms_jobid` on `Job` instance passed" \
+            " to `ArcLrms.peek`."
 
         controller, j = self._get_job_and_controller(job.lrms_jobid)
 
         if size is None:
-            size = sys.maxint
+            size = sys.maxsize
 
         # `local_file` could be a file name (string) or a file-like
         # object, as per function docstring; ensure `local_file_name`
         # is the local path
         try:
-           local_file_name = local_file.name
+            local_file_name = local_file.name
         except AttributeError:
-           local_file_name = local_file
+            local_file_name = local_file
 
         # `local_file` could be a file name (string) or a file-like
         # object, as per function docstring; ensure `local_file_name`
@@ -649,13 +670,13 @@ class Arc1Lrms(LRMS):
         destination_url = arc.URL(local_file_name)
 
         # download file
-        log.debug("Arc1Lrms.peek(): Downloading remote file '%s' into local file '%s' ..."
+        log.debug("Arc1Lrms.peek(): Downloading remote file '%s'"
+                  " into local file '%s' ..."
                   % (remote_filename, local_file_name))
         if not controller.ARCCopyFile(source_url, destination_url):
             log.warning("Failed downloading '%s' to '%s'"
                         % (source_url.str(), destination_url.str()))
         log.debug("Arc1LRMS.peek(): arc.JobController.ARCCopyFile: completed")
-
 
     @same_docstring_as(LRMS.validate_data)
     def validate_data(self, data_file_list):
@@ -664,27 +685,29 @@ class Arc1Lrms(LRMS):
         """
         for url in data_file_list:
             log.debug("Resource %s: checking URL '%s' ..." % (self.name, url))
-            if not url.scheme in ['srm', 'lfc', 'file', 'http', 'gsiftp', 'https']:
+            if url.scheme not in ['srm', 'lfc', 'file',
+                                  'http', 'gsiftp', 'https']:
                 return False
         return True
-
 
     @staticmethod
     def init_arc_logger():
         if not gc3libs.backends.arc1.Arc1Lrms.arc_logger_set:
             arc_rootlogger = arc.Logger_getRootLogger()
-            arc_logger = arc.Logger(arc_rootlogger, "gc3pie")
-            # arc_logger_dest = arc.LogStream(sys.stderr) # or open(os.devnull, 'w')
-            arc_logger_dest = arc.LogStream(open(gc3libs.Default.ARC1_LOGFILE, 'w'))
+            arc.Logger(arc_rootlogger, "gc3pie")  # do we need this?
+            arc_logger_dest = arc.LogStream(
+                open(gc3libs.Default.ARC1_LOGFILE, 'w'))
             arc_rootlogger.addDestination(arc_logger_dest)
-            arc_rootlogger.setThreshold(arc.DEBUG) # or .VERBOSE, .INFO, .WARNING, .ERROR
+            arc_rootlogger.setThreshold(arc.DEBUG)  # or .VERBOSE,
+            # .INFO, .WARNING,
+            # .ERROR
             gc3libs.backends.arc1.Arc1Lrms.arc_logger_set = True
 
     @same_docstring_as(LRMS.validate_data)
     def close(self):
         pass
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

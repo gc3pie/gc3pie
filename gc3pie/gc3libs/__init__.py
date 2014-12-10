@@ -36,7 +36,6 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
-import copy
 import os
 import os.path
 import string
@@ -45,17 +44,21 @@ import time
 import types
 import subprocess
 import shlex
+import uuid
 
 import logging
 import logging.config
 log = logging.getLogger("gc3.gc3libs")
 
-from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds, MiB
+from gc3libs.quantity import MB, hours, minutes, seconds, MiB
 from gc3libs.compat._collections import OrderedDict
 
 # this needs to be defined before we import other GC3Libs modules, as
 # they may depend on it
+
+
 class Default(object):
+
     """
     A namespace for all constants and default values used in the
     GC3Libs package.
@@ -69,13 +72,16 @@ class Default(object):
         # user-private config file: first look into `$GC3PIE_CONF`, and
         # fall-back to `~/.gc3/gc3pie.conf`
         os.environ.get('GC3PIE_CONF', os.path.join(RCDIR, "gc3pie.conf"))
-        ]
+    ]
     JOBS_DIR = os.path.join(RCDIR, "jobs")
     ARC0_LRMS = 'arc0'
     ARC1_LRMS = 'arc1'
     ARC2_LRMS = 'arc2'
-    ARC_CACHE_TIME = 30 #: only update ARC resources status every this seconds
-    ARC_LOST_JOB_TIMEOUT = 4*ARC_CACHE_TIME #: consider a submitted job lost if it does not show up in the information system after this duration
+    # : only update ARC resources status every this seconds
+    ARC_CACHE_TIME = 30
+    # : consider a submitted job lost if it does not show up in the
+    # information system after this duration
+    ARC_LOST_JOB_TIMEOUT = 4 * ARC_CACHE_TIME
     ARC_JOBLIST_LOCATION = os.path.expandvars("$HOME/.arc/jobs.xml")
 
     SGE_LRMS = 'sge'
@@ -92,24 +98,29 @@ class Default(object):
     SSH_CONNECT_TIMEOUT = 30
 
     # Proxy
-    PROXY_VALIDITY_THRESHOLD = 600 #: Proxy validity threshold in seconds. If proxy is expiring before the thresold, it will be marked as to be renewed.
+    # : Proxy validity threshold in seconds. If proxy is expiring
+    # before the thresold, it will be marked as to be renewed.
+    PROXY_VALIDITY_THRESHOLD = 600
 
     ARC1_LOGFILE = os.path.join(RCDIR, "arc1.log")
     ARC_LOGFILE = os.path.join(RCDIR, "arc.log")
-    ARC1_DEFAULT_SERVICE_TIMEOUT = 3 # max wait (seconds) for a service to respond; hopefully this impacts also LDAP searches
+    # max wait (seconds) for a service to respond; hopefully this impacts also
+    # LDAP searches
+    ARC1_DEFAULT_SERVICE_TIMEOUT = 3
 
-    PEEK_FILE_SIZE = 120 # expressed in bytes
+    PEEK_FILE_SIZE = 120  # expressed in bytes
 
     CERTIFICATE_AUTHORITIES_DIR = "/etc/grid-security/certificates"
     VOMS_DIR = "/etc/grid-security/vomsdir"
 
     # Openstack default VM Operating System overhead
-    VM_OS_OVERHEAD = 512*MiB
+    VM_OS_OVERHEAD = 512 * MiB
 
-from gc3libs.exceptions import *
+import gc3libs.exceptions
 from gc3libs.persistence import Persistable
 from gc3libs.url import UrlKeyDict, UrlValueDict
-from gc3libs.utils import defproperty, deploy_configuration_file, Enum, History, Struct, safe_repr
+from gc3libs.utils import (defproperty, deploy_configuration_file, Enum,
+                           History, Struct, safe_repr)
 
 
 # when used in the `output` attribute of an application,
@@ -118,7 +129,7 @@ from gc3libs.utils import defproperty, deploy_configuration_file, Enum, History,
 ANY_OUTPUT = '*'
 
 
-## utility functions
+# utility functions
 #
 
 def configure_logger(
@@ -146,7 +157,7 @@ def configure_logger(
     logging.config.fileConfig(log_conf, {
         'RCDIR': Default.RCDIR,
         'HOMEDIR': os.path.expandvars('$HOME'),
-        })
+    })
     log = logging.getLogger("gc3.gc3libs")
     log.setLevel(level)
     log.propagate = 1
@@ -165,7 +176,7 @@ def configure_logger(
     try:
         version_info = sys.version_info
     except AttributeError:
-        version_info = (1, 5) # 1.5 or earlier
+        version_info = (1, 5)  # 1.5 or earlier
     if version_info < (2, 5):
         logging.raiseExceptions = False
 
@@ -176,6 +187,7 @@ if 'ALL' in UNIGNORE_ERRORS:
 else:
     UNIGNORE_ALL_ERRORS = False
 
+
 def error_ignored(*ctx):
     """
     Return ``True`` if no object in list `ctx` matches the contents of the
@@ -185,11 +197,13 @@ def error_ignored(*ctx):
     module is initially loaded and is thus insensitive to changes in the
     environment that happen afterwards.
 
-    The calling interface is so designed, that a list of keywords describing -or
-    related- to the error are passed; if any of them has been mentioned in the
-    environment variable ``GC3PIE_NO_CATCH_ERRORS`` then this function returns
-    ``False`` -- i.e., the error is never ignored by GC3Pie and always
-    propagated to the top-level handler.
+    The calling interface is so designed, that a list of keywords
+    describing -or related- to the error are passed; if any of them
+    has been mentioned in the environment variable
+    ``GC3PIE_NO_CATCH_ERRORS`` then this function returns ``False`` --
+    i.e., the error is never ignored by GC3Pie and always propagated
+    to the top-level handler.
+
     """
     if UNIGNORE_ALL_ERRORS:
         return False
@@ -198,10 +212,11 @@ def error_ignored(*ctx):
                                                           for word in ctx))))
 
 
-## Task and Application classes
+# Task and Application classes
 #
 
 class Task(Persistable, Struct):
+
     """
     Mix-in class implementing a facade for job control.
 
@@ -269,7 +284,7 @@ class Task(Persistable, Struct):
         if self._controller != controller:
             if self._attached:
                 self.detach()
-            #gc3libs.log.debug("Attaching %s to %s" % (self, controller))
+            # gc3libs.log.debug("Attaching %s to %s" % (self, controller))
             controller.add(self)
             self._attached = True
             self._controller = controller
@@ -282,6 +297,7 @@ class Task(Persistable, Struct):
         # XXX: this returns a function object for whatever `name`;
         # should be fine since a "controller" interface should just contain
         # methods, but one never knows...
+
         def __getattr__(self, name):
             def throw_error(*args, **kwargs):
                 raise gc3libs.exceptions.DetachedFromControllerError(
@@ -304,7 +320,6 @@ class Task(Persistable, Struct):
                 pass
             self._controller = Task.__no_controller
 
-
     # interface with pickle/gc3libs.persistence: do not save the
     # attached grid/engine/core as well: it definitely needs to be
     # saved separately.
@@ -320,18 +335,18 @@ class Task(Persistable, Struct):
         self.__dict__ = state
         self.detach()
 
-
     # grid-level actions on this Task object are re-routed to the
     # grid/engine/core instance
     def submit(self, resubmit=False, targets=None, **extra_args):
         """
         Start the computational job associated with this `Task` instance.
         """
-        assert self._attached, ("Task.submit() called on detached task %s." % self)
+        assert self._attached, ("Task.submit() called on detached task %s." %
+                                self)
         assert hasattr(self._controller, 'submit'), \
-               ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
+            ("Invalid `_controller` object '%s' in Task %s" %
+             (self._controller, self))
         self._controller.submit(self, resubmit, targets, **extra_args)
-
 
     def update_state(self, **extra_args):
         """
@@ -365,11 +380,12 @@ class Task(Persistable, Struct):
         `pbs_end_time`, etc.
 
         """
-        assert self._attached, ("Task.update_state() called on detached task %s." % self)
+        assert self._attached, (
+            "Task.update_state() called on detached task %s." % self)
         assert hasattr(self._controller, 'update_job_state'), \
-               ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
+            ("Invalid `_controller` object '%s' in Task %s" %
+             (self._controller, self))
         self._controller.update_job_state(self, **extra_args)
-
 
     def kill(self, **extra_args):
         """
@@ -377,11 +393,12 @@ class Task(Persistable, Struct):
 
         See :meth:`gc3libs.Core.kill` for a full explanation.
         """
-        assert self._attached, ("Task.kill() called on detached task %s." % self)
+        assert self._attached, ("Task.kill() called on detached task %s." %
+                                self)
         assert hasattr(self._controller, 'kill'), \
-               ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
+            ("Invalid `_controller` object '%s' in Task %s" %
+             (self._controller, self))
         self._controller.kill(self, **extra_args)
-
 
     def fetch_output(self, output_dir=None,
                      overwrite=False, changed_only=True, **extra_args):
@@ -404,13 +421,15 @@ class Task(Persistable, Struct):
         if self.execution.state == Run.State.TERMINATING:
             # advance state to TERMINATED
             self.output_dir = self._get_download_dir(output_dir)
-            self.execution.info = ("Final output downloaded to '%s'" % self.output_dir)
+            self.execution.info = (
+                "Final output downloaded to '%s'" % self.output_dir)
             self.execution.state = Run.State.TERMINATED
             self.changed = True
             return self.output_dir
         else:
             download_dir = self._get_download_dir(output_dir)
-            self.execution.info = ("Output snapshot downloaded to '%s'" % download_dir)
+            self.execution.info = (
+                "Output snapshot downloaded to '%s'" % download_dir)
             return download_dir
 
     def _get_download_dir(self, download_dir):
@@ -429,10 +448,10 @@ class Task(Persistable, Struct):
                 return self.output_dir
             except AttributeError:
                 raise gc3libs.exceptions.InvalidArgument(
-                    "`Task._get_download_dir()` called with no explicit download directory,"
-                    " but object '%s' has no `output_dir` attribute set either."
-                    % (self, type(self)))
-
+                    "`Task._get_download_dir()` called with no explicit"
+                    " download directory, but object '%s' has no `output_dir`"
+                    " attribute set either." %
+                    (self, type(self)))
 
     def peek(self, what='stdout', offset=0, size=None, **extra_args):
         """
@@ -443,11 +462,12 @@ class Task(Persistable, Struct):
 
         See :meth:`gc3libs.Core.peek` for a full explanation.
         """
-        assert self._attached, ("Task.peek() called on detached task %s." % self)
+        assert self._attached, ("Task.peek() called on detached task %s." %
+                                self)
         assert hasattr(self._controller, 'peek'), \
-               ("Invalid `_controller` object '%s' in Task %s" % (self._controller, self))
+            ("Invalid `_controller` object '%s' in Task %s" %
+             (self._controller, self))
         return self._controller.peek(self, what, offset, size, **extra_args)
-
 
     def free(self, **extra_args):
         """
@@ -456,7 +476,6 @@ class Task(Persistable, Struct):
         See :meth:`gc3libs.Core.free` for a full explanation.
         """
         return
-
 
     # convenience methods, do not really add any functionality over
     # what's above
@@ -491,14 +510,14 @@ class Task(Persistable, Struct):
         # first update state, we'll submit NEW jobs last, so that the
         # state is not updated immediately after submission as ARC
         # does not cope well with this...
-        if self.execution.state in [ Run.State.SUBMITTED,
-                                     Run.State.RUNNING,
-                                     Run.State.STOPPED,
-                                     Run.State.UNKNOWN ]:
+        if self.execution.state in [Run.State.SUBMITTED,
+                                    Run.State.RUNNING,
+                                    Run.State.STOPPED,
+                                    Run.State.UNKNOWN]:
             self.update_state()
         # now "do the right thing" based on actual state
-        if self.execution.state in [ Run.State.STOPPED,
-                                     Run.State.UNKNOWN ]:
+        if self.execution.state in [Run.State.STOPPED,
+                                    Run.State.UNKNOWN]:
             raise gc3libs.exceptions.UnexpectedStateError(
                 "Task '%s' entered `%s` state." % (self, self.execution.state))
         elif self.execution.state == Run.State.NEW:
@@ -506,7 +525,6 @@ class Task(Persistable, Struct):
         elif self.execution.state == Run.State.TERMINATING:
             self.fetch_output()
             return self.execution.returncode
-
 
     def wait(self, interval=60):
         """
@@ -522,13 +540,13 @@ class Task(Persistable, Struct):
         #  - there's no way to tell if we are running threaded,
         #  - `self._controller` could be a `Core` instance, thus not capable
         #    of running independently.
-        # For now this is a poll+sleep loop, but we certainly need to revise it.
+        # For now this is a poll+sleep loop, but we certainly need to revise
+        # it.
         while True:
             self.update_state()
             if self.execution.state == Run.State.TERMINATED:
                 return self.returncode
             time.sleep(interval)
-
 
     # State transition handlers.
     #
@@ -557,7 +575,6 @@ class Task(Persistable, Struct):
         """
         pass
 
-
     def running(self):
         """
         Called when the job state transitions to `RUNNING`, i.e., the
@@ -568,7 +585,6 @@ class Task(Persistable, Struct):
         classes to implement additional behavior.
         """
         pass
-
 
     def stopped(self):
         """
@@ -581,7 +597,6 @@ class Task(Persistable, Struct):
         """
         pass
 
-
     def terminating(self):
         """
         Called when the job state transitions to `TERMINATING`, i.e.,
@@ -593,7 +608,6 @@ class Task(Persistable, Struct):
         classes to implement additional behavior.
         """
         pass
-
 
     def terminated(self):
         """
@@ -628,6 +642,7 @@ class Task(Persistable, Struct):
 
 
 class Application(Task):
+
     """
     Support for running a generic application with the GC3Libs.
     The following parameters are *required* to create an `Application`
@@ -697,7 +712,8 @@ class Application(Task):
       specify resource requirements for the application:
       * the number of independent execution units (CPU cores),
       * amount of memory (as a `gc3libs.quantity.Memory`:class: object),
-      * amount of wall-clock time to allocate for the computational job (as a `gc3libs.quantity.Duration`:class: object).
+      * amount of wall-clock time to allocate for the computational job
+        (as a `gc3libs.quantity.Duration`:class: object).
 
     The following optional parameters may be additionally
     specified as keyword arguments and will be given special
@@ -828,25 +844,28 @@ class Application(Task):
 
         if 'executable' in extra_args:
             gc3libs.log.warning(
-                "The `executable` argument is not supported anymore in GC3Pie 2.0."
-                " Please adapt your code and use `arguments` only.")
-            arguments = [ extra_args['executable'] ] + list(arguments)
+                "The `executable` argument is not supported anymore in"
+                " GC3Pie 2.0. Please adapt your code and use `arguments`"
+                " only.")
+            arguments = [extra_args['executable']] + list(arguments)
 
-        self.arguments = [ str(x) for x in arguments ]
+        self.arguments = [str(x) for x in arguments]
 
         self.inputs = Application._io_spec_to_dict(UrlKeyDict, inputs, True)
-        self.outputs = Application._io_spec_to_dict(UrlValueDict, outputs, False)
+        self.outputs = Application._io_spec_to_dict(
+            UrlValueDict, outputs, False)
 
         # check that remote entries are all distinct
         # (can happen that two local paths are mapped to the same remote one)
         if len(self.inputs.values()) != len(set(self.inputs.values())):
             # try to build an exact error message
-            inv = { }
+            inv = {}
             for l, r in self.inputs.iteritems():
                 if r in inv:
-                    raise DuplicateEntryError("Local inputs '%s' and '%s'"
-                                              " map to the same remote path '%s'"
-                                              % (l, inv[r], r))
+                    raise gc3libs.exceptions.DuplicateEntryError(
+                        "Local inputs '%s' and '%s'"
+                        " map to the same remote path '%s'" %
+                        (l, inv[r], r))
                 else:
                     inv[r] = l
 
@@ -860,12 +879,13 @@ class Application(Task):
         # (can happen that two remote paths are mapped to the same local one)
         if len(self.outputs.values()) != len(set(self.outputs.values())):
             # try to build an exact error message
-            inv = { }
+            inv = {}
             for r, l in self.outputs.iteritems():
                 if l in inv:
-                    raise DuplicateEntryError("Remote outputs '%s' and '%s'"
-                                              " map to the same local path '%s'"
-                                              % (r, inv[l], l))
+                    raise gc3libs.exceptions.DuplicateEntryError(
+                        "Remote outputs '%s' and '%s'"
+                        " map to the same local path '%s'" %
+                        (r, inv[l], l))
                 else:
                     inv[l] = r
 
@@ -883,23 +903,31 @@ class Application(Task):
         self.requested_cores = int(extra_args.pop('requested_cores', 1))
         self.requested_memory = extra_args.pop('requested_memory', None)
         assert (self.requested_memory is None
-                or isinstance(self.requested_memory, gc3libs.quantity.Memory)), \
-            ("Expected `Memory` instance for `requested_memory, got %r %s instead."
+                or isinstance(self.requested_memory,
+                              gc3libs.quantity.Memory)), \
+            ("Expected `Memory` instance for `requested_memory,"
+             " got %r %s instead."
              % (self.requested_memory, type(self.requested_memory)))
         self.requested_walltime = extra_args.pop('requested_walltime', None)
         assert (self.requested_walltime is None
-                or isinstance(self.requested_walltime, gc3libs.quantity.Duration)), \
-            ("Expected `Duration` instance for `requested_walltime, got %r %s instead."
+                or isinstance(self.requested_walltime,
+                              gc3libs.quantity.Duration)), \
+            ("Expected `Duration` instance for `requested_walltime,"
+             " got %r %s instead."
              % (self.requested_memory, type(self.requested_memory)))
-        self.requested_architecture = extra_args.pop('requested_architecture', None)
+        self.requested_architecture = extra_args.pop(
+            'requested_architecture', None)
         if self.requested_architecture is not None \
-               and self.requested_architecture not in [ Run.Arch.X86_32, Run.Arch.X86_64 ]:
+                and self.requested_architecture not in [
+                    Run.Arch.X86_32,
+                    Run.Arch.X86_64]:
             raise gc3libs.exceptions.InvalidArgument(
                 "Architecture must be either '%s' or '%s'"
                 % (Run.Arch.X86_32, Run.Arch.X86_64))
 
-        self.environment = dict((str(k), str(v))
-                                for k,v in extra_args.pop('environment', dict()).items())
+        self.environment = dict(
+            (str(k), str(v)) for k, v in extra_args.pop(
+                'environment', dict()).items())
 
         self.join = extra_args.pop('join', False)
         self.stdin = extra_args.pop('stdin', None)
@@ -907,12 +935,12 @@ class Application(Task):
             self.inputs[self.stdin] = os.path.basename(self.stdin)
         self.stdout = extra_args.pop('stdout', None)
         if self.stdout is not None and os.path.isabs(self.stdout):
-            raise InvalidArgument(
+            raise gc3libs.exceptions.InvalidArgument(
                 "Absolute path '%s' passed as `Application.stdout`"
                 % self.stdout)
         if ((self.stdout is not None)
-            and (gc3libs.ANY_OUTPUT not in self.outputs)
-            and (self.stdout not in self.outputs)):
+                and (gc3libs.ANY_OUTPUT not in self.outputs)
+                and (self.stdout not in self.outputs)):
             self.outputs[self.stdout] = self.stdout
 
         self.stderr = extra_args.pop('stderr', None)
@@ -921,12 +949,12 @@ class Application(Task):
             self.stderr = self.stdout
 
         if self.stderr is not None and os.path.isabs(self.stderr):
-            raise InvalidArgument(
+            raise gc3libs.exceptions.InvalidArgument(
                 "Absolute path '%s' passed as `Application.stderr`"
                 % self.stderr)
         if ((self.stderr is not None)
-            and (gc3libs.ANY_OUTPUT not in self.outputs)
-            and (self.stderr not in self.outputs)):
+                and (gc3libs.ANY_OUTPUT not in self.outputs)
+                and (self.stderr not in self.outputs)):
             self.outputs[self.stderr] = self.stderr
 
         self.tags = extra_args.pop('tags', list())
@@ -957,7 +985,6 @@ class Application(Task):
         # for k,v in self.inputs.iteritems():
         #     gc3libs.log.debug("inputs[%s]=%s", repr(k), repr(v))
 
-
     @staticmethod
     def _io_spec_to_dict(ctor, spec, force_abs):
         """
@@ -981,7 +1008,8 @@ class Application(Task):
         `gc3libs.url.UrlDict`, and that copy is returned::
 
           >>> d1 = { '/tmp/1':'1', '/tmp/2':'2' }
-          >>> d2 = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, d1, True)
+          >>> d2 = Application._io_spec_to_dict(
+          ...     gc3libs.url.UrlKeyDict, d1, True)
           >>> isinstance(d2, gc3libs.url.UrlKeyDict)
           True
           >>> for key in sorted(d2.keys()): print key.path
@@ -994,7 +1022,8 @@ class Application(Task):
         os.path.basename(path)`::
 
           >>> l1 = [ ('/tmp/1', '1'), '/tmp/2' ]
-          >>> d3 = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, l1, True)
+          >>> d3 = Application._io_spec_to_dict(
+          ...     gc3libs.url.UrlKeyDict, l1, True)
           >>> d3 == d2
           True
 
@@ -1004,12 +1033,13 @@ class Application(Task):
         """
         try:
             # is `spec` dict-like?
-            return ctor(((str(k), str(v)) for k,v in spec.iteritems()),
+            return ctor(((str(k), str(v)) for k, v in spec.iteritems()),
                         force_abs=force_abs)
-        except UnicodeError, err:
+        except UnicodeError as err:
             raise gc3libs.exceptions.InvalidValue(
-                "Use of non-ASCII file names is not (yet) supported in GC3Pie: %s: %s"
-                % (err.__class__.__name__, str(err)))
+                "Use of non-ASCII file names is not (yet) supported in"
+                " GC3Pie: %s: %s" %
+                (err.__class__.__name__, str(err)))
         except AttributeError:
             # `spec` is a list-like
             def convert_to_tuple(val):
@@ -1022,64 +1052,80 @@ class Application(Task):
             return ctor((convert_to_tuple(x) for x in spec),
                         force_abs=force_abs)
 
-
     def __str__(self):
         try:
             return str(self.persistent_id)
         except AttributeError:
             return safe_repr(self)
 
-
     def compatible_resources(self, resources):
         """
         Return a list of compatible resources.
         """
-        selected = [ ]
+        selected = []
         for lrms in resources:
             assert (lrms is not None), \
                 "Application.compatible_resources():" \
                 " expected `LRMS` object, got `None` instead."
             gc3libs.log.debug(
-                "Checking resource '%s' for compatibility with application requirements"
-                % lrms.name)
+                "Checking resource '%s' for compatibility with application"
+                " requirements" % lrms.name)
             # Checking whether resource is 'enabled'. Discard otherwise
             if (not lrms.enabled):
-                gc3libs.log.info("Rejecting resource '%s': resource currently disabled" % lrms.name)
+                gc3libs.log.info(
+                    "Rejecting resource '%s': resource currently disabled" %
+                    lrms.name)
                 continue
-            # if architecture is specified, check that it matches the resource one
+            # if architecture is specified, check that it matches the resource
+            # one
             if (self.requested_architecture is not None
-                and self.requested_architecture not in lrms.architecture):
-                gc3libs.log.info("Rejecting resource '%s': requested a different architecture (%s) than what resource provides (%s)"
-                                 % (lrms.name, self.requested_architecture,
-                                    str.join(', ', [str(arch) for arch in lrms.architecture ])))
+                    and self.requested_architecture not in lrms.architecture):
+                gc3libs.log.info(
+                    "Rejecting resource '%s': requested a different"
+                    " architecture (%s) than what resource provides (%s)" %
+                    (lrms.name, self.requested_architecture, str.join(
+                        ', ', [
+                            str(arch) for arch in lrms.architecture])))
                 continue
             # check that Application requirements are within resource limits
             if self.requested_cores > lrms.max_cores_per_job:
-                gc3libs.log.info("Rejecting resource '%s': requested more cores (%d) that resource provides (%d)"
-                                 % (lrms.name, self.requested_cores, lrms.max_cores_per_job))
+                gc3libs.log.info(
+                    "Rejecting resource '%s': requested more cores (%d) that"
+                    " resource provides (%d)" %
+                    (lrms.name, self.requested_cores, lrms.max_cores_per_job))
                 continue
-            if (self.requested_memory is not None
-                and self.requested_memory > self.requested_cores * lrms.max_memory_per_core):
-                gc3libs.log.info("Rejecting resource '%s': requested more memory (%s) that resource provides (%s, %s per CPU core)"
-                                 % (lrms.name, self.requested_memory, self.requested_cores*lrms.max_memory_per_core, lrms.max_memory_per_core))
+            if (self.requested_memory is not None and self.requested_memory >
+                    self.requested_cores * lrms.max_memory_per_core):
+                gc3libs.log.info(
+                    "Rejecting resource '%s': requested more memory (%s) that"
+                    " resource provides (%s, %s per CPU core)" %
+                    (lrms.name,
+                     self.requested_memory,
+                     self.requested_cores *
+                     lrms.max_memory_per_core,
+                     lrms.max_memory_per_core))
                 continue
             if (self.requested_walltime is not None
-                and self.requested_walltime > lrms.max_walltime):
-                gc3libs.log.info("Rejecting resource '%s': requested a longer duration (%s) that resource provides (%s)"
-                                 % (lrms.name, self.requested_walltime, lrms.max_walltime))
+                    and self.requested_walltime > lrms.max_walltime):
+                gc3libs.log.info(
+                    "Rejecting resource '%s': requested a longer duration (%s)"
+                    " that resource provides (%s)" %
+                    (lrms.name, self.requested_walltime, lrms.max_walltime))
                 continue
-            if not lrms.validate_data(self.inputs.keys()) or not lrms.validate_data(self.outputs.values()):
-                gc3libs.log.info("Rejecting resource '%s': input/output data protocol not supported."
-                                 % lrms.name)
+            if not lrms.validate_data(
+                    self.inputs.keys()) or not lrms.validate_data(
+                    self.outputs.values()):
+                gc3libs.log.info(
+                    "Rejecting resource '%s': input/output data protocol"
+                    " not supported." % lrms.name)
                 continue
 
             selected.append(lrms)
 
         return selected
 
-
     @staticmethod
-    def _cmp_resources(a,b):
+    def _cmp_resources(a, b):
         """
         Compare resources `a` and `b` and return -1,0,1 accordingly
         (see doc for the Python standard function `cmp`).
@@ -1107,21 +1153,27 @@ class Application(Task):
         if '_execution_targets' in self.execution:
             for lrms in selected:
                 if (hasattr(lrms, 'frontend')
-                     and lrms.frontend in self.execution._execution_targets):
+                        and lrms.frontend in
+                        self.execution._execution_targets):
                     # append resource to the bottom of the list
                     selected.remove(lrms)
                     selected.append(lrms)
         return selected
 
-    def fetch_output(self, download_dir, overwrite, changed_only, **extra_args):
+    def fetch_output(
+            self, download_dir, overwrite, changed_only, **extra_args):
         """
         Call the corresponding method of the controller.
         """
-        return self._controller.fetch_output(self,
-            download_dir, overwrite, changed_only, **extra_args)
+        return self._controller.fetch_output(
+            self,
+            download_dir,
+            overwrite,
+            changed_only,
+            **extra_args)
 
     ##
-    ## backend interface methods
+    # backend interface methods
     ##
 
     def xrsl(self, resource):
@@ -1143,15 +1195,16 @@ class Application(Task):
         """
         # build `xrsl` incrementally; concatenate all parts into a
         # single string at the end
-        xrsl= [
+        xrsl = [
             '&',
             '(executable="/bin/sh")',
-            '(gmlog=".gc3pie_arc")', # XXX: should check if conflicts with any input/output files
-            ]
+            # XXX: should check if conflicts with any input/output files
+            '(gmlog=".gc3pie_arc")',
+        ]
         xrsl.append('(arguments="-c" "%s")' % str.join(' ', self.arguments))
         # preserve execute permission on all input files
         executables = []
-        if self.has_key('executables'):
+        if 'executables' in self:
             # there are already references to files that should be
             # executables
             # e.g. a reference to a remote file that cannot be checked locally
@@ -1178,8 +1231,8 @@ class Application(Task):
             xrsl.append('(stderr="%s")' % self.stderr)
         if len(self.inputs) > 0:
             xrsl.append('(inputFiles=%s)'
-                        % str.join(' ', [ ('("%s" "%s")' % (r, l))
-                                          for (l,r) in self.inputs.items() ]))
+                        % str.join(' ', [('("%s" "%s")' % (r, l))
+                                         for (l, r) in self.inputs.items()]))
         if len(self.outputs) > 0:
             # XXX: this can go away when we have the ternary operator
             # `x = a if y else b` (Python 2.5)
@@ -1193,7 +1246,7 @@ class Application(Task):
                 def output_url(l, r):
                     if l.scheme == 'file':
                         return os.path.join(self.output_base_url,
-                                            utils.ifelse(l, l, r))
+                                            gc3libs.utils.ifelse(l, l, r))
                     else:
                         return l
 
@@ -1204,26 +1257,32 @@ class Application(Task):
                     return r
             # filter out stdout/stderr (they are automatically
             # retrieved) and then check again
-            outputs_ = [ ('("%s" "%s")' % (relpath(r), output_url(l, r)))
-                         for (r,l) in [ (remotename, localname)
-                                        for remotename,localname
-                                        in self.outputs.iteritems()
-                                        if (remotename != self.stdout
-                                            and remotename != self.stderr)]]
+            outputs_ = [('("%s" "%s")' % (relpath(r), output_url(l, r)))
+                        for (r, l) in [(remotename, localname)
+                                       for remotename, localname
+                                       in self.outputs.iteritems()
+                                       if (remotename != self.stdout
+                                           and remotename != self.stderr)]]
             if len(outputs_) > 0:
                 xrsl.append('(outputFiles=%s)' % str.join(' ', outputs_))
         if len(self.tags) > 0:
-            xrsl += [('(runTimeEnvironment="%s")' % rte) for rte in self.tags ]
+            xrsl += [('(runTimeEnvironment="%s")' % rte) for rte in self.tags]
         if len(self.environment) > 0:
-            xrsl.append('(environment=%s)' %
-                        str.join(' ', [ ('("%s" "%s")' % kv) for kv in self.environment.iteritems() ]))
+            xrsl.append(
+                '(environment=%s)' %
+                str.join(
+                    ' ', [
+                        ('("%s" "%s")' %
+                         kv) for kv in self.environment.iteritems()]))
         if self.requested_walltime:
             # xRSL assumes minutes by default
-            xrsl.append('(wallTime="%d")' % self.requested_walltime.amount(minutes))
+            xrsl.append('(wallTime="%d")' %
+                        self.requested_walltime.amount(minutes))
         if self.requested_memory:
             # ARC's "memory" is memory per "rank" (= core in MPI-speak)
-            xrsl.append('(memory="%d")'
-                        % (self.requested_memory.amount(MB) / self.requested_cores))
+            xrsl.append(
+                '(memory="%d")' %
+                (self.requested_memory.amount(MB) / self.requested_cores))
         if self.requested_cores:
             xrsl.append('(count="%d")' % self.requested_cores)
         # XXX: the xRSL specification states that the "architecture" value
@@ -1245,7 +1304,6 @@ class Application(Task):
         # force it to be a "str"!
         return str.join(' ', xrsl)
 
-
     def cmdline(self, resource):
         """
         Return list of command-line arguments for invoking the application.
@@ -1259,11 +1317,10 @@ class Application(Task):
         """
         if self.environment:
             return (['/usr/bin/env']
-                    + ["%s=%s" for k,v in self.environment.items()]
+                    + ["%s=%s" for k, v in self.environment.items()]
                     + self.arguments[:])
         else:
             return self.arguments[:]
-
 
     def qsub_sge(self, resource, **extra_args):
         """
@@ -1304,15 +1361,21 @@ class Application(Task):
             # SGE uses `s_rt` for wall-clock time limit, expressed in seconds
             qsub += ['-l', 's_rt=%d' % self.requested_walltime.amount(seconds)]
         if self.requested_memory:
-            # SGE uses `mem_free` for memory limits; 'M' suffix allowed for Megabytes
+            # SGE uses `mem_free` for memory limits; 'M' suffix allowed for
+            # Megabytes
             # XXX: there are a number of problems here:
-            #   - `mem_free` might not be requestable, i.e., submission will fail
-            #   - `mem_free` might be a JOB consumable, meaning the value should be the total amount of memory requested by the job
-            #   - in the end it's all matter of local configuration, so we might need to request `h_vmem` (job total) *and* `virtual_free` (per-slot consumable) ...
+            #   - `mem_free` might not be requestable, i.e., submission
+            #     will fail
+            #   - `mem_free` might be a JOB consumable, meaning the value
+            #     should be the total amount of memory requested by the job
+            #   - in the end it's all matter of local configuration, so we
+            #     might need to request `h_vmem` (job total) *and*
+            #     `virtual_free` (per-slot consumable) ...
             # Let's make whatever works in our cluster, and see how we can
             # extend/change it when issue reports come...
-            qsub += ['-l', ('mem_free=%dM'
-                            % (self.requested_memory.amount(MB) / self.requested_cores))]
+            qsub += ['-l', ('mem_free=%dM' %
+                            (self.requested_memory.amount(MB) /
+                             self.requested_cores))]
         if self.join:
             qsub += ['-j', 'yes']
         if self.stdout:
@@ -1335,21 +1398,26 @@ class Application(Task):
                 if pe_name is not None:
                     # XXX: overly verbose reporting?
                     log.info(
-                        "Application %s requested %d cores,"
-                        " but no '%s' configuration item is defined on resource '%s';"
-                        " using the 'default_pe' setting to submit the parallel job.",
-                        self, self.requested_cores, pe_cfg_name, resource.name)
+                        "Application %s requested %d cores, but no '%s'"
+                        " configuration item is defined on resource '%s';"
+                        " using the 'default_pe' setting to submit the"
+                        " parallel job.",
+                        self,
+                        self.requested_cores,
+                        pe_cfg_name,
+                        resource.name)
                 else:
                     raise gc3libs.exceptions.InternalError(
-                        "Application %s requested %d cores,"
-                        " but neither '%s' nor 'default_pe' appear in the configuration"
-                        " of resource '%s'.  Please fix the configuration and retry."
-                        % (self, self.requested_cores, pe_cfg_name, resource.name))
+                        "Application %s requested %d cores, but neither '%s'"
+                        " nor 'default_pe' appear in the configuration of"
+                        " resource '%s'.  Please fix the configuration and"
+                        " retry." %
+                        (self, self.requested_cores, pe_cfg_name,
+                         resource.name))
             qsub += ['-pe', pe_name, ('%d' % self.requested_cores)]
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '%s' % self.jobname]
         return (qsub, self.cmdline(resource))
-
 
     def bsub(self, resource, _suppress_warning=False, **extra_args):
         # XXX: the `_suppress_warning` switch is only provided for
@@ -1379,7 +1447,8 @@ class Application(Task):
         resource-specific submission options.
         """
         bsub = list(resource.bsub)
-        bsub += ['-cwd', '.', '-L', '/bin/sh', '-n', ('%d' % self.requested_cores)]
+        bsub += ['-cwd', '.', '-L', '/bin/sh',
+                 '-n', ('%d' % self.requested_cores)]
         if self.requested_walltime:
             # LSF wants walltime as HH:MM (days expressed as many hours)
             hs = int(self.requested_walltime.amount(hours))
@@ -1387,11 +1456,13 @@ class Application(Task):
             bsub += ['-W', ('%02d:%02d' % (hs, ms))]
         if self.requested_memory:
             # LSF uses `rusage[mem=...]` for memory limits (number of MBs)
-            bsub += ['-R', ('rusage[mem=%d]' % self.requested_memory.amount(MB))]
+            bsub += ['-R', ('rusage[mem=%d]' %
+                            self.requested_memory.amount(MB))]
         if self.stdout:
             bsub += ['-oo', ('%s' % self.stdout)]
             if not self.join and not self.stderr:
-                # LSF joins STDERR and STDOUT by default, so redirect STDERR away
+                # LSF joins STDERR and STDOUT by default, so redirect STDERR
+                # away
                 bsub += ['-eo', '/dev/null']
         if self.stdin:
             # `self.stdin` is the full pathname on the GC3Pie client host;
@@ -1403,22 +1474,24 @@ class Application(Task):
             bsub += ['-J', ('%s' % self.jobname)]
         return (bsub, self.cmdline(resource))
 
-
     def qsub_pbs(self, resource, _suppress_warning=False, **extra_args):
         """
         Similar to `qsub_sge()`, but for the PBS/TORQUE resource manager.
         """
         qsub = list(resource.qsub)
         if self.requested_walltime:
-            qsub += ['-l', 'walltime=%s' % (self.requested_walltime.amount(seconds))]
+            qsub += ['-l', 'walltime=%s' %
+                     (self.requested_walltime.amount(seconds))]
         if self.requested_memory:
             qsub += ['-l', 'mem=%dmb' % self.requested_memory.amount(MB)]
         if self.stdin:
             # `self.stdin` is the full pathname on the GC3Pie client host;
             # it is copied to its basename on the execution host
             # XXX: this is wrong, as it redirects STDIN of the `qsub` process!
-            #qsub += ['<', '%s' % os.path.basename(self.stdin)]
-            raise NotImplementedError("STDIN redirection is currently not handled by the PBS/TORQUE backend!")
+            # qsub += ['<', '%s' % os.path.basename(self.stdin)]
+            raise NotImplementedError(
+                "STDIN redirection is currently not handled by the"
+                " PBS/TORQUE backend!")
         if self.stderr:
             # from the qsub(1) man page: "If both the -j y and the -e
             # options are present, Grid Engine sets but ignores the
@@ -1434,7 +1507,6 @@ class Application(Task):
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '"%s"' % self.jobname[:15]]
         return (qsub, self.cmdline(resource))
-
 
     def sbatch(self, resource, **extra_args):
         """
@@ -1460,15 +1532,22 @@ class Application(Task):
         provide appropriate invocation templates and/or add different
         submission options.
         """
-        # sbatch --job-name="jobname" --mem-per-cpu="MBs" --input="filename" --output="filename" --no-requeue -n "number of slots" --cpus-per-task=1 --time="minutes" script.sh
+        # sbatch --job-name="jobname" --mem-per-cpu="MBs" --input="filename"
+        # --output="filename" --no-requeue -n "number of slots"
+        # --cpus-per-task=1 --time="minutes" script.sh
         sbatch = list(resource.sbatch)
         sbatch += ['--no-requeue']
         if self.requested_walltime:
-            # SLURM uses `--time` for wall-clock time limit, expressed in minutes
-            sbatch += ['--time', '%d' % self.requested_walltime.amount(minutes)]
+            # SLURM uses `--time` for wall-clock time limit, expressed in
+            # minutes
+            sbatch += ['--time', '%d' %
+                       self.requested_walltime.amount(minutes)]
         if self.requested_memory:
-            # SLURM uses `mem_free` for memory limits; 'M' suffix allowed for Megabytes
-            sbatch += ['--mem-per-cpu', '%d' % (self.requested_memory.amount(MB) / self.requested_cores) ]
+            # SLURM uses `mem_free` for memory limits; 'M' suffix allowed for
+            # Megabytes
+            sbatch += ['--mem-per-cpu', '%d' %
+                       (self.requested_memory.amount(MB) /
+                        self.requested_cores)]
         if self.stdout:
             sbatch += ['--output', '%s' % self.stdout]
         if self.stdin:
@@ -1481,11 +1560,11 @@ class Application(Task):
             # error-path attribute."
             sbatch += ['-e', '%s' % self.stderr]
         if self.requested_cores != 1:
-            sbatch += ['-n', ('%d' % self.requested_cores), '--cpus-per-task', '1']
+            sbatch += ['-n', ('%d' % self.requested_cores),
+                       '--cpus-per-task', '1']
         if 'jobname' in self and self.jobname:
             sbatch += ['--job-name', ('%s' % self.jobname)]
         return (sbatch, self.cmdline(resource))
-
 
     # Operation error handlers; called when transition from one state
     # to another fails.  The names are formed by suffixing the
@@ -1513,12 +1592,12 @@ class Application(Task):
         # "best" submission target
         return exs[0]
 
-
     # XXX: this method might be dangerous in that it can break the
     # `update_job_state` semantics; it's here for completeness, but we
     # should consider removing...
     def update_job_state_error(self, ex):
-        """Handle exceptions that occurred during a `Core.update_job_state` call.
+        """Handle exceptions that occurred during a `Core.update_job_state`
+        call.
 
         If this method returns an exception object, that exception is
         processed in `Core.update_job_state()` instead of the original
@@ -1534,7 +1613,6 @@ class Application(Task):
 
         """
         return ex
-
 
     def fetch_output_error(self, ex):
         """
@@ -1552,31 +1630,40 @@ class Application(Task):
 
 
 class _Signal(object):
+
     """
     Base class for representing fake signals encoding the failure
     reason for GC3Libs jobs.
     """
+
     def __init__(self, signum, description):
         self._signum = signum
         self.__doc__ = description
     # conversion to integer types
+
     def __int__(self):
         return self._signum
+
     def __long__(self):
         return self._signum
     # human-readable explanation
+
     def __str__(self):
         return "Signal %d: %s" % (self._signum, self.__doc__)
 
+
 class _Signals(object):
+
     """
-    Collection of (fake) signals used to encode termination reason in `Run.returncode`.
+    Collection of (fake) signals used to encode termination reason in
+    `Run.returncode`.
 
     ======  ============================================================
     signal  error condition
     ======  ============================================================
     125     submission to batch system failed
-    124     remote error (e.g., execution node crashed, batch system misconfigured)
+    124     remote error (e.g., execution node crashed, batch system
+            misconfigured)
     123     data staging failure
     122     job killed by batch system / sysadmin
     121     job canceled by user
@@ -1598,23 +1685,27 @@ class _Signals(object):
             return True
         else:
             return False
+
     def __getitem__(self, signal_num):
         if signal_num == 120:
-            return Signals.Lost
+            return _Signals.Lost
         elif signal_num == 121:
-            return Signals.Cancelled
+            return _Signals.Cancelled
         elif signal_num == 122:
-            return Signals.RemoteKill
+            return _Signals.RemoteKill
         elif signal_num == 123:
-            return Signals.DataStagingFailure
+            return _Signals.DataStagingFailure
         elif signal_num == 124:
-            return Signals.RemoteError
+            return _Signals.RemoteError
         elif signal_num == 125:
-            return Signals.SubmissionFailed
+            return _Signals.SubmissionFailed
         else:
-            raise gc3libs.exceptions.InvalidArgument("Unknown signal number %d" % signal_num)
+            raise gc3libs.exceptions.InvalidArgument(
+                "Unknown signal number %d" % signal_num)
+
 
 class Run(Struct):
+
     """
     A specialized `dict`-like object that keeps information about
     the execution state of an `Application` instance.
@@ -1641,6 +1732,7 @@ class Run(Struct):
     `Run` objects support attribute lookup by both the ``[...]`` and
     the ``.`` syntax; see `gc3libs.utils.Struct` for examples.
     """
+
     def __init__(self, initializer=None, attach=None, **keywd):
         """
         Create a new Run object; constructor accepts the same
@@ -1690,7 +1782,6 @@ class Run(Struct):
         if 'timestamp' not in self:
             self.timestamp = OrderedDict()
 
-
     @defproperty
     def info():
         """
@@ -1709,8 +1800,10 @@ class Run(Struct):
           u'a second message ...'
 
         """
+
         def fget(self):
             return self.history.last()
+
         def fset(self, value):
             self.history.append(unicode(value))
         return locals()
@@ -1718,15 +1811,20 @@ class Run(Struct):
     # states that a `Run` can be in
     State = Enum(
         'NEW',       # Job has not yet been submitted/started
-        'SUBMITTED', # Job has been sent to execution resource
+        'SUBMITTED',  # Job has been sent to execution resource
         'STOPPED',   # trap state: job needs manual intervention
         'RUNNING',   # job is executing on remote resource
-        'TERMINATING', # remote job execution finished, output not yet retrieved
-        'TERMINATED',# job execution finished (correctly or not) and will not be resumed
-        'UNKNOWN',   # job info not found or lost track of job (e.g., network error or invalid job ID)
-        )
+        # remote job execution finished, output not yet retrieved
+        'TERMINATING',
+        # job execution finished (correctly or not) and will not be resumed
+        'TERMINATED',
+        # job info not found or lost track of job (e.g., network error or
+        # invalid job ID)
+        'UNKNOWN',
+    )
 
     class Arch(object):
+
         """
         Processor architectures, for use as values in the
         `requested_architecture` field of the `Application` class
@@ -1757,24 +1855,24 @@ class Run(Struct):
         The value of `Run.state` must always be a value from the
         `Run.State` enumeration, i.e., one of the following values.
 
-        +---------------+--------------------------------------------------------------+----------------------+
-        |Run.State value|purpose                                                       |can change to         |
-        +===============+==============================================================+======================+
-        |NEW            |Job has not yet been submitted/started (i.e., gsub not called)|SUBMITTED (by gsub)   |
-        +---------------+--------------------------------------------------------------+----------------------+
-        |SUBMITTED      |Job has been sent to execution resource                       |RUNNING, STOPPED      |
-        +---------------+--------------------------------------------------------------+----------------------+
-        |STOPPED        |Trap state: job needs manual intervention (either user-       |TERMINATING(by gkill),|
-        |               |or sysadmin-level) to resume normal execution                 |SUBMITTED (by miracle)|
-        +---------------+--------------------------------------------------------------+----------------------+
-        |RUNNING        |Job is executing on remote resource                           |TERMINATING           |
-        +---------------+--------------------------------------------------------------+----------------------+
-        |TERMINATING    |Job has finished execution on remote resource;                |TERMINATED            |
-        |               |output not yet retrieved                                      |                      |
-        +---------------+--------------------------------------------------------------+----------------------+
-        |TERMINATED     |Job execution is finished (correctly or not)                  |None: final state     |
-        |               |and will not be resumed; output has been retrieved            |                      |
-        +---------------+--------------------------------------------------------------+----------------------+
+        +---------------+--------------------------------------------------------------+----------------------+    # noqa
+        |Run.State value|purpose                                                       |can change to         |    # noqa
+        +===============+==============================================================+======================+    # noqa
+        |NEW            |Job has not yet been submitted/started (i.e., gsub not called)|SUBMITTED (by gsub)   |    # noqa
+        +---------------+--------------------------------------------------------------+----------------------+    # noqa
+        |SUBMITTED      |Job has been sent to execution resource                       |RUNNING, STOPPED      |    # noqa
+        +---------------+--------------------------------------------------------------+----------------------+    # noqa
+        |STOPPED        |Trap state: job needs manual intervention (either user-       |TERMINATING(by gkill),|    # noqa
+        |               |or sysadmin-level) to resume normal execution                 |SUBMITTED (by miracle)|    # noqa
+        +---------------+--------------------------------------------------------------+----------------------+    # noqa
+        |RUNNING        |Job is executing on remote resource                           |TERMINATING           |    # noqa
+        +---------------+--------------------------------------------------------------+----------------------+    # noqa
+        |TERMINATING    |Job has finished execution on remote resource;                |TERMINATED            |    # noqa
+        |               |output not yet retrieved                                      |                      |    # noqa
+        +---------------+--------------------------------------------------------------+----------------------+    # noqa
+        |TERMINATED     |Job execution is finished (correctly or not)                  |None: final state     |    # noqa
+        |               |and will not be resumed; output has been retrieved            |                      |    # noqa
+        +---------------+--------------------------------------------------------------+----------------------+    # noqa
 
         When a :class:`Run` object is first created, it is assigned
         the state NEW.  After a successful invocation of
@@ -1802,11 +1900,14 @@ class Run(Struct):
         at all, for example, in case of a fatal failure during the
         submission step.
         """
+
         def fget(self):
             return self._state
+
         def fset(self, value):
             assert value in Run.State, \
-                ("Value '%s' is not a legal `gc3libs.Run.State` value." % value)
+                ("Value '%s' is not a legal `gc3libs.Run.State` value." %
+                 value)
             if self._state != value:
                 self.state_last_changed = time.time()
                 self.timestamp[value] = time.time()
@@ -1822,7 +1923,6 @@ class Run(Struct):
                     getattr(self._ref, handler)()
             self._state = value
         return locals()
-
 
     def in_state(self, *names):
         """
@@ -1848,7 +1948,6 @@ class Run(Struct):
         else:
             return False
 
-
     @defproperty
     def signal():
         """
@@ -1864,15 +1963,16 @@ class Run(Struct):
         "fake" one that GC3Libs uses to represent Grid middleware
         errors (see `Run.Signals`).
         """
+
         def fget(self):
             return self._signal
+
         def fset(self, value):
             if value is None:
                 self._signal = None
             else:
                 self._signal = int(value) & 0x7f
         return (locals())
-
 
     @defproperty
     def exitcode():
@@ -1883,15 +1983,16 @@ class Run(Struct):
         to mean that an error has occurred and the application could
         not end its execution normally.)
         """
+
         def fget(self):
             return self._exitcode
+
         def fset(self, value):
             if value is None:
                 self._exitcode = None
             else:
                 self._exitcode = int(value) & 0xff
         return (locals())
-
 
     @defproperty
     def returncode():
@@ -1946,6 +2047,7 @@ class Run(Struct):
 
         See also `Run.exitcode` and `Run.signal`.
         """
+
         def fget(self):
             if self.exitcode is None and self.signal is None:
                 return None
@@ -1958,6 +2060,7 @@ class Run(Struct):
             else:
                 signal = self.signal
             return (exitcode << 8) | signal
+
         def fset(self, value):
             if value is None:
                 self.signal = None
@@ -1966,7 +2069,7 @@ class Run(Struct):
                 try:
                     # `value` can be a tuple `(signal, exitcode)`;
                     # ensure values are within allowed range
-                    self.signal = int(value[0])   & 0x7f
+                    self.signal = int(value[0]) & 0x7f
                     self.exitcode = int(value[1]) & 0xff
                 except (TypeError, ValueError):
                     self.exitcode = (int(value) >> 8) & 0xff
@@ -1975,7 +2078,6 @@ class Run(Struct):
 
     # `Run.Signals` is an instance of global class `_Signals`
     Signals = _Signals()
-
 
     @staticmethod
     def shellexit_to_returncode(rc):
@@ -1995,12 +2097,13 @@ class Run(Struct):
         rc &= 0xff
         if rc > 128:
             # terminated by signal N is encoded as 128+N
-            return (rc-128, -1)
+            return (rc - 128, -1)
         else:
             # regular exit
             return (0, rc)
 
 # Factory method to create an Engine instance
+
 
 def create_engine(*conf_files, **extra_args):
     """
@@ -2021,7 +2124,7 @@ def create_engine(*conf_files, **extra_args):
     if not conf_files:
         conf_files = Default.CONFIG_FILE_LOCATIONS[:]
 
-    if not 'auto_enable_auth' in extra_args:
+    if 'auto_enable_auth' not in extra_args:
         extra_args['auto_enable_auth'] = True
 
     cfg = Configuration(*conf_files, **extra_args)
@@ -2031,7 +2134,7 @@ def create_engine(*conf_files, **extra_args):
     return engine
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

@@ -32,6 +32,7 @@ from pkg_resources import Requirement, resource_filename
 
 
 class TurbomoleApplication(gc3libs.Application):
+
     """
     Run TURBOMOLE's `program` on the given `control` file.  Any
     additional arguments are considered additional filenames to input
@@ -52,9 +53,9 @@ class TurbomoleApplication(gc3libs.Application):
             Requirement.parse("gc3pie"), "gc3libs/etc/turbomole.sh")
 
         inputs = {
-            src_wrapper_sh:'turbomole.sh',
-            control:'control',
-            }
+            src_wrapper_sh: 'turbomole.sh',
+            control: 'control',
+        }
         for path in others:
             inputs[path] = os.path.basename(path)
 
@@ -67,28 +68,29 @@ class TurbomoleApplication(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-            arguments = [ "./turbomole.sh", program ],
-            inputs = inputs,
-            outputs = gc3libs.ANY_OUTPUT,
+            arguments=["./turbomole.sh", program],
+            inputs=inputs,
+            outputs=gc3libs.ANY_OUTPUT,
             **extra_args
-            )
+        )
 
     def terminated(self):
         output_filename = os.path.join(self.output_dir, self.program + '.out')
         if not os.path.exists(output_filename):
-            self.execution.exitcode = 1 # FAIL
+            self.execution.exitcode = 1  # FAIL
             return
         ok = self.program + " ended normally\n"
         output_file = open(output_filename, 'r')
         output_file.seek(-len(ok), os.SEEK_END)
         if ok != output_file.read():
-            self.execution.exitcode = 1 # FAIL
+            self.execution.exitcode = 1  # FAIL
             return
-        self.execution.exitcode = 0 # SUCCESS
+        self.execution.exitcode = 0  # SUCCESS
         return
 
 
 class TurbomoleDefineApplication(gc3libs.Application):
+
     """
     Run TURBOMOLE's 'define' with the given `define_in` file as input,
     then run `program` on the `control` file produced.
@@ -114,10 +116,10 @@ class TurbomoleDefineApplication(gc3libs.Application):
             Requirement.parse("gc3pie"), "gc3libs/etc/turbomole.sh")
 
         inputs = {
-            src_wrapper_sh:'turbomole.sh',
-            define_in:'define.in',
-            coord:'coord',
-            }
+            src_wrapper_sh: 'turbomole.sh',
+            define_in: 'define.in',
+            coord: 'coord',
+        }
         for path in others:
             inputs[path] = os.path.basename(path)
 
@@ -130,30 +132,28 @@ class TurbomoleDefineApplication(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-            arguments = [ "./turbomole.sh", program ],
-            inputs = inputs,
-            outputs = gc3libs.ANY_OUTPUT,
+            arguments=["./turbomole.sh", program],
+            inputs=inputs,
+            outputs=gc3libs.ANY_OUTPUT,
             **extra_args
-            )
-
+        )
 
     def terminated(self):
         output_filename = os.path.join(self.output_dir, self.program + '.out')
         if not os.path.exists(output_filename):
-            self.execution.exitcode = 1 # FAIL
+            self.execution.exitcode = 1  # FAIL
             return
         ok = self.program + " ended normally\n"
         output_file = open(output_filename, 'r')
         output_file.seek(-len(ok), os.SEEK_END)
         if ok != output_file.read():
-            self.execution.exitcode = 1 # FAIL
+            self.execution.exitcode = 1  # FAIL
             return
-        self.execution.exitcode = 0 # SUCCESS
+        self.execution.exitcode = 0  # SUCCESS
         return
 
 
-
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

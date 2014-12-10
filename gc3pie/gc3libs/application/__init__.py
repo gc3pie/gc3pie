@@ -22,7 +22,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

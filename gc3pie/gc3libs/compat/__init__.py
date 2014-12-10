@@ -20,8 +20,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
-
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

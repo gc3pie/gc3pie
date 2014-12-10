@@ -24,7 +24,7 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
-from gc3libs.utils import getattr_nested, Struct
+from gc3libs.utils import getattr_nested
 
 
 # tag object for catching the "no value passed" in `GetAttr` and
@@ -33,8 +33,10 @@ _none = object()
 
 
 class GetValue(object):
+
     """
-    Provide easier compositional syntax for `GetAttributeValue` and `GetItemValue`.
+    Provide easier compositional syntax for `GetAttributeValue` and
+    `GetItemValue`.
 
     Instances of `GetAttributeValue` and `GetItemValue` can be composed by
     passing one as `xform` parameter to the other; however, this
@@ -42,6 +44,7 @@ class GetValue(object):
     order: for instance, to create an accessor to evaluate `x.a[0]`
     for any Python object `x`, one has to write::
 
+       >>> from gc3libs import Struct
        >>> fn1 = GetItemValue(0, GetAttributeValue('a'))
 
     The `GetValue` class allows to write accessor expressions the way
@@ -66,7 +69,7 @@ class GetValue(object):
     __slots__ = ('default',)
 
     def __init__(self, default=_none):
-         self.default = default
+        self.default = default
 
     def __call__(self, obj):
         # identity accessor
@@ -82,15 +85,16 @@ class GetValue(object):
 
     def __getitem__(self, place):
         return GetItemValue(
-            place,  xform=(lambda obj: self(obj)), default=self.default)
+            place, xform=(lambda obj: self(obj)), default=self.default)
 
     def ONLY(self, specifier):
         """
-        Restrict the action of the accessor expression to members of a certain class;
-        return default value otherwise.
+        Restrict the action of the accessor expression to members of a certain
+        class; return default value otherwise.
 
         The invocation to `only`:meth: should *always be last*::
 
+            >>> from gc3libs import Struct
             >>> fn = GetValue(default='foo').a[0].ONLY(Struct)
             >>> fn(Struct(a=['bar','baz']))
             'bar'
@@ -120,6 +124,7 @@ Use this for better readability (e.g., `GET[0]` instead of
 
 
 class GetAttributeValue(GetValue):
+
     """
     Return an accessor function for the given attribute.
 
@@ -127,6 +132,7 @@ class GetAttributeValue(GetValue):
     object, returns the value of its attribute `attr`, whose name is
     specified in the `GetAttributeValue` constructor::
 
+       >>> from gc3libs import Struct
         >>> fn = GetAttributeValue('x')
         >>> a = Struct(x=1, y=2)
         >>> fn(a)
@@ -193,6 +199,7 @@ class GetAttributeValue(GetValue):
 
 
 class GetItemValue(GetValue):
+
     """
     Return accessor function for the given item in a sequence.
 
@@ -275,6 +282,7 @@ class GetItemValue(GetValue):
 
 
 class GetOnly(GetValue):
+
     """
     Apply accessor function to members of a certain class; return a
     default value otherwise.
@@ -284,6 +292,7 @@ class GetOnly(GetValue):
     function is passed an instance of a different class, the default
     value is returned::
 
+       >>> from gc3libs import Struct
        >>> fn4 = GetOnly(Struct, default=42)
        >>> isinstance(fn4(Struct(foo='bar')), Struct)
        True
@@ -317,9 +326,7 @@ class GetOnly(GetValue):
                 return None
 
 
-
-
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

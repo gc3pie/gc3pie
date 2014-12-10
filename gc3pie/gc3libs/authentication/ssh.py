@@ -26,9 +26,11 @@ import gc3libs
 from gc3libs.authentication import Auth
 import gc3libs.exceptions
 
+
 class SshAuth(object):
+
     def __init__(self, **auth):
-        
+
         try:
             # test validity
             assert auth['type'] == 'ssh',\
@@ -36,8 +38,9 @@ class SshAuth(object):
                 % auth.type
             auth['username']
             self.__dict__.update(auth)
-        except AssertionError, x:
-            raise gc3libs.exceptions.ConfigurationError('Erroneous configuration parameter: %s' % str(x))
+        except AssertionError as x:
+            raise gc3libs.exceptions.ConfigurationError(
+                'Erroneous configuration parameter: %s' % str(x))
 
     def check(self):
         gc3libs.log.debug('Checking auth: SshAuth')
@@ -49,7 +52,7 @@ class SshAuth(object):
 Auth.register('ssh', SshAuth)
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

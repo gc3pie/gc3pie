@@ -36,6 +36,7 @@ import gc3libs.utils
 
 
 class Session(list):
+
     """
     A 'session' is a persistent collection of tasks.
 
@@ -125,7 +126,7 @@ class Session(list):
     INDEX_FILENAME = 'session_ids.txt'
     STORE_URL_FILENAME = "store.url"
     TIMESTAMP_FILES = {'start': 'created',
-                       'end'  : 'finished'}
+                       'end': 'finished'}
 
     DEFAULT_JOBS_DIR = 'jobs'
 
@@ -143,9 +144,14 @@ class Session(list):
           are used if and only if a new session is being *created*; they are
           ignored when loading existing sessions!
 
-        The `create` argument is used to control the behavior in case the session does not exists.
-        If `create` is `False` and the session does not exists an error will be raised.
-        If `create` is `True` and the session does not exists then a new session will be created.
+        The `create` argument is used to control the behavior in case the
+        session does not exists.
+
+        If `create` is `False` and the session does not exists an error
+        will be raised.
+
+        If `create` is `True` and the session does not exists then a new
+        session will be created.
 
         By default `gc3libs.persistence.filesystem.FileSystemStore`:class:
         (which see) is used for providing the session with a store.
@@ -174,16 +180,19 @@ class Session(list):
             # Session already exists?
             try:
                 self._load_session(**extra_args)
-            except IOError, err:
-                gc3libs.log.debug("Cannot load session '%s': %s", path, str(err))
+            except IOError as err:
+                gc3libs.log.debug(
+                    "Cannot load session '%s': %s", path, str(err))
                 if err.errno == 2:  # "No such file or directory"
                     if create:
                         gc3libs.log.debug(
-                            "Assuming session is incomplete or corrupted, creating it again.")
+                            "Assuming session is incomplete or corrupted,"
+                            " creating it again.")
                         self._create_session(store_url, **extra_args)
                     else:
                         raise gc3libs.exceptions.InvalidArgument(
-                            "Directory '%s' does not contain a valid session" % self.path)
+                            "Directory '%s' does not contain a valid session" %
+                            self.path)
                 else:
                     raise
         else:
@@ -202,15 +211,16 @@ class Session(list):
         # or SQLite raises an "OperationalError: unable to open
         # database file None None"
         gc3libs.utils.mkdir(self.path)
-        self.store = gc3libs.persistence.make_store(self.store_url, **extra_args)
+        self.store = gc3libs.persistence.make_store(
+            self.store_url, **extra_args)
         self._save_store_url_file()
         self._save_index_file()
 
         # Save the current command line on ``created`` file.
         fd = open(os.path.join(
             self.path,
-            self.TIMESTAMP_FILES['start']),'w')
-        fd.write(str.join(' ', sys.argv)+'\n')
+            self.TIMESTAMP_FILES['start']), 'w')
+        fd.write(str.join(' ', sys.argv) + '\n')
         fd.close()
 
         self.set_start_timestamp()
@@ -242,7 +252,7 @@ class Session(list):
         """
         # check access to new-style session dir and make it if needed
         if os.path.exists(self.path):
-            gc3libs.utils.test_file(self.path, os.W_OK|os.X_OK, isdir=True)
+            gc3libs.utils.test_file(self.path, os.W_OK | os.X_OK, isdir=True)
         else:
             os.makedirs(self.path)
 
@@ -256,10 +266,14 @@ class Session(list):
                 ids_out.write('\n')
             ids_out.close()
             ids_in.close()
-        except Exception, err:
+        except Exception as err:
             gc3libs.log.error(
-                "Error converting old-style session index '%s' to new-style one '%s':"
-                " %s: %s", ids_in.name, ids_out.name, err.__class__.__name__, str(err))
+                "Error converting old-style session index '%s' to new-style"
+                " one '%s': %s: %s",
+                ids_in.name,
+                ids_out.name,
+                err.__class__.__name__,
+                str(err))
             try:
                 os.remove(ids_out.name)
             except:
@@ -271,10 +285,14 @@ class Session(list):
         new_jobs_dir = os.path.join(self.path, self.DEFAULT_JOBS_DIR)
         try:
             shutil.move(jobs_dir, new_jobs_dir)
-        except Exception, err:
+        except Exception as err:
             gc3libs.log.error(
-                "Error moving old-style session store '%s' to new location '%s':"
-                " %s: %s", jobs_dir, new_jobs_dir, err.__class__.__name__, str(err))
+                "Error moving old-style session store '%s' to new location"
+                " '%s': %s: %s",
+                jobs_dir,
+                new_jobs_dir,
+                err.__class__.__name__,
+                str(err))
             try:
                 os.remove(ids_out.name)
             except:
@@ -285,21 +303,28 @@ class Session(list):
         try:
             self.store_url = ('file://%s' % os.path.abspath(new_jobs_dir))
             self._save_store_url_file()
-        except Exception, err:
+        except Exception as err:
             gc3libs.log.error(
-                "Error moving old-style session store '%s' to new location '%s':"
-                " %s: %s", jobs_dir, new_jobs_dir, err.__class__.__name__, str(err))
+                "Error moving old-style session store '%s' to new location"
+                " '%s': %s: %s",
+                jobs_dir,
+                new_jobs_dir,
+                err.__class__.__name__,
+                str(err))
             try:
                 os.remove(ids_out.name)
             except:
                 pass
             try:
                 shutil.move(new_jobs_dir, jobs_dir)
-            except Exception, err:
+            except Exception as err:
                 # log error and ignore it
                 gc3libs.log.error(
-                    "Additionally, got a %s while moving back '%s' to '%s': %s",
-                    err.__class__.__name__, new_jobs_dir, jobs_dir, str(err))
+                    "Additionally, got a %s while moving back '%s' to '%s':"
+                    " %s", err.__class__.__name__,
+                    new_jobs_dir,
+                    jobs_dir,
+                    str(err))
         # Try to guess when the session has been started
         statinfo = os.stat(index_csv)
         self.created = min(statinfo.st_ctime,
@@ -311,7 +336,7 @@ class Session(list):
         # old index (and ignore any related error)
         try:
             os.remove(index_csv)
-        except Exception, err:
+        except Exception as err:
             gc3libs.log.warning(
                 "Ignoring '%s' error that occurred in removing file '%s': %s",
                 err.__class__.__name__, index_csv, err)
@@ -335,7 +360,8 @@ class Session(list):
             gc3libs.log.info(
                 "Unable to load session: file %s is missing." % (store_fname))
             raise
-        self.store = gc3libs.persistence.make_store(self.store_url, **extra_args)
+        self.store = gc3libs.persistence.make_store(
+            self.store_url, **extra_args)
 
         idx_filename = os.path.join(self.path, self.INDEX_FILENAME)
         try:
@@ -352,12 +378,13 @@ class Session(list):
             self.created = os.stat(start_file).st_mtime
         except OSError:
             gc3libs.log.warning(
-                "Unable to recover starting time from existing session: file %s is missing." % (start_file))
+                "Unable to recover starting time from existing session:"
+                " file %s is missing." % (start_file))
 
         for task_id in ids:
             try:
                 self.tasks[task_id] = self.store.load(task_id)
-            except Exception, err:
+            except Exception as err:
                 if gc3libs.error_ignored(
                         # context:
                         # - module
@@ -393,7 +420,7 @@ class Session(list):
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
 
-    ## collection management
+    # collection management
 
     def add(self, task, flush=True):
         """
@@ -448,7 +475,8 @@ class Session(list):
 
     def _recursive_remove_from_store(self, task_id):
         """
-        Remove a task from the store and, if the object has a `tasks` attribute containing a list of other tasks, remove them from the store
+        Remove a task from the store and, if the object has a `tasks`
+        attribute containing a list of other tasks, remove them from the store
         """
         queue = [task_id]
         while queue:
@@ -461,7 +489,7 @@ class Session(list):
                 pass
             try:
                 self.store.remove(toremove)
-            except Exception, ex:
+            except Exception as ex:
                 gc3libs.log.warning(
                     "Error removing task id `%s` from the store:"
                     " %s" % ex)
@@ -492,7 +520,7 @@ class Session(list):
         """
         return set(task.jobname for task in self.tasks.values())
 
-    ## persistence management
+    # persistence management
 
     def flush(self):
         """
@@ -623,7 +651,7 @@ class Session(list):
         self.finished = self._touch_file(self.TIMESTAMP_FILES['end'])
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

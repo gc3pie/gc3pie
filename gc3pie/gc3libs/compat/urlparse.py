@@ -12,12 +12,12 @@ __all__ = ["urlparse", "urlunparse", "urljoin", "urldefrag",
 import sys as _sys
 if _sys.version >= (2, 5):
     # urlparse objects have attribute access since v2.5
-    from urlparse import *
+    from .urlparse import *
 
 else:
     # use the source from Python 2.7 (SVN r87331):
     # http://svn.python.org/view/python/branches/release27-maint/Lib/urlparse.py?view=markup
-        
+
     # A classification of schemes ('' means apply by default)
     uses_relative = ['ftp', 'http', 'gopher', 'nntp', 'imap',
                      'wais', 'file', 'https', 'shttp', 'mms',
@@ -25,7 +25,7 @@ else:
     uses_netloc = ['ftp', 'http', 'gopher', 'nntp', 'telnet',
                    'imap', 'wais', 'file', 'mms', 'https', 'shttp',
                    'snews', 'prospero', 'rtsp', 'rtspu', 'rsync', '',
-                   'svn', 'svn+ssh', 'sftp','nfs','git', 'git+ssh']
+                   'svn', 'svn+ssh', 'sftp', 'nfs', 'git', 'git+ssh']
     non_hierarchical = ['gopher', 'hdl', 'mailto', 'news',
                         'telnet', 'wais', 'imap', 'snews', 'sip', 'sips']
     uses_params = ['ftp', 'hdl', 'prospero', 'http', 'imap',
@@ -53,8 +53,9 @@ else:
     # use the `gc3libs.compat` namespace, so we can be sure this works
     # on Python 2.4 and 2.5
     from gc3libs.compat._collections import namedtuple
-    
+
     class ResultMixin(object):
+
         """Shared methods for the parsed result objects."""
 
         @property
@@ -97,22 +98,27 @@ else:
             else:
                 return None
 
+    class SplitResult(
+            namedtuple(
+                'SplitResult',
+                'scheme netloc path query fragment'),
+            ResultMixin):
 
-    class SplitResult(namedtuple('SplitResult', 'scheme netloc path query fragment'), ResultMixin):
-        
         __slots__ = ()
 
         def geturl(self):
             return urlunsplit(self)
 
-
-    class ParseResult(namedtuple('ParseResult', 'scheme netloc path params query fragment'), ResultMixin):
+    class ParseResult(
+            namedtuple(
+                'ParseResult',
+                'scheme netloc path params query fragment'),
+            ResultMixin):
 
         __slots__ = ()
 
         def geturl(self):
             return urlunparse(self)
-
 
     def urlparse(url, scheme='', allow_fragments=True):
         """Parse a URL into 6 components:
@@ -129,16 +135,17 @@ else:
         return ParseResult(scheme, netloc, url, params, query, fragment)
 
     def _splitparams(url):
-        if '/'  in url:
+        if '/' in url:
             i = url.find(';', url.rfind('/'))
             if i < 0:
                 return url, ''
         else:
             i = url.find(';')
-        return url[:i], url[i+1:]
+        return url[:i], url[i + 1:]
 
     def _splitnetloc(url, start=0):
-        delim = len(url)   # position of end of domain part of url, default is end
+        # position of end of domain part of url, default is end
+        delim = len(url)
         for c in '/?#':    # look for delimiters; the order is NOT important
             wdelim = url.find(c, start)        # find first of this delim
             if wdelim >= 0:                    # if found
@@ -156,14 +163,14 @@ else:
         cached = _parse_cache.get(key, None)
         if cached:
             return cached
-        if len(_parse_cache) >= MAX_CACHE_SIZE: # avoid runaway growth
+        if len(_parse_cache) >= MAX_CACHE_SIZE:  # avoid runaway growth
             clear_cache()
         netloc = query = fragment = ''
         i = url.find(':')
         if i > 0:
-            if url[:i] == 'http': # optimize the common case
+            if url[:i] == 'http':  # optimize the common case
                 scheme = url[:i].lower()
-                url = url[i+1:]
+                url = url[i + 1:]
                 if url[:2] == '//':
                     netloc, url = _splitnetloc(url, 2)
                     if (('[' in netloc and ']' not in netloc) or
@@ -176,12 +183,12 @@ else:
                 v = SplitResult(scheme, netloc, url, query, fragment)
                 _parse_cache[key] = v
                 return v
-            if url.endswith(':') or not url[i+1].isdigit():
+            if url.endswith(':') or not url[i + 1].isdigit():
                 for c in url[:i]:
                     if c not in scheme_chars:
                         break
                 else:
-                    scheme, url = url[:i].lower(), url[i+1:]
+                    scheme, url = url[:i].lower(), url[i + 1:]
 
         if url[:2] == '//':
             netloc, url = _splitnetloc(url, 2)
@@ -214,7 +221,8 @@ else:
         empty query; the RFC states that these are equivalent)."""
         scheme, netloc, url, query, fragment = data
         if netloc or (scheme and scheme in uses_netloc and url[:2] != '//'):
-            if url and url[:1] != '/': url = '/' + url
+            if url and url[:1] != '/':
+                url = '/' + url
             url = '//' + (netloc or '') + url
         if scheme:
             url = scheme + ':' + url
@@ -232,9 +240,9 @@ else:
         if not url:
             return base
         bscheme, bnetloc, bpath, bparams, bquery, bfragment = \
-                urlparse(base, '', allow_fragments)
+            urlparse(base, '', allow_fragments)
         scheme, netloc, path, params, query, fragment = \
-                urlparse(url, bscheme, allow_fragments)
+            urlparse(url, bscheme, allow_fragments)
         if scheme != bscheme or scheme not in uses_relative:
             return url
         if scheme in uses_netloc:
@@ -258,15 +266,15 @@ else:
             segments[-1] = ''
         while '.' in segments:
             segments.remove('.')
-        while 1:
+        while True:
             i = 1
             n = len(segments) - 1
             while i < n:
                 if (segments[i] == '..'
-                    and segments[i-1] not in ('', '..')):
-                    del segments[i-1:i+1]
+                        and segments[i - 1] not in ('', '..')):
+                    del segments[i - 1:i + 1]
                     break
-                i = i+1
+                i = i + 1
             else:
                 break
         if segments == ['', '..']:
@@ -293,10 +301,11 @@ else:
     # unquote method for parse_qs and parse_qsl
     # Cannot use directly from urllib as it would create a circular reference
     # because urllib uses urlparse methods (urljoin).  If you update this function,
-    # update it also in urllib.  This code duplication does not existin in Python3.
+    # update it also in urllib.  This code duplication does not existin in
+    # Python3.
 
     _hexdig = '0123456789ABCDEFabcdef'
-    _hextochr = dict((a+b, chr(int(a+b,16)))
+    _hextochr = dict((a + b, chr(int(a + b, 16)))
                      for a in _hexdig for b in _hexdig)
 
     def unquote(s):
@@ -368,7 +377,7 @@ else:
             nv = name_value.split('=', 1)
             if len(nv) != 2:
                 if strict_parsing:
-                    raise ValueError, "bad query field: %r" % (name_value,)
+                    raise ValueError("bad query field: %r" % (name_value,))
                 # Handle case of a control-name with no equal sign
                 if keep_blank_values:
                     nv.append('')

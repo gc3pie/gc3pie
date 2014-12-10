@@ -8,7 +8,7 @@ For details and the discussion leading up to this,
 see: `<http://code.google.com/p/gc3pie/issues/detail?id=47>`
 
 """
-# Copyright (C) 2011, 2012, 2013, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011 - 2014, GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -38,13 +38,14 @@ import types
 from gc3libs.utils import defproperty
 
 
-## utility functions
+# utility functions
 
 _QTY_RE = re.compile(
     r'(?P<amount>[+-]?([0-9]+(\.[0-9]+)?|\.[0-9]+)(E[+-]?[0-9]+)?)'
     r'\s*'
     r'(?P<unit>[a-z]+)?',
     re.I | re.X)
+
 
 def _split_amount_and_unit(val, default_unit=None, allow=None):
     """
@@ -101,8 +102,12 @@ def _split_amount_and_unit(val, default_unit=None, allow=None):
         unit = default_unit
     if allow is not None:
         if unit not in allow:
-            raise ValueError("Unit '%s' is not allowed here: only %s are."
-                             % (unit, str.join(",", [("'%s'" % a) for a in sorted(allow)])))
+            raise ValueError(
+                "Unit '%s' is not allowed here: only %s are." %
+                (unit, str.join(
+                    ",", [
+                        ("'%s'" %
+                         a) for a in sorted(allow)])))
     return (amount, unit)
 
 
@@ -123,12 +128,14 @@ def _make_comparison_function(op, domain):
                 "Cannot compare '%s' with '%s':"
                 " Can only compare homogeneous quantities!"
                 % (self.__class__.__name__, other.__class__.__name__))
-            return op(self.amount(unit=self.base, conv=domain), other.amount(unit=self.base, conv=domain))
+            return op(self.amount(unit=self.base, conv=domain),
+                      other.amount(unit=self.base, conv=domain))
         return cmp_fn
     return decorate
 
 
 class _Quantity(object):
+
     """
     Represent a dimensioned value.
 
@@ -166,7 +173,7 @@ class _Quantity(object):
 
       - http://martinfowler.com/eaaDev/quantity.html
       - http://mail.python.org/pipermail/python-ideas/2010-March/006894.html
-      - http://mgrzyb.blogspot.ch/2011/08/quantity-pattern-lessons-learned-from.html
+      - http://goo.gl/Drta6i
 
     """
 
@@ -176,7 +183,7 @@ class _Quantity(object):
         '_name',
         '_unit',
         '_UNITS',
-        )
+    )
 
     def amount(self, unit=None, conv=(lambda value: value)):
         """
@@ -205,6 +212,7 @@ class _Quantity(object):
 
         This is a read-only class-level attribute.
         """
+
         def fget(self):
             return self._base
         return locals()
@@ -217,6 +225,7 @@ class _Quantity(object):
         This is a read-only attribute: once set in the constructor, it
         cannot be changed.
         """
+
         def fget(self):
             return self._unit
         return locals()
@@ -232,13 +241,14 @@ class _Quantity(object):
         This is a read-only attribute: once set in the constructor, it
         cannot be changed.
         """
+
         def fget(self):
             return self._name
         return locals()
 
-    ## instance construction
+    # instance construction
 
-    _UNITS = { }
+    _UNITS = {}
     """
     A registry of valid units (by name).
 
@@ -253,7 +263,6 @@ class _Quantity(object):
         Register a new named quantity, i.e., a unit.
         """
         cls._UNITS[unit.name] = unit
-
 
     # since we are subclassing a builtin type,
     # we need to provide `__new__`, not `__init__`
@@ -270,7 +279,8 @@ class _Quantity(object):
             new._unit = new
         else:
             # default: quantity is int(val)*unit
-            assert unit is not None, ("Cannot construct a quantity from amount alone.")
+            assert unit is not None, (
+                "Cannot construct a quantity from amount alone.")
             assert unit.name in cls._UNITS, (
                 "Unit '%s' not allowed in '%s' quantity: only %s are."
                 % (unit.name, cls.__name__,
@@ -284,7 +294,7 @@ class _Quantity(object):
     @classmethod
     def _new_from_amount_and_unit(cls, amount, unit):
         new = super(_Quantity, cls).__new__(cls)
-        new._amount = amount*unit.amount(cls._base)
+        new._amount = amount * unit.amount(cls._base)
         new._unit = unit
         new._name = None
         return new
@@ -301,8 +311,7 @@ class _Quantity(object):
         # be the very class itself that we are going to serialize)
         return (("%d %s" % (self.amount(), self.unit.name)), self.name)
 
-
-    ## string representation
+    # string representation
     def to_str(self, fmt, unit=None, conv=(lambda value: value)):
         """
         Return a string representation of the quantity.
@@ -331,7 +340,7 @@ class _Quantity(object):
             unit = self.unit
         try:
             return (fmt % (self.amount(unit, conv=conv), unit.name))
-        except TypeError: # not all arguments converted
+        except TypeError:  # not all arguments converted
             return (fmt % self.amount(unit, conv=conv)) + unit.name
 
     def __str__(self):
@@ -341,15 +350,21 @@ class _Quantity(object):
         return self.to_str("%g%s")
 
     def __repr__(self):
-        """Return a string representation that can be read back with `eval()`."""
+        """
+        Return a string representation that can be read back with
+        `eval()`.
+        """
         if hasattr(self.unit, 'name'):
             return ('%s(%g, unit=%s)'
                     % (self.__class__.__name__, self.amount(), self.unit.name))
         else:
-            return ('%s(%g, unit=<%s object at 0x%x>)'
-                    % (self.__class__.__name__, self.amount(), self.unit.__class__.__name__, id(self.unit)))
+            return (
+                '%s(%g, unit=<%s object at 0x%x>)' %
+                (self.__class__.__name__, self.amount(),
+                 self.unit.__class__.__name__, id(self.unit)))
 
-    ## arithmetic: allow multiplication by a scalar, and division by a quantity (of the same kind)
+    # arithmetic: allow multiplication by a scalar, and division by a quantity
+    # (of the same kind)
     @staticmethod
     def _smallest_unit(self, other):
         """
@@ -378,22 +393,24 @@ class _Quantity(object):
 
     def __add__(self, other):
         assert isinstance(other, self.__class__), \
-               ("Cannot add '%s' to '%s':"
+            ("Cannot add '%s' to '%s':"
                 " can sum only homogeneous quantities."
                 % (self.__class__.__name__, other.__class__.__name__))
         unit = self._smallest_unit(self, other)
         return self._new_from_amount_and_unit(
-            (self.amount(self.base) + other.amount(self.base)) / unit.amount(self.base),
+            (self.amount(self.base) + other.amount(self.base)) /
+            unit.amount(self.base),
             unit=unit)
 
     def __sub__(self, other):
         assert isinstance(other, self.__class__), \
-               ("Cannot subtract '%s' from '%s':"
+            ("Cannot subtract '%s' from '%s':"
                 " can only operate on homogeneous quantities."
                 % (self.__class__.__name__, other.__class__.__name__))
         unit = self._smallest_unit(self, other)
         return self._new_from_amount_and_unit(
-            (self.amount(self.base) - other.amount(self.base)) / unit.amount(self.base),
+            (self.amount(self.base) - other.amount(self.base)) /
+            unit.amount(self.base),
             unit=unit)
 
     def __mul__(self, coeff):
@@ -403,9 +420,9 @@ class _Quantity(object):
             except (TypeError, ValueError):
                 raise TypeError("Cannot multiply '%s' and '%s':"
                                 " can only multiply '%s' by a pure number."
-                                ""% (coeff.__class__.__name__,
-                                     self.__class__.__name__,
-                                     self.__class__.__name__))
+                                "" % (coeff.__class__.__name__,
+                                      self.__class__.__name__,
+                                      self.__class__.__name__))
         return self._new_from_amount_and_unit(coeff * self.amount(), self.unit)
     __rmul__ = __mul__
 
@@ -415,8 +432,10 @@ class _Quantity(object):
         or divide a quantity by the specified amount.
         """
         try:
-            # the quotient of two (homogeneous) quantities is a ratio (pure number)
-            return (self.amount(self.base, conv=float) / other.amount(self.base, conv=float))
+            # the quotient of two (homogeneous) quantities is a ratio (pure
+            # number)
+            return (self.amount(self.base, conv=float) /
+                    other.amount(self.base, conv=float))
         except AttributeError:
             # we could really return `self * (1.0/other)`, but we want
             # to set the unit to a possibly smaller one (see
@@ -425,22 +444,24 @@ class _Quantity(object):
                 amount = self.amount(self.base, conv=float) / float(other)
             except TypeError:
                 raise TypeError(
-                    "Cannot multiply '%s' and '%s': can only take"
+                    "Cannot divide '%s' by '%s': can only take"
                     " the ratio of '%s' and a pure number or an"
-                    " homogeneous quantity." % (coeff.__class__.__name__,
-                                                self.__class__.__name__,
+                    " homogeneous quantity." % (self.__class__.__name__,
+                                                other.__class__.__name__,
                                                 self.__class__.__name__))
             unit = self._largest_nonfractional_unit(amount)
-            return self._new_from_amount_and_unit(amount / unit.amount(self.base), unit)
+            return self._new_from_amount_and_unit(
+                amount / unit.amount(self.base), unit)
 
     def __floordiv__(self, other):
         """Return the ratio of two quantities (as a whole number)."""
         assert isinstance(other, self.__class__), \
-               ("Cannot divide '%s' by '%s':"
-                " can only take the ratio of homogeneous quantities."
+            ("Cannot divide '%s' by '%s':"
+             " can only take the ratio of homogeneous quantities."
                 % (self.__class__.__name__, other.__class__.__name__))
         # the quotient of two (homogeneous) quantities is a ratio (pure number)
-        return (self.amount(self.base, conv=int) / other.amount(self.base, conv=int))
+        return (self.amount(self.base, conv=int) /
+                other.amount(self.base, conv=int))
 
     def __radd__(self, other):
         """
@@ -458,7 +479,8 @@ class _Quantity(object):
                 "Unsupported operands for +: %s (type '%s') and %s (type '%s')"
                 % (other, type(other), self, type(self)))
 
-    ## rich comparison operators, to ensure only homogeneous quantities are compared
+    # rich comparison operators, to ensure only homogeneous quantities are
+    # compared
     @_make_comparison_function(operator.gt, int)
     def __gt__(self, other):
         pass
@@ -485,6 +507,7 @@ class _Quantity(object):
 
 
 class Quantity(object):
+
     """
     Metaclass for creating quantity classes.
 
@@ -520,6 +543,7 @@ class Quantity(object):
       True
 
     """
+
     def __init__(self, base_unit_name, **other_units):
         self.base_unit_name = base_unit_name
         self.other_units = other_units
@@ -545,6 +569,7 @@ class Quantity(object):
 
 
 class Memory(object):
+
     """
     Represent an amount of RAM.
 
@@ -669,24 +694,26 @@ class Memory(object):
 
     """
     __metaclass__ = Quantity(
-        # base unit is "bytes"; use the symbol 'B', although this is not the SI usage.
+        # base unit is "bytes"; use the symbol 'B', although this is not the SI
+        # usage.
         'B',
         # 10-base units
         kB=1000,
-        MB=1000*1000,
-        GB=1000*1000*1000,
-        TB=1000*1000*1000*1000,
-        PB=1000*1000*1000*1000*1000,
+        MB=1000 * 1000,
+        GB=1000 * 1000 * 1000,
+        TB=1000 * 1000 * 1000 * 1000,
+        PB=1000 * 1000 * 1000 * 1000 * 1000,
         # binary base units
         KiB=1024,                # KiBiByte
-        MiB=1024*1024,           # MiBiByte
-        GiB=1024*1024*1024,      # GiBiByte
-        TiB=1024*1024*1024*1024, # TiBiByte
-        PiB=1024*1024*1024*1024*1024, # PiBiByte
-        )
+        MiB=1024 * 1024,           # MiBiByte
+        GiB=1024 * 1024 * 1024,      # GiBiByte
+        TiB=1024 * 1024 * 1024 * 1024,  # TiBiByte
+        PiB=1024 * 1024 * 1024 * 1024 * 1024,  # PiBiByte
+    )
 
 
 class Duration(object):
+
     """
     Represent the duration of a time lapse.
 
@@ -740,10 +767,10 @@ class Duration(object):
       However, the formats HH:MM and MM:SS are rejected as ambiguous::
 
         >>> # is this hours:minutes or minutes:seconds ?
-        >>> l0 = Duration('01:02')
+        >>> l0 = Duration('01:02')  # doctest:+ELLIPSIS
         Traceback (most recent call last):
           ...
-        ValueError: Duration '01:02' is ambiguous: use '1m 2s' for 1 minutes and 2 seconds, or '1h 2m' for 1 hours and 2 minutes.
+        ValueError: Duration '01:02' is ambiguous: use '1m 2s' ...
 
     * Finally, you can specify a duration like any other quantity,
       as an integral amount of a given time unit::
@@ -883,28 +910,28 @@ class Duration(object):
         microsec=1000,
         microseconds=1000,
         # seconds(s)
-        s=10**6,
-        sec=10**6,
-        secs=10**6,
-        second=10**6,
-        seconds=10**6,
+        s=10 ** 6,
+        sec=10 ** 6,
+        secs=10 ** 6,
+        second=10 ** 6,
+        seconds=10 ** 6,
         # minute(s)
-        m=60 * 10**6,
-        min=60 * 10**6,
-        mins=60 * 10**6,
-        minute=60 * 10**6,
-        minutes=60 * 10**6,
+        m=60 * 10 ** 6,
+        min=60 * 10 ** 6,
+        mins=60 * 10 ** 6,
+        minute=60 * 10 ** 6,
+        minutes=60 * 10 ** 6,
         # hour(s)
-        h=60*60 * 10**6,
-        hr=60*60 * 10**6,
-        hrs=60*60 * 10**6,
-        hour=60*60 * 10**6,
-        hours=60*60 * 10**6,
+        h=60 * 60 * 10 ** 6,
+        hr=60 * 60 * 10 ** 6,
+        hrs=60 * 60 * 10 ** 6,
+        hour=60 * 60 * 10 ** 6,
+        hours=60 * 60 * 10 ** 6,
         # day(s)
-        d=24*60*60 * 10**6,
-        day=24*60*60 * 10**6,
-        days=24*60*60 * 10**6,
-        )
+        d=24 * 60 * 60 * 10 ** 6,
+        day=24 * 60 * 60 * 10 ** 6,
+        days=24 * 60 * 60 * 10 ** 6,
+    )
 
     # override ctor to hook `_new_from_timedelta` in
     def __new__(cls, val, unit=None, name=None):
@@ -952,8 +979,8 @@ class Duration(object):
                                 val1, val2, val1, val2,
                                 val1, val2, val1, val2))
         else:
-            # strings like `30 seconds` can be parsed by `_Quantity._new_from_string`;
-            # see http://blogs.gnome.org/jamesh/2005/06/23/overriding-class-methods-in-python/
+            # strings like `30 seconds` can be parsed by
+            # `_Quantity._new_from_string`; see http://goo.gl/pY44W5
             return super(Duration, cls)._new_from_string(val)
 
     @classmethod
@@ -979,7 +1006,8 @@ class Duration(object):
         """
         try:
             # Python 2.7 onwards
-            return cls._new_from_amount_and_unit(int(td.total_seconds()), Duration.s)
+            return cls._new_from_amount_and_unit(
+                int(td.total_seconds()), Duration.s)
         except AttributeError:
             return cls._new_from_amount_and_unit(
                 int(td.seconds + td.days * 24 * 3600),
@@ -998,8 +1026,12 @@ class Duration(object):
 # needed by `Duration._new_from_string`
 _TIMESPEC_RE = re.compile(
     r'('
-    # 1. allow HH:MM:SS or DD:HH:MM:SS; the form XX:YY is rejected because of ambiguity
-    r'((?P<days1>[0-9]+):)?(?P<hours1>[0-9]+):(?P<minutes1>[0-9]+):(?P<secs1>[0-9]+)'
+    # 1. allow HH:MM:SS or DD:HH:MM:SS; the form XX:YY is rejected because of
+    # ambiguity
+    r'((?P<days1>[0-9]+):)?'
+    '(?P<hours1>[0-9]+):'
+    '(?P<minutes1>[0-9]+):'
+    '(?P<secs1>[0-9]+)'
     r'|'
     # 2. allow `4days 3hrs`, `1 hour 4 minutes` and abbreviations `1d 2h 4m`
     r'((?P<days2>[0-9]+) \s* d(ays?))? \s*'
@@ -1008,24 +1040,24 @@ _TIMESPEC_RE = re.compile(
     r'((?P<secs2>[0-9]+) \s* s(ecs?))?'
     # 3. everything else is forwarded to `_Quantity._new_from_string`
     r')',
-    re.X|re.I)
+    re.X | re.I)
 _TIMESPEC_VALS = [
     # regexp group name
     # |          unit time lapse as seconds
     # |          |         corresponding `Duration` unit
     # |          |         |
-    ('days1',    24*60*60, Duration.day),
-    ('hours1',   60*60,    Duration.hour),
-    ('minutes1', 60,       Duration.minute),
-    ('secs1',    1,        Duration.s),
-    ('days2',    24*60*60, Duration.day),
-    ('hours2',   60*60,    Duration.hour),
-    ('minutes2', 60,       Duration.minute),
-    ('secs2',    1,        Duration.s),
-    ]
+    ('days1', 24 * 60 * 60, Duration.day),
+    ('hours1', 60 * 60, Duration.hour),
+    ('minutes1', 60, Duration.minute),
+    ('secs1', 1, Duration.s),
+    ('days2', 24 * 60 * 60, Duration.day),
+    ('hours2', 60 * 60, Duration.hour),
+    ('minutes2', 60, Duration.minute),
+    ('secs2', 1, Duration.s),
+]
 
 
-## aliases for common units
+# aliases for common units
 
 B = Memory.B
 byte = B
@@ -1057,7 +1089,7 @@ d = Duration.d
 days = d
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest

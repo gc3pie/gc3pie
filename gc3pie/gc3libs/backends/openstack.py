@@ -45,18 +45,15 @@ from gc3libs.exceptions import \
     LRMSSkipSubmissionToNextIteration, \
     LRMSSubmitError, \
     MaximumCapacityReached, \
-    RecoverableError, \
     TransportError, \
     UnrecoverableAuthError, \
     UnrecoverableDataStagingError, \
     UnrecoverableError
 import gc3libs.url
 from gc3libs import Run
-from gc3libs.utils import mkdir, same_docstring_as
+from gc3libs.utils import same_docstring_as
 from gc3libs.backends import LRMS
 from gc3libs.backends.vmpool import VMPool, InstanceNotFound
-from gc3libs.session import Session
-from gc3libs.persistence import Persistable
 from gc3libs.utils import cache_for
 from gc3libs.quantity import MiB
 
@@ -66,11 +63,13 @@ ERROR_STATES = ['ERROR', 'UNNKNOWN']
 PENDING_STATES = ['BUILD', 'REBUILD', 'REBOOT', 'HARD_REBOOT',
                   'RESIZE', 'REVERT_RESIZE']
 
+
 class OpenStackVMPool(VMPool):
 
     """
     Implementation of `VMPool` for OpenStack cloud
     """
+
     def _get_instance(self, vm_id):
         try:
             vm = self.conn.servers.get(vm_id)
@@ -79,11 +78,14 @@ class OpenStackVMPool(VMPool):
                 "No instance with id %s has been found." % vm_id)
         return vm
 
+
 class OpenStackLrms(LRMS):
+
     """
     OpenStack resource.
     """
     RESOURCE_DIR = '$HOME/.gc3/openstack.d'
+
     def __init__(self, name,
                  # these parameters are inherited from the `LRMS` class
                  architecture, max_cores, max_cores_per_job,
@@ -143,7 +145,8 @@ class OpenStackLrms(LRMS):
                 "Keypair name `%s` is invalid: keypair names can only contain "
                 "alphanumeric chars: [a-zA-Z0-9_]" % keypair_name)
         self.keypair_name = keypair_name
-        self.public_key = os.path.expanduser(os.path.expandvars(public_key.strip()))
+        self.public_key = os.path.expanduser(
+            os.path.expandvars(public_key.strip()))
         self.image_id = image_id
         self.image_name = image_name
         self.instance_type = instance_type
@@ -158,7 +161,8 @@ class OpenStackLrms(LRMS):
         self.subresource_args['architecture'] = self['architecture']
         self.subresource_args['max_cores'] = self['max_cores']
         self.subresource_args['max_cores_per_job'] = self['max_cores_per_job']
-        self.subresource_args['max_memory_per_core'] = self['max_memory_per_core']
+        self.subresource_args['max_memory_per_core'] = \
+            self['max_memory_per_core']
         self.subresource_args['max_walltime'] = self['max_walltime']
         # ShellcmdLrms by default trusts the configuration, instead of
         # checking the real amount of memory and number of cpus, but
@@ -177,7 +181,7 @@ class OpenStackLrms(LRMS):
             auto_enable_auth=True)
 
         # Only api version 1.1 are tested so far.
-        self.compute_api_version='1.1'
+        self.compute_api_version = '1.1'
 
         # "Connect" to the cloud (connection is actually performed
         # only when needed by the `Client` class.
@@ -200,12 +204,12 @@ class OpenStackLrms(LRMS):
             self.client.authenticate()
             # Fill the flavors and update the resource.
             self._flavors = self.client.flavors.list()
-            flavor = max(self._flavors, key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
+            flavor = max(self._flavors,
+                         key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
             gc3libs.log.info("Biggest flavor available on the cloud: %s",
                              flavor.name)
             self['max_cores'] = self['max_cores_per_job'] = flavor.vcpus
             self['max_memory_per_core'] = flavor.ram * MiB
-
 
     def _create_instance(self, image_id, name='gc3pie-instance',
                          instance_type=None, user_data=None):
@@ -246,7 +250,7 @@ class OpenStackLrms(LRMS):
         try:
             vm = self.client.servers.create(name, image_id, instance_type,
                                             key_name=self.keypair_name, **args)
-        except Exception, ex:
+        except Exception as ex:
             # scrape actual error kind and message out of the
             # exception; we do this mostly for sensible logging, but
             # could be an actual improvement to Boto to provide
@@ -255,7 +259,6 @@ class OpenStackLrms(LRMS):
             # XXX: is there a more robust way of doing this?
             # fall back to normal reporting...
             raise UnrecoverableError("Error starting instance: %s" % ex)
-
 
         self._vmpool.add_vm(vm)
         gc3libs.log.info(
@@ -279,7 +282,7 @@ class OpenStackLrms(LRMS):
                                       keypair.fingerprint,
                                       self.keypair_name))
             return keypair
-        except Exception, ex:
+        except Exception as ex:
             fd.close()
             raise UnrecoverableError("Error importing keypair %s: %s"
                                      % (self.keypair_name, ex))
@@ -301,7 +304,7 @@ class OpenStackLrms(LRMS):
                 res['max_memory_per_core'] = flavor.ram * MiB
                 res['max_cores_per_job'] = flavor.vcpus
                 res['max_cores'] = flavor.vcpus
-            except Exception, ex:
+            except Exception as ex:
                 # Ignore any error here, as we can get information on
                 # the subresources when we connect to it.
                 gc3libs.log.info(
@@ -342,7 +345,8 @@ class OpenStackLrms(LRMS):
         # try with SSH agent first
         gc3libs.log.debug("Checking if keypair is registered in SSH agent...")
         agent = paramiko.Agent()
-        fingerprints_from_agent = [ self.__str_fingerprint(k) for k in agent.get_keys() ]
+        fingerprints_from_agent = [self.__str_fingerprint(k)
+                                   for k in agent.get_keys()]
         if keypair.fingerprint in fingerprints_from_agent:
             gc3libs.log.debug("Found remote key fingerprint in SSH agent.")
             return True
@@ -362,7 +366,7 @@ class OpenStackLrms(LRMS):
         for format, reader in [
                 ('DSS', paramiko.DSSKey.from_private_key_file),
                 ('RSA', paramiko.RSAKey.from_private_key_file),
-                ]:
+        ]:
             try:
                 gc3libs.log.debug(
                     "Trying to load key file `%s` as SSH %s key...",
@@ -371,15 +375,16 @@ class OpenStackLrms(LRMS):
                 gc3libs.log.info(
                     "Successfully loaded key file `%s` as SSH %s key.",
                     keyfile, format)
-            ## PasswordRequiredException < SSHException so we must check this first
+            # PasswordRequiredException < SSHException so we must
+            # check this first
             except paramiko.PasswordRequiredException:
                 gc3libs.log.warning(
-                    "Key %s is encripted with a password, so we cannot check if it"
-                    " matches the remote keypair (maybe you should start `ssh-agent`?)."
-                    " Continuing without consistency check with remote fingerprint.",
-                    keyfile)
+                    "Key %s is encripted with a password, so we cannot check"
+                    " if it matches the remote keypair (maybe you should start"
+                    " `ssh-agent`?). Continuing without consistency check with"
+                    " remote fingerprint.", keyfile)
                 return False
-            except paramiko.SSHException, ex:
+            except paramiko.SSHException as ex:
                 gc3libs.log.debug(
                     "File `%s` is not a valid %s private key: %s",
                     keyfile, format, ex)
@@ -393,8 +398,8 @@ class OpenStackLrms(LRMS):
         localkey_fingerprint = self.__str_fingerprint(pkey)
         if localkey_fingerprint != keypair.fingerprint:
             raise UnrecoverableAuthError(
-                "Keypair `%s` exists but has different fingerprint than local one:"
-                " local public key file `%s` has fingerprint `%s`,"
+                "Keypair `%s` exists but has different fingerprint than local"
+                " one: local public key file `%s` has fingerprint `%s`,"
                 " whereas EC2 API reports fingerprint `%s`. Aborting!" % (
                     self.public_key,
                     self.keypair_name,
@@ -451,9 +456,9 @@ class OpenStackLrms(LRMS):
                 continue
             self.security_group_rules.append({
                 'ip_protocol': rulesplit[0],
-                'from_port':   int(rulesplit[1]),
-                'to_port':     int(rulesplit[2]),
-                'cidr_ip':     rulesplit[3],
+                'from_port': int(rulesplit[1]),
+                'to_port': int(rulesplit[2]),
+                'cidr_ip': rulesplit[3],
             })
 
     def _setup_security_groups(self):
@@ -468,7 +473,7 @@ class OpenStackLrms(LRMS):
             return
 
         try:
-            security_group = self._get_security_group(self.security_group_name)
+            self._get_security_group(self.security_group_name)
         except NotFound:
             try:
                 gc3libs.log.info("Creating security group %s",
@@ -477,14 +482,14 @@ class OpenStackLrms(LRMS):
                 self.client.security_groups.create(
                     self.security_group_name,
                     "GC3Pie_%s" % self.security_group_name)
-            except Exception, ex:
+            except Exception as ex:
                 gc3libs.log.error("Error creating security group %s: %s",
                                   self.security_group_name, ex)
                 raise UnrecoverableError(
                     "Error creating security group %s: %s"
                     % (self.security_group_name, ex))
 
-            security_group = self._get_security_group(self.security_group_name)
+            self._get_security_group(self.security_group_name)
         # TODO: Check if the security group has all the rules we want
         # security_group = groups[self.security_group_name]
         # current_rules = []
@@ -549,10 +554,12 @@ class OpenStackLrms(LRMS):
                 flavor.name, conf_option)
             return flavor
         else:
-            valid_flavors = [ flv for flv in self._flavors
-                              if flv.vcpus >= job.requested_cores
-                              and (flv.ram * MiB - self.vm_os_overhead) >= job.requested_memory ]
-            flavor = min(valid_flavors, key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
+            valid_flavors = [flv for flv in self._flavors
+                             if flv.vcpus >= job.requested_cores
+                             and (flv.ram * MiB - self.vm_os_overhead)
+                             >= job.requested_memory]
+            flavor = min(valid_flavors,
+                         key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
             gc3libs.log.debug(
                 "Using flavor %s which is the smallest flavor that can run"
                 " application %s", flavor.name, job.jobname)
@@ -572,11 +579,12 @@ class OpenStackLrms(LRMS):
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
         try:
-            subresource = self._get_subresource(self._get_vm(app.os_instance_id))
+            subresource = self._get_subresource(
+                self._get_vm(app.os_instance_id))
         except InstanceNotFound:
             # ignore -- if this VM exists no more, we need not cancel any job
             pass
-        except UnrecoverableError, err:
+        except UnrecoverableError as err:
             gc3libs.log.error(
                 "Changing state of task '%s' to UNKNOWN because of"
                 " an OpenStack API error (%s: %s)",
@@ -602,7 +610,7 @@ class OpenStackLrms(LRMS):
         for vm_id in self._vmpool:
             try:
                 vm = self._vmpool.get_vm(vm_id, force_reload=True)
-            except UnrecoverableError, ex:
+            except UnrecoverableError as ex:
                 gc3libs.log.warning(
                     "Removing stale information on VM `%s`. It has probably"
                     " been deleted from outside GC3Pie.", vm_id)
@@ -630,18 +638,20 @@ class OpenStackLrms(LRMS):
                 self._vmpool.remove_vm(vm.id)
                 self.subresources.pop(vm.id)
                 continue
-            elif vm.status in ['SHUTOFF', 'SUSPENDED', 'RESCUE', 'VERIFY_RESIZE']:
+            elif vm.status in ['SHUTOFF', 'SUSPENDED',
+                               'RESCUE', 'VERIFY_RESIZE']:
                 # The VM has probably ben stopped or shut down from
                 # outside GC3Pie.
                 gc3libs.log.error(
-                    "VM with id `%s` is in permanent state `%s`.", vm.id, vm.status)
+                    "VM with id `%s` is in permanent state `%s`.",
+                    vm.id, vm.status)
                 continue
 
             # Get or create a resource associated to the vm
             subresource = self._get_subresource(vm)
             try:
                 subresource.get_resource_status()
-            except TransportError, ex:
+            except TransportError as ex:
                 # TODO: get all the IPs and try with all of them to connect.
                 # Start with preferred_ip if defined
                 gc3libs.log.info(
@@ -653,12 +663,12 @@ class OpenStackLrms(LRMS):
                     vm.preferred_ip = ip
                     subresource.frontend = ip
                     gc3libs.log.info(
-                        "Connection error. Trying with alternate IP address %s",
-                        vm.preferred_ip)
+                        "Connection error. Trying with alternate IP address "
+                        "%s", vm.preferred_ip)
                     try:
                         subresource.get_resource_status()
                         break
-                    except Exception, ex:
+                    except Exception as ex:
                         gc3libs.log.info(
                             "Ignoring error in updating resource '%s': %s."
                             " The corresponding VM may not be ready yet.",
@@ -667,7 +677,7 @@ class OpenStackLrms(LRMS):
                 # this resource is considered "pending" as we couldn't
                 # update its status
                 subresource.updated = False
-            except Exception, ex:
+            except Exception as ex:
                 # XXX: Actually, we should try to identify the kind of
                 # error we are getting. For instance, if the
                 # configuration options `username` is wrong, we will
@@ -701,10 +711,12 @@ class OpenStackLrms(LRMS):
         return self
 
     @same_docstring_as(LRMS.get_results)
-    def get_results(self, app, download_dir, overwrite=False, changed_only=True):
+    def get_results(self, app, download_dir, overwrite=False,
+                    changed_only=True):
         try:
-            subresource = self._get_subresource(self._get_vm(app.os_instance_id))
-        except InstanceNotFound, ex:
+            subresource = self._get_subresource(
+                self._get_vm(app.os_instance_id))
+        except InstanceNotFound:
             gc3libs.log.error(
                 "Changing state of task '%s' to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore.",
@@ -715,8 +727,9 @@ class OpenStackLrms(LRMS):
                 "State changed to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore."
                 % (app.os_instance_id,))
-            raise UnrecoverableDataStagingError("VM where job was running is no longer available")
-        except UnrecoverableError, err:
+            raise UnrecoverableDataStagingError(
+                "VM where job was running is no longer available")
+        except UnrecoverableError as err:
             gc3libs.log.error(
                 "Changing state of task '%s' to UNKNOWN because of"
                 " an OpenStack API error (%s: %s)",
@@ -727,7 +740,8 @@ class OpenStackLrms(LRMS):
                 " an OpenStack API error (%s: %s)."
                 % (err.__class__.__name__, err))
             raise
-        return subresource.get_results(app, download_dir, overwrite, changed_only)
+        return subresource.get_results(
+            app, download_dir, overwrite, changed_only)
 
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
@@ -736,7 +750,7 @@ class OpenStackLrms(LRMS):
             try:
                 self.subresources[app.os_instance_id] = self._get_subresource(
                     self._get_vm(app.os_instance_id))
-            except InstanceNotFound, ex:
+            except InstanceNotFound:
                 gc3libs.log.error(
                     "Changing state of task '%s' to TERMINATED since OpenStack"
                     " instance '%s' does not exist anymore.",
@@ -748,7 +762,7 @@ class OpenStackLrms(LRMS):
                     " instance '%s' does not exist anymore."
                     % (app.os_instance_id,))
                 raise
-            except UnrecoverableError, err:
+            except UnrecoverableError as err:
                 gc3libs.log.error(
                     "Changing state of task '%s' to UNKNOWN because of"
                     " an OpenStack API error (%s: %s)",
@@ -834,7 +848,7 @@ class OpenStackLrms(LRMS):
                     "Job successfully submitted to remote resource %s.",
                     subresource.name)
                 return job
-            except (LRMSSubmitError, InstanceNotFound), ex:
+            except (LRMSSubmitError, InstanceNotFound) as ex:
                 if gc3libs.error_ignored(
                         # context:
                         # - module
@@ -861,10 +875,11 @@ class OpenStackLrms(LRMS):
             if not self.vm_pool_max_size \
                     or len(self._vmpool) < self.vm_pool_max_size:
                 user_data = self.get_user_data_for_job(job)
-                vm = self._create_instance(image_id,
-                                           name="GC3Pie_%s_%d" % (self.name, (len(self._vmpool)+1)),
-                                           instance_type=instance_type,
-                                           user_data=user_data)
+                vm = self._create_instance(
+                    image_id,
+                    name="GC3Pie_%s_%d" % (self.name, (len(self._vmpool) + 1)),
+                    instance_type=instance_type,
+                    user_data=user_data)
                 pending_vms.add(vm.id)
 
                 self._vmpool.add_vm(vm)
@@ -891,8 +906,9 @@ class OpenStackLrms(LRMS):
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
         try:
-            subresource = self._get_subresource(self._get_vm(app.os_instance_id))
-        except InstanceNotFound, ex:
+            subresource = self._get_subresource(
+                self._get_vm(app.os_instance_id))
+        except InstanceNotFound:
             gc3libs.log.error(
                 "Changing state of task '%s' to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore.",
@@ -903,7 +919,8 @@ class OpenStackLrms(LRMS):
                 "State changed to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore."
                 % (app.os_instance_id,))
-            raise UnrecoverableDataStagingError("VM where job was running is no longer available.")
+            raise UnrecoverableDataStagingError(
+                "VM where job was running is no longer available.")
         return subresource.peek(app, remote_filename, local_file, offset, size)
 
     def validate_data(self, data_file_list=None):
@@ -911,7 +928,7 @@ class OpenStackLrms(LRMS):
         Supported protocols: file
         """
         for url in data_file_list:
-            if not url.scheme in ['file']:
+            if url.scheme not in ['file']:
                 return False
         return True
 
@@ -934,7 +951,8 @@ class OpenStackLrms(LRMS):
         # freeing the resource from the application is now needed as
         # the same instanc may run multiple applications
         try:
-            subresource = self._get_subresource(self._get_vm(app.os_instance_id))
+            subresource = self._get_subresource(
+                self._get_vm(app.os_instance_id))
         except InstanceNotFound:
             # ignore -- if the instance is no more, there is
             # nothing we should free
@@ -954,7 +972,6 @@ class OpenStackLrms(LRMS):
             del self.subresources[vm.id]
             vm.delete()
             del self._vmpool[vm.id]
-
 
     @same_docstring_as(LRMS.close)
     def close(self):
@@ -985,16 +1002,16 @@ class OpenStackLrms(LRMS):
         del state['client']
         return state
 
-    def __setstate__(self):
+    def __setstate__(self, state):
         self.__dict__.update(state)
-        self.client = client.Client(
+        self.client = NovaClient.Client(
             self.compute_api_version, self.os_username, self.os_password,
             self.os_tenant_name, self.os_auth_url,
             region_name=self.os_region_name)
         self._connect()
 
 
-## main: run tests
+# main: run tests
 
 if "__main__" == __name__:
     import doctest
@@ -1052,6 +1069,3 @@ if "__main__" == __name__:
 #
 #    VERIFY_RESIZE. System is awaiting confirmation that the server is
 #    operational after a move or resize.
-
-
-# [<SecurityGroup description=Allow all the ports, id=6, name=all_tcp_ports, rules=[{u'from_port': 1, u'group': {}, u'ip_protocol': u'tcp', u'to_port': 65000, u'parent_group_id': 6, u'ip_range': {u'cidr': u'0.0.0.0/0'}, u'id': 11}, {u'from_port': -1, u'group': {}, u'ip_protocol': u'icmp', u'to_port': -1, u'parent_group_id': 6, u'ip_range': {u'cidr': u'0.0.0.0/0'}, u'id': 12}, {u'from_port': 1, u'group': {}, u'ip_protocol': u'udp', u'to_port': 65535, u'parent_group_id': 6, u'ip_range': {u'cidr': u'0.0.0.0/0'}, u'id': 13}], tenant_id=4bdc5d18c711438f8be0ec9b70272892>,

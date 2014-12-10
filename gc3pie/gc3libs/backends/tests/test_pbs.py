@@ -23,6 +23,7 @@ __version__ = '$Revision$'
 
 import datetime
 import os
+import shutil
 import tempfile
 
 from nose.tools import assert_equal
@@ -30,7 +31,7 @@ from nose.tools import assert_equal
 import gc3libs
 import gc3libs.core
 import gc3libs.config
-from gc3libs.quantity import Memory, kB, MB, GB, Duration, seconds, minutes, hours
+from gc3libs.quantity import kB, seconds, minutes
 
 from faketransport import FakeTransport
 
@@ -42,26 +43,32 @@ def correct_submit(jobid=123):
     """ % jobid
     return (0, out, "")
 
+
 def tracejob_notfound(jobid=123):
-    err = """/var/spool/torque/server_priv/accounting/20120309: Permission denied
+    err = """/var/spool/torque/server_priv/accounting/20120309: \
+Permission denied
 /var/spool/torque/mom_logs/20120309: No such file or directory
 /var/spool/torque/sched_logs/20120309: No such file or directory
 """
 
     return (0, "", err)
 
+
 def correct_qstat_queued(jobid=123):
     out = """%s                 antani     amessina                0 Q short
 """ % jobid
     return (0, out, "")
 
+
 def correct_tracejob_queued(jobid=123):
     out = """Job: %s
 
 03/14/2012 18:42:04  S    enqueuing into short, state 1 hop 1
-03/14/2012 18:42:04  S    Job Queued at request of amessina@argo.ictp.it, owner = amessina@argo.ictp.it, job name = STDIN, queue = short
+03/14/2012 18:42:04  S    Job Queued at request of amessina@argo.ictp.it, \
+owner = amessina@argo.ictp.it, job name = STDIN, queue = short
 """ % jobid
-    err = """/var/spool/torque/server_priv/accounting/20120314: Permission denied
+    err = """/var/spool/torque/server_priv/accounting/20120314: \
+Permission denied
 /var/spool/torque/mom_logs/20120314: No such file or directory
 /var/spool/torque/sched_logs/20120314: No such file or directory
 """
@@ -69,19 +76,24 @@ def correct_tracejob_queued(jobid=123):
 
 
 def correct_qstat_running(jobid=123):
-    out = """%s                 cam_icbc         idiallo         01:01:18 R short
+    out = """%s                 cam_icbc         idiallo         \
+01:01:18 R short
 """ % jobid
     return (0, out, "")
+
 
 def correct_tracejob_running(jobid=123):
     out = """Job: %s
 
 03/14/2012 18:42:04  S    enqueuing into short, state 1 hop 1
-03/14/2012 18:42:04  S    Job Queued at request of amessina@argo.ictp.it, owner = amessina@argo.ictp.it, job name = STDIN, queue = short
+03/14/2012 18:42:04  S    Job Queued at request of amessina@argo.ictp.it, \
+owner = amessina@argo.ictp.it, job name = STDIN, queue = short
 03/14/2012 18:45:25  S    Job Run at request of root@argo.ictp.it
-03/14/2012 18:45:25  S    Not sending email: User does not want mail of this type.
+03/14/2012 18:45:25  S    Not sending email: User does not want mail \
+of this type.
 """ % jobid
-    err = """/var/spool/torque/server_priv/accounting/20120314: Permission denied
+    err = """/var/spool/torque/server_priv/accounting/20120314: \
+Permission denied
 /var/spool/torque/mom_logs/20120314: No such file or directory
 /var/spool/torque/sched_logs/20120314: No such file or directory
 """
@@ -89,27 +101,35 @@ def correct_tracejob_running(jobid=123):
 
 
 def qdel_notfound(jobid=123):
-    return (153,"",  """qdel: Unknown Job Id %s""" % jobid)
+    return (153, "",  """qdel: Unknown Job Id %s""" % jobid)
+
 
 def qstat_notfound(jobid=123):
     err = """qstat: Unknown Job Id %s
 """ % jobid
     return (153, "", err)
 
+
 def correct_tracejob_done(jobid=123):
     out = """
 Job: %s
 
 03/09/2012 09:31:53  S    enqueuing into short, state 1 hop 1
-03/09/2012 09:31:53  S    Job Queued at request of amessina@argo.ictp.it, owner = amessina@argo.ictp.it, job name = DemoPBSApp, queue = short
+03/09/2012 09:31:53  S    Job Queued at request of amessina@argo.ictp.it, \
+owner = amessina@argo.ictp.it, job name = DemoPBSApp, queue = short
 03/09/2012 09:32:03  S    Job Run at request of root@argo.ictp.it
-03/09/2012 09:32:03  S    Not sending email: User does not want mail of this type.
-03/09/2012 09:34:08  S    Not sending email: User does not want mail of this type.
-03/09/2012 09:34:08  S    Exit_status=0 resources_used.cput=00:00:00 resources_used.mem=2364kb resources_used.vmem=190944kb resources_used.walltime=00:02:05
+03/09/2012 09:32:03  S    Not sending email: User does not want mail \
+of this type.
+03/09/2012 09:34:08  S    Not sending email: User does not want mail \
+of this type.
+03/09/2012 09:34:08  S    Exit_status=0 resources_used.cput=00:00:00 \
+resources_used.mem=2364kb resources_used.vmem=190944kb \
+resources_used.walltime=00:02:05
 03/09/2012 09:34:08  S    dequeuing from short, state COMPLETE
 """ % jobid
 
-    err = """/var/spool/torque/server_priv/accounting/20120309: Permission denied
+    err = """/var/spool/torque/server_priv/accounting/20120309: \
+Permission denied
 /var/spool/torque/mom_logs/20120309: No such file or directory
 /var/spool/torque/sched_logs/20120309: No such file or directory
 """
@@ -119,18 +139,23 @@ Job: %s
 
 def qsub_failed_resources():
     out = ""
-    err = """qsub: Job exceeds queue resource limits MSG=cannot locate feasible nodes
+    err = """qsub: Job exceeds queue resource limits MSG=cannot locate \
+feasible nodes
 """
     return (190, out, err)
 
+
 def qsub_failed_acl():
     out = ""
-    err = """qsub: Unauthorized Request  MSG=user ACL rejected the submitting user: user amessina@argo.ictp.it, queue cm1
+    err = """qsub: Unauthorized Request  MSG=user ACL rejected the \
+submitting user: user amessina@argo.ictp.it, queue cm1
 """
     return (159, out, err)
 
+
 def qdel_success():
     return (0, "", "")
+
 
 def qdel_failed_acl(jobid=123):
     err = """qdel: Unauthorized Request  MSG=operation not permitted %s
@@ -143,21 +168,22 @@ State = gc3libs.Run.State
 
 
 class FakeApp(gc3libs.Application):
+
     def __init__(self):
         gc3libs.Application.__init__(
             self,
-            arguments = ['/bin/hostname'], # mandatory
-            inputs = [],                   # mandatory
-            outputs = [],                  # mandatory
-            output_dir = "./fakedir",      # mandatory
-            stdout = "stdout.txt",
-            stderr = "stderr.txt",
-            requested_cores = 1,)
+            arguments=['/bin/hostname'],  # mandatory
+            inputs=[],                    # mandatory
+            outputs=[],                   # mandatory
+            output_dir="./fakedir",       # mandatory
+            stdout="stdout.txt",
+            stderr="stderr.txt",
+            requested_cores=1,)
 
 
 class TestBackendPbs(object):
 
-    CONF="""
+    CONF = """
 [resource/example]
 type=pbs
 auth=ssh
@@ -175,6 +201,7 @@ enabled=True
 type=ssh
 username=NONEXISTENT
 """
+
     def setUp(self):
         (fd, self.tmpfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
@@ -204,7 +231,7 @@ username=NONEXISTENT
         self.transport.expected_answer['qsub'] = qsub_failed_resources()
         try:
             self.core.submit(app)
-        except Exception, e:
+        except Exception as e:
             assert isinstance(e, gc3libs.exceptions.LRMSError)
         assert_equal(app.execution.state, State.NEW)
 
@@ -212,10 +239,9 @@ username=NONEXISTENT
         self.transport.expected_answer['qsub'] = qsub_failed_acl()
         try:
             self.core.submit(app)
-        except Exception, e:
+        except Exception as e:
             assert isinstance(e, gc3libs.exceptions.LRMSError)
         assert_equal(app.execution.state, State.NEW)
-
 
     def test_pbs_basic_workflow(self):
         app = FakeApp()
@@ -224,7 +250,6 @@ username=NONEXISTENT
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
         assert_equal(app.execution.state, State.SUBMITTED)
-
 
         # Update state. We would expect the job to be SUBMITTED
         self.transport.expected_answer['qstat'] = correct_qstat_queued()
@@ -244,7 +269,6 @@ username=NONEXISTENT
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.TERMINATING)
 
-
     def test_tracejob_parsing(self):
         app = FakeApp()
         self.transport.expected_answer['qsub'] = correct_submit()
@@ -255,20 +279,35 @@ username=NONEXISTENT
 
         job = app.execution
         # common job reporting values (see Issue 78)
-        assert_equal(job.exitcode,        0)
-        assert_equal(job.duration,        2*minutes + 5*seconds)
-        assert_equal(job.max_used_memory, 190944*kB)
-        assert_equal(job.used_cpu_time,   0*seconds)
+        assert_equal(job.exitcode, 0)
+        assert_equal(job.duration, 2 * minutes + 5 * seconds)
+        assert_equal(job.max_used_memory, 190944 * kB)
+        assert_equal(job.used_cpu_time, 0 * seconds)
         # PBS-specific values
-        assert_equal(job.pbs_queue,       'short')
-        assert_equal(job.pbs_jobname,     'DemoPBSApp')
-        assert_equal(job.pbs_max_used_ram, 2364*kB)
+        assert_equal(job.pbs_queue, 'short')
+        assert_equal(job.pbs_jobname, 'DemoPBSApp')
+        assert_equal(job.pbs_max_used_ram, 2364 * kB)
         assert_equal(job.pbs_submission_time,
-                     datetime.datetime(year=2012, month=3, day=9, hour=9, minute=31, second=53))
+                     datetime.datetime(year=2012,
+                                       month=3,
+                                       day=9,
+                                       hour=9,
+                                       minute=31,
+                                       second=53))
         assert_equal(job.pbs_running_time,
-                     datetime.datetime(year=2012, month=3, day=9, hour=9, minute=32, second=3))
+                     datetime.datetime(year=2012,
+                                       month=3,
+                                       day=9,
+                                       hour=9,
+                                       minute=32,
+                                       second=3))
         assert_equal(job.pbs_end_time,
-                     datetime.datetime(year=2012, month=3, day=9, hour=9, minute=34, second=8))
+                     datetime.datetime(year=2012,
+                                       month=3,
+                                       day=9,
+                                       hour=9,
+                                       minute=34,
+                                       second=8))
 
     def test_delete_job(self):
         app = FakeApp()
@@ -279,7 +318,7 @@ username=NONEXISTENT
         self.core.kill(app)
         assert_equal(app.execution.state, State.TERMINATED)
 
-    def test_delete_job(self):
+    def test_delete_already_deleted_job(self):
         app = FakeApp()
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
@@ -293,20 +332,35 @@ username=NONEXISTENT
         rc, stdout, stderr = correct_tracejob_done()
         status = self.backend._parse_acct_output(stdout)
         # common job reporting values (see Issue 78)
-        assert_equal(status['exitcode'],        0)
-        assert_equal(status['duration'],        2*minutes + 5*seconds)
-        assert_equal(status['max_used_memory'], 190944*kB)
-        assert_equal(status['used_cpu_time'],   0*seconds)
+        assert_equal(status['exitcode'], 0)
+        assert_equal(status['duration'], 2 * minutes + 5 * seconds)
+        assert_equal(status['max_used_memory'], 190944 * kB)
+        assert_equal(status['used_cpu_time'], 0 * seconds)
         # PBS-specific values
-        assert_equal(status['pbs_queue'],       'short')
-        assert_equal(status['pbs_jobname'],     'DemoPBSApp')
-        assert_equal(status['pbs_max_used_ram'], 2364*kB)
+        assert_equal(status['pbs_queue'], 'short')
+        assert_equal(status['pbs_jobname'], 'DemoPBSApp')
+        assert_equal(status['pbs_max_used_ram'], 2364 * kB)
         assert_equal(status['pbs_submission_time'],
-                     datetime.datetime(year=2012, month=3, day=9, hour=9, minute=31, second=53))
+                     datetime.datetime(year=2012,
+                                       month=3,
+                                       day=9,
+                                       hour=9,
+                                       minute=31,
+                                       second=53))
         assert_equal(status['pbs_running_time'],
-                     datetime.datetime(year=2012, month=3, day=9, hour=9, minute=32, second=3))
+                     datetime.datetime(year=2012,
+                                       month=3,
+                                       day=9,
+                                       hour=9,
+                                       minute=32,
+                                       second=3))
         assert_equal(status['pbs_end_time'],
-                     datetime.datetime(year=2012, month=3, day=9, hour=9, minute=34, second=8))
+                     datetime.datetime(year=2012,
+                                       month=3,
+                                       day=9,
+                                       hour=9,
+                                       minute=34,
+                                       second=8))
 
 
 def tearDownModule():
@@ -352,8 +406,8 @@ tracejob = /usr/local/sbin/tracejob
 
     assert_equal(b.qsub, ['/usr/local/bin/qsub', '-q', 'testing'])
 
-    assert_equal(b._qstat,    '/usr/local/bin/qstat')
-    assert_equal(b._qdel,     '/usr/local/bin/qdel')
+    assert_equal(b._qstat, '/usr/local/bin/qstat')
+    assert_equal(b._qdel, '/usr/local/bin/qdel')
     assert_equal(b._tracejob, '/usr/local/sbin/tracejob')
 
 
