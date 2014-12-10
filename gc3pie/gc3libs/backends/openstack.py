@@ -562,7 +562,7 @@ class OpenStackLrms(LRMS):
                          key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
             gc3libs.log.debug(
                 "Using flavor %s which is the smallest flavor that can run"
-                " application %s", flavor.name, job.jobname)
+                " application %s", flavor.name, job)
             return flavor
 
     def get_user_data_for_job(self, job):
@@ -826,7 +826,7 @@ class OpenStackLrms(LRMS):
         if not instance_type:
             raise RuntimeError(
                 "Unable to find a suitable instance type for "
-                "application %s" % job.jobname)
+                "application %s" % job)
 
         # First of all, try to submit to one of the subresources.
         for vm_id, subresource in self.subresources.items():
