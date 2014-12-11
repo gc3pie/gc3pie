@@ -161,6 +161,14 @@ A job can be in one and only one of the following states:
   this case: the best thing you can do is to contact the systems
   administrator to determine what has happened.
 
+``UNKNOWN``
+
+  Job info is not found, possibly because the remote resource is
+  currently not accessible due to a network error, a misconfiguration
+  or because the remote resource is not available anymore. When the
+  root cause is fixed, and the resource is available again, the status
+  of the job should automatically move to another state.
+
 ``TERMINATED``
 
   The job has finished running; now there are three things you can do:
@@ -493,6 +501,48 @@ output files, plus some backend-specific information::
         stdout: exam01.out
         tags: APPS/CHEM/GAMESS-2010
         verno: None
+
+
+:command:`gselect`: select job ids from from a session
+======================================================
+
+The :command:`gselect` command allows you to select Job IDs from a
+GC3Pie session that satisfy the selected criteria. This command is
+usually used in combination with :command:`gresub`, :command:`gkill`,
+:command:`ginfo`, :command:`gget` or :command:`gclean`, for instance::
+
+    $ gselect -l STOPPED | xargs gresub
+
+The output of this command is a list of Job IDs, one per line.  The
+criteria specified by command-line options will be AND'ed together,
+i.e., a job must satisfy all of them in order to be selected.
+
+You can select a job based on the following criteria:
+
+``JobID regexp``
+
+    Use option `--jobid REGEXP` to select jobs whose ID matches the
+    supplied regular expression (case insensitive)
+
+``Job state``
+
+    Use option `--state STATE[,STATE...]` to select jobs in one of the
+    specified states, for instance to select jobs in either STOPPED
+    or SUBMITTED state, run `gselect --state STOPPED,SUBMITTED`.
+
+``exit status``
+
+    You can select jobs that terminated with exit status equal to 0
+    with `--ok` option. To select failed jobs instead (exit status
+    different from 0), use option `--failed`
+
+``Submission time``
+
+    Use option `--submitted-before DATE` and `--submitted-after DATE` to select
+    jobs submitted before or after a specific date. `DATE` must be in
+    a human readable format recognized by the `parsedatetime
+    <https://pypi.python.org/pypi/parsedatetime/>` module, for
+    instance `in 2 hours`, `yesterday` or `10 November 2014, 1pm`.
 
 
 :command:`gcloud`: manage VMs created by the EC2 backend
