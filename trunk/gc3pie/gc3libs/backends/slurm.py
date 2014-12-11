@@ -307,7 +307,7 @@ class SlurmLrms(batch.BatchSystem):
     #
     def _acct_command(self, job):
         return ('env SLURM_TIME_FORMAT=standard %s --noheader --parsable'
-                ' --format jobid,exitcode,ncpus,elapsed,totalcpu,'
+                ' --format jobid,exitcode,state,ncpus,elapsed,totalcpu,'
                 'submit,start,end,maxrss,maxvmsize -j %s' %
                 (self._sacct, job.lrms_jobid))
 
@@ -323,19 +323,36 @@ class SlurmLrms(batch.BatchSystem):
             if line == '':
                 continue
             # because of the trailing `|` we have an extra empty field
-            jobid, exit, ncpus, elapsed, totalcpu, submit,\
+            jobid, exit, state, ncpus, elapsed, totalcpu, submit,\
                 start, end, maxrss, maxvmsize, _ = line.split('|')
+
+            # In some case the state can contain a specification, as
+            # "CANCELLED by 1000"
+            state = state.split()[0]
+
             # SLURM job IDs have the form `jobID[.step]`: only the
             # lines with the `step` part carry resource usage records,
             # whereas the total `jobID` line carries the exit codes
             # and overall duration/timing information.
             if '.' not in jobid:
+                assert state in ['CANCELLED', 'COMPLETED', 'FAILED',
+                                 'NODE_FAIL', 'PREEMPTED', 'TIMEOUT']
                 # master job record
                 acct['duration'] = SlurmLrms._parse_duration(elapsed)
                 acct['used_cpu_time'] = SlurmLrms._parse_duration(totalcpu)
-                # compute POSIX exit status
-                exitcode, signal = exit.split(':')
-                acct['exitcode'] = (int(exitcode) << 8) + (int(signal) & 0x7f)
+                if state in ['CANCELLED', 'TIMEOUT']:
+                    # In this case, the exit code of the master job is
+                    # `0:0` or `0:1`, but we want to keep track of the
+                    # fact that the job was killed by the system (or
+                    # the user).
+                    acct['exitcode'] = int(Run.Signals.RemoteKill)
+                elif state == 'NODE_FAIL':
+                    acct['exitcode'] = int(Run.Signals.RemoteError)
+                else:
+                    # compute POSIX exit status
+                    exitcode, signal = exit.split(':')
+                    acct['exitcode'] = ((int(exitcode) << 8)
+                                        + (int(signal) & 0x7f))
                 # XXX: the master job record seems to report the
                 # *requested* slots, whereas the step records report
                 # the actual usage.  In our case these should be the
