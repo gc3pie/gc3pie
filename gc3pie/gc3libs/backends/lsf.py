@@ -413,7 +413,7 @@ class LsfLrms(batch.BatchSystem):
         return ("%s -l %s" % (self._bjobs, job.lrms_jobid))
 
     def _acct_command(self, job):
-        return ("%s -l %s" % (self._bjobs, job.lrms_jobid))
+        return ("%s -l %s" % (self._bacct, job.lrms_jobid))
 
     @staticmethod
     def _lsf_state_to_gc3pie_state(stat):
