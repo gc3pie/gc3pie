@@ -132,10 +132,10 @@ exist in the session.
     (default: 1).  *NUM* must be a whole number.
 
   -m GIGABYTES, --memory-per-core GIGABYTES
-    Set the amount of memory required per execution core,
-    in gigabytes (Default: 2). Currently, *GIGABYTES* can
-    only be an integer number; fractional amounts are
-    discarded.
+    Set the amount of memory required per execution core; (Default:
+    2GB). Specify this as an integral number followed by a unit,
+    e.g. '512MB' or '4GB'. Valid unit names are: 'B', 'GB', 'GiB',
+    'KiB', 'MB', 'MiB', 'PB', 'PiB', 'TB', 'TiB', 'kB'.
 
   -r NAME, --resource NAME
     Submit jobs to a specific :term:`resource`. ``NAME`` is a
@@ -143,11 +143,16 @@ exist in the session.
     Use the command `gservers` to list available resources.
 
   -w DURATION, --wall-clock-time DURATION
-    Set the time limit for each job (default is '8' for
-    '8 hours'). Jobs exceeding this limit will be stopped
-    and considered as *failed*. The duration can be
-    expressed as a whole number (indicating the duration
-    in hours) or as a string in the form 'hours:minutes'.
+
+    Set the time limit for each job; default is '8 hours'.  Jobs
+    exceeding this limit will be stopped and considered as
+    'failed'. The duration can be expressed as a whole number followed
+    by a time unit, e.g., '3600 s', '60 minutes', '8 hours', or a
+    combination thereof, e.g., '2hours 30minutes'.  Valid unit names
+    are: 'd', 'day', 'days', 'h', 'hour', 'hours', 'hr', 'hrs', 'm',
+    'microsec', 'microseconds', 'min', 'mins', 'minute', 'minutes',
+    'ms', 'nanosec', 'nanoseconds', 'ns', 's', 'sec', 'second',
+    'seconds', 'secs'.
 
 
 Session control options

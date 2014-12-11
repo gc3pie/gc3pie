@@ -247,6 +247,9 @@ information.
 +------------------+--------------------------------------------------------------+----------------------+
 |RUNNING           |Job is executing on remote resource                           |TERMINATED            |
 +------------------+--------------------------------------------------------------+----------------------+
+|UNKNOWN           |Job info not found or lost track of job (e.g., network error  |any other state       |
+|                  |or invalid job ID)                                            |                      |
++------------------+--------------------------------------------------------------+----------------------+
 |TERMINATED        |Job execution is finished (correctly or not)                  |None: final state     |
 |                  |and will not be resumed                                       |                      |
 +------------------+--------------------------------------------------------------+----------------------+
@@ -269,6 +272,14 @@ can get out of the STOPPED state automatically: all transitions from the
 STOPPED state require manual intervention, either by the submitting
 user (e.g., cancel the job), or by the remote systems administrator
 (e.g., by releasing the hold).
+
+The UNKNOWN state is a temporary error state: whenever GC3Pie is
+unable to get any information on the job, its state move to
+UNKNOWN. It is usually related to a (hopefully temporary) failure
+while accessing the remote resource, because of a network error or
+because the resource is not correctly configured. After the underlying
+cause of the error is fixed and GC3Pie is able again to get
+information on the job, its state will change to the proper state.
 
 The TERMINATED state is the final state of a job: once a job reaches
 it, it cannot get back to any other state. Jobs reach TERMINATED state
