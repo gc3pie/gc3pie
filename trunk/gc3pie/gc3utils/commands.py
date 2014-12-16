@@ -1444,7 +1444,7 @@ in order to be selected.
             raise RuntimeError("Session `%s` not found" % self.params.session)
 
         # Load tasks from the store
-        current_jobs = list(self.session)
+        current_jobs = list(self.session.iter_workflow())
 
         # pipeline of checks to perform; more expensive checks should come last
         # so they look at less jobs (do I long for LISP? Oh yes I do...)

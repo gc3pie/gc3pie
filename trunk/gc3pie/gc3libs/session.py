@@ -508,10 +508,15 @@ class Session(list):
         return len(self.tasks)
 
     def __iter__(self):
+        return self.tasks.itervalues()
+
+    def iter_workflow(self):
         task_collections = filter(lambda x: isinstance(x, TaskCollection),
                                   self.tasks.values())
         proper_tasks = set(self.tasks.values()).difference(task_collections)
-        return itertools.chain(*([proper_tasks] + map(iter, task_collections)))
+        return itertools.chain(
+            *([proper_tasks]
+              + map(lambda x: x.iter_workflow(), task_collections)))
 
     def list_ids(self):
         """

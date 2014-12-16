@@ -60,7 +60,7 @@ class TaskCollection(Task):
             self.tasks = tasks
         Task.__init__(self, **extra_args)
 
-    def __iter__(self):
+    def iter_workflow(self):
         """
         Returns an iterator that will traverse the whole tree of tasks.
         """
@@ -71,8 +71,19 @@ class TaskCollection(Task):
             (task for task in self.tasks
                 if not isinstance(task, TaskCollection)),
             # recurse into collection subtasks
-            *(iter(coll) for coll in self.tasks
+            *(coll.iter_workflow() for coll in self.tasks
                 if isinstance(coll, TaskCollection)))
+
+    def iter_tasks(self):
+        """
+        Returns an iterator that will traverse the whole tree of tasks.
+        """
+        return itertools.chain(
+            # this task collection
+            itertools.repeat(self, 1),
+            # iterator over non-collection subtasks
+            (task for task in self.tasks),
+        )
 
     @gc3libs.utils.defproperty
     def changed():
