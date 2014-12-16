@@ -101,8 +101,9 @@ force removal of a job regardless.
             raise gc3libs.exceptions.InvalidUsage(
                 "Option '-A' conflicts with list of job IDs to remove.")
 
+        all_ids = [job.persistent_id for job in self.session.iter_workflow()]
         if self.params.all:
-            args = self.session.store.list()
+            args = all_ids
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
         else:
@@ -266,7 +267,8 @@ GC3Libs internals.
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
             try:
-                self.params.args = self.session.store.list()
+                self.params.args = [job.persistent_id
+                                    for job in self.session.iter_workflow()]
             except NotImplementedError:
                 raise NotImplementedError(
                     "Job storage module does not allow listing all jobs."
@@ -493,7 +495,8 @@ Print job state.
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
             # self.params.args = self.session.list_ids()
-            self.params.args = self.session.store.list()
+            self.params.args = [job.persistent_id
+                                for job in self.session.iter_workflow()]
 
         if len(self.params.args) == 0:
             print("No jobs submitted.")
@@ -690,7 +693,7 @@ released once the output files have been fetched.
                 " use either '-A' or explicitly list task IDs.")
 
         if self.params.all:
-            args = self.session.store.list()
+            args = [job.persistent_id for job in self.session.iter_workflow()]
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
         else:
@@ -794,7 +797,7 @@ error occurred.
                 "Option '-A' conflicts with list of job IDs to remove.")
 
         if self.params.all:
-            args = self.session.store.list()
+            args = [job.persistent_id for job in self.session.iter_workflow()]
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
         else:
