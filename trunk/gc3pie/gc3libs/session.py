@@ -24,6 +24,7 @@ __version__ = '$Revision$'
 
 # stdlib imports
 import csv
+import itertools
 import os
 import sys
 import shutil
@@ -33,6 +34,7 @@ import gc3libs
 import gc3libs.exceptions
 import gc3libs.persistence
 import gc3libs.utils
+from gc3libs.workflow import TaskCollection
 
 
 class Session(list):
@@ -506,7 +508,10 @@ class Session(list):
         return len(self.tasks)
 
     def __iter__(self):
-        return self.tasks.itervalues()
+        task_collections = filter(lambda x: isinstance(x, TaskCollection),
+                                  self.tasks.values())
+        proper_tasks = set(self.tasks.values()).difference(task_collections)
+        return itertools.chain(*([proper_tasks] + map(iter, task_collections)))
 
     def list_ids(self):
         """
