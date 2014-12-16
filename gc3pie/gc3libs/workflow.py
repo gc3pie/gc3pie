@@ -29,6 +29,7 @@ can implement problem-specific job control policies.
 __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
+import itertools
 import os
 
 from gc3libs.compat._collections import defaultdict
@@ -58,6 +59,20 @@ class TaskCollection(Task):
         else:
             self.tasks = tasks
         Task.__init__(self, **extra_args)
+
+    def __iter__(self):
+        """
+        Returns an iterator that will traverse the whole tree of tasks.
+        """
+        return itertools.chain(
+            # this task collection
+            itertools.repeat(self, 1),
+            # iterator over non-collection subtasks
+            (task for task in self.tasks
+                if not isinstance(task, TaskCollection)),
+            # recurse into collection subtasks
+            *(iter(coll) for coll in self.tasks
+                if isinstance(coll, TaskCollection)))
 
     @gc3libs.utils.defproperty
     def changed():
