@@ -39,6 +39,8 @@ from gc3libs.persistence import Persistable, make_store
 import gc3libs.persistence.sql
 from gc3libs.session import Session
 from gc3libs.utils import Struct
+from gc3libs import Task
+from gc3libs.workflow import TaskCollection
 
 
 class _PStruct(Struct, Persistable):
@@ -277,6 +279,37 @@ class TestSession(object):
                                   self.sess.TIMESTAMP_FILES['start'])
         assert_equal(os.stat(start_file).st_mtime, self.sess.created)
         assert_equal(os.stat(start_file).st_mtime, session2.created)
+
+    def test_standard_session_iterator_for_tasks(self):
+        self.sess.add(Task(jobname='task-1'))
+        self.sess.add(Task(jobname='task-2'))
+        self.sess.add(Task(jobname='task-3'))
+
+        assert_equal(set(('task-1', 'task-2', 'task-3')),
+                     set(job.jobname for job in self.sess))
+
+    def test_standard_session_iterator_for_tasks_and_task_collections(self):
+        coll = TaskCollection(jobname='collection',
+                              tasks=[Task() for i in range(3)])
+        self.sess.add(coll)
+
+        assert_equal(['collection'],
+                     [job.jobname for job in self.sess])
+
+    def test_workflow_iterator_for_session(self):
+        coll = TaskCollection(
+            jobname='collection',
+            tasks=[Task(jobname='task-%d' % i) for i in range(3)])
+        coll2 = TaskCollection(
+            jobname='collection-1',
+            tasks=[Task(jobname='task-1-%d' % i) for i in range(3)])
+        coll.tasks.append(coll2)
+
+        self.sess.add(coll)
+
+        assert_equal(['collection', 'task-0', 'task-1', 'task-2',
+                      'collection-1', 'task-1-0', 'task-1-1', 'task-1-2'],
+                     [job.jobname for job in self.sess.iter_workflow()])
 
 
 class StubForSqlSession(TestSession):
