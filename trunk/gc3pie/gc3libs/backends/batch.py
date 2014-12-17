@@ -567,12 +567,9 @@ class BatchSystem(LRMS):
             # the exit status.
             cmd = self._acct_command(job)
             if cmd:
-                # This log  is misleading. If jobstate  == TERMINATING
-                # we reach  this point even though  the status command
-                # returned the correct status.
                 log.debug(
-                    "The job status command returned no information;"
-                    " trying with '%s' instead ...", cmd)
+                    "Retrieving accounting information using command"
+                    " '%s' ..." % cmd)
                 try:
                     return self.__do_acct(job, cmd, self._parse_acct_output)
                 except gc3libs.exceptions.AuxiliaryCommandError:
