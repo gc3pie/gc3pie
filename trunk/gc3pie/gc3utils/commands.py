@@ -45,11 +45,12 @@ from parsedatetime.parsedatetime import Calendar
 
 # local modules
 from gc3libs import Run
-import gc3libs.exceptions
+from gc3libs.quantity import Duration, Memory
+from gc3libs.session import Session
 import gc3libs.cmdline
+import gc3libs.exceptions
 import gc3libs.persistence
 import gc3libs.utils as utils
-from gc3libs.session import Session
 
 
 class _BaseCmd(gc3libs.cmdline.GC3UtilsScript):
@@ -361,23 +362,32 @@ is canceled before re-submission.
                        dest="ncores",
                        type=int,
                        metavar="NUM",
-                       default=1,
                        help='Request running job on this number of CPU cores')
         self.add_param("-m", "--memory",
                        action="store",
                        dest="memory_per_core",
-                       type=int,
-                       metavar="NUM",
-                       default=1,
-                       help="Request at least this memory per core (GB) on"
-                       " execution site")
+                       metavar="GIGABYTES",
+                       help="Set the amount of memory required per execution"
+                       " core; default: %(default)s. Specify this as an"
+                       " integral number followed by a unit, e.g., '512MB'"
+                       " or '4GB'. execution site")
         self.add_param("-w", "--walltime",
                        action="store",
                        dest="walltime",
-                       type=int,
-                       metavar="HOURS",
-                       default=1,
-                       help='Guaranteed minimal duration of job, in hours.')
+                       metavar="DURATION",
+                       help="Set the time limit for each job."
+                       " Jobs exceeding this limit will be stopped and"
+                       " considered as 'failed'. The duration can be expressed"
+                       " as a whole number followed by a time unit, e.g.,"
+                       " '3600 s', '60 minutes', '8 hours', or a combination"
+                       " thereof, e.g., '2hours 30minutes'.")
+
+    def parse_args(self):
+        if self.params.walltime:
+            self.params.walltime = Duration(self.params.walltime)
+
+        if self.params.memory_per_core:
+            self.params.memory_per_core = Memory(self.params.memory_per_core)
 
     def main(self):
         try:
@@ -409,6 +419,16 @@ is canceled before re-submission.
         failed = 0
         for jobid in self.params.args:
             app = self.session.load(jobid.strip())
+
+            # Update the requested walltime, memory per core and
+            # number of cores for the application
+            if self.params.ncores:
+                app.requested_cores = self.params.ncores
+            if self.params.memory_per_core:
+                app.requested_memory = self.params.memory_per_core\
+                    * app.requested_cores
+            if self.params.walltime:
+                app.requested_walltime = self.params.walltime
             app.attach(self._core)
             try:
                 app.update_state()  # update state
