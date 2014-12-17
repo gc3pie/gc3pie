@@ -567,6 +567,9 @@ class BatchSystem(LRMS):
             # the exit status.
             cmd = self._acct_command(job)
             if cmd:
+                # This log  is misleading. If jobstate  == TERMINATING
+                # we reach  this point even though  the status command
+                # returned the correct status.
                 log.debug(
                     "The job status command returned no information;"
                     " trying with '%s' instead ...", cmd)
