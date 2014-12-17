@@ -1627,7 +1627,8 @@ in order to be selected.
         terminated.
         """
         return [job for job in job_list
-                if job.execution.returncode != 0]
+                if job.execution.returncode is not None
+                and job.execution.returncode != 0]
 
     @staticmethod
     def filter_by_submission_date(job_list, start, end):
