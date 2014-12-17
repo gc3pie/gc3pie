@@ -415,6 +415,9 @@ class LsfLrms(batch.BatchSystem):
     def _acct_command(self, job):
         return ("%s -l %s" % (self._bacct, job.lrms_jobid))
 
+    def _secondary_acct_command(self, job):
+        return ("%s -l %s" % (self._bacct, job.lrms_jobid))
+
     @staticmethod
     def _lsf_state_to_gc3pie_state(stat):
         log.debug("Translating LSF's `bjobs` status '%s' to"
@@ -445,6 +448,8 @@ class LsfLrms(batch.BatchSystem):
         r'Exited with exit code (?P<exit_status>[0-9]+).', re.M)
     _cpu_time_re = re.compile(
         r'The CPU time used is (?P<cputime>[0-9]+(\.[0-9]+)?) seconds', re.M)
+    _mem_used_re = re.compile(
+        r'MAX MEM:\s+(?P<mem_used>[0-9]+)\s+(?P<mem_unit>[a-zA-Z]+);', re.M)
 
     def _parse_stat_output(self, stdout):
         # LSF `bjobs -l` uses a LDIF-style continuation lines, wherein
@@ -487,6 +492,7 @@ class LsfLrms(batch.BatchSystem):
                 if match:
                     log.debug("LSF says: '%s'", match.group(0))
                     jobstatus.exit_status = int(match.group('exit_status'))
+
         if 'state' not in jobstatus:
             jobstatus.state = Run.State.UNKNOWN
         return jobstatus
@@ -572,6 +578,49 @@ class LsfLrms(batch.BatchSystem):
             # XXX: what does LSF use as a default?
             return Memory(int(m), unit=bytes)
 
+    @staticmethod
+    def _parse_acct_output(stdout):
+        data = dict()
+
+        # Try to parse used cputime
+        match = LsfLrms._cpu_time_re.search(stdout)
+        if match:
+            cpu_time = match.group('cputime')
+            data['used_cpu_time'] = Duration(float(cpu_time), unit=seconds)
+
+        # Parse memory usage
+        match = LsfLrms._mem_used_re.search(stdout)
+        if match:
+            mem_used = match.group('mem_used')
+            # mem_unit should always be Mbytes
+            data['max_used_memory'] = Memory(float(mem_used), unit=MB)
+
+        # Find submission time and completion time        
+        lines = iter(stdout.split('\n'))
+        for line in lines:
+            match = LsfLrms._EVENT_RE.match(line)
+            if match:
+                timestamp = line.split(': ')[0]
+                event = match.group('event')
+                if event == 'Submitted':
+                    data['lsf_submission_time'] = \
+                        LsfLrms._parse_timespec(timestamp)
+                elif event in ['Dispatched', 'Started']:
+                    data['lsf_start_time'] = \
+                        LsfLrms._parse_timespec(timestamp)
+                elif event in ['Completed', 'Done successfully']:
+                    data['lsf_completion_time'] = \
+                        LsfLrms._parse_timespec(timestamp)
+                continue
+        if 'lsf_completion_time' in data and 'lsf_start_time' in data:
+            data['duration'] = Duration(
+                data['lsf_completion_time'] - data['lsf_start_time'])
+        else:
+            # XXX: what should we use for jobs that did not run at all?
+            data['duration'] = Duration(0, unit=seconds)
+
+        return data
+
     _RESOURCE_USAGE_RE = re.compile(r'^\s+ CPU_T \s+ '
                                     'WAIT \s+ '
                                     'TURNAROUND \s+ '
@@ -583,10 +632,11 @@ class LsfLrms(batch.BatchSystem):
         r'^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)'
         ' \s+ (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
         ' \s+ [0-9]+ \s+ [0-9:]+:'
-        ' \s+ (?P<event>Submitted|Dispatched|Completed)', re.X)
+        ' \s+ (?P<event>Submitted|Dispatched|Started|Completed|'
+        'Done\ successfully)', re.X)
 
     @staticmethod
-    def _parse_acct_output(stdout):
+    def _parse_secondary_acct_output(stdout):
         data = dict()
         lines = iter(stdout.split('\n'))
         for line in lines:
