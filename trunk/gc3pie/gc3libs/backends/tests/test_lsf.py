@@ -133,7 +133,7 @@ def test_bjobs_output_done1():
                   auth=None,  # ignored if `transport` is `local`
                   frontend='localhost',
                   transport='local')
-    jobstatus = lsf._parse_stat_output("""
+    bjobs_output = """
 Job <131851>, Job Name <ChromaExtractShort>, User <wwolski>, Project <default>,
                      Status <DONE>, Queue <pub.8h>, Job Priority <50>, Command
                      <ChromatogramExtractor -in /cluster/scratch/malars/openswa
@@ -158,6 +158,9 @@ Tue Jul 24 10:04:19: Started on <a6122>, Execution Home </cluster/home/biol/wwo
                      obs/lrms_job.YNZmU17755/.>;
 Tue Jul 24 10:05:45: Done successfully. The CPU time used is 2.1 seconds.
 
+ MEMORY USAGE:
+ MAX MEM: 41 Mbytes;  AVG MEM: 41 Mbytes
+
  SCHEDULING PARAMETERS:
            r15s   r1m  r15m   ut      pg    io   ls    it    tmp    swp    mem
  loadSched   -     -     -     -       -     -    -     -  1000M     -      -
@@ -166,10 +169,65 @@ Tue Jul 24 10:05:45: Done successfully. The CPU time used is 2.1 seconds.
           scratch      xs       s       m       l      xl      sp
  loadSched 4000.0      -       -       -       -       -       -
  loadStop      -       -       -       -       -       -       -
-""")
+"""
+    jobstatus = lsf._parse_stat_output(bjobs_output)
     assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
     assert_equal(jobstatus.exit_status, 0)
 
+def test_bjobs_output_for_accounting():
+    lsf = LsfLrms(name='test',
+                  architecture=gc3libs.Run.Arch.X86_64,
+                  max_cores=1,
+                  max_cores_per_job=1,
+                  max_memory_per_core=1 * GB,
+                  max_walltime=1 * hours,
+                  auth=None,  # ignored if `transport` is `local`
+                  frontend='localhost',
+                  transport='local',
+                  bacct='bjobs')
+    bjobs_output = """
+Job <131851>, Job Name <ChromaExtractShort>, User <wwolski>, Project <default>,
+                     Status <DONE>, Queue <pub.8h>, Job Priority <50>, Command
+                     <ChromatogramExtractor -in /cluster/scratch/malars/openswa
+                     th/data/AQUA_fixed_water/split_napedro_L120224_001_SW-400A
+                     QUA_no_background_2ul_dilution_10/split_napedro_L120224_00
+                     1_SW-400AQUA_no_background_2ul_dilution_10_28.mzML.gz -tr
+                     /cluster/scratch/malars/openswath/assays/iRT/DIA_iRT.TraML
+                      -out split_napedro_L120224_001_SW-400AQUA_no_background_2
+                     ul_dilution_10_28._rtnorm.chrom.mzML -is_swath -min_upper_
+                     edge_dist 1 -threads 2>, Share group charged </lsf_biol_al
+                     l/lsf_biol_other/wwolski>
+Tue Jul 24 10:03:15: Submitted from host <brutus3>, CWD <$HOME/.gc3pie_jobs/lrm
+                     s_job.YNZmU17755/.>, Output File <lsf.o%J>, Requested Reso
+                     urces <select[mem<70000 && lustre] order[-ut] rusage[mem=1
+                     000,m=1]>, Login Shell </bin/sh>, Specified Hosts <thin+9>
+                     , <single+8>, <smp16+6>, <smp24+5>, <smp48+4>;
+
+ RUNLIMIT
+ 480.0 min of a6122
+Tue Jul 24 10:04:19: Started on <a6122>, Execution Home </cluster/home/biol/wwo
+                     lski>, Execution CWD </cluster/home/biol/wwolski/.gc3pie_j
+                     obs/lrms_job.YNZmU17755/.>;
+Tue Jul 24 10:05:45: Done successfully. The CPU time used is 2.1 seconds.
+
+ MEMORY USAGE:
+ MAX MEM: 41 Mbytes;  AVG MEM: 41 Mbytes
+
+ SCHEDULING PARAMETERS:
+           r15s   r1m  r15m   ut      pg    io   ls    it    tmp    swp    mem
+ loadSched   -     -     -     -       -     -    -     -  1000M     -      -
+ loadStop    -     -     -     -       -     -    -     -     -      -      -
+
+          scratch      xs       s       m       l      xl      sp
+ loadSched 4000.0      -       -       -       -       -       -
+ loadStop      -       -       -       -       -       -       -
+"""
+
+    # Also parse the output of jobs to get accounting information
+    acct = lsf._parse_acct_output(bjobs_output)
+    assert_equal(acct['duration'], Duration('86s'))
+    assert_equal(acct['used_cpu_time'], Duration('2.1s'))
+    assert_equal(acct['max_used_memory'], Memory('41MB'))
 
 def test_bjobs_output_done2():
     lsf = LsfLrms(name='test',
@@ -454,7 +512,16 @@ Mon Aug  4 12:28:51 2014: Completed <exit>.
 def test_bacct_done0():
     """Test parsing accounting information of a <sleep 300> job."""
     # gotten with `bacct -l "jobid"`
-    acct = LsfLrms._parse_acct_output("""
+    lsf = LsfLrms(name='test',
+                  architecture=gc3libs.Run.Arch.X86_64,
+                  max_cores=1,
+                  max_cores_per_job=1,
+                  max_memory_per_core=1 * GB,
+                  max_walltime=1 * hours,
+                  auth=None,  # ignored if `transport` is `local`
+                  frontend='localhost',
+                  transport='local')
+    acct = lsf._parse_secondary_acct_output("""
 Accounting information about jobs that are:
   - submitted by all users.
   - accounted on all projects.
@@ -506,7 +573,16 @@ SUMMARY:      ( time unit: second )
 
 def test_bacct_done1():
     """Test parsing `bacct -l` output for a not-so-trivial job."""
-    acct = LsfLrms._parse_acct_output("""
+    lsf = LsfLrms(name='test',
+                  architecture=gc3libs.Run.Arch.X86_64,
+                  max_cores=1,
+                  max_cores_per_job=1,
+                  max_memory_per_core=1 * GB,
+                  max_walltime=1 * hours,
+                  auth=None,  # ignored if `transport` is `local`
+                  frontend='localhost',
+                  transport='local')
+    acct = lsf._parse_secondary_acct_output("""
 Accounting information about jobs that are:
   - submitted by all users.
   - accounted on all projects.
@@ -557,7 +633,16 @@ SUMMARY:      ( time unit: second )
 
 def test_bacct_killed():
     """Test parsing `bacct -l` output for a canceled job."""
-    acct = LsfLrms._parse_acct_output("""
+    lsf = LsfLrms(name='test',
+                  architecture=gc3libs.Run.Arch.X86_64,
+                  max_cores=1,
+                  max_cores_per_job=1,
+                  max_memory_per_core=1 * GB,
+                  max_walltime=1 * hours,
+                  auth=None,  # ignored if `transport` is `local`
+                  frontend='localhost',
+                  transport='local')
+    acct = lsf._parse_secondary_acct_output("""
 Accounting information about jobs that are:
   - submitted by all users.
   - accounted on all projects.
