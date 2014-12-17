@@ -413,7 +413,7 @@ class LsfLrms(batch.BatchSystem):
         return ("%s -l %s" % (self._bjobs, job.lrms_jobid))
 
     def _acct_command(self, job):
-        return ("%s -l %s" % (self._bacct, job.lrms_jobid))
+        return ("%s -l %s" % (self._bjobs, job.lrms_jobid))
 
     def _secondary_acct_command(self, job):
         return ("%s -l %s" % (self._bacct, job.lrms_jobid))
@@ -578,8 +578,29 @@ class LsfLrms(batch.BatchSystem):
             # XXX: what does LSF use as a default?
             return Memory(int(m), unit=bytes)
 
+    def _parse_acct_output(self, stdout):
+        # Antonio: this is an ugly fix, but we have issues with bacct
+        # on some LSF installation being veeeeery slow, so we have to
+        # try and use `bjobs` whenever possible, and fall back to bacct if bjobs does not work.
+        #
+        # However, since the user could update the configuration file
+        # and put `bacct = bacct`, we also have to ensure that we are
+        # calling the correct function to parse the output of the acct
+        # command.
+        if self._bacct.startswith('bacct'):
+            return self.__parse_acct_output_w_bacct(stdout)
+        elif self._bacct.startswith('bjobs'):
+            return self.__parse_acct_output_w_bjobs(stdout)
+        else:
+            log.warning(
+                "Unknown acct command `%s`. Assuming its output is compatible"
+                " with `bacct`" % self._bacct)
+            return self.__parse_acct_output_w_bacct(stdout)
+
+    _parse_secondary_acct_output = _parse_acct_output
+
     @staticmethod
-    def _parse_acct_output(stdout):
+    def __parse_acct_output_w_bjobs(stdout):
         data = dict()
 
         # Try to parse used cputime
@@ -595,7 +616,7 @@ class LsfLrms(batch.BatchSystem):
             # mem_unit should always be Mbytes
             data['max_used_memory'] = Memory(float(mem_used), unit=MB)
 
-        # Find submission time and completion time        
+        # Find submission time and completion time
         lines = iter(stdout.split('\n'))
         for line in lines:
             match = LsfLrms._EVENT_RE.match(line)
@@ -636,7 +657,7 @@ class LsfLrms(batch.BatchSystem):
         'Done\ successfully)', re.X)
 
     @staticmethod
-    def _parse_secondary_acct_output(stdout):
+    def __parse_acct_output_w_bacct(stdout):
         data = dict()
         lines = iter(stdout.split('\n'))
         for line in lines:
