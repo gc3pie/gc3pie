@@ -174,6 +174,7 @@ Tue Jul 24 10:05:45: Done successfully. The CPU time used is 2.1 seconds.
     assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
     assert_equal(jobstatus.exit_status, 0)
 
+
 def test_bjobs_output_for_accounting():
     lsf = LsfLrms(name='test',
                   architecture=gc3libs.Run.Arch.X86_64,
@@ -183,8 +184,7 @@ def test_bjobs_output_for_accounting():
                   max_walltime=1 * hours,
                   auth=None,  # ignored if `transport` is `local`
                   frontend='localhost',
-                  transport='local',
-                  bacct='bjobs')
+                  transport='local')
     bjobs_output = """
 Job <131851>, Job Name <ChromaExtractShort>, User <wwolski>, Project <default>,
                      Status <DONE>, Queue <pub.8h>, Job Priority <50>, Command
@@ -228,6 +228,7 @@ Tue Jul 24 10:05:45: Done successfully. The CPU time used is 2.1 seconds.
     assert_equal(acct['duration'], Duration('86s'))
     assert_equal(acct['used_cpu_time'], Duration('2.1s'))
     assert_equal(acct['max_used_memory'], Memory('41MB'))
+
 
 def test_bjobs_output_done2():
     lsf = LsfLrms(name='test',
@@ -520,8 +521,9 @@ def test_bacct_done0():
                   max_walltime=1 * hours,
                   auth=None,  # ignored if `transport` is `local`
                   frontend='localhost',
-                  transport='local')
-    acct = lsf._parse_secondary_acct_output("""
+                  transport='local',
+                  bacct='bacct')
+    acct = lsf._parse_acct_output("""
 Accounting information about jobs that are:
   - submitted by all users.
   - accounted on all projects.
@@ -581,8 +583,9 @@ def test_bacct_done1():
                   max_walltime=1 * hours,
                   auth=None,  # ignored if `transport` is `local`
                   frontend='localhost',
-                  transport='local')
-    acct = lsf._parse_secondary_acct_output("""
+                  transport='local',
+                  bacct='bacct')
+    acct = lsf._parse_acct_output("""
 Accounting information about jobs that are:
   - submitted by all users.
   - accounted on all projects.
@@ -641,8 +644,9 @@ def test_bacct_killed():
                   max_walltime=1 * hours,
                   auth=None,  # ignored if `transport` is `local`
                   frontend='localhost',
-                  transport='local')
-    acct = lsf._parse_secondary_acct_output("""
+                  transport='local',
+                  bacct='bacct')
+    acct = lsf._parse_acct_output("""
 Accounting information about jobs that are:
   - submitted by all users.
   - accounted on all projects.
