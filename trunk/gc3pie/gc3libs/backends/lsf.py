@@ -380,7 +380,8 @@ class LsfLrms(batch.BatchSystem):
         self.bsub = self._get_command_argv('bsub')
 
         # LSF commands
-        self._bacct = self._get_command('bacct')
+        self._bacct = self._get_command('bacct', 'bjobs')
+        self._bacct2 = self._get_command('bacct2', 'bacct')
         self._bjobs = self._get_command('bjobs')
         self._bkill = self._get_command('bkill')
         self._lshosts = self._get_command('lshosts')
@@ -416,7 +417,7 @@ class LsfLrms(batch.BatchSystem):
         return ("%s -l %s" % (self._bjobs, job.lrms_jobid))
 
     def _secondary_acct_command(self, job):
-        return ("%s -l %s" % (self._bacct, job.lrms_jobid))
+        return ("%s -l %s" % (self._bacct2, job.lrms_jobid))
 
     @staticmethod
     def _lsf_state_to_gc3pie_state(stat):
@@ -581,7 +582,8 @@ class LsfLrms(batch.BatchSystem):
     def _parse_acct_output(self, stdout):
         # Antonio: this is an ugly fix, but we have issues with bacct
         # on some LSF installation being veeeeery slow, so we have to
-        # try and use `bjobs` whenever possible, and fall back to bacct if bjobs does not work.
+        # try and use `bjobs` whenever possible, and fall back to
+        # bacct if bjobs does not work.
         #
         # However, since the user could update the configuration file
         # and put `bacct = bacct`, we also have to ensure that we are
