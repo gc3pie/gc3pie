@@ -203,13 +203,13 @@ sed -i -e "s|@INPUT@|${INPUT_FOLDER}|g" ${PARAMS_FILE}
 # echo configuration
 
 # run script
-log "Running: ${PYRAD} -p ${PARAMS_FILE} -s123"
+log "Running: ${PYRAD} -p ${PARAMS_FILE} -s23"
 if [ $DEBUG -ne 0 ]; then
-    log "Running: strace -f -o strace.log ${PYRAD} -p ${PARAMS_FILE} -s123"
-    strace -f -o strace.log ${PYRAD} -p ${PARAMS_FILE} -s123
+    log "Running: strace -f -o strace.log ${PYRAD} -p ${PARAMS_FILE} -s23"
+    strace -f -o strace.log ${PYRAD} -p ${PARAMS_FILE} -s23
 else
-    log "Running: ${PYRAD} -p ${PARAMS_FILE} -s123"
-    ${PYRAD} -p ${PARAMS_FILE} -s123
+    log "Running: ${PYRAD} -p ${PARAMS_FILE} -s23"
+    ${PYRAD} -p ${PARAMS_FILE} -s23
 fi
 
 RET=$?
