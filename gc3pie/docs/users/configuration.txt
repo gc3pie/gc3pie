@@ -255,26 +255,64 @@ Some configuration keys are commmon to all resource types:
   *  ``max_cores``: Total number of cores provided by the resource.
   *  ``architecture``: Processor architecture.  Should be one of the strings ``x86_64`` (for 64-bit Intel/AMD/VIA processors), ``i686`` (for 32-bit Intel/AMD/VIA x86 processors), or ``x86_64,i686`` if both architectures are available on the resource.
   *  ``time_cmd``: Used only when ``type`` is ``shellcmd``. The `time` program is used as wrapper for the application in order to collect informations about the execution when running without a real `LRMS`.
+
   * ``prologue``: Used only when ``type`` is ``pbs``, ``lsf``,
-     ``slurm`` or ``sge``. The content of the `prologue` script will
-     be *inserted* into the submission script and it's executed before
+     ``slurm`` or ``sge``. The content of the `prologue` script will be
+     *inserted* into the submission script and it's executed before
      the real application.  It is intended to execute some shell
      commands needed to setup the execution environment before running
      the application (e.g. running a `module load ...` command). The
      script **must** be a valid, plain `/bin/sh` script.
+
+  * ``<application_name>_prologue``: Same as ``prologue``, but it is
+    used only when ``<application_name>`` matches the name of the
+    application. Valid application names are: `zods`, `gamess`,
+    `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`. If
+    both ``prologue`` and ``<application_name>_prologue`` options are
+    defined, the content of both files is included in the submission
+    script (first ``prologue``, then ``<application_name>_prologue``).
+
+  * ``prologue_content``: Used only when ``type`` is ``pbs``, ``lsf``,
+     ``slurm`` or ``sge``. A (possibly multi-line) string that will be
+     *inserted* into the submission script and executed before the
+     real application. Its value will be inserted after *any* other
+     ``prologue``, ``<application_name>_prologue`` option, if present.
+
+  * ``<application_name>_prologue_content``: Same as
+    ``prologue_content``, but it is used only when
+    ``<application_name>`` matches the name of the application. Valid
+    application names are: `zods`, `gamess`, `turbomole`, `codeml`,
+    `rosetta`, `rosetta_docking`, `geotop`. Its value will be inserted
+    after *any* other ``prologue``, ``<application_name>_prologue``,
+    ``prologue_content`` option, if present.
+
   * ``epilogue``: Used only when ``type`` is ``pbs``, ``lsf``,
      ``slurm`` or ``sge``. The content of the `epilogue` script will
      be *inserted* into the submission script and it's executed after
      the real application. The script **must** be a valid, plain
      `/bin/sh` script.
-  * ``<application_name>_prologue``: Same as ``prologue``, but it is
-    used only when ``<application_name>``  matches the name of the
-    application. Valid application names are: `zods`, `gamess`,
-    `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`,
+
   * ``<application_name>_epilogue``: Same as ``epilogue``, but it is
-    used only when ``<application_name>``  matches the name of the
+    used only when ``<application_name>`` matches the name of the
     application. Valid application names are: `zods`, `gamess`,
-    `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`,
+    `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`.  If
+    both ``epilogue`` and ``<application_name>_epilogue`` options are
+    defined, the content of both files is included in the submission
+    script (first ``epilogue``, then ``<application_name>_epilogue``).
+
+  * ``epilogue_content``: Used only when ``type`` is ``pbs``, ``lsf``,
+     ``slurm`` or ``sge``. A (possibly multi-line) string that will be
+     *inserted* into the submission script and executed after the real
+     application. Its value will be inserted after *any* other
+     ``epilogue``, ``<application_name>_epilogue`` option, if present.
+
+  * ``<application_name>_epilogue_content``: Same as
+    ``epilogue_content``, but it is used only when
+    ``<application_name>`` matches the name of the application. Valid
+    application names are: `zods`, `gamess`, `turbomole`, `codeml`,
+    `rosetta`, `rosetta_docking`, `geotop`. Its value will be inserted
+    after *any* other ``epilogue``, ``<application_name>_epilogue``,
+    ``epilogue_content`` option, if present.
 
 ``arc0`` resources
 ~~~~~~~~~~~~~~~~~~
