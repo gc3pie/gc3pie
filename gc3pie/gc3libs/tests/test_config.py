@@ -377,6 +377,14 @@ class TestPrologueEpilogueScripts(object):
     def setUp(self):
         # setup conf dir and conf file
         self.files_to_remove = []
+
+        self.conftmpdir = tempfile.mkdtemp()
+        self.tmpdir = tempfile.mkdtemp()
+        # setup config file and sctipts
+        cfgfname = os.path.join(self.conftmpdir, 'gc3pie.conf')
+        self.files_to_remove.append(self.conftmpdir)
+        self.files_to_remove.append(self.tmpdir)
+
         cfgstring = """
 [auth/ssh]
 type = ssh
@@ -391,10 +399,10 @@ max_memory_per_core = 2
 max_walltime = 8
 max_cores = 2
 architecture = x86_64
-prologue = scripts/shellcmd_pre.sh
-epilogue = scripts/shellcmd_post.sh
-myapp_prologue = scripts/myapp_shellcmd_pre.sh
-myapp_epilogue = scripts/myapp_shellcmd_post.sh
+prologue = %(tmpdir)s/scripts/shellcmd_pre.sh
+epilogue = %(tmpdir)s/scripts/shellcmd_post.sh
+myapp_prologue = %(tmpdir)s/scripts/myapp_shellcmd_pre.sh
+myapp_epilogue = %(tmpdir)s/scripts/myapp_shellcmd_post.sh
 override = False
 
 [resource/testpbs]
@@ -407,15 +415,14 @@ max_memory_per_core = 2
 max_walltime = 8
 max_cores = 2
 architecture = x86_64
-prologue = scripts/shellcmd_pre.sh
-epilogue = scripts/shellcmd_post.sh
-myapp_prologue = scripts/myapp_shellcmd_pre.sh
-myapp_epilogue = scripts/myapp_shellcmd_post.sh
-"""
-        self.tmpdir = tempfile.mkdtemp()
-        # setup config file and sctipts
-        cfgfname = os.path.join(self.tmpdir, 'gc3pie.conf')
-        self.files_to_remove.append(self.tmpdir)
+prologue = %(tmpdir)s/scripts/shellcmd_pre.sh
+epilogue = %(tmpdir)s/scripts/shellcmd_post.sh
+myapp_prologue = %(tmpdir)s/scripts/myapp_shellcmd_pre.sh
+myapp_epilogue = %(tmpdir)s/scripts/myapp_shellcmd_post.sh
+app2_prologue_content = echo prologue app2
+app2_epilogue_content = echo epilogue app2
+""" % {'tmpdir': self.tmpdir}
+
         fdcfg = open(cfgfname, 'w')
         fdcfg.write(cfgstring)
         fdcfg.close()
@@ -449,14 +456,15 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
         self.core = gc3libs.core.Core(self.cfg)
         for resource in self.core.get_resources():
             for (k, v) in resource.iteritems():
-                if 'prologue' not in k and 'epilogue' not in k:
+                if k not in ['prologue', 'epilogue',
+                             'myapp_prologue', 'myapp_epilogue']:
                     continue
                 assert os.path.isfile(v)
                 assert os.path.isabs(v)
                 assert_equal(os.path.abspath(v),
                              v)
 
-    def test_pbs_prologue_and_epilogue_contents(self):
+    def test_pbs_prologue_and_epilogue_contents_when_files(self):
         """Prologue and epilogue scripts are inserted in the submission script
         """
         # Ugly hack. We have to list the job dirs to check which one
@@ -501,6 +509,63 @@ myapp_epilogue = scripts/myapp_shellcmd_post.sh
         if app.execution.state != Run.State.NEW:
             self.core.kill(app)
 
+    def test_pbs_prologue_and_epilogue_contents_when_not_files(self):
+        """Prologue and epilogue scripts are inserted in the submission script
+        """
+        # Ugly hack. We have to list the job dirs to check which one
+        # is the new one.
+        jobdir = os.path.expanduser('~/.gc3pie_jobs')
+        jobs = []
+        if os.path.isdir(jobdir):
+            jobs = os.listdir(jobdir)
+        app = Application(['/bin/true'], [], [], '')
+        app.application_name = 'app2'
+        self.core = gc3libs.core.Core(self.cfg)
+        self.core.select_resource('testpbs')
+        try:
+            self.core.submit(app)
+        except Exception:
+            # it is normal to have an error since we don't probably
+            # run a pbs server in this machine.
+            pass
+
+        newjobs = [d for d in os.listdir(jobdir) if d not in jobs]
+
+        # There must be only one more job...
+        assert_equal(len(newjobs), 1)
+
+        newjobdir = os.path.join(jobdir, newjobs[0])
+        self.files_to_remove.append(newjobdir)
+
+        # and only one file in it
+        assert_equal(len(os.listdir(newjobdir)), 1)
+
+        # Check the content of the script file
+        scriptfname = os.path.join(newjobdir, (os.listdir(newjobdir)[0]))
+        scriptfile = open(scriptfname)
+        assert re.match(
+            "#!/bin/sh.*"
+            "# prologue file `.*` BEGIN.*"
+            "echo prologue.*"
+            "# prologue file END.*"
+            "# inline script BEGIN.*"
+            "echo prologue app2.*"
+            "# inline script END.*"
+            "/bin/true.*"
+            "# epilogue file `.*` BEGIN.*"
+            "echo epilogue.*"
+            "# epilogue file END.*"
+            "# inline script BEGIN.*"
+            "echo epilogue app2.*"
+            "# inline script END",
+            scriptfile.read(),
+            re.DOTALL | re.M)
+        scriptfile.close()
+
+        # kill the job
+        if app.execution.state != Run.State.NEW:
+            self.core.kill(app)
+
     def test_prologue_epilogue_issue_352(self):
         cfgstring = """
 [auth/ssh]
@@ -537,7 +602,8 @@ override = False
         self.core = gc3libs.core.Core(self.cfg)
         for resource in self.core.get_resources():
             for (k, v) in resource.iteritems():
-                if 'prologue' not in k and 'epilogue' not in k:
+                if k not in ['prologue', 'epilogue',
+                             'myapp_prologue', 'myapp_epilogue']:
                     continue
                 assert os.path.isabs(v)
                 assert os.path.isfile(v)
