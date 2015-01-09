@@ -353,9 +353,9 @@ class BatchSystem(LRMS):
         application and will return a string which contains the
         contents of the script(s) merged together.
         """
-        epilogues = ['epilogue', app.application_name + 'epilogue',
+        epilogues = ['epilogue', app.application_name + '_epilogue',
                      'epilogue_content',
-                     app.application_name + 'epilogue_content']
+                     app.application_name + '_epilogue_content']
         return self._get_prepost_scripts(app, epilogues)
 
     @LRMS.authenticated
