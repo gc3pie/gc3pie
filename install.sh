@@ -434,6 +434,9 @@ install_gc3pie_via_svn () {
     svn co $GC3_SVN_URL src
 
     cd src
+    # Fix for boto/pbr stupid dependency issue
+    pip install pbr
+    # Install as developer
     python setup.py develop
     cd $orig_wd
 }
