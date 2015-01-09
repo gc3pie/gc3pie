@@ -461,11 +461,12 @@ class Configuration(gc3libs.utils.Struct):
     def _perform_filename_conversion(config_items, path_regexp, filename):
         for key, value in config_items.iteritems():
             if path_regexp.match(key):
-                config_items[key] = os.path.join(
-                    os.path.dirname(filename),
-                    value)
+                basedir = (os.path.dirname(value)
+                           if os.path.isfile(value)
+                           else os.path.dirname(filename))
+                config_items[key] = os.path.join(basedir, value)
 
-    _path_key_regexp = re.compile('^(\w+_)?(prologue|epilogue)')
+    _path_key_regexp = re.compile('^(\w+_)?(prologue|epilogue)$')
 
     @staticmethod
     def _perform_type_conversions(config_items, converters, filename):
