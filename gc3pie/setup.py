@@ -38,7 +38,8 @@ import setuptools
 import setuptools.dist
 # avoid setuptools including `.svn` directories into the PyPI package
 from setuptools.command import sdist
-del sdist.finders[:]
+if hasattr(sdist, 'finders'):
+    del sdist.finders[:]
 
 setuptools.setup(
     name="gc3pie",
