@@ -765,7 +765,6 @@ class EC2Lrms(LRMS):
                     changed_only=True):
         subresource = self._get_subresource(self._get_vm(app.ec2_instance_id))
         return subresource.get_results(app, download_dir,
-                                       ignore_nonexisting=False,
                                        overwrite=overwrite,
                                        changed_only=changed_only)
 
