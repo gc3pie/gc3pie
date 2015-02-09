@@ -33,7 +33,7 @@ the trick!
   the Python interpreter, or GC3Utils will still complain!
 
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by

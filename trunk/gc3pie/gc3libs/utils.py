@@ -8,7 +8,7 @@ function or class belongs in here is the following: place a function
 or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
-# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by

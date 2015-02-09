@@ -2,7 +2,7 @@
 #
 #   gdocking.py -- Front-end script for submitting ROSETTA `docking_protocol` jobs to SMSCG.
 #
-#   Copyright (C) 2010-2012 GC3, University of Zurich
+#   Copyright (C) 2010-2012 S3IT, Zentrale Informatik, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by

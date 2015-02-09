@@ -14,7 +14,7 @@ work on the source for `exercise_A_2.py`:
 """
 #
 #
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it

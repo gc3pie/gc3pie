@@ -3,7 +3,7 @@
 """
 Job control on SGE clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2009-2014 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
