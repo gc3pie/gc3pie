@@ -2,7 +2,7 @@
 """
 Top-level interface to Grid functionality.
 """
-# Copyright (C) 2009-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -205,14 +205,16 @@ an overlay Grid on the resources specified in the configuration file.
         # auto_enable_auth = extra_args.get(
         #     'auto_enable_auth', self.auto_enable_auth)
 
-        if hasattr(app.execution, 'resource_name'):
+        try:
             lrms = self.get_backend(app.execution.resource_name)
             lrms.free(app)
-        else:
+        except AttributeError:
             gc3libs.log.debug(
-                "Core.__free_application(): Application `%s` does not have an "
-                "`execution.resource_name` attribute. Assuming it has been "
-                "aborted before submission." % str(app))
+                "Core.__free_application():"
+                " Application `%s` is missing the `execution.resource_name` attribute."
+                " This should not happen. I'm assuming the application had been"
+                " aborted before submission.",
+                app)
 
     def __free_task(self, task, **extra_args):
         """Implementation of `free` on generic `Task` objects."""
