@@ -135,9 +135,10 @@ class BatchSystem(LRMS):
         elif transport == 'ssh':
             auth = self._auth_fn()
             self._username = auth.username
+            self._port = auth.port
             self.transport = gc3libs.backends.transport.SshTransport(
-                frontend, username=self._username, keyfile=keyfile,
-                ignore_ssh_host_keys=ignore_ssh_host_keys)
+                frontend, username=self._username, port=self._port,
+                keyfile=keyfile, ignore_ssh_host_keys=ignore_ssh_host_keys)
         else:
             raise gc3libs.exceptions.TransportError(
                 "Unknown transport '%s'" % transport)
