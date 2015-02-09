@@ -7,7 +7,7 @@ simple command-line frontend to distributed resources
 This is a generic front-end code; actual implementation of commands
 can be found in `gc3utils.commands`:mod:
 """
-# Copyright (C) 2009-2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # Includes parts adapted from the ``bzr`` code, which is
 # copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
