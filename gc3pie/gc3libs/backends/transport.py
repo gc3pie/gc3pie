@@ -477,12 +477,13 @@ class SshTransport(Transport):
 
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 gc3libs.log.debug(
-                    "Connecting to host '%s' as user '%s' via SSH "
-                    "(timeout %ds)...", self.remote_frontend,
+                    "Connecting to host '%s' (port %s) as user '%s' via SSH "
+                    "(timeout %ds)...", self.remote_frontend, self.port,
                     self.username, self.timeout)
                 self.ssh.connect(self.remote_frontend,
                                  timeout=self.timeout,
                                  username=self.username,
+                                 port=self.port,
                                  allow_agent=True,
                                  key_filename=self.keyfile)
                 self.sftp = self.ssh.open_sftp()
