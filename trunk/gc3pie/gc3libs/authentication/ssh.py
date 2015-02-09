@@ -37,6 +37,10 @@ class SshAuth(object):
                 "Configuration error. Unknown type: %s. Valid type: ssh" \
                 % auth.type
             auth['username']
+            if 'port' in auth:
+                auth['port'] = int(auth['port'])
+            else:
+                auth['port'] = gc3libs.Default.SSH_PORT
             self.__dict__.update(auth)
         except AssertionError as x:
             raise gc3libs.exceptions.ConfigurationError(
