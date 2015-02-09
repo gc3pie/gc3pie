@@ -106,6 +106,7 @@ For the ``ssh``-type auth, the following keys must be provided:
 
   * ``type``: must be ``ssh``
   * ``username``: must be the username to log in as on the remote machine
+  * ``port``: TCP port number where the SSH server is listening.  The default value 22 is fine for almost all cases; change it only if you know what you are doing.
 
 For the ``ec2``-type auth, the following keys *can* be provided. If
 they are not found, the value of the corresponding environment
