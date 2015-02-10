@@ -1583,10 +1583,16 @@ class Engine(object):
                     else:
                         # propagate exceptions for debugging purposes
                         raise
-                if task.execution.state == Run.State.TERMINATED:
-                    self._terminated.append(task)
-                    self._core.free(task)
-                    transitioned.append(index)
+
+            for index, task in enumerate(self._terminating):
+                try:
+                    if task.execution.state == Run.State.TERMINATED:
+                        self._terminated.append(task)
+                        transitioned.append(index)
+                        self._core.free(task)
+                except Exception as ex:
+                    gc3libs.log.error("Probably resource doesn't exist anymore")
+
                 if self._store and task.changed:
                     self._store.save(task)
             # remove tasks for which final output has been retrieved
