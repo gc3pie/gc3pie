@@ -31,20 +31,25 @@ class SshAuth(object):
 
     def __init__(self, **auth):
 
+        assert auth['type'] == 'ssh'
+
         try:
-            # test validity
-            assert auth['type'] == 'ssh',\
-                "Configuration error. Unknown type: %s. Valid type: ssh" \
-                % auth.type
             auth['username']
+        except KeyError as err:
+            raise gc3libs.exceptions.ConfigurationError(
+                "Missing `username` in SSH auth section.")
+
+        try:
             if 'port' in auth:
                 auth['port'] = int(auth['port'])
             else:
                 auth['port'] = gc3libs.Default.SSH_PORT
-            self.__dict__.update(auth)
-        except AssertionError as err:
+        except (ValueError, TypeError) as err:
             raise gc3libs.exceptions.ConfigurationError(
-                'Erroneous configuration parameter: %s' % (err,))
+                "Invalid `port` setting in SSH auth section.")
+
+        # everything else is just stored as-is
+        self.__dict__.update(auth)
 
     def check(self):
         return True
