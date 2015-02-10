@@ -450,6 +450,7 @@ class Configuration(gc3libs.utils.Struct):
         'max_cores_per_job'   : int,
         'max_memory_per_core' : _legacy_parse_memory,
         'max_walltime'        : _legacy_parse_duration,
+        'port'                : int,
         'vm_os_overhead'      : _legacy_parse_os_overhead,
         # LSF-specific
         'lsf_continuation_line_prefix_length': int,
