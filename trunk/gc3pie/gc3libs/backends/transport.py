@@ -412,7 +412,7 @@ class SshTransport(Transport):
 
     def __init__(self, remote_frontend,
                  ignore_ssh_host_keys=False,
-                 ssh_config='~/.ssh/config',
+                 ssh_config=None,
                  username=None, port=None,
                  keyfile=None, timeout=None):
         """
@@ -454,7 +454,7 @@ class SshTransport(Transport):
 
         # use SSH options, if available
         sshcfg = paramiko.SSHConfig()
-        config_filename = os.path.expanduser(ssh_config)
+        config_filename = os.path.expanduser(ssh_config or gc3libs.Default.SSH_CONFIG_FILE)
         if os.path.exists(config_filename):
             with open(config_filename, 'r') as config_file:
                 sshcfg.parse(config_file)

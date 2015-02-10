@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2009-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -94,6 +94,7 @@ class Default(object):
     OPENSTACK_LRMS = 'openstack'
 
     # Transport information
+    SSH_CONFIG_FILE = '~/.ssh/config'
     SSH_PORT = 22
     SSH_CONNECT_TIMEOUT = 30
 
