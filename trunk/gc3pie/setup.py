@@ -96,8 +96,6 @@ setuptools.setup(
 
     # run-time dependencies
     install_requires=[
-        'boto==2.9.4',
-        'python-novaclient==2.15',
         # paramiko and pycrypto are required for SSH operations
         'paramiko==1.13',
         'pycrypto==2.6.1',
@@ -110,10 +108,19 @@ setuptools.setup(
         'sqlalchemy==0.7.9',
         # Needed for parsing human-readable dates (gselect uses it).
         'parsedatetime==0.8.7',
-        # needed by Benjamin's DE optimizer code
-        # To add as an *optional* dependency
-        # 'numpy',
         ],
+    extras_require = {
+        'openstack': [
+            'python-novaclient==2.15',
+        ],
+        'ec2': [
+            'boto==2.9.4',
+        ],
+        'optimizer': [
+            # needed by Benjamin's DE optimizer code
+            'numpy',
+        ],
+    },
     # Apparently, this list is read from right to left...
     tests_require=['tox'],
     cmdclass={'test': Tox},
