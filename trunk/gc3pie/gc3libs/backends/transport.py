@@ -415,6 +415,33 @@ class SshTransport(Transport):
                  ssh_config='~/.ssh/config',
                  username=None, port=None,
                  keyfile=None, timeout=None):
+        """
+        Initialize an `SshTransport` object for operating on host `remote_frontend`.
+
+        Second optional argument `ignore_ssh_host_keys` instructs the
+        communication layer *not* to validate the SSH host key and
+        ignore the contents of SSH "known hosts" file.  While
+        insecure, this is the only way of dealing with cloud-based VMs
+        (where the host key is generated during VM creation).
+
+        Third optional argument `ssh_config` specifies the path to an
+        OpenSSH configuration file (see man page `ssh_config(5)` for
+        details).  If found in that file, any of the following options
+        override the GC3Pie built-in default:
+
+        * ``ConnectTimeout`` sets the maximum time GC3Pie will wait
+          for a connection to be established, before considering the
+          attempt failed.
+        * ``HostName`` overrides the host name given by `remote_frontend`
+        * ``IdentityFile`` sets the (private) key file to use for
+          authentication to the remote host.
+        * ``Port`` sets the TCP port to use for connections.
+        * ``ProxyCommand`` pipes all SSH I/O through the given command.
+        * ``User`` sets the user name to use when connecting.
+
+        Additional arguments ``user``, ``port``, ``keyfile``, and
+        ``timeout``, if given, override the above settings.
+        """
         self.remote_frontend = remote_frontend
         self.port = port
         self.username = username
