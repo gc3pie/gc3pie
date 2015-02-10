@@ -3,7 +3,7 @@
 """
 Deal with GC3Pie configuration files.
 """
-# Copyright (C) 2012-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -262,10 +262,10 @@ class Configuration(gc3libs.utils.Struct):
             corrupt or has wrong format.
         """
         gc3libs.log.debug(
-            "Configuration.load(): Reading file '%s' ..." % filename)
-        stream = open(filename, 'r')
-        (defaults, resources, auths) = self._parse(stream, filename)
-        stream.close()
+            "Configuration.load(): Reading file '%s' ...",
+            filename)
+        with open(filename, 'r') as stream:
+            defaults, resources, auths = self._parse(stream, filename)
         for name, values in resources.iteritems():
             self.resources[name].update(values)
         for name, values in auths.iteritems():
@@ -323,7 +323,7 @@ class Configuration(gc3libs.utils.Struct):
                     filename = repr(stream)
             raise gc3libs.exceptions.ConfigurationError(
                 "Configuration file '%s' is unreadable or malformed: %s: %s"
-                % (filename, err.__class__.__name__, str(err)))
+                % (filename, err.__class__.__name__, err))
 
         # update `defaults` with the contents of the `[DEFAULTS]` section
         defaults.update(parser.defaults())
@@ -361,8 +361,8 @@ class Configuration(gc3libs.utils.Struct):
                 except Exception as err:
                     raise gc3libs.exceptions.ConfigurationError(
                         "Incorrect entry for resource '%s' in configuration"
-                        " file '%s': %s" %
-                        (name, filename, str(err)))
+                        " file '%s': %s"
+                        % (name, filename, str(err)))
 
                 resources[name].update(config_items)
                 resources[name]['name'] = name
@@ -385,10 +385,10 @@ class Configuration(gc3libs.utils.Struct):
         return (defaults, resources, auths)
 
     _renamed_keys = {
-        # old key name         new key name
-        # ===================  ===================
-        'ncores': 'max_cores',
-        'sge_accounting_delay': 'accounting_delay',
+        # old key name           new key name
+        # ===================    ===================
+        'ncores'               : 'max_cores',
+        'sge_accounting_delay' : 'accounting_delay',
     }
 
     @staticmethod
@@ -415,14 +415,12 @@ class Configuration(gc3libs.utils.Struct):
                 del config_items[oldkey]
 
     _updated_values = {
-        # key name  old value            new value
-        # ========  ===================  ==================
+        # key name  old value             new value
+        # ========  ===================   ==================
         'type': {
-            # old value     new value
-            # ============  ==================
-            'arc': gc3libs.Default.ARC0_LRMS,
-            'ssh': gc3libs.Default.SGE_LRMS,
-            'subprocess': gc3libs.Default.SHELLCMD_LRMS,
+                    'arc'               : gc3libs.Default.ARC0_LRMS,
+                    'ssh'               : gc3libs.Default.SGE_LRMS,
+                    'subprocess'        : gc3libs.Default.SHELLCMD_LRMS,
         },
     }
 
@@ -441,21 +439,7 @@ class Configuration(gc3libs.utils.Struct):
                         filename)
                     config_items[key] = changed[value]
 
-    # type transforms for well-known configuration keys
-    _convert = {
-        # item name            converter
-        # ===================  ==================================
-        'enabled': gc3libs.utils.string_to_boolean,
-        'architecture': _parse_architecture,
-        'max_cores': int,
-        'max_cores_per_job': int,
-        'max_memory_per_core': _legacy_parse_memory,
-        'max_walltime': _legacy_parse_duration,
-        'vm_os_overhead': _legacy_parse_os_overhead,
-        # LSF-specific
-        'lsf_continuation_line_prefix_length':
-        int,
-    }
+    _path_key_regexp = re.compile('^(\w+_)?(prologue|epilogue)$')
 
     @staticmethod
     def _perform_filename_conversion(config_items, path_regexp, filename):
@@ -466,7 +450,20 @@ class Configuration(gc3libs.utils.Struct):
                            else os.path.dirname(filename))
                 config_items[key] = os.path.join(basedir, value)
 
-    _path_key_regexp = re.compile('^(\w+_)?(prologue|epilogue)$')
+    # type transforms for well-known configuration keys
+    _convert = {
+        # item name             converter
+        # ===================   ==================================
+        'enabled'             : gc3libs.utils.string_to_boolean,
+        'architecture'        : _parse_architecture,
+        'max_cores'           : int,
+        'max_cores_per_job'   : int,
+        'max_memory_per_core' : _legacy_parse_memory,
+        'max_walltime'        : _legacy_parse_duration,
+        'vm_os_overhead'      : _legacy_parse_os_overhead,
+        # LSF-specific
+        'lsf_continuation_line_prefix_length': int,
+    }
 
     @staticmethod
     def _perform_type_conversions(config_items, converters, filename):
@@ -477,7 +474,7 @@ class Configuration(gc3libs.utils.Struct):
                 except Exception as err:
                     raise gc3libs.exceptions.ConfigurationError(
                         "Error parsing configuration item '%s': %s: %s"
-                        % (key, err.__class__.__name__, str(err)))
+                        % (key, err.__class__.__name__, err))
 
     @defproperty
     def auth_factory():
