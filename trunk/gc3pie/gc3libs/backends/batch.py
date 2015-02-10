@@ -117,8 +117,13 @@ class BatchSystem(LRMS):
                  max_memory_per_core, max_walltime,
                  auth,  # ignored if `transport` is 'local'
                  # these are specific to the this backend
-                 frontend, transport, keyfile=None, ignore_ssh_host_keys=False,
+                 frontend, transport,
                  accounting_delay=15,
+                 # SSH-related options; ignored if `transport` is 'local'
+                 ssh_config=None,
+                 keyfile=None,
+                 ignore_ssh_host_keys=False,
+                 ssh_timeout=None,
                  **extra_args):
 
         # init base class
@@ -134,11 +139,16 @@ class BatchSystem(LRMS):
             self._username = getuser()
         elif transport == 'ssh':
             auth = self._auth_fn()
-            self._username = auth.username
-            self._port = auth.port
+            self._username=auth.username
             self.transport = gc3libs.backends.transport.SshTransport(
-                frontend, username=self._username, port=self._port,
-                keyfile=keyfile, ignore_ssh_host_keys=ignore_ssh_host_keys)
+                frontend,
+                ignore_ssh_host_keys=ignore_ssh_host_keys,
+                ssh_config=(ssh_config or auth.ssh_config),
+                username=self._username,
+                port=auth.port,
+                keyfile=(keyfile or auth.keyfile),
+                timeout=(ssh_timeout or auth.timeout),
+            )
         else:
             raise gc3libs.exceptions.TransportError(
                 "Unknown transport '%s'" % transport)
