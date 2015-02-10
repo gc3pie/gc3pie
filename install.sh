@@ -2,7 +2,7 @@
 # @(#)install.sh
 #
 #
-#  Copyright (C) 2012-2014 GC3, University of Zurich. All rights reserved.
+#  Copyright (C) 2012-2015 GC3, University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -421,7 +421,7 @@ This script was unable to create a valid virtual environment.
 EOF
     fi
     echo "Installing GC3Pie from PyPI package with '$VENVDIR/bin/pip' ..."
-    $VENVDIR/bin/pip install gc3pie
+    $VENVDIR/bin/pip install "gc3pie${FEATURES}"
 }
 
 install_gc3pie_via_svn () {
@@ -434,10 +434,14 @@ install_gc3pie_via_svn () {
     svn co $GC3_SVN_URL src
 
     cd src
-    # Fix for boto/pbr stupid dependency issue
-    pip install pbr
-    # Install as developer
-    python setup.py develop
+
+    # fix for a stupid boto/pbr dependency issue
+    if (echo "${FEATURES}" | fgrep -qi openstack); then
+      pip install pbr
+    fi
+    # see https://bitbucket.org/tarek/distribute/issue/130 as to why
+    # this is a better `python setup.py develop`
+    pip install -e ".${FEATURES}"
     cd $orig_wd
 }
 
@@ -485,6 +489,15 @@ $0 [OPTIONS]
 
 Options:
 
+      -a, --feature LIST     Install these optional features (comma-separated list).
+                             Currently defined features are:
+                               openstack: support running jobs in VMs on OpenStack clouds
+                               ec2:       support running jobs in VMs on OpenStack clouds
+                               optimizer: install math libraries needed by the optimizer library
+                             For instance, to install all features use '-a openstack,ec2,optimizer'.
+                             To install no optional feature, use '-a none'.
+                             By default, all cloud-related features are installed.
+
       -d, --target DIRECTORY Install GC3Pie virtual environment into DIRECTORY.
                              (Default: $VENVDIR)
 
@@ -507,10 +520,15 @@ EOF
 
 
 # Main program
-short_opts='d:p:hDNfvxy'
-long_opts='target:,python:,help,debug,develop,no-gc3apps,overwrite,verbose,yes'
+short_opts='a:d:p:hDNfvxy'
+long_opts='feature:,features:,target:,python:,help,debug,develop,no-gc3apps,overwrite,verbose,yes'
 
-if [ "x$(getopt -T)" = 'x' ]; then
+# test which `getopt` version is available:
+# - GNU `getopt` will generate no output and exit with status 4
+# - POSIX `getopt` will output `--` and exit with status 0
+getopt -T > /dev/null
+rc=$?
+if [ "$rc" -eq 4 ]; then
     # GNU getopt
     args=$(getopt --name "$PROG" --shell sh -l "$long_opts" -o "$short_opts" -- "$@")
     if [ $? -ne 0 ]; then
@@ -530,6 +548,14 @@ fi
 while true
 do
     case "$1" in
+        -a|--feature*)
+            shift
+            if [ "$1" = "none" ]; then
+                FEATURES=''
+            else
+                FEATURES="[$1]"
+            fi
+            ;;
         -d|--target)
             shift
             VENVDIR=$1
@@ -601,6 +627,7 @@ Python executable:        $PYTHON
 Ask for confirmation:     $(integer_to_boolean $ASKCONFIRMATION)
 Development mode:         $(integer_to_boolean $DEVELOP)
 Install gc3apps:          $(integer_to_boolean $WITHAPPS)
+Optional features:        ${FEATURES:+[NONE]}
 Overwrite:                $OVERWRITEDIR
 
 EOF
