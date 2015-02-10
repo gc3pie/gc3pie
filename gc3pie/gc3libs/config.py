@@ -290,23 +290,13 @@ class Configuration(gc3libs.utils.Struct):
 
         * `auths`: same for the ``[auth/name]`` sections.
 
-        In addition, key renaming (for compatibility with previous versions)
-        and type conversion is performed here, so that the returned
-        dictionaries conform to a specified schema:
-
-          ===================  =========================
-          Attribute name       Type
-          ===================  =========================
-          architecture         set of strings
-          max_cores            int
-          max_cores_per_job    int
-          max_memory_per_core  gc3libs.quantity.Memory
-          max_walltime         gc3libs.quantity.Duration
-          ===================  =========================
-
-        Any attribute not mentioned in the above table will have type
-        ``str`` (i.e., it is left unchanged).
-
+        In addition, key renaming (for compatibility with previous
+        versions) and type conversion is performed here, so that the
+        returned dictionaries conform to a specified schema.  Type
+        conversion are performed according to the value of the
+        `_convert` attribute on this object; any attribute not
+        mentioned in that table will have type ``str`` (i.e., it is
+        left unchanged).
         """
         defaults = dict()
         resources = defaultdict(dict)
