@@ -25,7 +25,7 @@ To install GC3Pie just type this at your terminal prompt::
 
     sh -c "$(wget -O- http://gc3pie.googlecode.com/svn/install.sh)"
 
-If `wget` is not installed in your computer, you should use `curl` instead::
+If `wget` is not installed in your computer, you can use `curl` instead::
 
     sh -c "$(curl -s http://gc3pie.googlecode.com/svn/install.sh)"
 
@@ -57,6 +57,19 @@ to the standard behavior.  In order to use these options, you have to:
 
 The accepted options are as follows:
 
+  ``--feature LIST``
+
+      Install optional features (comma-separated list).  Currently
+      defined features are:
+
+      * ``openstack``: support running jobs in VMs on OpenStack clouds
+      * ``ec2``:       support running jobs in VMs on OpenStack clouds
+      * ``optimizer``: install math libraries needed by the optimizer library
+
+      For instance, to install all features use ``-a openstack,ec2,optimizer``.
+      To install no optional feature, use ``-a none``.
+
+      By default, all cloud-related features are installed.
 
   ``-d DIRECTORY``
 
@@ -129,7 +142,7 @@ Installation into a virtualenv has two distinct advantages:
        standard library, but sometimes it needs separate installation)
      - a C/C++ compiler (this is usually installed by default).
 
-   If you intend to use also the ARC backend (required for SMSCG), 
+   If you intend to use also the ARC backend (required for SMSCG),
    you need the NorduGrid/ARC binaries and a working ``slcs-init`` command
    installed on the same machine where GC3Pie is.  You can find
    instructions for installing it at:
@@ -141,7 +154,7 @@ Installation into a virtualenv has two distinct advantages:
      http://code.google.com/p/gc3pie/wiki/OSSpecificInstallDetails
 
 
-1. If `virtualenv`_ is not already installed on your system, 
+1. If `virtualenv`_ is not already installed on your system,
    get the Python package and install it::
 
       wget http://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.7.tar.gz
@@ -165,7 +178,7 @@ Installation into a virtualenv has two distinct advantages:
 
    * `$HOME/.bashrc` file, if using the `bash` shell or to the
    * `$HOME/.cshrc` file, if using the `tcsh` shell.
- 
+
    In any case, once `virtualenv` has been installed, you can exit
    its directory and remove it::
 
@@ -181,7 +194,7 @@ Installation into a virtualenv has two distinct advantages:
        source bin/activate
 
    In this step and in the following ones, the directory
-   ``$HOME/gc3pie`` is going to be the installation folder of GC3Pie. 
+   ``$HOME/gc3pie`` is going to be the installation folder of GC3Pie.
    You can change this to another directory path; any directory that's
    writable by your Linux account will be OK.
 
@@ -228,9 +241,9 @@ Installation into a virtualenv has two distinct advantages:
    provides an explanation of the syntax.
 
    The `example configuration file <http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/gc3libs/etc/gc3pie.conf.example/>`_
-   can be used as a startup point if you want to enable access to the SMSCG_ infrastructure.  
-   Before you can actually use this file, you will need to: 
-   
+   can be used as a startup point if you want to enable access to the SMSCG_ infrastructure.
+   Before you can actually use this file, you will need to:
+
    * insert into it three values, for which we `can NOT` provide defaults:
 
     1. ``aai_username``:
@@ -250,7 +263,7 @@ Installation into a virtualenv has two distinct advantages:
         "crypto" should be here. Find out more at:  http://www.smscg.ch/www/user/
 
 
-    Please, remember to uncomment the three lines, too.       
+    Please, remember to uncomment the three lines, too.
 
    * Enable the SMSCG_ resource in the ``Examples`` section of the file.
      To do this simply uncomment the following lines::
@@ -266,8 +279,8 @@ Installation into a virtualenv has two distinct advantages:
         # max_walltime = 24
         # ncores = 8000
         # architecture = i686, x86_64
-    
-7. Now you can check your GC3Pie installation; just type the command:: 
+
+7. Now you can check your GC3Pie installation; just type the command::
 
      gc3utils --help
 
@@ -301,7 +314,7 @@ If you used the installation script, the fastest way to upgrade is just to reins
 
 0. De-activate the current GC3Pie virtual environment::
 
-     deactivate 
+     deactivate
 
    (If you get an error "command not found", do not worry and proceed
    on to the next step; in case of other errors please stop here and
