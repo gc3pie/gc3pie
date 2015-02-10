@@ -6,10 +6,8 @@ use_setuptools()
 
 
 def read_whole_file(path):
-    stream = open(path, 'r')
-    text = stream.read()
-    stream.close
-    return text
+    with open(path, 'r') as stream:
+        return stream.read()
 
 
 # See http://tox.readthedocs.org/en/latest/example/basic.html#integration-with-setuptools-distribute-test-commands # noqa
