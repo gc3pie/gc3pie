@@ -462,6 +462,10 @@ class SshTransport(Transport):
         else:
             self.timeout = float(timeout)
 
+        # support for extra configuration options, not having a direct
+        # equivalent in the GC3Pie configuration file
+        self.proxy_command = ssh_options.get('proxycommand', None)
+
 
     @same_docstring_as(Transport.connect)
     def connect(self):
@@ -494,6 +498,14 @@ class SshTransport(Transport):
                     gc3libs.log.info("Ignoring ssh host key file.")
 
                 self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+                if self.proxy_command:
+                    proxy = paramiko.ProxyCommand(self.proxy_command)
+                    gc3libs.log.debug("Using ProxyCommand for SSH connections: %s", self.proxy_command)
+                else:
+                    proxy = None
+                    gc3libs.log.debug("Using no ProxyCommand for SSH connections.")
+
                 gc3libs.log.debug(
                     "Connecting to host '%s' (port %s) as user '%s' via SSH "
                     "(timeout %ds)...", self.remote_frontend, self.port,
@@ -503,7 +515,8 @@ class SshTransport(Transport):
                                  username=self.username,
                                  port=self.port,
                                  allow_agent=True,
-                                 key_filename=self.keyfile)
+                                 key_filename=self.keyfile,
+                                 sock=proxy)
                 self.sftp = self.ssh.open_sftp()
                 self._is_open = True
         except Exception as ex:
