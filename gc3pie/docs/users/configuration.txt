@@ -106,7 +106,28 @@ For the ``ssh``-type auth, the following keys must be provided:
 
   * ``type``: must be ``ssh``
   * ``username``: must be the username to log in as on the remote machine
-  * ``port``: TCP port number where the SSH server is listening.  The default value 22 is fine for almost all cases; change it only if you know what you are doing.
+
+The following configuration keys are instead optional:
+
+  * ``port``: TCP port number where the SSH server is listening.  The
+    default value 22 is fine for almost all cases; change it only if
+    you know what you are doing.
+  * ``keyfile``: path to the (private) key file to use for SSH public
+    key authentication.
+  * ``ssh_config``: path to a SSH configuration file, where to read
+    additional options from (default: ``$HOME/ssh/config``:file:.  The
+    format of the SSH configuration file is documented in the
+    `ssh_config(5)`__ man page.
+  * ``timeout``: maximum amount of time (in seconds) that GC3Pie will
+    wait for the SSH connection to be established.
+
+.. __: http://www.openbsd.org/cgi-bin/man.cgi/OpenBSD-current/man5/ssh_config.5?query=ssh_config&sec=5
+
+.. note::
+
+  We advise you to use the SSH config file for setting port, key file,
+  and connection timeout.  Options ``port``, ``keyfile``, and
+  ``timeout`` could be deprecated in future releases.
 
 For the ``ec2``-type auth, the following keys *can* be provided. If
 they are not found, the value of the corresponding environment
@@ -194,6 +215,8 @@ should be used on which computational resource is defined in the
     [auth/ssh2] # I use a different account name on some resources
     type = ssh
     username = rmurri
+    # read additional options from this SSH config file
+    ssh_config = ~/.ssh/alt-config
 
 *Example 3.* The following configuration section is used to access an
 EC2 resource (access and
@@ -400,6 +423,28 @@ are used by the SGE backend:
   * ``qstat``: get the status of a job or the status of available
     resources.
 
+If ``transport`` is ``ssh``, then the following options are also read
+and take precedence above the corresponding options set in the "auth"
+section:
+
+  * ``port``: TCP port number where the SSH server is listening.
+  * ``keyfile``: path to the (private) key file to use for SSH public
+    key authentication.
+  * ``ssh_config``: path to a SSH configuration file, where to read
+    additional options from.  The format of the SSH configuration file
+    is documented in the `ssh_config(5)`__ man page.
+  * ``ssh_timeout``: maximum amount of time (in seconds) that GC3Pie will
+    wait for the SSH connection to be established.
+
+.. __: http://www.openbsd.org/cgi-bin/man.cgi/OpenBSD-current/man5/ssh_config.5?query=ssh_config&sec=5
+
+.. note::
+
+  We advise you to use the SSH config file for setting port, key file,
+  and connection timeout.  Options ``port``, ``keyfile``, and
+  ``timeout`` could be deprecated in future releases.
+
+
 ``pbs`` resources
 ~~~~~~~~~~~~~~~~~
 
@@ -434,6 +479,27 @@ are used by the PBS backend:
     resources.
 
   * ``tracejob``: get info on resources used by a job.
+
+If ``transport`` is ``ssh``, then the following options are also read
+and take precedence above the corresponding options set in the "auth"
+section:
+
+  * ``port``: TCP port number where the SSH server is listening.
+  * ``keyfile``: path to the (private) key file to use for SSH public
+    key authentication.
+  * ``ssh_config``: path to a SSH configuration file, where to read
+    additional options from.  The format of the SSH configuration file
+    is documented in the `ssh_config(5)`__ man page.
+  * ``ssh_timeout``: maximum amount of time (in seconds) that GC3Pie will
+    wait for the SSH connection to be established.
+
+.. __: http://www.openbsd.org/cgi-bin/man.cgi/OpenBSD-current/man5/ssh_config.5?query=ssh_config&sec=5
+
+.. note::
+
+  We advise you to use the SSH config file for setting port, key file,
+  and connection timeout.  Options ``port``, ``keyfile``, and
+  ``timeout`` could be deprecated in future releases.
 
 
 ``lsf`` resources
@@ -478,6 +544,27 @@ following configuration option is here to help:
     the whitespace prefix of continuation lines in ``bjobs`` output.
     This setting is normally not needed.
 
+If ``transport`` is ``ssh``, then the following options are also read
+and take precedence above the corresponding options set in the "auth"
+section:
+
+  * ``port``: TCP port number where the SSH server is listening.
+  * ``keyfile``: path to the (private) key file to use for SSH public
+    key authentication.
+  * ``ssh_config``: path to a SSH configuration file, where to read
+    additional options from.  The format of the SSH configuration file
+    is documented in the `ssh_config(5)`__ man page.
+  * ``ssh_timeout``: maximum amount of time (in seconds) that GC3Pie will
+    wait for the SSH connection to be established.
+
+.. __: http://www.openbsd.org/cgi-bin/man.cgi/OpenBSD-current/man5/ssh_config.5?query=ssh_config&sec=5
+
+.. note::
+
+  We advise you to use the SSH config file for setting port, key file,
+  and connection timeout.  Options ``port``, ``keyfile``, and
+  ``timeout`` could be deprecated in future releases.
+
 
 ``slurm`` resources
 ~~~~~~~~~~~~~~~~~~~
@@ -510,6 +597,28 @@ are used by the SLURM backend:
 
   * ``sacct``: get info on resources used by a job.
 
+If ``transport`` is ``ssh``, then the following options are also read
+and take precedence above the corresponding options set in the "auth"
+section:
+
+  * ``port``: TCP port number where the SSH server is listening.
+  * ``keyfile``: path to the (private) key file to use for SSH public
+    key authentication.
+  * ``ssh_config``: path to a SSH configuration file, where to read
+    additional options from.  The format of the SSH configuration file
+    is documented in the `ssh_config(5)`__ man page.
+  * ``ssh_timeout``: maximum amount of time (in seconds) that GC3Pie will
+    wait for the SSH connection to be established.
+
+.. __: http://www.openbsd.org/cgi-bin/man.cgi/OpenBSD-current/man5/ssh_config.5?query=ssh_config&sec=5
+
+.. note::
+
+  We advise you to use the SSH config file for setting port, key file,
+  and connection timeout.  Options ``port``, ``keyfile``, and
+  ``timeout`` could be deprecated in future releases.
+
+
 ``shellcmd`` resources
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -541,6 +650,28 @@ The following optional configuration keys are available in a
     temporary working directories for processes executed through this
     backend. The default value `None` means to use ``$TMPDIR`` or
     `/tmp`:file: (see `tempfile.mkftemp` for details).
+
+If ``transport`` is ``ssh``, then the following options are also read
+and take precedence above the corresponding options set in the "auth"
+section:
+
+  * ``port``: TCP port number where the SSH server is listening.
+  * ``keyfile``: path to the (private) key file to use for SSH public
+    key authentication.
+  * ``ssh_config``: path to a SSH configuration file, where to read
+    additional options from.  The format of the SSH configuration file
+    is documented in the `ssh_config(5)`__ man page.
+  * ``ssh_timeout``: maximum amount of time (in seconds) that GC3Pie will
+    wait for the SSH connection to be established.
+
+.. __: http://www.openbsd.org/cgi-bin/man.cgi/OpenBSD-current/man5/ssh_config.5?query=ssh_config&sec=5
+
+.. note::
+
+  We advise you to use the SSH config file for setting port, key file,
+  and connection timeout.  Options ``port``, ``keyfile``, and
+  ``timeout`` could be deprecated in future releases.
+
 
 ``ec2+shellcmd`` resource
 ~~~~~~~~~~~~~~~~~~~~~~~~~

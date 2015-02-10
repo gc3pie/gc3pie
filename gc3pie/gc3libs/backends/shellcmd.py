@@ -169,11 +169,16 @@ ReturnCode=%x"""
                  max_memory_per_core, max_walltime,
                  auth=None,
                  # these are specific to `ShellcmdLrms`
-                 # ignored if `transport` is 'local'
-                 frontend='localhost', transport='local', time_cmd=None,
-                 override='False', keyfile=None, ignore_ssh_host_keys=False,
-                 spooldir=None, resourcedir=None,
-                 ssh_timeout=gc3libs.Default.SSH_CONNECT_TIMEOUT,
+                 frontend='localhost', transport='local',
+                 time_cmd=None,
+                 override='False',
+                 spooldir=None,
+                 resourcedir=None,
+                 # SSH-related options; ignored if `transport` is 'local'
+                 ssh_config=None,
+                 keyfile=None,
+                 ignore_ssh_host_keys=False,
+                 ssh_timeout=None,
                  **extra_args):
 
         # init base class
@@ -205,11 +210,15 @@ ReturnCode=%x"""
         elif transport == 'ssh':
             auth = self._auth_fn()
             self._username = auth.username
-            self._port = auth.port
             self.transport = gc3libs.backends.transport.SshTransport(
-                frontend, username=self._username, port=self._port,
-                keyfile=keyfile, ignore_ssh_host_keys=ignore_ssh_host_keys,
-                timeout=ssh_timeout)
+                frontend,
+                ignore_ssh_host_keys=ignore_ssh_host_keys,
+                ssh_config=(ssh_config or auth.ssh_config),
+                username=self._username,
+                port=auth.port,
+                keyfile=(keyfile or auth.keyfile),
+                timeout=(ssh_timeout or auth.timeout),
+            )
         else:
             raise gc3libs.exceptions.TransportError(
                 "Unknown transport '%s'" % transport)
