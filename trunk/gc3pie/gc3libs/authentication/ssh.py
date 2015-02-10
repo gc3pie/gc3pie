@@ -3,7 +3,7 @@
 """
 Authentication support for accessing resources through the SSH protocol.
 """
-# Copyright (C) 2009-2011 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -42,12 +42,11 @@ class SshAuth(object):
             else:
                 auth['port'] = gc3libs.Default.SSH_PORT
             self.__dict__.update(auth)
-        except AssertionError as x:
+        except AssertionError as err:
             raise gc3libs.exceptions.ConfigurationError(
-                'Erroneous configuration parameter: %s' % str(x))
+                'Erroneous configuration parameter: %s' % (err,))
 
     def check(self):
-        gc3libs.log.debug('Checking auth: SshAuth')
         return True
 
     def enable(self):
