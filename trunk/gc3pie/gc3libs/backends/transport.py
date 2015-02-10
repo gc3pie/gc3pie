@@ -6,7 +6,7 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.
 """
-# Copyright (C) 2009-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -410,40 +410,58 @@ import gc3libs
 
 class SshTransport(Transport):
 
-    def __init__(self, remote_frontend, port=gc3libs.Default.SSH_PORT,
-                 username=None, ignore_ssh_host_keys=False, keyfile=None,
-                 timeout=gc3libs.Default.SSH_CONNECT_TIMEOUT):
+    def __init__(self, remote_frontend, port=None, username=None,
+                 ignore_ssh_host_keys=False, keyfile=None, timeout=None):
         self.remote_frontend = remote_frontend
         self.port = port
         self.username = username
 
         self.ssh = paramiko.SSHClient()
-        self.timeout = timeout
         self.ignore_ssh_host_keys = ignore_ssh_host_keys
         self.sftp = None
         self._is_open = False
         self.transport_channel = None
 
+        # use SSH options, if available
+        sshcfg = paramiko.SSHConfig()
+        config_filename = os.path.expanduser('~/.ssh/config')
+        if os.path.exists(config_filename):
+            with open(config_filename, 'r') as config_file:
+                sshcfg.parse(config_file)
+            # check if we have an ssh configuration stanza for this host
+            ssh_options = sshcfg.lookup(self.remote_frontend)
+        else:
+            # no options
+            ssh_options = {}
+
+        # merge SSH options from the SSH config file with parameters
+        # we were given in this method call
+        if 'hostname' in ssh_options:
+            self.remote_frontend = ssh_options['hostname']
+
+        if username is None:
+            self.username = ssh_options.get('user', None)
+        else:
+            assert type(username) in types.StringTypes
+            self.username = username
+
+        if port is None:
+            self.port = ssh_options.get('port', gc3libs.Default.SSH_PORT)
+        else:
+            self.port = int(port)
+
         if keyfile is None:
-            # try to get the path to SSH public key file  from `~/.ssh/config`
-            try:
-                ssh_config = paramiko.SSHConfig()
-                config_filename = os.path.expanduser('~/.ssh/config')
-                config_file = open(config_filename)
-                ssh_config.parse(config_file)
-                # Check if we have an ssh configuration stanza for this host
-                hostconfig = ssh_config.lookup(self.remote_frontend)
-                self.keyfile = hostconfig.get('identityfile', None)
-                config_file.close()
-            except IOError as err:
-                if err.errno == 2:
-                    # "No such file or directory" -- ignore error
-                    self.keyfile = None
-                else:
-                    raise
+            self.keyfile = ssh_options.get('identityfile', None)
         else:
             assert type(keyfile) in types.StringTypes
             self.keyfile = keyfile
+
+        if timeout is None:
+            self.timeout = ssh_options.get('connecttimeout',
+                                           gc3libs.Default.SSH_CONNECT_TIMEOUT)
+        else:
+            self.timeout = float(timeout)
+
 
     @same_docstring_as(Transport.connect)
     def connect(self):
