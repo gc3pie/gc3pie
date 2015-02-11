@@ -14,7 +14,7 @@
 Quick start
 ===========
 
-We provide an installation script which automatically try to install
+We provide an installation script which automatically tries to install
 GC3pie in your home directory.  The quick installation procedure has
 only been tested on variants of the GNU/Linux operating
 system. (However, the script should work on MacOSX as well, provided
