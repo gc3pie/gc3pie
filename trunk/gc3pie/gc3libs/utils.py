@@ -28,7 +28,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 import contextlib
 import functools
 import os
@@ -43,6 +43,7 @@ import cStringIO as StringIO
 import UserDict
 
 
+from gc3libs.compat._collections import OrderedDict
 import gc3libs.compat.lockfile as lockfile
 
 import gc3libs
