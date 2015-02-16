@@ -49,6 +49,7 @@ import uuid
 import logging
 import logging.config
 log = logging.getLogger("gc3.gc3libs")
+log.propagate = True
 
 from gc3libs.quantity import MB, hours, minutes, seconds, MiB
 from gc3libs.compat._collections import OrderedDict
