@@ -108,6 +108,8 @@ setuptools.setup(
         'sqlalchemy==0.7.9',
         # Needed for parsing human-readable dates (gselect uses it).
         'parsedatetime==0.8.7',
+        # needed by DependentTaskCollection
+        'toposort==1.0',
         ],
     extras_require = {
         'openstack': [

@@ -33,6 +33,7 @@ import itertools
 import os
 
 from gc3libs.compat._collections import defaultdict
+from toposort import toposort
 
 from gc3libs import Run, Task
 import gc3libs.exceptions
@@ -874,6 +875,68 @@ class RetryableTask(Task):
         if own_state_new != own_state_old:
             self.execution.state = own_state_new
             self.changed = True
+
+
+class DependentTaskCollection(SequentialTaskCollection):
+
+    """
+    Run a set of tasks, respecting inter-dependencies between them.
+
+    Each task can list a number of tasks that need to be run before
+    it; upon submission, a `DependentTaskCollection` creates a direct
+    acyclic graph from that dependency information and ensures that no
+    task is run before its dependencies have been successfully
+    executed.
+
+    The collection state is set to `TERMINATED` once all tasks have
+    reached the same terminal status.
+    """
+
+    def __init__(self, tasks=None, **extra_args):
+        super(DependentTaskCollection, self).__init__([], **extra_args)
+        # record what tasks were given, but only move them to the
+        # actual execution list when *this* TaskCollection is first
+        # submitted
+        self._deps = defaultdict(set)
+        if tasks:
+            for task in tasks:
+                self.add(task)
+
+    def add(self, task, after=None):
+        """
+        Add a task to the collection.
+
+        The task will be run after any tasks referenced in the `after`
+        sequence have terminated their run.  Alternatively, a task can
+        list tasks it depends upon in its ``.after`` attribute; i.e.,
+        the following two syntaxes are equivalent:
+
+            | >>> coll.add(task1, after=[task2])
+            |
+            | >>> task1.after = [task2]
+            | >>> coll.add(task1)
+
+        **Note:** tasks can only be added to a
+        `DependentTaskCollection` while it's in state ``NEW``.
+        """
+        assert (self.execution.state == Run.State.NEW), \
+            "Can only add tasks to a DependentTaskCollection while it's in state `NEW`"
+        # collect all task dependencies
+        task_dependencies = self._deps[task]
+        task_dependencies.update(after)
+        try:
+            task_dependencies.update(task.after)
+        except AttributeError:
+            pass
+
+    def submit(self, resubmit=False, targets=None, **extra_args):
+        if self.execution.state == Run.State.NEW:
+            # create DAG from dependency information
+            sorted_and_grouped_tasks = toposort(self._deps)
+            for batch in sorted_and_grouped_tasks:
+                step = ParallelTaskCollection(batch)
+                super(DependentTaskCollection, self).add(step)
+        super(DependentTaskCollection, self).submit(resubmit, targets, **extra_args)
 
 
 # main: run tests
