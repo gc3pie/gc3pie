@@ -260,10 +260,15 @@ class TaskCollection(Task):
 
         Default implementation for `TaskCollection` is to set the
         exitcode to the maximum of the exit codes of its tasks.
+        If no tasks were run, the exitcode is set to 0.
         """
-        self.execution._exitcode = max(
-            task.execution._exitcode for task in self.tasks
-        )
+        if self.tasks:
+            self.execution._exitcode = max(
+                task.execution._exitcode for task in self.tasks
+            )
+        else:
+            # a sequence with no tasks terminates successfully
+            self.execution._exitcode = 0
 
 
 class SequentialTaskCollection(TaskCollection):
@@ -347,18 +352,22 @@ class SequentialTaskCollection(TaskCollection):
         """
         Start the current task in the collection.
         """
-        if self._current_task is None:
-            self._current_task = 0
-        task = self.tasks[self._current_task]
-        task.attach(self._controller)
-        task.submit(resubmit, targets, **extra_args)
-        if task.execution.state == Run.State.NEW:
-            # submission failed, state unchanged
-            self.execution.state = Run.State.NEW
-        elif task.execution.state == Run.State.SUBMITTED:
-            self.execution.state = Run.State.SUBMITTED
+        if self.tasks:
+            if self._current_task is None:
+                self._current_task = 0
+            task = self.tasks[self._current_task]
+            task.attach(self._controller)
+            task.submit(resubmit, targets, **extra_args)
+            if task.execution.state == Run.State.NEW:
+                # submission failed, state unchanged
+                self.execution.state = Run.State.NEW
+            elif task.execution.state == Run.State.SUBMITTED:
+                self.execution.state = Run.State.SUBMITTED
+            else:
+                self.execution.state = Run.State.RUNNING
         else:
-            self.execution.state = Run.State.RUNNING
+            # no tasks to run, sequence is already finished
+            self.execution.state = Run.State.TERMINATED
         self.changed = True
         return self.execution.state
 
