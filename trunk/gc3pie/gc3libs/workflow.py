@@ -10,7 +10,7 @@ patterns of job group execution; they can be combined to form more
 complex workflows.  Hook methods are provided so that derived classes
 can implement problem-specific job control policies.
 """
-# Copyright (C) 2009-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -280,7 +280,7 @@ class SequentialTaskCollection(TaskCollection):
     def __init__(self, tasks, **extra_args):
         # XXX: check that `tasks` is a sequence type
         TaskCollection.__init__(self, tasks, **extra_args)
-        self._current_task = 0
+        self._current_task = None
 
     def add(self, task):
         task.detach()
