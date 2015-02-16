@@ -539,6 +539,11 @@ an overlay Grid on the resources specified in the configuration file.
         """
         Retrieve output into local directory `app.output_dir`.
 
+        If the task is not expected to produce any output (i.e.,
+        `app.would_output == False`) then the only effect of this is
+        to advance the state of ``TERMINATING`` tasks to
+        ``TERMINATED``.
+
         Optional argument `download_dir` overrides the download location.
 
         The download directory is created if it does not exist.  If it
@@ -602,62 +607,64 @@ an overlay Grid on the resources specified in the configuration file.
         # determine download dir
         download_dir = app._get_download_dir(download_dir)
 
-        # Prepare/Clean download dir
-        try:
-            if overwrite:
-                if not os.path.exists(download_dir):
-                    os.makedirs(download_dir)
-            else:
-                utils.mkdir_with_backup(download_dir)
-        except Exception as ex:
-            gc3libs.log.error(
-                "Failed creating download directory '%s': %s: %s",
-                download_dir,
-                ex.__class__.__name__,
-                str(ex))
-            raise
+        if download_dir is not None:
+            # Prepare/Clean download dir
+            try:
+                if overwrite:
+                    if not os.path.exists(download_dir):
+                        os.makedirs(download_dir)
+                else:
+                    utils.mkdir_with_backup(download_dir)
+            except Exception as ex:
+                gc3libs.log.error(
+                    "Failed creating download directory '%s': %s: %s",
+                    download_dir,
+                    ex.__class__.__name__,
+                    str(ex))
+                raise
 
-        # download job output
-        try:
-            lrms = self.get_backend(job.resource_name)
-            lrms.get_results(app, download_dir, overwrite, changed_only)
-            # clear previous data staging errors
-            if job.signal == Run.Signals.DataStagingFailure:
-                job.signal = 0
-        except gc3libs.exceptions.InvalidResourceName as ex:
-            gc3libs.log.warning(
-                "No such resource '%s': %s"
-                % (app.execution.resource_name, str(ex)))
-            ex = app.fetch_output_error(ex)
-            if isinstance(ex, Exception):
-                job.info = ("No output could be retrieved: %s" % str(ex))
-                raise ex
-            else:
+            # download job output
+            try:
+                lrms = self.get_backend(job.resource_name)
+                lrms.get_results(app, download_dir, overwrite, changed_only)
+                # clear previous data staging errors
+                if job.signal == Run.Signals.DataStagingFailure:
+                    job.signal = 0
+            except gc3libs.exceptions.InvalidResourceName as ex:
+                gc3libs.log.warning(
+                    "No such resource '%s': %s"
+                    % (app.execution.resource_name, str(ex)))
+                ex = app.fetch_output_error(ex)
+                if isinstance(ex, Exception):
+                    job.info = ("No output could be retrieved: %s" % str(ex))
+                    raise ex
+                else:
+                    return
+            except gc3libs.exceptions.RecoverableDataStagingError as rex:
+                job.info = ("Temporary failure when retrieving results: %s."
+                            " Ignoring error, try again." % str(rex))
                 return
-        except gc3libs.exceptions.RecoverableDataStagingError as rex:
-            job.info = ("Temporary failure when retrieving results: %s."
-                        " Ignoring error, try again." % str(rex))
-            return
-        except gc3libs.exceptions.UnrecoverableDataStagingError as ex:
-            job.signal = Run.Signals.DataStagingFailure
-            ex = app.fetch_output_error(ex)
-            if isinstance(ex, Exception):
-                job.info = ("No output could be retrieved: %s" % str(ex))
-                raise ex
-        except Exception as ex:
-            ex = app.fetch_output_error(ex)
-            if isinstance(ex, Exception):
-                raise ex
+            except gc3libs.exceptions.UnrecoverableDataStagingError as ex:
+                job.signal = Run.Signals.DataStagingFailure
+                ex = app.fetch_output_error(ex)
+                if isinstance(ex, Exception):
+                    job.info = ("No output could be retrieved: %s" % str(ex))
+                    raise ex
+            except Exception as ex:
+                ex = app.fetch_output_error(ex)
+                if isinstance(ex, Exception):
+                    raise ex
 
-        # successfully downloaded results
-        gc3libs.log.debug("Downloaded output of '%s' (which is in state %s)"
-                          % (str(app), job.state))
+            # successfully downloaded results
+            gc3libs.log.debug("Downloaded output of '%s' (which is in state %s)"
+                              % (str(app), job.state))
 
-        app.output_dir = os.path.abspath(download_dir)
-        app.changed = True
+            app.output_dir = os.path.abspath(download_dir)
+            app.changed = True
 
-        if job.state == Run.State.TERMINATING:
-            gc3libs.log.debug("Final output of '%s' retrieved" % str(app))
+            if job.state == Run.State.TERMINATING:
+                gc3libs.log.debug("Final output of '%s' retrieved" % str(app))
+
         return Task.fetch_output(app, download_dir)
 
     def __fetch_output_task(

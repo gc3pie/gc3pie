@@ -54,6 +54,10 @@ class TaskCollection(Task):
     task states.
     """
 
+    # a generic `TaskCollection` produces no output -- change in
+    # subclasses or specific instance if needed
+    would_output = False
+
     def __init__(self, tasks=None, **extra_args):
         if tasks is None:
             self.tasks = []
@@ -718,6 +722,7 @@ class RetryableTask(Task):
         self.max_retries = max_retries
         self.retried = 0
         self.task = task
+        self.would_output = self.task.would_output
         Task.__init__(self, **extra_args)
 
     @gc3libs.utils.defproperty
