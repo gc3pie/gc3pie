@@ -3,7 +3,7 @@
 """
 Utility classes and methods for dealing with URLs.
 """
-# Copyright (C) 2011-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -24,8 +24,7 @@ __version__ = '$Revision$'
 
 
 import os
-
-import gc3libs.compat.urlparse as urlparse
+import urlparse
 
 
 # XXX: rewrite using `collections.namedtuple` when we no longer

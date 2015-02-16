@@ -32,7 +32,7 @@ __version__ = 'development version (SVN $Revision$)'
 import itertools
 import os
 
-from gc3libs.compat._collections import defaultdict
+from collections import defaultdict
 from gc3libs.compat.toposort import toposort
 
 from gc3libs import Run, Task

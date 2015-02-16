@@ -52,7 +52,7 @@ log = logging.getLogger("gc3.gc3libs")
 log.propagate = True
 
 from gc3libs.quantity import MB, hours, minutes, seconds, MiB
-from gc3libs.compat._collections import OrderedDict
+from collections import OrderedDict
 
 # this needs to be defined before we import other GC3Libs modules, as
 # they may depend on it

@@ -32,7 +32,7 @@ import re
 # GC3Pie imports
 import gc3libs
 import gc3libs.authentication
-from gc3libs.compat._collections import defaultdict
+from collections import defaultdict
 import gc3libs.utils
 
 from gc3libs.quantity import Memory, GB, Duration, hours, MiB
