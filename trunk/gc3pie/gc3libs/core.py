@@ -1590,8 +1590,12 @@ class Engine(object):
                         self._terminated.append(task)
                         transitioned.append(index)
                         self._core.free(task)
-                except Exception as ex:
-                    gc3libs.log.error("Probably resource doesn't exist anymore")
+                except Exception as err:
+                    gc3libs.log.error(
+                        "Got error freeing up resources used by task '%s': %s: %s."
+                        " (For cloud-based resources, it's possible that the VM"
+                        " has been destroyed already.)",
+                        task, err.__class__.__name__, err)
 
                 if self._store and task.changed:
                     self._store.save(task)
