@@ -257,6 +257,10 @@ class Task(Persistable, Struct):
 
     """
 
+    # assume that a generic `Task` produces no output -- this should
+    # be changed in subclasses!
+    would_output = False
+
     def __init__(self, **extra_args):
         """
         Initialize a `Task` instance.
@@ -423,8 +427,9 @@ class Task(Persistable, Struct):
         if self.execution.state == Run.State.TERMINATING:
             # advance state to TERMINATED
             self.output_dir = self._get_download_dir(output_dir)
-            self.execution.info = (
-                "Final output downloaded to '%s'" % self.output_dir)
+            if self.output_dir:
+                self.execution.info = (
+                    "Final output downloaded to '%s'" % self.output_dir)
             self.execution.state = Run.State.TERMINATED
             self.changed = True
             return self.output_dir
@@ -436,12 +441,21 @@ class Task(Persistable, Struct):
 
     def _get_download_dir(self, download_dir):
         """
-        Return a directory path where to download this Task's output files.
+        Return a directory path where to download this Task's output files,
+        or ``None`` if this Task is not expected to produce any output.
 
-        If the given `download_dir` is not None, return that.  Otherwise,
-        return the directory saved on this object in attribute `output_dir`.
-        If all else fails, raise `gc3libs.exceptions.InvalidArgument`.
+        For output-producing tasks, if the given `download_dir` is not
+        None, return that.  Otherwise, return the directory saved on
+        this object in attribute `output_dir`.  If all else fails,
+        raise an `InvalidArgument` exception.
         """
+        # XXX: the try/except block below is there for compatibility
+        # with saved jobs -- should be removed after release 2.3
+        try:
+            if not self.would_output:
+                return None
+        except AttributeError:
+            pass
         # determine download dir
         if download_dir is not None:
             return download_dir
@@ -958,6 +972,9 @@ class Application(Task):
                 and (gc3libs.ANY_OUTPUT not in self.outputs)
                 and (self.stderr not in self.outputs)):
             self.outputs[self.stderr] = self.stderr
+
+        if (self.outputs or self.stdout or self.stderr):
+            self.would_output = True
 
         self.tags = extra_args.pop('tags', list())
 
