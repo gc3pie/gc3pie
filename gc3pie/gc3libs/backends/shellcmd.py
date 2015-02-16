@@ -527,13 +527,14 @@ ReturnCode=%x"""
         Delete `self.resource_dir/PID` file
         """
         self.transport.connect()
-        # XXX: We should check for exceptions!
         log.debug("Deleting resource file for pid %s", pid)
         pidfile = posixpath.join(self.resource_dir, str(pid))
         try:
             self.transport.remove(pidfile)
-        except Exception:
-            log.error("Ignoring error while deleting file %s", pidfile)
+        except Exception, err:
+            log.error(
+                "Ignored error deleting file `%s`: %s: %s",
+                pidfile, err.__class__.__name__, err)
 
     @staticmethod
     def _filter_memory(job):
