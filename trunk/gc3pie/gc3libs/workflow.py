@@ -33,7 +33,7 @@ import itertools
 import os
 
 from gc3libs.compat._collections import defaultdict
-from toposort import toposort
+from gc3libs.compat.toposort import toposort
 
 from gc3libs import Run, Task
 import gc3libs.exceptions
