@@ -54,7 +54,7 @@ from pkg_resources import Requirement, resource_filename
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, existing_file
-from gc3libs.compat._collections import defaultdict
+from collections import defaultdict
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 

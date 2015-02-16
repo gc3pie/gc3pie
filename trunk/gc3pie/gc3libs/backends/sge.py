@@ -29,7 +29,7 @@ import math
 import re
 import time
 
-from gc3libs.compat._collections import defaultdict
+from collections import defaultdict
 
 # GC3Pie imports
 from gc3libs import log, Run

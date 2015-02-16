@@ -7,7 +7,7 @@ Part of the code used in this module originally comes from:
   - http://wordaligned.com/articles/echo
 
 """
-# Copyright (C) 2011 S3IT, Zentrale Informatik, University of Zurich, except where otherwise noted.
+# Copyright (C) 2011, 2015 S3IT, Zentrale Informatik, University of Zurich, except where otherwise noted.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -27,9 +27,8 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 
+import functools
 import inspect
-
-import gc3libs.compat.functools as functools
 
 import gc3libs
 
