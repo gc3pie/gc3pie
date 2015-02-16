@@ -450,9 +450,9 @@ class Task(Persistable, Struct):
             except AttributeError:
                 raise gc3libs.exceptions.InvalidArgument(
                     "`Task._get_download_dir()` called with no explicit"
-                    " download directory, but object '%s' has no `output_dir`"
-                    " attribute set either." %
-                    (self, type(self)))
+                    " download directory, but object '%s' (%s) has no `output_dir`"
+                    " attribute set either."
+                    % (self, type(self)))
 
     def peek(self, what='stdout', offset=0, size=None, **extra_args):
         """
