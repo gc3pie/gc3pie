@@ -20,6 +20,7 @@
 #  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #
 PROG="GC3Pie install"
+__version__='1.42'
 
 BASE_PIP_URL="https://pypi.python.org/simple"
 VIRTUALENV_LATEST_URL="https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
@@ -669,7 +670,8 @@ Ask for confirmation:     $(integer_to_boolean $ASKCONFIRMATION)
 Development mode:         $(integer_to_boolean $DEVELOP)
 Install gc3apps:          $(integer_to_boolean $WITHAPPS)
 Optional features:        ${FEATURES:+[NONE]}
-Overwrite:                $OVERWRITEDIR
+Overwrite existing dir:   $OVERWRITEDIR
+Installer script version: $__version__
 
 EOF
 
