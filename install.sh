@@ -149,7 +149,7 @@ have_command () {
 
 require_command () {
   if ! have_command "$1"; then
-    abort 1 "Could not find required command '$1' in system PATH. Aborting."
+    abort $EX_USAGE "Could not find required command '$1' in system PATH. Aborting."
   fi
 }
 
@@ -574,7 +574,7 @@ if [ "$rc" -eq 4 ]; then
     # GNU getopt
     args=$(getopt --name "$PROG" --shell sh -l "$long_opts" -o "$short_opts" -- "$@")
     if [ $? -ne 0 ]; then
-        abort 1 "Type '$PROG --help' to get usage information."
+        abort $EX_USAGE "Type '$PROG --help' to get usage information."
     fi
     # use 'eval' to remove getopt quoting
     eval set -- $args
@@ -582,7 +582,7 @@ else
     # old-style getopt, use compatibility syntax
     args=$(getopt "$short_opts" "$@")
     if [ $? -ne 0 ]; then
-        abort 1 "Type '$PROG --help' to get usage information."
+        abort $EX_USAGE "Type '$PROG --help' to get usage information."
     fi
     eval set -- $args
 fi
@@ -741,7 +741,7 @@ EOF
         echo "Removing directory $VENVDIR as requested."
         rm $verbose -rf $VENVDIR
     else
-        abort 66 "Internal error: unexpected value '$OVERWRITEDIR' for OVERWRITEDIR."
+        abort $EX_PROTOCOL "Internal error: unexpected value '$OVERWRITEDIR' for OVERWRITEDIR."
     fi
 fi
 
