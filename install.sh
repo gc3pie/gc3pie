@@ -103,7 +103,7 @@ __EOF__
   fi
   cat 1>&2 <<__EOF__
 
-If the above does not help you solve the isue, please contact the
+If the above does not help you solve the issue, please contact the
 GC3Pie team by sending an email to gc3pie@googlegroups.com.  Include
 the full output of this script to help us identifying the problem.
 
@@ -373,10 +373,10 @@ EOF
 
     # Anaconda Python needs special treatment because of the relative
     # RPATH, see Issue 479
-    if ($PYTHON -V | fgrep -q 'Anaconda'); then
-        anaconda_root_dir=$(basename $(basename $(type $PYTHON | cut -d' ' -f3) ) )
+    if ($PYTHON -V 2>&1 | fgrep -q 'Anaconda'); then
+        anaconda_root_dir=$(dirname $(dirname $(command -v $PYTHON) ) )
         if ! [ -d "${anaconda_root_dir}/lib" ]; then
-            die $EX_SOFTWARE  <<EOF
+            die $EX_SOFTWARE "Unexpected Anaconda directory layout" <<__EOF__
 Anaconda Python detected, but I expected to find a 'lib/' directory
 under the root directory '${anaconda_root_dir}', and there is none.
 Cannot proceed; please report this issue to the GC3Pie developers
@@ -384,16 +384,19 @@ at gc3pie@googlegroups.com.
 
 Please include the following information in your issue report:
 
-\$ $PYTHON -V
-$($PYTHON -V)
+\$ command -v $PYTHON
+$(command -v $PYTHON)
 
-EOF
+\$ $PYTHON -V
+$($PYTHON -V 2>&1)
+
+__EOF__
         fi
         # more sanity checks
         case $(echo "${anaconda_root_dir}"/lib/libpython*.so*) in
             "${anaconda_root_dir}/lib/libpython*.so*")
                 # no expansion, hence no `libpython*.so*`
-                die $EX_SOFTWARE  <<EOF
+                die $EX_SOFTWARE "Unexpected Anaconda directory layout" <<__EOF__
 Anaconda Python detected, but I expected to find a a libpython.so
 file under directory '${anaconda_root_dir}/lib', and there is none.
 Cannot proceed; please report this issue to the GC3Pie developers
@@ -401,13 +404,16 @@ at gc3pie@googlegroups.com.
 
 Please include the following information in your issue report:
 
+\$ command -v $PYTHON
+$(command -v $PYTHON)
+
 \$ $PYTHON -V
-$($PYTHON -V)
+$($PYTHON -V 2>&1)
 
 \$ ls -l ${anaconda_root_dir}/lib/
 $(ls -l "${anaconda_root_dir}/lib/")
 
-EOF
+__EOF__
                 ;;
         esac
         # actually do the patching
@@ -416,7 +422,7 @@ EOF
     fi
 
     # python virtualenv.py --[no,system]-site-packages $DESTDIR
-    $PYTHON virtualenv.py $verbose $WITH_SITE_PACKAGES -p $PYTHON $DESTDIR
+    $PYTHON virtualenv.py $verbose $WITH_SITE_PACKAGES -p $(command -v $PYTHON) $DESTDIR
 
     . $VENVDIR/bin/activate
 
