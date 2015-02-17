@@ -31,8 +31,8 @@
 .. contents::
 
 
-GC3Pie 2.3.0
-============
+GC3Pie 2.3.0 (currently in development)
+=======================================
 
 Incompatible changes
 --------------------
@@ -41,6 +41,48 @@ Incompatible changes
   patterns to selectively unignore unexpected/generic errors in the code.  As
   this feature should only be used in debugging code, we allow ourselves to
   break backwards compatibility.
+
+* The cloud and mathemtics libraries are no longer installed by
+  default with ``pip install gc3pie`` -- please use::
+
+        pip install gc3pie[openstack,ec2,optimizer]
+
+  to install support for all optional backends and libraries.
+
+* The `gc3libs.utils.ifelse` function was removed in favor of Python's
+  ternary operator.
+
+
+New features
+------------
+
+* New task collection `DependentTaskCollection`:class: to run a
+  collection of tasks with given pre/post dependencies across them.
+
+* GC3Pie will now parse and obey the ``Port``, ``Identity``, ``User``,
+  ``ConnectionTimeout``, and ``ProxyCommand`` options from the SSH
+  config file.  Location of an alternate configuration file to use
+  with GC3Pie can be set in any ``[auth/*]`` section of type SSH; see
+  the `configuration`:ref: reference for details.  Thanks to Niko
+  Eherenfeuchter and Karandash8 for feature requests and preliminary
+  implementations.
+
+* Application prologue and epilogue scripts can now be embedded in the
+  GC3Pie configuration file, or referenced by file name.
+
+* New selection options have been added to the `gselect`:ref: command.
+
+
+Important bug fixes
+-------------------
+
+* Shell metacharacters are now allowed in `Application` arguments.
+  Each argument string is now properly quoted before passing it to the
+  execution layer.
+
+* LSF backend updated to work with *both* bjobs *and* bacct for
+  accounting, or to parse information provided in the final output
+  file as a last resort.
 
 
 GC3Pie 2.2.0
