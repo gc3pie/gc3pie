@@ -343,29 +343,6 @@ EOF
         exit $EX_SOFTWARE
     fi
 
-    # Check if gc3pie is already installed.
-    if have_command gc3utils || have_command easy_install || have_command pip; then
-        WITH_SITE_PACKAGES="--no-site-packages"
-        cat <<EOF
-
-WARNING
-=======
-
-Creating virtual environment with '--no-site-packages' option.  If you
-need to use the NorduGrid libraries, you need to install them inside the
-virtual environment!
-
-EOF
-        ask_yn "Do you still want to proceed?"
-        if [ "$REPLY" = 'no' ]; then
-            echo "Aborting installation as requested."
-            echo
-            exit $EX_TEMPFAIL
-        fi
-    else
-        WITH_SITE_PACKAGES="--system-site-packages"
-    fi
-
     # Use the latest virtualenv that can use `.tar.gz` files
     VIRTUALENV_URL=$VIRTUALENV_191_URL
 
@@ -374,6 +351,7 @@ EOF
     # Anaconda Python needs special treatment because of the relative
     # RPATH, see Issue 479
     if ($PYTHON -V 2>&1 | fgrep -q 'Anaconda'); then
+        python_is_anaconda=yes
         anaconda_root_dir=$(dirname $(dirname $(command -v $PYTHON) ) )
         if ! [ -d "${anaconda_root_dir}/lib" ]; then
             die $EX_SOFTWARE "Unexpected Anaconda directory layout" <<__EOF__
@@ -421,10 +399,80 @@ __EOF__
         ln -s -v "${anaconda_root_dir}"/lib/libpython*.so* "${DESTDIR}/lib/"
     fi
 
+    # check for conditions that require us to skip site packages:
+    # - GC3Pie already installed
+    # - `pip` or `easy_install` already in the system path (cannot upgrade setuptools and friends)
+    if have_command gc3utils || have_command easy_install || have_command pip; then
+        if [ -n "$python_is_anaconda" ]; then
+            WITH_SITE_PACKAGES="--system-site-packages"
+            cat <<__EOF__
+
+WARNING
+=======
+
+Anaconda Python detected!  I'm creating the virtual environment with a
+'--system-site-packages' option, to let GC3Pie programs use all the
+libraries that come bundled with Anaconda.  If this leads to errors
+related to 'setuptools', 'distribute' or 'pip', then please report a
+bug at: https://code.google.com/p/gc3pie/issues/list
+
+__EOF__
+            ask_yn "Do you still want to proceed?"
+            if [ "$REPLY" = 'no' ]; then
+                echo "Aborting installation as requested."
+                echo
+                exit $EX_TEMPFAIL
+            fi
+        else
+            WITH_SITE_PACKAGES="--no-site-packages"
+            cat <<__EOF__
+
+WARNING
+=======
+
+Creating virtual environment with '--no-site-packages' option.  If you
+need to use the NorduGrid libraries, you need to install them inside the
+virtual environment!
+
+__EOF__
+            ask_yn "Do you still want to proceed?"
+            if [ "$REPLY" = 'no' ]; then
+                echo "Aborting installation as requested."
+                echo
+                exit $EX_TEMPFAIL
+            fi
+        fi
+    else
+        WITH_SITE_PACKAGES="--system-site-packages"
+    fi
+
     # python virtualenv.py --[no,system]-site-packages $DESTDIR
     $PYTHON virtualenv.py $verbose $WITH_SITE_PACKAGES -p $(command -v $PYTHON) $DESTDIR
+    rc=$?
+    if [ $rc -ne 0 ]; then
+            die $EX_SOFTWARE \
+                "Failed to create virtual environment" <<__EOF__
+The command::
 
+    $PYTHON virtualenv.py $verbose $WITH_SITE_PACKAGES -p $(command -v $PYTHON) $DESTDIR
+
+exited with failure code $rc and did not create a Python virtual environment.
+
+Please get in touch with the GC3Pie developers at the email address
+gc3pie@googlegroups.com to get help with this error.
+__EOF__
+    fi
+
+    # activate virtualenv
     . $VENVDIR/bin/activate
+
+    # for whatever reason, the `pip` executable is not created in the
+    # virtualenv when using Anaconda Python ...
+    if [ -n "$python_is_anaconda" ]; then
+        sed -e "1s^${anaconda_root_dir}/bin/python^${VENVDIR}/bin/python^" \
+            < "${anaconda_root_dir}/bin/pip" > "${VENVDIR}/bin/pip"
+        chmod $verbose +x "${VENVDIR}/bin/pip"
+    fi
 
     # Recent versions of `pip` insist that setuptools>=0.8 is installed,
     # because they try to use the "wheel" format for any kind of package.
