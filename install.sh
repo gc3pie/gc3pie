@@ -26,8 +26,6 @@ VIRTUALENV_LATEST_URL="https://raw.github.com/pypa/virtualenv/master/virtualenv.
 VIRTUALENV_191_URL="https://raw.github.com/pypa/virtualenv/1.9.1/virtualenv.py"
 GC3_SVN_URL="http://gc3pie.googlecode.com/svn/trunk/gc3pie"
 
-VIRTUALENV_CMD="virtualenv"
-
 
 ## Defaults
 VENVDIR=$HOME/gc3pie
@@ -371,10 +369,53 @@ EOF
     VIRTUALENV_URL=$VIRTUALENV_191_URL
 
     download virtualenv.py $VIRTUALENV_URL
-    VIRTUALENV_CMD="$PYTHON virtualenv.py"
+
+    # Anaconda Python needs special treatment because of the relative
+    # RPATH, see Issue 479
+    if ($PYTHON -V | fgrep -q 'Anaconda'); then
+        anaconda_root_dir=$(basename $(basename $(type $PYTHON | cut -d' ' -f3) ) )
+        if ! [ -d "${anaconda_root_dir}/lib" ]; then
+            die $EX_SOFTWARE  <<EOF
+Anaconda Python detected, but I expected to find a 'lib/' directory
+under the root directory '${anaconda_root_dir}', and there is none.
+Cannot proceed; please report this issue to the GC3Pie developers
+at gc3pie@googlegroups.com.
+
+Please include the following information in your issue report:
+
+\$ $PYTHON -V
+$($PYTHON -V)
+
+EOF
+        fi
+        # more sanity checks
+        case $(echo "${anaconda_root_dir}"/lib/libpython*.so*) in
+            "${anaconda_root_dir}/lib/libpython*.so*")
+                # no expansion, hence no `libpython*.so*`
+                die $EX_SOFTWARE  <<EOF
+Anaconda Python detected, but I expected to find a a libpython.so
+file under directory '${anaconda_root_dir}/lib', and there is none.
+Cannot proceed; please report this issue to the GC3Pie developers
+at gc3pie@googlegroups.com.
+
+Please include the following information in your issue report:
+
+\$ $PYTHON -V
+$($PYTHON -V)
+
+\$ ls -l ${anaconda_root_dir}/lib/
+$(ls -l "${anaconda_root_dir}/lib/")
+
+EOF
+                ;;
+        esac
+        # actually do the patching
+        mkdir -p $verbose "$DESTDIR/lib"
+        ln -s -v "${anaconda_root_dir}"/lib/libpython*.so* "${DESTDIR}/lib/"
+    fi
 
     # python virtualenv.py --[no,system]-site-packages $DESTDIR
-    $VIRTUALENV_CMD $verbose $WITH_SITE_PACKAGES -p $PYTHON $DESTDIR
+    $PYTHON virtualenv.py $verbose $WITH_SITE_PACKAGES -p $PYTHON $DESTDIR
 
     . $VENVDIR/bin/activate
 
