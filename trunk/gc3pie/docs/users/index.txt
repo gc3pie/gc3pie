@@ -19,13 +19,13 @@ Table of Contents
 
 .. toctree::
 
-  NEWS
   install
   configuration
   env-vars
   gc3apps/index
   gc3utils
   troubleshooting
+  NEWS
 
 
 .. _`install`: install.html
