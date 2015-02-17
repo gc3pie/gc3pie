@@ -41,7 +41,7 @@ if hasattr(sdist, 'finders'):
 
 setuptools.setup(
     name="gc3pie",
-    version="2.2.dev",  # see: http://packages.python.org/distribute/setuptools.html # noqa
+    version="2.3.dev",  # see: http://packages.python.org/distribute/setuptools.html # noqa
 
     packages=setuptools.find_packages(exclude=['ez_setup']),
     # metadata for upload to PyPI
