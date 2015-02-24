@@ -291,13 +291,9 @@ class Transport(object):
                    ex.__class__.__name__, str(ex)))
         try:
             if os.path.isdir(source):
-                # destination must be a directory
-                assert self.isdir(destination), \
-                    "Transport.put(): when source is a directory," \
-                    " destination must be a directory, too!"
                 # `source` is a directory, recursively descend it
                 self.makedirs(destination)
-                for entry in os.listdir(source):
+                for entry in os.listdir(source):                 
                     # don't use `os.path.join` for remote path names,
                     # ``/`` is the right separator to use; see
                     # http://code.fabfile.org/issues/show/306
@@ -732,6 +728,7 @@ class SshTransport(Transport):
                           " remote destination: '%s'; remote host: '%s'.",
                           source, destination, self.remote_frontend)
         self.connect()  # ensure connection is up
+
         Transport.put(self, source, destination,
                       ignore_errors, overwrite, changed_only)
 
