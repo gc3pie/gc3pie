@@ -117,10 +117,6 @@ class GndnApplication(Application):
         Move results into original results folder
         """
         gc3libs.log.info("Application terminated with exit code %s" % self.execution.exitcode)
-        if not os.listdir(self.output_file):
-            gc3libs.log.error("No results have been retrieved. Failing job.")
-            self.execution.returncode = (0, 1)
-
         for result in os.listdir(os.path.join(self.output_dir,"results/")):
             shutil.move(os.path.join(self.output_dir,"results/",result),
                         os.path.join(self.input_folder,"results",os.path.basename(result)))
