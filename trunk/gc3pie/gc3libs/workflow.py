@@ -442,6 +442,52 @@ class SequentialTaskCollection(TaskCollection):
         return self.execution.state
 
 
+class _OnError(object):
+    """
+    Mix-in class to make a `SequentialTaskCollection`:class: turn to a
+    specific state state as soon as one of the tasks fail.
+
+    The final state is set by copying the `_on_error_state` attribute.
+
+    A second effect of mixing this class in is that the
+    `self.execution.returncode` mirrors the return code of the last
+    finished task.
+    """
+    def next(self, done):
+        self.execution.returncode = self.tasks[done].execution.returncode
+        if done == len(self.tasks) - 1:
+            return Run.State.TERMINATED
+        else:
+            if self.execution.returncode != 0:
+                return self._on_error_state
+            else:
+                return Run.State.RUNNING
+
+
+class AbortOnError(_OnError):
+    """
+    Mix-in class to make a `SequentialTaskCollection`:class: turn to TERMINATED
+    state as soon as one of the tasks fail.
+
+    A second effect of mixing this class in is that the
+    `self.execution.returncode` mirrors the return code of the last
+    finished task.
+    """
+    _on_error_state = Run.State.TERMINATED
+
+
+class StopOnError(_OnError):
+    """
+    Mix-in class to make a `SequentialTaskCollection`:class: turn to STOPPED
+    state as soon as one of the tasks fail.
+
+    A second effect of mixing this class in is that the
+    `self.execution.returncode` mirrors the return code of the last
+    finished task.
+    """
+    _on_error_state = Run.State.STOPPED
+
+
 class StagedTaskCollection(SequentialTaskCollection):
 
     """
