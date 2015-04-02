@@ -69,7 +69,7 @@ from gc3libs.quantity import Memory, kB, MB, MiB, GB, Duration, hours, minutes, 
 from gc3libs.workflow import RetryableTask
 
 DEFAULT_CORES = 1
-DEFAULT_MEMORY = Memory(3,GB)
+DEFAULT_MEMORY = Memory(1500,MB)
 DEFAULT_WALLTIME = Duration(300,hours)
 
 ## custom application class
