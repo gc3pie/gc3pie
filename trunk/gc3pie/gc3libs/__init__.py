@@ -1574,9 +1574,6 @@ class Application(Task):
             # it is copied to its basename on the execution host
             sbatch += ['--input', '%s' % os.path.basename(self.stdin)]
         if self.stderr:
-            # from the sbatch(1) man page: "If both the -j y and the -e
-            # options are present, Grid Engine sets but ignores the
-            # error-path attribute."
             sbatch += ['-e', '%s' % self.stderr]
         if self.requested_cores != 1:
             sbatch += ['-n', ('%d' % self.requested_cores),
