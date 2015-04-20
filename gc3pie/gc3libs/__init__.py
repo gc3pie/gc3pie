@@ -1576,8 +1576,8 @@ class Application(Task):
         if self.stderr:
             sbatch += ['-e', '%s' % self.stderr]
         if self.requested_cores != 1:
-            sbatch += ['-n', ('%d' % self.requested_cores),
-                       '--cpus-per-task', '1']
+            sbatch += ['--ntasks', '1',
+                       '--cpus-per-task', ('%d' % self.requested_cores)]
         if 'jobname' in self and self.jobname:
             sbatch += ['--job-name', ('%s' % self.jobname)]
         return (sbatch, self.cmdline(resource))
