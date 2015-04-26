@@ -224,7 +224,7 @@ architecture=x64_64
 # [resource/brutus]
 # enabled = no
 # type = lsf
-# auth = none
+# auth = noauth
 # transport = local
 # frontend = brutus.ethz.ch
 # architecture = x86_64
