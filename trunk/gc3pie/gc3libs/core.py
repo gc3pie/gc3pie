@@ -824,8 +824,8 @@ an overlay Grid on the resources specified in the configuration file.
                 resource = lrms.get_resource_status()
                 resource.updated = True
             except Exception as ex:
-                gc3libs.log.error("Got error while updating resource '%s': %s."
-                                  % (lrms.name, str(ex)))
+                gc3libs.log.error("Got error updating resource '%s': %s."
+                                  % (lrms.name, ex))
                 lrms.updated = False
 
     def close(self):
