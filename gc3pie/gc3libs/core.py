@@ -343,15 +343,14 @@ an overlay Grid on the resources specified in the configuration file.
         exs = []
         # after brokering we have a sorted list of valid resource
         for resource in targets:
-            gc3libs.log.debug("Attempting submission to resource '%s'..."
-                              % resource.name)
+            gc3libs.log.debug("Attempting submission to resource '%s'...",
+                              resource.name)
             try:
                 job.timestamp[Run.State.NEW] = time.time()
                 job.info = ("Submitting to '%s'" % (resource.name,))
                 resource.submit_job(app)
             except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration as ex:
-                gc3libs.log.info(
-                    "Submission of job %s delayed" % app)
+                gc3libs.log.info("Submission of job %s delayed", app)
                 # Just raise the exception
                 raise
             except Exception as ex:
