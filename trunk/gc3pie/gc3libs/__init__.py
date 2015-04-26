@@ -1144,31 +1144,33 @@ class Application(Task):
         return selected
 
     @staticmethod
-    def _cmp_resources(a, b):
+    def _resource_sorting_key(rsc):
         """
-        Compare resources `a` and `b` and return -1,0,1 accordingly
-        (see doc for the Python standard function `cmp`).
+        Return the value to be used for comparing resource `rsc` with others.
 
-        Computational resource `a` is preferred over `b` if it has less
-        queued jobs from the same user; failing that, if it has more free
-        slots; failing that, if it has less queued jobs (in total);
-        finally, should all preceding parameters compare equal, `a` is
-        preferred over `b` if it has less running jobs from the same user.
+        See `rank_resources`:meth: and Python's `sorted()` builtin.
         """
-        a_ = (a.user_queued, -a.free_slots, a.queued, a.user_run)
-        b_ = (b.user_queued, -b.free_slots, b.queued, b.user_run)
-        return cmp(a_, b_)
+        return (-rsc.user_queued, rsc.free_slots, -rsc.queued, -rsc.user_run)
 
     def rank_resources(self, resources):
         """
         Sort the given resources in order of preference.
 
-        By default, less-loaded resources come first;
-        see `_cmp_resources`:meth:.
+        By default, computational resource `a` is preferred over `b`
+        if it has less queued jobs from the same user; failing that,
+        if it has more free slots; failing that, if it has less queued
+        jobs (in total); finally, should all preceding parameters
+        compare equal, `a` is preferred over `b` if it has less
+        running jobs from the same user.
+
+        Resources where the job has already attempted to run (the
+        resource front-end name is recorded in
+        `.execution._execution_targets`) are then moved to the back of
+        the list, to avoid resubmitting to a faulty resource.
         """
+        selected = sorted(resources, key=self._resource_sorting_key)
         # shift lrms that are already in application.execution_targets
         # to the bottom of the list
-        selected = sorted(resources, cmp=self._cmp_resources)
         if '_execution_targets' in self.execution:
             for lrms in selected:
                 if (hasattr(lrms, 'frontend')
