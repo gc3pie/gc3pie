@@ -1150,7 +1150,7 @@ class Application(Task):
 
         See `rank_resources`:meth: and Python's `sorted()` builtin.
         """
-        return (-rsc.user_queued, rsc.free_slots, -rsc.queued, -rsc.user_run)
+        return (rsc.user_queued, -rsc.free_slots, rsc.queued, rsc.user_run)
 
     def rank_resources(self, resources):
         """
