@@ -371,10 +371,10 @@ $($PYTHON -V 2>&1)
 __EOF__
         fi
         # more sanity checks
-        case $(echo "${anaconda_root_dir}"/lib/libpython*.so*) in
-            "${anaconda_root_dir}/lib/libpython*.so*")
-                # no expansion, hence no `libpython*.so*`
-                die $EX_SOFTWARE "Unexpected Anaconda directory layout" <<__EOF__
+        if ! (ls "${anaconda_root_dir}"/lib/libpython*.so* \
+            >/dev/null 2>/dev/null);
+        then
+            die $EX_SOFTWARE "Unexpected Anaconda directory layout" <<__EOF__
 Anaconda Python detected, but I expected to find a a libpython.so
 file under directory '${anaconda_root_dir}/lib', and there is none.
 Cannot proceed; please report this issue to the GC3Pie developers
@@ -392,8 +392,7 @@ $($PYTHON -V 2>&1)
 $(ls -l "${anaconda_root_dir}/lib/")
 
 __EOF__
-                ;;
-        esac
+        fi
         # actually do the patching
         mkdir -p $verbose "$DESTDIR/lib"
         ln -s -v "${anaconda_root_dir}"/lib/libpython*.so* "${DESTDIR}/lib/"
@@ -404,7 +403,7 @@ __EOF__
     # - `pip` or `easy_install` already in the system path (cannot upgrade setuptools and friends)
     if have_command gc3utils || have_command easy_install || have_command pip; then
         if [ -n "$python_is_anaconda" ]; then
-            WITH_SITE_PACKAGES="--system-site-packages"
+            WITH_SITE_PACKAGES="--system-site-packages --no-setuptools"
             cat <<__EOF__
 
 WARNING
