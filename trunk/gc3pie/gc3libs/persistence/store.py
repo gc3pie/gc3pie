@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011-2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -201,9 +201,10 @@ def make_store(uri, *args, **extra_args):
                     " `gc3libs.persistence.make_store`:"
                     " has never been registered.", uri.scheme)
                 raise
-    except Exception as ex:
-        gc3libs.log.error("Error constructing store for URL '%s': %s: %s",
-                          str(uri), ex.__class__.__name__, str(ex))
+    except Exception as err:
+        gc3libs.log.error(
+            "Error constructing store for URL '%s': %s: %s",
+            uri, err.__class__.__name__, err)
         raise
 
 # main: run tests
