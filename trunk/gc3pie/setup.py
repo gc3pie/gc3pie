@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-# See http://packages.python.org/distribute/setuptools.html for details
-from distribute_setup import use_setuptools
+from ez_setup import use_setuptools
 use_setuptools()
 
 
@@ -97,27 +96,27 @@ setuptools.setup(
     # run-time dependencies
     install_requires=[
         # paramiko and pycrypto are required for SSH operations
-        'paramiko==1.13',
-        'pycrypto==2.6.1',
+        'paramiko',
+        'pycrypto',
         # prettytable -- format tabular text output
-        'prettytable==0.7.2',
+        'prettytable',
         # pyCLI -- object-oriented command-line app programming
-        'pyCLI==2.0.3',
+        'pyCLI',
         # Needed by SqlStore
         # 0.7.9 is the latest version with Python2.4 support
-        'sqlalchemy==0.7.9',
+        'sqlalchemy',
         # Needed for parsing human-readable dates (gselect uses it).
-        'parsedatetime==0.8.7',
+        'parsedatetime',
         # needed by DependentTaskCollection
         # (but incompatible with Py 2.6, so we include a patched copy)
         #'toposort==1.0',
         ],
     extras_require = {
         'openstack': [
-            'python-novaclient==2.15',
+            'python-novaclient',
         ],
         'ec2': [
-            'boto==2.9.4',
+            'boto',
         ],
         'optimizer': [
             # needed by Benjamin's DE optimizer code
