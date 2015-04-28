@@ -3,7 +3,7 @@
 #   gmbsim.py -- GC3Pie front-end for running the
 #   "sim_run_dclone_design_test.R" by Mollie Brooks
 #
-#   Copyright (C) 2014 S3IT, Zentrale Informatik, University of Zurich
+#   Copyright (C) 2014, 2015 S3IT, Zentrale Informatik, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -127,7 +127,7 @@ class GmbsimApplication(Application):
         extra_args.setdefault('requested_cores',        4)
         extra_args.setdefault('requested_memory',       1*GB)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
-        extra_args.setdefault('requested_walltime',     2*hours)
+        extra_args.setdefault('requested_walltime',     12*hours)
         # chain into `Application` superclass ctor
         Application.__init__(
             self,
