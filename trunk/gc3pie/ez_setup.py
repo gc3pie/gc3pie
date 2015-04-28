@@ -30,10 +30,8 @@ try:
 except ImportError:
     USER_SITE = None
 
-# 14.3 is a known good version
-# 5.5.1 is known to break PyCrypto installation
-# somewhere in the middle lies the minimal needed version
-DEFAULT_VERSION = "14.3"
+# 5.8 is a known good version as of 2015-04-28
+DEFAULT_VERSION = "5.8"
 DEFAULT_URL = "https://pypi.python.org/packages/source/s/setuptools/"
 DEFAULT_SAVE_DIR = os.curdir
 
