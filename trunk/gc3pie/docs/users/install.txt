@@ -37,6 +37,41 @@ an email to gc3pie@googlegroups.com asking for help.  Include the full
 output of the script in your email, in order to help us to identify
 the problem.
 
+Now you can check your GC3Pie installation; follow the on-screen
+instructions to activate the virtual environment.  Then, just type the
+command::
+
+  gc3utils --help
+
+and you should see the following output appear on your screen::
+
+  Usage: gc3utils COMMAND [options]
+
+  Command `gc3utils` is a unified front-end to computing resources.
+  You can get more help on a specific sub-command by typing::
+    gc3utils COMMAND --help
+  where command is one of these:
+    clean
+    cloud
+    get
+    info
+    kill
+    resub
+    select
+    servers
+    stat
+    tail
+
+If you get some errors, do not despair!  The `GC3Pie users
+mailing-list <gc3pie@googlegroups.com>` is there to help you :-)
+
+With the default configuration file, GC3Pie is set up to only run
+jobs on the computer where it is installed.  To run jobs on remote
+resources, you need to edit the configuration file; `the
+ConfigurationFile Wiki page
+<http://code.google.com/p/gc3pie/wiki/ConfigurationFile/>`_
+provides an explanation of the syntax.
+
 
 Non-standard installation options
 =================================
@@ -236,51 +271,7 @@ Installation into a virtualenv has two distinct advantages:
      ln -s '../src/gc3apps/codeml/gcodeml.py' bin/gcodeml
 
 
-6. Before you can actually run the GC3Pie, you need to have a
-   working configuration file; `the ConfigurationFile Wiki page <http://code.google.com/p/gc3pie/wiki/ConfigurationFile/>`_
-   provides an explanation of the syntax.
-
-   The `example configuration file <http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/gc3libs/etc/gc3pie.conf.example/>`_
-   can be used as a startup point if you want to enable access to the SMSCG_ infrastructure.
-   Before you can actually use this file, you will need to:
-
-   * insert into it three values, for which we `can NOT` provide defaults:
-
-    1. ``aai_username``:
-        This is the "username" you are asked for when accessing
-        any SWITCHaai_/Shibboleth web page, e.g., https://gc3-aai01.uzh.ch/secure/
-
-    2. ``idp``:
-        Find this out with the command "slcs-info": it prints a list of
-        IdP (Identity Provider IDs) followed by the human-readable name
-        of the associated institution. Pick the one that corresponds to
-        you University.  It is always the last two components of the
-        University's Internet domain name (e.g., "uzh.ch" or "ethz.ch").
-
-    3. ``vo``:
-        In order to use SMSCG, you must sign up to a VO (Virtual
-        Organisation).  One the words "life", "earth", "atlas" or
-        "crypto" should be here. Find out more at:  http://www.smscg.ch/www/user/
-
-
-    Please, remember to uncomment the three lines, too.
-
-   * Enable the SMSCG_ resource in the ``Examples`` section of the file.
-     To do this simply uncomment the following lines::
-
-        # [resource/smscg]
-        # enabled = false
-        # name = smscg
-        # type = arc0
-        # auth = smscg
-        # arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
-        # max_cores_per_job = 256
-        # max_memory_per_core = 2
-        # max_walltime = 24
-        # ncores = 8000
-        # architecture = i686, x86_64
-
-7. Now you can check your GC3Pie installation; just type the command::
+6. Now you can check your GC3Pie installation; just type the command::
 
      gc3utils --help
 
@@ -293,16 +284,26 @@ Installation into a virtualenv has two distinct advantages:
        gc3utils COMMAND --help
      where command is one of these:
        clean
+       cloud
        get
        info
        kill
-       list
        resub
+       select
+       servers
        stat
        tail
 
    If you get some errors, do not despair!  The `GC3Pie users
    mailing-list <gc3pie@googlegroups.com>` is there to help you :-)
+
+
+7. With the default configuration file, GC3Pie is set up to only run
+   jobs on the computer where it is installed.  To run jobs on remote
+   resources, you need to edit the configuration file; `the
+   ConfigurationFile Wiki page
+   <http://code.google.com/p/gc3pie/wiki/ConfigurationFile/>`_
+   provides an explanation of the syntax.
 
 
 .. _upgrade:
