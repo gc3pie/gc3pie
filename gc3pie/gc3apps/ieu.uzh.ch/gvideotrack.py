@@ -38,6 +38,13 @@ Options:
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+  2015-05-04:
+  * Added -D and -L option
+  -L [INT], --linkrange [INT]
+                        Linkrange value. Default: 1.
+  -D [INT], --displacement [INT]
+                        Displacement value. Default: 10.
+
   2014-11-13:
   * Initial version
 """
@@ -102,12 +109,19 @@ class GVideoTrackingApplication(Application):
             memory = 1000 
 
         # Rscript --vanilla s3it_articleLinker.R trj_out/data00422.ijout.txt jar/ParticleLinker.jar result
-        arguments = "Rscript --vanilla ParticleLinker.R %s ParticleLinker.jar result %s" % (os.path.basename(video_file),memory)
+        # arguments = "Rscript --vanilla ParticleLinker.R %s ParticleLinker.jar result %s" % (os.path.basename(video_file),memory)
+        arguments = "Rscript --vanilla ParticleLinker.R %s ParticleLinker.jar result %s %s %s" % (
+            os.path.basename(video_file),
+            extra_args['linkrange'],
+            extra_args['displacement'],
+            memory
+        )
 
         inputs[video_file] = os.path.basename(video_file)
 
         # Set output
         outputs['result/'] = 'result/'
+
 
         Application.__init__(
             self,
@@ -165,6 +179,14 @@ class GVideoTrackingScript(SessionBasedScript):
                        dest="jarfile", default=None,
                        help="Location of the 'ParticleLinker.jar'.")
 
+        self.add_param("-L", "--linkrange", type=int, metavar="[INT]", 
+                       dest="linkrange", default=1,
+                       help="Linkrange value. Default: 1.")
+
+        self.add_param("-D", "--displacement", type=int, metavar="[INT]", 
+                       dest="displacement", default=10,
+                       help="Displacement value. Default: 10.")
+
     def parse_args(self):
         """
         Check validity of input parameters and selected benchmark.
@@ -185,6 +207,10 @@ class GVideoTrackingScript(SessionBasedScript):
                 raise gc3libs.exceptions.InvalidUsage("ParticleLinker jar "
                                                       " file %s not found" 
                                                       % self.params.jarfile)
+
+
+        assert int(self.params.linkrange)
+        assert int(self.params.displacement)
 
     def new_tasks(self, extra):
         """
@@ -214,18 +240,10 @@ class GVideoTrackingScript(SessionBasedScript):
             if self.params.jarfile:
                 extra_args['jarfile'] = self.params.jarfile
 
+            extra_args['linkrange'] = self.params.linkrange
+            extra_args['displacement'] = self.params.displacement
+
             extra_args['jobname'] = jobname
-
-            # if self.params.store_results:
-            #     if not os.path.isdir(self.params.store_results):
-            #         os.makedirs(self.params.store_results)
-            #     extra_args['result_dir'] = self.params.store_results
-            # else:
-            #     extra_args['result_dir'] = self.params.output
-            #     extra_args['result_dir'] = extra_args['result_dir'].replace('NAME', self.params.session)
-
-            # extra_args['output_dir'] = self.params.output
-            # extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 'compute')
 
             tasks.append(GVideoTrackingApplication(
                 os.path.join(self.params.videos,video_file),
