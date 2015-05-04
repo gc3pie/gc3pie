@@ -793,7 +793,7 @@ ReturnCode=%x"""
         # set up environment
         env_arguments = ''
         for k, v in app.environment.iteritems():
-            env_arguments += "%s=%s; " % (k, v)
+            env_arguments += "%s=%s; export %s; " % (k, v, k)
         arguments = str.join(' ', (sh_quote_unsafe(i) for i in app.arguments))
 
         # Create the directory in which pid, output and wrapper script
