@@ -1016,21 +1016,24 @@ def prettyprint(
         output.write('\n')
 
 
-def progressive_number(qty=None,
-                       id_filename=os.path.expanduser('~/.gc3/next_id.txt')):
+def progressive_number(qty=None, id_filename=None):
     """
     Return a positive integer, whose value is guaranteed to
     be monotonically increasing across different invocations
     of this function, and also across separate instances of the
     calling program.
 
+    This is accomplished by using a system-wide file which holds the
+    "next available" ID.  The location of this file can be set using
+    the ``GC3PIE_ID_FILE`` environment variable, or programmatically
+    using the `id_filename` argument.  By default, the "next ID" file
+    is located at ``~/.gc3/next_id.txt``:file:
+
     Example::
 
-    (create a temporary directory to avoid bug #)
-
+      >>> # create "next ID" file in a temporary location
       >>> import tempfile, os
       >>> (fd, tmp) = tempfile.mkstemp()
-
 
       >>> n = progressive_number(id_filename=tmp)
       >>> m = progressive_number(id_filename=tmp)
@@ -1073,6 +1076,9 @@ def progressive_number(qty=None,
     """
     assert qty is None or qty > 0, \
         "Argument `qty` must be a positive integer"
+    if id_filename is None:
+        id_filename = os.environ.get('GC3PIE_ID_FILE',
+                                     os.path.expanduser('~/.gc3/next_id.txt'))
     # ensure directory exists, otherwise the error message is obscure;
     # see Issue 486 for details
     id_dirname = dirname(id_filename)
