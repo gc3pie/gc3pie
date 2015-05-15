@@ -167,6 +167,12 @@ class TaskCollection(Task):
         # directory where to download files; each task will get its
         # own subdir based on its `.persistent_id`
         coll_output_dir = self._get_download_dir(output_dir)
+        assert coll_output_dir is not None, \
+            ("Unknown collection output directory!"
+             " Task collection '%s' was not initialized with"
+             " `would_output=False`, but then `fetch_output()`"
+             " was called without any explicit `output_dir=...`"
+             " setting.")
         for task in self.tasks:
             if task.execution.state != Run.State.TERMINATING:
                 continue
