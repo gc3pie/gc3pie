@@ -1073,6 +1073,11 @@ def progressive_number(qty=None,
     """
     assert qty is None or qty > 0, \
         "Argument `qty` must be a positive integer"
+    # ensure directory exists, otherwise the error message is obscure;
+    # see Issue 486 for details
+    id_dirname = dirname(id_filename)
+    if not os.path.exists(id_dirname):
+        os.makedirs(id_dirname)
     # XXX: can raise 'LockTimeout'
     lck = lock(id_filename, timeout=30, create=True)
     id_file = open(id_filename, 'r+')
