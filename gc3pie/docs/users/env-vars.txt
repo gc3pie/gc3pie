@@ -19,6 +19,11 @@ The following environmental variables affect GC3Pie operations.
   initialization of GC3Pie.  If undefined or empty, no additional
   configuration file is loaded.
 
+`GC3PIE_ID_FILE`
+
+  Path to the a shared state file, used for recording the "next
+  available" job ID number.  By default, it is located at
+  ``~/.gc3/next_id.txt``:file:.
 
 `GC3PIE_NO_CATCH_ERRORS`
 
