@@ -527,12 +527,12 @@ ReturnCode=%x"""
         Delete `self.resource_dir/PID` file
         """
         self.transport.connect()
-        log.debug("Deleting resource file for pid %s", pid)
+        log.debug("Deleting resource file for pid %s ...", pid)
         pidfile = posixpath.join(self.resource_dir, str(pid))
         try:
             self.transport.remove(pidfile)
         except Exception, err:
-            log.error(
+            log.debug(
                 "Ignored error deleting file `%s`: %s: %s",
                 pidfile, err.__class__.__name__, err)
 
