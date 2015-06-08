@@ -2120,9 +2120,8 @@ class Run(Struct):
             # regular exit
             return (0, rc)
 
+
 # Factory method to create an Engine instance
-
-
 def create_engine(*conf_files, **extra_args):
     """
     Returns a `gc3libs.core.Engine`:class: class.
