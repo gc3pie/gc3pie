@@ -1001,7 +1001,8 @@ class DependentTaskCollection(SequentialTaskCollection):
             # create DAG from dependency information
             sorted_and_grouped_tasks = toposort(self._deps)
             for batch in sorted_and_grouped_tasks:
-                step = ParallelTaskCollection(batch)
+                step = ParallelTaskCollection(batch,
+                                              would_output=self.would_output)
                 super(DependentTaskCollection, self).add(step)
         super(DependentTaskCollection, self).submit(resubmit, targets, **extra_args)
 
