@@ -172,7 +172,8 @@ class TaskCollection(Task):
              " Task collection '%s' was not initialized with"
              " `would_output=False`, but then `fetch_output()`"
              " was called without any explicit `output_dir=...`"
-             " setting.")
+             " setting."
+             % (self,))
         for task in self.tasks:
             if task.execution.state != Run.State.TERMINATING:
                 continue
