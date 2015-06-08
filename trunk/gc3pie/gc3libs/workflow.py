@@ -1025,7 +1025,7 @@ class DependentTaskCollection(SequentialTaskCollection):
 
     def submit(self, resubmit=False, targets=None, **extra_args):
         if self.execution.state == Run.State.NEW:
-            extras = { 'would_output':self.would_output }
+            extras = {'would_output': self.would_output}
             if 'output_dir' in self:
                 extras['output_dir'] = self.output_dir
             # create DAG from dependency information
