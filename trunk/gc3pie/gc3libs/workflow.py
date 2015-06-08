@@ -1025,11 +1025,13 @@ class DependentTaskCollection(SequentialTaskCollection):
 
     def submit(self, resubmit=False, targets=None, **extra_args):
         if self.execution.state == Run.State.NEW:
+            extras = { 'would_output':self.would_output }
+            if 'output_dir' in self:
+                extras['output_dir'] = self.output_dir
             # create DAG from dependency information
             sorted_and_grouped_tasks = toposort(self._deps)
             for batch in sorted_and_grouped_tasks:
-                step = ParallelTaskCollection(batch,
-                                              would_output=self.would_output)
+                step = ParallelTaskCollection(batch, **extras)
                 super(DependentTaskCollection, self).add(step)
         super(DependentTaskCollection, self).submit(resubmit, targets, **extra_args)
 
