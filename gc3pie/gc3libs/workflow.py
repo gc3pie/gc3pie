@@ -161,6 +161,33 @@ class TaskCollection(Task):
             "Called abstract method TaskCollection.kill() -"
             " this should be overridden in derived classes.")
 
+    def _get_download_dir(self, download_dir):
+        """
+        Return the base directory path where to download this Task
+        collection's output files.
+
+        Works just like method `Task._get_download_dir`, the only
+        difference being that here we cannot return ``None`` if this
+        Task is not expected to produce any output, as the value will
+        be used as a base path for all dependent tasks.
+        """
+        # determine download dir
+        if download_dir is not None:
+            return download_dir
+        else:
+            try:
+                return self.output_dir
+            except AttributeError:
+                cwd = os.getcwd()
+                gc3libs.log.error(
+                    "`TaskCollection._get_download_dir()` called"
+                    " with no explicit download directory,"
+                    " but object '%s' (%s) has no `output_dir`"
+                    " attribute set either. Using `%s` as collection's"
+                    " base output directory."
+                    % (self, type(self), cwd))
+                return cwd
+
     def fetch_output(self, output_dir=None,
                      overwrite=False, changed_only=True, **extra_args):
         # if `output_dir` is not None, it is interpreted as the base
@@ -170,9 +197,9 @@ class TaskCollection(Task):
         assert coll_output_dir is not None, \
             ("Unknown collection output directory!"
              " Task collection '%s' was not initialized with"
-             " `would_output=False`, but then `fetch_output()`"
-             " was called without any explicit `output_dir=...`"
-             " setting."
+             " an explicit `output_dir=...` setting,"
+             " but then `fetch_output()` was called without any"
+             " explicit `output_dir=...` argument."
              % (self,))
         for task in self.tasks:
             if task.execution.state != Run.State.TERMINATING:
