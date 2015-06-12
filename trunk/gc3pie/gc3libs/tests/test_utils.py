@@ -50,6 +50,28 @@ class TestYieldAtNext(object):
         assert_equal(result, None)
         assert_equal(g.next(), 'a sent value')
 
+    def test_YieldAtNext_send_iter(self):
+        def generator_yield_send():
+            val = (yield 0)
+            while True:
+                val = (yield val)
+        g = gc3libs.utils.YieldAtNext(generator_yield_send())
+        expected = range(0, 9)
+        n = 0
+        print ("expecting %d messages" % (len(expected),))
+        for msg in g:
+            print ("received: %s" % (msg,))
+            # check msg
+            assert_equal(msg, expected[n])
+            # send another msg
+            n += 1
+            if n < len(expected):
+                result = g.send(expected[n])
+                assert_equal(result, None)
+            else:
+                print ("no more messages to send")
+                break
+
     def test_YieldAtNext_throw(self):
         def generator_yield_throw():
             try:
