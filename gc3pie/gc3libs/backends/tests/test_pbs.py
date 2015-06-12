@@ -101,7 +101,7 @@ Permission denied
 
 
 def qdel_notfound(jobid=123):
-    return (153, "",  """qdel: Unknown Job Id %s""" % jobid)
+    return (153, "", """qdel: Unknown Job Id %s""" % jobid)
 
 
 def qstat_notfound(jobid=123):
