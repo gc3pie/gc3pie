@@ -1791,9 +1791,11 @@ class YieldAtNext(object):
             raise StopIteration
         elif self._has_saved:
             self._has_saved = False
-            # XXX: This keeps a reference to the returned object into
-            # `self._saved` until that attribute is overwritten.
-            return self._saved
+            # make sure we do not keep any reference to the saved
+            # object after `return`
+            value = self._saved
+            self._saved = None
+            return value
         else:
             return self._generator.next()
 
