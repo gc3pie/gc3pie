@@ -69,7 +69,8 @@ class TestYieldAtNext(object):
                 result = g.send(expected[n])
                 assert_equal(result, None)
             else:
-                print ("no more messages to send")
+                assert_equal(n, len(expected))
+                print ("%d messages received, no more messages to send" % (n,))
                 break
 
     def test_YieldAtNext_throw(self):
