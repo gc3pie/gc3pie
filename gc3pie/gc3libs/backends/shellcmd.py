@@ -196,7 +196,7 @@ ReturnCode=%x"""
         # `transport` right now.
         self.spooldir = spooldir
 
-        # Resource dir is expanded in `_gether_machine_specs()` and
+        # Resource dir is expanded in `_gather_machine_specs()` and
         # only after that the `resource_dir` property will be
         # set. This is done in order to delay a possible connection to
         # a remote machine, and avoiding such a remote connection when
