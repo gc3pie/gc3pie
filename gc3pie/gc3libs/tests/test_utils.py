@@ -22,6 +22,9 @@ Test for classes and functions in the `utils` module.
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+
+from itertools import izip
+
 # 3rd party imports
 from nose.tools import assert_equal, raises
 
@@ -72,6 +75,26 @@ class TestYieldAtNext(object):
                 assert_equal(n, len(expected))
                 print ("%d messages received, no more messages to send" % (n,))
                 break
+
+    def test_YieldAtNext_send_many(self):
+        def generator_yield_send():
+            val = (yield 0)
+            while True:
+                val = (yield val)
+        g = gc3libs.utils.YieldAtNext(generator_yield_send())
+        expected = range(1, 10)
+        # consume one value to init the generator
+        g.next()
+        # send all messages
+        for msg in expected:
+            g.send(msg)
+            print ("sent message '%s'" % (msg,))
+        # receive them all
+        print ("expecting %d messages back" % (len(expected),))
+        for msg, expected_msg in izip(g, expected):
+            print ("received: %s" % (msg,))
+            # check msg
+            assert_equal(msg, expected_msg)
 
     def test_YieldAtNext_throw(self):
         def generator_yield_throw():

@@ -28,7 +28,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
-from collections import defaultdict
+from collections import defaultdict, deque
 import contextlib
 import functools
 import os
@@ -1776,11 +1776,11 @@ class YieldAtNext(object):
     subsequent call to the `next` method.
     """
 
-    __slots__ = ['_generator', '_has_saved', '_saved', '_stop_iteration']
+    __slots__ = ['_generator', '_saved', '_stop_iteration']
 
     def __init__(self, generator):
         self._generator = generator
-        self._has_saved = False
+        self._saved = deque()
         self._stop_iteration = False
 
     def __iter__(self):
@@ -1789,27 +1789,20 @@ class YieldAtNext(object):
     def next(self):
         if self._stop_iteration:
             raise StopIteration
-        elif self._has_saved:
-            self._has_saved = False
-            # make sure we do not keep any reference to the saved
-            # object after `return`
-            value = self._saved
-            self._saved = None
-            return value
+        elif self._saved:
+            return self._saved.popleft()
         else:
             return self._generator.next()
 
     def send(self, value):
         try:
-            self._saved = self._generator.send(value)
-            self._has_saved = True
+            self._saved.append(self._generator.send(value))
         except StopIteration:
             self._stop_iteration = True
 
     def throw(self, *excinfo):
         try:
-            self._saved = self._generator.throw(*excinfo)
-            self._has_saved = True
+            self._saved.append(self._generator.throw(*excinfo))
         except StopIteration:
             self._stop_iteration = True
 
