@@ -76,7 +76,7 @@ override = False
     """)
     try:
         cfg = gc3libs.config.Configuration(tmpfile)
-        resources = cfg.make_resources()
+        resources = cfg.make_resources(ignore_errors=False)
         # resources are enabled by default
         assert 'test' in resources
         assert_is_instance(resources['test'], ShellcmdLrms)
@@ -175,7 +175,7 @@ override = False
     """)
     try:
         cfg = gc3libs.config.Configuration(tmpfile)
-        resources = cfg.make_resources()
+        resources = cfg.make_resources(ignore_errors=False)
         assert 'ncores' not in resources['test']
         assert 'max_cores' in resources['test']
         assert_equal(resources['test']['max_cores'], 77)
@@ -359,7 +359,7 @@ def _check_bad_conf(conf):
     tmp = _setup_config_file(conf)
     cfg = gc3libs.config.Configuration(tmp)
     # first check that errors are swallowed
-    resources = cfg.make_resources()
+    resources = cfg.make_resources(ignore_errors=False)
     assert_equal(len(resources), 0)
     # next check that configuration error is raised
     try:
@@ -443,7 +443,7 @@ app2_epilogue_content = echo epilogue app2
                 scriptfd.close()
 
         self.cfg = gc3libs.config.Configuration(cfgfname)
-        # self.resources = self.cfg.make_resources()
+        # self.resources = self.cfg.make_resources(ignore_errors=False)
         # assert_equal(resources['test']['prologue'],
         #              'scripts/shellcmd_pre.sh')
 
