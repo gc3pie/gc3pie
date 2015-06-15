@@ -1469,6 +1469,11 @@ class Engine(object):
         if (self.can_submit and
                 currently_submitted < limit_submitted and
                 currently_in_flight < limit_in_flight):
+            # update state of all enabled resources, to give a chance to
+            # all to get a new job; for a complete discussion, see:
+            # https://code.google.com/p/gc3pie/issues/detail?id=485
+            self._core.update_resources()
+            # now try to submit
             with self.scheduler(self._new,
                                 self._core.resources.values()) as _sched:
                 # wrap the original generator object so that `send`
@@ -1479,8 +1484,8 @@ class Engine(object):
                 for task_index, resource_name in sched:
                     task = self._new[task_index]
                     resource = self._core.resources[resource_name]
-                    # try to submit; go to SUBMITTED if successful, FAILED if
-                    # not
+                    # try to submit; go to SUBMITTED if successful,
+                    # FAILED if not
                     try:
                         self._core.submit(task, targets=[resource])
                         if self._store:
