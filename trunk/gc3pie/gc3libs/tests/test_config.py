@@ -2,7 +2,7 @@
 #
 # -*- coding: utf-8 -*-
 #
-#  Copyright (C) 2010-2012 S3IT, Zentrale Informatik, University of Zurich
+#  Copyright (C) 2010-2012, 2015 S3IT, Zentrale Informatik, University of Zurich
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -609,6 +609,53 @@ override = False
                 assert os.path.isfile(v)
                 assert_equal(os.path.abspath(v),
                              v)
+
+
+@raises(gc3libs.exceptions.ConfigurationError)
+def test_invalid_resource_type():
+    """Test parsing a configuration file with an unknown resource type."""
+    tmpfile = _setup_config_file("""
+[resource/test]
+type = noop
+auth = none
+transport = local
+max_cores_per_job = 1
+max_memory_per_core = 1
+max_walltime = 8
+max_cores = 2
+architecture = x86_64
+    """)
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+        resources = cfg.make_resources(ignore_errors=False)
+    finally:
+        os.remove(tmpfile)
+
+
+def test_additional_backend():
+    """Test instanciating a non-std backend."""
+    tmpfile = _setup_config_file("""
+[resource/test]
+type = noop
+auth = none
+transport = local
+max_cores_per_job = 1
+max_memory_per_core = 1
+max_walltime = 8
+max_cores = 2
+architecture = x86_64
+    """)
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+        cfg.TYPE_CONSTRUCTOR_MAP['noop'] = ('gc3libs.backends.noop', 'NoOpLrms')
+        resources = cfg.make_resources(ignore_errors=False)
+        # resources are enabled by default
+        assert 'test' in resources
+        from gc3libs.backends.noop import NoOpLrms
+        assert_is_instance(resources['test'], NoOpLrms)
+        # test types
+    finally:
+        os.remove(tmpfile)
 
 
 if __name__ == "__main__":

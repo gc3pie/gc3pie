@@ -194,6 +194,10 @@ class Configuration(gc3libs.utils.Struct):
         if len(locations) > 0:
             self.load(*locations)
 
+        # actual resource constructor classes
+        self._resource_constructors_cache = {}
+
+
     def load(self, *locations):
         """
         Merge settings from configuration files into this `Configuration`
@@ -498,6 +502,47 @@ class Configuration(gc3libs.utils.Struct):
         # use `lambda` for delayed evaluation
         return (lambda **extra_args: self.auth_factory.get(name, **extra_args))
 
+    # map resource type name (e.g., 'sge' or 'openstack') to module
+    # name + class/function within that module
+    TYPE_CONSTRUCTOR_MAP = {
+        gc3libs.Default.ARC0_LRMS: ("gc3libs.backends.arc0", "ArcLrms"),
+        gc3libs.Default.ARC1_LRMS: ("gc3libs.backends.arc1", "Arc1Lrms"),
+        gc3libs.Default.EC2_LRMS:  ("gc3libs.backends.ec2",  "EC2Lrms"),
+        gc3libs.Default.LSF_LRMS:  ("gc3libs.backends.lsf",  "LsfLrms"),
+        gc3libs.Default.PBS_LRMS:  ("gc3libs.backends.pbs",  "PbsLrms"),
+        gc3libs.Default.OPENSTACK_LRMS:
+                                   ("gc3libs.backends.openstack",
+                                    "OpenStackLrms"),
+        gc3libs.Default.SGE_LRMS:  ("gc3libs.backends.sge",  "SgeLrms"),
+        gc3libs.Default.SHELLCMD_LRMS:
+                                   ("gc3libs.backends.shellcmd",
+                                    "ShellcmdLrms"),
+        gc3libs.Default.SLURM_LRMS:("gc3libs.backends.slurm",
+                                    "SlurmLrms"),
+    }
+
+    def _get_resource_constructor(self, resource_type):
+        """
+        Return the callable to be used to instanciate resource of the
+        given type name.
+        """
+        if resource_type in self._resource_constructors_cache:
+            cls = self._resource_constructors_cache[resource_type]
+        else:
+            for typename, (modname, clsname) in self.TYPE_CONSTRUCTOR_MAP.items():
+                if typename == resource_type:
+                    mod = __import__(modname, globals(), locals(), [clsname], -1)
+                    cls = getattr(mod, clsname)
+                    self._resource_constructors_cache[resource_type] = cls
+                    gc3libs.log.debug(
+                        "Using class %r from module %r"
+                        " to instanciate resources of type %s",
+                        cls, mod, typename)
+                    return cls
+            # no match
+            raise gc3libs.exceptions.ConfigurationError(
+                "Unknown resource type '%s'" % resource_type)
+
     def make_resources(self, ignore_errors=True):
         """
         Make backend objects corresponding to the configured resources.
@@ -585,37 +630,9 @@ class Configuration(gc3libs.utils.Struct):
             resdict['auth'] = self.make_auth(resdict['auth'])
 
         try:
-            if resdict['type'] == gc3libs.Default.ARC0_LRMS:
-                from gc3libs.backends.arc0 import ArcLrms
-                cls = ArcLrms
-            elif resdict['type'] == gc3libs.Default.ARC1_LRMS:
-                from gc3libs.backends.arc1 import Arc1Lrms
-                cls = Arc1Lrms
-            elif resdict['type'] == gc3libs.Default.SGE_LRMS:
-                from gc3libs.backends.sge import SgeLrms
-                cls = SgeLrms
-            elif resdict['type'] == gc3libs.Default.PBS_LRMS:
-                from gc3libs.backends.pbs import PbsLrms
-                cls = PbsLrms
-            elif resdict['type'] == gc3libs.Default.LSF_LRMS:
-                from gc3libs.backends.lsf import LsfLrms
-                cls = LsfLrms
-            elif resdict['type'] == gc3libs.Default.SHELLCMD_LRMS:
-                from gc3libs.backends.shellcmd import ShellcmdLrms
-                cls = ShellcmdLrms
-            elif resdict['type'] == gc3libs.Default.SLURM_LRMS:
-                from gc3libs.backends.slurm import SlurmLrms
-                cls = SlurmLrms
-            elif resdict['type'].split('+')[0] == gc3libs.Default.EC2_LRMS:
-                from gc3libs.backends.ec2 import EC2Lrms
-                cls = EC2Lrms
-            elif (resdict['type'].split('+')[0] ==
-                    gc3libs.Default.OPENSTACK_LRMS):
-                from gc3libs.backends.openstack import OpenStackLrms
-                cls = OpenStackLrms
-            else:
-                raise gc3libs.exceptions.ConfigurationError(
-                    "Unknown resource type '%s'" % resdict['type'])
+            # valid strings can be, e.g., `shellcmd+ssh` or `sge`
+            resource_type = resdict['type'].split('+')[0]
+            cls = self._get_resource_constructor(resource_type)
             # check that required parameters are given, and try to
             # give a sensible error message if not; if we do not
             # do this, users see a traceback like this::
