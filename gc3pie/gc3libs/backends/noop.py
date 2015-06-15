@@ -114,9 +114,10 @@ class NoOpLrms(LRMS):
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir,
                     overwrite=False, changed_only=True):
-        raise gc3libs.exceptions.DataStagingError(
-            "Retrieval of output files is not supported"
-            " in the NoOp backend.")
+        if app.outputs:
+            raise gc3libs.exceptions.DataStagingError(
+                "Retrieval of output files is not supported"
+                " in the NoOp backend.")
         return
 
     def update_job_state(self, app):
@@ -128,14 +129,27 @@ class NoOpLrms(LRMS):
         transitions = self.transition_graph[app.execution.state]
         log.debug("Task %s transitions: %s.", app, str.join(", ", [
             ("with probability %g to state %s" % (prob, state))
-            for prob, state in transitions if prob > 0
+            for prob, state in transitions.items() if prob > 0
         ]))
         dice = random()
         log.debug("Rolled dice, got %g result", dice)
-        for prob, state in sorted(transitions):
+        for prob, state in sorted(transitions.items()):
             if dice < prob:
                 log.debug(
                     "Task %s transitions to state '%s'", app, state)
+                # update resource state based on old and new app state
+                if app.execution.state == Run.State.SUBMITTED:
+                    self.queued -= 1
+                    self.user_queued -= 1
+                if app.execution.state == Run.State.RUNNING:
+                    self.user_run -= 1
+                if state == Run.State.RUNNING:
+                    self.user_run += 1
+                if state == Run.State.TERMINATING:
+                    self.free_slots += app.requested_cores
+                    if app.requested_memory:
+                        self.available_memory += app.requested_memory
+                # set the new app state
                 app.execution.state = state
                 break
             else:
