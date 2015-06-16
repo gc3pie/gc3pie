@@ -125,12 +125,7 @@ setuptools.setup(
     },
     # Apparently, this list is read from right to left...
     tests_require=[
-        # *Note:* Since tox 2.0.0, the $HOME environment variable is
-        # *no longer passed to the tests; some GC3Pie tests fail as
-        # *they assume they can read the config file and/or write into
-        # *sudirs of $HOME.  Quick fix for now is to use the last
-        # *known good version of `tox`.
-        'tox<=1.9.2'
+        'tox'
     ],
     cmdclass={'test': Tox},
     # additional non-Python files to be bundled in the package
