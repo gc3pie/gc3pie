@@ -70,6 +70,10 @@ enabled=True
         self.files_to_remove.append(fname)
 
     def tearDown(self):
+        # since TYPE_CONSTRUCTOR_MAP is a class-level variable, we
+        # need to clean up otherwise other tests will see the No-Op
+        # backend
+        del self.cfg.TYPE_CONSTRUCTOR_MAP['noop']
         for fname in self.files_to_remove:
             if os.path.isdir(fname):
                 shutil.rmtree(fname)

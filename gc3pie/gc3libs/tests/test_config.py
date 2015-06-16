@@ -655,6 +655,10 @@ architecture = x86_64
         assert_is_instance(resources['test'], NoOpLrms)
         # test types
     finally:
+        # since TYPE_CONSTRUCTOR_MAP is a class-level variable, we
+        # need to clean up otherwise other tests will see the No-Op
+        # backend
+        del cfg.TYPE_CONSTRUCTOR_MAP['noop']
         os.remove(tmpfile)
 
 
