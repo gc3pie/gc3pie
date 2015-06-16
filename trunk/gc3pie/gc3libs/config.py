@@ -527,7 +527,7 @@ class Configuration(gc3libs.utils.Struct):
         given type name.
         """
         if resource_type in self._resource_constructors_cache:
-            cls = self._resource_constructors_cache[resource_type]
+            return self._resource_constructors_cache[resource_type]
         else:
             for typename, (modname, clsname) in self.TYPE_CONSTRUCTOR_MAP.items():
                 if typename == resource_type:
