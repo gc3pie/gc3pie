@@ -1,19 +1,38 @@
 #!/usr/bin/env python
+"""
+Setup file for installing GC3Pie.
+"""
 
+import sys
+
+
+# see http://peak.telecommunity.com/DevCenter/setuptools
+# for an explanation of the keywords and syntax of this file.
+#
 from ez_setup import use_setuptools
 use_setuptools()
 
+import setuptools
+import setuptools.dist
+# avoid setuptools including `.svn` directories into the PyPI package
+from setuptools.command import sdist
+if hasattr(sdist, 'finders'):
+    del sdist.finders[:]
 
+
+## auxiliary functions
+#
 def read_whole_file(path):
     with open(path, 'r') as stream:
         return stream.read()
 
 
+## test runner setup
+#
 # See http://tox.readthedocs.org/en/latest/example/basic.html#integration-with-setuptools-distribute-test-commands # noqa
 # on how to run tox when python setup.py test is run
+#
 from setuptools.command.test import test as TestCommand
-import sys
-
 
 class Tox(TestCommand):
     def finalize_options(self):
@@ -28,24 +47,18 @@ class Tox(TestCommand):
         sys.exit(errno)
 
 
-# see http://peak.telecommunity.com/DevCenter/setuptools
-# for an explanation of the keywords and syntax of this file.
+## real setup description begins here
 #
-import setuptools
-import setuptools.dist
-# avoid setuptools including `.svn` directories into the PyPI package
-from setuptools.command import sdist
-if hasattr(sdist, 'finders'):
-    del sdist.finders[:]
-
 setuptools.setup(
     name="gc3pie",
-    version="2.3.dev",  # see: http://packages.python.org/distribute/setuptools.html # noqa
+    version="2.3.dev",  # see PEP 440
 
     packages=setuptools.find_packages(exclude=['ez_setup']),
     # metadata for upload to PyPI
-    description="A Python library and simple command-line frontend for"
-    " computational job submission to multiple resources.",
+    description=(
+        "A Python library and simple command-line frontend for"
+        " computational job submission to multiple resources."
+    ),
     long_description=read_whole_file('README.txt'),
     author="Grid Computing Competence Centre, University of Zurich",
     author_email="gc3utils-dev@gc3.lists.uzh.ch",
