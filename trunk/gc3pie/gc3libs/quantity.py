@@ -8,7 +8,7 @@ For details and the discussion leading up to this,
 see: `<http://code.google.com/p/gc3pie/issues/detail?id=47>`
 
 """
-# Copyright (C) 2011 - 2014, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011 - 2014, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
