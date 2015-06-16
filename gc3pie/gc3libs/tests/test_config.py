@@ -662,6 +662,62 @@ architecture = x86_64
         os.remove(tmpfile)
 
 
+def test_resource_definition_via_dict():
+    """Test programmatic resource definition (as opposed to reading a config file)."""
+    cfg = gc3libs.config.Configuration()
+    # define resource
+    name = 'test'
+    cfg.resources[name].update(
+        name=name,
+        type='shellcmd',
+        auth='none',
+        transport='local',
+        max_cores_per_job=1,
+        max_memory_per_core=1*GB,
+        max_walltime=8*hours,
+        max_cores=2,
+        architecture=Run.Arch.X86_64,
+    )
+    # make it
+    resources = cfg.make_resources(ignore_errors=False)
+    # check result
+    resource = resources[name]
+    assert_equal(resource.name, name)
+    assert_is_instance(resource,
+                       gc3libs.backends.shellcmd.ShellcmdLrms)
+    assert_is_instance(resource.transport,
+                       gc3libs.backends.transport.LocalTransport)
+    assert_equal(resource.max_cores_per_job, 1)
+    assert_equal(resource.max_memory_per_core, 1*GB)
+    assert_equal(resource.max_walltime, 8*hours)
+    assert_equal(resource.max_cores, 2)
+    assert_equal(resource.architecture, Run.Arch.X86_64)
+
+
+def test_multiple_instanciation(num_resources=3):
+    """Check that multiple resources of the same type can be instanciated."""
+    cfg = gc3libs.config.Configuration()
+    for n in range(num_resources):
+        name = ('test%d' % (n+1))
+        cfg.resources[name].update(
+            name=name,
+            type='shellcmd',
+            auth='none',
+            transport='local',
+            max_cores_per_job=1,
+            max_memory_per_core=1*GB,
+            max_walltime=8*hours,
+            max_cores=2,
+            architecture=Run.Arch.X86_64,
+        )
+    resources = cfg.make_resources(ignore_errors=False)
+    for n in range(num_resources):
+        name = ('test%d' % (n+1))
+        resource = resources[name]
+        assert_equal(resource.name, name)
+        assert_is_instance(resource, gc3libs.backends.shellcmd.ShellcmdLrms)
+
+
 if __name__ == "__main__":
     import nose
     nose.runmodule()
