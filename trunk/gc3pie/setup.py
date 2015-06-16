@@ -60,8 +60,8 @@ setuptools.setup(
         " computational job submission to multiple resources."
     ),
     long_description=read_whole_file('README.txt'),
-    author="Grid Computing Competence Centre, University of Zurich",
-    author_email="gc3utils-dev@gc3.lists.uzh.ch",
+    author="S3IT, Zentrale Informatik, University of Zurich",
+    author_email="gc3pie-dev@googlegroups.com",
     license="LGPL",
     keywords="grid arc globus sge gridengine ssh gamess rosetta batch job",
     url="http://gc3pie.googlecode.com/",  # project home page
