@@ -47,9 +47,48 @@ class NoOpLrms(LRMS):
     """
     Simulate execution of an `Application`:class instance.
 
-    Upon every invocation of `update_job_state`:meth:
-    the application status is advanced to the next
-    state.
+    Upon every invocation of `update_job_state`:meth: the application
+    status is advanced to the next state (according to the normal
+    progression SUBMITTED -> RUNNING -> TERMINATING).
+
+    This progression can be altered by assigning a different
+    transition graph to attribute `transition_graph` on an instance.
+    The transition graph has a two-level structure:
+
+    * keys are task execution states (e.g., `Run.State.SUBMITTED`)
+
+    * values are dictionaries, mapping a probability (i.e., a floating
+      point number between 0.0 and 1.0) to a new state.  All
+      probabilities should sum to a number less then, or equal to, 1.0
+      -- but this condition is not checked or enforced.  Likewise, it
+      is not checked nor enforced that the new state is a valid target
+      state given the source.
+
+    Every invocation of :meth:`update_job_state` results in the task
+    execution state possibly changing to one of the target states,
+    according to the given transition probabilities.
+
+    For example, the following transition graph specifies that a job
+    in state ``SUBMITTED`` can change to ``RUNNING`` with 80%
+    probability (and with 20% stay in ``SUBMITTED`` state); a job in
+    state ``RUNNING`` has a 50% chance of transitioning to
+    ``TERMINATING``, 10% chance of being ``STOPPED`` and 40% chance of
+    staying in state ``RUNNING``; and a job in ``STOPPED`` state stays
+    in ``STOPPED`` state forever::
+
+    | transition_graph = {
+    |   Run.State.SUBMITTED = {
+    |     0.80: Run.State.RUNNING,
+    |   },
+    |   Run.State.RUNNING = {
+    |     0.50: Run.State.TERMINATING,
+    |     0.10: Run.State.STOPPED,
+    |     0.40: Run.State.RUNNING, # implcit, could be omitted
+    |   },
+    |   Run.State.STOPPED = {
+    |     1.00: Run.State.STOPPED,
+    |   },
+    | }
 
     All parameters taken by the base class `LRMS`:class: are
     understood by this class constructor, but they are actually
