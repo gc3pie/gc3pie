@@ -63,7 +63,24 @@ setuptools.setup(
     author="S3IT, Zentrale Informatik, University of Zurich",
     author_email="gc3pie-dev@googlegroups.com",
     license="LGPL",
-    keywords="grid arc globus sge gridengine ssh gamess rosetta batch job",
+    keywords=str.join(' ', [
+        "batch",
+        "cloud",
+        "cluster",
+        "differential optimization",
+        "ec2",
+        "gridengine",
+        "job management",
+        "large-scale data analysis",
+        "openstack",
+        "pbs",
+        "remote execution",
+        "sge",
+        "slurm",
+        "ssh",
+        "torque",
+        "workflow",
+    ]),
     url="http://gc3pie.googlecode.com/",  # project home page
 
     # see http://pypi.python.org/pypi?%3Aaction=list_classifiers
