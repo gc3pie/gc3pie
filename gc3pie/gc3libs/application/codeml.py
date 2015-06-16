@@ -2,7 +2,7 @@
 #
 #   codeml.py -- Simple interface to the CODEML application
 #
-#   Copyright (C) 2010, 2011, 2012 GC3, University of Zurich
+#   Copyright (C) 2010, 2011, 2012 University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
