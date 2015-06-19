@@ -485,7 +485,7 @@ class _Script(cli.app.CommandLineApp):
                    " including any output you got by running '%s -vvvv %s'."
                    " (You need to be subscribed to post to the mailing list;"
                    " you can also post without being subscribed by using the"
-                   " web interface at http://dir.gmane.org/gmane.comp.python.gc3pie )")
+                   " web interface at http://dir.gmane.org/gmane.comp.python.gc3pie )"
                    " Thanks for your cooperation!")
             if len(sys.argv) > 0:
                 msg %= (str(ex), self.name, str.join(' ', sys.argv[1:]))
