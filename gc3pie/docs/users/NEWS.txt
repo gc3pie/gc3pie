@@ -72,6 +72,11 @@ New features
 
 * New selection options have been added to the `gselect`:ref: command.
 
+* `gc3libs.Configuration` will now raise different exceptions
+  depending on whether no files could be read
+  (`NoAccessibleConfigurationFile`:class:) or could not be parsed
+  (`NoValidConfigurationFile`:class:)
+
 
 Important bug fixes
 -------------------

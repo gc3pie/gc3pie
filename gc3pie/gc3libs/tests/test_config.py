@@ -260,6 +260,32 @@ def parse_invalid_conf(confstr, **extra_args):
     defaults, resources, auths = cfg._parse(StringIO(confstr))
 
 
+@raises(gc3libs.exceptions.NoAccessibleConfigurationFile)
+def test_load_non_existing_file():
+    """Test that `Configuration.load()` raises a `NoAccessibleConfigurationFile` exception if no configuration file exists"""
+    cfg = gc3libs.config.Configuration('/NON_EXISTING_FILE')
+
+
+@raises(gc3libs.exceptions.NoAccessibleConfigurationFile)
+def test_load_non_readable_file():
+    """Test that `Configuration.load()` raises a `NoAccessibleConfigurationFile` exception if no configuration file can be read"""
+    with tempfile.NamedTemporaryFile(prefix=__name__) as tmpfile:
+        os.chmod(tmpfile.name, 0)
+        cfg = gc3libs.config.Configuration(tmpfile.name)
+
+
+@raises(gc3libs.exceptions.NoValidConfigurationFile)
+def test_load_non_valid_file():
+    """Test that `Configuration.load()` raises a `NoValidConfigurationFile` exception if no configuration file can be parsed"""
+    tmpfile = _setup_config_file("""
+This is not a valid configuration file.
+""")
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+    finally:
+        os.remove(tmpfile)
+
+
 def test_auth_none():
     """Test that `auth = none` is always available."""
     tmpfile = _setup_config_file("""
