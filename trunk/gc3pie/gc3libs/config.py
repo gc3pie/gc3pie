@@ -218,6 +218,7 @@ class Configuration(gc3libs.utils.Struct):
             if none of the specified files could be read.
         """
         files_successfully_read = 0
+        files_successfully_parsed = 0
 
         for filename in locations:
             filename = os.path.expandvars(os.path.expanduser(filename))
@@ -233,16 +234,26 @@ class Configuration(gc3libs.utils.Struct):
                     " ignoring." % filename)
                 continue  # with next `filename`
 
+            filename = os.path.abspath(filename)
+            self.cfgfiles.append(filename)
+            # since file passed the `R_OK` access test, we know it
+            # *can* be read before actually doing it
+            files_successfully_read += 1
             try:
-                self.cfgfiles.append(os.path.abspath(filename))
                 self.merge_file(filename)
-                files_successfully_read += 1
+                files_successfully_parsed += 1
             except gc3libs.exceptions.ConfigurationError:
                 continue  # with next file
 
         if files_successfully_read == 0:
-            raise gc3libs.exceptions.NoConfigurationFile(
+            raise gc3libs.exceptions.NoAccessibleConfigurationFile(
                 "Could not read any configuration file; tried location '%s'."
+                % str.join("', '", locations))
+        if files_successfully_parsed == 0:
+            raise gc3libs.exceptions.NoValidConfigurationFile(
+                "Could not parse any configuration file;"
+                " tried location(s) '%s' but they all had errors."
+                " (Which see in previous log messages.)"
                 % str.join("', '", locations))
 
     def merge_file(self, filename):

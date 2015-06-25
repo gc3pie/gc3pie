@@ -19,7 +19,7 @@ in core Python, namely:
   this indicates a bug in the software.
 
 """
-# Copyright (C) 2009-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -309,11 +309,36 @@ class MaximumCapacityReached(LRMSSubmitError, RecoverableError):
     pass
 
 
-class NoConfigurationFile(FatalError):
+class ConfigurationFileError(FatalError):
+
+    """
+    Generic issue with the configuration file(s).
+    """
+    pass
+
+
+class NoConfigurationFile(ConfigurationFileError):
 
     """
     Raised when the configuration file cannot be read (e.g., does not
     exist or has wrong permissions), or cannot be parsed (e.g., is
+    malformed).
+    """
+    pass
+
+
+class NoAccessibleConfigurationFile(NoConfigurationFile):
+
+    """
+    Raised when the configuration file cannot be read (e.g., does not
+    exist or has wrong permissions).
+    """
+    pass
+
+
+class NoValidConfigurationFile(NoConfigurationFile):
+    """
+    Raised when the configuration file cannot be parsed (e.g., is
     malformed).
     """
     pass
