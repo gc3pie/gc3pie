@@ -262,6 +262,30 @@ def parse_invalid_conf(confstr, **extra_args):
     defaults, resources, auths = cfg._parse(StringIO(confstr))
 
 
+def test_auth_none():
+    """Test that `auth = none` is always available."""
+    tmpfile = _setup_config_file("""
+[resource/test]
+type = pbs
+auth = none
+frontend = localhost
+transport = local
+max_cores_per_job = 44
+max_memory_per_core = 55 GB
+max_walltime = 66 hours
+max_cores = 77
+architecture = x86_64
+    """)
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+        auth = cfg.make_auth('none')
+        assert_is_instance(auth(), gc3libs.authentication.NoneAuth)
+        # if this doesn't raise any error, we're good
+        resources = cfg.make_resources(ignore_errors=False)
+    finally:
+        os.remove(tmpfile)
+
+
 def test_key_renames():
     """Test that `ncores` is renamed to `max_cores` during parse"""
     tmpfile = _setup_config_file("""

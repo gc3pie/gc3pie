@@ -183,6 +183,9 @@ class Configuration(gc3libs.utils.Struct):
         self.resources = defaultdict(gc3libs.utils.Struct)
         self.auths = defaultdict(gc3libs.utils.Struct)
 
+        # ensure `auth = none` is always available
+        self.auths['none'] = gc3libs.utils.Struct(type='none')
+
         # use keyword arguments to set defaults
         self.auto_enable_auth = extra_args.pop('auto_enable_auth', True)
         self.update(extra_args)
