@@ -266,7 +266,7 @@ class Configuration(gc3libs.utils.Struct):
             corrupt or has wrong format.
         """
         gc3libs.log.debug(
-            "Configuration.load(): Reading file '%s' ...",
+            "Configuration.merge_file(): Reading file '%s' ...",
             filename)
         with open(filename, 'r') as stream:
             defaults, resources, auths = self._parse(stream, filename)
