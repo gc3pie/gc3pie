@@ -33,10 +33,8 @@ try:
     from nose.tools import assert_is_instance
 except ImportError:
     # Python 2.6 does not support assert_is_instance()
-    from nose.tools import assert_true
-
     def assert_is_instance(obj, cls):
-        assert_true(isinstance(obj, cls))
+        assert (isinstance(obj, cls))
 
 # GC3Pie imports
 from gc3libs import Run, Application
