@@ -81,7 +81,7 @@ class TaskCollection(Task):
 
     def iter_tasks(self):
         """
-        Returns an iterator that will traverse the whole tree of tasks.
+        Iterate over non-collection tasks enclosed in this collection.
         """
         return itertools.chain(
             # this task collection
