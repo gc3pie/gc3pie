@@ -102,26 +102,133 @@ override = False
 def test_invalid_confs():
     """Test reading invalid configuration files"""
     invalid_confs = [
-        # syntax error: no section header
-        "THIS IS NOT A CONFIG FILE",
-        # syntax error: malformed key=value
-        """
+        # #0
+        (
+            'no section header',
+            "THIS IS NOT A CONFIG FILE"
+        ),
+        # #1
+        (
+            'malformed key=value',
+            """
 [auth/ssh]
 type - ssh
-        """,
+            """
+        ),
+        # #2
+        (
+            'missing required key `type` in `auth` section',
+            """
+[auth/ssh]
+#type = ssh
+            """
+        ),
+        # #3
+        (
+            'missing required key `type` in `resource` section',
+            """
+[resource/test]
+#type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2GiB
+max_walltime = 8 hours
+max_cores = 10
+architecture = x86_64
+            """
+        ),
+        (
+            'missing required key `max_cores_per_job` in `resource` section',
+            """
+[resource/test]
+type = shellcmd
+frontend = localhost
+transport = local
+#max_cores_per_job = 2
+max_memory_per_core = 2GiB
+max_walltime = 8 hours
+max_cores = 10
+architecture = x86_64
+            """
+        ),
+        (
+            'missing required key `max_memory_per_core` in `resource` section',
+            """
+[resource/test]
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+#max_memory_per_core = 2GiB
+max_walltime = 8 hours
+max_cores = 10
+architecture = x86_64
+        """
+        ),
+        (
+            'missing required key `max_walltime` in `resource` section',
+            """
+[resource/test]
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2GiB
+#max_walltime = 8 hours
+max_cores = 10
+architecture = x86_64
+            """
+        ),
+        (
+            'missing required key `max_cores` in `resource` section',
+            """
+[resource/test]
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2GiB
+max_walltime = 8 hours
+#max_cores = 10
+architecture = x86_64
+        """
+        ),
+        (
+            'missing required key `architecture` in `resource` section',
+            """
+[resource/test]
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2GiB
+max_walltime = 8 hours
+max_cores = 10
+#architecture = x86_64
+            """
+        ),
     ]
-    for n, confstr in enumerate(invalid_confs):
+    for n, (title, conf) in enumerate(invalid_confs):
+        n += 1  # start with `#1` instead of `#0`
+
         import_invalid_conf.description = (
-            test_invalid_confs.__doc__ + (' #%d (load)' % n))
-        yield import_invalid_conf, confstr
+            test_invalid_confs.__doc__
+            + (' #%d: %s (load)' % (n, title))
+        )
+        yield import_invalid_conf, conf
 
         read_invalid_conf.description = (
-            test_invalid_confs.__doc__ + (' #%d (merge_file)' % n))
-        yield read_invalid_conf, confstr
+            test_invalid_confs.__doc__
+            + (' #%d: %s (merge_file)' % (n, title))
+        )
+        yield read_invalid_conf, conf
 
         parse_invalid_conf.description = (
-            test_invalid_confs.__doc__ + (' #%d (_parse)' % n))
-        yield parse_invalid_conf, confstr
+            test_invalid_confs.__doc__
+            + (' #%d: %s (_parse)' % (n, title))
+        )
+        yield parse_invalid_conf, conf
 
 
 @raises(gc3libs.exceptions.NoConfigurationFile)
@@ -188,25 +295,40 @@ class TestReadMultiple(object):
     def setUp(self):
         self.f1 = _setup_config_file("""
 [resource/localhost]
-type = shellcmd
-transport = local
-architecture = x86_64
 seq = 1
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2GiB
+max_walltime = 8 hours
+max_cores = 10
+architecture = x86_64
         """)
         self.f2 = _setup_config_file("""
 [resource/localhost]
-type = shellcmd
-transport = local
-architecture = x86_64
 seq = 1
 foo = 2
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2GiB
+max_walltime = 8 hours
+max_cores = 10
+architecture = x86_64
         """)
         self.f3 = _setup_config_file("""
 [resource/localhost]
-type = shellcmd
-transport = local
-architecture = x86_64
 seq = 3
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2GiB
+max_walltime = 8 hours
+max_cores = 10
+architecture = x86_64
         """)
 
     def tearDown(self):
@@ -286,6 +408,13 @@ def test_valid_architectures():
     ]
     config_template = gc3libs.template.Template("""
 [resource/test]
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2GiB
+max_walltime = 8 hours
+max_cores = 10
 architecture = ${arch}
 """)
     for arch, result in test_cases:
@@ -314,6 +443,13 @@ def test_invalid_architectures():
     ]
     config_template = gc3libs.template.Template("""
 [resource/test]
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2GiB
+max_walltime = 8 hours
+max_cores = 10
 architecture = ${arch}
 """)
     for arch in test_cases:
@@ -323,49 +459,6 @@ architecture = ${arch}
         yield (raises(
             gc3libs.exceptions.ConfigurationError)(_check_parse_arch),
             config_template.substitute(arch=arch), 'should not be used')
-
-
-def test_mandatory_configuration_options():
-    """Check that mandatory configuration options are really required"""
-    good_conf = """
-[auth/ssh]
-type = ssh
-username = gc3pie
-
-[resource/test]
-# omit one line below
-type = shellcmd
-max_cores_per_job = 2
-max_memory_per_core = 2
-max_walltime = 8
-max_cores = 2
-architecture = x86_64
-"""
-    lines = good_conf.split('\n')
-    header_ends_at = lines.index("# omit one line below")
-    for omit in range(1 + header_ends_at, len(lines)):
-        if lines[omit].strip() == '':
-            continue
-        bad_conf = str.join('\n', lines[:omit] + lines[omit + 1:])
-        # display meaningful test name with `nosetests -v`
-        _check_bad_conf.description = (
-            test_mandatory_configuration_options.__doc__ +
-            (" (omit '%s')" % lines[omit]))
-        yield _check_bad_conf, bad_conf
-
-
-@raises(TypeError, gc3libs.exceptions.ConfigurationError)
-def _check_bad_conf(conf):
-    tmp = _setup_config_file(conf)
-    cfg = gc3libs.config.Configuration(tmp)
-    # first check that errors are swallowed
-    resources = cfg.make_resources(ignore_errors=False)
-    assert_equal(len(resources), 0)
-    # next check that configuration error is raised
-    try:
-        resources = cfg.make_resources(ignore_errors=False)
-    finally:
-        os.remove(tmp)
 
 
 class TestPrologueEpilogueScripts(object):
