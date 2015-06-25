@@ -149,7 +149,20 @@ class LRMS(gc3libs.utils.Struct):
         @wraps(fn)
         def wrapper(self, *args, **kwargs):
             if self._auth_fn is not None:
-                self._auth_fn()
+                try:
+                    self._auth_fn()
+                except Exception as err:
+                    # log error and disable resource - if the "*Auth"
+                    # object cannot be instanciated, there is not much
+                    # we can do...
+                    gc3libs.log.warning(
+                        "Problems initializing authentication backend"
+                        " for resource '%s': %s.", self.name, err)
+                    gc3libs.log.error(
+                        "Resource '%s' will be disabled"
+                        " because of authentication problems.",
+                        self.name)
+                    self.enabled = False
             return fn(self, *args, **kwargs)
         return wrapper
 
