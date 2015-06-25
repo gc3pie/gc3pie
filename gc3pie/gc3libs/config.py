@@ -663,17 +663,13 @@ class Configuration(gc3libs.utils.Struct):
                     ("%s=%r" % (k, v)) for k, v in sorted(resdict.iteritems())
                 ]))
 
-        # sanity check
-        if 'type' not in resdict:
-            raise gc3libs.exceptions.ConfigurationError(
-                "Missing required parameter 'type' in resource definition %s."
-                % resdict)
-
-        # XXX: should be done by the backend constructor!?
-        if 'architecture' not in resdict:
-            raise gc3libs.exceptions.ConfigurationError(
-                "No architecture specified for resource '%s'"
-                % resdict['name'])
+        # minimal sanity check
+        for key in self._resource_required_keys:
+            if key not in resdict:
+                raise gc3libs.exceptions.ConfigurationError(
+                    "Missing required parameter '{key}'"
+                    " in definition of resource '{name}'."
+                    .format(key=key, name=resdict['name']))
 
         if 'auth' in resdict:
             resdict['auth'] = self.make_auth(resdict['auth'])
