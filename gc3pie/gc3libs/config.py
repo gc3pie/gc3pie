@@ -330,7 +330,22 @@ class Configuration(gc3libs.utils.Struct):
                     "Config._parse():"
                     " Read configuration stanza for auth '%s'." %
                     name)
+
+                # minimal sanity check
                 config_items = dict(parser.items(sectname))
+                for key in self._auth_required_keys:
+                    if key not in config_items:
+                        raise gc3libs.exceptions.ConfigurationError(
+                            "Missing mandatory configuration key `{key}`"
+                            " in section [{sectname}]"
+                            " of the configuration file `{filename}`."
+                            " This configuration file will be ignored."
+                            .format(
+                                key=key,
+                                sectname=sectname,
+                                filename=filename
+                            ))
+
                 auths[name].update(config_items)
                 auths[name]['name'] = name
 
@@ -358,6 +373,20 @@ class Configuration(gc3libs.utils.Struct):
                         " file '%s': %s"
                         % (name, filename, str(err)))
 
+                # minimal sanity check
+                for key in self._resource_required_keys:
+                    if key not in config_items:
+                        raise gc3libs.exceptions.ConfigurationError(
+                            "Missing mandatory configuration key `{key}`"
+                            " in section [{sectname}]"
+                            " of the configuration file `{filename}`."
+                            " This configuration file will be ignored."
+                            .format(
+                                key=key,
+                                sectname=sectname,
+                                filename=filename
+                            ))
+
                 resources[name].update(config_items)
                 resources[name]['name'] = name
                 if __debug__:
@@ -377,6 +406,23 @@ class Configuration(gc3libs.utils.Struct):
                     sectname)
 
         return (defaults, resources, auths)
+
+    # config keys common to every kind of `[auth/*]` section;
+    # if any of these is missing, the section is clearly invalid
+    _auth_required_keys = (
+        'type',
+    )
+
+    # config keys common to every kind of `[resource/*]` section;
+    # if any of these is missing, the section is clearly invalid
+    _resource_required_keys = (
+        'architecture',
+        'max_cores',
+        'max_cores_per_job',
+        'max_memory_per_core',
+        'max_walltime',
+        'type',
+    )
 
     _renamed_keys = {
         # old key name           new key name
