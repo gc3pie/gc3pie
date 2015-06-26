@@ -659,7 +659,8 @@ ReturnCode=%x"""
                     % (app, app.execution.lrms_jobid))
             try:
                 outcome = self._parse_wrapper_output(wrapper_file)
-                app.execution.returncode = int(outcome.ReturnCode)
+                app.execution.returncode = \
+                    Run.shellexit_to_returncode(int(outcome.ReturnCode))
                 self._delete_job_resource_file(pid)
             finally:
                 wrapper_file.close()
