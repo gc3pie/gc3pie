@@ -247,8 +247,6 @@ section (by its ``auth`` key).
 Resources currently come in several flavours, distinguished by the
 value of the ``type`` key:
 
-  * If ``type`` is ``arc1``, then the resource is accessed using the ARC grid middleware (version 1.1.x/1.0.x);
-  * If ``type`` is ``arc0``, then the resource is accessed using the ARC grid middleware (version 0.8.x);
   * If ``type`` is ``sge``, then the resource is a `Grid Engine`_ batch system, to be accessed by an SSH connection to its front-end node.
   * If ``type`` is ``pbs``, then the resource is a `Torque/PBS`_ batch system, to be accessed by an SSH connection to its front-end node.
   * If ``type`` is ``lsf``, then the resource is a `LSF`_ batch system, to be accessed by an SSH connection to its front-end node.
@@ -263,9 +261,7 @@ value of the ``type`` key:
 All `[resource/{name}]`:file: sections (except those of ``shellcmd``
 type) *must* reference a valid ``auth/***`` section. Resources of
 ``sge``, ``pbs``, ``lsf`` and ``slurm`` type can only reference
-:command:``ssh`` type sections.; resources of type ``arc0`` or
-``arc1`` can only reference ``[auth/***]`` sections whose type is
-``voms-proxy`` or ``grid-proxy``.
+:command:``ssh`` type sections.
 
 Some configuration keys are commmon to all resource types:
 
@@ -337,47 +333,6 @@ Some configuration keys are commmon to all resource types:
     `rosetta`, `rosetta_docking`, `geotop`. Its value will be inserted
     after *any* other ``epilogue``, ``<application_name>_epilogue``,
     ``epilogue_content`` option, if present.
-
-``arc0`` resources
-~~~~~~~~~~~~~~~~~~
-
-The ``arc_ldap`` key should be set to the LDAP URL of an ARC GIIS or
-GRIS.  If, in addition, the ``frontend`` key is also defined, then
-only queues belonging to the specified frontend will be considered for
-brokering.
-
-When a job has just been submitted, the ARC information system does
-not immediately report about it: the job will appear at the next cache
-update.  This creates a time window during which no information is
-reported about the job by ARC, as if it never existed.  In order not
-to mistake this for a "job lost" error, GC3Libs allow a "grace time":
-job information lookups are allowed to fail for a certain time span
-after submission. The duration of this time span is set with the optional
-``lost_job_timeout`` parameter, whose default is 4 times the ARC default
-cache time; this parameter should not be lower than twice the
-information system update frequency.
-
-  * ``lost_job_timeout``: Time (in seconds) a failure in job lookup in the information system will *not* be considered critical
-
-
-``arc1`` resources
-~~~~~~~~~~~~~~~~~~
-
-The ``arc_ldap`` key should be defined to a valid ARC1 information system URL.
-
-When a job has just been submitted, the ARC information system does
-not immediately report about it: the job will appear at the next cache
-update.  This creates a time window during which no information is
-reported about the job by ARC, as if it never existed.  In order not
-to mistake this for a "job lost" error, GC3Libs allow a "grace time":
-job information lookups are allowed to fail for a certain time span
-after submission. The duration of this time span is set with the optional
-``lost_job_timeout`` parameter, whose default is 4 times the ARC default
-cache time; this parameter should not be lower than twice the
-information system update frequency.
-
-  * ``lost_job_timeout``: Time (in seconds) a failure in job lookup in the information system will *not* be considered critical
-
 
 ``sge`` resources
 ~~~~~~~~~~~~~~~~~
@@ -811,41 +766,7 @@ writing means use the default region on Amazon.
 Example ``resource`` sections
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-*Example 1.* This configuration stanza defines a resource ``smscg``
-representing the whole SMSCG_ infrastructure, accessed through the ARC
-(version 0.8.x) middleware::
-
-    [resource/smscg]
-    # A whole ARC-based Grid
-    type = arc0
-    auth = <voms_auth_name>
-    arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
-    # These values are correct as of 2011-02-28; please
-    # ask on the SMSCG mailing list if unsure.
-    max_cores_per_job = 256
-    max_memory_per_core = 3
-    max_walltime = 9999
-    ncores = 1200
-    architecture = x86_64, i686
-
-*Example 2.* This configuration stanza shows how to access a single
-cluster through the ARC middleware (version 1.x) using the name
-``idgc3grid01`` (which is also the internet host name of the cluster
-front-end)::
-
-    [resource/idgc3grid01]
-    # A single cluster, accessed through the ARC middleware
-    type = arc
-    auth = <auth_name> # pick a ``voms`` type auth
-    frontend = idgc3grid01.uzh.ch
-    name = gc3
-    arc_ldap = ldap://idgc3grid01.uzh.ch:2135/mds-vo-name=local,o=grid
-    max_cores_per_job = 32
-    max_memory_per_core = 2
-    max_walltime = 12
-    ncores = 80
-
-*Example 3.* This configuration stanza defines a resource to submit
+*Example 1.* This configuration stanza defines a resource to submit
 jobs to the `Grid Engine`_ cluster whose front-end host is
 ``ocikbpra.uzh.ch``::
 
@@ -861,10 +782,9 @@ jobs to the `Grid Engine`_ cluster whose front-end host is
     max_walltime = 2
     ncores = 80
 
-*Example 4.* This configuration stanza defines a resource to submit
+*Example 2.* This configuration stanza defines a resource to submit
 jobs on virtual machines that will be automatically started by GC3Pie
 on `Hobbes`_, the private OpenStack cloud of the University of Zurich::
-
 
     [resource/hobbes]
     enabled=yes

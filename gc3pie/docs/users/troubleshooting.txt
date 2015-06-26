@@ -75,32 +75,10 @@ Common errors using GC3Pie
 This section section lists Python errors that may happen when using
 GC3Pie; each section is named after the error name appearing in the
 *last line* of the Python traceback.  (See section `What is a Python
-traceback?`_ above.)  
+traceback?`_ above.)
 
 If you get an error that is not listed here, please get in touch via
 the `GC3Pie mailing list`_.
-
-
-AttributeError: args
-~~~~~~~~~~~~~~~~~~~~
-
-This error is signaled by a traceback like the following::
-
-    Traceback (most recent call last):
-      ...
-      File "/opt/nordugrid/lib/python2.4/site-packages/arclib.py",
- line 1146, in <lambda>
-        __getattr__ = lambda self, name: _swig_getattr(self,
- CertificateError, name)
-      File "/opt/nordugrid/lib/python2.4/site-packages/arclib.py",
- line 54, in _swig_getattr
-        raise AttributeError(name)
-    AttributeError: args
-
-This is due to a version mismatch between the Python interpreter and
-the NorduGrid ARClib; it's really the same issue as in `ImportError:
-.../site-packages/_arclib.so: undefined symbol: Py_InitModule4`_,
-which see for a discussion and remedies.
 
 
 AttributeError: `module` object has no attribute `StringIO`
@@ -119,7 +97,7 @@ is due to a conflicts of the `pyCLI library <pycli>`_ (prior to version 2.0.3) a
 `Debian/Ubuntu package *python-stats* <python-stats>`_
 
 .. _pycli: http://pypi.python.org/pypi/pyCLI
-.. _python-stats: http://packages.debian.org/squeeze/python-stats 
+.. _python-stats: http://packages.debian.org/squeeze/python-stats
 
 There are three ways to get rid of the error:
 
@@ -142,62 +120,6 @@ It usually means that you didn't run ``source ../bin/activate;
 
 Please re-do the steps in the `GC3Pie Upgrade instructions
 <upgrade>`:ref: to fix the error.
-
-
-FTPControlError: Server responded: File unavailable.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Sample error traceback::
-
-    Traceback (most recent call last):
-      ...
-      File "/opt/nordugrid/lib/python2.5/site-packages/arclib.py", line 1405, in Download
-        def Download(self, *args): return _arclib.FTPControl_Download(self, *args)
-    arclib.FTPControlError: Server responded: File unavailable.
-
-This error happens when trying to view a non-existent file with the
-`gtail`:command: command; see `Issue 111`_ for details.
-
-.. _`Issue 111`: http://code.google.com/p/gc3pie/issues/detail?id=111
-
-Once a job goes into ``RUNNING`` state, its standard output log is not
-made immediately available to the batch system.  The only solution is
-to try again later; if the error persists, there might be some problem
-with the application that is not creating its output file as expected.
-This would needs further investigation and you are encouraged to
-report to the `GC3Pie mailing list`_ about it.
-
-
-ImportError: ``.../site-packages/_arclib.so``: undefined symbol: ``Py_InitModule4``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This error::
-
-    Traceback (most recent call last):
-      ...
-      File ".../site-packages/arclib.py", line 17, in swig_import_helper
-        import _arclib
-    ImportError: .../site-packages/_arclib.so: undefined symbol: Py_InitModule4
-
-Is due to a mismatch of the Python version and the NorduGrid ARClib
-library: it occurs when the `arclib`:file: library has been compiled
-for a different Python version than the one you're using.
-
-NorduGrid_ compiles their ARC/Python library with the default Python
-that comes with the Linux distribution; thus, if you are using a
-Python version different from the default, there's a good chance that
-the ARC library will not work with that Python.
-
-A rule of thumb to determine if you are using the default Python is to
-run the command ``which python``.  If this outputs anything different
-from `/usr/bin/python`:file: or `/bin/python`:file:, then you are
-using a custom Python version.  You might want to ask your systems
-administrator to install the version of `arclib`:file: appropriate for
-your Python, or to revert to the default Python.
-
-Failing that, please ask on the `GC3Pie mailing list`_: each case is
-subtly different and it's impossible to give universally-valid
-instructions.
 
 
 ImportError: No module named ``pstats``
@@ -232,23 +154,6 @@ can have two different causes:
 
 1. You didn't create a configuration file, or you did not list any resource in it.
 2. Some other error prevented the resources from being initialized, or the configuration file from being properly read.
-
-
-Terminate called after throwing an instance of ``LdapQueryError``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This error has been reported after some days of running the
-`gcodeml`:command: script with the ARC backend::
-
-    terminate called after throwing an instance of 'LdapQueryError'
-     what():  Thread creation in ParallelLdapQueries failed
-    Aborted
-
-We believe this is a `bug in the ARC libraries`__, but not much
-information is known at the moment.  So, if you see an instance of
-this, please get in touch via the `GC3Pie mailing list`_.
-
-.. __: http://bugzilla.nordugrid.org/show_bug.cgi?id=2830
 
 
 ValueError: I/O operation on closed file
