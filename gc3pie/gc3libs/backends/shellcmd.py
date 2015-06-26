@@ -377,7 +377,7 @@ ReturnCode=%x"""
         # as a separate step
         if not self.transport.exists(self.resource_dir):
             try:
-                log.info('Creating resource file directory: %s ...',
+                log.info("Creating resource file directory: '%s' ...",
                          self.resource_dir)
                 self.transport.makedirs(self.resource_dir)
             except Exception as ex:
@@ -405,7 +405,7 @@ ReturnCode=%x"""
             # the wrapper script will execute `exec time_cmd` in order
             # to replace the current shell, but `exec` will never run
             # the builtin.
-            time_cmd = "time"
+            time_cmd = 'time'
             exit_code, stdout, stderr = self.transport.execute_command(
                 'command %s --version 2>&1 | grep GNU' % time_cmd)
             if exit_code == 0:
@@ -423,7 +423,7 @@ ReturnCode=%x"""
         if not self.time_cmd:
             raise gc3libs.exceptions.ConfigurationError(
                 "Unable to find GNU `time` installed on your system."
-                " Please, install GNU time and set `time_cmd`"
+                " Please, install GNU time and set the `time_cmd`"
                 " configuration option in gc3pie.conf.")
 
         if not self.override:
@@ -452,10 +452,10 @@ ReturnCode=%x"""
 
         if max_cores != self.max_cores:
             log.info(
-                "Mismatch of value `max_cores` on resource '%s': configuration"
-                " file says `max_cores=%d` while it's actually `%d`."
-                " Updating current value.", self.name,
-                self.max_cores, max_cores)
+                "Mismatch of value `max_cores` on resource '%s':"
+                " configuration file says `max_cores=%d` while it's actually `%d`."
+                " Updating current value.",
+                self.name, self.max_cores, max_cores)
             self.max_cores = max_cores
 
         if self.total_memory != self.max_memory_per_core:
@@ -500,14 +500,13 @@ ReturnCode=%x"""
         log.debug("Reading resource file for pid %s", pid)
         jobinfo = None
         fname = posixpath.join(self.resource_dir, str(pid))
-        fp = self.transport.open(fname, 'rb')
-        try:
-            jobinfo = pickle.load(fp)
-        except Exception as ex:
-            log.error("Unable to read remote resource file %s: %s",
-                      fname, ex)
-            raise
-        fp.close()
+        with self.transport.open(fname, 'rb') as fp:
+            try:
+                jobinfo = pickle.load(fp)
+            except Exception as ex:
+                log.error("Unable to read remote resource file %s: %s",
+                          fname, ex)
+                raise
         return jobinfo
 
     def _update_job_resource_file(self, pid, resources):
@@ -517,10 +516,9 @@ ReturnCode=%x"""
         self.transport.connect()
         # XXX: We should check for exceptions!
         log.debug("Updating resource file for pid %s", pid)
-        fp = self.transport.open(
-            posixpath.join(self.resource_dir, str(pid)), 'wb')
-        pickle.dump(resources, fp, -1)
-        fp.close()
+        with self.transport.open(
+                posixpath.join(self.resource_dir, str(pid)), 'wb') as fp:
+            pickle.dump(resources, fp, -1)
 
     def _delete_job_resource_file(self, pid):
         """
@@ -531,7 +529,7 @@ ReturnCode=%x"""
         pidfile = posixpath.join(self.resource_dir, str(pid))
         try:
             self.transport.remove(pidfile)
-        except Exception, err:
+        except Exception as err:
             log.debug(
                 "Ignored error deleting file `%s`: %s: %s",
                 pidfile, err.__class__.__name__, err)
@@ -559,10 +557,10 @@ ReturnCode=%x"""
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
-        # if we have been doing our own book-keeping well, then
-        # there's no resource status to update
         self.updated = False
-        if not hasattr(self, 'running_kernel'):
+        try:
+            self.running_kernel
+        except AttributeError:
             self._gather_machine_specs()
 
         self.job_infos = self._get_persisted_resource_state()
@@ -623,7 +621,8 @@ ReturnCode=%x"""
         exit_code, stdout, stderr = self.transport.execute_command(
             "ps ax | grep -E '^ *%d '" % pid)
         if exit_code == 0:
-            log.debug("Process with pid %s found. Checking its status", pid)
+            log.debug("Process with PID %s found."
+                      " Checking its running status", pid)
             # Process exists. Check the status
             status = stdout.split()[2]
             if status[0] == 'T':
@@ -635,9 +634,8 @@ ReturnCode=%x"""
                 app.execution.state = Run.State.RUNNING
         else:
             log.debug(
-                "Process with PID %d not found. Checking wrapper file", pid)
-            # pid does not exists in process table. Check wrapper file
-            # contents
+                "Process with PID %d not found."
+                " Checking wrapper file ...", pid)
             app.execution.state = Run.State.TERMINATING
             if pid in self.job_infos:
                 self.job_infos[pid]['terminated'] = True
@@ -661,7 +659,7 @@ ReturnCode=%x"""
                 outcome = self._parse_wrapper_output(wrapper_file)
                 app.execution.returncode = int(outcome.ReturnCode)
                 self._delete_job_resource_file(pid)
-            except:
+            finally:
                 wrapper_file.close()
 
         self._get_persisted_resource_state()
