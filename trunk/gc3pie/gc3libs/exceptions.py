@@ -442,9 +442,6 @@ class ApplicationDescriptionError(FatalError):
     Raised when the dumped description on a given Application produces
     something that the LRMS backend cannot process.
 
-    As an example, for arc backends, this error is raised when the
-    parsing of the Application's XRSL fails
-
     """
     pass
 

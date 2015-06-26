@@ -773,6 +773,35 @@ architecture = x86_64
         os.remove(tmpfile)
 
 
+def test_removed_arc0_resource_type():
+    """Test parsing a configuration file with the removed `arc0` resource type."""
+    _test_removed_resource_type('arc0')
+
+def test_removed_arc1_resource_type():
+    """Test parsing a configuration file with the removed `arc1` resource type."""
+    _test_removed_resource_type('arc1')
+
+def _test_removed_resource_type(kind):
+    name = ('test_' + kind)
+    tmpfile = _setup_config_file("""
+[resource/{name}]
+type = {kind}
+auth = none
+transport = local
+max_cores_per_job = 11
+max_memory_per_core = 22 GB
+max_walltime = 33 hours
+max_cores = 44
+architecture = x86_64
+    """.format(name=name, kind=kind))
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+        resources = cfg.make_resources(ignore_errors=False)
+        assert name not in resources
+    finally:
+        os.remove(tmpfile)
+
+
 def test_additional_backend():
     """Test instanciating a non-std backend."""
     tmpfile = _setup_config_file("""

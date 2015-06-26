@@ -75,15 +75,12 @@ class Default(object):
         os.environ.get('GC3PIE_CONF', os.path.join(RCDIR, "gc3pie.conf"))
     ]
     JOBS_DIR = os.path.join(RCDIR, "jobs")
+
+    # the ARC backends have been removed, but keep their names around
+    # so we can issue a warning if a user still has these resources in
+    # the configuration file
     ARC0_LRMS = 'arc0'
     ARC1_LRMS = 'arc1'
-    ARC2_LRMS = 'arc2'
-    # : only update ARC resources status every this seconds
-    ARC_CACHE_TIME = 30
-    # : consider a submitted job lost if it does not show up in the
-    # information system after this duration
-    ARC_LOST_JOB_TIMEOUT = 4 * ARC_CACHE_TIME
-    ARC_JOBLIST_LOCATION = os.path.expandvars("$HOME/.arc/jobs.xml")
 
     SGE_LRMS = 'sge'
     PBS_LRMS = 'pbs'
@@ -104,19 +101,13 @@ class Default(object):
     # before the thresold, it will be marked as to be renewed.
     PROXY_VALIDITY_THRESHOLD = 600
 
-    ARC1_LOGFILE = os.path.join(RCDIR, "arc1.log")
-    ARC_LOGFILE = os.path.join(RCDIR, "arc.log")
-    # max wait (seconds) for a service to respond; hopefully this impacts also
-    # LDAP searches
-    ARC1_DEFAULT_SERVICE_TIMEOUT = 3
-
     PEEK_FILE_SIZE = 120  # expressed in bytes
-
-    CERTIFICATE_AUTHORITIES_DIR = "/etc/grid-security/certificates"
-    VOMS_DIR = "/etc/grid-security/vomsdir"
 
     # Openstack default VM Operating System overhead
     VM_OS_OVERHEAD = 512 * MiB
+
+    # time to cache lshosts/bjobs information for
+    LSF_CACHE_TIME = 30
 
 import gc3libs.exceptions
 from gc3libs.persistence import Persistable
@@ -784,9 +775,7 @@ class Application(Task):
 
     `tags`
       list of tag names (string) that must be present on a
-      resource in order to be eligible for submission; in the ARC
-      backend, tags are interpreted as run-time environments (RTE) to
-      request.
+      resource in order to be eligible for submission.
 
     Any other keyword arguments will be set as instance attributes,
     but otherwise ignored by the `Application` constructor.
@@ -1196,134 +1185,6 @@ class Application(Task):
     ##
     # backend interface methods
     ##
-
-    def xrsl(self, resource):
-        """
-        Return a string containing an xRSL sequence, suitable for
-        submitting an instance of this application through ARC's
-        ``ngsub`` command.
-
-        The default implementation produces XRSL content based on
-        the construction parameters; you should override this method
-        to produce XRSL tailored to your application.
-
-        .. warning::
-
-          WARNING: ARClib SWIG bindings cannot resolve the overloaded
-          constructor if the xRSL string argument is a Python 'unicode'
-          object; if you overload this method, force the result to be
-          a 'str'!
-        """
-        # build `xrsl` incrementally; concatenate all parts into a
-        # single string at the end
-        xrsl = [
-            '&',
-            '(executable="/bin/sh")',
-            # XXX: should check if conflicts with any input/output files
-            '(gmlog=".gc3pie_arc")',
-        ]
-        xrsl.append('(arguments="-c" "%s")' % str.join(' ', self.arguments))
-        # preserve execute permission on all input files
-        executables = []
-        if 'executables' in self:
-            # there are already references to files that should be
-            # executables
-            # e.g. a reference to a remote file that cannot be checked locally
-            executables = self.executables
-        for l, r in self.inputs.iteritems():
-            if os.access(l.path, os.X_OK):
-                executables.append(r)
-        if len(executables) > 0:
-            xrsl.append('(executables=%s)'
-                        % str.join(' ', [('"%s"' % x) for x in executables]))
-        if self.stdin:
-            xrsl.append('(stdin="%s")' % self.stdin)
-        # XXX: this can go away when we have the ternary operator
-        # `x = a if y else b` (Python 2.5)
-        if self.join:
-            xrsl.append('(join="yes")')
-        else:
-            xrsl.append('(join="no")')
-        if self.stdout:
-            xrsl.append('(stdout="%s")' % self.stdout)
-        else:
-            xrsl.append('(stdout="/dev/null")')
-        if self.stderr and not self.join:
-            xrsl.append('(stderr="%s")' % self.stderr)
-        if len(self.inputs) > 0:
-            xrsl.append('(inputFiles=%s)'
-                        % str.join(' ', [('("%s" "%s")' % (r, l))
-                                         for (l, r) in self.inputs.items()]))
-        if len(self.outputs) > 0:
-            # XXX: this can go away when we have the ternary operator
-            # `x = a if y else b` (Python 2.5)
-            if self.output_base_url is None:
-                def output_url(l, r):
-                    if l.scheme == 'file':
-                        return ''
-                    else:
-                        return l
-            else:
-                def output_url(l, r):
-                    if l.scheme == 'file':
-                        return os.path.join(self.output_base_url,
-                                            gc3libs.utils.ifelse(l, l, r))
-                    else:
-                        return l
-
-            def relpath(r):
-                if r == gc3libs.ANY_OUTPUT:
-                    return '/'
-                else:
-                    return r
-            # filter out stdout/stderr (they are automatically
-            # retrieved) and then check again
-            outputs_ = [('("%s" "%s")' % (relpath(r), output_url(l, r)))
-                        for (r, l) in [(remotename, localname)
-                                       for remotename, localname
-                                       in self.outputs.iteritems()
-                                       if (remotename != self.stdout
-                                           and remotename != self.stderr)]]
-            if len(outputs_) > 0:
-                xrsl.append('(outputFiles=%s)' % str.join(' ', outputs_))
-        if len(self.tags) > 0:
-            xrsl += [('(runTimeEnvironment="%s")' % rte) for rte in self.tags]
-        if len(self.environment) > 0:
-            xrsl.append(
-                '(environment=%s)' %
-                str.join(
-                    ' ', [
-                        ('("%s" "%s")' %
-                         kv) for kv in self.environment.iteritems()]))
-        if self.requested_walltime:
-            # xRSL assumes minutes by default
-            xrsl.append('(wallTime="%d")' %
-                        self.requested_walltime.amount(minutes))
-        if self.requested_memory:
-            # ARC's "memory" is memory per "rank" (= core in MPI-speak)
-            xrsl.append(
-                '(memory="%d")' %
-                (self.requested_memory.amount(MB) / self.requested_cores))
-        if self.requested_cores:
-            xrsl.append('(count="%d")' % self.requested_cores)
-        # XXX: the xRSL specification states that the "architecture" value
-        # is matched against the value reported as `uname -a` on the cluster,
-        # but different Linux distributions use "i386", "i586" and "i686"
-        # as `uname -a` values, so there is no single value that can
-        # match any x86 arch...
-        if self.requested_architecture is not None:
-            xrsl.append('(architecture="%s")' % self.requested_architecture)
-        if 'jobname' in self:
-            xrsl.append('(jobname="%s")' % self.jobname)
-
-        # XXX: experimental
-        # this should be harmless if cache registration would not work
-        xrsl.append('(cache="yes")')
-
-        # WARNING: ARClib SWIG bindings cannot resolve the overloaded
-        # constructor if the argument is a Python "unicode" object;
-        # force it to be a "str"!
-        return str.join(' ', xrsl)
 
     def cmdline(self, resource):
         """

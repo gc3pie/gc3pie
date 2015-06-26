@@ -562,11 +562,14 @@ class Configuration(gc3libs.utils.Struct):
         # use `lambda` for delayed evaluation
         return (lambda **extra_args: self.auth_factory.get(name, **extra_args))
 
+    _removed_resource_types = (
+        gc3libs.Default.ARC0_LRMS,
+        gc3libs.Default.ARC1_LRMS,
+    )
+
     # map resource type name (e.g., 'sge' or 'openstack') to module
     # name + class/function within that module
     TYPE_CONSTRUCTOR_MAP = {
-        gc3libs.Default.ARC0_LRMS: ("gc3libs.backends.arc0", "ArcLrms"),
-        gc3libs.Default.ARC1_LRMS: ("gc3libs.backends.arc1", "Arc1Lrms"),
         gc3libs.Default.EC2_LRMS:  ("gc3libs.backends.ec2",  "EC2Lrms"),
         gc3libs.Default.LSF_LRMS:  ("gc3libs.backends.lsf",  "LsfLrms"),
         gc3libs.Default.PBS_LRMS:  ("gc3libs.backends.pbs",  "PbsLrms"),
@@ -667,13 +670,6 @@ class Configuration(gc3libs.utils.Struct):
                 resdict['name'])
             return None
 
-        if __debug__:
-            gc3libs.log.debug(
-                "Creating resource '%s' defined by: %s.",
-                resdict['name'], str.join(', ', [
-                    ("%s=%r" % (k, v)) for k, v in sorted(resdict.iteritems())
-                ]))
-
         # minimal sanity check
         for key in self._resource_required_keys:
             if key not in resdict:
@@ -681,6 +677,22 @@ class Configuration(gc3libs.utils.Struct):
                     "Missing required parameter '{key}'"
                     " in definition of resource '{name}'."
                     .format(key=key, name=resdict['name']))
+
+        if resdict['type'] in self._removed_resource_types:
+            resdict['enabled'] = False
+            gc3libs.log.warning(
+                "Dropping computational resource '{name}':"
+                " resource type '{type}' is no longer supported."
+                " Please update your configuration file."
+                .format(**resdict))
+            return None
+
+        if __debug__:
+            gc3libs.log.debug(
+                "Creating resource '%s' defined by: %s.",
+                resdict['name'], str.join(', ', [
+                    ("%s=%r" % (k, v)) for k, v in sorted(resdict.iteritems())
+                ]))
 
         if 'auth' in resdict:
             resdict['auth'] = self.make_auth(resdict['auth'])

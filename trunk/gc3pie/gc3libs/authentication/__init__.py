@@ -2,7 +2,7 @@
 """
 Authentication support for the GC3Libs.
 """
-# Copyright (C) 2009-2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -172,7 +172,6 @@ class NoneAuth(object):
 Auth.register('none', NoneAuth)
 # register additional auth types
 # FIXME: it would be nice to have some kind of auto-discovery instead
-import gc3libs.authentication.grid
 import gc3libs.authentication.ssh
 import gc3libs.authentication.ec2
 import gc3libs.authentication.openstack

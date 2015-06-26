@@ -3,7 +3,7 @@
 """
 Job control on SGE clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2009-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -700,7 +700,7 @@ class LsfLrms(batch.BatchSystem):
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._bkill, jobid))
 
-    @gc3libs.utils.cache_for(gc3libs.Default.ARC_CACHE_TIME)
+    @gc3libs.utils.cache_for(gc3libs.Default.LSF_CACHE_TIME)
     @LRMS.authenticated
     def get_resource_status(self):
         """
