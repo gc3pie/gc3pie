@@ -639,8 +639,10 @@ ReturnCode=%x"""
             app.execution.state = Run.State.TERMINATING
             if pid in self.job_infos:
                 self.job_infos[pid]['terminated'] = True
-            if app.requested_memory:
-                self.available_memory += app.requested_memory
+                assert (app.requested_memory
+                        == self.job_infos[pid]['requested_memory'])
+                if app.requested_memory:
+                    self.available_memory += app.requested_memory
             wrapper_filename = posixpath.join(
                 app.execution.lrms_execdir,
                 ShellcmdLrms.WRAPPER_DIR,
