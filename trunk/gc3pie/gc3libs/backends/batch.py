@@ -519,7 +519,13 @@ class BatchSystem(LRMS):
             jobstatus = parse(stdout)
             job.update(jobstatus)
             if 'exitcode' in jobstatus:
-                job.returncode = int(jobstatus['exitcode'])
+                # XXX: we're assuming the batch system executes the
+                # job through a shell, and collects the shell exit
+                # code -- IOW, a job is never exec()'d directly from
+                # the batch system daemon.  I'm not sure this is
+                # actually true in all cases.
+                job.returncode = Run.shellexit_to_returncode(
+                        int(jobstatus['exitcode']))
                 job.state = Run.State.TERMINATING
             return job.state
         else:
