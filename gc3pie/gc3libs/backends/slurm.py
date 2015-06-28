@@ -3,7 +3,7 @@
 """
 Job control on SLURM clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2012-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -350,9 +350,7 @@ class SlurmLrms(batch.BatchSystem):
                     acct['exitcode'] = int(Run.Signals.RemoteError)
                 else:
                     # compute POSIX exit status
-                    exitcode, signal = exit.split(':')
-                    acct['exitcode'] = ((int(exitcode) << 8)
-                                        + (int(signal) & 0x7f))
+                    acct['exitcode'], acct['signal'] = exit.split(':')
                 # XXX: the master job record seems to report the
                 # *requested* slots, whereas the step records report
                 # the actual usage.  In our case these should be the
