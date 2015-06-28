@@ -108,6 +108,9 @@ class Auth(object):
                 params = self._config[auth_name].copy()
                 params.update(kwargs)
                 a = self._ctors[auth_name](**dict(params))
+            except KeyError as err:
+                a = gc3libs.exceptions.ConfigurationError(
+                    "Unknown auth section %s" % (str(err),))
             except (AssertionError, AttributeError) as ex:
                 a = gc3libs.exceptions.ConfigurationError(
                     "Missing required configuration parameters"
