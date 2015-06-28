@@ -519,12 +519,16 @@ class BatchSystem(LRMS):
             jobstatus = parse(stdout)
             job.update(jobstatus)
             if 'exitcode' in jobstatus:
-                # XXX: we're assuming the batch system executes the
-                # job through a shell, and collects the shell exit
-                # code -- IOW, a job is never exec()'d directly from
-                # the batch system daemon.  I'm not sure this is
-                # actually true in all cases.
-                job.returncode = Run.shellexit_to_returncode(
+                if 'signal' in jobstatus:
+                    job.returncode = (jobstatus['signal'],
+                                      jobstatus['exitcode'])
+                else:
+                    # XXX: we're assuming the batch system executes the
+                    # job through a shell, and collects the shell exit
+                    # code -- IOW, a job is never exec()'d directly from
+                    # the batch system daemon.  I'm not sure this is
+                    # actually true in all cases.
+                    job.returncode = Run.shellexit_to_returncode(
                         int(jobstatus['exitcode']))
                 job.state = Run.State.TERMINATING
             return job.state
@@ -562,9 +566,8 @@ class BatchSystem(LRMS):
                         " setting GC3Pie job state to `UNKNOWN`")
 
                 if 'exit_status' in jobstatus:
-                    job.exitcode = int(jobstatus['exit_status'])
-                    # XXX: we should set the `signal` part accordingly
-                    job.signal = 0
+                    job.returncode = Run.shellexit_to_returncode(
+                        int(jobstatus['exit_status']))
 
                 # SLURM's `squeue` command exits with code 0 if the
                 # job ID exists in the database (i.e., a job with that

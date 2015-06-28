@@ -491,7 +491,6 @@ class LsfLrms(batch.BatchSystem):
                 # EXIT = job exited with exit code != 0
                 match = LsfLrms._unsuccessful_exit_re.search(stdout)
                 if match:
-                    log.debug("LSF says: '%s'", match.group(0))
                     jobstatus.exit_status = int(match.group('exit_status'))
 
         if 'state' not in jobstatus:
