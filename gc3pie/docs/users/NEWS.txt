@@ -78,7 +78,7 @@ New features
 * `gc3libs.Configuration` will now raise different exceptions
   depending on whether no files could be read
   (`NoAccessibleConfigurationFile`:class:) or could not be parsed
-  (`NoValidConfigurationFile`:class:)
+  (`NoValidConfigurationFile`:class:).
 
 
 Important bug fixes
@@ -91,6 +91,10 @@ Important bug fixes
 * LSF backend updated to work with *both* bjobs *and* bacct for
   accounting, or to parse information provided in the final output
   file as a last resort.
+
+* All backends should now set a Task's `returncode` and `exitcode`
+  values according to the documented meaning.  Thanks
+  to Y. Yakimovitch for reporting the issue.
 
 
 GC3Pie 2.2.0
