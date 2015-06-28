@@ -729,6 +729,7 @@ class Configuration(gc3libs.utils.Struct):
 
             # finally, try to construct backend class...
             return cls(**dict(resdict))
+
         except Exception as err:
             gc3libs.log.error(
                 "Could not create resource '%s': %s. Configuration file"
