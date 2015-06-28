@@ -49,7 +49,7 @@ Input parameters consists of:
 </ROWSET>
 """
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.3 version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2014-09-05:

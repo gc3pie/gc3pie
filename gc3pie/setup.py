@@ -51,7 +51,7 @@ class Tox(TestCommand):
 #
 setuptools.setup(
     name="gc3pie",
-    version="2.3.dev",  # see PEP 440
+    version = '2.3',  # see PEP 440
 
     packages=setuptools.find_packages(exclude=['ez_setup']),
     # metadata for upload to PyPI

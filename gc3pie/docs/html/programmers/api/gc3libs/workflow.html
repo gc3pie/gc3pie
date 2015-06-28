@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>gc3libs.workflow &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>gc3libs.workflow &mdash; gc3pie 2.3.dev (SVN $Revision$) documentation</title>
     
-    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.3.dev (SVN $Revision$)',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="top" title="gc3pie 2.3.dev (SVN $Revision$) documentation" href="../../../index.html" />
     <link rel="up" title="GC3Libs programming API" href="../index.html" />
     <link rel="next" title="gc3utils" href="../gc3utils.html" />
     <link rel="prev" title="gc3libs.utils" href="utils.html" />
@@ -35,8 +35,8 @@
 </script>
 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -51,16 +51,16 @@
         <li class="right" >
           <a href="utils.html" title="gc3libs.utils"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
-          <li><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="module-gc3libs.workflow">
 <span id="gc3libs-workflow"></span><h1><cite>gc3libs.workflow</cite><a class="headerlink" href="#module-gc3libs.workflow" title="Permalink to this headline">¶</a></h1>
@@ -72,47 +72,90 @@ patterns of job group execution; they can be combined to form more
 complex workflows.  Hook methods are provided so that derived classes
 can implement problem-specific job control policies.</p>
 <dl class="class">
+<dt id="gc3libs.workflow.AbortOnError">
+<em class="property">class </em><code class="descclassname">gc3libs.workflow.</code><code class="descname">AbortOnError</code><a class="headerlink" href="#gc3libs.workflow.AbortOnError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mix-in class to make a <a class="reference internal" href="#gc3libs.workflow.SequentialTaskCollection" title="gc3libs.workflow.SequentialTaskCollection"><code class="xref py py-class docutils literal"><span class="pre">SequentialTaskCollection</span></code></a> turn to TERMINATED
+state as soon as one of the tasks fail.</p>
+<p>A second effect of mixing this class in is that the
+<cite>self.execution.returncode</cite> mirrors the return code of the last
+finished task.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="gc3libs.workflow.DependentTaskCollection">
+<em class="property">class </em><code class="descclassname">gc3libs.workflow.</code><code class="descname">DependentTaskCollection</code><span class="sig-paren">(</span><em>tasks=None</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.DependentTaskCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a set of tasks, respecting inter-dependencies between them.</p>
+<p>Each task can list a number of tasks that need to be run before
+it; upon submission, a <cite>DependentTaskCollection</cite> creates a direct
+acyclic graph from that dependency information and ensures that no
+task is run before its dependencies have been successfully
+executed.</p>
+<p>The collection state is set to <cite>TERMINATED</cite> once all tasks have
+reached the same terminal status.</p>
+<dl class="method">
+<dt id="gc3libs.workflow.DependentTaskCollection.add">
+<code class="descname">add</code><span class="sig-paren">(</span><em>task</em>, <em>after=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.DependentTaskCollection.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a task to the collection.</p>
+<p>The task will be run after any tasks referenced in the <cite>after</cite>
+sequence have terminated their run.  Alternatively, a task can
+list tasks it depends upon in its <code class="docutils literal"><span class="pre">.after</span></code> attribute; i.e.,
+the following two syntaxes are equivalent:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">&gt;&gt;&gt; coll.add(task1, after=[task2])</div>
+<div class="line"><br /></div>
+<div class="line">&gt;&gt;&gt; task1.after = [task2]</div>
+<div class="line">&gt;&gt;&gt; coll.add(task1)</div>
+</div>
+</div></blockquote>
+<p><strong>Note:</strong> tasks can only be added to a
+<cite>DependentTaskCollection</cite> while it&#8217;s in state <code class="docutils literal"><span class="pre">NEW</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="gc3libs.workflow.ParallelTaskCollection">
-<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">ParallelTaskCollection</tt><big>(</big><em>tasks=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.workflow.</code><code class="descname">ParallelTaskCollection</code><span class="sig-paren">(</span><em>tasks=None</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection" title="Permalink to this definition">¶</a></dt>
 <dd><p>A <cite>ParallelTaskCollection</cite> runs all of its tasks concurrently.</p>
 <p>The collection state is set to <cite>TERMINATED</cite> once all tasks have
 reached the same terminal status.</p>
 <dl class="method">
 <dt id="gc3libs.workflow.ParallelTaskCollection.add">
-<tt class="descname">add</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.add" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.add" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a task to the collection.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.ParallelTaskCollection.attach">
-<tt class="descname">attach</tt><big>(</big><em>controller</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.attach" title="Permalink to this definition">¶</a></dt>
+<code class="descname">attach</code><span class="sig-paren">(</span><em>controller</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.attach" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use the given Controller interface for operations on the job
 associated with this task.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.ParallelTaskCollection.kill">
-<tt class="descname">kill</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
+<code class="descname">kill</code><span class="sig-paren">(</span><em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
 <dd><p>Terminate all tasks in the collection, and set collection
 state to <cite>TERMINATED</cite>.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.ParallelTaskCollection.progress">
-<tt class="descname">progress</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.progress" title="Permalink to this definition">¶</a></dt>
+<code class="descname">progress</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.progress" title="Permalink to this definition">¶</a></dt>
 <dd><p>Try to advance all jobs in the collection to the next state in
 a normal lifecycle.  Return list of task execution states.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.ParallelTaskCollection.submit">
-<tt class="descname">submit</tt><big>(</big><em>resubmit=False</em>, <em>targets=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.submit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">submit</code><span class="sig-paren">(</span><em>resubmit=False</em>, <em>targets=None</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.submit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Start all tasks in the collection.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.ParallelTaskCollection.update_state">
-<tt class="descname">update_state</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
+<code class="descname">update_state</code><span class="sig-paren">(</span><em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.ParallelTaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update state of all tasks in the collection.</p>
 </dd></dl>
 
@@ -120,7 +163,7 @@ a normal lifecycle.  Return list of task execution states.</p>
 
 <dl class="class">
 <dt id="gc3libs.workflow.RetryableTask">
-<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">RetryableTask</tt><big>(</big><em>task</em>, <em>max_retries=0</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.RetryableTask" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.workflow.</code><code class="descname">RetryableTask</code><span class="sig-paren">(</span><em>task</em>, <em>max_retries=0</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.RetryableTask" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wrap a <cite>Task</cite> instance and re-submit it until a specified
 termination condition is met.</p>
 <p>By default, the re-submission upon failure happens iff execution
@@ -128,18 +171,18 @@ terminated with nonzero return code; the failed task is retried up
 to <cite>self.max_retries</cite> times (indefinitely if <cite>self.max_retries</cite> is 0).</p>
 <p>Override the <cite>retry</cite> method to implement a different retryal policy.</p>
 <p><em>Note:</em> The resubmission code is implemented in the
-<tt class="xref py py-meth docutils literal"><span class="pre">terminated()</span></tt>, so be sure to call it if you override in
+<code class="xref py py-meth docutils literal"><span class="pre">terminated()</span></code>, so be sure to call it if you override in
 derived classes.</p>
 <dl class="attribute">
 <dt id="gc3libs.workflow.RetryableTask.changed">
-<tt class="descname">changed</tt><a class="headerlink" href="#gc3libs.workflow.RetryableTask.changed" title="Permalink to this definition">¶</a></dt>
-<dd><p>Evaluates to <cite>True</cite> if this task or any of its subtasks has been modified
-and should be saved to persistent storage.</p>
+<code class="descname">changed</code><a class="headerlink" href="#gc3libs.workflow.RetryableTask.changed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluates to <cite>True</cite> if this task or any of its subtasks has been
+modified and should be saved to persistent storage.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.RetryableTask.retry">
-<tt class="descname">retry</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.RetryableTask.retry" title="Permalink to this definition">¶</a></dt>
+<code class="descname">retry</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.RetryableTask.retry" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return <cite>True</cite> or <cite>False</cite>, depending on whether the failed task
 should be re-submitted or not.</p>
 <p>The default behavior is to retry a task iff its execution
@@ -152,7 +195,7 @@ policy.</p>
 
 <dl class="method">
 <dt id="gc3libs.workflow.RetryableTask.update_state">
-<tt class="descname">update_state</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.RetryableTask.update_state" title="Permalink to this definition">¶</a></dt>
+<code class="descname">update_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.RetryableTask.update_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update the state of the dependent task, then resubmit it if it&#8217;s
 TERMINATED and <cite>self.retry()</cite> is <cite>True</cite>.</p>
 </dd></dl>
@@ -161,7 +204,7 @@ TERMINATED and <cite>self.retry()</cite> is <cite>True</cite>.</p>
 
 <dl class="class">
 <dt id="gc3libs.workflow.SequentialTaskCollection">
-<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">SequentialTaskCollection</tt><big>(</big><em>tasks</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.workflow.</code><code class="descname">SequentialTaskCollection</code><span class="sig-paren">(</span><em>tasks</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection" title="Permalink to this definition">¶</a></dt>
 <dd><p>A <cite>SequentialTaskCollection</cite> runs its tasks one at a time.</p>
 <p>After a task has completed, the <cite>next</cite> method is called with the
 index of the finished task in the <cite>self.tasks</cite> list; the return
@@ -173,21 +216,21 @@ they were given to the constructor, and sets the state to
 <cite>TERMINATED</cite> when all tasks have been run.</p>
 <dl class="method">
 <dt id="gc3libs.workflow.SequentialTaskCollection.attach">
-<tt class="descname">attach</tt><big>(</big><em>controller</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.attach" title="Permalink to this definition">¶</a></dt>
+<code class="descname">attach</code><span class="sig-paren">(</span><em>controller</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.attach" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use the given Controller interface for operations on the job
 associated with this task.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.SequentialTaskCollection.kill">
-<tt class="descname">kill</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
+<code class="descname">kill</code><span class="sig-paren">(</span><em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.kill" title="Permalink to this definition">¶</a></dt>
 <dd><p>Stop execution of this sequence.  Kill currently-running task
 (if any), then set collection state to TERMINATED.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.SequentialTaskCollection.next">
-<tt class="descname">next</tt><big>(</big><em>done</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.next" title="Permalink to this definition">¶</a></dt>
+<code class="descname">next</code><span class="sig-paren">(</span><em>done</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.next" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the state or task to run when step number <cite>done</cite> is completed.</p>
 <p>This method is called when a task is finished; the <cite>done</cite>
 argument contains the index number of the just-finished task
@@ -213,13 +256,13 @@ job execution.</p>
 
 <dl class="method">
 <dt id="gc3libs.workflow.SequentialTaskCollection.submit">
-<tt class="descname">submit</tt><big>(</big><em>resubmit=False</em>, <em>targets=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.submit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">submit</code><span class="sig-paren">(</span><em>resubmit=False</em>, <em>targets=None</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.submit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Start the current task in the collection.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.SequentialTaskCollection.update_state">
-<tt class="descname">update_state</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
+<code class="descname">update_state</code><span class="sig-paren">(</span><em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.SequentialTaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update state of the collection, based on the jobs&#8217; statuses.</p>
 </dd></dl>
 
@@ -227,13 +270,13 @@ job execution.</p>
 
 <dl class="class">
 <dt id="gc3libs.workflow.StagedTaskCollection">
-<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">StagedTaskCollection</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.StagedTaskCollection" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.workflow.</code><code class="descname">StagedTaskCollection</code><span class="sig-paren">(</span><em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.StagedTaskCollection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simplified interface for creating a sequence of Tasks.
 This can be used when the number of Tasks to run is
 fixed and known at program writing time.</p>
 <p>A <cite>StagedTaskCollection</cite> subclass should define methods <cite>stage0</cite>,
 <cite>stage1</cite>, ... up to <cite>stageN</cite> (for some arbitrary value of N positive
-integer).  Each of these <cite>stageN</cite> must return a <tt class="xref py py-class docutils literal"><span class="pre">Task</span></tt>
+integer).  Each of these <cite>stageN</cite> must return a <code class="xref py py-class docutils literal"><span class="pre">Task</span></code>
 instance; the task returned by the <cite>stage0</cite> method will be executed
 first, followed by the task returned by <cite>stage1</cite>, and so on.
 The sequence stops at the first N such that <cite>stageN</cite> is not defined.</p>
@@ -245,8 +288,18 @@ code.</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="gc3libs.workflow.StopOnError">
+<em class="property">class </em><code class="descclassname">gc3libs.workflow.</code><code class="descname">StopOnError</code><a class="headerlink" href="#gc3libs.workflow.StopOnError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mix-in class to make a <a class="reference internal" href="#gc3libs.workflow.SequentialTaskCollection" title="gc3libs.workflow.SequentialTaskCollection"><code class="xref py py-class docutils literal"><span class="pre">SequentialTaskCollection</span></code></a> turn to STOPPED
+state as soon as one of the tasks fail.</p>
+<p>A second effect of mixing this class in is that the
+<cite>self.execution.returncode</cite> mirrors the return code of the last
+finished task.</p>
+</dd></dl>
+
+<dl class="class">
 <dt id="gc3libs.workflow.TaskCollection">
-<em class="property">class </em><tt class="descclassname">gc3libs.workflow.</tt><tt class="descname">TaskCollection</tt><big>(</big><em>tasks=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.workflow.</code><code class="descname">TaskCollection</code><span class="sig-paren">(</span><em>tasks=None</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.TaskCollection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for all task collections. A &#8220;task collection&#8221; is a
 group of tasks, that can be managed collectively as a single one.</p>
 <p>A task collection implements the same interface as the <cite>Task</cite>
@@ -257,33 +310,45 @@ decides how to deduce a collective state based on the individual
 task states.</p>
 <dl class="method">
 <dt id="gc3libs.workflow.TaskCollection.add">
-<tt class="descname">add</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.add" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.TaskCollection.add" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a task to the collection.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.TaskCollection.attach">
-<tt class="descname">attach</tt><big>(</big><em>controller</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.attach" title="Permalink to this definition">¶</a></dt>
+<code class="descname">attach</code><span class="sig-paren">(</span><em>controller</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.TaskCollection.attach" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use the given Controller interface for operations on the job
 associated with this task.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="gc3libs.workflow.TaskCollection.changed">
-<tt class="descname">changed</tt><a class="headerlink" href="#gc3libs.workflow.TaskCollection.changed" title="Permalink to this definition">¶</a></dt>
-<dd><p>Evaluates to <cite>True</cite> if this task or any of its subtasks has been modified
-and should be saved to persistent storage.</p>
+<code class="descname">changed</code><a class="headerlink" href="#gc3libs.workflow.TaskCollection.changed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluates to <cite>True</cite> if this task or any of its subtasks has been
+modified and should be saved to persistent storage.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.TaskCollection.free">
-<tt class="descname">free</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.free" title="Permalink to this definition">¶</a></dt>
+<code class="descname">free</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.TaskCollection.free" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method just asks the Engine to free the contained tasks.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="gc3libs.workflow.TaskCollection.iter_tasks">
+<code class="descname">iter_tasks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.TaskCollection.iter_tasks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over non-collection tasks enclosed in this collection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="gc3libs.workflow.TaskCollection.iter_workflow">
+<code class="descname">iter_workflow</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.TaskCollection.iter_workflow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an iterator that will traverse the whole tree of tasks.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="gc3libs.workflow.TaskCollection.peek">
-<tt class="descname">peek</tt><big>(</big><em>what</em>, <em>offset=0</em>, <em>size=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.peek" title="Permalink to this definition">¶</a></dt>
+<code class="descname">peek</code><span class="sig-paren">(</span><em>what</em>, <em>offset=0</em>, <em>size=None</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.TaskCollection.peek" title="Permalink to this definition">¶</a></dt>
 <dd><p>Raise a <cite>gc3libs.exceptions.InvalidOperation</cite> error, as there
 is no meaningful semantics that can be defined for <cite>peek</cite> into
 a generic collection of tasks.</p>
@@ -291,13 +356,13 @@ a generic collection of tasks.</p>
 
 <dl class="method">
 <dt id="gc3libs.workflow.TaskCollection.remove">
-<tt class="descname">remove</tt><big>(</big><em>task</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.remove" title="Permalink to this definition">¶</a></dt>
+<code class="descname">remove</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.TaskCollection.remove" title="Permalink to this definition">¶</a></dt>
 <dd><p>Remove a task from the collection.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.TaskCollection.stats">
-<tt class="descname">stats</tt><big>(</big><em>only=None</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.stats" title="Permalink to this definition">¶</a></dt>
+<code class="descname">stats</code><span class="sig-paren">(</span><em>only=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.TaskCollection.stats" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a dictionary mapping each state name into the count of
 tasks in that state. In addition, the following keys are defined:</p>
 <ul class="simple">
@@ -319,17 +384,18 @@ class is not contained in <cite>only</cite> are ignored.</p>
 
 <dl class="method">
 <dt id="gc3libs.workflow.TaskCollection.terminated">
-<tt class="descname">terminated</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.terminated" title="Permalink to this definition">¶</a></dt>
+<code class="descname">terminated</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.TaskCollection.terminated" title="Permalink to this definition">¶</a></dt>
 <dd><p>Called when the job state transitions to <cite>TERMINATED</cite>, i.e.,
 the job has finished execution (with whatever exit status, see
 <cite>returncode</cite>) and the final output has been retrieved.</p>
 <p>Default implementation for <cite>TaskCollection</cite> is to set the
-exitcode to the maximum of the exit codes of its tasks.</p>
+exitcode to the maximum of the exit codes of its tasks.
+If no tasks were run, the exitcode is set to 0.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.workflow.TaskCollection.update_state">
-<tt class="descname">update_state</tt><big>(</big><em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.workflow.TaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
+<code class="descname">update_state</code><span class="sig-paren">(</span><em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.workflow.TaskCollection.update_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update the running state of all managed tasks.</p>
 </dd></dl>
 
@@ -341,7 +407,7 @@ exitcode to the maximum of the exit codes of its tasks.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
   <p class="topless"><a href="utils.html"
@@ -349,7 +415,7 @@ exitcode to the maximum of the exit codes of its tasks.</p>
   <h4>Next topic</h4>
   <p class="topless"><a href="../gc3utils.html"
                         title="next chapter"><cite>gc3utils</cite></a></p>
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../../search.html" method="get">
       <input type="text" name="q" />
@@ -366,7 +432,7 @@ exitcode to the maximum of the exit codes of its tasks.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -381,15 +447,15 @@ exitcode to the maximum of the exit codes of its tasks.</p>
         <li class="right" >
           <a href="utils.html" title="gc3libs.utils"
              >previous</a> |</li>
-        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
-          <li><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
       </ul>
     </div>
 
-    <div class="footer">
-        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2010-2015, S3IT, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
