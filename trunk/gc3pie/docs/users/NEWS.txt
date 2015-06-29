@@ -31,8 +31,8 @@
 .. contents::
 
 
-GC3Pie 2.3.0 (currently in development)
-=======================================
+GC3Pie 2.3
+==========
 
 Incompatible changes
 --------------------
@@ -97,8 +97,8 @@ Important bug fixes
   to Y. Yakimovitch for reporting the issue.
 
 
-GC3Pie 2.2.0
-============
+GC3Pie 2.2
+==========
 
 New features
 ------------
@@ -129,8 +129,8 @@ Important bug fixes
   results to be retrieved even after a reboot of the remote machine.
 
 
-GC3Pie 2.1.0
-============
+GC3Pie 2.1
+==========
 
 New features and incompatible changes
 -------------------------------------
