@@ -7,8 +7,10 @@ cat <<EOF
 Usage: $PROG PATH VERSION
 
 Release the sources at PATH  as gc3pie-VERSION.
+
 In detail, this does the following:
   - checks that there are no uncommitted changes
+  - if releasing "trunk", create release branch first
   - commits BRANCH to tags/VERSION
   - sets the '__version__' attribute in every module to VERSION;
   - updates the documentation
@@ -48,23 +50,6 @@ is_absolute_path () {
 }
 
 
-## environment check
-
-require_command dot
-require_command egrep
-require_command getopt
-require_command make
-require_command pyreverse
-require_command python
-require_command svn
-
-python -c 'import sphinx' \
-    || die 1 "Cannot load required Python module 'sphinx'"
-
-python -c 'import sphinx_pypi_upload' \
-    || die 1 "Cannot load required Python module 'sphinx_pypi_upload'"
-
-
 ## parse command-line
 
 maybe=""
@@ -101,11 +86,37 @@ if [ -z "$version" ]; then
 fi
 
 
+## environment check
+
+require_command dot
+require_command egrep
+require_command getopt
+require_command make
+require_command pyreverse
+require_command python
+require_command svn
+
+python -c 'import sphinx' \
+    || die 1 "Cannot load required Python module 'sphinx'"
+
+python -c 'import sphinx_pypi_upload' \
+    || die 1 "Cannot load required Python module 'sphinx_pypi_upload'"
+
+
 ## main
 
 if [ -n "$debug" ]; then
     set -x
 fi
+
+# check that version nr. follows semantic versioning std, and also
+# extract the `major.minor` part for later reference
+main_version=$(expr match "${version}" '\([0-9]\+\.[0-9]\+\)\.[0-9]\+')
+if [ -z "$main_version" ]; then
+    die 1 "VERSION must have the form 'major.minor.patchlevel'"
+fi
+
+repo_root_url=$(svn info | fgrep 'Repository Root:' | cut -d' ' -f3-)
 
 pushd $branch \
     || die 1 "Cannot change directory to branch '$branch'"
@@ -115,8 +126,15 @@ svn_st=$(svn status --ignore-externals | egrep -v '^[IX?]')
 if [ -n "$svn_st" ]; then
     die 1 "There are uncommitted changes in SVN tree (run 'svn status' to check); cannot continue."
 fi
-
 popd
+
+# if releasing trunk, create release branch first
+if expr match "$branch" 'trunk' >/dev/null; then
+    $maybe svn cp "${repo_root_url}/${branch}" "${repo_root_url}/branches/${main_version}"
+    branch="branches/${version}"
+    $maybe svn up
+fi
+
 echo Creating "$version" tag
 $maybe svn cp $branch tags/$version
 set +e
