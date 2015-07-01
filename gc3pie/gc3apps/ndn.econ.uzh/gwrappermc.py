@@ -247,12 +247,12 @@ class GwrappermcScript(SessionBasedScript):
             for task in self.session:
                 if isinstance(task,GwrappermcApplication) and task.execution.returncode == 0:
                     # get index reference
-                    index = task.index_chunk
-                    chunk_size = task.chunk_size
+                    # index = task.index_chunk
+                    # chunk_size = task.chunk_size
 
-                    for index in [int(task.index_chunk),int(task.index_chunk) + int(task.chunk_size)]:
+                    for index in range(int(task.index_chunk)+1, int(task.index_chunk) + int(task.chunk_size) + 1):
 
-                        result_file = os.path.join(task.output_folder,
+                        result_file = os.path.join(task.output_dir,
                                                    "%s_%d.csv" % (output_file_name_prefix,
                                                                   index))
                         if os.path.isfile(result_file):
@@ -298,7 +298,7 @@ class GwrappermcScript(SessionBasedScript):
         cc = pandas.read_csv(file_to_chunk, header=None)
         for index in range(0, len(cc.columns), chunk_size):
             filename = "%s/chunk_%s.csv" % (chunk_files_dir,index)
-            cc.to_csv(filename ,columns=[index, index+chunk_size], header=False, index=False)
+            cc.to_csv(filename ,columns=[index, index+chunk_size], header=False, index=Falses)
             chunk.append((filename,index))
 
         return chunk
