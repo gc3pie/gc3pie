@@ -1092,11 +1092,6 @@ class Engine(object):
         results will be downloaded in a subdirectory named after the
         task's `permanent_id`.
 
-      `fetch_output_overwrites`
-        Default value to pass as the `overwrite` argument to
-        :meth:`Core.fetch_output` when retrieving results of a
-        terminated task.
-
       `scheduler`
         A factory function for creating objects that conform to the
         `Scheduler` interface to control task submission; see the
@@ -1129,7 +1124,7 @@ class Engine(object):
     def __init__(self, controller, tasks=list(), store=None,
                  can_submit=True, can_retrieve=True,
                  max_in_flight=0, max_submitted=0,
-                 output_dir=None, fetch_output_overwrites=False,
+                 output_dir=None,
                  scheduler=first_come_first_serve,
                  retrieve_running=False,
                  retrieve_overwrites=False,
@@ -1157,7 +1152,6 @@ class Engine(object):
         :param max_in_flight:
         :param max_submitted:
         :param output_dir:
-        :param fetch_output_overwrites:
         :param scheduler:
         :param bool retrieve_running:
         :param bool retrieve_overwrites:
@@ -1182,7 +1176,6 @@ class Engine(object):
         self.max_in_flight = max_in_flight
         self.max_submitted = max_submitted
         self.output_dir = output_dir
-        self.fetch_output_overwrites = fetch_output_overwrites
         self.scheduler = scheduler
         self.retrieve_running = retrieve_running
         self.retrieve_overwrites = retrieve_overwrites
