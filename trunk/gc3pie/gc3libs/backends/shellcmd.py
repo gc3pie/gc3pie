@@ -649,14 +649,11 @@ ReturnCode=%x"""
                 ShellcmdLrms.WRAPPER_OUTPUT_FILENAME)
             try:
                 wrapper_file = self.transport.open(wrapper_filename, 'r')
-            except Exception as ex:
+            except Exception as err:
                 self._delete_job_resource_file(pid)
-                log.error("Opening wrapper file %s raised an exception: %s",
-                          wrapper_filename, str(ex))
-                raise gc3libs.exceptions.InvalidArgument(
-                    "Job '%s' refers to process wrapper %s which"
-                    " ended unexpectedly"
-                    % (app, app.execution.lrms_jobid))
+                raise gc3libs.exceptions.InvalidValue(
+                    "Could not open wrapper file '%s' for task '%s': %s"
+                    % (wrapper_filename, app, err), do_log=True)
             try:
                 outcome = self._parse_wrapper_output(wrapper_file)
                 app.execution.returncode = \
