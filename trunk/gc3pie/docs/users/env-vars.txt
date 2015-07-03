@@ -44,3 +44,11 @@ The following environmental variables affect GC3Pie operations.
 
   - Additional keywords describing the error. Please have a look at the source
     code for these keywords.
+
+`GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL`
+
+  If this environmental variable is set to ``yes`` or ``1``, GC3Pie
+  will abort operations immediately if a configured resource cannot be
+  initialized.  The default behavior is instead to ignore
+  initialization errors and only abort if *no* resources can be
+  initialized.
