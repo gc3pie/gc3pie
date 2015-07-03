@@ -321,9 +321,26 @@ an overlay Grid on the resources specified in the configuration file.
                             % r.name)
                         r.get_resource_status()
                         updated_resources.append(r)
+                    except UnrecoverableError as err:
+                        # disable resource -- there's no point in
+                        # trying it again at a later stage
+                        r.enabled = False
+                        gc3libs.log.error(
+                            "Unrecoverable error updating status"
+                            " of resource '{name}': {reason}."
+                            " Disabling resource."
+                            .format(name=r.name, reason=err))
+                        gc3libs.log.warning(
+                            "Resource {name} will be ignored from now on.")
+                        gc3libs.log.debug(
+                            "Got error from get_resource_status(): %s: %s",
+                            err.__class__.__name__, err,
+                            exc_info=True)
                     except Exception as err:
                         # ignore errors in update, assume resource has
-                        # a problem and just drop it
+                        # a problem and just drop it from *this*
+                        # scheduling cycle but consider it again at a
+                        # later stage
                         gc3libs.log.error(
                             "Cannot update status of resource '%s', dropping"
                             " it. See log file for details." %
