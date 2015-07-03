@@ -312,45 +312,8 @@ an overlay Grid on the resources specified in the configuration file.
                 targets = compatible_resources
             else:
                 # update status of selected resources
-                updated_resources = []
-                for r in compatible_resources:
-                    try:
-                        # in-place update of resource status
-                        gc3libs.log.debug(
-                            "Trying to update status of resource '%s' ..."
-                            % r.name)
-                        r.get_resource_status()
-                        updated_resources.append(r)
-                    except UnrecoverableError as err:
-                        # disable resource -- there's no point in
-                        # trying it again at a later stage
-                        r.enabled = False
-                        gc3libs.log.error(
-                            "Unrecoverable error updating status"
-                            " of resource '{name}': {reason}."
-                            " Disabling resource."
-                            .format(name=r.name, reason=err))
-                        gc3libs.log.warning(
-                            "Resource {name} will be ignored from now on.")
-                        gc3libs.log.debug(
-                            "Got error from get_resource_status(): %s: %s",
-                            err.__class__.__name__, err,
-                            exc_info=True)
-                    except Exception as err:
-                        # ignore errors in update, assume resource has
-                        # a problem and just drop it from *this*
-                        # scheduling cycle but consider it again at a
-                        # later stage
-                        gc3libs.log.error(
-                            "Cannot update status of resource '%s', dropping"
-                            " it. See log file for details." %
-                            r.name)
-                        gc3libs.log.debug(
-                            "Got error from get_resource_status(): %s: %s",
-                            err.__class__.__name__,
-                            str(err),
-                            exc_info=True)
-
+                self.update_resources(compatible_resources)
+                updated_resources = [r for r in compatible_resources if r.updated]
                 if len(updated_resources) == 0:
                     raise gc3libs.exceptions.LRMSSubmitError(
                         "No computational resource found reachable during"
@@ -826,14 +789,21 @@ an overlay Grid on the resources specified in the configuration file.
         """Implementation of `peek` on generic `Task` objects."""
         return task.peek(what, offset, size, **extra_args)
 
-    def update_resources(self, **extra_args):
+    def update_resources(self, resources=all, **extra_args):
         """
-        Update the state of resources configured into this `Core` instance.
+        Update the state of a given set of resources.
 
         Each resource object in the returned list will have its `updated`
         attribute set to `True` if the update operation succeeded, or `False`
         if it failed.
+
+        Optional argument `resources` should be a subset of the
+        resources configured in this `Core` instance (the actual
+        `Lrms`:class: objects, not the resource names).  By default,
+        all configured resources are updated.
         """
+        if resources is all:
+            resources = self.resources.values()
         for lrms in self.resources.itervalues():
             try:
                 if not lrms.enabled:
@@ -842,9 +812,27 @@ an overlay Grid on the resources specified in the configuration file.
                 #     'auto_enable_auth', self.auto_enable_auth)
                 resource = lrms.get_resource_status()
                 resource.updated = True
-            except Exception as ex:
-                gc3libs.log.error("Got error updating resource '%s': %s."
-                                  % (lrms.name, ex))
+            except gc3libs.exceptions.UnrecoverableError as err:
+                # disable resource -- there's no point in
+                # trying it again at a later stage
+                lrms.enabled = False
+                lrms.updated = False
+                gc3libs.log.error(
+                    "Unrecoverable error updating status"
+                    " of resource '%s': %s."
+                    " Disabling resource.",
+                    lrms.name, err)
+                gc3libs.log.warning(
+                    "Resource %s will be ignored from now on.",
+                    lrms.name)
+                gc3libs.log.debug(
+                    "Got error updating resource '%s': %s: %s",
+                    lrms.name, err.__class__.__name__, err,
+                    exc_info=True)
+            except Exception as err:
+                gc3libs.log.error(
+                    "Got error updating resource '%s': %s.",
+                    lrms.name, err)
                 lrms.updated = False
 
     def close(self):
