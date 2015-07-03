@@ -2002,11 +2002,19 @@ def create_engine(*conf_files, **extra_args):
     if not conf_files:
         conf_files = Default.CONFIG_FILE_LOCATIONS[:]
 
+    # extract params specific to the `Core` instance
+    core_extra_args = {
+        'resource_errors_are_fatal':
+            extra_args.pop('resource_errors_are_fatal', False),
+    }
+
+    # params specific to the `Configuration` instance
     if 'auto_enable_auth' not in extra_args:
         extra_args['auto_enable_auth'] = True
 
+    # make 'em all
     cfg = Configuration(*conf_files, **extra_args)
-    core = Core(cfg)
+    core = Core(cfg, **core_extra_args)
     engine = Engine(core)
 
     return engine

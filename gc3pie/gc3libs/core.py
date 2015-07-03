@@ -116,8 +116,9 @@ class MatchMaker(object):
 
 class Core:
 
-    """Core operations: submit, update state, retrieve (a
-snapshot of) output, cancel job.
+    """
+Core operations: submit, update state, retrieve (a snapshot of)
+output, cancel job.
 
 Core operations are *blocking*, i.e., they return only after the
 operation has successfully completed, or an error has been detected.
@@ -125,14 +126,29 @@ operation has successfully completed, or an error has been detected.
 Operations are always performed by a `Core` object.  `Core` implements
 an overlay Grid on the resources specified in the configuration file.
 
+Initialization of a `Core`:class: instance also initializes all
+resources in the passed `Configuration`:class: instance.  By default,
+GC3Pie's `Core` objects will ignore errors in initializing resources,
+and only raise an exception if *no* resources can be initialized.
+This can be changed by either passing an optional argument
+``resource_errors_are_fatal=True``, or by setting the environmental
+variable ``GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL`` to ``yes`` or ``1``.
     """
 
-    def __init__(self, cfg, matchmaker=MatchMaker()):
+    def __init__(self, cfg, matchmaker=MatchMaker(),
+                 resource_errors_are_fatal=None):
+        # propagate resource init errors?
+        if resource_errors_are_fatal is None:
+            # get result from the environment
+            resource_errors_are_fatal = gc3libs.utils.string_to_boolean(
+                os.environ.get('GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL', 'no'))
+
         # init auths
         self.auto_enable_auth = cfg.auto_enable_auth
 
         # init backends
-        self.resources = cfg.make_resources()
+        self.resources = cfg.make_resources(
+            ignore_errors=(not resource_errors_are_fatal))
         if len(self.resources) == 0:
             raise gc3libs.exceptions.NoResources(
                 "No resources given to initialize `gc3libs.core.Core` object!")
