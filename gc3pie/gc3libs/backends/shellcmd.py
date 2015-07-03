@@ -397,29 +397,8 @@ ReturnCode=%x"""
         exit_code, stdout, stderr = self.transport.execute_command('uname -s')
         self.running_kernel = stdout.strip()
 
-        # Fix time_cmd variable
-        if not self.time_cmd:
-            # Check if gnu time is installed. We use `command` in
-            # order to execute the binary and not the shell builtin,
-            # if present (cf. the POSIX standard).  Also note that the
-            # wrapper script will execute `exec time_cmd` in order to
-            # replace the current shell, but `exec` will never run the
-            # builtin.
-            time_cmd = 'time'
-            exit_code, stdout, stderr = self.transport.execute_command(
-                'command %s --version 2>&1 | grep GNU' % time_cmd)
-            if exit_code == 0:
-                # Default `time` command is GNU! Good!
-                self.time_cmd = time_cmd
-            else:
-                # This could be a MacOSX system. Check if GNU time is
-                # installed as `gtime` via homebrew or MacPorts.
-                time_cmd = "gtime"
-                exit_code, stdout, stderr = self.transport.execute_command(
-                    "command %s --version 2>&1 | grep GNU" % time_cmd)
-                if exit_code == 0:
-                    self.time_cmd = time_cmd
-
+        # ensure `time_cmd` points to a valid value
+        self.time_cmd = self._locate_gnu_time()
         if not self.time_cmd:
             raise gc3libs.exceptions.ConfigurationError(
                 "Unable to find GNU `time` installed on your system."
@@ -469,6 +448,33 @@ ReturnCode=%x"""
             self.max_memory_per_core = self.total_memory
 
         self.available_memory = self.total_memory
+
+    def _locate_gnu_time(self):
+        """
+        Return the command name to run the GNU `time` binary,
+        or ``None`` if it cannot be found.
+        """
+        candidates = [
+            'time',  # default on Linux systems
+            'gtime', # MacOSX with Homebrew or MacPorts
+        ]
+        if self.time_cmd:
+            # try this first
+            candidates.insert(0, self.time_cmd)
+        for time_cmd in candidates:
+            gc3libs.log.debug(
+                "Checking if GNU time is available as command `%s`", time_cmd)
+            # We use `command` in order to force the shell to execute
+            # the binary and not the shell builtin (cf. the POSIX
+            # standard).  However note that the wrapper script will
+            # execute `exec time_cmd` in order to replace the current
+            # shell, but `exec` will never run the builtin.
+            exit_code, stdout, stderr = self.transport.execute_command(
+                'command %s --version 2>&1 | grep GNU' % time_cmd)
+            if exit_code == 0:
+                # command is GNU! Good!
+                return time_cmd
+        return None
 
     def _get_persisted_resource_state(self):
         """
