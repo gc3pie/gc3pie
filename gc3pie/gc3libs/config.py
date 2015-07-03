@@ -590,11 +590,11 @@ class Configuration(gc3libs.utils.Struct):
         given type name.
         """
         if resource_type not in self._resource_constructors_cache:
-            if typename not in self.TYPE_CONSTRUCTOR_MAP:
+            if resource_type not in self.TYPE_CONSTRUCTOR_MAP:
                 raise gc3libs.exceptions.ConfigurationError(
                     "Unknown resource type '%s'" % resource_type)
             else:
-                modname, clsname = self.TYPE_CONSTRUCTOR_MAP[typename]
+                modname, clsname = self.TYPE_CONSTRUCTOR_MAP[resource_type]
                 try:
                     mod = __import__(modname,
                                      globals(), locals(),
@@ -613,7 +613,7 @@ class Configuration(gc3libs.utils.Struct):
                 gc3libs.log.debug(
                     "Using class %r from module %r"
                     " to instanciate resources of type %s",
-                    cls, mod, typename)
+                    cls, mod, resource_type)
                 return cls
             return self._resource_constructors_cache[resource_type]
 
