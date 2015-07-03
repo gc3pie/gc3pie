@@ -161,12 +161,37 @@ setuptools.setup(
     # additional non-Python files to be bundled in the package
     package_data={
         'gc3libs': [
+            # helper scripts for classes in the core library
             'etc/codeml.pl',
-            'etc/gc3pie.conf.example',
-            'etc/geotop_wrap.sh',
-            'etc/logging.conf.example',
             'etc/rosetta.sh',
-            ],
+            'etc/run_R.sh',
+            'etc/turbomole.sh',
+            'etc/run_matlab.sh',
+            # example files
+            'etc/gc3pie.conf.example',
+            'etc/logging.conf.example',
+            'etc/minibacct.c',
+            # helper scripts for specific gc3apps
+            'etc/gbenchmark_infomap_wrapper.sh',
+            'etc/gbenchmark_wrapper.sh',
+            'etc/gbenchmark_wrapper_allinone.py',
+            'etc/gcelljunction_wrapper.sh',
+            'etc/geosphere_wrapper.sh',
+            'etc/geotop_wrap.sh',
+            'etc/geotop_wrap.sh',
+            'etc/gmodis_wrapper.sh',
+            'etc/gndn_wrapper.sh',
+            'etc/gnfs-cmd',
+            'etc/gnlp_wrapper.py',
+            'etc/gpyrad_wrapper.sh',
+            'etc/grdock_wrapper.sh',
+            'etc/gstructure_wrapper.sh',
+            'etc/gweight_wrap.sh',
+            'etc/gwrappermc_wrapper.sh',
+            'etc/run_gtsub_control.sh',
+            'etc/smd_projections_wrapper.sh',
+            'etc/square.sh',
+        ],
     },
     data_files=[
         ('gc3apps', [
