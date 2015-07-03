@@ -37,7 +37,6 @@ the for of:
 ...
 
 XXX: To be clarified:
-. When input files should be removed ?
 . What happen if an error happen at merging time ?
 . Should be possible to re-run a subset of the initial chunk list
 without re-creating a new session ?
@@ -298,7 +297,7 @@ class GwrappermcScript(SessionBasedScript):
         cc = pandas.read_csv(file_to_chunk, header=None)
         for index in range(0, len(cc.columns), chunk_size):
             filename = "%s/chunk_%s.csv" % (chunk_files_dir,index)
-            cc.to_csv(filename ,columns=[index, index+chunk_size], header=False, index=Falses)
+            cc.to_csv(filename ,columns=range(index,index+chunk_size), header=False, index=False)
             chunk.append((filename,index))
 
         return chunk
