@@ -150,8 +150,8 @@ an overlay Grid on the resources specified in the configuration file.
 
     def select_resource(self, match):
         """
-        Alter the configured list of resources, and retain only those that
-        satisfy predicate `match`.  Return number of enabled resources.
+        Disable resources that *do not* satisfy predicate `match`.
+        Return number of enabled resources.
 
         Argument `match` can be:
 
@@ -162,6 +162,11 @@ an overlay Grid on the resources specified in the configuration file.
 
           - or it can be a string: only resources whose name matches
             (wildcards ``*`` and ``?`` are allowed) are retained.
+
+        .. note::
+
+          Calling this method modifies the configured list of
+          resources in-place.
         """
         enabled = 0
         for lrms in self.resources.itervalues():
