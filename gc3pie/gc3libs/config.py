@@ -594,8 +594,20 @@ class Configuration(gc3libs.utils.Struct):
         else:
             for typename, (modname, clsname) in self.TYPE_CONSTRUCTOR_MAP.items():
                 if typename == resource_type:
-                    mod = __import__(modname, globals(), locals(), [clsname], -1)
-                    cls = getattr(mod, clsname)
+                    try:
+                        mod = __import__(modname,
+                                         globals(), locals(),
+                                         [clsname], -1)
+                        cls = getattr(mod, clsname)
+                    except (ImportError, AttributeError) as err:
+                        raise gc3libs.exceptions.Error(
+                            ("Could not instanciate"
+                             " resource type '{type}': {errcls}: {errmsg}"
+                             .format(
+                                 type=resource_type,
+                                 errcls=err.__class__.__name__,
+                                 errmsg=err)),
+                            do_log=True)
                     self._resource_constructors_cache[resource_type] = cls
                     gc3libs.log.debug(
                         "Using class %r from module %r"
