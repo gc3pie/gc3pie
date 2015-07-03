@@ -401,10 +401,10 @@ ReturnCode=%x"""
         if not self.time_cmd:
             # Check if gnu time is installed. We use `command` in
             # order to execute the binary and not the shell builtin,
-            # if present. Cfr. POSIX standard.  Please, also note that
-            # the wrapper script will execute `exec time_cmd` in order
-            # to replace the current shell, but `exec` will never run
-            # the builtin.
+            # if present (cf. the POSIX standard).  Also note that the
+            # wrapper script will execute `exec time_cmd` in order to
+            # replace the current shell, but `exec` will never run the
+            # builtin.
             time_cmd = 'time'
             exit_code, stdout, stderr = self.transport.execute_command(
                 'command %s --version 2>&1 | grep GNU' % time_cmd)
