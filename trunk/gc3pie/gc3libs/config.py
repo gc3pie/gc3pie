@@ -589,34 +589,33 @@ class Configuration(gc3libs.utils.Struct):
         Return the callable to be used to instanciate resource of the
         given type name.
         """
-        if resource_type in self._resource_constructors_cache:
+        if resource_type not in self._resource_constructors_cache:
+            if typename not in self.TYPE_CONSTRUCTOR_MAP:
+                raise gc3libs.exceptions.ConfigurationError(
+                    "Unknown resource type '%s'" % resource_type)
+            else:
+                modname, clsname = self.TYPE_CONSTRUCTOR_MAP[typename]
+                try:
+                    mod = __import__(modname,
+                                     globals(), locals(),
+                                     [clsname], -1)
+                    cls = getattr(mod, clsname)
+                except (ImportError, AttributeError) as err:
+                    raise gc3libs.exceptions.Error(
+                        ("Could not instanciate"
+                         " resource type '{type}': {errcls}: {errmsg}"
+                         .format(
+                             type=resource_type,
+                             errcls=err.__class__.__name__,
+                             errmsg=err)),
+                        do_log=True)
+                self._resource_constructors_cache[resource_type] = cls
+                gc3libs.log.debug(
+                    "Using class %r from module %r"
+                    " to instanciate resources of type %s",
+                    cls, mod, typename)
+                return cls
             return self._resource_constructors_cache[resource_type]
-        else:
-            for typename, (modname, clsname) in self.TYPE_CONSTRUCTOR_MAP.items():
-                if typename == resource_type:
-                    try:
-                        mod = __import__(modname,
-                                         globals(), locals(),
-                                         [clsname], -1)
-                        cls = getattr(mod, clsname)
-                    except (ImportError, AttributeError) as err:
-                        raise gc3libs.exceptions.Error(
-                            ("Could not instanciate"
-                             " resource type '{type}': {errcls}: {errmsg}"
-                             .format(
-                                 type=resource_type,
-                                 errcls=err.__class__.__name__,
-                                 errmsg=err)),
-                            do_log=True)
-                    self._resource_constructors_cache[resource_type] = cls
-                    gc3libs.log.debug(
-                        "Using class %r from module %r"
-                        " to instanciate resources of type %s",
-                        cls, mod, typename)
-                    return cls
-            # no match
-            raise gc3libs.exceptions.ConfigurationError(
-                "Unknown resource type '%s'" % resource_type)
 
     def make_resources(self, ignore_errors=True):
         """
