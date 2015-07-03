@@ -815,8 +815,8 @@ an overlay Grid on the resources specified in the configuration file.
                     continue
                 # auto_enable_auth = extra_args.get(
                 #     'auto_enable_auth', self.auto_enable_auth)
-                resource = lrms.get_resource_status()
-                resource.updated = True
+                lrms.get_resource_status()
+                lrms.updated = True
             except gc3libs.exceptions.UnrecoverableError as err:
                 # disable resource -- there's no point in
                 # trying it again at a later stage
@@ -831,13 +831,19 @@ an overlay Grid on the resources specified in the configuration file.
                     "Resource %s will be ignored from now on.",
                     lrms.name)
                 gc3libs.log.debug(
-                    "Got error updating resource '%s': %s: %s",
-                    lrms.name, err.__class__.__name__, err,
+                    "Got error '%s' in updating resource '%s';"
+                    " printing full traceback.",
+                    err.__class__.__name__, lrms.name,
                     exc_info=True)
             except Exception as err:
                 gc3libs.log.error(
-                    "Got error updating resource '%s': %s.",
+                    "Ignoring error updating resource '%s': %s.",
                     lrms.name, err)
+                gc3libs.log.debug(
+                    "Got error '%s' in updating resource '%s';"
+                    " printing full traceback.",
+                    err.__class__.__name__, lrms.name,
+                    exc_info=True)
                 lrms.updated = False
 
     def close(self):
@@ -1265,6 +1271,14 @@ class Engine(object):
             limit_submitted = self.max_submitted
         else:
             limit_submitted = utils.PlusInfinity()
+
+        # if no resources are enabled, there's no point in running
+        # this further
+        nr_enabled_resources = sum(int(rsc.enabled)
+                                   for rsc in self._core.resources.itervalues())
+        if nr_enabled_resources == 0:
+            raise gc3libs.exceptions.NoResources(
+                "No resources available for running jobs.")
 
         # update status of SUBMITTED/RUNNING tasks before launching
         # new ones, otherwise we would be checking the status of
