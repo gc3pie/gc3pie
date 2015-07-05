@@ -31,6 +31,22 @@
 .. contents::
 
 
+GC3Pie 2.4
+==========
+
+New features
+------------
+
+* The environment variable ``GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL``
+  can be set to ``yes`` or ``1`` to cause GC3Pie to abort if any
+  errors occur while initializing the configured resources.  The
+  default behavior of GC3Pie is instead to keep running until there is
+  at least one resource that can be used.
+
+* A resource is now automatically disabled if an unrecoverable error
+  occurs during its use.
+
+
 GC3Pie 2.3
 ==========
 
@@ -45,7 +61,7 @@ Incompatible changes
   this feature should only be used in debugging code, we allow ourselves to
   break backwards compatibility.
 
-* The cloud and mathemtics libraries are no longer installed by
+* The cloud and mathematics libraries are no longer installed by
   default with ``pip install gc3pie`` -- please use::
 
         pip install gc3pie[openstack,ec2,optimizer]
