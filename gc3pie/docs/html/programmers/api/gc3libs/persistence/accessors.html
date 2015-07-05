@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>gc3libs.persistence.accessors &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>gc3libs.persistence.accessors &mdash; gc3pie 2.3.dev (SVN $Revision$) documentation</title>
     
-    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.3.dev (SVN $Revision$)',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="top" title="gc3pie 2.3.dev (SVN $Revision$) documentation" href="../../../../index.html" />
     <link rel="up" title="GC3Libs programming API" href="../../index.html" />
     <link rel="next" title="gc3libs.persistence.filesystem" href="filesystem.html" />
     <link rel="prev" title="gc3libs.persistence" href="../persistence.html" />
@@ -35,8 +35,8 @@
 </script>
 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -51,23 +51,23 @@
         <li class="right" >
           <a href="../persistence.html" title="gc3libs.persistence"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
-          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="module-gc3libs.persistence.accessors">
 <span id="gc3libs-persistence-accessors"></span><h1><cite>gc3libs.persistence.accessors</cite><a class="headerlink" href="#module-gc3libs.persistence.accessors" title="Permalink to this headline">¶</a></h1>
 <p>Accessors for object attributes and container items.</p>
 <dl class="data">
 <dt id="gc3libs.persistence.accessors.GET">
-<tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GET</tt><em class="property"> = &lt;gc3libs.persistence.accessors.GetValue object at 0x2af0bb98a590&gt;</em><a class="headerlink" href="#gc3libs.persistence.accessors.GET" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.persistence.accessors.</code><code class="descname">GET</code><em class="property"> = &lt;gc3libs.persistence.accessors.GetValue object&gt;</em><a class="headerlink" href="#gc3libs.persistence.accessors.GET" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constant identity getter.</p>
 <p>Use this for better readability (e.g., <cite>GET[0]</cite> instead of
 <cite>GetValue()[0]</cite>).</p>
@@ -75,15 +75,16 @@
 
 <dl class="class">
 <dt id="gc3libs.persistence.accessors.GetAttributeValue">
-<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetAttributeValue</tt><big>(</big><em>attr</em>, <em>xform=&lt;function &lt;lambda&gt; at 0x2af0bbe096e0&gt;</em>, <em>default=&lt;object object at 0x2af0bbdff570&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetAttributeValue" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.persistence.accessors.</code><code class="descname">GetAttributeValue</code><span class="sig-paren">(</span><em>attr</em>, <em>xform=&lt;function &lt;lambda&gt;&gt;</em>, <em>default=&lt;object object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.persistence.accessors.GetAttributeValue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return an accessor function for the given attribute.</p>
 <p>An instance of <cite>GetAttributeValue</cite> is a callable that, given any
 object, returns the value of its attribute <cite>attr</cite>, whose name is
 specified in the <cite>GetAttributeValue</cite> constructor:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetAttributeValue</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Struct</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-<span class="go">1</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gc3libs</span> <span class="kn">import</span> <span class="n">Struct</span>
+<span class="go"> &gt;&gt;&gt; fn = GetAttributeValue(&#39;x&#39;)</span>
+<span class="go"> &gt;&gt;&gt; a = Struct(x=1, y=2)</span>
+<span class="go"> &gt;&gt;&gt; fn(a)</span>
+<span class="go"> 1</span>
 </pre></div>
 </div>
 <p>The accessor raises <cite>AttributeError</cite> if no such attribute
@@ -122,14 +123,14 @@ return a (possibly different) object whose attributes should be
 looked up.  In other words, if <cite>xform</cite> is specified, then the
 returned accessor function computes <cite>xform(obj).attr</cite> instead of
 <cite>obj.attr</cite>.</p>
-<p>This allows combining <cite>GetAttributeValue</cite> with <a class="reference internal" href="#gc3libs.persistence.accessors.GetItemValue" title="gc3libs.persistence.accessors.GetItemValue"><tt class="xref py py-meth docutils literal"><span class="pre">GetItemValue()</span></tt></a> (which
+<p>This allows combining <cite>GetAttributeValue</cite> with <a class="reference internal" href="#gc3libs.persistence.accessors.GetItemValue" title="gc3libs.persistence.accessors.GetItemValue"><code class="xref py py-meth docutils literal"><span class="pre">GetItemValue()</span></code></a> (which
 see), to access objects in deeply-nested data structures; see
-<a class="reference internal" href="#gc3libs.persistence.accessors.GetItemValue" title="gc3libs.persistence.accessors.GetItemValue"><tt class="xref py py-class docutils literal"><span class="pre">GetItemValue</span></tt></a> for examples.</p>
+<a class="reference internal" href="#gc3libs.persistence.accessors.GetItemValue" title="gc3libs.persistence.accessors.GetItemValue"><code class="xref py py-class docutils literal"><span class="pre">GetItemValue</span></code></a> for examples.</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="gc3libs.persistence.accessors.GetItemValue">
-<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetItemValue</tt><big>(</big><em>place</em>, <em>xform=&lt;function &lt;lambda&gt; at 0x2af0bbe09848&gt;</em>, <em>default=&lt;object object at 0x2af0bbdff570&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetItemValue" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.persistence.accessors.</code><code class="descname">GetItemValue</code><span class="sig-paren">(</span><em>place</em>, <em>xform=&lt;function &lt;lambda&gt;&gt;</em>, <em>default=&lt;object object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.persistence.accessors.GetItemValue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return accessor function for the given item in a sequence.</p>
 <p>An instance of <cite>GetItemValue</cite> is a callable that, given any
 sequence/container object, returns the value of the item at its
@@ -187,20 +188,21 @@ returned accessor function computes <cite>xform(obj)[idx]</cite> instead of
 <span class="go">1</span>
 </pre></div>
 </div>
-<p>This allows combining <cite>GetItemValue</cite> with <tt class="xref py py-class docutils literal"><span class="pre">GetAttrValue</span></tt>
+<p>This allows combining <cite>GetItemValue</cite> with <code class="xref py py-class docutils literal"><span class="pre">GetAttrValue</span></code>
 (which see), to access objects in deeply-nested data structures.</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="gc3libs.persistence.accessors.GetOnly">
-<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetOnly</tt><big>(</big><em>only</em>, <em>xform=&lt;function &lt;lambda&gt; at 0x2af0bbe099b0&gt;</em>, <em>default=&lt;object object at 0x2af0bbdff570&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetOnly" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.persistence.accessors.</code><code class="descname">GetOnly</code><span class="sig-paren">(</span><em>only</em>, <em>xform=&lt;function &lt;lambda&gt;&gt;</em>, <em>default=&lt;object object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.persistence.accessors.GetOnly" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply accessor function to members of a certain class; return a
 default value otherwise.</p>
 <p>The <cite>GetOnly</cite> accessor performs just like <cite>GetValue</cite>, but is
 effective only on instances of a certain class; if the accessor
 function is passed an instance of a different class, the default
 value is returned:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn4</span> <span class="o">=</span> <span class="n">GetOnly</span><span class="p">(</span><span class="n">Struct</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gc3libs</span> <span class="kn">import</span> <span class="n">Struct</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn4</span> <span class="o">=</span> <span class="n">GetOnly</span><span class="p">(</span><span class="n">Struct</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">fn4</span><span class="p">(</span><span class="n">Struct</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s">&#39;bar&#39;</span><span class="p">)),</span> <span class="n">Struct</span><span class="p">)</span>
 <span class="go">True</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">fn4</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s">&#39;bar&#39;</span><span class="p">)),</span> <span class="nb">dict</span><span class="p">)</span>
@@ -219,14 +221,16 @@ value is returned:</p>
 
 <dl class="class">
 <dt id="gc3libs.persistence.accessors.GetValue">
-<em class="property">class </em><tt class="descclassname">gc3libs.persistence.accessors.</tt><tt class="descname">GetValue</tt><big>(</big><em>default=&lt;object object at 0x2af0bbdff570&gt;</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetValue" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provide easier compositional syntax for <cite>GetAttributeValue</cite> and <cite>GetItemValue</cite>.</p>
+<em class="property">class </em><code class="descclassname">gc3libs.persistence.accessors.</code><code class="descname">GetValue</code><span class="sig-paren">(</span><em>default=&lt;object object&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.persistence.accessors.GetValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide easier compositional syntax for <cite>GetAttributeValue</cite> and
+<cite>GetItemValue</cite>.</p>
 <p>Instances of <cite>GetAttributeValue</cite> and <cite>GetItemValue</cite> can be composed by
 passing one as <cite>xform</cite> parameter to the other; however, this
 results in the writing order being the opposite of the composition
 order: for instance, to create an accessor to evaluate <cite>x.a[0]</cite>
 for any Python object <cite>x</cite>, one has to write:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn1</span> <span class="o">=</span> <span class="n">GetItemValue</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">GetAttributeValue</span><span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">))</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gc3libs</span> <span class="kn">import</span> <span class="n">Struct</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn1</span> <span class="o">=</span> <span class="n">GetItemValue</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">GetAttributeValue</span><span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>The <cite>GetValue</cite> class allows to write accessor expressions the way
@@ -249,11 +253,12 @@ used in case the required attribute or item is not found:</p>
 </div>
 <dl class="method">
 <dt id="gc3libs.persistence.accessors.GetValue.ONLY">
-<tt class="descname">ONLY</tt><big>(</big><em>specifier</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.accessors.GetValue.ONLY" title="Permalink to this definition">¶</a></dt>
-<dd><p>Restrict the action of the accessor expression to members of a certain class;
-return default value otherwise.</p>
-<p>The invocation to <tt class="xref py py-meth docutils literal"><span class="pre">only()</span></tt> should <em>always be last</em>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetValue</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;foo&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ONLY</span><span class="p">(</span><span class="n">Struct</span><span class="p">)</span>
+<code class="descname">ONLY</code><span class="sig-paren">(</span><em>specifier</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.persistence.accessors.GetValue.ONLY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restrict the action of the accessor expression to members of a certain
+class; return default value otherwise.</p>
+<p>The invocation to <code class="xref py py-meth docutils literal"><span class="pre">only()</span></code> should <em>always be last</em>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gc3libs</span> <span class="kn">import</span> <span class="n">Struct</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">GetValue</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s">&#39;foo&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ONLY</span><span class="p">(</span><span class="n">Struct</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="n">Struct</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;bar&#39;</span><span class="p">,</span><span class="s">&#39;baz&#39;</span><span class="p">]))</span>
 <span class="go">&#39;bar&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;bar&#39;</span><span class="p">,</span><span class="s">&#39;baz&#39;</span><span class="p">]))</span>
@@ -278,7 +283,7 @@ return default value otherwise.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
   <p class="topless"><a href="../persistence.html"
@@ -286,7 +291,7 @@ return default value otherwise.</p>
   <h4>Next topic</h4>
   <p class="topless"><a href="filesystem.html"
                         title="next chapter"><cite>gc3libs.persistence.filesystem</cite></a></p>
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../../../search.html" method="get">
       <input type="text" name="q" />
@@ -303,7 +308,7 @@ return default value otherwise.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -318,15 +323,15 @@ return default value otherwise.</p>
         <li class="right" >
           <a href="../persistence.html" title="gc3libs.persistence"
              >previous</a> |</li>
-        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
       </ul>
     </div>
 
-    <div class="footer">
-        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2010-2015, S3IT, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
