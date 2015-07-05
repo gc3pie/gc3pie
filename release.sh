@@ -130,13 +130,15 @@ popd
 
 # if releasing trunk, create release branch first
 if expr match "$branch" 'trunk' >/dev/null; then
-    $maybe svn cp "${repo_root_url}/${branch}" "${repo_root_url}/branches/${main_version}"
-    branch="branches/${version}"
+    $maybe svn cp -m"Create branch to track releases ${main_version}.x" \
+           "${repo_root_url}/${branch}" \
+           "${repo_root_url}/branches/${main_version}"
+    branch="branches/${main_version}"
     $maybe svn up
 fi
 
 echo Creating "$version" tag
-$maybe svn cp $branch tags/$version
+$maybe svn cp -m"Release version ${version}" $branch tags/$version
 set +e
 
 pushd tags/$version \
