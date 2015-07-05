@@ -615,7 +615,7 @@ class Configuration(gc3libs.utils.Struct):
                     " to instanciate resources of type %s",
                     cls, mod, resource_type)
                 return cls
-            return self._resource_constructors_cache[resource_type]
+        return self._resource_constructors_cache[resource_type]
 
     def make_resources(self, ignore_errors=True):
         """
