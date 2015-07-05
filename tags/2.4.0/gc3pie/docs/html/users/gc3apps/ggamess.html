@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>The ggamess script &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>The ggamess script &mdash; gc3pie 2.3.dev (SVN $Revision$) documentation</title>
     
-    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.3.dev (SVN $Revision$)',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="top" title="gc3pie 2.3.dev (SVN $Revision$) documentation" href="../../index.html" />
     <link rel="up" title="The GC3Apps software" href="index.html" />
     <link rel="next" title="The ggeotop script" href="ggeotop.html" />
     <link rel="prev" title="Introduction to session-based scripts" href="intro.html" />
@@ -35,8 +35,8 @@
 </script>
 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -51,20 +51,20 @@
         <li class="right" >
           <a href="intro.html" title="Introduction to session-based scripts"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../index.html" >User Documentation</a> &raquo;</li>
-          <li><a href="index.html" accesskey="U">The GC3Apps software</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >User Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">The GC3Apps software</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="the-ggamess-script">
 <h1>The <strong>ggamess</strong> script<a class="headerlink" href="#the-ggamess-script" title="Permalink to this headline">¶</a></h1>
-<p>GC3Apps provide a script drive execution of multiple <tt class="docutils literal"><span class="pre">gamess</span></tt> jobs
+<p>GC3Apps provide a script drive execution of multiple <code class="docutils literal"><span class="pre">gamess</span></code> jobs
 each of them with a different input file.
 It uses the generic <cite>gc3libs.cmdline.SessionBasedScript</cite> framework.</p>
 <p>The purpose of GAMESS is to execute <em>several concurrent
@@ -79,14 +79,14 @@ even if it appears broken in several ones in the mail):</p>
 </div>
 <p>The parts in double quotes should be replaced with actual content:</p>
 <blockquote>
-<div><p><tt class="docutils literal"><span class="pre">a_session_name</span></tt>:</p>
+<div><p><code class="docutils literal"><span class="pre">a_session_name</span></code>:</p>
 <blockquote>
 <div>Used for grouping.  This is a word of your choosing (e.g.,
 &#8220;<cite>test1</cite>&#8221;, &#8220;<cite>control_group</cite>&#8221;), used as a label to tag a group of
 analyses. Multiple concurrent sessions can exist, and they
 won&#8217;t interfere one with the other.  Again, note that a single
 session can run many different <cite>.inp</cite> files.</div></blockquote>
-<p><tt class="docutils literal"><span class="pre">input_files_or_directories</span></tt>:</p>
+<p><code class="docutils literal"><span class="pre">input_files_or_directories</span></code>:</p>
 <blockquote>
 <div>This part consists in the path name of <cite>.inp</cite> files or a
 directory containing <cite>.inp</cite> files.  When a directory is
@@ -99,17 +99,17 @@ finished job creates one directory (whose name is equal to the name of
 the input file, minus the trailing <cite>.inp</cite>), which contains the <cite>.out</cite>
 and <cite>.dat</cite> files.</p>
 <p>For shorter typing, I have defined an alias <cite>ggms</cite> to expand to the
-above string <tt class="docutils literal"><span class="pre">ggamess.py</span> <span class="pre">-A</span> <span class="pre">...</span> <span class="pre">2011R3-beckya-dmulti</span></tt>, so you could
+above string <code class="docutils literal"><span class="pre">ggamess.py</span> <span class="pre">-A</span> <span class="pre">...</span> <span class="pre">2011R3-beckya-dmulti</span></code>, so you could
 shorten the command to just:</p>
 <div class="highlight-python"><div class="highlight"><pre>ggms -s &quot;a_session_name&quot; &quot;input_files_or_directories&quot;
 </pre></div>
 </div>
-<p>For instance, to use <tt class="docutils literal"><span class="pre">ggames.py</span></tt> to analyse a single <cite>.inp</cite> file you
+<p>For instance, to use <code class="docutils literal"><span class="pre">ggames.py</span></code> to analyse a single <cite>.inp</cite> file you
 must run:</p>
 <div class="highlight-python"><div class="highlight"><pre>ggms -s &quot;single&quot; dmulti/inp/neutral/dmulti_cc4l.inp
 </pre></div>
 </div>
-<p>while to use <tt class="docutils literal"><span class="pre">ggamess.py</span></tt> to run several GAMESS jobs in parallel:</p>
+<p>while to use <code class="docutils literal"><span class="pre">ggamess.py</span></code> to run several GAMESS jobs in parallel:</p>
 <div class="highlight-python"><div class="highlight"><pre>ggms -s &quot;multiple&quot; dmulti/inp/neutral
 </pre></div>
 </div>
@@ -117,32 +117,32 @@ must run:</p>
 <div class="section" id="tweaking-execution">
 <h2>Tweaking execution<a class="headerlink" href="#tweaking-execution" title="Permalink to this headline">¶</a></h2>
 <p>Command-line options (those that start with a dash character &#8216;-&#8216;) can
-be used to alter the behavior of the <tt class="docutils literal"><span class="pre">ggamess.py</span></tt> command:</p>
+be used to alter the behavior of the <code class="docutils literal"><span class="pre">ggamess.py</span></code> command:</p>
 <blockquote>
-<div><p><tt class="docutils literal"><span class="pre">-A</span></tt> <cite>filename.changes.tar.gz</cite></p>
+<div><p><code class="docutils literal"><span class="pre">-A</span></code> <cite>filename.changes.tar.gz</cite></p>
 <blockquote>
 <div>This selects the file containing your customized version of
 GAMESS in a format suitable for running in a virtual machine on
 the Grid.  This file should be created following the procedure
 detailed below.</div></blockquote>
-<p><tt class="docutils literal"><span class="pre">-R</span></tt> <cite>version</cite></p>
+<p><code class="docutils literal"><span class="pre">-R</span></code> <cite>version</cite></p>
 <blockquote>
 <div><p>Select a specific version of GAMESS.  This should have been
 installed in the virtual machine within a directory named
-<tt class="docutils literal"><span class="pre">gamess-version</span></tt>; for example, your modified GAMESS is saved in
-directory <tt class="docutils literal"><span class="pre">gamess-2011R3-beckya-dmulti</span></tt> so the &#8220;<cite>version</cite>&#8221; string
-is <tt class="docutils literal"><span class="pre">2011R3-beckya-dmulti</span></tt>.</p>
-<p>If you omit the <tt class="docutils literal"><span class="pre">-R</span></tt> &#8220;<cite>version</cite>&#8221; part, you get the default GAMESS
+<code class="docutils literal"><span class="pre">gamess-version</span></code>; for example, your modified GAMESS is saved in
+directory <code class="docutils literal"><span class="pre">gamess-2011R3-beckya-dmulti</span></code> so the &#8220;<cite>version</cite>&#8221; string
+is <code class="docutils literal"><span class="pre">2011R3-beckya-dmulti</span></code>.</p>
+<p>If you omit the <code class="docutils literal"><span class="pre">-R</span></code> &#8220;<cite>version</cite>&#8221; part, you get the default GAMESS
 which is presently 2011R1.</p>
 </div></blockquote>
-<p><tt class="docutils literal"><span class="pre">-s</span></tt> <cite>session</cite></p>
+<p><code class="docutils literal"><span class="pre">-s</span></code> <cite>session</cite></p>
 <blockquote>
 <div>Group jobs in a named session; see above.</div></blockquote>
-<p><tt class="docutils literal"><span class="pre">-w</span></tt> <cite>NUM</cite></p>
+<p><code class="docutils literal"><span class="pre">-w</span></code> <cite>NUM</cite></p>
 <blockquote>
 <div>Request a running time of at <cite>NUM</cite> hours.  If you omit this part,
 the default is 8 hours.</div></blockquote>
-<p><tt class="docutils literal"><span class="pre">-m</span></tt> <cite>NUM</cite></p>
+<p><code class="docutils literal"><span class="pre">-m</span></code> <cite>NUM</cite></p>
 <blockquote>
 <div>Request <cite>NUM</cite> Gigabytes of memory for running each job.  GAMESS&#8217;
 memory is measured in words, and each word is 8 bytes; add 1 GB
@@ -158,26 +158,26 @@ done by running the following command at the command prompt on
 </pre></div>
 </div>
 <p>After a few seconds, you should find yourself at the same
-<tt class="docutils literal"><span class="pre">user&#64;rootstrap</span></tt> prompt that you get on your VirtualBox instance, so
+<code class="docutils literal"><span class="pre">user&#64;rootstrap</span></code> prompt that you get on your VirtualBox instance, so
 you can use the same commands etc.</p>
 <p>The only difference of note is that you can exchange files between the
 AppPot virtual machine and <cite>ocikbgtw</cite> via the <cite>job</cite> directory (whereas
-it&#8217;s <tt class="docutils literal"><span class="pre">/scratch</span></tt> in VirtualBox).  So: files you copy into <cite>job</cite> in the
+it&#8217;s <code class="docutils literal"><span class="pre">/scratch</span></code> in VirtualBox).  So: files you copy into <cite>job</cite> in the
 AppPot VM will appear into your home directory on <cite>ocikbgtw</cite>, and
 conversely files from your home directory on <cite>ocikbgtw</cite> can be
 read/written as if they were into directory <cite>job</cite> in the AppPot VM.</p>
 <p>Once you have compiled a new version of GAMESS that you wish to test,
-you need to run this command (at the <tt class="docutils literal"><span class="pre">user&#64;rootstrap</span></tt> command prompt
+you need to run this command (at the <code class="docutils literal"><span class="pre">user&#64;rootstrap</span></code> command prompt
 in the AppPot VM):</p>
 <div class="highlight-python"><div class="highlight"><pre>sudo apppot-snap changes ~/job/beckya-dmulti.changes.tar.gz
 </pre></div>
 </div>
-<p>This will overwrite the file <tt class="docutils literal"><span class="pre">beckya-dmulti.changes.tar.gz</span></tt> with the
+<p>This will overwrite the file <code class="docutils literal"><span class="pre">beckya-dmulti.changes.tar.gz</span></code> with the
 new GAMESS version.  If you don&#8217;t want to overwrite it and instead
 create another one, just change the filename above (but it <em>has to</em>
-end with the string <tt class="docutils literal"><span class="pre">.changes.tar.gz</span></tt>), and the use the new name for
-the <tt class="docutils literal"><span class="pre">-R</span></tt> option to ggamess.py</p>
-<p>Exit the AppPot VM by typing <tt class="docutils literal"><span class="pre">exit</span></tt> at the command prompt.</p>
+end with the string <code class="docutils literal"><span class="pre">.changes.tar.gz</span></code>), and the use the new name for
+the <code class="docutils literal"><span class="pre">-R</span></code> option to ggamess.py</p>
+<p>Exit the AppPot VM by typing <code class="docutils literal"><span class="pre">exit</span></code> at the command prompt.</p>
 </div>
 </div>
 
@@ -185,7 +185,7 @@ the <tt class="docutils literal"><span class="pre">-R</span></tt> option to ggam
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h3><a href="../../index.html">Table Of Contents</a></h3>
   <ul>
@@ -203,7 +203,7 @@ the <tt class="docutils literal"><span class="pre">-R</span></tt> option to ggam
   <h4>Next topic</h4>
   <p class="topless"><a href="ggeotop.html"
                         title="next chapter">The <strong class="command">ggeotop</strong> script</a></p>
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../search.html" method="get">
       <input type="text" name="q" />
@@ -220,7 +220,7 @@ the <tt class="docutils literal"><span class="pre">-R</span></tt> option to ggam
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -235,15 +235,15 @@ the <tt class="docutils literal"><span class="pre">-R</span></tt> option to ggam
         <li class="right" >
           <a href="intro.html" title="Introduction to session-based scripts"
              >previous</a> |</li>
-        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../index.html" >User Documentation</a> &raquo;</li>
-          <li><a href="index.html" >The GC3Apps software</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >User Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >The GC3Apps software</a> &raquo;</li> 
       </ul>
     </div>
 
-    <div class="footer">
-        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2010-2015, S3IT, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Introduction &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>Introduction &mdash; gc3pie 2.3.dev (SVN $Revision$) documentation</title>
     
-    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.3.dev (SVN $Revision$)',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="top" title="gc3pie 2.3.dev (SVN $Revision$) documentation" href="../../../index.html" />
     <link rel="up" title="GC3Pie programming tutorials" href="../index.html" />
     <link rel="next" title="GC3Libs programming API" href="../../api/index.html" />
     <link rel="prev" title="GC3Pie programming tutorials" href="../index.html" />
@@ -35,8 +35,8 @@
 </script>
 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -51,16 +51,16 @@
         <li class="right" >
           <a href="../index.html" title="GC3Pie programming tutorials"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
-          <li><a href="../index.html" accesskey="U">GC3Pie programming tutorials</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../index.html" accesskey="U">GC3Pie programming tutorials</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
@@ -92,9 +92,9 @@ our <cite>warholized</cite> image.</p>
 <p>Clearly, step 2) depends on the step 1), and 3) depends on 2), so we
 basically have a sequence of tasks, but since step 2) need to create
 <cite>N</cite> different independent images, we can parallelize this step.</p>
-<div class="figure align-center">
+<div class="figure align-center" id="id1">
 <img alt="workflow of the `warholize` script" src="../../../_images/workflow.png" />
-<p class="caption">Workflow of the <cite>warholize</cite> script</p>
+<p class="caption"><span class="caption-text">Workflow of the <cite>warholize</cite> script</span></p>
 </div>
 </div>
 <div class="section" id="from-top-to-bottom">
@@ -129,14 +129,14 @@ others):</p>
 </div>
 <p>Please note that you must either write a small docstring, or add a
 <cite>description</cite> attribute. These values are used when the script is
-called with options <tt class="docutils literal"><span class="pre">--help</span></tt> or <tt class="docutils literal"><span class="pre">--version</span></tt>, which are
+called with options <code class="docutils literal"><span class="pre">--help</span></code> or <code class="docutils literal"><span class="pre">--version</span></code>, which are
 automatically added by GC3Pie.</p>
 <p>The way we want to use our script is straightforward:</p>
 <div class="highlight-python"><div class="highlight"><pre>$  warholize.py inputfile [inputfiles ...]
 </pre></div>
 </div>
-<p>and this will create a directory <tt class="docutils literal"><span class="pre">Warholized.&lt;inputfile&gt;</span></tt> in which
-there will be a file called <tt class="docutils literal"><span class="pre">warhol_&lt;inputfile&gt;</span></tt> containing the
+<p>and this will create a directory <code class="docutils literal"><span class="pre">Warholized.&lt;inputfile&gt;</span></code> in which
+there will be a file called <code class="docutils literal"><span class="pre">warhol_&lt;inputfile&gt;</span></code> containing the
 desired warholized image (and a lot of temporary files, at least for now).</p>
 <p>But we may want to add some additional options to the script, in order
 to decide how many colorized pictures the warholized image will be
@@ -151,7 +151,7 @@ from <cite>cli.app.CommandLineApp</cite>:</p>
                    <span class="n">help</span><span class="o">=</span><span class="s">&quot;Number of copyes (Default:4). It has to be a perfect square!&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>In this example we will accept a <tt class="docutils literal"><span class="pre">--copies</span></tt> option to define how
+<p>In this example we will accept a <code class="docutils literal"><span class="pre">--copies</span></code> option to define how
 many colorized copies the final picture will be made of. Please refer
 to the documentation of the <a class="reference external" href="http://packages.python.org/pyCLI/">PyCLI</a> module for details on the syntax
 of the <cite>add_param</cite> method.</p>
@@ -180,7 +180,7 @@ informations about the execution. This module works like the
 <a class="reference external" href="http://docs.python.org/library/logging.html">logging</a> module and has methods like <cite>error</cite>, <cite>warning</cite>, <cite>info</cite> or
 <cite>debug</cite>, but its logging level is automatically configured by
 <cite>SessionBasedScript</cite>&#8216;s constructor.  This way you can increase the
-verbosity of your script by simply adding <tt class="docutils literal"><span class="pre">-v</span></tt> options from the
+verbosity of your script by simply adding <code class="docutils literal"><span class="pre">-v</span></code> options from the
 command line.</p>
 </div>
 <div class="section" id="the-workflows">
@@ -321,7 +321,7 @@ is:</p>
 <p>Creating a <cite>gc3libs.Application</cite> is straigthforward: you just
 call the constructor with the executable, the arguments, and the
 input/output files you will need.</p>
-<p>If you don&#8217;t specify the <tt class="docutils literal"><span class="pre">output_dir</span></tt> directory, gc3pie libraries
+<p>If you don&#8217;t specify the <code class="docutils literal"><span class="pre">output_dir</span></code> directory, gc3pie libraries
 will create one starting from the class name. If the output directory
 exists already, the old one will be renamed.</p>
 <p>To do any kind of post processing you can define a <cite>terminate</cite> method
@@ -493,7 +493,7 @@ modify the grayscaled image by <cite>coloring</cite> a generic pixel with a
 luminosity value of <cite>n</cite> (which will be an integer value from 0 to 255,
 of course) with the color at position <cite>n</cite> in the LUT image (actually,
 <cite>n+1</cite>). Each <cite>ApplyLutApplication</cite> will save the resulting image to a
-file named as <tt class="docutils literal"><span class="pre">grayscaled_&lt;input_image&gt;.&lt;N&gt;</span></tt>.</p>
+file named as <code class="docutils literal"><span class="pre">grayscaled_&lt;input_image&gt;.&lt;N&gt;</span></code>.</p>
 <p>The class will look like:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">ApplyLutApplication</span><span class="p">(</span><span class="n">gc3libs</span><span class="o">.</span><span class="n">Application</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Apply the LUT computed by `CreateLutApplication` to</span>
@@ -536,10 +536,10 @@ needed files.</p>
 <div class="section" id="step-three-merge-all-them-together">
 <h2>Step three: merge all them together<a class="headerlink" href="#step-three-merge-all-them-together" title="Permalink to this headline">¶</a></h2>
 <p>At this point we will have in the main output directory a bunch of
-files named after <tt class="docutils literal"><span class="pre">grayscaled_&lt;input_image&gt;.N</span></tt> with N a sequential
-integer and <tt class="docutils literal"><span class="pre">&lt;input_image&gt;</span></tt> the name of the original image. The last
+files named after <code class="docutils literal"><span class="pre">grayscaled_&lt;input_image&gt;.N</span></code> with N a sequential
+integer and <code class="docutils literal"><span class="pre">&lt;input_image&gt;</span></code> the name of the original image. The last
 application, <cite>MergeImagesApplication</cite>, will produce a
-<tt class="docutils literal"><span class="pre">warhol_&lt;input_image&gt;</span></tt> image by merging all of them using the
+<code class="docutils literal"><span class="pre">warhol_&lt;input_image&gt;</span></code> image by merging all of them using the
 command:</p>
 <div class="highlight-python"><div class="highlight"><pre>$    montage grayscaled_&lt;input_image&gt;.* -tile 3x3 -geometry +5+5 -background white warholized_&lt;input_image&gt;
 </pre></div>
@@ -600,7 +600,7 @@ etc...:</p>
     <span class="n">warholize</span><span class="o">.</span><span class="n">WarholizeScript</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Please note that the <tt class="docutils literal"><span class="pre">import</span> <span class="pre">warholize</span></tt> statement is important to
+<p>Please note that the <code class="docutils literal"><span class="pre">import</span> <span class="pre">warholize</span></code> statement is important to
 address <a class="reference external" href="http://code.google.com/p/gc3pie/issues/detail?id=95">issue 95</a> and make the gc3pie scripts work with your current
 session (<cite>gstat</cite>, <cite>ginfo</cite>...)</p>
 </div>
@@ -609,17 +609,17 @@ session (<cite>gstat</cite>, <cite>ginfo</cite>...)</p>
 <p>To test this script I would suggest to use the famous <cite>Lena</cite> picture,
 which can be found in the <cite>miscelaneous</cite> section of the <a class="reference external" href="http://sipi.usc.edu/database/?volume=misc">Signal and
 Image Processing Institute</a> page. Download the image, rename it as
-<tt class="docutils literal"><span class="pre">lena.tiff</span></tt> and run the following command:</p>
+<code class="docutils literal"><span class="pre">lena.tiff</span></code> and run the following command:</p>
 <div class="highlight-python"><div class="highlight"><pre>$    ./warholize.py -C 1 lena.tiff --copies 9
 </pre></div>
 </div>
-<p>(add <tt class="docutils literal"><span class="pre">-r</span> <span class="pre">localhost</span></tt> if your gc3pie.conf script support it and you
+<p>(add <code class="docutils literal"><span class="pre">-r</span> <span class="pre">localhost</span></code> if your gc3pie.conf script support it and you
 want to test it locally).</p>
-<p>After completion a file <tt class="docutils literal"><span class="pre">Warholized.lena.tiff/output/warhol_lena.tiff</span></tt>
+<p>After completion a file <code class="docutils literal"><span class="pre">Warholized.lena.tiff/output/warhol_lena.tiff</span></code>
 will be created.</p>
-<div class="figure align-center">
+<div class="figure align-center" id="id2">
 <img alt="warholized version of Lena" src="../../../_images/warholized_lena.jpg" />
-<p class="caption">Warholized version of <cite>Lena</cite></p>
+<p class="caption"><span class="caption-text">Warholized version of <cite>Lena</cite></span></p>
 </div>
 </div>
 
@@ -627,7 +627,7 @@ will be created.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h3><a href="../../../index.html">Table Of Contents</a></h3>
   <ul>
@@ -653,7 +653,7 @@ will be created.</p>
   <h4>Next topic</h4>
   <p class="topless"><a href="../../api/index.html"
                         title="next chapter">GC3Libs programming API</a></p>
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../../search.html" method="get">
       <input type="text" name="q" />
@@ -670,7 +670,7 @@ will be created.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -685,15 +685,15 @@ will be created.</p>
         <li class="right" >
           <a href="../index.html" title="GC3Pie programming tutorials"
              >previous</a> |</li>
-        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
-          <li><a href="../index.html" >GC3Pie programming tutorials</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../index.html" >GC3Pie programming tutorials</a> &raquo;</li> 
       </ul>
     </div>
 
-    <div class="footer">
-        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2010-2015, S3IT, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

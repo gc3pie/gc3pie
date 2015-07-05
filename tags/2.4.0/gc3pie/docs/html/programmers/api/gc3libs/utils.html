@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>gc3libs.utils &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>gc3libs.utils &mdash; gc3pie 2.3.dev (SVN $Revision$) documentation</title>
     
-    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.3.dev (SVN $Revision$)',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../index.html" />
+    <link rel="top" title="gc3pie 2.3.dev (SVN $Revision$) documentation" href="../../../index.html" />
     <link rel="up" title="GC3Libs programming API" href="../index.html" />
     <link rel="next" title="gc3libs.workflow" href="workflow.html" />
     <link rel="prev" title="gc3libs.url" href="url.html" />
@@ -35,8 +35,8 @@
 </script>
 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -51,16 +51,16 @@
         <li class="right" >
           <a href="url.html" title="gc3libs.url"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
-          <li><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="module-gc3libs.utils">
 <span id="gc3libs-utils"></span><h1><cite>gc3libs.utils</cite><a class="headerlink" href="#module-gc3libs.utils" title="Permalink to this headline">¶</a></h1>
@@ -72,9 +72,8 @@ or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.</p>
 <dl class="class">
 <dt id="gc3libs.utils.Enum">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Enum</tt><a class="headerlink" href="#gc3libs.utils.Enum" title="Permalink to this definition">¶</a></dt>
-<dd><p>A generic enumeration class.  Inspired by:
-<a class="reference external" href="http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python/2182437#2182437">http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python/2182437#2182437</a>
+<em class="property">class </em><code class="descclassname">gc3libs.utils.</code><code class="descname">Enum</code><a class="headerlink" href="#gc3libs.utils.Enum" title="Permalink to this definition">¶</a></dt>
+<dd><p>A generic enumeration class.  Inspired by: <a class="reference external" href="http://goo.gl/1AL5N0">http://goo.gl/1AL5N0</a>
 with some more syntactic sugar added.</p>
 <p>An <cite>Enum</cite> class must be instanciated with a list of strings, that
 make the enumeration &#8220;label&#8221;:</p>
@@ -106,8 +105,8 @@ label by string value:</p>
 
 <dl class="class">
 <dt id="gc3libs.utils.ExponentialBackoff">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">ExponentialBackoff</tt><big>(</big><em>slot_duration=0.05</em>, <em>max_retries=5</em><big>)</big><a class="headerlink" href="#gc3libs.utils.ExponentialBackoff" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate waiting times with the <a class="reference external" href="http://en.wikipedia.org/wiki/Exponential_backoff#An_example_of_an_exponential_backoff_algorithm">exponential backoff</a> algorithm.</p>
+<em class="property">class </em><code class="descclassname">gc3libs.utils.</code><code class="descname">ExponentialBackoff</code><span class="sig-paren">(</span><em>slot_duration=0.05</em>, <em>max_retries=5</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.ExponentialBackoff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate waiting times with the <a class="reference external" href="http://goo.gl/PxVICA">exponential backoff</a> algorithm.</p>
 <p>Returned times are in seconds (or fractions thereof); they are
 integral multiples of the basic time slot, which is set with the
 <cite>slot_duration</cite> constructor parameter.</p>
@@ -125,13 +124,13 @@ or by looping over it:</p>
 </div>
 <dl class="method">
 <dt id="gc3libs.utils.ExponentialBackoff.next">
-<tt class="descname">next</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.utils.ExponentialBackoff.next" title="Permalink to this definition">¶</a></dt>
+<code class="descname">next</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.ExponentialBackoff.next" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return next waiting time.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.utils.ExponentialBackoff.wait">
-<tt class="descname">wait</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.utils.ExponentialBackoff.wait" title="Permalink to this definition">¶</a></dt>
+<code class="descname">wait</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.ExponentialBackoff.wait" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wait for another while.</p>
 </dd></dl>
 
@@ -139,7 +138,7 @@ or by looping over it:</p>
 
 <dl class="class">
 <dt id="gc3libs.utils.History">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">History</tt><a class="headerlink" href="#gc3libs.utils.History" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.utils.</code><code class="descname">History</code><a class="headerlink" href="#gc3libs.utils.History" title="Permalink to this definition">¶</a></dt>
 <dd><p>A list of messages with timestamps and (optional) tags.</p>
 <p>The <cite>append</cite> method should be used to add a message to the <cite>History</cite>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">L</span> <span class="o">=</span> <span class="n">History</span><span class="p">()</span>
@@ -147,7 +146,8 @@ or by looping over it:</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;second one&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The <cite>last</cite> method returns the text of the last message appended, with its timestamp:</p>
+<p>The <cite>last</cite> method returns the text of the last message appended, with its
+timestamp:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">L</span><span class="o">.</span><span class="n">last</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;second one at&#39;</span><span class="p">)</span>
 <span class="go">True</span>
 </pre></div>
@@ -160,7 +160,7 @@ temporal order they were added to the list, with their timestamp:</p>
 </div>
 <dl class="method">
 <dt id="gc3libs.utils.History.append">
-<tt class="descname">append</tt><big>(</big><em>message</em>, <em>*tags</em><big>)</big><a class="headerlink" href="#gc3libs.utils.History.append" title="Permalink to this definition">¶</a></dt>
+<code class="descname">append</code><span class="sig-paren">(</span><em>message</em>, <em>*tags</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.History.append" title="Permalink to this definition">¶</a></dt>
 <dd><p>Append a message to this <cite>History</cite>.</p>
 <p>The message is timestamped with the time at the moment of the
 call.</p>
@@ -172,13 +172,14 @@ not yet implemented.)</em></p>
 
 <dl class="method">
 <dt id="gc3libs.utils.History.format_message">
-<tt class="descname">format_message</tt><big>(</big><em>message</em><big>)</big><a class="headerlink" href="#gc3libs.utils.History.format_message" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a formatted message, appending to the message its timestamp in human readable format.</p>
+<code class="descname">format_message</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.History.format_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a formatted message, appending to the message its timestamp
+in human readable format.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.utils.History.last">
-<tt class="descname">last</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.utils.History.last" title="Permalink to this definition">¶</a></dt>
+<code class="descname">last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.History.last" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return text of last message appended.
 If log is empty, return empty string.</p>
 </dd></dl>
@@ -187,7 +188,7 @@ If log is empty, return empty string.</p>
 
 <dl class="class">
 <dt id="gc3libs.utils.PlusInfinity">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">PlusInfinity</tt><a class="headerlink" href="#gc3libs.utils.PlusInfinity" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.utils.</code><code class="descname">PlusInfinity</code><a class="headerlink" href="#gc3libs.utils.PlusInfinity" title="Permalink to this definition">¶</a></dt>
 <dd><p>An object that is greater-than any other object.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">PlusInfinity</span><span class="p">()</span>
 </pre></div>
@@ -242,7 +243,7 @@ comparing <cite>PlusInfinity</cite> to itself:</p>
 
 <dl class="class">
 <dt id="gc3libs.utils.Singleton">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Singleton</tt><a class="headerlink" href="#gc3libs.utils.Singleton" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.utils.</code><code class="descname">Singleton</code><a class="headerlink" href="#gc3libs.utils.Singleton" title="Permalink to this definition">¶</a></dt>
 <dd><p>Derived classes of <cite>Singleton</cite> can have only one instance in the
 running Python interpreter.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Singleton</span><span class="p">()</span>
@@ -255,7 +256,7 @@ running Python interpreter.</p>
 
 <dl class="class">
 <dt id="gc3libs.utils.Struct">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">Struct</tt><big>(</big><em>initializer=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.utils.Struct" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.utils.</code><code class="descname">Struct</code><span class="sig-paren">(</span><em>initializer=None</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.Struct" title="Permalink to this definition">¶</a></dt>
 <dd><p>A <cite>dict</cite>-like object, whose keys can be accessed with the usual
 &#8216;[...]&#8217; lookup syntax, or with the &#8216;.&#8217; get attribute syntax.</p>
 <p>Examples:</p>
@@ -286,7 +287,7 @@ shallow copy of the instance:</p>
 </div>
 <dl class="method">
 <dt id="gc3libs.utils.Struct.copy">
-<tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.utils.Struct.copy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.Struct.copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a (shallow) copy of this <cite>Struct</cite> instance.</p>
 </dd></dl>
 
@@ -294,7 +295,7 @@ shallow copy of the instance:</p>
 
 <dl class="class">
 <dt id="gc3libs.utils.YieldAtNext">
-<em class="property">class </em><tt class="descclassname">gc3libs.utils.</tt><tt class="descname">YieldAtNext</tt><big>(</big><em>generator</em><big>)</big><a class="headerlink" href="#gc3libs.utils.YieldAtNext" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.utils.</code><code class="descname">YieldAtNext</code><span class="sig-paren">(</span><em>generator</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.YieldAtNext" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provide an alternate protocol for generators.</p>
 <p>Wrap a Python generator object, and buffer the return values from
 <cite>send</cite> and <cite>throw</cite> calls, returning <cite>None</cite> instead. Return the
@@ -304,7 +305,7 @@ subsequent call to the <cite>next</cite> method.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.backup">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">backup</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.backup" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">backup</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.backup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Rename the filesystem entry at <cite>path</cite> by appending a unique
 numerical suffix; return new name.</p>
 <p>For example,</p>
@@ -316,7 +317,7 @@ numerical suffix; return new name.</p>
 </pre></div>
 </div>
 <ol class="arabic simple" start="2">
-<li>then make a backup of it; the backup will end in <tt class="docutils literal"><span class="pre">.~1~</span></tt>:</li>
+<li>then make a backup of it; the backup will end in <code class="docutils literal"><span class="pre">.~1~</span></code>:</li>
 </ol>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">path1</span> <span class="o">=</span> <span class="n">backup</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s">&#39;.~1~&#39;</span><span class="p">)</span>
@@ -324,7 +325,7 @@ numerical suffix; return new name.</p>
 </pre></div>
 </div>
 <p>3. re-create the file, and make a second backup: this time the
-file will be renamed with a <tt class="docutils literal"><span class="pre">.~2~</span></tt> extension:</p>
+file will be renamed with a <code class="docutils literal"><span class="pre">.~2~</span></code> extension:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">path2</span> <span class="o">=</span> <span class="n">backup</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span> <span class="o">+</span> <span class="s">&#39;.~2~&#39;</span><span class="p">)</span>
@@ -340,13 +341,13 @@ file will be renamed with a <tt class="docutils literal"><span class="pre">.~2~<
 
 <dl class="function">
 <dt id="gc3libs.utils.basename_sans">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">basename_sans</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.basename_sans" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">basename_sans</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.basename_sans" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return base name without the extension.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.cache_for">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">cache_for</tt><big>(</big><em>lapse</em><big>)</big><a class="headerlink" href="#gc3libs.utils.cache_for" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">cache_for</code><span class="sig-paren">(</span><em>lapse</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.cache_for" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cache the result of a (nullary) method invocation for a given
 amount of time. Use as a decorator on object methods whose results
 are to be cached.</p>
@@ -386,7 +387,7 @@ following simple code:</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.cat">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">cat</tt><big>(</big><em>*args</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.utils.cat" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">cat</code><span class="sig-paren">(</span><em>*args</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.cat" title="Permalink to this definition">¶</a></dt>
 <dd><p>Concatenate the contents of all <cite>args</cite> into <cite>output</cite>.  Both
 <cite>output</cite> and each of the <cite>args</cite> can be a file-like object or a
 string (indicating the path of a file to open).</p>
@@ -396,26 +397,26 @@ mode; otherwise it is overwritten.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.copy_recursively">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">copy_recursively</tt><big>(</big><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>changed_only=True</em><big>)</big><a class="headerlink" href="#gc3libs.utils.copy_recursively" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">copy_recursively</code><span class="sig-paren">(</span><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>changed_only=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.copy_recursively" title="Permalink to this definition">¶</a></dt>
 <dd><p>Copy <cite>src</cite> to <cite>dst</cite>, descending it recursively if necessary.</p>
 <p>The <cite>overwrite</cite> and <cite>changed_only</cite> optional arguments
-have the same effect as in <a class="reference internal" href="#gc3libs.utils.copytree" title="gc3libs.utils.copytree"><tt class="xref py py-func docutils literal"><span class="pre">copytree()</span></tt></a> (which see).</p>
+have the same effect as in <a class="reference internal" href="#gc3libs.utils.copytree" title="gc3libs.utils.copytree"><code class="xref py py-func docutils literal"><span class="pre">copytree()</span></code></a> (which see).</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.copyfile">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">copyfile</tt><big>(</big><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>changed_only=True</em>, <em>link=False</em><big>)</big><a class="headerlink" href="#gc3libs.utils.copyfile" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">copyfile</code><span class="sig-paren">(</span><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>changed_only=True</em>, <em>link=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.copyfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Copy a file from <cite>src</cite> to <cite>dst</cite>; return <cite>True</cite> if the copy was
 actually made.</p>
-<p>If <cite>overwrite</cite> is <tt class="docutils literal"><span class="pre">False</span></tt> (default), an existing destination entry
+<p>If <cite>overwrite</cite> is <code class="docutils literal"><span class="pre">False</span></code> (default), an existing destination entry
 is left unchanged and <cite>False</cite> is returned.</p>
-<p>If <cite>overwrite</cite> is <tt class="docutils literal"><span class="pre">True</span></tt>, then <cite>changed_only</cite> determines
+<p>If <cite>overwrite</cite> is <code class="docutils literal"><span class="pre">True</span></code>, then <cite>changed_only</cite> determines
 if the destination file is overwritten:</p>
 <ul class="simple">
-<li>if <cite>changed_only</cite> is <tt class="docutils literal"><span class="pre">True</span></tt> (default), then destination is
+<li>if <cite>changed_only</cite> is <code class="docutils literal"><span class="pre">True</span></code> (default), then destination is
 overwritten if and only if it has a different size or has been
 modified less recently than the source;</li>
-<li>if <cite>changed_only</cite> is <tt class="docutils literal"><span class="pre">False</span></tt>, then the destination is
+<li>if <cite>changed_only</cite> is <code class="docutils literal"><span class="pre">False</span></code>, then the destination is
 overwritten unconditionally.</li>
 </ul>
 <p>If <cite>link</cite> is <cite>True</cite>, an attempt at hard-linking is done first;
@@ -423,23 +424,23 @@ failing that, we copy the source file onto the destination
 one. Permission bits and modification times are copied as well.</p>
 <p>If <cite>dst</cite> is a directory, a file with the same basename as <cite>src</cite> is
 created (or overwritten) in the directory specified.</p>
-<p>Return <tt class="docutils literal"><span class="pre">True</span></tt> or <tt class="docutils literal"><span class="pre">False</span></tt>, depending on whether the source file
+<p>Return <code class="docutils literal"><span class="pre">True</span></code> or <code class="docutils literal"><span class="pre">False</span></code>, depending on whether the source file
 was actually copied (or linked) to the destination.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.copytree">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">copytree</tt><big>(</big><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>changed_only=True</em><big>)</big><a class="headerlink" href="#gc3libs.utils.copytree" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">copytree</code><span class="sig-paren">(</span><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>changed_only=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.copytree" title="Permalink to this definition">¶</a></dt>
 <dd><p>Recursively copy an entire directory tree rooted at <cite>src</cite>.</p>
-<p>If <cite>overwrite</cite> is <tt class="docutils literal"><span class="pre">False</span></tt> (default), entries that already exist in
+<p>If <cite>overwrite</cite> is <code class="docutils literal"><span class="pre">False</span></code> (default), entries that already exist in
 the destination tree are left unchanged and not overwritten.</p>
-<p>If <cite>overwrite</cite> is <tt class="docutils literal"><span class="pre">True</span></tt>, then <cite>changed_only</cite> determines
+<p>If <cite>overwrite</cite> is <code class="docutils literal"><span class="pre">True</span></code>, then <cite>changed_only</cite> determines
 which files are overwritten:</p>
 <ul class="simple">
-<li>if <cite>changed_only</cite> is <tt class="docutils literal"><span class="pre">True</span></tt> (default), then only files for
+<li>if <cite>changed_only</cite> is <code class="docutils literal"><span class="pre">True</span></code> (default), then only files for
 which the source has a different size or has been modified
 more recently than the destination are copied;</li>
-<li>if <cite>changed_only</cite> is <tt class="docutils literal"><span class="pre">False</span></tt>, then <em>all</em> files in <cite>source</cite>
+<li>if <cite>changed_only</cite> is <code class="docutils literal"><span class="pre">False</span></code>, then <em>all</em> files in <cite>source</cite>
 will be copied into <cite>destination</cite>, unconditionally.</li>
 </ul>
 <p>Destination directory <cite>dst</cite> is created if it does not exist.</p>
@@ -448,7 +449,7 @@ will be copied into <cite>destination</cite>, unconditionally.</li>
 
 <dl class="function">
 <dt id="gc3libs.utils.count">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">count</tt><big>(</big><em>seq</em>, <em>predicate</em><big>)</big><a class="headerlink" href="#gc3libs.utils.count" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">count</code><span class="sig-paren">(</span><em>seq</em>, <em>predicate</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.count" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return number of items in <cite>seq</cite> that match <cite>predicate</cite>.
 Argument <cite>predicate</cite> should be a callable that accepts
 one argument and returns a boolean.</p>
@@ -456,15 +457,14 @@ one argument and returns a boolean.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.defproperty">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">defproperty</tt><big>(</big><em>fn</em><big>)</big><a class="headerlink" href="#gc3libs.utils.defproperty" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">defproperty</code><span class="sig-paren">(</span><em>fn</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.defproperty" title="Permalink to this definition">¶</a></dt>
 <dd><p>Decorator to define properties with a simplified syntax in Python 2.4.
-See <a class="reference external" href="http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6">http://code.activestate.com/recipes/410698-property-decorator-for-python-24/#c6</a>
-for details and examples.</p>
+See <a class="reference external" href="http://goo.gl/IoOZ8m">http://goo.gl/IoOZ8m</a> for details and examples.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.deploy_configuration_file">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">deploy_configuration_file</tt><big>(</big><em>filename</em>, <em>template_filename=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.deploy_configuration_file" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">deploy_configuration_file</code><span class="sig-paren">(</span><em>filename</em>, <em>template_filename=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.deploy_configuration_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Ensure that configuration file <cite>filename</cite> exists; possibly
 copying it from the specified <cite>template_filename</cite>.</p>
 <p>Return <cite>True</cite> if a file with the specified name exists in the
@@ -472,26 +472,27 @@ configuration directory.  If not, try to copy the template file
 over and then return <cite>False</cite>; in case the copy operations fails,
 a <cite>NoConfigurationFile</cite> exception is raised.</p>
 <p>The <cite>template_filename</cite> is always resolved relative to GC3Libs&#8217;
-&#8216;package resource&#8217; directory (i.e., the <tt class="docutils literal"><span class="pre">etc/</span></tt> directory in the
+&#8216;package resource&#8217; directory (i.e., the <code class="docutils literal"><span class="pre">etc/</span></code> directory in the
 sources.  If <cite>template_filename</cite> is <cite>None</cite>, then it is assumed to
 be the base name of <cite>filename</cite>.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.dirname">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">dirname</tt><big>(</big><em>pathname</em><big>)</big><a class="headerlink" href="#gc3libs.utils.dirname" title="Permalink to this definition">¶</a></dt>
-<dd><p>Same as <cite>os.path.dirname</cite> but return <cite>.</cite> in case of path names with no directory component.</p>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">dirname</code><span class="sig-paren">(</span><em>pathname</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.dirname" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as <cite>os.path.dirname</cite> but return <cite>.</cite> in case of path names with no
+directory component.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.fgrep">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">fgrep</tt><big>(</big><em>literal</em>, <em>filename</em><big>)</big><a class="headerlink" href="#gc3libs.utils.fgrep" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">fgrep</code><span class="sig-paren">(</span><em>literal</em>, <em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.fgrep" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate over all lines in a file that contain the <cite>literal</cite> string.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.first">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">first</tt><big>(</big><em>seq</em><big>)</big><a class="headerlink" href="#gc3libs.utils.first" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">first</code><span class="sig-paren">(</span><em>seq</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.first" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the first element of sequence or iterator <cite>seq</cite>.
 Raise <cite>TypeError</cite> if the argument does not implement
 either of the two interfaces.</p>
@@ -509,7 +510,7 @@ either of the two interfaces.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.from_template">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">from_template</tt><big>(</big><em>template</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.utils.from_template" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">from_template</code><span class="sig-paren">(</span><em>template</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.from_template" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the contents of <cite>template</cite>, substituting all occurrences
 of Python formatting directives &#8216;%(key)s&#8217; with the corresponding values
 taken from dictionary <cite>extra_args</cite>.</p>
@@ -522,13 +523,21 @@ template contents itself.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.getattr_nested">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">getattr_nested</tt><big>(</big><em>obj</em>, <em>name</em><big>)</big><a class="headerlink" href="#gc3libs.utils.getattr_nested" title="Permalink to this definition">¶</a></dt>
-<dd><p>Like Python&#8217;s <cite>getattr</cite>, but perform a recursive lookup if <cite>name</cite> contains any dots.</p>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">getattr_nested</code><span class="sig-paren">(</span><em>obj</em>, <em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.getattr_nested" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like Python&#8217;s <cite>getattr</cite>, but perform a recursive lookup if <cite>name</cite> contains
+any dots.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.grep">
+<code class="descclassname">gc3libs.utils.</code><code class="descname">grep</code><span class="sig-paren">(</span><em>pattern</em>, <em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.grep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over all lines in a file that match the <cite>pattern</cite> regular
+expression.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.ifelse">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">ifelse</tt><big>(</big><em>test</em>, <em>if_true</em>, <em>if_false</em><big>)</big><a class="headerlink" href="#gc3libs.utils.ifelse" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">ifelse</code><span class="sig-paren">(</span><em>test</em>, <em>if_true</em>, <em>if_false</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.ifelse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return <cite>if_true</cite> is argument <cite>test</cite> evaluates to <cite>True</cite>,
 return <cite>if_false</cite> otherwise.</p>
 <p>This is just a workaround for Python 2.4 lack of the
@@ -544,7 +553,7 @@ conditional assignment operator:</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.irange">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">irange</tt><big>(</big><em>start</em>, <em>stop</em>, <em>step=1</em><big>)</big><a class="headerlink" href="#gc3libs.utils.irange" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">irange</code><span class="sig-paren">(</span><em>start</em>, <em>stop</em>, <em>step=1</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.irange" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate over all values greater or equal than <cite>start</cite> and less than <cite>stop</cite>.
 (Or the reverse, if <cite>step &lt; 0</cite>.)</p>
 <p>Example:</p>
@@ -581,7 +590,7 @@ to be specified:</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.lock">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">lock</tt><big>(</big><em>path</em>, <em>timeout</em>, <em>create=True</em><big>)</big><a class="headerlink" href="#gc3libs.utils.lock" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">lock</code><span class="sig-paren">(</span><em>path</em>, <em>timeout</em>, <em>create=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.lock" title="Permalink to this definition">¶</a></dt>
 <dd><p>Lock the file at <cite>path</cite>.  Raise a <cite>LockTimeout</cite> error if the lock
 cannot be acquired within <cite>timeout</cite> seconds.</p>
 <p>Return a <cite>lock</cite> object that should be passed unchanged to the
@@ -589,19 +598,19 @@ cannot be acquired within <cite>timeout</cite> seconds.</p>
 <p>If no <cite>path</cite> points to a non-existent location, an empty file is
 created before attempting to lock (unless <cite>create</cite> is <cite>False</cite>).
 An attempt is made to remove the file in case an error happens.</p>
-<p>See also: <a class="reference internal" href="#gc3libs.utils.unlock" title="gc3libs.utils.unlock"><tt class="xref py py-func docutils literal"><span class="pre">gc3libs.utils.unlock()</span></tt></a></p>
+<p>See also: <a class="reference internal" href="#gc3libs.utils.unlock" title="gc3libs.utils.unlock"><code class="xref py py-func docutils literal"><span class="pre">gc3libs.utils.unlock()</span></code></a></p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.mkdir">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">mkdir</tt><big>(</big><em>path</em>, <em>mode=511</em><big>)</big><a class="headerlink" href="#gc3libs.utils.mkdir" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">mkdir</code><span class="sig-paren">(</span><em>path</em>, <em>mode=511</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.mkdir" title="Permalink to this definition">¶</a></dt>
 <dd><p>Like <cite>os.makedirs</cite>, but does not throw an exception if PATH
 already exists.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.mkdir_with_backup">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">mkdir_with_backup</tt><big>(</big><em>path</em>, <em>mode=511</em><big>)</big><a class="headerlink" href="#gc3libs.utils.mkdir_with_backup" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">mkdir_with_backup</code><span class="sig-paren">(</span><em>path</em>, <em>mode=511</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.mkdir_with_backup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Like <cite>os.makedirs</cite>, but if <cite>path</cite> already exists and is not empty,
 rename the existing one to a backup name (see the <cite>backup</cite> function).</p>
 <p>Unlike <cite>os.makedirs</cite>, no exception is thrown if the directory
@@ -611,45 +620,52 @@ are not altered to reflect <cite>mode</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.move_recursively">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">move_recursively</tt><big>(</big><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>changed_only=True</em><big>)</big><a class="headerlink" href="#gc3libs.utils.move_recursively" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">move_recursively</code><span class="sig-paren">(</span><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>changed_only=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.move_recursively" title="Permalink to this definition">¶</a></dt>
 <dd><p>Move <cite>src</cite> to <cite>dst</cite>, descending it recursively if necessary.</p>
 <p>The <cite>overwrite</cite> and <cite>changed_only</cite> optional arguments
-have the same effect as in <a class="reference internal" href="#gc3libs.utils.copytree" title="gc3libs.utils.copytree"><tt class="xref py py-func docutils literal"><span class="pre">copytree()</span></tt></a> (which see).</p>
+have the same effect as in <a class="reference internal" href="#gc3libs.utils.copytree" title="gc3libs.utils.copytree"><code class="xref py py-func docutils literal"><span class="pre">copytree()</span></code></a> (which see).</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.movefile">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">movefile</tt><big>(</big><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>changed_only=True</em>, <em>link=False</em><big>)</big><a class="headerlink" href="#gc3libs.utils.movefile" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">movefile</code><span class="sig-paren">(</span><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>changed_only=True</em>, <em>link=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.movefile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Move a file from <cite>src</cite> to <cite>dst</cite>; return <cite>True</cite> if the move was
 actually made.</p>
 <p>The <cite>overwrite</cite> and <cite>changed_only</cite> optional arguments
-have the same effect as in <a class="reference internal" href="#gc3libs.utils.copyfile" title="gc3libs.utils.copyfile"><tt class="xref py py-func docutils literal"><span class="pre">copyfile()</span></tt></a> (which see).</p>
+have the same effect as in <a class="reference internal" href="#gc3libs.utils.copyfile" title="gc3libs.utils.copyfile"><code class="xref py py-func docutils literal"><span class="pre">copyfile()</span></code></a> (which see).</p>
 <p>If <cite>dst</cite> is a directory, a file with the same basename as <cite>src</cite> is
 created (or overwritten) in the directory specified.</p>
-<p>Return <tt class="docutils literal"><span class="pre">True</span></tt> or <tt class="docutils literal"><span class="pre">False</span></tt>, depending on whether the source file
+<p>Return <code class="docutils literal"><span class="pre">True</span></code> or <code class="docutils literal"><span class="pre">False</span></code>, depending on whether the source file
 was actually moved to the destination.</p>
-<p>See also: <a class="reference internal" href="#gc3libs.utils.copyfile" title="gc3libs.utils.copyfile"><tt class="xref py py-func docutils literal"><span class="pre">copyfile()</span></tt></a></p>
+<p>See also: <a class="reference internal" href="#gc3libs.utils.copyfile" title="gc3libs.utils.copyfile"><code class="xref py py-func docutils literal"><span class="pre">copyfile()</span></code></a></p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.movetree">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">movetree</tt><big>(</big><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>changed_only=True</em><big>)</big><a class="headerlink" href="#gc3libs.utils.movetree" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">movetree</code><span class="sig-paren">(</span><em>src</em>, <em>dst</em>, <em>overwrite=False</em>, <em>changed_only=True</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.movetree" title="Permalink to this definition">¶</a></dt>
 <dd><p>Recursively move an entire directory tree rooted at <cite>src</cite>.</p>
 <p>The <cite>overwrite</cite> and <cite>changed_only</cite> optional arguments
-have the same effect as in <a class="reference internal" href="#gc3libs.utils.copytree" title="gc3libs.utils.copytree"><tt class="xref py py-func docutils literal"><span class="pre">copytree()</span></tt></a> (which see).</p>
-<p>See also: <a class="reference internal" href="#gc3libs.utils.copytree" title="gc3libs.utils.copytree"><tt class="xref py py-func docutils literal"><span class="pre">copytree()</span></tt></a>.</p>
+have the same effect as in <a class="reference internal" href="#gc3libs.utils.copytree" title="gc3libs.utils.copytree"><code class="xref py py-func docutils literal"><span class="pre">copytree()</span></code></a> (which see).</p>
+<p>See also: <a class="reference internal" href="#gc3libs.utils.copytree" title="gc3libs.utils.copytree"><code class="xref py py-func docutils literal"><span class="pre">copytree()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="gc3libs.utils.occurs">
+<code class="descclassname">gc3libs.utils.</code><code class="descname">occurs</code><span class="sig-paren">(</span><em>pattern</em>, <em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.occurs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return <code class="docutils literal"><span class="pre">True</span></code> if any line in <cite>filename</cite> matches regular expression
+<cite>pattern</cite>.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.prettyprint">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">prettyprint</tt><big>(</big><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2b4fc0b31150&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><big>)</big><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">prettyprint</code><span class="sig-paren">(</span><em>D</em>, <em>indent=0</em>, <em>width=0</em>, <em>maxdepth=None</em>, <em>step=4</em>, <em>only_keys=None</em>, <em>output=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w'&gt;</em>, <em>_key_prefix=''</em>, <em>_exclude=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.prettyprint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print dictionary instance <cite>D</cite> in a YAML-like format.
 Each output line consists of:</p>
 <blockquote>
 <div><ul class="simple">
 <li><cite>indent</cite> spaces,</li>
 <li>the key name,</li>
-<li>a colon character <tt class="docutils literal"><span class="pre">:</span></tt>,</li>
+<li>a colon character <code class="docutils literal"><span class="pre">:</span></code>,</li>
 <li>the associated value.</li>
 </ul>
 </div></blockquote>
@@ -666,20 +682,22 @@ indented <cite>step</cite> spaces from the enclosing dictionary.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.progressive_number">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">progressive_number</tt><big>(</big><em>qty=None</em>, <em>id_filename='/home/antonio/.gc3/next_id.txt'</em><big>)</big><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">progressive_number</code><span class="sig-paren">(</span><em>qty=None</em>, <em>id_filename=None</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.progressive_number" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a positive integer, whose value is guaranteed to
 be monotonically increasing across different invocations
 of this function, and also across separate instances of the
 calling program.</p>
+<p>This is accomplished by using a system-wide file which holds the
+&#8220;next available&#8221; ID.  The location of this file can be set using
+the <code class="docutils literal"><span class="pre">GC3PIE_ID_FILE</span></code> environment variable, or programmatically
+using the <cite>id_filename</cite> argument.  By default, the &#8220;next ID&#8221; file
+is located at <code class="docutils literal"><span class="pre">~/.gc3/next_id.txt</span></code>:file:</p>
 <p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre>(create a temporary directory to avoid bug #)
-</pre></div>
-</div>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span><span class="o">,</span> <span class="nn">os</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># create &quot;next ID&quot; file in a temporary location</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span><span class="o">,</span> <span class="nn">os</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">()</span>
-</pre></div>
-</div>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">n</span> <span class="o">=</span> <span class="n">progressive_number</span><span class="p">(</span><span class="n">id_filename</span><span class="o">=</span><span class="n">tmp</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">n</span> <span class="o">=</span> <span class="n">progressive_number</span><span class="p">(</span><span class="n">id_filename</span><span class="o">=</span><span class="n">tmp</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">=</span> <span class="n">progressive_number</span><span class="p">(</span><span class="n">id_filename</span><span class="o">=</span><span class="n">tmp</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">m</span> <span class="o">&gt;</span> <span class="n">n</span>
 <span class="go">True</span>
@@ -730,7 +748,7 @@ positive integer.</td>
 
 <dl class="function">
 <dt id="gc3libs.utils.read_contents">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">read_contents</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.read_contents" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">read_contents</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.read_contents" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the whole contents of the file at <cite>path</cite> as a single string.</p>
 <p>Example:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">read_contents</span><span class="p">(</span><span class="s">&#39;/dev/null&#39;</span><span class="p">)</span>
@@ -753,7 +771,7 @@ positive integer.</td>
 
 <dl class="function">
 <dt id="gc3libs.utils.safe_repr">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">safe_repr</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.utils.safe_repr" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">safe_repr</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.safe_repr" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a string describing Python object <cite>obj</cite>.</p>
 <p>Avoids calling any Python magic methods, so should be safe to use
 as a &#8216;last resort&#8217; in implementation of <cite>__str__</cite> and <cite>__repr__</cite>.</p>
@@ -761,7 +779,7 @@ as a &#8216;last resort&#8217; in implementation of <cite>__str__</cite> and <ci
 
 <dl class="function">
 <dt id="gc3libs.utils.same_docstring_as">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">same_docstring_as</tt><big>(</big><em>referenced_fn</em><big>)</big><a class="headerlink" href="#gc3libs.utils.same_docstring_as" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">same_docstring_as</code><span class="sig-paren">(</span><em>referenced_fn</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.same_docstring_as" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function decorator: sets the docstring of the following function
 to the one of <cite>referenced_fn</cite>.</p>
 <p>Intended usage is for setting docstrings on methods redefined in
@@ -771,14 +789,14 @@ corresponding abstract method in the base class.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.samefile">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">samefile</tt><big>(</big><em>path1</em>, <em>path2</em><big>)</big><a class="headerlink" href="#gc3libs.utils.samefile" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">samefile</code><span class="sig-paren">(</span><em>path1</em>, <em>path2</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.samefile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Like <cite>os.path.samefile</cite> but return <cite>False</cite> if either one of the
 paths does not exist.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.sh_quote_safe">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">sh_quote_safe</tt><big>(</big><em>text</em><big>)</big><a class="headerlink" href="#gc3libs.utils.sh_quote_safe" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">sh_quote_safe</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.sh_quote_safe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Escape a string for safely passing as argument to a shell command.</p>
 <p>Return a single-quoted string that expands to the exact literal
 contents of <cite>text</cite> when used as an argument to a shell command.
@@ -794,7 +812,7 @@ string read syntax):</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.sh_quote_safe_cmdline">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">sh_quote_safe_cmdline</tt><big>(</big><em>args</em><big>)</big><a class="headerlink" href="#gc3libs.utils.sh_quote_safe_cmdline" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">sh_quote_safe_cmdline</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.sh_quote_safe_cmdline" title="Permalink to this definition">¶</a></dt>
 <dd><p>Single-quote a list of strings for passing to the shell as a
 command.  Return the list of quoted arguments concatenated and
 separated by spaces.</p>
@@ -807,10 +825,10 @@ separated by spaces.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.sh_quote_unsafe">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">sh_quote_unsafe</tt><big>(</big><em>text</em><big>)</big><a class="headerlink" href="#gc3libs.utils.sh_quote_unsafe" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">sh_quote_unsafe</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.sh_quote_unsafe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Double-quote a string for passing as argument to a shell command.</p>
 <p>Return a double-quoted string that expands to the contents of
-<cite>text</cite> but still allows variable expansion and <tt class="docutils literal"><span class="pre">\</span></tt>-escapes
+<cite>text</cite> but still allows variable expansion and <code class="docutils literal"><span class="pre">\</span></code>-escapes
 processing by the UNIX shell.  Examples (note that backslashes are
 doubled because of Python&#8217;s string read syntax):</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">sh_quote_unsafe</span><span class="p">(</span><span class="s">&quot;arg&quot;</span><span class="p">))</span>
@@ -825,7 +843,7 @@ doubled because of Python&#8217;s string read syntax):</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.sh_quote_unsafe_cmdline">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">sh_quote_unsafe_cmdline</tt><big>(</big><em>args</em><big>)</big><a class="headerlink" href="#gc3libs.utils.sh_quote_unsafe_cmdline" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">sh_quote_unsafe_cmdline</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.sh_quote_unsafe_cmdline" title="Permalink to this definition">¶</a></dt>
 <dd><p>Double-quote a list of strings for passing to the shell as a
 command.  Return the list of quoted arguments concatenated and
 separated by spaces.</p>
@@ -838,7 +856,7 @@ separated by spaces.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.string_to_boolean">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">string_to_boolean</tt><big>(</big><em>word</em><big>)</big><a class="headerlink" href="#gc3libs.utils.string_to_boolean" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">string_to_boolean</code><span class="sig-paren">(</span><em>word</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.string_to_boolean" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert <cite>word</cite> to a Python boolean value and return it.
 The strings <cite>true</cite>, <cite>yes</cite>, <cite>on</cite>, <cite>1</cite> (with any
 capitalization and any amount of leading and trailing
@@ -879,14 +897,14 @@ spaces) are recognized as meaning Python <cite>True</cite>:</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.stripped">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">stripped</tt><big>(</big><em>iterable</em><big>)</big><a class="headerlink" href="#gc3libs.utils.stripped" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">stripped</code><span class="sig-paren">(</span><em>iterable</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.stripped" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate over lines in <cite>iterable</cite> and return each of them stripped
 of leading and trailing blanks.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.tempdir">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">tempdir</tt><big>(</big><em>*args</em>, <em>**kwds</em><big>)</big><a class="headerlink" href="#gc3libs.utils.tempdir" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">tempdir</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.tempdir" title="Permalink to this definition">¶</a></dt>
 <dd><p>A context manager for creating and then deleting a temporary directory.</p>
 <p>All arguments are passed unchanged to the <cite>tempfile.mkdtemp</cite>
 standand library function.</p>
@@ -895,10 +913,10 @@ standand library function.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.test_file">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">test_file</tt><big>(</big><em>path</em>, <em>mode</em>, <em>exception=&lt;type 'exceptions.RuntimeError'&gt;</em>, <em>isdir=False</em><big>)</big><a class="headerlink" href="#gc3libs.utils.test_file" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">test_file</code><span class="sig-paren">(</span><em>path</em>, <em>mode</em>, <em>exception=&lt;type 'exceptions.RuntimeError'&gt;</em>, <em>isdir=False</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.test_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Test for access to a path; if access is not granted, raise an
 instance of <cite>exception</cite> with an appropriate error message.
-This is a frontend to <tt class="xref py py-func docutils literal"><span class="pre">os.access()</span></tt>, which see for exact
+This is a frontend to <code class="xref py py-func docutils literal"><span class="pre">os.access()</span></code>, which see for exact
 semantics and the meaning of <cite>path</cite> and <cite>mode</cite>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -906,7 +924,7 @@ semantics and the meaning of <cite>path</cite> and <cite>mode</cite>.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>path</strong> &#8211; Filesystem path to test.</li>
-<li><strong>mode</strong> &#8211; See <tt class="xref py py-func docutils literal"><span class="pre">os.access()</span></tt></li>
+<li><strong>mode</strong> &#8211; See <code class="xref py py-func docutils literal"><span class="pre">os.access()</span></code></li>
 <li><strong>exception</strong> &#8211; Class of exception to raise if test fails.</li>
 <li><strong>isdir</strong> &#8211; If <cite>True</cite> then also test that <cite>path</cite> points to a directory.</li>
 </ul>
@@ -947,7 +965,7 @@ that <cite>path</cite> points to a directory inode:</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.to_bytes">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">to_bytes</tt><big>(</big><em>s</em><big>)</big><a class="headerlink" href="#gc3libs.utils.to_bytes" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">to_bytes</code><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.to_bytes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert string <cite>s</cite> to an integer number of bytes.  Suffixes like
 &#8216;KB&#8217;, &#8216;MB&#8217;, &#8216;GB&#8217; (up to &#8216;YB&#8217;), with or without the trailing &#8216;B&#8217;,
 are allowed and properly accounted for.  Case is ignored in
@@ -974,17 +992,17 @@ suffixes.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.touch">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">touch</tt><big>(</big><em>path</em><big>)</big><a class="headerlink" href="#gc3libs.utils.touch" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">touch</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.touch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Ensure a regular file exists at <cite>path</cite>.</p>
 <p>If the file already exists, its access and modification time are
 updated.</p>
-<p>(This is a very limited and stripped down version of the <tt class="docutils literal"><span class="pre">touch</span></tt>
+<p>(This is a very limited and stripped down version of the <code class="docutils literal"><span class="pre">touch</span></code>
 POSIX utility.)</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.uniq">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">uniq</tt><big>(</big><em>seq</em><big>)</big><a class="headerlink" href="#gc3libs.utils.uniq" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">uniq</code><span class="sig-paren">(</span><em>seq</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.uniq" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate over all unique elements in sequence <cite>seq</cite>.</p>
 <p>Distinct values are returned in a sorted fashion.</p>
 <p>Examples:</p>
@@ -1013,16 +1031,16 @@ POSIX utility.)</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.unlock">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">unlock</tt><big>(</big><em>lock</em><big>)</big><a class="headerlink" href="#gc3libs.utils.unlock" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">unlock</code><span class="sig-paren">(</span><em>lock</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.unlock" title="Permalink to this definition">¶</a></dt>
 <dd><p>Release a previously-acquired lock.</p>
 <p>Argument <cite>lock</cite> should be the return value of a previous
 <cite>gc3libs.utils.lock</cite> call.</p>
-<p>See also: <a class="reference internal" href="#gc3libs.utils.lock" title="gc3libs.utils.lock"><tt class="xref py py-func docutils literal"><span class="pre">gc3libs.utils.lock()</span></tt></a></p>
+<p>See also: <a class="reference internal" href="#gc3libs.utils.lock" title="gc3libs.utils.lock"><code class="xref py py-func docutils literal"><span class="pre">gc3libs.utils.lock()</span></code></a></p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.utils.update_parameter_in_file">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">update_parameter_in_file</tt><big>(</big><em>path</em>, <em>var_in</em>, <em>new_val</em>, <em>regex_in</em><big>)</big><a class="headerlink" href="#gc3libs.utils.update_parameter_in_file" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">update_parameter_in_file</code><span class="sig-paren">(</span><em>path</em>, <em>var_in</em>, <em>new_val</em>, <em>regex_in</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.update_parameter_in_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Updates a parameter value in a parameter file using predefined regular
 expressions in <cite>_loop_regexps</cite>.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1033,7 +1051,8 @@ expressions in <cite>_loop_regexps</cite>.</p>
 <li><strong>path</strong> &#8211; Full path to the parameter file.</li>
 <li><strong>var_in</strong> &#8211; The variable to modify.</li>
 <li><strong>new_val</strong> &#8211; The updated parameter value.</li>
-<li><strong>regex</strong> &#8211; Name of the regular expression that describes the format of the parameter file.</li>
+<li><strong>regex</strong> &#8211; Name of the regular expression that describes the format
+of the parameter file.</li>
 </ul>
 </td>
 </tr>
@@ -1043,7 +1062,7 @@ expressions in <cite>_loop_regexps</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.utils.write_contents">
-<tt class="descclassname">gc3libs.utils.</tt><tt class="descname">write_contents</tt><big>(</big><em>path</em>, <em>data</em><big>)</big><a class="headerlink" href="#gc3libs.utils.write_contents" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.utils.</code><code class="descname">write_contents</code><span class="sig-paren">(</span><em>path</em>, <em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.utils.write_contents" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overwrite the contents of the file at <cite>path</cite> with the given data.
 If the file does not exist, it is created.</p>
 <p>Example:</p>
@@ -1066,7 +1085,7 @@ If the file does not exist, it is created.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
   <p class="topless"><a href="url.html"
@@ -1074,7 +1093,7 @@ If the file does not exist, it is created.</p>
   <h4>Next topic</h4>
   <p class="topless"><a href="workflow.html"
                         title="next chapter"><cite>gc3libs.workflow</cite></a></p>
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../../search.html" method="get">
       <input type="text" name="q" />
@@ -1091,7 +1110,7 @@ If the file does not exist, it is created.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -1106,15 +1125,15 @@ If the file does not exist, it is created.</p>
         <li class="right" >
           <a href="url.html" title="gc3libs.url"
              >previous</a> |</li>
-        <li><a href="../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
-          <li><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../index.html" >GC3Libs programming API</a> &raquo;</li> 
       </ul>
     </div>
 
-    <div class="footer">
-        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2010-2015, S3IT, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
