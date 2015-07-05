@@ -24,6 +24,7 @@ __version__ = 'development version (SVN $Revision$)'
 
 
 import datetime
+import os
 import re
 import time
 
@@ -345,9 +346,11 @@ class SlurmLrms(batch.BatchSystem):
                     # `0:0` or `0:1`, but we want to keep track of the
                     # fact that the job was killed by the system (or
                     # the user).
-                    acct['exitcode'] = int(Run.Signals.RemoteKill)
+                    acct['exitcode'] = os.EX_TEMPFAIL
+                    acct['signal'] = int(Run.Signals.RemoteKill)
                 elif state == 'NODE_FAIL':
-                    acct['exitcode'] = int(Run.Signals.RemoteError)
+                    acct['exitcode'] = os.EX_TEMPFAIL
+                    acct['signal'] = int(Run.Signals.RemoteError)
                 else:
                     # compute POSIX exit status
                     acct['exitcode'], acct['signal'] = exit.split(':')

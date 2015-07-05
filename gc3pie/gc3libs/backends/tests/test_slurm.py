@@ -3,7 +3,7 @@
 """
 Test interaction with the SLURM batch-queueing system.
 """
-# Copyright (C) 2011-2013 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2013, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -438,9 +438,9 @@ username=NONEXISTENT
         self.core.update_job_state(app)
         job = app.execution
 
-        assert_equal(job.state, State.TERMINATING)
-        assert_equal(job.exitcode, 0)
-        assert_equal(job.signal, int(gc3libs.Run.Signals.RemoteKill))
+        assert_equal(job.state,    State.TERMINATING)
+        assert_equal(job.exitcode, os.EX_TEMPFAIL)
+        assert_equal(job.signal,   int(gc3libs.Run.Signals.RemoteKill))
 
     def test_parse_sacct_output_job_cancelled(self):
         app = FakeApp()
@@ -451,9 +451,9 @@ username=NONEXISTENT
         self.core.update_job_state(app)
         job = app.execution
 
-        assert_equal(job.state, State.TERMINATING)
-        assert_equal(job.exitcode, 0)
-        assert_equal(job.signal, int(gc3libs.Run.Signals.RemoteKill))
+        assert_equal(job.state,    State.TERMINATING)
+        assert_equal(job.exitcode, os.EX_TEMPFAIL)
+        assert_equal(job.signal,   int(gc3libs.Run.Signals.RemoteKill))
 
     def test_cancel_job1(self):
         app = FakeApp()
