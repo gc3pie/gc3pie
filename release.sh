@@ -138,7 +138,7 @@ if expr match "$branch" 'trunk' >/dev/null; then
 fi
 
 echo Creating "$version" tag
-$maybe svn cp -m"Release version ${version}" $branch tags/$version
+$maybe svn cp $branch tags/$version
 set +e
 
 pushd tags/$version \
@@ -176,6 +176,6 @@ echo Uploading source package to PyPI ...
 (cd gc3pie; $maybe ./setup.py sdist upload)
 
 echo Uploading documentation to PyPI ...
-(cd gc3pie; $maybe ./setup.py upload_sphinx)
+(cd gc3pie; $maybe ./setup.py upload_sphinx --upload-dir docs/html)
 echo "All done: released '$branch' as GC3Pie '$version' ${maybe+(nah, joking...)}"
 exit 0
