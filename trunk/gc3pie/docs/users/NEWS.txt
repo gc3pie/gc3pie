@@ -31,6 +31,19 @@
 .. contents::
 
 
+GC3Pie 2.5
+==========
+
+Incompatible changes
+--------------------
+
+* Old-style sessions are not supported any more.  (This should not be
+  a problem, as they have been automatically converted to "new-style"
+  since years now.  In the unlikely case you still have an old-style
+  session directory on disk, just run any session command from version
+  2.4 and it will convert the format automatically.)
+
+
 GC3Pie 2.4
 ==========
 

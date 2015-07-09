@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -81,54 +81,6 @@ def test_destroy():
         if os.path.exists(tmpdir):
             shutil.rmtree(tmpdir)
         raise
-
-
-class TestOldstyleConversion:
-
-    def setUp(self):
-        self.path = tempfile.mktemp(dir='.')
-        self.jobs_dir = os.path.abspath(self.path + '.jobs')
-        # create old-style session
-        self.index_csv = self.path + '.csv'
-        # Load the old store
-        store_url = "file://%s" % self.jobs_dir
-        oldstore = make_store(store_url)
-        # save something in it
-        self.test_task_id = oldstore.save(_PStruct(a=1, b='foo'))
-        jobidfile = open(self.index_csv, 'w')
-        jobline = {
-            'jobname': 'test',
-            'persistent_id': self.test_task_id,
-            'state': 'UNKNOWN',
-            'info': '', }
-        csv.DictWriter(
-            jobidfile,
-            ['jobname', 'persistent_id', 'state', 'info'],
-            extrasaction='ignore').writerow(jobline)
-        jobidfile.close()
-        # create new-style session
-        self.sess = Session(self.path)
-
-    def tearDown(self):
-        if os.path.exists(self.index_csv):
-            os.remove(self.index_csv)
-        if os.path.exists(self.jobs_dir):
-            shutil.rmtree(self.jobs_dir)
-        if os.path.exists(self.path):
-            shutil.rmtree(self.path)
-
-    def test_load_oldstyle_session(self):
-        """Check that Session is able to load an old-style session"""
-        # Check if the job list is correct
-        assert_true(self.test_task_id in self.sess.tasks)
-        assert_equal(self.sess.load(self.test_task_id),
-                     self.sess.tasks[self.test_task_id])
-
-    def test_convert_oldstyle_session(self):
-        assert_true(os.path.isdir(self.sess.path))
-        assert_false(os.path.exists(self.index_csv))
-        assert_false(os.path.exists(self.jobs_dir))
-        assert_true(self.sess.created > 0)
 
 
 class TestSession(object):
