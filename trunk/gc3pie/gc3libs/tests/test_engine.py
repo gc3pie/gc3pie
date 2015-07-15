@@ -128,7 +128,7 @@ def test_engine_submit_to_multiple_resources(num_resources=3, num_jobs=50):
     engine = Engine(core)
     # generate 50 no-op tasks
     for n in range(num_jobs):
-        name = 'app{}'.format(n)
+        name = 'app{nr}'.format(nr=n)
         engine.add(
             Application(
                 ['/bin/true'],
