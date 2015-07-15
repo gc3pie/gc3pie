@@ -143,7 +143,7 @@ def test_engine_submit_to_multiple_resources(num_resources=3, num_jobs=50):
     engine.progress()
     # get handles to the actual backend objects
     rscs = [
-        core.get_backend('test{}'.format(n+1))
+        core.get_backend('test{nr}'.format(nr=n+1))
         for n in range(num_resources)
     ]
     num_jobs_per_resource = [
