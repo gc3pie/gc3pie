@@ -258,8 +258,13 @@ class InvalidResourceName(Error, ValueError):
     """
     Raised to signal that no computational resource with the given
     name is defined in the configuration file.
+
+    Raising this exception will automatically log its message at ERROR
+    level, unless the `do_log=False` optional argument is explicitly
+    passed to the constructor.
     """
-    pass
+    def __init__(self, msg, do_log=True):
+        super(InvalidResourceName, self).__init__(msg, do_log)
 
 
 class InvalidUsage(FatalError):
