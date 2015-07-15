@@ -75,7 +75,7 @@ def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
 
     # generate some no-op tasks
     for n in range(num_jobs):
-        name = 'app{}'.format(n)
+        name = 'app{nr}'.format(nr=n+1)
         engine.add(
             Application(
                 ['/bin/true'],
@@ -112,7 +112,7 @@ def test_engine_submit_to_multiple_resources(num_resources=3, num_jobs=50):
     cfg = gc3libs.config.Configuration()
     cfg.TYPE_CONSTRUCTOR_MAP['noop'] = ('gc3libs.backends.noop', 'NoOpLrms')
     for n in range(num_resources):
-        name = 'test{}'.format(n+1)
+        name = 'test{nr}'.format(nr=n+1)
         cfg.resources[name].update(
             name=name,
             type='noop',
