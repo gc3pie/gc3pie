@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2012, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -167,6 +167,16 @@ class Session(list):
         self.finished = -1
         self.cmdline = extra_args.get('cmdline', None)
 
+        # check if there is an old-style session to load
+        oldstyle_index = self.path + '.csv'
+        oldstyle_store = self.path + '.jobs'
+        if (os.path.isfile(oldstyle_index) and os.path.isdir(oldstyle_store)):
+            gc3libs.log.warning(
+                "Old-style session detected in file '%s' and directory '%s'."
+                " Attempting conversion to directory based format ..."
+                % (oldstyle_index, oldstyle_store))
+            self._convert_oldstyle_session(oldstyle_index, oldstyle_store)
+
         # load or make session
         if os.path.isdir(self.path):
             # Session already exists?
@@ -216,6 +226,125 @@ class Session(list):
         fd.close()
 
         self.set_start_timestamp()
+
+    def _convert_oldstyle_session(self, index_csv, jobs_dir):
+        """
+        Convert an old-style session into a new-style one.  An
+        exception is raised if any error is encountered during the
+        conversion.
+
+        An old-style session consists of a `.csv` index file and a
+        `.jobs` directory.  Both will be moved to the location where
+        the new-style session expects them, i.e., into file
+        ``index.txt`` and subdirectory ``jobs`` respectively.
+
+        Converted sessions use a `FilesystemStore`:class: located in
+        the `.jobs` directory; any other setting of `store_url` in
+        this class instance is ignored and overwritten with the new
+        `jobs` directory location.  In other words, storage is *not*
+        converted to the any new format -- it is just relocated on the
+        filesystem.
+
+        .. fixme::
+
+          If the conversion process fails halfway through, you will
+          end up with something that is neither a valid old-style
+          session nor a valid new-style one!  This is certainly a bug.
+
+        """
+        # check access to new-style session dir and make it if needed
+        if os.path.exists(self.path):
+            gc3libs.utils.test_file(self.path, os.W_OK | os.X_OK, isdir=True)
+        else:
+            os.makedirs(self.path)
+
+        # convert job index file
+        ids_out = open(os.path.join(self.path, Session.INDEX_FILENAME), 'w')
+        ids_in = open(index_csv, 'r')
+        try:
+            for row in csv.DictReader(ids_in, ['jobname', 'persistent_id',
+                                               'state', 'info']):
+                ids_out.write(row['persistent_id'])
+                ids_out.write('\n')
+            ids_out.close()
+            ids_in.close()
+        except Exception as err:
+            gc3libs.log.error(
+                "Error converting old-style session index '%s' to new-style"
+                " one '%s': %s: %s",
+                ids_in.name,
+                ids_out.name,
+                err.__class__.__name__,
+                str(err))
+            try:
+                os.remove(ids_out.name)
+            except:
+                pass
+            ids_out.close()
+            ids_in.close()
+
+        # move jobs directory
+        new_jobs_dir = os.path.join(self.path, self.DEFAULT_JOBS_DIR)
+        try:
+            shutil.move(jobs_dir, new_jobs_dir)
+        except Exception as err:
+            gc3libs.log.error(
+                "Error moving old-style session store '%s' to new location"
+                " '%s': %s: %s",
+                jobs_dir,
+                new_jobs_dir,
+                err.__class__.__name__,
+                str(err))
+            try:
+                os.remove(ids_out.name)
+            except:
+                pass
+            # XXX: should we undo the `shutil.move` above? how?
+
+        # create `store.url` file pointing to new location
+        try:
+            self.store_url = ('file://%s' % os.path.abspath(new_jobs_dir))
+            self._save_store_url_file()
+        except Exception as err:
+            gc3libs.log.error(
+                "Error moving old-style session store '%s' to new location"
+                " '%s': %s: %s",
+                jobs_dir,
+                new_jobs_dir,
+                err.__class__.__name__,
+                str(err))
+            try:
+                os.remove(ids_out.name)
+            except:
+                pass
+            try:
+                shutil.move(new_jobs_dir, jobs_dir)
+            except Exception as err:
+                # log error and ignore it
+                gc3libs.log.error(
+                    "Additionally, got a %s while moving back '%s' to '%s':"
+                    " %s", err.__class__.__name__,
+                    new_jobs_dir,
+                    jobs_dir,
+                    str(err))
+        # Try to guess when the session has been started
+        statinfo = os.stat(index_csv)
+        self.created = min(statinfo.st_ctime,
+                           statinfo.st_mtime,
+                           statinfo.st_atime)
+        self.set_start_timestamp(self.created)
+
+        # if we got this far, everything is fine and we can remove the
+        # old index (and ignore any related error)
+        try:
+            os.remove(index_csv)
+        except Exception as err:
+            gc3libs.log.warning(
+                "Ignoring '%s' error that occurred in removing file '%s': %s",
+                err.__class__.__name__, index_csv, err)
+
+        gc3libs.log.info("Successfully converted old-style session"
+                         " to new-style session directory '%s'", self.path)
 
     def _load_session(self, **extra_args):
         """

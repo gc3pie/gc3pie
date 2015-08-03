@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>gc3libs.backends.sge &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>gc3libs.backends.sge &mdash; gc3pie 2.3.dev (SVN $Revision$) documentation</title>
     
-    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.3.dev (SVN $Revision$)',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="top" title="gc3pie 2.3.dev (SVN $Revision$) documentation" href="../../../../index.html" />
     <link rel="up" title="GC3Libs programming API" href="../../index.html" />
     <link rel="next" title="gc3libs.backends.shellcmd" href="shellcmd.html" />
     <link rel="prev" title="gc3libs.backends.pbs" href="pbs.html" />
@@ -35,8 +35,8 @@
 </script>
 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -51,28 +51,28 @@
         <li class="right" >
           <a href="pbs.html" title="gc3libs.backends.pbs"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
-          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="module-gc3libs.backends.sge">
 <span id="gc3libs-backends-sge"></span><h1><cite>gc3libs.backends.sge</cite><a class="headerlink" href="#module-gc3libs.backends.sge" title="Permalink to this headline">¶</a></h1>
 <p>Job control on SGE clusters (possibly connecting to the front-end via SSH).</p>
 <dl class="class">
 <dt id="gc3libs.backends.sge.SgeLrms">
-<em class="property">class </em><tt class="descclassname">gc3libs.backends.sge.</tt><tt class="descname">SgeLrms</tt><big>(</big><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth</em>, <em>frontend</em>, <em>transport</em>, <em>default_pe=None</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.SgeLrms" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.backends.sge.</code><code class="descname">SgeLrms</code><span class="sig-paren">(</span><em>name</em>, <em>architecture</em>, <em>max_cores</em>, <em>max_cores_per_job</em>, <em>max_memory_per_core</em>, <em>max_walltime</em>, <em>auth</em>, <em>frontend</em>, <em>transport</em>, <em>default_pe=None</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.backends.sge.SgeLrms" title="Permalink to this definition">¶</a></dt>
 <dd><p>Job control on SGE clusters (possibly by connecting via SSH to a
 submit node).</p>
 <dl class="method">
 <dt id="gc3libs.backends.sge.SgeLrms.get_resource_status">
-<tt class="descname">get_resource_status</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.SgeLrms.get_resource_status" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_resource_status</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.backends.sge.SgeLrms.get_resource_status" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update the status of the resource associated with this <cite>LRMS</cite>
 instance in-place.  Return updated <cite>Resource</cite> object.</p>
 </dd></dl>
@@ -81,15 +81,15 @@ instance in-place.  Return updated <cite>Resource</cite> object.</p>
 
 <dl class="function">
 <dt id="gc3libs.backends.sge.compute_nr_of_slots">
-<tt class="descclassname">gc3libs.backends.sge.</tt><tt class="descname">compute_nr_of_slots</tt><big>(</big><em>qstat_output</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.compute_nr_of_slots" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">gc3libs.backends.sge.</code><code class="descname">compute_nr_of_slots</code><span class="sig-paren">(</span><em>qstat_output</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.backends.sge.compute_nr_of_slots" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the number of total, free, and used/reserved slots from
-the output of SGE&#8217;s <tt class="docutils literal"><span class="pre">qstat</span> <span class="pre">-F</span></tt>.</p>
+the output of SGE&#8217;s <code class="docutils literal"><span class="pre">qstat</span> <span class="pre">-F</span></code>.</p>
 <p>Return a dictionary instance, mapping each host name into a
-dictionary instance, mapping the strings <tt class="docutils literal"><span class="pre">total</span></tt>, <tt class="docutils literal"><span class="pre">available</span></tt>,
-and <tt class="docutils literal"><span class="pre">unavailable</span></tt> to (respectively) the the total number of
+dictionary instance, mapping the strings <code class="docutils literal"><span class="pre">total</span></code>, <code class="docutils literal"><span class="pre">available</span></code>,
+and <code class="docutils literal"><span class="pre">unavailable</span></code> to (respectively) the the total number of
 slots on the host, the number of free slots on the host, and the
 number of used+reserved slots on the host.</p>
-<p>Cluster-wide totals are associated with key <tt class="docutils literal"><span class="pre">global</span></tt>.</p>
+<p>Cluster-wide totals are associated with key <code class="docutils literal"><span class="pre">global</span></code>.</p>
 <p><strong>Note:</strong> The &#8216;available slots&#8217; computation carried out by this
 function is unreliable: there is indeed no notion of a &#8216;global&#8217; or
 even &#8216;per-host&#8217; number of &#8216;free&#8217; slots in SGE.  Slot numbers can
@@ -104,8 +104,8 @@ on how local policies will map a job to the available queues.</p>
 
 <dl class="function">
 <dt id="gc3libs.backends.sge.count_jobs">
-<tt class="descclassname">gc3libs.backends.sge.</tt><tt class="descname">count_jobs</tt><big>(</big><em>qstat_output</em>, <em>whoami</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.count_jobs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parse SGE&#8217;s <tt class="docutils literal"><span class="pre">qstat</span></tt> output (as contained in string <cite>qstat_output</cite>)
+<code class="descclassname">gc3libs.backends.sge.</code><code class="descname">count_jobs</code><span class="sig-paren">(</span><em>qstat_output</em>, <em>whoami</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.backends.sge.count_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse SGE&#8217;s <code class="docutils literal"><span class="pre">qstat</span></code> output (as contained in string <cite>qstat_output</cite>)
 and return a quadruple <cite>(R, Q, r, q)</cite> where:</p>
 <blockquote>
 <div><ul class="simple">
@@ -121,15 +121,15 @@ any user);</li>
 
 <dl class="function">
 <dt id="gc3libs.backends.sge.parse_qhost_f">
-<tt class="descclassname">gc3libs.backends.sge.</tt><tt class="descname">parse_qhost_f</tt><big>(</big><em>qhost_output</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.parse_qhost_f" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parse SGE&#8217;s <tt class="docutils literal"><span class="pre">qhost</span> <span class="pre">-F</span></tt> output (as contained in string <cite>qhost_output</cite>)
+<code class="descclassname">gc3libs.backends.sge.</code><code class="descname">parse_qhost_f</code><span class="sig-paren">(</span><em>qhost_output</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.backends.sge.parse_qhost_f" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse SGE&#8217;s <code class="docutils literal"><span class="pre">qhost</span> <span class="pre">-F</span></code> output (as contained in string <cite>qhost_output</cite>)
 and return a <cite>dict</cite> instance, mapping each host name to its attributes.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="gc3libs.backends.sge.parse_qstat_f">
-<tt class="descclassname">gc3libs.backends.sge.</tt><tt class="descname">parse_qstat_f</tt><big>(</big><em>qstat_output</em><big>)</big><a class="headerlink" href="#gc3libs.backends.sge.parse_qstat_f" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parse SGE&#8217;s <tt class="docutils literal"><span class="pre">qstat</span> <span class="pre">-F</span></tt> output (as contained in string <cite>qstat_output</cite>)
+<code class="descclassname">gc3libs.backends.sge.</code><code class="descname">parse_qstat_f</code><span class="sig-paren">(</span><em>qstat_output</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.backends.sge.parse_qstat_f" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse SGE&#8217;s <code class="docutils literal"><span class="pre">qstat</span> <span class="pre">-F</span></code> output (as contained in string <cite>qstat_output</cite>)
 and return a <cite>dict</cite> instance, mapping each queue name to its attributes.</p>
 </dd></dl>
 
@@ -139,7 +139,7 @@ and return a <cite>dict</cite> instance, mapping each queue name to its attribut
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
   <p class="topless"><a href="pbs.html"
@@ -147,7 +147,7 @@ and return a <cite>dict</cite> instance, mapping each queue name to its attribut
   <h4>Next topic</h4>
   <p class="topless"><a href="shellcmd.html"
                         title="next chapter"><cite>gc3libs.backends.shellcmd</cite></a></p>
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../../../search.html" method="get">
       <input type="text" name="q" />
@@ -164,7 +164,7 @@ and return a <cite>dict</cite> instance, mapping each queue name to its attribut
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -179,15 +179,15 @@ and return a <cite>dict</cite> instance, mapping each queue name to its attribut
         <li class="right" >
           <a href="pbs.html" title="gc3libs.backends.pbs"
              >previous</a> |</li>
-        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
       </ul>
     </div>
 
-    <div class="footer">
-        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2010-2015, S3IT, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

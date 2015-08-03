@@ -36,7 +36,7 @@ in core Python, namely:
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.4.1 version (SVN $Revision$)'
 
 
 import gc3libs
@@ -258,13 +258,8 @@ class InvalidResourceName(Error, ValueError):
     """
     Raised to signal that no computational resource with the given
     name is defined in the configuration file.
-
-    Raising this exception will automatically log its message at ERROR
-    level, unless the `do_log=False` optional argument is explicitly
-    passed to the constructor.
     """
-    def __init__(self, msg, do_log=True):
-        super(InvalidResourceName, self).__init__(msg, do_log)
+    pass
 
 
 class InvalidUsage(FatalError):

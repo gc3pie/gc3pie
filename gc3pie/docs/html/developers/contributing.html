@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Contributing to GC3Pie &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>Contributing to GC3Pie &mdash; gc3pie 2.3.dev (SVN $Revision$) documentation</title>
     
-    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.3.dev (SVN $Revision$)',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../index.html" />
+    <link rel="top" title="gc3pie 2.3.dev (SVN $Revision$) documentation" href="../index.html" />
     <link rel="up" title="Developer Documentation" href="index.html" />
     <link rel="next" title="List of contributors to GC3Pie" href="../credits.html" />
     <link rel="prev" title="Developer Documentation" href="index.html" />
@@ -35,8 +35,8 @@
 </script>
 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -51,15 +51,15 @@
         <li class="right" >
           <a href="index.html" title="Developer Documentation"
              accesskey="P">previous</a> |</li>
-        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="index.html" accesskey="U">Developer Documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Developer Documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="contributing-to-gc3pie">
 <h1>Contributing to GC3Pie<a class="headerlink" href="#contributing-to-gc3pie" title="Permalink to this headline">¶</a></h1>
@@ -83,41 +83,41 @@ below to request write-access to the repository.</p>
 <h3>Repository structure<a class="headerlink" href="#repository-structure" title="Permalink to this headline">¶</a></h3>
 <p>The GC3Pie code repository follows the <a class="reference external" href="http://stackoverflow.com/a/109009/459543">standard subversion layout</a>:</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">trunk</span></tt> is the place for development code: it has all the latest
+<li><code class="docutils literal"><span class="pre">trunk</span></code> is the place for development code: it has all the latest
 and greatest features, and also the newest and nastiest bugs.</li>
-<li><tt class="docutils literal"><span class="pre">tags</span></tt> is where released code is: each subdirectory of <tt class="docutils literal"><span class="pre">tags</span></tt> is
+<li><code class="docutils literal"><span class="pre">tags</span></code> is where released code is: each subdirectory of <code class="docutils literal"><span class="pre">tags</span></code> is
 a snapshot of a release of GC3Pie code, and should never change.</li>
-<li><tt class="docutils literal"><span class="pre">branches</span></tt> are alternative development lines, for instance code
+<li><code class="docutils literal"><span class="pre">branches</span></code> are alternative development lines, for instance code
 from past releases that still gets bugfixes, or experimental
 features that have not been implemented in the main development line
-<tt class="docutils literal"><span class="pre">trunk</span></tt> (because, e.g., they require a radical API change).</li>
+<code class="docutils literal"><span class="pre">trunk</span></code> (because, e.g., they require a radical API change).</li>
 </ul>
-<p>We shall now describe the contents of the <tt class="docutils literal"><span class="pre">trunk</span></tt> directory, as
+<p>We shall now describe the contents of the <code class="docutils literal"><span class="pre">trunk</span></code> directory, as
 there is where most new code will land.  Organization of the code in
-<tt class="docutils literal"><span class="pre">tags</span></tt> and <tt class="docutils literal"><span class="pre">branches</span></tt> is very similar and you should be able to
+<code class="docutils literal"><span class="pre">tags</span></code> and <code class="docutils literal"><span class="pre">branches</span></code> is very similar and you should be able to
 adapt easily.</p>
-<p>The <tt class="docutils literal"><span class="pre">gc3pie</span></tt> directory in <tt class="docutils literal"><span class="pre">trunk</span></tt> contains all GC3Pie code.  It
+<p>The <code class="docutils literal"><span class="pre">gc3pie</span></code> directory in <code class="docutils literal"><span class="pre">trunk</span></code> contains all GC3Pie code.  It
 has one subdirectory for each of the main parts of GC3Pie:</p>
 <ul>
-<li><p class="first">The <tt class="docutils literal"><span class="pre">gc3libs</span></tt> directory contains the GC3Libs code, which is the
-core of GC3Pie.  GC3Libs are extensively described in the <a class="reference internal" href="../programmers/api/index.html#gc3libs"><em>API</em></a> section of this document; read the module descriptions
+<li><p class="first">The <code class="docutils literal"><span class="pre">gc3libs</span></code> directory contains the GC3Libs code, which is the
+core of GC3Pie.  GC3Libs are extensively described in the <a class="reference internal" href="../programmers/api/index.html#gc3libs"><span>API</span></a> section of this document; read the module descriptions
 to find out where your new suggested functionality would suit best.
 If unsure, ask on the <a class="reference external" href="mailto:gc3pie&#37;&#52;&#48;googlegroups&#46;com">GC3Pie mailing list</a>.</p>
 </li>
-<li><p class="first">The <tt class="docutils literal"><span class="pre">gc3utils</span></tt> directory contains the sources for the low-level
+<li><p class="first">The <code class="docutils literal"><span class="pre">gc3utils</span></code> directory contains the sources for the low-level
 GC3Utils command-line utilities.</p>
 </li>
-<li><p class="first">The <tt class="docutils literal"><span class="pre">gc3apps</span></tt> directory contains the sources for higher level
+<li><p class="first">The <code class="docutils literal"><span class="pre">gc3apps</span></code> directory contains the sources for higher level
 scripts that implement some computational use case of independent
 interest.</p>
-<p>The <tt class="docutils literal"><span class="pre">gc3apps</span></tt> directory contains one subdirectory per <em>application
+<p>The <code class="docutils literal"><span class="pre">gc3apps</span></code> directory contains one subdirectory per <em>application
 script</em>.  Actually, each subdirectory can contain one or more Python
 scripts, as long as they form a coherent bundle; for instance,
 <a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a> is a suite of applications in computational biology: there
 are different GC3Apps script corresponding to different uses of the
-<a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a> suite, all of them grouped into the <tt class="docutils literal"><span class="pre">rosetta</span></tt>
+<a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a> suite, all of them grouped into the <code class="docutils literal"><span class="pre">rosetta</span></code>
 subdirectory.</p>
-<p>Subdirectories of the <tt class="docutils literal"><span class="pre">gc3apps</span></tt> directory follow this naming
+<p>Subdirectories of the <code class="docutils literal"><span class="pre">gc3apps</span></code> directory follow this naming
 convention:</p>
 <ul class="simple">
 <li>the directory name is the main application name, if the
@@ -125,7 +125,7 @@ application that the scripts wrap is a known, publicly-released
 computational application (e.g., <a class="reference external" href="http://www.rosettacommons.org/">Rosetta</a>, <a class="reference external" href="http://www.msg.ameslab.gov/gamess/">GAMESS</a>)</li>
 <li>the directory name is the requestor&#8217;s name, if the application
 that the scripts wrap is some research code that is being
-internally developed. For instance, the <tt class="docutils literal"><span class="pre">bf.uzh.ch</span></tt> directory
+internally developed. For instance, the <code class="docutils literal"><span class="pre">bf.uzh.ch</span></code> directory
 contains scripts that wrap code for economic simulations that is
 being developed at the <a class="reference external" href="http://www.bf.uzh.ch/">Banking and Finance Institute of the University
 of Zurich</a></li>
@@ -144,12 +144,12 @@ might be a good idea.</p>
 <div class="section" id="package-generation">
 <h2>Package generation<a class="headerlink" href="#package-generation" title="Permalink to this headline">¶</a></h2>
 <p>Due to issue <a class="reference external" href="http://code.google.com/p/gc3pie/issues/detail?id=329">329</a>, we don&#8217;t use the automatic discovery <em>feature</em> of
-<tt class="docutils literal"><span class="pre">setuptools</span></tt>, so the files included in the distributed packages are
-those in the <tt class="docutils literal"><span class="pre">MANIFEST.in</span></tt> file, please check <a class="reference external" href="http://docs.python.org/distutils/sourcedist.html#the-manifest-in-template">The MANIFEST.in
+<code class="docutils literal"><span class="pre">setuptools</span></code>, so the files included in the distributed packages are
+those in the <code class="docutils literal"><span class="pre">MANIFEST.in</span></code> file, please check <a class="reference external" href="http://docs.python.org/distutils/sourcedist.html#the-manifest-in-template">The MANIFEST.in
 template</a> section of the python documentation for a syntax
 reference. We usually include only code, documentation, and related
 files. We also include the regression tests, but we <strong>do not include</strong>
-the application tests in <tt class="docutils literal"><span class="pre">gc3apps/*/test</span></tt> directories.</p>
+the application tests in <code class="docutils literal"><span class="pre">gc3apps/*/test</span></code> directories.</p>
 </div>
 <div class="section" id="testing-the-code">
 <h2>Testing the code<a class="headerlink" href="#testing-the-code" title="Permalink to this headline">¶</a></h2>
@@ -213,12 +213,12 @@ install <cite>tox</cite> on it with:</p>
 <div class="highlight-python"><div class="highlight"><pre>pip install tox
 </pre></div>
 </div>
-<p>Running <a class="reference external" href="http://tox.testrun.org/latest/">tox</a> is straightforward; just type <tt class="docutils literal"><span class="pre">tox</span></tt> on the command-line
+<p>Running <a class="reference external" href="http://tox.testrun.org/latest/">tox</a> is straightforward; just type <code class="docutils literal"><span class="pre">tox</span></code> on the command-line
 in GC3Pie&#8217;s top level source directory.</p>
-<p>The default <tt class="docutils literal"><span class="pre">tox.ini</span></tt> file shipped with GC3Pie attempts to test all
+<p>The default <code class="docutils literal"><span class="pre">tox.ini</span></code> file shipped with GC3Pie attempts to test all
 Python versions from 2.4 to 2.7 (inclusive).  If you want to run tests
 only for a specific version of python, for instance Python 2.6, use
-the <tt class="docutils literal"><span class="pre">-e</span></tt> option:</p>
+the <code class="docutils literal"><span class="pre">-e</span></code> option:</p>
 <div class="highlight-python"><div class="highlight"><pre>tox -e py26
 [...]
 Ran 118 tests in 14.168s
@@ -231,13 +231,13 @@ __________________________________________________________ [tox summary] _______
 </div>
 <p>(See section <a class="reference internal" href="#skipping-tests">skipping tests</a> for a discussion about how and when to
 define skipped tests.)</p>
-<p>Option <tt class="docutils literal"><span class="pre">-r</span></tt> instructs <strong class="command">tox</strong> to re-build the testing virtual
+<p>Option <code class="docutils literal"><span class="pre">-r</span></code> instructs <strong class="command">tox</strong> to re-build the testing virtual
 environment. This is usually needed when you update the dependencies
 of GC3Pie or when you add or remove command line programs or
 configuration files. However, if you feel that the environments can be
 <em>unclean</em>, you can clean up everything by:</p>
 <ol class="arabic">
-<li><p class="first">deleting all the <tt class="docutils literal"><span class="pre">*.pyc</span></tt> file in your source tree:</p>
+<li><p class="first">deleting all the <code class="docutils literal"><span class="pre">*.pyc</span></code> file in your source tree:</p>
 <div class="highlight-python"><div class="highlight"><pre>find . -name &#39;*.pyc&#39; -delete
 </pre></div>
 </div>
@@ -252,16 +252,16 @@ configuration files. However, if you feel that the environments can be
 </div>
 <div class="section" id="organizing-tests">
 <h3>Organizing tests<a class="headerlink" href="#organizing-tests" title="Permalink to this headline">¶</a></h3>
-<p>Each single python file should have a test file inside a <tt class="docutils literal"><span class="pre">tests</span></tt>
-subpackage with filename created by prefixing <tt class="docutils literal"><span class="pre">test_</span></tt> to the
-filename to test.  For example, if you created a file <tt class="docutils literal"><span class="pre">foo.py</span></tt>,
-there should be a file <tt class="docutils literal"><span class="pre">tests/test_foo.py</span></tt> which will contains tests
-for <tt class="docutils literal"><span class="pre">foo.py</span></tt>.</p>
+<p>Each single python file should have a test file inside a <code class="docutils literal"><span class="pre">tests</span></code>
+subpackage with filename created by prefixing <code class="docutils literal"><span class="pre">test_</span></code> to the
+filename to test.  For example, if you created a file <code class="docutils literal"><span class="pre">foo.py</span></code>,
+there should be a file <code class="docutils literal"><span class="pre">tests/test_foo.py</span></code> which will contains tests
+for <code class="docutils literal"><span class="pre">foo.py</span></code>.</p>
 <p>Even though following the naming convention above is not always
 possible, each test regarding a specific component should be in a file
-inside a <tt class="docutils literal"><span class="pre">tests</span></tt> directory inside that component.  For instance,
+inside a <code class="docutils literal"><span class="pre">tests</span></code> directory inside that component.  For instance,
 tests for the subpackage <cite>gc3libs.persistence</cite> are located inside the
-directory <tt class="docutils literal"><span class="pre">gc3libs/persistence/tests</span></tt> but are not named after the
+directory <code class="docutils literal"><span class="pre">gc3libs/persistence/tests</span></code> but are not named after the
 specific file.</p>
 </div>
 <div class="section" id="writing-tests">
@@ -282,8 +282,8 @@ in the future.</li>
 <li>Tests should clean up every temporary file they create.</li>
 </ul>
 <p>Writing tests is very easy: just create a file whose name begins with
-<tt class="docutils literal"><span class="pre">test_</span></tt>, then put in it some functions which name begins with
-<tt class="docutils literal"><span class="pre">test_</span></tt>; the <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> framework will automatically call each one of
+<code class="docutils literal"><span class="pre">test_</span></code>, then put in it some functions which name begins with
+<code class="docutils literal"><span class="pre">test_</span></code>; the <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> framework will automatically call each one of
 them. Moreover, <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> will run also any <a class="reference external" href="http://wiki.python.org/moin/DocTest">doctest</a> which will be found in
 the code.</p>
 <p>Full documentation of the <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> framework is available at the <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a>
@@ -292,7 +292,7 @@ want to use to improve your tests, detailed in the following sections.</p>
 <div class="section" id="testing-for-errors">
 <h4>Testing for errors<a class="headerlink" href="#testing-for-errors" title="Permalink to this headline">¶</a></h4>
 <p>If your test must verify that the code raises an exception, instead
-of wrapping the test inside a <tt class="docutils literal"><span class="pre">try:</span> <span class="pre">...</span> <span class="pre">except:</span></tt> block you can use
+of wrapping the test inside a <code class="docutils literal"><span class="pre">try:</span> <span class="pre">...</span> <span class="pre">except:</span></code> block you can use
 the <cite>&#64;raises</cite> decorator from the <cite>nose.tools</cite> module:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">nose.tools</span> <span class="kn">import</span> <span class="n">raises</span>
 
@@ -341,8 +341,8 @@ tests at run time:</p>
 <p>This will result in five tests: <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> will iterate the generator,
 creating a function test case wrapper for each tuple it
 yields. Specifically, in the example above, <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> will execute the
-function calls <tt class="docutils literal"><span class="pre">check_even(0,0)</span></tt>, <tt class="docutils literal"><span class="pre">check_even(1,3)</span></tt>, ...,
-<tt class="docutils literal"><span class="pre">check_even(4,12)</span></tt> as if each of them were written in the source as
+function calls <code class="docutils literal"><span class="pre">check_even(0,0)</span></code>, <code class="docutils literal"><span class="pre">check_even(1,3)</span></code>, ...,
+<code class="docutils literal"><span class="pre">check_even(4,12)</span></code> as if each of them were written in the source as
 a separate test; if any of them fails (i.e., raises an
 <cite>AssertionError</cite>), then the test is considered failed.</p>
 </div>
@@ -358,12 +358,12 @@ different configurations (e.g., by just overriding the set-up and
 clean-up code).</li>
 </ul>
 <p>A test class is a regular Python class, whose name begins with
-<tt class="docutils literal"><span class="pre">Test</span></tt> (first letter must be uppercase); each method whose name
-begins with <tt class="docutils literal"><span class="pre">test_</span></tt> defines a test case.</p>
+<code class="docutils literal"><span class="pre">Test</span></code> (first letter must be uppercase); each method whose name
+begins with <code class="docutils literal"><span class="pre">test_</span></code> defines a test case.</p>
 <p>If the class defines a <cite>setUp</cite> method, it will be called <em>before each
 test method</em>. If the class defines a <cite>tearDown</cite> method, it will be
 called <em>after each test method</em>.</p>
-<p>If class methods <tt class="docutils literal"><span class="pre">setup_class</span></tt> and <tt class="docutils literal"><span class="pre">teardown_class</span></tt> are defined,
+<p>If class methods <code class="docutils literal"><span class="pre">setup_class</span></code> and <code class="docutils literal"><span class="pre">teardown_class</span></code> are defined,
 <a class="reference external" href="http://readthedocs.org/docs/nose/en/latest/">nose</a> will invoke them <em>once</em> (before and after performing the tests
 of that class, respectively).</p>
 <p>A canonical example of a test class with fixtures looks like this:</p>
@@ -433,8 +433,8 @@ contribution to any free/open-source Python project!</p>
 name object methods.</li>
 <li>use 4 spaces to indent code; never use TABs.</li>
 <li>use lowercase letters for method and variable names; use underscores
-<tt class="docutils literal"><span class="pre">_</span></tt> to separate words in multi-word identifiers (e.g.,
-<tt class="docutils literal"><span class="pre">lower_case_with_underscores</span></tt>)</li>
+<code class="docutils literal"><span class="pre">_</span></code> to separate words in multi-word identifiers (e.g.,
+<code class="docutils literal"><span class="pre">lower_case_with_underscores</span></code>)</li>
 <li>use &#8220;CamelCase&#8221; for class and exception names.</li>
 <li>but, above all, do not blindly follow the rules and try to do the
 thing that <em>enhances code clarity and readability!</em></li>
@@ -452,8 +452,8 @@ functions and classes do not appear in this documentation, which
 makes them invisible to new users.</p>
 </li>
 <li><p class="first">Use fully-qualified names for all imported symbols; i.e., write
-<tt class="docutils literal"><span class="pre">import</span> <span class="pre">foo</span></tt> and then use <tt class="docutils literal"><span class="pre">foo.bar()</span></tt> instead of <tt class="docutils literal"><span class="pre">from</span> <span class="pre">foo</span>
-<span class="pre">import</span> <span class="pre">bar</span></tt>.  If there are few imports from a module, and the
+<code class="docutils literal"><span class="pre">import</span> <span class="pre">foo</span></code> and then use <code class="docutils literal"><span class="pre">foo.bar()</span></code> instead of <code class="docutils literal"><span class="pre">from</span> <span class="pre">foo</span>
+<span class="pre">import</span> <span class="pre">bar</span></code>.  If there are few imports from a module, and the
 imported names do <em>clearly</em> belong to another module, this rule can
 be relaxed if this enhances readability, but <em>never</em> do use
 unqualified names for exceptions.</p>
@@ -484,10 +484,10 @@ arguments, so this change can happen any time, although changing
 <em>positional</em> arguments will break backward compatibility, and thus
 it&#8217;s usually well advertised and tested.</p>
 </li>
-<li><p class="first">Use double quotes <tt class="docutils literal"><span class="pre">&quot;</span></tt> to enclose strings representing messages meant
+<li><p class="first">Use double quotes <code class="docutils literal"><span class="pre">&quot;</span></code> to enclose strings representing messages meant
 for human consumption (e.g., log messages, or strings that will be
 printed on the users&#8217; terminal screen).</p>
-<p><em>Rationale:</em> The apostrophe character <tt class="docutils literal"><span class="pre">'</span></tt> is a normal occurrence in
+<p><em>Rationale:</em> The apostrophe character <code class="docutils literal"><span class="pre">'</span></code> is a normal occurrence in
 English text; use of the double quotes minimizes the chances that
 you introduce a syntax error by terminating a string in its middle.</p>
 </li>
@@ -502,11 +502,11 @@ message was intended to mean 6 months ago.</p>
 <p>Common typographical conventions enhance readability, and help users
 identify lines of readable text.</p>
 </li>
-<li><p class="first">Use single quotes <tt class="docutils literal"><span class="pre">'</span></tt> for strings that are meant for internal
+<li><p class="first">Use single quotes <code class="docutils literal"><span class="pre">'</span></code> for strings that are meant for internal
 program usage (e.g., attribute names).</p>
 <p><em>Rationale:</em> To distinguish them visually from messages to the user.</p>
 </li>
-<li><p class="first">Use triple quotes <tt class="docutils literal"><span class="pre">&quot;&quot;&quot;</span></tt> for docstrings, even if they fit on a single
+<li><p class="first">Use triple quotes <code class="docutils literal"><span class="pre">&quot;&quot;&quot;</span></code> for docstrings, even if they fit on a single
 line.</p>
 <p><em>Rationale:</em> Visual distinction.</p>
 </li>
@@ -516,7 +516,7 @@ line.</p>
 <li>the module docstring (explain briefly the module purpose and
 features),</li>
 <li>the copyright and licence notice,</li>
-<li>module imports (in the order suggested by <span class="target" id="index-0"></span><a class="pep reference external" href="http://www.python.org/dev/peps/pep-0008"><strong>PEP 8</strong></a>)</li>
+<li>module imports (in the order suggested by <span class="target" id="index-0"></span><a class="pep reference external" href="https://www.python.org/dev/peps/pep-0008"><strong>PEP 8</strong></a>)</li>
 <li>and then the code...</li>
 </ul>
 <p><em>Rationale:</em> The docstring should be on top so it&#8217;s the first thing
@@ -531,28 +531,28 @@ waste of space, but we&#8217;re required by law to have it.</p>
 Sphinx (<a class="reference external" href="http://sphinx-doc.org/contents.html">http://sphinx-doc.org/contents.html</a>).</p>
 <p>GC3Pie documentation is divided in three sections:</p>
 <ul class="simple">
-<li><a class="reference internal" href="../users/index.html#user-documentation"><em>User Documentation</em></a>: info on how to install, configure and run
+<li><a class="reference internal" href="../users/index.html#user-documentation"><span>User Documentation</span></a>: info on how to install, configure and run
 GC3Pie applications.</li>
-<li><a class="reference internal" href="../programmers/index.html#programmer-documentation"><em>Programmer Documentation</em></a>: info for programmers who want to
+<li><a class="reference internal" href="../programmers/index.html#programmer-documentation"><span>Programmer Documentation</span></a>: info for programmers who want to
 use the GC3Pie libraries to write their own scripts and
 applications.</li>
-<li><a class="reference internal" href="index.html#developer-documentation"><em>Developer Documentation</em></a>: detailed information on how to
+<li><a class="reference internal" href="index.html#developer-documentation"><span>Developer Documentation</span></a>: detailed information on how to
 contribute to GC3Pie and get your code included in the main library.</li>
 </ul>
-<p>The <em class="xref std std-ref">GC3Libs programming API</em> is the most relevant part of the
+<p>The <span class="xref std std-ref">GC3Libs programming API</span> is the most relevant part of the
 docs for developers contributing code and is generated automatically
 from the docstrings inside the modules. Automatic documentation in
 Sphinx is described under
 <a class="reference external" href="http://sphinx-doc.org/tutorial.html#autodoc">http://sphinx-doc.org/tutorial.html#autodoc</a>. While updating the docs
-of existing modules is simply done by running <tt class="docutils literal"><span class="pre">make</span> <span class="pre">html</span></tt>, adding
+of existing modules is simply done by running <code class="docutils literal"><span class="pre">make</span> <span class="pre">html</span></code>, adding
 documentation for a new module requires one of the following two
 procedures:</p>
 <ul>
 <li><p class="first">Add a reference to the new module in
-<tt class="file docutils literal"><span class="pre">docs/programmers/api/index.txt</span></tt>. Additionally, create a file
+<code class="file docutils literal"><span class="pre">docs/programmers/api/index.txt</span></code>. Additionally, create a file
 that enables automatic documentation for the module. For the module
-<tt class="file docutils literal"><span class="pre">core.py</span></tt>, for example, automatic documentation is enabled by
-a file <tt class="file docutils literal"><span class="pre">docs/programmers/api/gc3libs/core.txt</span></tt> with the
+<code class="file docutils literal"><span class="pre">core.py</span></code>, for example, automatic documentation is enabled by
+a file <code class="file docutils literal"><span class="pre">docs/programmers/api/gc3libs/core.txt</span></code> with the
 following content:</p>
 <div class="highlight-python"><div class="highlight"><pre>`gc3libs.core`
 ==============
@@ -562,10 +562,10 @@ following content:</p>
 </pre></div>
 </div>
 </li>
-<li><p class="first">Execute the script <tt class="file docutils literal"><span class="pre">docs/programmers/api/makehier.sh</span></tt>, which
-automates the above.  Note that the <tt class="file docutils literal"><span class="pre">makehier.sh</span></tt> script will
-re-create all <tt class="docutils literal"><span class="pre">.txt</span></tt> files for all GC3Pie modules, so check if
-there were some unexpected changes (e.g., with <tt class="docutils literal"><span class="pre">svn</span> <span class="pre">status</span></tt>)
+<li><p class="first">Execute the script <code class="file docutils literal"><span class="pre">docs/programmers/api/makehier.sh</span></code>, which
+automates the above.  Note that the <code class="file docutils literal"><span class="pre">makehier.sh</span></code> script will
+re-create all <code class="docutils literal"><span class="pre">.txt</span></code> files for all GC3Pie modules, so check if
+there were some unexpected changes (e.g., with <code class="docutils literal"><span class="pre">svn</span> <span class="pre">status</span></code>)
 before you commit!</p>
 </li>
 </ul>
@@ -585,7 +585,7 @@ answer promptly.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
@@ -626,7 +626,7 @@ answer promptly.</p>
   <h4>Next topic</h4>
   <p class="topless"><a href="../credits.html"
                         title="next chapter">List of contributors to GC3Pie</a></p>
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
@@ -643,7 +643,7 @@ answer promptly.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -658,14 +658,14 @@ answer promptly.</p>
         <li class="right" >
           <a href="index.html" title="Developer Documentation"
              >previous</a> |</li>
-        <li><a href="../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="index.html" >Developer Documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Developer Documentation</a> &raquo;</li> 
       </ul>
     </div>
 
-    <div class="footer">
-        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2010-2015, S3IT, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

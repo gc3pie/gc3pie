@@ -33,7 +33,7 @@ relevant aspects of the application being represented.
 """
 __docformat__ = 'reStructuredText'
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.4.1 version (SVN $Revision$)'
 
 
 import os
@@ -2004,9 +2004,10 @@ def create_engine(*conf_files, **extra_args):
         conf_files = Default.CONFIG_FILE_LOCATIONS[:]
 
     # extract params specific to the `Core` instance
-    core_extra_args = {}
-    if 'resource_errors_are_fatal' in extra_args:
-        core_extra_args['resource_errors_are_fatal'] = extra_args.pop('resource_errors_are_fatal')
+    core_extra_args = {
+        'resource_errors_are_fatal':
+            extra_args.pop('resource_errors_are_fatal', False),
+    }
 
     # params specific to the `Configuration` instance
     if 'auto_enable_auth' not in extra_args:
