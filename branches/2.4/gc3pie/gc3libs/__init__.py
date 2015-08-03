@@ -113,7 +113,7 @@ import gc3libs.exceptions
 from gc3libs.persistence import Persistable
 from gc3libs.url import UrlKeyDict, UrlValueDict
 from gc3libs.utils import (defproperty, deploy_configuration_file, Enum,
-                           History, Struct, safe_repr)
+                           History, Struct, safe_repr, sh_quote_unsafe)
 
 
 # when used in the `output` attribute of an application,
@@ -1199,7 +1199,8 @@ class Application(Task):
         """
         if self.environment:
             return (['/usr/bin/env']
-                    + ["%s=%s" for k, v in self.environment.items()]
+                    + [('%s=%s' % (k, sh_quote_unsafe(v)))
+                       for k, v in self.environment.items()]
                     + self.arguments[:])
         else:
             return self.arguments[:]
