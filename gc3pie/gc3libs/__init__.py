@@ -1297,6 +1297,8 @@ class Application(Task):
                         " retry." %
                         (self, self.requested_cores, pe_cfg_name,
                          resource.name))
+            # XXX: it is the cluster admin's responsibility to ensure
+            # that this PE allocates all cores on the same machine
             qsub += ['-pe', pe_name, ('%d' % self.requested_cores)]
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '%s' % self.jobname]
@@ -1386,7 +1388,8 @@ class Application(Task):
             # error-path attribute."
             qsub += ['-o', '%s' % self.stdout]
         if self.requested_cores > 1:
-            qsub += ['-l', 'nodes=%d' % self.requested_cores]
+            # require that all cores are on the same node
+            qsub += ['-l', 'nodes=1:ppn=%d' % self.requested_cores]
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '"%s"' % self.jobname[:15]]
         return (qsub, self.cmdline(resource))
@@ -1441,6 +1444,7 @@ class Application(Task):
             sbatch += ['-e', '%s' % self.stderr]
         if self.requested_cores != 1:
             sbatch += ['--ntasks', '1',
+                       # require that all cores are on the same node
                        '--cpus-per-task', ('%d' % self.requested_cores)]
         if 'jobname' in self and self.jobname:
             sbatch += ['--job-name', ('%s' % self.jobname)]
