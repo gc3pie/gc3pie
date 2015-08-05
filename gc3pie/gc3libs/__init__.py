@@ -717,7 +717,8 @@ class Application(Task):
 
     `requested_cores`,`requested_memory`,`requested_walltime`
       specify resource requirements for the application:
-      * the number of independent execution units (CPU cores),
+      * the number of independent execution units (CPU cores; all are
+        required to be in the same execution node),
       * amount of memory (as a `gc3libs.quantity.Memory`:class: object),
       * amount of wall-clock time to allocate for the computational job
         (as a `gc3libs.quantity.Duration`:class: object).
