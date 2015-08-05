@@ -1200,8 +1200,7 @@ class Application(Task):
         """
         if self.environment:
             return (['/usr/bin/env']
-                    + [('%s=%s' % (k, sh_quote_unsafe(v)))
-                       for k, v in self.environment.items()]
+                    + [('%s=%s' % (k, v)) for k, v in self.environment.items()]
                     + self.arguments[:])
         else:
             return self.arguments[:]
