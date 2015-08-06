@@ -787,12 +787,18 @@ ReturnCode=%x"""
 
         if app.stdout is not None:
             redirection_arguments += " >%s" % app.stdout
+            stdout_dir = os.path.dirname(app.stdout)
+            if stdout_dir:
+                self.transport.makedirs(posixpath.join(execdir, stdout_dir))
 
         if app.join:
             redirection_arguments += " 2>&1"
         else:
             if app.stderr is not None:
                 redirection_arguments += " 2>%s" % app.stderr
+                stderr_dir = os.path.dirname(app.stderr)
+                if stderr_dir:
+                    self.transport.makedirs(posixpath.join(execdir, stderr_dir))
 
         # set up environment
         env_arguments = ''
