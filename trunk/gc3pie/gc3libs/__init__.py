@@ -1051,15 +1051,18 @@ class Application(Task):
                 (err.__class__.__name__, str(err)))
         except AttributeError:
             # `spec` is a list-like
-            def convert_to_tuple(val):
-                if isinstance(val, types.StringTypes):
-                    l = str(val)
-                    r = os.path.basename(l)
-                    return (l, r)
-                else:
-                    return (str(val[0]), str(val[1]))
-            return ctor((convert_to_tuple(x) for x in spec),
+            return ctor((Application.__convert_to_tuple(x) for x in spec),
                         force_abs=force_abs)
+
+    @staticmethod
+    def __convert_to_tuple(val):
+        """Auxiliary method for `io_spec_to_dict`:meth:, which see."""
+        if isinstance(val, types.StringTypes):
+            l = str(val)
+            r = os.path.basename(l)
+            return (l, r)
+        else:
+            return (str(val[0]), str(val[1]))
 
     def __str__(self):
         try:
