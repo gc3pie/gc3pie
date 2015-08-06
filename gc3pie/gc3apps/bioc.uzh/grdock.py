@@ -33,7 +33,7 @@ Input parameters consists of:
 Options:
 """
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.4.2 version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2015-02-17:

@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>gc3libs.persistence.filesystem &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>gc3libs.persistence.filesystem &mdash; gc3pie 2.3.dev (SVN $Revision$) documentation</title>
     
-    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.3.dev (SVN $Revision$)',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../../../index.html" />
+    <link rel="top" title="gc3pie 2.3.dev (SVN $Revision$) documentation" href="../../../../index.html" />
     <link rel="up" title="GC3Libs programming API" href="../../index.html" />
     <link rel="next" title="gc3libs.persistence.idfactory" href="idfactory.html" />
     <link rel="prev" title="gc3libs.persistence.accessors" href="accessors.html" />
@@ -35,8 +35,8 @@
 </script>
 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -51,22 +51,22 @@
         <li class="right" >
           <a href="accessors.html" title="gc3libs.persistence.accessors"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
-          <li><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../index.html" accesskey="U">GC3Libs programming API</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="module-gc3libs.persistence.filesystem">
 <span id="gc3libs-persistence-filesystem"></span><h1><cite>gc3libs.persistence.filesystem</cite><a class="headerlink" href="#module-gc3libs.persistence.filesystem" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="gc3libs.persistence.filesystem.FilesystemStore">
-<em class="property">class </em><tt class="descclassname">gc3libs.persistence.filesystem.</tt><tt class="descname">FilesystemStore</tt><big>(</big><em>directory='/home/antonio/.gc3/jobs'</em>, <em>idfactory=&lt;gc3libs.persistence.idfactory.IdFactory object at 0x2af0b63e1e10&gt;</em>, <em>protocol=2</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">gc3libs.persistence.filesystem.</code><code class="descname">FilesystemStore</code><span class="sig-paren">(</span><em>directory='/home/rmurri/.gc3/jobs'</em>, <em>idfactory=&lt;gc3libs.persistence.idfactory.IdFactory object&gt;</em>, <em>protocol=2</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save and load objects in a given directory.  Uses Python&#8217;s
 standard <cite>pickle</cite> module to serialize objects onto files.</p>
 <p>All objects are saved as files in the given directory (default:
@@ -87,7 +87,7 @@ if different from <cite>gc3libs.persistence.serialization.DEFAULT_PROTOCOL</cite
 <cite>SqlStore</cite>.</p>
 <dl class="method">
 <dt id="gc3libs.persistence.filesystem.FilesystemStore.list">
-<tt class="descname">list</tt><big>(</big><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.list" title="Permalink to this definition">¶</a></dt>
+<code class="descname">list</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.list" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return list of IDs of saved <cite>Job</cite> objects.</p>
 <p>This is an optional method; classes that do not implement it
 should raise a <cite>NotImplementedError</cite> exception.</p>
@@ -95,26 +95,26 @@ should raise a <cite>NotImplementedError</cite> exception.</p>
 
 <dl class="method">
 <dt id="gc3libs.persistence.filesystem.FilesystemStore.load">
-<tt class="descname">load</tt><big>(</big><em>id_</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.load" title="Permalink to this definition">¶</a></dt>
+<code class="descname">load</code><span class="sig-paren">(</span><em>id_</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load a saved object given its ID, and return it.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.persistence.filesystem.FilesystemStore.remove">
-<tt class="descname">remove</tt><big>(</big><em>id_</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.remove" title="Permalink to this definition">¶</a></dt>
+<code class="descname">remove</code><span class="sig-paren">(</span><em>id_</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.remove" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete a given object from persistent storage, given its ID.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.persistence.filesystem.FilesystemStore.replace">
-<tt class="descname">replace</tt><big>(</big><em>id_</em>, <em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.replace" title="Permalink to this definition">¶</a></dt>
+<code class="descname">replace</code><span class="sig-paren">(</span><em>id_</em>, <em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.replace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Replace the object already saved with the given ID with a copy
 of <cite>obj</cite>.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="gc3libs.persistence.filesystem.FilesystemStore.save">
-<tt class="descname">save</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.save" title="Permalink to this definition">¶</a></dt>
+<code class="descname">save</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.persistence.filesystem.FilesystemStore.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save an object, and return an ID.</p>
 </dd></dl>
 
@@ -122,12 +122,12 @@ of <cite>obj</cite>.</p>
 
 <dl class="function">
 <dt id="gc3libs.persistence.filesystem.make_filesystemstore">
-<tt class="descclassname">gc3libs.persistence.filesystem.</tt><tt class="descname">make_filesystemstore</tt><big>(</big><em>url</em>, <em>*args</em>, <em>**extra_args</em><big>)</big><a class="headerlink" href="#gc3libs.persistence.filesystem.make_filesystemstore" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a <a class="reference internal" href="#gc3libs.persistence.filesystem.FilesystemStore" title="gc3libs.persistence.filesystem.FilesystemStore"><tt class="xref py py-class docutils literal"><span class="pre">FilesystemStore</span></tt></a> instance, given a &#8216;<a class="reference external" href="file:///">file:///</a>&#8216; URL
+<code class="descclassname">gc3libs.persistence.filesystem.</code><code class="descname">make_filesystemstore</code><span class="sig-paren">(</span><em>url</em>, <em>*args</em>, <em>**extra_args</em><span class="sig-paren">)</span><a class="headerlink" href="#gc3libs.persistence.filesystem.make_filesystemstore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a <a class="reference internal" href="#gc3libs.persistence.filesystem.FilesystemStore" title="gc3libs.persistence.filesystem.FilesystemStore"><code class="xref py py-class docutils literal"><span class="pre">FilesystemStore</span></code></a> instance, given a &#8216;<a class="reference external" href="file:///">file:///</a>&#8216; URL
 and optional initialization arguments.</p>
 <p>This function is a bridge between the generic factory functions
-provided by <tt class="xref py py-func docutils literal"><span class="pre">gc3libs.persistence.make_store()</span></tt> and
-<tt class="xref py py-func docutils literal"><span class="pre">gc3libs.persistence.register()</span></tt> and the class constructor
+provided by <a class="reference internal" href="../persistence.html#gc3libs.persistence.make_store" title="gc3libs.persistence.make_store"><code class="xref py py-func docutils literal"><span class="pre">gc3libs.persistence.make_store()</span></code></a> and
+<code class="xref py py-func docutils literal"><span class="pre">gc3libs.persistence.register()</span></code> and the class constructor
 <cite>FilesystemStore</cite>:class.</p>
 <p>Examples:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fs1</span> <span class="o">=</span> <span class="n">make_filesystemstore</span><span class="p">(</span><span class="n">gc3libs</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">Url</span><span class="p">(</span><span class="s">&#39;file:///tmp&#39;</span><span class="p">))</span>
@@ -143,7 +143,7 @@ provided by <tt class="xref py py-func docutils literal"><span class="pre">gc3li
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
   <p class="topless"><a href="accessors.html"
@@ -151,7 +151,7 @@ provided by <tt class="xref py py-func docutils literal"><span class="pre">gc3li
   <h4>Next topic</h4>
   <p class="topless"><a href="idfactory.html"
                         title="next chapter"><cite>gc3libs.persistence.idfactory</cite></a></p>
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../../../search.html" method="get">
       <input type="text" name="q" />
@@ -168,7 +168,7 @@ provided by <tt class="xref py py-func docutils literal"><span class="pre">gc3li
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -183,15 +183,15 @@ provided by <tt class="xref py py-func docutils literal"><span class="pre">gc3li
         <li class="right" >
           <a href="accessors.html" title="gc3libs.persistence.accessors"
              >previous</a> |</li>
-        <li><a href="../../../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Programmer Documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-2"><a href="../../index.html" >GC3Libs programming API</a> &raquo;</li> 
       </ul>
     </div>
 
-    <div class="footer">
-        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2010-2015, S3IT, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking

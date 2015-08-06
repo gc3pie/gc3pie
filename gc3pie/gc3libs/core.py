@@ -19,7 +19,7 @@ Top-level interface to Grid functionality.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 2110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.4.2 version (SVN $Revision$)'
 __date__ = '$Date$'
 
 
@@ -161,8 +161,8 @@ variable ``GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL`` to ``yes`` or ``1``.
             return self.resources[name]
         except KeyError:
             raise gc3libs.exceptions.InvalidResourceName(
-                "No configured resource by the name '%s'"
-                % (name,))
+                "Cannot find computational resource '%s'" %
+                name)
 
     def select_resource(self, match):
         """
@@ -493,16 +493,14 @@ variable ``GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL`` to ``yes`` or ``1``.
                 app.changed = True
                 continue
 
-            except gc3libs.exceptions.InvalidResourceName as err:
+            except gc3libs.exceptions.InvalidResourceName as irn:
                 # could be the corresponding LRMS has been removed
                 # because of an unrecoverable error mark application
                 # as state UNKNOWN
                 gc3libs.log.warning(
-                    "Cannot access computational resource '%s',"
-                    " marking task '%s' as UNKNOWN."
-                    % (app.execution.resource_name, app))
-                app.execution.state = Run.State.TERMINATED
-                app.changed = True
+                    "Failed while retrieving resource %s from core.Detailed"
+                    " Error message: %s" %
+                    (app.execution.resource_name, str(irn)))
                 continue
 
             # XXX: Re-enabled the catch-all clause otherwise the loop stops at
@@ -635,10 +633,13 @@ variable ``GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL`` to ``yes`` or ``1``.
                 # clear previous data staging errors
                 if job.signal == Run.Signals.DataStagingFailure:
                     job.signal = 0
-            except gc3libs.exceptions.InvalidResourceName as err:
-                ex = app.fetch_output_error(err)
+            except gc3libs.exceptions.InvalidResourceName as ex:
+                gc3libs.log.warning(
+                    "No such resource '%s': %s"
+                    % (app.execution.resource_name, str(ex)))
+                ex = app.fetch_output_error(ex)
                 if isinstance(ex, Exception):
-                    job.info = ("No output could be retrieved: %s" % (ex,))
+                    job.info = ("No output could be retrieved: %s" % str(ex))
                     raise ex
                 else:
                     return
@@ -710,11 +711,11 @@ variable ``GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL`` to ``yes`` or ``1``.
             # attribute.
             if job.state != Run.State.NEW:
                 raise
-        except gc3libs.exceptions.InvalidResourceName as err:
+        except gc3libs.exceptions.InvalidResourceName as irn:
             gc3libs.log.warning(
-                "Cannot access computational resource '%s',"
-                " but marking task '%s' as TERMINATED anyway."
-                % (app.execution.resource_name, app))
+                "Failed while retrieving resource %s from core.Detailed"
+                " Error message: %s" %
+                (app.execution.resource_name, str(irn)))
         gc3libs.log.debug(
             "Setting task '%s' status to TERMINATED"
             " and returncode to SIGCANCEL", app)

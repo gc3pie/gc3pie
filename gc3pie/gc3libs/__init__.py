@@ -33,7 +33,7 @@ relevant aspects of the application being represented.
 """
 __docformat__ = 'reStructuredText'
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.4.2 version (SVN $Revision$)'
 
 
 import os
@@ -1051,18 +1051,15 @@ class Application(Task):
                 (err.__class__.__name__, str(err)))
         except AttributeError:
             # `spec` is a list-like
-            return ctor((Application.__convert_to_tuple(x) for x in spec),
+            def convert_to_tuple(val):
+                if isinstance(val, types.StringTypes):
+                    l = str(val)
+                    r = os.path.basename(l)
+                    return (l, r)
+                else:
+                    return (str(val[0]), str(val[1]))
+            return ctor((convert_to_tuple(x) for x in spec),
                         force_abs=force_abs)
-
-    @staticmethod
-    def __convert_to_tuple(val):
-        """Auxiliary method for `io_spec_to_dict`:meth:, which see."""
-        if isinstance(val, types.StringTypes):
-            l = str(val)
-            r = os.path.basename(l)
-            return (l, r)
-        else:
-            return (str(val[0]), str(val[1]))
 
     def __str__(self):
         try:
@@ -1307,7 +1304,12 @@ class Application(Task):
             qsub += ['-N', '%s' % self.jobname]
         return (qsub, self.cmdline(resource))
 
-    def bsub(self, resource, **extra_args):
+    def bsub(self, resource, _suppress_warning=False, **extra_args):
+        # XXX: the `_suppress_warning` switch is only provided for
+        # some applications to make use of this generic method without
+        # logging the user-level warning, because, e.g., it has already
+        # been taken care in some other way (cf. GAMESS' `qgms`).
+        # Use with care and don't depend on it!
         """
         Get an LSF ``qsub`` command-line invocation for submitting an
         instance of this application.  Return a pair `(cmd_argv,
@@ -1362,7 +1364,7 @@ class Application(Task):
             bsub += ['-J', ('%s' % self.jobname)]
         return (bsub, self.cmdline(resource))
 
-    def qsub_pbs(self, resource, **extra_args):
+    def qsub_pbs(self, resource, _suppress_warning=False, **extra_args):
         """
         Similar to `qsub_sge()`, but for the PBS/TORQUE resource manager.
         """
@@ -2011,9 +2013,10 @@ def create_engine(*conf_files, **extra_args):
         conf_files = Default.CONFIG_FILE_LOCATIONS[:]
 
     # extract params specific to the `Core` instance
-    core_extra_args = {}
-    if 'resource_errors_are_fatal' in extra_args:
-        core_extra_args['resource_errors_are_fatal'] = extra_args.pop('resource_errors_are_fatal')
+    core_extra_args = {
+        'resource_errors_are_fatal':
+            extra_args.pop('resource_errors_are_fatal', False),
+    }
 
     # params specific to the `Configuration` instance
     if 'auto_enable_auth' not in extra_args:

@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>GC3Pie programming tutorials &mdash; gc3pie development (SVN $Revision$) documentation</title>
+    <title>GC3Pie programming tutorials &mdash; gc3pie 2.3.dev (SVN $Revision$) documentation</title>
     
-    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     'development (SVN $Revision$)',
+        VERSION:     '2.3.dev (SVN $Revision$)',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <link rel="top" title="gc3pie development (SVN $Revision$) documentation" href="../../index.html" />
+    <link rel="top" title="gc3pie 2.3.dev (SVN $Revision$) documentation" href="../../index.html" />
     <link rel="up" title="Programmer Documentation" href="../index.html" />
     <link rel="next" title="Introduction" href="warholize/warholize.html" />
     <link rel="prev" title="Programming overview" href="../overview.html" />
@@ -35,8 +35,8 @@
 </script>
 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -51,15 +51,15 @@
         <li class="right" >
           <a href="../overview.html" title="Programming overview"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../index.html" accesskey="U">Programmer Documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Programmer Documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="gc3pie-programming-tutorials">
 <h1>GC3Pie programming tutorials<a class="headerlink" href="#gc3pie-programming-tutorials" title="Permalink to this headline">¶</a></h1>
@@ -95,7 +95,7 @@ applications, from submission to getting back the final results.</div></blockquo
 <div>Low-level tools to aid debugging the scripts.</div></blockquote>
 <p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/programmers/tutorials/part08.pdf">Introduction to Workflows with GC3Pie</a></p>
 <blockquote>
-<div>Using a practical example (the <a class="reference internal" href="#warholize-tutorial"><em>Warholize Tutorial</em></a>) we show
+<div>Using a practical example (the <a class="reference internal" href="#warholize-tutorial"><span>Warholize Tutorial</span></a>) we show
 how workflows are implemented with GC3Pie. The following slides
 will cover in more details the single steps needed to produce a
 complex workflow.</div></blockquote>
@@ -132,7 +132,7 @@ a <cite>SequentialTaskCollection</cite>.</div></blockquote>
 <p><a class="reference external" href="http://gc3pie.googlecode.com/svn/trunk/gc3pie/examples/warholize.py">warholize.py</a></p>
 <blockquote>
 <div>an enhanched version of the <cite>warholize</cite> script proposed in the
-<a class="reference internal" href="#warholize-tutorial"><em>Warholize Tutorial</em></a></div></blockquote>
+<a class="reference internal" href="#warholize-tutorial"><span>Warholize Tutorial</span></a></div></blockquote>
 </div>
 <div class="section" id="warholize-tutorial">
 <span id="id1"></span><h2>Warholize Tutorial<a class="headerlink" href="#warholize-tutorial" title="Permalink to this headline">¶</a></h2>
@@ -141,10 +141,10 @@ to build a command line script which will run a complex workflow with
 both parallel and sequential tasks.</p>
 <p>The tutorial itself contains the complete source code of the
 application (cfr. <a class="reference external" href="http://en.wikipedia.org/wiki/Literate_programming">Literate Programming</a> on Wikipedia), so that you
-will be able to test/modify it and produce a working <tt class="docutils literal"><span class="pre">warholize.py</span></tt>
-script by downloading the <tt class="docutils literal"><span class="pre">pylit.py</span></tt>:file: script from the <a class="reference external" href="https://github.com/gmilde/PyLit">PyLit
+will be able to test/modify it and produce a working <code class="docutils literal"><span class="pre">warholize.py</span></code>
+script by downloading the <code class="docutils literal"><span class="pre">pylit.py</span></code>:file: script from the <a class="reference external" href="https://github.com/gmilde/PyLit">PyLit
 Homepage</a> and running the following command on the
-<tt class="docutils literal"><span class="pre">gc3pie/docs/programmers/tutorials/warholize/warholize.txt</span></tt> file,
+<code class="docutils literal"><span class="pre">gc3pie/docs/programmers/tutorials/warholize/warholize.txt</span></code> file,
 from within the SVN tree of GC3Pie:</p>
 <div class="highlight-python"><div class="highlight"><pre>$ ./pylit warholize.txt warholize.py
 </pre></div>
@@ -174,7 +174,7 @@ from within the SVN tree of GC3Pie:</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h3><a href="../../index.html">Table Of Contents</a></h3>
   <ul>
@@ -192,7 +192,7 @@ from within the SVN tree of GC3Pie:</p>
   <h4>Next topic</h4>
   <p class="topless"><a href="warholize/warholize.html"
                         title="next chapter">Introduction</a></p>
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../search.html" method="get">
       <input type="text" name="q" />
@@ -209,7 +209,7 @@ from within the SVN tree of GC3Pie:</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -224,14 +224,14 @@ from within the SVN tree of GC3Pie:</p>
         <li class="right" >
           <a href="../overview.html" title="Programming overview"
              >previous</a> |</li>
-        <li><a href="../../index.html">gc3pie development (SVN $Revision$) documentation</a> &raquo;</li>
-          <li><a href="../index.html" >Programmer Documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../index.html">gc3pie 2.3.dev (SVN $Revision$) documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Programmer Documentation</a> &raquo;</li> 
       </ul>
     </div>
 
-    <div class="footer">
-        &copy; Copyright 2010-2012, Grid Computing Competence Centre, University of Zurich.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2010-2015, S3IT, University of Zurich.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
 <div class="footer">This page uses <a href="http://analytics.google.com/">
 Google Analytics</a> to collect statistics. You can disable it by blocking
