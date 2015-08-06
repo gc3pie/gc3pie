@@ -95,10 +95,7 @@ type=none
                 pass
 
     def test_submission_ok(self):
-        """
-        Test a successful submission cycle and the backends' resource
-        book-keeping.
-        """
+        """Test a successful submission cycle and the backends' resource book-keeping"""
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
 
         app = gc3libs.Application(
@@ -153,9 +150,7 @@ type=none
             raise
 
     def test_check_app_after_reloading_session(self):
-        """Check if we are able to check the status of a job after the
-        script which started the job has died.
-        """
+        """Check that the job status is still available the end of the starter script"""
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
 
@@ -191,8 +186,7 @@ type=none
         assert_equal(app.execution.returncode, 0)
 
     def test_app_argument_with_spaces(self):
-        """Check that arguments with spaces are not splitted
-        """
+        """Check that arguments with spaces are not split"""
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
 
@@ -219,10 +213,8 @@ type=none
         assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
         assert_not_equal(app.execution.returncode, 0)
 
-    # def test_time_cmd_args(self):
-    #     assert_equal(self.backend.time_cmd, '/usr/bin/time')
-
     def test_resource_usage(self):
+        """Check book-keeping of core and memory resources"""
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
 
@@ -285,6 +277,7 @@ type=none
 
     @raises(gc3libs.exceptions.NoResources)
     def test_not_enough_cores_usage(self):
+        """Check that a `NoResources` exception is raised if more cores are requested than available"""
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
         bigapp = gc3libs.Application(
@@ -298,6 +291,7 @@ type=none
 
     @raises(gc3libs.exceptions.NoResources)
     def test_not_enough_memory_usage(self):
+        """Check that a `NoResources` exception is raised if more memory is requested than available"""
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
         bigapp = gc3libs.Application(
