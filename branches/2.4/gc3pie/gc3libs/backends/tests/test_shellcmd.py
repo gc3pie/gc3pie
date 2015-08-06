@@ -248,6 +248,32 @@ type=none
         stdout_contents = open(stdout_file, 'r').read()
         assert_equal(stdout_contents, 'OK\n')
 
+    def test_stdout_in_directory(self):
+        """Check that `Application.stdout` can include a full path"""
+        tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
+        self.cleanup_file(tmpdir)
+
+        app = gc3libs.Application(
+            arguments=['/bin/echo', 'OK'],
+            inputs=[],
+            outputs=[],
+            output_dir=tmpdir,
+            stdout='logs/stdout.txt')
+        self.core.submit(app)
+        self.apps_to_kill.append(app)
+
+        self.run_until_terminating(app)
+
+        self.core.fetch_output(app)
+        stdout_dir = os.path.join(app.output_dir, 'logs')
+        stdout_file = os.path.join(stdout_dir, 'stdout.txt')
+        assert os.path.exists(stdout_dir)
+        assert os.path.isdir(stdout_dir)
+        assert os.path.exists(stdout_file)
+        assert os.path.isfile(stdout_file)
+        stdout_contents = open(stdout_file, 'r').read()
+        assert_equal(stdout_contents, 'OK\n')
+
     @raises(gc3libs.exceptions.NoResources)
     def test_not_enough_cores_usage(self):
         """Check that a `NoResources` exception is raised if more cores are requested than available"""
