@@ -1332,8 +1332,13 @@ class Application(Task):
         resource-specific submission options.
         """
         bsub = list(resource.bsub)
-        bsub += ['-cwd', '.', '-L', '/bin/sh',
-                 '-n', ('%d' % self.requested_cores)]
+        bsub += ['-cwd', '.', '-L', '/bin/sh']
+        if self.requested_cores > 1:
+            bsub += [
+                '-n', ('%d' % self.requested_cores),
+                # require that all cores reside on the same host
+                '-R', 'span[hosts=1]'
+            ]
         if self.requested_walltime:
             # LSF wants walltime as HH:MM (days expressed as many hours)
             hs = int(self.requested_walltime.amount(hours))
