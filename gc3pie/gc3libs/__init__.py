@@ -1304,12 +1304,7 @@ class Application(Task):
             qsub += ['-N', '%s' % self.jobname]
         return (qsub, self.cmdline(resource))
 
-    def bsub(self, resource, _suppress_warning=False, **extra_args):
-        # XXX: the `_suppress_warning` switch is only provided for
-        # some applications to make use of this generic method without
-        # logging the user-level warning, because, e.g., it has already
-        # been taken care in some other way (cf. GAMESS' `qgms`).
-        # Use with care and don't depend on it!
+    def bsub(self, resource, **extra_args):
         """
         Get an LSF ``qsub`` command-line invocation for submitting an
         instance of this application.  Return a pair `(cmd_argv,
@@ -1364,7 +1359,7 @@ class Application(Task):
             bsub += ['-J', ('%s' % self.jobname)]
         return (bsub, self.cmdline(resource))
 
-    def qsub_pbs(self, resource, _suppress_warning=False, **extra_args):
+    def qsub_pbs(self, resource, **extra_args):
         """
         Similar to `qsub_sge()`, but for the PBS/TORQUE resource manager.
         """
