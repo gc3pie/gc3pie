@@ -3,7 +3,7 @@
 """
 Unit tests for the `gc3libs.backends.shellcmd` module.
 """
-# Copyright (C) 2011-2013 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -252,6 +252,36 @@ type=none
             self.core.update_job_state(app)
         assert_equal(self.backend.free_slots, cores_before)
         assert_equal(self.backend.available_memory, mem_before)
+
+    def test_env_vars_definition(self):
+        """Check that `Application.environment` settings are correctly propagated"""
+        tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
+        self.cleanup_file(tmpdir)
+
+        app = gc3libs.Application(
+            arguments=['/bin/echo', '$MSG'],
+            inputs=[],
+            outputs=[],
+            output_dir=tmpdir,
+            stdout='stdout.txt',
+            environment={'MSG':'OK'})
+        self.core.submit(app)
+        self.apps_to_kill.append(app)
+
+        MAX_WAIT = 10  # seconds
+        WAIT = 0.1  # seconds
+        waited = 0
+        while app.execution.state != gc3libs.Run.State.TERMINATING \
+                and waited < MAX_WAIT:
+            time.sleep(WAIT)
+            waited += WAIT
+            self.core.update_job_state(app)
+        self.core.fetch_output(app)
+        stdout_file = os.path.join(app.output_dir, app.stdout)
+        assert os.path.exists(stdout_file)
+        assert os.path.isfile(stdout_file)
+        stdout_contents = open(stdout_file, 'r').read()
+        assert_equal(stdout_contents, 'OK\n')
 
     @raises(gc3libs.exceptions.NoResources)
     def test_not_enough_cores_usage(self):
