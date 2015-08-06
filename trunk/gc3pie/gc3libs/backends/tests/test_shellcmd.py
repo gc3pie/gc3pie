@@ -77,6 +77,18 @@ type=none
     def cleanup_file(self, fname):
         self.files_to_remove.append(fname)
 
+    def run_until_terminating(self, app, max_wait=10, polling_interval=0.1):
+        """
+        Wait until the given `app` job is done, but timeout and raise an
+        error if it takes too much time.
+        """
+        waited = 0
+        while app.execution.state != gc3libs.Run.State.TERMINATING \
+                and waited < max_wait:
+            time.sleep(polling_interval)
+            waited += polling_interval
+            self.core.update_job_state(app)
+
     def tearDown(self):
         for fname in self.files_to_remove:
             if os.path.isdir(fname):
@@ -119,16 +131,7 @@ type=none
         assert_equal(self.backend.user_queued, 0)
         assert_equal(self.backend.user_run, 1)
 
-        # wait until the test job is done, but timeout and raise an error
-        # if it takes too much time...
-        MAX_WAIT = 10  # seconds
-        WAIT = 0.1  # seconds
-        waited = 0
-        while app.execution.state != gc3libs.Run.State.TERMINATING \
-                and waited < MAX_WAIT:
-            time.sleep(WAIT)
-            waited += WAIT
-            self.core.update_job_state(app)
+        self.run_until_terminating(app)
         try:
             assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
             assert_equal(self.backend.free_slots, 123)
@@ -170,18 +173,7 @@ type=none
         # The wrapper process should die and write the final status
         # and the output to a file, so that `Core` will be able to
         # retrieve it.
-
-        # wait until the test job is done, but timeout and raise an error
-        # if it takes too much time...
-        MAX_WAIT = 10  # seconds
-        WAIT = 0.1  # seconds
-        waited = 0
-        while app.execution.state != gc3libs.Run.State.TERMINATING \
-                and waited < MAX_WAIT:
-            time.sleep(WAIT)
-            waited += WAIT
-            self.core.update_job_state(app)
-
+        self.run_until_terminating(app)
         assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
         assert_equal(app.execution.returncode, 0)
 
@@ -200,16 +192,9 @@ type=none
             requested_cores=1, )
         self.core.submit(app)
         self.apps_to_kill.append(app)
-
         self.cleanup_file(app.execution.lrms_execdir)
-        MAX_WAIT = 10  # seconds
-        WAIT = 0.1  # seconds
-        waited = 0
-        while app.execution.state != gc3libs.Run.State.TERMINATING \
-                and waited < MAX_WAIT:
-            time.sleep(WAIT)
-            waited += WAIT
-            self.core.update_job_state(app)
+
+        self.run_until_terminating(app)
         assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
         assert_not_equal(app.execution.returncode, 0)
 
@@ -234,14 +219,8 @@ type=none
         mem_after = self.backend.available_memory
         assert_equal(cores_before, cores_after + 2)
         assert_equal(mem_before, mem_after + app.requested_memory)
-        MAX_WAIT = 10  # seconds
-        WAIT = 0.1  # seconds
-        waited = 0
-        while app.execution.state != gc3libs.Run.State.TERMINATING \
-                and waited < MAX_WAIT:
-            time.sleep(WAIT)
-            waited += WAIT
-            self.core.update_job_state(app)
+
+        self.run_until_terminating(app)
         assert_equal(self.backend.free_slots, cores_before)
         assert_equal(self.backend.available_memory, mem_before)
 
@@ -260,14 +239,8 @@ type=none
         self.core.submit(app)
         self.apps_to_kill.append(app)
 
-        MAX_WAIT = 10  # seconds
-        WAIT = 0.1  # seconds
-        waited = 0
-        while app.execution.state != gc3libs.Run.State.TERMINATING \
-                and waited < MAX_WAIT:
-            time.sleep(WAIT)
-            waited += WAIT
-            self.core.update_job_state(app)
+        self.run_until_terminating(app)
+
         self.core.fetch_output(app)
         stdout_file = os.path.join(app.output_dir, app.stdout)
         assert os.path.exists(stdout_file)
