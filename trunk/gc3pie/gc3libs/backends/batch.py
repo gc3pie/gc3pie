@@ -375,6 +375,7 @@ class BatchSystem(LRMS):
         sandbox, and will copy the sandbox in there.
         """
         job = app.execution
+
         # Create the remote directory.
         try:
             self.transport.connect()
@@ -394,7 +395,8 @@ class BatchSystem(LRMS):
             raise
         except:
             raise
-            # Copy the input file to remote directory.
+
+        # Copy the input file(s) to remote directory.
         for local_path, remote_path in app.inputs.items():
             remote_path = os.path.join(ssh_remote_folder, remote_path)
             remote_parent = os.path.dirname(remote_path)
@@ -420,6 +422,15 @@ class BatchSystem(LRMS):
                               app.arguments[0])
             self.transport.chmod(os.path.join(ssh_remote_folder,
                                               app.arguments[0]), 0o755)
+
+        # if STDOUT/STDERR should be saved in a directory, ensure it
+        # exists (see Issue 495 for details)
+        for dest in (app.stdout, app.stderr):
+            if dest:
+                destdir = os.path.dirname(dest)
+                if destdir:
+                    self.transport.makedirs(
+                        posixpath.join(ssh_remote_folder, destdir))
 
         try:
             sub_cmd, aux_script = self._submit_command(app)
