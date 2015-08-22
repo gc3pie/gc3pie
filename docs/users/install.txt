@@ -23,11 +23,11 @@ section below.)
 
 To install GC3Pie just type this at your terminal prompt::
 
-    sh -c "$(wget -O- http://gc3pie.googlecode.com/svn/install.sh)"
+  wget -O- https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py | python
 
 If `wget` is not installed in your computer, you can use `curl` instead::
 
-    sh -c "$(curl -s http://gc3pie.googlecode.com/svn/install.sh)"
+  curl -s https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py | python
 
 The above command creates a directory `$HOME/gc3pie`:file: and installs
 the latest release of GC3Pie and all its dependencies into it.
@@ -85,16 +85,17 @@ Non-standard installation options
 The installation script accept a few options that select alternatives
 to the standard behavior.  In order to use these options, you have to:
 
-1. download the installation script into a file named `install.sh`:file:::
+1. download the installation script into a file named `install.py`:file:::
 
-     wget http://gc3pie.googlecode.com/svn/install.sh
+   wget https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
 
 2. run the command::
 
-     sh ./install.sh [options]
+     python install.py [options]
 
    replacing the string ``[options]`` with the actual options you want
-   to pass to the script.
+   to pass to the script.  Also, the ``python`` command should be the
+   Python executable that you want to use to run GC3Pie applications.
 
 The accepted options are as follows:
 
@@ -125,18 +126,12 @@ The accepted options are as follows:
   ``--develop``
 
       Instead of installing the latest *release* of GC3Pie, it will
-      install the *development branch* from the SVN repository.
+      install the *master branch* from the GitHub repository.
 
   ``--yes``
 
       Run non-interactively, and assume a "yes" reply to every
       question.
-
-  ``-p PYTHON``
-
-      Uses the given ``PYTHON`` program as python interpreter.  By
-      default the installation script looks for a ``python`` binary in
-      the standard ``$PATH``.
 
   ``--no-gc3apps``
 
@@ -164,23 +159,21 @@ Installation into a virtualenv has two distinct advantages:
 
 0. Install software prerequisites:
 
-   * On Debian/Ubuntu, install packages: ``subversion``,
+   * On Debian/Ubuntu, install packages: ``git``,
      ``python-dev``, ``python-profiler`` and the C/C++ compiler::
 
-       apt-get install subversion python-dev python-profiler gcc g++
+       apt-get install git python-dev python-profiler gcc g++
 
-   * On CentOS5, install packages ``subversion`` and ``python-devel``
+   * On CentOS5, install packages ``git`` and ``python-devel``
      and the C/C++ compiler::
 
-       yum install subversion python-devel gcc gcc-c++
+       yum install git python-devel gcc gcc-c++
 
    * On other Linux distributions, you will need to install:
 
-     - the ``svn`` command (from the SubVersion_ VCS)
+     - the ``git`` command (from the Git_ VCS)
      - Python development headers and libraries
        (for installing extension libraries written in C/C++)
-     - the Python package ``pstats`` (it's part of the Python
-       standard library, but sometimes it needs separate installation)
      - a C/C++ compiler (this is usually installed by default).
 
 
@@ -234,11 +227,11 @@ Installation into a virtualenv has two distinct advantages:
 
 3. Check-out the ``gc3pie`` files in a ``src/`` directory::
 
-       svn co http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie src
+       git clone https://github.com/uzh/gc3pie.git src
 
 
 4. Install the ``gc3pie`` in "develop" mode, so any modification
-   pulled from subversion is immediately reflected in the running environment::
+   pulled from GitHub is immediately reflected in the running environment::
 
        cd src/
        env CC=gcc ./setup.py develop
@@ -395,7 +388,7 @@ HTML Documentation
 HTML documentation for the GC3Libs programming interface can be
 read online at:
 
-  http://gc3pie.googlecode.com/svn/branches/2.0/gc3pie/docs/html/index.html
+  http://gc3pie.readthedocs.org/
 
 If you installed GC3Pie manually, or if you installed it using the
 ``install.sh`` script with the ``--develop`` option, you can also
@@ -414,6 +407,7 @@ in order to build the documentation locally.
 .. _sphinx: http://sphinx.pocoo.org/
 .. _virtualenv: http://pypi.python.org/pypi/virtualenv/1.7
 
+.. _Git: http://git-scm.org/
 .. _`MacPorts`: http://www.macports.org/
 .. _`Fink`: http://sourceforge.net/projects/fink/
 .. _`Homebrew`: http://mxcl.github.com/homebrew/
