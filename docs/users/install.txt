@@ -23,11 +23,13 @@ section below.)
 
 To install GC3Pie just type this at your terminal prompt::
 
-  wget -O- https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py | python
+    wget https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
+    python install.py
 
 If `wget` is not installed in your computer, you can use `curl` instead::
 
-  curl -s https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py | python
+    curl -s -O https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
+    python install.py
 
 The above command creates a directory `$HOME/gc3pie`:file: and installs
 the latest release of GC3Pie and all its dependencies into it.
