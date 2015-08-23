@@ -212,7 +212,7 @@ username=NONEXISTENT
     def test_submission_failed(self):
         app = FakeApp()
         # Submission failed (jobname starting with a digit, cfr issue #250
-        # at http://code.google.com/p/gc3pie/issues/detail?id=250) This
+        # at https://github.com/uzh/gc3pie/issues/250) This
         # first test will show the answer you would get if the job name
         # starts with a digit.
         self.transport.expected_answer['qsub'] = \

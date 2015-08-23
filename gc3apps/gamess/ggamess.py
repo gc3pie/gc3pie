@@ -52,7 +52,7 @@ from gc3libs.cmdline import SessionBasedScript, existing_file
 
 
 # run script, but allow GC3Pie persistence module to access classes defined here;
-# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+# for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
     import ggamess
     ggamess.GGamessScript().run()

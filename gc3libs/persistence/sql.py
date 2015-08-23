@@ -297,7 +297,7 @@ def make_sqlstore(url, *args, **extra_args):
         if not os.path.exists(dir):
             os.makedirs(dir)
         # rewrite ``sqlite`` URLs to be RFC compliant, see:
-        # http://code.google.com/p/gc3pie/issues/detail?id=261
+        # https://github.com/uzh/gc3pie/issues/261
         url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
     return SqlStore(str(url), *args, **extra_args)
 

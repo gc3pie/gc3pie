@@ -59,7 +59,7 @@ __author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 # run script, but allow GC3Pie persistence module to access classes defined here;
-# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+# for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
     import gsnowpack
     gsnowpack.GsnowpackScript().run()

@@ -52,7 +52,7 @@ class FakeTransport(LocalTransport):
     need a complete and correct ``sh`` parser (no, the `shlex` module
     is not enough).  We should be passing argv-style arrays to the
     `Transport.execute_command` module and check that instead; see
-    https://code.google.com/p/gc3pie/issues/detail?id=285&q=argv
+    https://github.com/uzh/gc3pie/issues/285&q=argv
     """
 
     def __init__(self, expected_answer={}):

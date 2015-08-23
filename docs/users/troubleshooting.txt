@@ -171,4 +171,4 @@ This is discussed in `Issue 182`_; a fix have been committed to
 release 1.0, so if you are seeing this error, you are running a
 pre-release version of GC3Pie and should `upgrade`:ref:.
 
-.. _`Issue 182`: http://code.google.com/p/gc3pie/issues/detail?id=182
+.. _`Issue 182`: https://github.com/uzh/gc3pie/issues/182

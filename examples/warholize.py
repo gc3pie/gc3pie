@@ -694,4 +694,4 @@ if __name__ == '__main__':
 #
 # .. _`Signal and Image Processing Institute`: http://sipi.usc.edu/database/?volume=misc
 #
-# .. _`issue 95`: http://code.google.com/p/gc3pie/issues/detail?id=95
+# .. _`issue 95`: https://github.com/uzh/gc3pie/issues/95
