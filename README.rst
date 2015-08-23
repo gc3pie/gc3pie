@@ -12,11 +12,11 @@ and grid resources seamlessly.  GC3Pie aims at providing the
 building blocks by which Python scripts that combine several
 applications in a dynamic workflow can be quickly developed.
 
-The GC3Pie suite is comprised of three main components: 
+The GC3Pie suite is comprised of three main components:
 
  * GC3Libs: A python package for controlling the life-cycle of a Grid or batch computational job
  * GC3Utils: Command-line tools exposing the main functionality provided by GC3Libs
- * GC3Apps: Driver scripts to run large job campaigns 
+ * GC3Apps: Driver scripts to run large job campaigns
 
 
 GC3Libs
@@ -24,7 +24,7 @@ GC3Libs
 
 GC3Libs provides services for submitting computational jobs to Grids
 and batch systems and controlling their execution, persisting job
-information, and retrieving the final output.  
+information, and retrieving the final output.
 
 GC3Libs takes an _application-oriented approach to batch computing.  A
 generic ``Application`` class provides the basic operations for
@@ -68,12 +68,14 @@ used in production as-is, or adapted to suit your data processing needs.
 Installation instructions and further reading
 =============================================
 
-For up-to-date information, please visit the GC3Pie home page at:
-http://gc3pie.googlecode.com/
+For up-to-date information, please read the GC3Pie documentation at:
+http://gc3pie.readthedocs.org/
 
-Installation instructions are in the ``INSTALL.txt`` file (in this
-same directory), or can be read online at: 
-http://code.google.com/p/gc3pie/wiki/InstallGC3Pie
+Installation instructions are in the `INSTALL.rst`_ file (in this
+same directory), or can be read online at:
+http://gc3pie.readthedocs.org/en/latest/users/install.html
+
+.. _`INSTALL.rst`: https://github.com/uzh/gc3pie/blob/master/INSTALL.rst
 
 
 .. References
