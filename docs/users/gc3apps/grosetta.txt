@@ -132,7 +132,7 @@ A `grosetta`:command: command-line is constructed as follows:
 
 There will be a number of *identical* jobs being executed as a result
 of a `grosetta`:command: or `gdocking`:command: invocation; this
-number depends on the ratio of the values given to options ``-P`` 
+number depends on the ratio of the values given to options ``-P``
 and ``-p``:
 
   -P NUM, --total-decoys NUM
@@ -161,14 +161,14 @@ one job will be created (as in the *example 1.* above).
   submits them, and finally prints the following status report::
 
       Status of jobs in the 'SAMPLE_SESSION' session: (at 10:53:46, 02/28/12)
-              NEW   0/3    (0.0%)  
-          RUNNING   0/3    (0.0%)  
-          STOPPED   0/3    (0.0%)  
-        SUBMITTED   3/3   (100.0%) 
-       TERMINATED   0/3    (0.0%)  
-      TERMINATING   0/3    (0.0%)  
-            total   3/3   (100.0%) 
-   
+              NEW   0/3    (0.0%)
+          RUNNING   0/3    (0.0%)
+          STOPPED   0/3    (0.0%)
+        SUBMITTED   3/3   (100.0%)
+       TERMINATED   0/3    (0.0%)
+      TERMINATING   0/3    (0.0%)
+            total   3/3   (100.0%)
+
   Note that the status report counts the number of *jobs in the
   session*, not the total number of decoys being generated.  (Feel
   free to report this as a bug.)
@@ -185,14 +185,14 @@ correctly retrieved.  On successful completion, the command given in
 *example 2.* above, would print::
 
     Status of jobs in the 'SAMPLE_SESSION' session: (at 11:05:50, 02/28/12)
-            NEW   0/3    (0.0%)  
-        RUNNING   0/3    (0.0%)  
-        STOPPED   0/3    (0.0%)  
-      SUBMITTED   0/3    (0.0%)  
-     TERMINATED   3/3   (100.0%) 
-    TERMINATING   0/3    (0.0%)  
-             ok   3/3   (100.0%) 
-          total   3/3   (100.0%) 
+            NEW   0/3    (0.0%)
+        RUNNING   0/3    (0.0%)
+        STOPPED   0/3    (0.0%)
+      SUBMITTED   0/3    (0.0%)
+     TERMINATED   3/3   (100.0%)
+    TERMINATING   0/3    (0.0%)
+             ok   3/3   (100.0%)
+          total   3/3   (100.0%)
 
 The three jobs are named ``0--1``, ``2--3`` and ``4--5`` (you could
 see this by passing the ``-l`` option to `grosetta`:command:); each of
@@ -205,7 +205,7 @@ instead named after the input file, with a `.{N}--{M}`:file: suffix
 added.
 
 For each job, the set of output files is automatically retrieved and
-placed in the locations described below.  
+placed in the locations described below.
 
 .. note::
 
@@ -298,8 +298,9 @@ This section contains commented example sessions with
 in the `GC3Pie Rosetta test`_ directory (courtesy of `Lars
 Malmstroem`_).
 
-.. _`gc3pie rosetta test`: http://code.google.com/p/gc3pie/source/browse/#svn%2Ftrunk%2Fgc3pie%2Fgc3apps%2Frosetta%2Ftest
-.. _`Lars Malmstroem`: http://www.imsb.ethz.ch/researchgroup/malars
+.. _`gc3pie rosetta test`: http://github.com/uzh/gc3pie/gc3apps/rosetta/test
+.. _`Lars Malmstroem`: http://lars.malmstroem.net/
+
 
 Manage a set of jobs from start to end
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -319,7 +320,7 @@ the following command-line invocation::
 
 The ``-s example`` option tells `grosetta`:command: to store
 information about the computational jobs in the ``example.jobs``
-directory. 
+directory.
 
 The ``-C 120`` option tells `grosetta`:command: to update job state
 every 120 seconds; output from finished jobs is retrieved and new jobs
@@ -332,7 +333,7 @@ value should be such that the computational job can actually compute
 that many decoys in the allotted `wall-clock time <walltime>`:term:).
 
 The above command will start by printing a status report like the
-following:: 
+following::
 
         Status of jobs in the 'example.csv' session:
          SUBMITTED   1/1 (100.0%)
@@ -353,7 +354,7 @@ Managing a session by repeated `grosetta`:command: invocation
 
 We now show how one can obtain the same result by calling
 `grosetta`:command: multiple times (there could be hours of
-interruption between one invocation and the next one).  
+interruption between one invocation and the next one).
 
 .. note::
 
