@@ -246,6 +246,14 @@ class OpenStackLrms(LRMS):
 
         # FIXME: we should add check/creation of proper security
         # groups
+
+        nics = None
+        if self.network_ids:
+            nics=[{'net-id': netid.strip(), 'v4-fixed-ip': ''} for netid in self.network_ids.split(',') ]
+            gc3libs.log.debug("Specifying networks for vm %s: %s",
+                      name, str.join(', ', [nic['net-id'] for nic in nics]))
+        args['nics'] = nics
+        
         gc3libs.log.debug("Create new VM using image id `%s`", image_id)
         try:
             vm = self.client.servers.create(name, image_id, instance_type,
