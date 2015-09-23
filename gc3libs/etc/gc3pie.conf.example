@@ -26,37 +26,7 @@ debug = 0
 # Each `resource/***` section can reference one (and one only) auth
 # section.
 #
-# Examples:
-#
-# 1) The following section can be used to define an `smscg` auth that
-# is used to access the resources of the distributed computing
-# infrastructure SMSCG (http://www.smscg.ch/).
-#
-# You need to insert three values here, for which we can provide no
-# default: "aai_username", "idp", and "vo".
-#
-# aai_username: This is the "username" you are asked for when accessing 
-#   any SWITCHaai/Shibboleth web page, e.g., https://gc3-aai01.uzh.ch/secure/
-#
-# idp: Find this out with the command "slcs-info": it prints a list of IdP
-#   (Identity Provider IDs) followed by the human-readable name of the associated
-#   institution. Pick the one that corresponds to you University.
-#   It is always the last two components of the University's Internet domain name 
-#   (e.g., "uzh.ch" or "ethz.ch").
-# 
-# vo: In order to use SMSCG, you must sign up to a VO (Virtual Organisation).
-#   One the words "life", "earth", "atlas" or "crypto" should be here.
-#   Find out more at: http://www.smscg.ch/www/user/
-
-#
-# [auth/smscg]
-# type = voms-proxy
-# cert_renewal_method = slcs
-# aai_username = PLEASE-SET-aai_username-IN-gc3pie.conf
-# idp =  PLEASE-SET-idp-IN-gc3pie.conf
-# vo = smscg
-#
-# 2) The following section shows how to define an auth section for
+# The following section shows how to define an auth section for
 # accessing computers via SSH.  The same section can be re-used on all
 # computers where your username and/or identity file (public/private
 # key) is the same:
@@ -65,10 +35,10 @@ debug = 0
 # type = ssh
 # username = your_ssh_user_name_on_computer_alice
 #
-# 3) If you have a different account name on some resources, you can create
+# If you have a different account name on some resources, you can create
 # another auth section with, e.g.
 #
-# [auth/ssh_on_bob]
+# [auth/ssh_bob]
 # type = ssh
 # username = your_ssh_user_name_on_computer_bob
 
@@ -82,7 +52,6 @@ debug = 0
 #
 #  type           meaning
 #  =============  ======================================================================
-#  arc0           resource is accessed using the ARC 0.8.x middleware
 #  sge            resource is a Grid Engine cluster, accessed via qsub/qstat over SSH
 #  lsf            resource is an LSF cluster, accessed via bsub/bjobs over SSH
 #  pbs            resource is a TORQUE/OpenPBS cluster, accessed via qsub/qstat over SSH
@@ -163,37 +132,7 @@ architecture=x64_64
 
 # Examples:
 #
-# 1) A single cluster, accessed through the ARC middleware:
-#
-# [resource/idgc3grid01]
-# enabled = no
-# type = arc0
-# auth = smscg
-# frontend = idgc3grid01.uzh.ch
-# name = gc3
-# arc_ldap = ldap://idgc3grid01.uzh.ch:2135/o=grid/mds-vo-name=local
-# max_cores_per_job = 256
-# max_memory_per_core = 2 GB
-# max_walltime = 99999 hours
-# max_cores = 320
-# architecture = x86_64
-
-# 2) Access to the whole SMSCG distributed infrastructure, seen as a
-# single compute resource:
-# 
-# [resource/smscg]
-# enabled = false
-# name = smscg
-# type = arc0
-# auth = smscg
-# arc_ldap = ldap://giis.smscg.ch:2135/o=grid/mds-vo-name=Switzerland
-# max_cores_per_job = 256
-# max_memory_per_core = 2 GB
-# max_walltime = 24 hours
-# ncores = 8000
-# architecture = i686, x86_64
-
-# 3) A single Sun Grid Engine cluster, accessed by SSH'ing to the
+# 1) A single Sun Grid Engine cluster, accessed by SSH'ing to the
 # front-end node to control jobs via qsub/qstat:
 #
 # [resource/schroedinger]
@@ -218,7 +157,7 @@ architecture=x64_64
 # #qacct = /usr/local/sbin/qacct.sh
 # #qdel = /usr/local/bin/qdel
 
-# 4) A single LSF cluster, accessed directly (i.e., GC3Pie must be
+# 2) A single LSF cluster, accessed directly (i.e., GC3Pie must be
 # running on the cluster front-end node):
 #
 # [resource/brutus]
