@@ -56,7 +56,7 @@ def runctx(args):
     reader = pandas.read_csv(arguments.inputcsv, header=0)
     for index in range(0,len(reader)-1):
         indata = reader.ix[index]
-        indata.pop('id')
+        index_of_dat = indata.pop('id')
         indata.to_csv("./input.dat",header=False,index=True,sep="\t")
         _process = subprocess.Popen(command,stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
@@ -71,12 +71,12 @@ def runctx(args):
         if exitcode == 0:
             # sys.stdout.write("Adding results for index: %d" % index)
             # sys.stdout.flush()
-            results[index] = out.strip().split('\t')
+            results[index_of_dat] = out.strip().split('\t')
 
     # collect all results into a single .csv file
     print("Aggregating results")
     # s = pandas.Series(results.values(), results.keys())
-    s = pandas.DataFrame(results)
+    s = pandas.DataFrame.from_dict(results,orient='index')
     s.to_csv('results.csv', header=False,index=True)
     print "Done"
     

@@ -59,7 +59,7 @@ setuptools.setup(
         "A Python library and simple command-line frontend for"
         " computational job submission to multiple resources."
     ),
-    long_description=read_whole_file('README.txt'),
+    long_description=read_whole_file('README.rst'),
     author="S3IT, Zentrale Informatik, University of Zurich",
     author_email="gc3pie-dev@googlegroups.com",
     license="LGPL",

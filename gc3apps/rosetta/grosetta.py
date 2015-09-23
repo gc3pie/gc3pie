@@ -40,7 +40,7 @@ __docformat__ = 'reStructuredText'
 
 
 
-# workaround Issue 95, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+# workaround Issue 95, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
     import grosetta
     grosetta.GRosettaScript().run()

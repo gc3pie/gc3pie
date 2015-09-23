@@ -99,7 +99,7 @@ reference. We usually include only code, documentation, and related
 files. We also include the regression tests, but we **do not include**
 the application tests in ``gc3apps/*/test`` directories.
 
-.. _329: http://code.google.com/p/gc3pie/issues/detail?id=329
+.. _329: https://github.com/uzh/gc3pie/issues/329
 .. _`The MANIFEST.in template`: http://docs.python.org/distutils/sourcedist.html#the-manifest-in-template
 
 

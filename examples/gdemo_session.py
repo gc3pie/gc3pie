@@ -30,7 +30,7 @@ __docformat__ = 'reStructuredText'
 
 
 # Workaround for Issue 95: import this module and run it first
-# for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
+# for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
     import gdemo_session
     gdemo_session.Gdemo().run()

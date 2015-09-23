@@ -16,23 +16,34 @@ Quick start
 
 We provide an installation script which automatically tries to install
 GC3pie in your home directory.  The quick installation procedure has
-only been tested on variants of the GNU/Linux operating
-system. (However, the script should work on MacOSX as well, provided
-you follow the preparation steps outlined in the "MacOSX installation"
-section below.)
+only been tested on variants of the GNU/Linux operating system;
+however, the script should work on MacOSX as well, provided you follow
+the preparation steps outlined in the "MacOSX installation" section
+below.
 
-To install GC3Pie just type this at your terminal prompt::
+To install GC3Pie: (1) download the installation script into a file
+`install.py`_, then (2) type this at your terminal prompt::
 
-    wget https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
-    python install.py
-
-If `wget` is not installed in your computer, you can use `curl` instead::
-
-    curl -s -O https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
     python install.py
 
 The above command creates a directory `$HOME/gc3pie`:file: and installs
 the latest release of GC3Pie and all its dependencies into it.
+
+.. _`install.py`: https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
+
+Alternatively, you can also perform both steps at the terminal prompt::
+
+    # use this if the `wget` command is installed
+    wget https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
+    python install.py
+
+    # use this if the `curl` command is installed instead
+    curl -O https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
+    python install.py
+
+Choose either one of the two methods above, depending on whether
+``wget`` or ``curl`` is installed on your system (Linux systems
+normally have ``wget``; MacOSX normally uses ``curl``).
 
 In case you have trouble running the installation script, please send
 an email to `gc3pie@googlegroups.com
@@ -76,8 +87,8 @@ mailing-list <gc3pie@googlegroups.com>`_ is there to help you :-)
 With the default configuration file, GC3Pie is set up to only run
 jobs on the computer where it is installed.  To run jobs on remote
 resources, you need to edit the configuration file; `the
-ConfigurationFile Wiki page
-<http://code.google.com/p/gc3pie/wiki/ConfigurationFile/>`_
+Configuration file documentation
+<http://gc3pie.readthedocs.org/en/latest/users/configuration.html>`_
 provides an explanation of the syntax.
 
 
@@ -89,11 +100,11 @@ to the standard behavior.  In order to use these options, you have to:
 
 1. download the installation script into a file named `install.py`:file:::
 
-   wget https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
+        wget https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
 
 2. run the command::
 
-     python install.py [options]
+        python install.py [options]
 
    replacing the string ``[options]`` with the actual options you want
    to pass to the script.  Also, the ``python`` command should be the
@@ -292,8 +303,8 @@ Installation into a virtualenv has two distinct advantages:
 7. With the default configuration file, GC3Pie is set up to only run
    jobs on the computer where it is installed.  To run jobs on remote
    resources, you need to edit the configuration file; `the
-   ConfigurationFile Wiki page
-   <http://code.google.com/p/gc3pie/wiki/ConfigurationFile/>`_
+   configuration file documentation
+   <http://gc3pie.readthedocs.org/en/latest/users/configuration.html>`_
    provides an explanation of the syntax.
 
 
@@ -378,7 +389,7 @@ posting a message using the web interface at
    * other resources, like `pbs` via `ssh` transport, will work.
 
    * you can install the GNU time command either via `MacPorts`_,
-     `Fink`_, `Homebrew`_ or from the `this url`_. After installing it
+     `Fink`_, `Homebrew`_ or from `this url`_. After installing it
      you don't need to update your ``PATH`` environment variable, it's
      enough to set the ``time_cmd`` option in your GC3Pie
      configuration file.

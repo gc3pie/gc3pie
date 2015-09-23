@@ -1503,7 +1503,7 @@ class Engine(object):
                 currently_in_flight < limit_in_flight):
             # update state of all enabled resources, to give a chance to
             # all to get a new job; for a complete discussion, see:
-            # https://code.google.com/p/gc3pie/issues/detail?id=485
+            # https://github.com/uzh/gc3pie/issues/485
             self._core.update_resources()
             # now try to submit
             with self.scheduler(self._new,

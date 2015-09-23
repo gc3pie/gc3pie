@@ -819,7 +819,7 @@ class OpenStackLrms(LRMS):
         # Updating resource is needed to update the subresources. This
         # is not always done before the submit_job because of issue
         # nr.  386:
-        #     http://code.google.com/p/gc3pie/issues/detail?id=386
+        #     https://github.com/uzh/gc3pie/issues/386
         self.get_resource_status()
         pending_vms = set(vm.id for vm in self._vmpool.get_all_vms()
                           if vm.status in PENDING_STATES)

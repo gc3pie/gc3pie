@@ -86,7 +86,7 @@ __docformat__ = 'reStructuredText'
 
 
 # workaround for Issue 95,
-# see: http://code.google.com/p/gc3pie/issues/detail?id=95
+# see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
     import gdocking
     gdocking.GDockingScript().run()
@@ -211,7 +211,7 @@ of newly-created jobs so that this limit is never exceeded.
             version = __version__, # module version == script version
             # Use fully-qualified name for class,
             # to allow GC3Utils to unpickle job instances
-            # see: http://code.google.com/p/gc3pie/issues/detail?id=95
+            # see: https://github.com/uzh/gc3pie/issues/95
             application = GDockingApplication,
             input_filename_pattern = '*.pdb'
             )
