@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2012-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -92,7 +92,7 @@ class OpenStackLrms(LRMS):
                  max_memory_per_core, max_walltime,
                  # these are specific of the OpenStackLrms class
                  keypair_name, public_key, os_region=None,
-                 image_id=None, image_name=None, os_auth_url=None,
+                 image_id=None, os_auth_url=None,
                  instance_type=None, auth=None, vm_pool_max_size=None,
                  user_data=None, vm_os_overhead=gc3libs.Default.VM_OS_OVERHEAD,
                  **extra_args):
@@ -129,7 +129,8 @@ class OpenStackLrms(LRMS):
             raise gc3libs.exceptions.InvalidArgument(
                 "Cannot connect to the OpenStack API:"
                 " No 'OS_AUTH_URL' environment variable defined,"
-                " and no 'os_auth_url' argument passed to the EC2 backend.")
+                " and no 'os_auth_url' argument passed"
+                " to the OpenStack backend.")
         self.os_auth_url = os_auth_url
         self.os_username = auth.os_username
         self.os_password = auth.os_password
@@ -148,7 +149,6 @@ class OpenStackLrms(LRMS):
         self.public_key = os.path.expanduser(
             os.path.expandvars(public_key.strip()))
         self.image_id = image_id
-        self.image_name = image_name
         self.instance_type = instance_type
         self.user_data = user_data
         self.vm_os_overhead = gc3libs.quantity.Memory(vm_os_overhead)
@@ -170,17 +170,16 @@ class OpenStackLrms(LRMS):
         if self.subresource_type == gc3libs.Default.SHELLCMD_LRMS:
             self.subresource_args['override'] = 'True'
 
-        if not image_name and not image_id:
+        if image_id is None:
             raise ConfigurationError(
-                "No `image_id` or `image_name` has been specified in the"
-                " configuration file.")
+                "No `image_id` specified in the configuration file.")
 
         # helper for creating sub-resources
         self._cfgobj = gc3libs.config.Configuration(
             *gc3libs.Default.CONFIG_FILE_LOCATIONS,
             auto_enable_auth=True)
 
-        # Only api version 1.1 are tested so far.
+        # Only API version 1.1 has been tested so far
         self.compute_api_version = '1.1'
 
         # "Connect" to the cloud (connection is actually performed
@@ -215,7 +214,7 @@ class OpenStackLrms(LRMS):
                          instance_type=None, user_data=None):
         """
         Create an instance using the image `image_id` and instance
-        type `instance_type`. If not `instance_type` is defined, use
+        type `instance_type`. If no `instance_type` is defined, use
         the default.
 
         This method will also setup the keypair and the security
@@ -249,16 +248,17 @@ class OpenStackLrms(LRMS):
 
         nics = None
         if self.network_ids:
-            nics=[{'net-id': netid.strip(), 'v4-fixed-ip': ''} for netid in self.network_ids.split(',') ]
+            nics=[{'net-id': netid.strip(), 'v4-fixed-ip': ''}
+                  for netid in self.network_ids.split(',')]
             gc3libs.log.debug("Specifying networks for vm %s: %s",
                       name, str.join(', ', [nic['net-id'] for nic in nics]))
         args['nics'] = nics
-        
+
         gc3libs.log.debug("Create new VM using image id `%s`", image_id)
         try:
             vm = self.client.servers.create(name, image_id, instance_type,
                                             key_name=self.keypair_name, **args)
-        except Exception as ex:
+        except Exception as err:
             # scrape actual error kind and message out of the
             # exception; we do this mostly for sensible logging, but
             # could be an actual improvement to Boto to provide
@@ -266,7 +266,7 @@ class OpenStackLrms(LRMS):
             # element...
             # XXX: is there a more robust way of doing this?
             # fall back to normal reporting...
-            raise UnrecoverableError("Error starting instance: %s" % ex)
+            raise UnrecoverableError("Error starting instance: %s" % err)
 
         self._vmpool.add_vm(vm)
         gc3libs.log.info(
@@ -408,7 +408,8 @@ class OpenStackLrms(LRMS):
             raise UnrecoverableAuthError(
                 "Keypair `%s` exists but has different fingerprint than local"
                 " one: local public key file `%s` has fingerprint `%s`,"
-                " whereas EC2 API reports fingerprint `%s`. Aborting!" % (
+                " whereas OpenStack API reports fingerprint `%s`."
+                " Aborting!" % (
                     self.public_key,
                     self.keypair_name,
                     localkey_fingerprint,
