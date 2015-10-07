@@ -52,24 +52,21 @@ debug = 0
 #
 #  type           meaning
 #  =============  ======================================================================
-#  sge            resource is a Grid Engine cluster, accessed via qsub/qstat over SSH
-#  lsf            resource is an LSF cluster, accessed via bsub/bjobs over SSH
-#  pbs            resource is a TORQUE/OpenPBS cluster, accessed via qsub/qstat over SSH
-#  shellcmd       run jobs on the local computer
-#  ec2+<subtype>  run jobs on VMs created on a cloud with EC2-compatible APIs
-#  openstack+<subtype>  run jobs on VMs created on a cloud with OpenStack APIs
-#
-# Every resource/*** section must reference a valid auth/*** section.
-# Resources of `arc0` type can only reference voms-proxy/grid-proxy
-# type auth sections; resources of lsf/pbs/sge type can only reference
-# ssh type sections; the `shellcmd`/localhost resources currently
-# ignore whatever auth info is passed.
+#  lsf            an LSF cluster, accessed via bsub/bjobs over SSH
+#  pbs            a TORQUE/OpenPBS cluster, accessed via qsub/qstat over SSH
+#  sge            a (Sun/Oracle/Univa) Grid Engine cluster, accessed via qsub/qstat over SSH
+#  slurm          a SLURM cluster, accessed via sbatch/squeue over SSH
+#  shellcmd       run commands through the shell, on the local computer or over SSH
+#  ec2+shellcmd   run commands on VMs created on a cloud with EC2-compatible APIs
+#  openstack+shellcmd  run commands on VMs created on a cloud with OpenStack APIs
 #
 # Some keys are commmon to all resource types:
 #
 #    * type: Resource type, see above
 #    * auth: the name of a valid auth/*** section; only the authentication 
 #      	     section name (after the `/` must be specified).
+#            Only needed if launching jobs on a remote computer or cluster
+#            over SSH.
 #    * max_cores: Total number of cores provided by the resource
 #    * max_cores_per_job: Maximum number of CPU cores that a job can request; 
 #            a resource will be dropped during the brokering process if a job 
@@ -115,7 +112,8 @@ type=shellcmd
 auth=noauth
 transport=local
 # where the GNU `time` command is located; 
-# the default is fine on almost any Linux distribution.
+# the default is fine on almost any Linux distribution;
+# you might need to change this for MacOSX
 #time_cmd=/usr/bin/time
 # max_cores sets a limit on the number of cuncurrently-running jobs
 max_cores=2
@@ -124,15 +122,24 @@ max_cores_per_job=2
 max_memory_per_core=2 GB
 max_walltime=2 hours
 architecture=x64_64
-# When True, the shellcmd backend will discover the actual
-# architecture, the number of cores and the total memory of the
-# machine and will ignore the values found on the configuration
-# file. Default is `False`
-# override = False
+# When `override` is set to ``yes``, the shellcmd backend will try to
+# discover the actual architecture, number of cores and the total
+# memory of the machine and only use the values found on the
+# configuration file as a fallback. Default for the `override` option
+# is ``no``.
+#override = no
 
-# Examples:
+
+##############################
+# Computing cluster examples #
+##############################
 #
-# 1) A single Sun Grid Engine cluster, accessed by SSH'ing to the
+# The following examples show how to set up GC3Pie to submit jobs to a
+# batch-queueing cluster.  GC3Pie could be running on the cluster
+# frontend/submission host (in which case no "auth" is needed), or
+# could connect to the submission host over SSH.
+#
+# 1) A Sun Grid Engine cluster, accessed by SSH'ing to the
 # front-end node to control jobs via qsub/qstat:
 #
 # [resource/schroedinger]
@@ -157,7 +164,7 @@ architecture=x64_64
 # #qacct = /usr/local/sbin/qacct.sh
 # #qdel = /usr/local/bin/qdel
 
-# 2) A single LSF cluster, accessed directly (i.e., GC3Pie must be
+# 2) An LSF cluster, accessed directly (i.e., GC3Pie must be
 # running on the cluster front-end node):
 #
 # [resource/brutus]
@@ -179,194 +186,174 @@ architecture=x64_64
 # #bkill = /path/to/my/bkill.sh
 # #lshosts = lshosts
 
-#################
-# CLOUD BACKEND #
-#################
+# 3) A SLURM cluster, connecting to the front-end node via SSH.  This
+# example also demoes the use of the "prologue" to load environment
+# modules prior to executing the payload of a job.
+#
+# [resource/hydra]
+# enabled = yes
+# type = slurm
+# frontend = login.s3it.uzh.ch
+# transport = ssh
+# auth = ssh_uzh
+# max_walltime = 1 day
+# max_cores = 96
+# max_cores_per_job = 64
+# max_memory_per_core = 1 TiB
+# architecture = x86_64
+# prologue_contents = module load cluster/largemem
 
-# [auth/ec2hobbes]
-# type = ec2
-#
-# If `ec2_access_key` is empty, then the `EC2_ACCESS_KEY` environment
-# variable is will be used, if any.
-# 
-# ec2_access_key =
-#
-# If `ec2_secret_key` is empty, then the `EC2_SECRET_KEY` environment
-# variable is will be used, if any.
-# 
-# ec2_secret_key =
+
+##################
+# Cloud examples #
+##################
+
+# Everything below this line provides examples for configuring GC3Pie
+# to work with EC2- and OpenStack-based IaaS clouds.  The
+# configuration is more complex than the examples above, since a cloud
+# backend needs information on how to access the cloud management
+# interface *and* the virtual machines.
+
+# 1) Start VMs using an OpenStack cloud infrastructure.  Values in the
+# example are actually the correct ones for the "Hobbes" IaaS cloud at
+# UZH.
+
+# Since GC3Pie needs to authenticate to the cloud management system
+# (via an HTTP-based network API) and then to the VMs that runs the
+# jobs (via SSH), two separate authentication sections are needed.
 
 # [auth/hobbes]
-# type = openstack
 #
-# If `os_username` is empty, then the `OS_USERNAME` environment
-# variable will be used, if any.
-# 
-# os_username =
+# This section is used to authenticate to the cloud management system
 #
-# If `os_password` is empty, then the `OS_PASSWORD` environment
-# variable will be used, if any.
-# 
-# os_password =
-#
-# If `os_project_name` is empty, then the `OS_TENANT_NAME` environment
-# variable will be used, if any.
-#
-# os_project_name =
+#type = openstack
 
-# Images created by the GC3 team have a `gc3-user` account by default.
-#
-# [auth/gc3user_ssh]
-# type = ssh
-# username = gc3-user
-
-# [resource/hobbes]
-# enabled = yes
-# auth = hobbes
-#
-# This resource will create a new VM for each submitted job, and a
-# resource associated to the VM. These subresources define the way we
-# access the VM. It is usually a `shellcmd` backend with `ssh`
-# transport, but in the future this may change.
-#
-# The `type` option defines which backend we want to use for the
-# subresource. The syntax is:
-#
-# openstack+`subresourcetype`
-#
-# where `subresourcetype` is any valid resource type. However, we
-# currently only support `shellcmd`.
+# If `os_username` is empty, then the content of the `OS_USERNAME`
+# environment variable will be used.
 # 
-# type = openstack+shellcmd
+#os_username =
+
+# If `os_password` is empty, then the content of the `OS_PASSWORD`
+# environment variable will be used.
+# 
+#os_password =
+
+# If `os_project_name` is empty, then the content of the
+# `OS_TENANT_NAME` environment variable will be used.
+#
+#os_project_name =
+
+
+# [auth/ssh_gc3user]
+#
+# This section is used to connect via SSH to VMs that run the computational jobs.
+#
+#type = ssh
+
+# VM images created by the GC3 team have a `gc3-user` account by default.
+#username = gc3-user
+
+
+# The `resource` section specifies parameters to deal with the cloud
+# management system.  GC3Pie will create a new VM for each submitted
+# job, and a resource associated to the VM; for now the only option
+# for VM-level "subresources" is `shellcmd`.  In other words, GC3Pie
+# will create one or more VMs, and then connect to each one via SSH in
+# order to directly execute jobs by starting them through the shell.
+
+#[resource/hobbes]
+#
+# For now the only valid type to use with OpenStack-based clouds is
+# `openstack+shellcmd`.
+# 
+#type = openstack+shellcmd
+
+# The following values affect the resource broker and determine how
+# many jobs can fit in a VM (i.e., when a new VM will be started).
+# Their meaning is otherwise exactly the same as with all other
+# resources; see, e.g., the `localhost` resource of type `shellcmd`.
+#
+#max_cores_per_job = 8
+#max_memory_per_core = 2 GB
+#max_walltime = 8 hours
+#max_cores = 32
+#architecture = x86_64
+
+#  What authentication credential should be used to talk to the cloud
+#  management interface? (OpenStack Nova API)
+#
+#auth = hobbes
 
 # If `os_auth_url` is empty, then the `OS_AUTH_URL` environment variable
 # is will be used. 
 # 
-# os_auth_url = http://cloud.gc3.uzh.ch:5000/v2.0
+#os_auth_url = http://cloud.gc3.uzh.ch:5000/v2.0
 
-# OpenStack Region to use.
+# OpenStack Region for starting VMs.
 #
-# os_region = nova
+#os_region = nova
 
-# Maximum number of VM running at the same time
+# Maximum number of VM running at the same time. If not configured
+# here, the number of concurrently-running VMs will still be limited
+# by OpenStack's quota.
 # 
-# vm_pool_max_size = 
+#vm_pool_max_size = 
 
-# Operating System memory overhead for each VM.
-# This value will be used to compute the memory availability of a given 
-# flavor when matching it with the application memory requirements:
+# VM flavor for newly-created VMs. If `instance_type` is
+# empty or not defined, `m1.small` will be used instead. If an
+# `Application()` instance has an `os_instance_type` attribute, it
+# will be used instead of the default value configured here.
+# 
+#instance_type = m1.small
+#
+# Override the default instance type for applications with a specific
+# `application_name` attribute::
+#
+#<application_name>_instance_type
+
+# Default image id to use (OpenStack's UUID).
+# 
+#image_id = e50e8606-6d12-11e5-82a6-22d3a7a06a51
+#
+# Override the default image for applications with name `<application_name>`:
+#
+#<application_name>_image_id = 
+
+# Operating System memory overhead for each VM.  This value will be
+# used to compute the memory availability of VMs with a given flavor
+# when matching it with the application memory requirements:
 #
 # flavor.memory - vm_os_overhead >= application.requested_memory
 #
 # This should guarantee that the actual available memory of a given VM will
 # satisfy the application requirements.
 # 
-# vm_os_overhead = 512 MiB
+#vm_os_overhead = 512 MiB
 
-### **Note:** You also need to copy here the contents of the "VM AUTHENTICATION"
-### and "CLOUD SECURITY" sections below!
-
-
-# [resource/ec2hobbes]
-# enabled = yes
-# auth = ec2hobbes
-#
-# This resource will create a new VM for each submitted job, and a
-# resource associated to the VM. These subresources define the way we
-# access the VM. It is usually a `shellcmd` backend with `ssh`
-# transport, but in the future this may change.
-#
-# The `type` option defines which backend we want to use for the
-# subresource. The syntax is:
-#
-# ec2+`subresourcetype`
-#
-# where `subresourcetype` is any valid resource type. However, we
-# currently only support `shellcmd`.
+# Auth stanza (in the current configuration file) to use for
+# connecting to VMs.
 # 
-# type = ec2+shellcmd
+#vm_auth = ssh_gc3user
 
-# If `ec2_url` is empty, then the `EC2_URL` environment variable
-# is will be used, if any. If EC2_URL is empty too, the default url
-# for AWS will be used.
-# 
-# ec2_url = http://cloud.gc3.uzh.ch:8773/services/Cloud
-
-# EC2 Region to use. It is usually needed only if AWS is not used.
-#
-# ec2_region = nova
-
-# Maximum number of VM running at the same time
-# 
-# vm_pool_max_size = 
-
-#####################
-# VM AUTHENTICATION #
-#####################
-# In order to access the VM, a keypair is usually used. GC3Pie is able
-# to configure a new keypair if needed.
+# In order to access newly-spawned VMs, they need to be configured to
+# allow passwordless authentication with the user name configured
+# above.  In both OpenStack and EC2 clouds, this is done by defining
+# an SSH keypair and authorizing it on the VM.  GC3Pie can use an
+# existing keypair (specified by name), and even create it if it does
+# not exist on the remote VM infrastructure (for this, a public key
+# file is needed).
 # 
 # If the keypair `keypair_name` does not exists, a new one will be
 # created and the public key in `public_key` will be imported. If the
 # keypair exists, the fingerprint will be checked and an error is
 # raised if it does not match `public_key`s fingerpring.
 #
-# keypair_name = keypair1
-# public_key = ~/.ssh/id_dsa.pub
+# keypair_name = gc3pie
+# public_key = ~/.ssh/id_rsa.pub
 
-# `vm_auth` refers to the auth stanza in the current configuration
-# file to use for remote VM. Basically, it contains only the username
-# to use when connecting to the VM.
-# 
-# vm_auth = gc3user_ssh
-
-# Default instance type to use. If `instance_type` is empty or not
-# defined, `m1.small` will be used instead. If an Application() has an
-# `ec2_instance_type` attribute, it will be used instead of the
-# default one.
-# 
-# instance_type = m1.small
-#
-# Instance type to use for applications with name `<application_name>`:
-#
-# <application_name>_instance_type
-
-# Default image id to use (in EC2 format).
-# 
-# image_id = ami-00000035
-#
-# Image id to use for applications with name `<application_name>`:
-#
-# <application_name>_image_id = 
-
-# Default image name to use. The value of `image_name` is ignored if
-# `image_id` is present. Moreover, an error is raised if more than one
-# image with the same image name is available on the cloud.
-#
-# image_name =
-
-# `user_data` is a script passed to the virtual machine and executed
-# right after the startup procedure. Default value is set using:
-#
-# user_data =
-#
-# `user_data` to use for application with name `<application_name>`:
-#
-# <application_name>_user_data = 
-#
-# Please note that if your script needs to span multiple lines they must be indented. For instance:
-# 
-# user_data = #!/bin/bash
-#     apt-get update
-#     apt-get install -y octave
-# apt-get install -y r-core # <= this line will NOT be included in the `user_data` script!
-
-###################
-# SECURITY GROUPS #
-###################
 # GC3Pie is able to configure security groups associated to the VM.
 #
-# If a security group with this name is not found, a new one will be
+# If a security group with the name is not found, a new one will be
 # created.  If it does exist but not all rules defined in
 # `security_group_rules` are present, missing rules will be added to
 # the security group.
@@ -376,21 +363,143 @@ architecture=x64_64
 #
 # `security_group_rules` is a comma separated list of security
 # rules. Each rule is basically an entry in the firewall to allow some
-# internet traffic.  A rule specification is the form:
+# internet traffic.  A rule specification has the form:
 #
-#   <rule>    : protocol:from_port:to_port:ipnetwork
+#   protocol:from_port:to_port:ipnetwork
 #
 # where:
 #
 #   `protocol` is one of "icmp", "udp", "tcp"
 #   from_port  is an integer (use -1 for icmp)
 #   to_port    is an integer (use -1 for icmp)
-#   ipnetwork  is a network specification in the form `IP/netmask` (0.0.0.0/0 for any ip)
+#   ipnetwork  is a network specification in the form `IPaddr/netmask` (0.0.0.0/0 for any IP address)
 
-# Values currently used by the resource broker of GC3Pie.
+
+# 2) Start VMs using an EC2-compatible cloud infrastructure
+
+# Again, two separate [auth/...] sections are needed for cloud-based
+# computing, since GC3Pie needs to authenticate to the cloud
+# management system (via an HTTP-based network API) and then to the
+# VMs that runs the jobs (via SSH).
+
+#[auth/ec2hobbes]
 #
-# max_cores_per_job = 8
-# max_memory_per_core = 2 GB
-# max_walltime = 8 hours
-# max_cores = 32
-# architecture = x86_64
+# This section is used to authenticate to the cloud management API.
+# The values below are correct for the "Hobbes" IaaS cloud at UZH.
+#
+#type = ec2
+#
+# If `ec2_access_key` is empty, then the `EC2_ACCESS_KEY` environment
+# variable will be used.
+# 
+#ec2_access_key =
+#
+# If `ec2_secret_key` is empty, then the `EC2_SECRET_KEY` environment
+# variable is will be used.
+# 
+#ec2_secret_key =
+
+
+# [auth/ssh_ubuntu]
+#
+# This section is used to connect via SSH to VMs that run the computational jobs.
+#
+#type = ssh
+
+# Ubuntu official cloud images use a "ubuntu" user
+#username = ubuntu
+
+#[resource/ec2hobbes]
+#
+# For now the only valid type to use with EC2-compatible clouds is
+# `ec2+shellcmd`.
+# 
+#type = ec2+shellcmd
+#enabled = yes
+
+# The following values affect the resource broker and determine how
+# many jobs can fit in a VM (i.e., when a new VM will be started).
+# Their meaning is otherwise exactly the same as with all other
+# resources; see, e.g., the `localhost` resource of type `shellcmd`.
+#
+#max_cores_per_job = 8
+#max_memory_per_core = 2 GB
+#max_walltime = 8 hours
+#max_cores = 32
+#architecture = x86_64
+
+# Credentials to use when authenticating to the cloud management API.
+#
+#auth = ec2hobbes
+
+# If `ec2_url` is empty, then the `EC2_URL` environment variable
+# is will be used, if any. If EC2_URL is empty too, the default url
+# for AWS will be used.
+# 
+#ec2_url = http://cloud.gc3.uzh.ch:8773/services/Cloud
+
+# EC2 Region to use. Not needed on AWS.
+#
+#ec2_region = nova
+
+# Maximum number of VM running at the same time
+# 
+#vm_pool_max_size = 
+
+# What `[auth /...]`stanza in the current configuration file to use
+# for connecting to VMs.
+# 
+#vm_auth = ssh_ubuntu
+
+# See the "OpenStack" example for an explanation of the
+# keypair-related options.
+#
+# keypair_name = gc3pie
+# public_key = ~/.ssh/id_dsa.pub
+
+# Default instance type to use for creating VMs. If `instance_type` is
+# empty or not defined, `m1.small` will be used instead. If an
+# `Application()` instance has an `ec2_instance_type` attribute, it
+# will be used instead of the default value configured here.
+# 
+#instance_type = m1.small
+#
+# Override the default instance type for applications with a specific
+# `application_name` attribute::
+#
+#<application_name>_instance_type
+
+# Default image id to use (in EC2 format).
+# 
+#image_id = ami-00000035
+#
+# Override the default image for applications with name `<application_name>`:
+#
+#<application_name>_image_id = 
+
+# Default image name to use. The value of `image_name` is ignored if
+# `image_id` is present. Moreover, an error is raised if more than one
+# image with the same image name is available on the cloud.
+#
+#image_name =
+
+# `user_data` is a script passed to the virtual machine and executed
+# right after the startup procedure. Default value is the empty script.
+#
+#user_data =
+#
+# Please note that if your script needs to span multiple lines they
+# must be indented with respect to the initial `user_data=` line. For
+# instance::
+# 
+#     user_data = #!/bin/bash
+#         apt-get update
+#         apt-get install -y octave
+#     apt-get install -y r-core # <= this line will NOT be included in the `user_data` script!
+#
+# Override `user_data` to use for application with name `<application_name>`:
+#
+#<application_name>_user_data = 
+
+# The EC2 backend also supports setting security groups, see the
+# example in the "OpenStack" section.
