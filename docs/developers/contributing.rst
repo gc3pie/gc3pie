@@ -558,10 +558,10 @@ documentation for a new module requires one of the following two
 procedures:
 
 - Add a reference to the new module in
-  `docs/programmers/api/index.txt`:file:. Additionally, create a file
+  `docs/programmers/api/index.rst`:file:. Additionally, create a file
   that enables automatic documentation for the module. For the module
   `core.py`:file:, for example, automatic documentation is enabled by
-  a file `docs/programmers/api/gc3libs/core.txt`:file: with the
+  a file `docs/programmers/api/gc3libs/core.rst`:file: with the
   following content::
 
     `gc3libs.core`
@@ -572,7 +572,7 @@ procedures:
 
 - Execute the script `docs/programmers/api/makehier.sh`:file:, which
   automates the above.  Note that the `makehier.sh`:file: script will
-  re-create all ``.txt`` files for all GC3Pie modules, so check if
+  re-create all ``.rst`` files for all GC3Pie modules, so check if
   there were some unexpected changes (e.g., with ``svn status``)
   before you commit!
 

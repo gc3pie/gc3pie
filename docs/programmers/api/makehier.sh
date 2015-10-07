@@ -23,7 +23,7 @@ for module in $modules; do
     underline=$(repeat $(expr 2 + $c) '=')
 
     # create file
-    filename=$(echo $module | tr '.' '/').txt
+    filename=$(echo $module | tr '.' '/').rst
     dir=$(dirname $filename)
     # echo ">>>" mkdir -v -p $dir
     # echo ">>> ${filename}"
@@ -43,11 +43,11 @@ ${underline}
 __EOF__
 
     # insert generated file into TOCtree
-    tocitems="$tocitems $(echo $module | tr '.' '/').txt"
+    tocitems="$tocitems $(echo $module | tr '.' '/').rst"
 done
 
 # create ToC
-cat > index.txt <<EOF
+cat > index.rst <<EOF
 .. Hey Emacs, this is -*- rst -*-
 
    This file follows reStructuredText markup syntax; see
@@ -64,5 +64,5 @@ cat > index.txt <<EOF
 
 EOF
 for tocitem in $tocitems; do
-    echo "   $tocitem" >> index.txt
+    echo "   $tocitem" >> index.rst
 done

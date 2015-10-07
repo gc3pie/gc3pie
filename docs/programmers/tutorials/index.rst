@@ -120,10 +120,10 @@ application (cfr. `Literate Programming`_ on Wikipedia), so that you
 will be able to test/modify it and produce a working ``warholize.py``
 script by downloading the ``pylit.py``:file: script from the `PyLit
 Homepage`_ and running the following command on the
-``gc3pie/docs/programmers/tutorials/warholize/warholize.txt`` file,
+``gc3pie/docs/programmers/tutorials/warholize/warholize.rst`` file,
 from within the SVN tree of GC3Pie::
 
-  $ ./pylit warholize.txt warholize.py
+  $ ./pylit warholize.rst warholize.py
 
 
 .. toctree::
