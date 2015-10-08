@@ -589,6 +589,7 @@ class OpenStackLrms(LRMS):
         try:
             subresource = self._get_subresource(
                 self._get_vm(app.os_instance_id))
+            return subresource.cancel_job(app)
         except InstanceNotFound:
             # ignore -- if this VM exists no more, we need not cancel any job
             pass
@@ -603,7 +604,6 @@ class OpenStackLrms(LRMS):
                 " an OpenStack API error (%s: %s)."
                 % (err.__class__.__name__, err))
             raise
-        return subresource.cancel_job(app)
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
