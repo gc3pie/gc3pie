@@ -35,6 +35,8 @@ the for of:
 3  id1  id4
 
 ...
+2015-09-29: aggregated result file should be named after the `-o` option
+
 
 XXX: To be clarified:
 . What happen if an error happen at merging time ?
@@ -162,6 +164,10 @@ class GwrappermcScript(SessionBasedScript):
                        help="Location of the Main_Loop.m script and "
                        "related MAtlab functions. Default: None")
 
+        self.add_param("-R", "--result-file", metavar="STRING", type=str,
+                       dest="merged_result", default="result.csv",
+                       help="Name of merged result file. Default: result.csv")
+        
     def setup_args(self):
 
         self.add_param('csv_input_file', type=str,
@@ -192,7 +198,7 @@ class GwrappermcScript(SessionBasedScript):
                 if not os.path.isdir(self.params.main_loop):
                     raise gc3libs.exceptions.InvalidUsage(
                         "Main_Loop.m location %s not found" % self.params.main_loop)
-
+                
     def new_tasks(self, extra):
         """
         Read content of 'command_file'
