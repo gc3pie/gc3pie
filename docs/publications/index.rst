@@ -15,8 +15,6 @@ message to the `GC3Pie mailing-list <mailto:gc3pie@googlegroups.com>`_
 (or use the `GMANE.org web interface
 <http://dir.gmane.org/gmane.comp.python.gc3pie>`_).
 
-.. contents::
-
 
 GC3Pie overviews
 ----------------
