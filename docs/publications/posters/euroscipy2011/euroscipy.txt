@@ -1,0 +1,36 @@
+============================================================
+  GC3Pie: a Python framework for high-throughput computing
+============================================================
+
+:Authors: Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>,
+          Riccardo Murri <riccardo.murri@gmail.com>,
+          Mike Packard <mpackard@oci.uzh.ch>
+
+GC3Pie is a suite of Python classes (and command-line tools built upon
+them) to aid in submitting and controlling batch jobs to clusters and
+grid resources seamlessly.  GC3Pie aims at providing the building
+blocks by which Python scripts that combine several existing
+applications in a dynamic workflow can be quickly developed.
+
+There is a need in some scientific communities, to run large job
+campaigns to analyze a vast number of data files with the same
+(pre-existing) application. The single-job level of control exposed by
+many existing Grid computing middlewares in this case is not enough: a
+user would have to implement "glue scripts" to control hundreds or
+thousand jobs at once.  GC3Pie has provisons for this, in the form of
+re-usable Python classes that implement a single point of control for
+job families; it also has support for some popular scientific
+applications, but more can be added by subclassing the generic
+``Application`` object.
+
+This talk will survey the features and services offered by GC3Pie, and
+show how these have been used in a number of real-life scientific use
+cases. 
+
+
+
+.. (for Emacs only)
+..
+  Local variables:
+  mode: rst
+  End:

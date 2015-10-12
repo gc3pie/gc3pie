@@ -1,0 +1,254 @@
+%%
+%% LaTeX template for UZH presentations.
+%% (Riccardo Murri, <riccardo.murri@uzh.ch>)
+%% 
+%% Requires the `beamer` document class,
+%% available at http://latex-beamer.sf.net/
+%%
+%% Use UTF-8 text (backwards compatible to ASCII, but not to
+%% ISO-8859-1 and ISO-8859-15) or change the
+%% `\usepackage[utf8x]{inputenc}` line below.
+%%
+
+\documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usepackage{lsci}
+
+% \documentclass {beamer}
+% \mode<presentation>
+% {
+%   % for theme/color selection, see: http://www.hartwork.org/beamer-theme-matrix/
+%   \usetheme{CambridgeUS}
+%   \usecolortheme{dolphin}
+  
+%   % no navigation bar
+%   \setbeamertemplate{navigation symbols}{}
+
+%   \logo{\includegraphics[scale=0.17]{uzh-logo}}
+%   % To get just the UniZH coat of arms, use the following line instead:
+%   %\logo{\includegraphics[scale=0.25,viewport=0 0 159 159]{uzh-logo}}
+% }
+
+% abbrev
+\newcommand{\ggamess}{\emph{GGamess}}
+
+\title[GGamess]% will appear on the bottom line
+{Running GAMESS jobs \\ with \ggamess}
+\author[R.\ Murri]
+{Riccardo Murri \\ \texttt{<riccardo.murri@uzh.ch>}}
+\institute[GC3, Univ. of Zurich]% will appear on the bottom line
+{\href{http://www.gc3.uzh.ch/}{Grid Computing Competence Centre}, 
+  \href{http://www.uzh.ch/}{University of Zurich}
+  \\ \url{http://www.gc3.uzh.ch/}}
+\date[Sep.~11, 2012]% will appear on the bottom line
+  {Sep.~11, 2012}
+
+
+\begin{document}
+
+\subject{Talks}
+% This is only inserted into the PDF information catalog. Can be left
+% out. 
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% turn logo off after page 1
+\expandafter\global\logo{}
+
+% \begin{frame}
+%   \frametitle{Talk outline}
+%   \tableofcontents
+%   % You might wish to add the option [pausesections]
+% \end{frame}
+
+
+%% Consult the `beamer` class documentation to know what kind of LaTeX
+%% commands may be used here.  The following is just an example
+
+\section{Introduction}
+
+\begin{frame}
+  \frametitle{\ggamess: a tool for high-throughput GAMESS}
+
+  \ggamess\ is a command-line tool to run an arbitrary set of GAMESS
+  \texttt{.INP} files in parallel.
+
+  \+ 
+  The purpose of this talk is to rehash its usage before we
+  introduce the new testing features.
+
+  \+
+  If you have any feedback on basic \ggamess, we'd love to hear it as well!
+\end{frame}
+
+
+\section{GGamess}
+
+\begin{frame}
+  \frametitle{What is GGamess then?}
+  
+  GGamess is a command-line tool to submit a set of GAMESS
+  \texttt{.INP} files in parallel.
+  \begin{itemize}
+  \item For each job, manage the entire lifecycle: submit, monitor,
+    retrieve output when done.
+  \item Each job is independent of others.
+  \item You can stop and restart it at a later time, processing
+    continues from where it was interrupted.
+  \item Finally exits when all jobs are done.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Example: running the GAMESS tests / 1}
+  Running \texttt{ggamess} once submits the the jobs.
+
+  \begin{scriptsize}
+\begin{semiverbatim}
+\$ \textbf{ls tests/data/}
+exam01.inp  exam02.inp  exam03.inp  exam04.inp  exam05.inp
+\emph{[...]}
+exam41.inp  exam42.inp  exam43.inp  exam44.inp 
+
+\$ \textbf{./ggamess.py tests/data/}
+Status of jobs in the 'ggamess' session: (at 11:14:23, 05/05/11)
+        NEW   0/44     (0.0\%)
+    STOPPED   0/44     (0.0\%)
+  \textbf{SUBMITTED   44/44   (100.0\%)}
+ TERMINATED   0/44     (0.0\%)
+TERMINATING   0/44     (0.0\%)
+      total   44/44   (100.0\%)
+\end{semiverbatim}
+  \end{scriptsize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Example: running the GAMESS tests / 2}
+  Running it again updates status and fetches results of finished jobs.
+
+  \+
+  You can also request a detailed listing of the jobs with the
+  \texttt{-l} option:
+  \begin{scriptsize}
+    \begin{semiverbatim}
+\$ \textbf{./ggamess.py -l test/data/}
+\begin{tiny}
+ JobID     Job name     State                                    Info                               
+===================================================================================
+job.8945   exam42     SUBMITTED    Submitted to 'smscg' at Thu May  5 11:11:58 2011                 
+job.8944   exam16     SUBMITTED    Submitted to 'smscg' at Thu May  5 11:12:02 2011                 
+\emph{[...]}
+job.8937   exam20     TERMINATED   Execution of gamess terminated normally
+job.8936   exam29     TERMINATED   Execution of gamess terminated normally
+\end{tiny}
+\end{semiverbatim}
+    \end{scriptsize}
+    
+  Each job has its own output directory.
+  \begin{scriptsize}
+\begin{semiverbatim}
+\$ \textbf{ls exam29}
+exam29.dat  exam29.out
+\end{semiverbatim}
+  \end{scriptsize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Example: running the GAMESS tests / 3}
+
+  You can tell \texttt{ggamess} to keep running until all jobs are
+  done and their output retrieved.
+
+  \+
+  Example: keep running, and update job status every 20 seconds.
+  \begin{scriptsize}
+  \begin{semiverbatim}
+\$ \textbf{./ggamess.py tests/data/ -C 20}
+Status of jobs in the 'ggamess' session: (at 11:27:48, 05/05/11)
+        NEW   0/44     (0.0\%)  
+    STOPPED   0/44     (0.0\%)  
+  SUBMITTED   5/44    (11.4\%)  
+ TERMINATED   39/44   (88.6\%)  
+TERMINATING   0/44     (0.0\%)  
+         ok   39/44   (88.6\%)  
+      total   44/44   (100.0\%) 
+\emph{...continues running until Ctrl+C is hit}
+\end{semiverbatim}
+  \end{scriptsize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{More features / 1}
+
+  Can request a specific version of GAMESS with the \texttt{-R}
+  option:
+    \begin{itemize}
+    \item e.g., \texttt{ggamess -R 2010R3-peve};
+    \item default is to use GAMESS 2012R1;
+    \item however, still no ``list available versions'' feature;
+    \item running customized versions is possible but more complicated
+      (ask me if you're interested!)
+    \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{More features / 2}
+
+  Can run \emph{parallel GAMESS jobs} with the \texttt{-c} option:
+  \begin{itemize}
+  \item e.g., \texttt{ggamess -c 8} runs a parallel job on 8 CPUs.
+  \item the number following \texttt{-c} \emph{must match} what's in
+    the \texttt{.INP} file!
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{More features / 3}
+
+  Option \texttt{-o \emph{directory}} sets a directory under which all
+  output will be collected. (Default is the current directory.)
+
+  \+ 
+  Option \texttt{-s \emph{name}} collects all job information in a
+  \emph{named session}.  You can have several sessions running in
+  parallel.
+  
+  \+ 
+  All options can be \emph{independently} combined.
+\end{frame}
+
+
+\section{This is the end...}
+\label{sec:end}
+
+\begin{frame}
+  \begin{center}
+    {\Huge Thank you!}
+    \\
+    \+
+    {\Large (Any questions?)}
+  \end{center}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Three tools for high-throughput GAMESS}
+
+  \begin{description}
+  \item[GRunDB] Compute energy of a set of molecules.
+  \item[GGamess] Run an arbitrary set of GAMESS \texttt{.INP} files in parallel.
+  \item[gc3libs.template] Generate a set of files from a given template.
+  \end{description}
+\end{frame}
+
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% x-symbol-8bits: nil
+%%% End: 

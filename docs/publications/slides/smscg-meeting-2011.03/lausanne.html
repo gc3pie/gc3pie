@@ -1,0 +1,847 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+lang="en" xml:lang="en">
+<head>
+<title>GC3Libs</title>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"/>
+<meta name="generator" content="Org-mode"/>
+<meta name="generated" content="2011-02-03"/>
+<meta name="author" content="Riccardo Murri, GC3, University of Zurich"/>
+<meta name="description" content="An introduction to Grid programming with the GC3Libs"/>
+<meta name="keywords" content=""/>
+<!-- configuration parameters --> <meta name='defaultView' content='slideshow' /> <meta name='controlVis' content='hidden' /> <!-- style sheet links --> <link rel='stylesheet' href='ui/default/slides.css' type='text/css' media='projection' id='slideProj' /> <link rel='stylesheet' href='ui/default/outline.css' type='text/css' media='screen' id='outlineStyle' /> <link rel='stylesheet' href='ui/default/print.css' type='text/css' media='print' id='slidePrint' /> <link rel='stylesheet' href='ui/default/opera.css' type='text/css' media='projection' id='operaFix' /><!-- S5 JS --> <script src='ui/jquery.js' type='text/javascript'></script> <script src='ui/org-slides.js' type='text/javascript'></script> <script src='ui/default/slides.js' type='text/javascript'></script> <script src='ui/default/style.js' type='text/javascript'></script>
+<script type="text/javascript">
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+
+</head>
+<body>
+<div id="content">
+
+<div class='layout'>
+<div id='controls'></div>
+<div id='currentSlide'></div>
+<div id='header'></div>
+<div id='footer'></div>
+</div>
+<div class='presentation'>
+<div class='slide front'>
+  <div id='front-logo'></div>
+<h1 class='front'>GC3Libs</h1><h3>Riccardo Murri, GC3, University of Zurich</h3></div>
+
+
+
+
+<div id="outline-container-1" class="outline-2">
+<h2 id="sec-1">A typical high-throughput use case? </h2>
+<div class="outline-text-2" id="text-1">
+
+
+<p>
+Run application <b>A</b> on a range of different inputs.
+Each input is a different file (or a set of files).
+</p>
+<p>
+Then collect output files and post-process them, e.g., gather some
+statistics.
+</p>
+<p>
+Typically implemented by a set of sh/perl scripts to drive execution
+on a local cluster.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-2" class="outline-2">
+<h2 id="sec-2">Potential issues </h2>
+<div class="outline-text-2" id="text-2">
+
+
+<ol>
+<li>
+<b>Portability:</b> Cannot run on a different cluster without rewriting
+all the scripts.
+
+</li>
+<li>
+<b>Code reuse:</b> Scripts are often very tied to a certain purpose, so
+they are difficult to reuse.
+</li>
+</ol>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-3" class="outline-2">
+<h2 id="sec-3">What is GC3Libs? </h2>
+<div class="outline-text-2" id="text-3">
+
+
+<p>
+GC3Libs is a Python library to drive application execution on Grids
+and SGE clusters.
+</p>
+<p>
+GC3Libs provides ways to customize execution control based on
+application type, and compose applications to form complex execution
+patterns.
+</p>
+<p>
+GC3Libs is part of a larger pack of tools called GC3Pie.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-4" class="outline-2">
+<h2 id="sec-4">What is GC3Pie, then? </h2>
+<div class="outline-text-2" id="text-4">
+
+<p>GC3Pie consists of:
+</p>
+<ul>
+<li>
+GC3Libs: Python library, aimed at programmers to drive application
+execution on Grids and clusters.
+
+</li>
+<li>
+GC3Utils: simple command-line interface to the core GC3Libs
+functionality: submit/monitor/kill a job, retrieve output, etc.
+
+</li>
+<li>
+GRosetta/GGamess/GRunDB/etc.: Driver scripts developed for
+specific groups, but that may be of independent general interest.
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-5" class="outline-2">
+<h2 id="sec-5">How is GC3Libs different? </h2>
+<div class="outline-text-2" id="text-5">
+
+<p>GC3Libs runs specific <b>applications</b>, not generic jobs.
+</p>
+<p>
+That is, GC3Libs exposes <code>Application</code> classes whose programming
+interface is adapted to the specific task/computation a scientific
+application performs.
+</p>
+<p>
+GC3Libs supports a few applications in the main library.  (Our goal
+is to support more and more.)
+</p>
+<p>
+You can add your own applications.  You <i>have to</i> add you own
+applications. 
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-6" class="outline-2">
+<h2 id="sec-6">How could this solve any issues? </h2>
+<div class="outline-text-2" id="text-6">
+
+<p><b>Portability:</b> GC3Libs aims at providing an abstraction over Grid
+and cluster resources: one single script is be able to run 
+on different computational sites.
+</p>
+<p>
+<b>Code reuse:</b> The application model, coupled with an object-oriented
+design, encourages writing more generic code that can be intergrated
+into the library.  (We hope for community-contributed code in the
+event.)
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-7" class="outline-2">
+<h2 id="sec-7">GC3Libs application model </h2>
+<div class="outline-text-2" id="text-7">
+
+<p>An application is a subclass of the <code>gc3libs.Application</code> class.
+</p>
+<p>
+Generic <code>Application</code> class patterned after <a href="http://www.nordugrid.org/documents/xrsl.pdf">ARC's xRSL</a> model.
+</p>
+<p>
+At a minimum: provide applications-specific command-line invocation.
+</p>
+<p>
+Advanced users can customize pre- and post-processing, react on
+state transitions, set computational requirements based on input
+files, influence scheduling.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-8" class="outline-2">
+<h2 id="sec-8">A stupid example </h2>
+<div class="outline-text-2" id="text-8">
+
+
+
+
+<pre class="src src-python"><span style="color: #a020f0;">class</span> <span style="color: #228b22;">SquareApplication</span>(Application):
+  <span style="color: #00008b;">"""Compute the square of an integer, remotely."""</span>
+  <span style="color: #a020f0;">def</span> <span style="color: #0000ff;">__init__</span>(<span style="color: #a020f0;">self</span>, x):
+    Application.__init__(
+      <span style="color: #a020f0;">self</span>,
+      executable = <span style="color: #00008b;">'/usr/bin/expr'</span>,
+      arguments = [x, <span style="color: #00008b;">'*'</span>, x],
+      inputs = [ ],
+      outputs = [ ],
+      stdout = <span style="color: #00008b;">"stdout.txt"</span>,
+    )
+</pre>
+
+
+
+</div>
+
+</div>
+
+<div id="outline-container-9" class="outline-2">
+<h2 id="sec-9">A less stupid example </h2>
+<div class="outline-text-2" id="text-9">
+
+
+
+
+<pre class="src src-python">app = RosettaDockingApplication(
+   100, <span style="color: #000000; background-color: #e5e5e5;"># </span><span style="color: #000000; background-color: #e5e5e5;">number of decoys to compute
+</span>   <span style="color: #00008b;">'1brs.pdb'</span>, <span style="color: #000000; background-color: #e5e5e5;"># </span><span style="color: #000000; background-color: #e5e5e5;">input file
+</span>   flags_file=<span style="color: #00008b;">'flags.txt'</span>, <span style="color: #000000; background-color: #e5e5e5;"># </span><span style="color: #000000; background-color: #e5e5e5;">optional
+</span>)
+</pre>
+
+
+
+<p>
+The <code>RosettaDockingApplication</code> class knows how to invoke Rosetta's
+<code>docking_protocol</code> program to compute N decoys of a given input file.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-10" class="outline-2">
+<h2 id="sec-10">Core operations </h2>
+<div class="outline-text-2" id="text-10">
+
+<p>Core operations: submit, update state, retrieve (a
+snapshot of) output, cancel job.
+</p>
+<p>
+Core operations are <b>synchronous</b>.
+</p>
+<p>
+Operations are always performed by a <code>Core</code> object.
+<code>Core</code> implements an overlay Grid on the resources 
+specified in the configuration file.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-11" class="outline-2">
+<h2 id="sec-11">Application lifecycle </h2>
+<div class="outline-text-2" id="text-11">
+
+<p>GC3Libs <code>Application</code> objects mimic POSIX processes life-cycle.
+</p>
+<p>
+4 states of an <code>Application</code> object: NEW, SUBMITTED, RUNNING, TERMINATED.
+</p>
+<p>
+As with processes, after initial submission, all state transitions
+happen automatically.  GC3Libs software can only monitor states and
+react on changes.
+</p>
+<p>
+Each state transition triggers a method call on the <code>Application</code>
+object.  E.g., after submission, the <code>submitted()</code> method is called.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-12" class="outline-2">
+<h2 id="sec-12">A successful run or not? </h2>
+<div class="outline-text-2" id="text-12">
+
+<p>There's a <i>single TERMINATED state</i>, whatever the job outcome.
+</p>
+<p>
+As with POSIX processes, you have to inspect the exit code and
+signals to determine the cause of "job death".
+</p><ul>
+<li>
+If <code>os.WIFSIGNALED(app) = False</code> then job run to completion:
+check exit code!
+</li>
+<li>
+If <code>os.WIFSIGNALED(app) = True</code> then some error occurred before
+end of application code.
+</li>
+</ul>
+
+
+
+<p>
+Grid- and batch-system errors are encoded as "pseudo-signals".
+E.g., if <code>os.WTERMSIG(app) = 124</code> then job was killed by remote
+batch system.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-13" class="outline-2">
+<h2 id="sec-13">A simple GC3Libs script structure </h2>
+<div class="outline-text-2" id="text-13">
+
+<ol>
+<li>
+Create <code>gc3libs.Core</code> instance
+</li>
+<li>
+Create instance(s) of the application class
+</li>
+<li>
+Submit applications
+</li>
+<li>
+Monitor application status (loop)
+</li>
+<li>
+Retrieve results
+</li>
+<li>
+Postprocess and display
+</li>
+</ol>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-14" class="outline-2">
+<h2 id="sec-14">What if&hellip;? </h2>
+<div class="outline-text-2" id="text-14">
+
+<p>Looping is fine with a small number of jobs.
+</p>
+<p>
+What if I want to run 10'000 jobs in a session? Do I have to
+loop/wait until all of them are finished?
+</p>
+<p>
+What if my box crashes in the middle of the loop?  Do I lose all
+running jobs? 
+</p>
+<p>
+What if the proxy expires just in the middle of the loop?
+</p></div>
+
+</div>
+
+<div id="outline-container-15" class="outline-2">
+<h2 id="sec-15">How do I manage authentication with GC3Libs? </h2>
+<div class="outline-text-2" id="text-15">
+
+<p>You don't.
+</p>
+<p>
+GC3Libs will check that there is always a valid proxy and
+certificate when attempting Grid operations, and if necessary, renew
+it.  
+</p>
+<p>
+GC3Libs provide a specific authentication module, that abstracts on
+the various authentication models.  It can be used to ease/automate
+authentication steps when accessing the Grid.
+</p></div>
+
+</div>
+
+<div id="outline-container-16" class="outline-2">
+<h2 id="sec-16">Persisting jobs </h2>
+<div class="outline-text-2" id="text-16">
+
+<p>GC3Libs provides a simple persistence framework: 
+</p><ul>
+<li>
+save a live <code>Application</code> to disk, return "persistent ID"
+</li>
+<li>
+load a saved application given its "persistent ID"
+</li>
+<li>
+delete a saved application
+</li>
+<li>
+list IDs of saved applications (very simplistic! <b>your input     needed:</b> what kind of query/select operations should we support?)
+</li>
+</ul>
+
+
+<p>
+Filesystem-based storage (1 job, 1 file).  But interface is generic,
+could use SQL, <a href="http://www.mongodb.org">MongoDB</a>, etc.
+</p>
+<p>
+Implemented on top of Python's <code>pickle</code> module: it can persist any
+kind of object, not just jobs.
+</p></div>
+
+</div>
+
+<div id="outline-container-17" class="outline-2">
+<h2 id="sec-17">Asynchronous operations </h2>
+<div class="outline-text-2" id="text-17">
+
+<p>The <code>Engine</code> class provides all core operations, 
+with a non-blocking interface.
+</p>
+<p>
+Calling core methods on an <code>Engine</code> instance returns immediately to
+the caller; operations are actually executed when you call the
+<code>Engine.progress()</code> method.
+</p>
+<p>
+Which you can do in a separate thread, thus achieving
+asynchronous operation.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-18" class="outline-2">
+<h2 id="sec-18">The <code>Engine</code> class </h2>
+<div class="outline-text-2" id="text-18">
+
+<p>Same programmatic interface as the <code>Core</code> class:
+can drop an <code>Engine</code> instance every time a <code>Core</code> is needed.
+</p>
+<p>
+The <code>progress()</code> method will advance jobs through their lifecycle; 
+use state-transition methods to take application-specific actions.
+(E.g., post-process output data.)
+</p>
+<p>
+An engine can automatically persist the jobs, if you so wish.
+(Just pass it a <code>Store</code> instance at construction time.)
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-19" class="outline-2">
+<h2 id="sec-19">A not-so-simple GC3Libs script structure </h2>
+<div class="outline-text-2" id="text-19">
+
+<ol>
+<li>
+<i>Create gc3libs.core.Core instance</i>
+</li>
+<li>
+<i>Create a gc3libs.persistence.FilesystemStore instance</i>
+</li>
+<li>
+<i>Create a gc3libs.core.Engine instance</i>
+</li>
+<li>
+<i>Load saved jobs into it</i>
+</li>
+<li>
+Create <i>new</i> instance(s) of the application class
+</li>
+<li>
+<i>Let engine manage jobs until all are done</i>
+</li>
+<li>
+<del>Retrieve results</del> (the <code>Engine</code> does it)
+</li>
+<li>
+Postprocess and display
+</li>
+</ol>
+
+
+<p>
+Tasks 1.-4., and 6.-7. are automatically done by the
+<code>SessionBasedScript</code> class.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-20" class="outline-2">
+<h2 id="sec-20">A not-so-simple GC3Libs script (code) </h2>
+<div class="outline-text-2" id="text-20">
+
+
+
+
+<pre class="src src-python">core = Core(read_config_file)
+store = FilesystemStore(directory)
+apps = [ store.load(jobid) 
+         <span style="color: #a020f0;">for</span> jobid <span style="color: #a020f0;">in</span> <span style="color: #a020f0;">file</span>(session, <span style="color: #00008b;">'r'</span>) ]
+<span style="color: #a020f0;">for</span> arg <span style="color: #a020f0;">in</span> new_args:
+  apps += Application(arg, ...)
+engine = Engine(core, apps, store)
+engine.wait() <span style="color: #000000; background-color: #e5e5e5;"># </span><span style="color: #000000; background-color: #e5e5e5;">call progress() until done
+</span>total_global_postprocess()
+</pre>
+
+
+
+<p>
+This is the <b>actual</b> structure of the GRosetta/GGamess/GRunDB
+scripts!   (But you would just subclass <code>SessionBasedScript</code>.)
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-21" class="outline-2">
+<h2 id="sec-21">More high-throughput use cases </h2>
+<div class="outline-text-2" id="text-21">
+
+<p>Run application <i>A</i>, shuffle/process the output and feed it into
+application <i>B</i>.  (For instance, run <b>R</b> to gather statistics on
+simulation results.)
+</p>
+<p>
+Make complicated at will: 
+</p><ul>
+<li>
+More stages in the pipeline.
+</li>
+<li>
+More complex patterns: different post-processing stage depending
+on some output outcome.
+</li>
+<li>
+Number and type of stages can change at runtime, too.
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-22" class="outline-2">
+<h2 id="sec-22">Job dependency management </h2>
+<div class="outline-text-2" id="text-22">
+
+<p><i>(Note: this is currently work in progress :-)</i>
+</p>
+<p>
+GC3Libs provides <a href="http://en.wikipedia.org/wiki/Directed_acyclic_graph">Directed Acyclic Graph</a> support.
+</p>
+<p>
+DAGs are created programmatically from Python code.
+</p>
+<p>
+Which means, no graphical editor.  But also means you can create
+workflows on-the-fly as your computation proceeds.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-23" class="outline-2">
+<h2 id="sec-23">Composition of jobs (I) </h2>
+<div class="outline-text-2" id="text-23">
+
+<p>The unit of job composition is called a <code>Task</code> in GC3Libs.
+</p>
+<p>
+An <code>Application</code> is the primary instance of a <code>Task</code>.
+</p>
+<p>
+However, a single task can be composed of many applications.
+A task is a composite object: tasks can be composed of other tasks.
+</p>
+<p>
+Workflows are built by composing tasks in different ways.
+A "workflow" is a task, too.
+</p></div>
+
+</div>
+
+<div id="outline-container-24" class="outline-2">
+<h2 id="sec-24">Composition of jobs (II) </h2>
+<div class="outline-text-2" id="text-24">
+
+<p>The <code>SequentialTask</code> class takes a list of jobs and executes them
+one after the other. Subclass and override the <code>next()</code> method to
+determine early exit conditions, or to modify the list dynamically.
+</p>
+<p>
+The <code>ParallelTask</code> class takes a list of jobs and executes all of
+them in parallel.  It's done when all jobs are done: there's an
+implicit synchronization barrier at the end.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-25" class="outline-2">
+<h2 id="sec-25">Composition of jobs (III) </h2>
+<div class="outline-text-2" id="text-25">
+
+<p><code>Application</code>, <code>SequentialTask</code> and <code>ParallelTask</code> are all
+subclasses of the same <code>Task</code> interface.
+</p>
+<p>
+So, you can create sequential collections of parallel jobs, parallel
+collections of sequential collections, etc.
+</p>
+<p>
+Any DAG can be expressed as composition of these classes.
+And collections can be mutated at run-time.
+</p>
+<p>
+An <code>Engine</code> really manages a list of tasks, so we are really
+scripting workflows here.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-26" class="outline-2">
+<h2 id="sec-26">Well, <i>almost</i> </h2>
+<div class="outline-text-2" id="text-26">
+
+
+<p>
+GC3Libs in active development.  We are still experimenting with some
+APIs.  Parts of the code not fully tested.
+</p>
+<p>
+Long list of features requests, planned improvements, and bug
+reports. 
+</p>
+<p>
+Small team: we work is being prioritized according to requests from
+users, but sometimes it takes quite some time from request to
+implementation.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-27" class="outline-2">
+<h2 id="sec-27">Again on issues (I) </h2>
+<div class="outline-text-2" id="text-27">
+
+
+<p>
+<b>Portability:</b> different computational resources have different
+conceptual/programming models.  Taking the minimal common set of
+features is often not enough. 
+</p>
+<p>
+Solving this might need some radical programming change.
+Until that is sorted out, we have a constantly changing API, and
+even that might not support the features you need.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-28" class="outline-2">
+<h2 id="sec-28">Again on issues (II) </h2>
+<div class="outline-text-2" id="text-28">
+
+
+<p>
+<b>Portability:</b> Deployment issues.
+</p>
+<p>
+Can only do limited testing, unforeseen bugs are being reported.
+</p>
+<p>
+Also, Python packaging is far from ideal (several competing
+solutions, none of which seems to work flawlessly).
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-29" class="outline-2">
+<h2 id="sec-29">Again on issues (III) </h2>
+<div class="outline-text-2" id="text-29">
+
+
+<p>
+<b>Code reuse:</b> At the end of the day, this very much depends on the
+user: so far users have been building sh/perl scripts to glue
+together Python scripts provided by GC3Libs.
+</p>
+<p>
+Is this "just" a language/habit issue?
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-30" class="outline-2">
+<h2 id="sec-30">Any questions? </h2>
+<div class="outline-text-2" id="text-30">
+
+
+<div style="text-align: center">
+<p>GC3Pie home page: <a href="http://gc3pie.googlecode.com">http://gc3pie.googlecode.com</a>
+</p>
+<p>
+Source code: <code>svn co http://gc3pie.googlecode.com/svn</code>
+</p>
+<p>
+Mailing list: gc3pie@googlegroups.com
+</p>
+<p>
+Thank you!
+</p>
+</div>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-31" class="outline-2">
+<h2 id="sec-31">Technical details </h2>
+<div class="outline-text-2" id="text-31">
+
+<p>The following slides discuss a few technical details that complement
+the introduction.
+</p>
+<p>
+(But they are actually only relevant if you are trying to do some
+GC3Libs programming.)
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-32" class="outline-2">
+<h2 id="sec-32">Core operations: verb/object interface </h2>
+<div class="outline-text-2" id="text-32">
+
+<p>Get an instance of <code>Core</code>:
+</p>
+
+
+<pre class="src src-python">g = Core(read_config_file(path))
+</pre>
+
+
+
+<p>
+Then you can operate on <code>Application</code> instances:
+</p><ul>
+<li>
+submit: <code>g.submit(app)</code>
+</li>
+<li>
+monitor: <code>g.update_state(app)</code>
+</li>
+<li>
+fetch output: <code>g.fetch_output(app, dir)</code> (starts working as soon as
+application is RUNNING)
+</li>
+<li>
+cancel job: <code>g.kill(app)</code>
+</li>
+<li>
+free remote resources: <code>g.free(app)</code>
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-33" class="outline-2">
+<h2 id="sec-33">Core operations: self-action interface </h2>
+<div class="outline-text-2" id="text-33">
+
+<p>Get an instance of core, then "attach" an application to it:
+</p>
+
+
+<pre class="src src-python">g = Core(read_config_file())
+app.attach(g)
+</pre>
+
+
+
+<p>
+The application can now operate on itself:
+</p><ul>
+<li>
+submit: <code>app.submit()</code>
+</li>
+<li>
+monitor: <code>app.update_state()</code>
+</li>
+<li>
+etc.
+</li>
+</ul>
+
+
+<p>
+Combined with state-transition methods, this gives a way to embed
+job control logic in the <code>Application</code> object.
+</p>
+<p>
+Think of automatic resubmission if certain conditions are met.
+</p>
+
+
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

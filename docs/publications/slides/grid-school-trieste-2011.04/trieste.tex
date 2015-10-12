@@ -1,0 +1,663 @@
+% Created 2011-04-21 gio 12:11
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{soul}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{wasysym}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\tolerance=1000
+\providecommand{\alert}[1]{\textbf{#1}}
+\usepackage{pslatex}\usetheme{CambridgeUS}\usecolortheme{dolphin}\setbeamertemplate{navigation symbols}{}\setlength{\parskip}{1em}
+\begin{document}
+
+
+
+\title{GC3Pie}
+\author{Riccardo Murri, GC3, University of Zurich}
+\date{2011-04-21}
+\maketitle
+
+
+
+
+
+\begin{frame}
+\frametitle{A typical high-throughput use case?}
+\label{sec-1}
+
+
+  Run application \emph{A} on a range of different inputs.
+  Each input is a different file (or a set of files).
+
+  Then collect output files and post-process them, e.g., gather some
+  statistics.
+
+  Typically implemented by a set of \texttt{sh} / \texttt{perl} scripts to drive
+  execution on a local cluster.
+\end{frame}
+\begin{frame}
+\frametitle{Potential issues}
+\label{sec-2}
+
+
+\begin{enumerate}
+\item \textbf{Portability:} Cannot run on a different cluster without rewriting
+   all the scripts.
+\item \textbf{Code reuse:} Scripts are often very tied to a certain purpose, so
+   they are difficult to reuse.
+\item \textbf{Heavy maintenance:} the more a script does its job well, the more
+   you'll find yourself adding ``generic'' features and maintaining
+   requests from other users.
+\end{enumerate}
+\end{frame}
+\begin{frame}
+\frametitle{What is GC3Libs?}
+\label{sec-3}
+
+
+  GC3Libs is a \href{http://www.python.org/}{Python} library to drive application execution on Grids
+  and \href{http://www.oracle.com/us/products/tools/oracle-grid-engine-075549.html}{SGE} clusters.
+
+  GC3Libs provides ways to customize execution control based on
+  application type, and compose applications to form complex execution
+  patterns.
+
+  GC3Libs is part of a larger pack of tools called \href{http://gc3pie.googlecode.com/}{GC3Pie}.
+  
+\end{frame}
+\begin{frame}
+\frametitle{What is GC3Pie, then?}
+\label{sec-4}
+
+  \href{http://gc3pie.googlecode.com/}{GC3Pie} consists of:
+
+\begin{itemize}
+\item \emph{GC3Libs:} Python library, aimed at programmers to drive application
+    execution on Grids and clusters.
+\item \emph{GC3Utils:} simple command-line interface to the core GC3Libs
+    functionality: submit/monitor/kill a job, retrieve output, etc.
+\item \emph{GC3Apps:} Driver scripts developed for specific groups, but that
+    may be of independent general interest.  (E.g., running the
+    \href{http://www.rosettacommons.org/manuals/archive/rosetta3.1_user_guide/app_dock.html}{Rosetta Docking} application on a large set of inputs.)
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{How is GC3Libs different? (I)}
+\label{sec-5}
+
+  GC3Libs runs specific \textbf{applications}, not generic jobs.
+
+  That is, GC3Libs exposes \texttt{Application} classes whose programming
+  interface is adapted to the specific task/computation a scientific
+  application performs.
+
+  GC3Libs supports a few applications in the main library.  (Our goal
+  is to support more and more.)
+
+  You can add your own applications.  You \emph{have to} add you own
+  applications. 
+\end{frame}
+\begin{frame}
+\frametitle{How is GC3Libs different? (II)}
+\label{sec-6}
+
+  GC3Libs can run applications in parallel, or sequentially, or any
+  combination of the two, and do arbitrary processing of data in the
+  middle.
+
+  Think of \href{http://en.wikipedia.org/wiki/Scientific_workflow_system}{workflows}, except you can write them in the Python
+  programming language.
+
+  Which means, you can create them dynamically at runtime, adapting
+  the schema to your problem.
+\end{frame}
+\begin{frame}
+\frametitle{How could this solve any issues?}
+\label{sec-7}
+
+  \textbf{Portability:} GC3Libs aims at providing an abstraction over Grid
+  and cluster resources: one single script is be able to run 
+  on different computational sites.
+
+  \textbf{Code reuse:} The application model, coupled with an object-oriented
+  design, encourages writing more generic code that can be intergrated
+  into the library.  (We hope for community-contributed code in the
+  event.)
+
+  \textbf{Heavy maintenance:} Generic features are part of the library. Focus
+   on what makes your code special.
+\end{frame}
+\begin{frame}
+\frametitle{GC3Libs application model}
+\label{sec-8}
+
+  An application is a subclass of the \texttt{gc3libs.Application} class.
+
+  Generic \texttt{Application} class patterned after \href{http://www.nordugrid.org/documents/xrsl.pdf}{ARC's xRSL} model.
+
+  At a minimum: provide application-specific command-line invocation.
+
+  Advanced users can customize pre- and post-processing, react on
+  state transitions, set computational requirements based on input
+  files, influence scheduling.  (This is standard OOP: subclass and
+  override a method.)
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{An example from the library}
+\label{sec-9}
+
+\begin{verbatim}
+app = RosettaDockingApplication(
+   100, # number of decoys to compute
+   '1brs.pdb', # input file
+   flags_file='flags.txt', # optional
+)
+\end{verbatim}
+
+  The \texttt{RosettaDockingApplication} class knows how to invoke Rosetta's
+  \texttt{docking\_protocol} program to compute N decoys of a given input file.
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{A basic example (I)}
+\label{sec-10}
+
+\begin{verbatim}
+class SquareApplication(Application):
+  """Compute the square of an integer, remotely."""
+  def __init__(self, x):
+    Application.__init__(
+      self,
+      executable = '/usr/bin/expr',
+      arguments = [x, '*', x],
+      inputs = [ ],
+      outputs = [ ],
+      stdout = "stdout.txt",
+    )
+\end{verbatim}
+  This runs \texttt{expr x * x} and saves its output into \texttt{stdout.txt}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{A basic example (II)}
+\label{sec-11}
+
+  When the remote computation is done, the \texttt{postprocess} method is
+  called with the path to the output.
+\begin{verbatim}
+def postprocess(self, output_dir):
+  output_file = open(output_dir + self.stdout)
+  output_value = output_file.read()
+  self.result = int(output_value)
+\end{verbatim}
+  The above code sets \texttt{result} to the integer value computed by
+  running \texttt{expr x * x}.
+\end{frame}
+\begin{frame}
+\frametitle{A simple high-throughput script structure\ldots{}}
+\label{sec-12}
+
+\begin{enumerate}
+\item Get access to the Grid (e.g., authentication step)
+\item Prepare files for submission
+\item Submit jobs
+\item Monitor job status (loop)
+\item Retrieve results
+\item Postprocess and display
+\end{enumerate}
+\end{frame}
+\begin{frame}
+\frametitle{Core operations}
+\label{sec-13}
+
+  Core operations: submit, update state, retrieve (a
+  snapshot of) output, cancel job.
+
+  Core operations are \textbf{synchronous}.
+  
+  Operations are always performed by a \texttt{Core} object.
+  \texttt{Core} implements an overlay Grid on the resources 
+  specified in the configuration file.
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Core operations: verb/object interface}
+\label{sec-14}
+
+  Get an instance of \texttt{Core}:
+\begin{verbatim}
+g = Core(read_config_file(path))
+\end{verbatim}
+
+  Then you can operate on \texttt{Application} instances:
+\begin{itemize}
+\item submit: \texttt{g.submit(app)}
+\item monitor: \texttt{g.update\_state(app)}
+\item fetch output: \texttt{g.fetch\_output(app, dir)} (starts working as soon as
+    application is RUNNING)
+\item cancel job: \texttt{g.kill(app)}
+\item free remote resources: \texttt{g.free(app)}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{A simple high-throughput script, GC3Libs version}
+\label{sec-15}
+
+\begin{enumerate}
+\item \emph{Create a gc3libs.Core instance}
+\item \emph{Create instance(s) of the application class}
+\item Submit applications
+\item Monitor application status (loop)
+\item Retrieve results
+\item Postprocess and display
+\end{enumerate}
+\end{frame}
+\begin{frame}
+\frametitle{What if\ldots{}?}
+\label{sec-16}
+
+  Looping is fine with a small number of jobs.
+
+  What if I want to run 10'000 jobs in a session? Do I have to
+  loop/wait until all of them are finished?
+
+  What if my box crashes in the middle of the loop?  Do I lose all
+  running jobs? 
+
+  What if the proxy expires just in the middle of the loop?
+\end{frame}
+\begin{frame}
+\frametitle{How do I manage authentication with GC3Libs?}
+\label{sec-17}
+
+  You don't.
+
+  GC3Libs will check that there is always a valid proxy and
+  certificate when attempting Grid operations, and if necessary, renew
+  it.  
+
+  GC3Libs provide a specific authentication module, that abstracts on
+  the various authentication models.  It can be used to ease/automate
+  authentication steps when accessing the Grid.
+\end{frame}
+\begin{frame}
+\frametitle{Persisting jobs}
+\label{sec-18}
+
+  GC3Libs provides a simple persistence framework: 
+\begin{itemize}
+\item save a live \texttt{Application} to disk, return ``persistent ID''
+\item load a saved application given its ``persistent ID''
+\item delete a saved application
+\item list IDs of saved applications (very simplistic! \textbf{your input     needed:} what kind of query/select operations should we support?)
+\end{itemize}
+
+  Filesystem-based storage (1 job, 1 file).  But interface is generic,
+  could use SQL, \href{http://www.mongodb.org}{MongoDB}, etc.
+
+  Implemented on top of Python's \texttt{pickle} module: it can persist any
+  kind of object, not just jobs.
+\end{frame}
+\begin{frame}
+\frametitle{Asynchronous operations}
+\label{sec-19}
+
+  The \texttt{Engine} class provides all core operations, 
+  with a non-blocking interface.
+
+  Calling core methods on an \texttt{Engine} instance returns immediately to
+  the caller; operations are actually executed when you call the
+  \texttt{Engine.progress()} method.
+
+  Which you can do in a separate thread, thus achieving
+  asynchronous operation.
+\end{frame}
+\begin{frame}
+\frametitle{The \texttt{Engine} class}
+\label{sec-20}
+
+  Same programmatic interface as the \texttt{Core} class:
+  you can use an \texttt{Engine} instance every time a \texttt{Core} is needed.
+
+  The \texttt{progress()} method will advance jobs through their lifecycle; 
+  use state-transition methods to take application-specific actions.
+  (E.g., post-process output data.)
+  
+  An engine can automatically persist the jobs, if you so wish.
+  (Just pass it a \texttt{Store} instance at construction time.)
+\end{frame}
+\begin{frame}
+\frametitle{A high-throughput script with GC3Libs, revisited}
+\label{sec-21}
+
+\begin{enumerate}
+\item \emph{Create a gc3libs.core.Core instance}
+\item \emph{Create a gc3libs.persistence.FilesystemStore instance}
+\item \emph{Create a gc3libs.core.Engine instance}
+\item \emph{Load saved jobs into it}
+\item Create \emph{new} instance(s) of the application class
+\item \emph{Let engine manage jobs until all are done}
+\item \st{Retrieve results} (the \texttt{Engine} does it)
+\item Postprocess and display
+\end{enumerate}
+
+  Tasks 1.-4., and 6.-7. are automatically done by the
+  \texttt{SessionBasedScript} class.
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{A high-throughput script with GC3Libs, \emph{the code}}
+\label{sec-22}
+
+\begin{verbatim}
+core = Core(read_config_file)
+store = FilesystemStore(directory)
+apps = [ store.load(jobid) 
+         for jobid in file(session, 'r') ]
+for arg in new_args:
+  apps += Application(arg, ...)
+engine = Engine(core, apps, store)
+engine.wait() # call progress() until done
+total_global_postprocess()
+\end{verbatim}
+
+  This is the \textbf{actual} structure of the GRosetta/GGamess/GRunDB
+  scripts!   (But you would just subclass \texttt{SessionBasedScript}.)
+\end{frame}
+\begin{frame}
+\frametitle{Job dependency management}
+\label{sec-23}
+
+  GC3Libs provides \href{http://en.wikipedia.org/wiki/Directed_acyclic_graph}{Directed Acyclic Graph} support.
+
+  DAGs are created programmatically from Python code.
+
+  Which means, no graphical editor.  But also means you can create
+  workflows on-the-fly as your computation proceeds.
+\end{frame}
+\begin{frame}
+\frametitle{The \emph{3n+1} conjecture, a fictitious use case}
+\label{sec-24}
+
+  Define a function \emph{f(n)}, for \emph{n} positive integer:
+\begin{itemize}
+\item if \emph{n} is even, then \emph{f(n)=n} / \emph{2},
+\item if \emph{n} is odd, then \emph{f(n)=3n+1},
+\end{itemize}
+  For every positive integer \emph{n}, form the sequence \emph{S(n)}:
+  \emph{n} → \emph{f(n)} → \emph{f(f(n))} → \emph{f(f(f(n)))} → \ldots{}
+
+  For example:
+\begin{itemize}
+\item \emph{S(1)} = 1 → 4 → 2 → 1,
+\item \emph{S(2)} = 2 → 1,
+\item \emph{S(3)} = 3 → 10 → 5 → 16 → 4 → 2 → 1,
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{The \emph{3n+1} conjecture (II)}
+\label{sec-25}
+
+  \textbf{Conjecture:} For every positive integer \emph{n}, the sequence \emph{S(n)}
+  eventually hits \emph{1}.
+
+  Imagine you want to check the \emph{3n+1} conjecture up to some very
+  large number \emph{N}.
+\begin{itemize}
+\item For each \emph{n = 1, \ldots{}, N}, run a task \emph{H(n)} that computes
+    \emph{S(n)} until it hits \emph{1}.
+\item Each task \emph{H(n)} is a sequence of computational jobs \emph{J(n,k)},
+    where \emph{J(n,k+1)} applies function \emph{f} to the result of \emph{J(n,k)}.
+\end{itemize}
+
+  The \emph{J(n,k)} must be run \textbf{sequentially} (over \emph{k}).
+
+  The \emph{H(n)} can be run in \textbf{parallel}.
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{The \emph{3n+1} conjecture (III)}
+\label{sec-26}
+
+  Let's define the simple application \emph{J(n,k)} that computes \emph{f}:
+\begin{verbatim}
+class HotpoApplication(Application):
+  def __init__(self, n):
+    Application.__init__(
+      self,
+      executable = '/usr/bin/expr',
+      arguments = (
+          # run `expr n / 2` if n is even
+          [n, '/', n] if n % 2 == 0
+          # run `expr 1 + 3 * n` if n is odd
+          else [1, '+', 3, '*', n]),
+      stdout = "stdout.txt",
+    )
+\end{verbatim}
+  
+\end{frame}
+\begin{frame}
+\frametitle{Composition of tasks (I)}
+\label{sec-27}
+
+  The unit of job composition is called a \texttt{Task} in GC3Libs.
+
+  An \texttt{Application} is the primary instance of a \texttt{Task}.
+
+  However, a single task can be composed of many applications.
+  A task is a composite object: tasks can be composed of other tasks.
+
+  Workflows are built by composing tasks in different ways.
+  A ``workflow'' is a task, too.
+\end{frame}
+\begin{frame}
+\frametitle{Composition of tasks (II)}
+\label{sec-28}
+
+  The \texttt{SequentialTask} class takes a list of jobs and executes them
+  one after the other. Subclass and override the \texttt{next()} method to
+  determine early exit conditions, or to modify the list dynamically.
+
+  The \texttt{ParallelTask} class takes a list of jobs and executes all of
+  them in parallel.  It's done when all jobs are done: there's an
+  implicit synchronization barrier at the end.
+  
+\end{frame}
+\begin{frame}
+\frametitle{Composition of tasks (III)}
+\label{sec-29}
+
+  \texttt{Application}, \texttt{SequentialTask} and \texttt{ParallelTask} are all
+  subclasses of the same \texttt{Task} interface.
+
+  So, you can create sequential collections of parallel jobs, parallel
+  collections of sequential collections, etc.
+
+  Plus, collections can be mutated at run-time.
+
+  An \texttt{Engine} really manages a list of tasks, so we are really
+  scripting workflows here.
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{The \emph{3n+1} conjecture (IV)}
+\label{sec-30}
+
+  Now string together the \emph{J(n,k)} to compute a single sequence
+  \emph{S(n)}:
+\begin{verbatim}
+class HotpoSequence(SequentialTask):
+  def __init__(self, n):
+    # compute first iteration of /f/
+    self.tasks = [ MyApplication(n) ]
+    SequentialTask.__init__(self, self.tasks)
+  def next(self, k):
+    last_computed_value = self.tasks[k].result
+    if last_computed_value == 1:
+      return TERMINATED
+    else:
+      self.tasks.append(MyApplication(last_computed_value)
+       return RUNNING
+\end{verbatim}
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{The \emph{3n+1} conjecture (V)}
+\label{sec-31}
+
+  Parallel tasks are independent by definition, so it's even easier to
+  create a collection:
+\begin{verbatim}
+tasks = ParallelTaskCollection([ 
+            HotpoSequence(n) for n in range(1, N) ])
+\end{verbatim}
+  
+  We can run such a collection like any other \texttt{Application}.
+
+  Have fun proving the \emph{3n+1} conjecture! ;-)
+\end{frame}
+\begin{frame}
+\frametitle{A real use case: dynamic programming / value function iteration (I)}
+\label{sec-32}
+
+  Let a function \emph{U(t, a, b, c)} be given.  Assume that computing
+  \emph{U} is computationally intensive.
+
+  We want to compute a function \emph{f(x,t)} such that:
+\begin{itemize}
+\item \emph{f(x,0)} has a given value (boundary condition)
+\item \emph{f(x,t+1) = U(t, f(x-1,t), f(x,t), f(x+1,t))}
+\end{itemize}
+
+  Can this be computed with a GC3Pie task collection?
+\end{frame}
+\begin{frame}
+\frametitle{A real use case: dynamic programming / value function iteration (II)}
+\label{sec-33}
+
+  Computing \emph{f(x,t+1)} depends on the computed values of \emph{f(x±1,t)}.
+
+  But computing \emph{f(x,t)} is independent of \emph{f(x',t)}.
+
+  So we have a \textbf{sequence} of \textbf{parallel} jobs:
+\begin{itemize}
+\item a parallel collection \emph{P(t)} computes \emph{f(x,t)} for every \emph{x}
+\item a sequential collection \emph{S} computes \emph{P(1)}, then \emph{P(2)}, etc\ldots{}
+\end{itemize}
+\end{frame}
+\begin{frame}
+\frametitle{Again on issues (I)}
+\label{sec-34}
+
+  \textbf{Portability:} different computational resources have different
+  conceptual/programming models.  Taking the minimal common set of
+  features is often not enough. 
+
+  Solving this might need some radical programming change.
+  Until that is sorted out, we have a constantly changing API, and
+  even that might not support the features you need.
+\end{frame}
+\begin{frame}
+\frametitle{Again on issues (II)}
+\label{sec-35}
+
+  \textbf{Code reuse:} At the end of the day, this very much depends on the
+  user: so far users have been building sh/perl scripts to glue
+  together Python scripts provided by GC3Libs.
+
+  Is this ``just'' a language/habit issue?
+\end{frame}
+\begin{frame}
+\frametitle{Again on issues (III)}
+\label{sec-36}
+
+  \textbf{Heavy maintenance:} GC3Libs provide classes for frequently-used
+   patterns in high-throughput application scripting and programming.
+
+   So, you get standard/generic features for free, and can concentrate
+   on implementing the part that is specific to \emph{your} application.
+\end{frame}
+\begin{frame}
+\frametitle{The usual disclaimer of warranty}
+\label{sec-37}
+
+
+  GC3Libs in active development.  Long list of features requests,
+  planned improvements, and bug reports.
+
+  Small team: work is being prioritized according to requests from
+  users, but sometimes it takes quite some time from request to
+  implementation.
+  
+\end{frame}
+\begin{frame}
+\frametitle{Any questions?}
+\label{sec-38}
+
+\begin{center}
+GC3Pie home page: \href{http://gc3pie.googlecode.com}{http://gc3pie.googlecode.com}
+
+Source code: \texttt{svn co http://gc3pie.googlecode.com/svn}
+
+Mailing list: \href{mailto:gc3pie@googlegroups.com}{gc3pie@googlegroups.com}
+
+\textbf{Thank you!}
+\end{center}
+\end{frame}
+\begin{frame}
+\frametitle{Technical details}
+\label{sec-39}
+
+  The following slides discuss a few technical details that complement
+  the introduction.
+
+  (But they are actually only relevant if you are trying to do some
+  GC3Libs programming.)
+\end{frame}
+\begin{frame}
+\frametitle{Application lifecycle}
+\label{sec-40}
+
+  GC3Libs \texttt{Application} objects mimic POSIX processes life-cycle.
+  There's a \emph{single TERMINATED state}, whatever the job outcome.
+  
+  As with POSIX processes, you have to inspect the exit code and
+  signals to determine the cause of ``job death''.
+\begin{itemize}
+\item If \texttt{os.WIFSIGNALED(app) = False} then job run to completion:
+    check exit code!
+\item If \texttt{os.WIFSIGNALED(app) = True} then some error occurred before
+    end of application code.
+\end{itemize}
+  
+  Grid- and batch-system errors are encoded as ``pseudo-signals''.
+  E.g., if \texttt{os.WTERMSIG(app) = 124} then job was killed by remote
+  batch system.
+  
+\end{frame}
+\begin{frame}[fragile]
+\frametitle{Core operations: self-action interface}
+\label{sec-41}
+
+  Get an instance of core, then ``attach'' an application to it:
+\begin{verbatim}
+g = Core(read_config_file())
+app.attach(g)
+\end{verbatim}
+
+  The application can now operate on itself:
+\begin{itemize}
+\item submit: \texttt{app.submit()}
+\item monitor: \texttt{app.update\_state()}
+\item etc.
+\end{itemize}
+
+  Combined with state-transition methods, this gives a way to embed
+  job control logic in the \texttt{Application} object.
+
+  Think of automatic resubmission if certain conditions are met.
+\end{frame}
+
+\end{document}

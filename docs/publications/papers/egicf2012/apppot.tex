@@ -1,0 +1,240 @@
+% Please use the skeleton file you have received in the 
+% invitation-to-submit email, where your data are already
+% filled in. Otherwise please make sure you insert your 
+% data according to the instructions in PoSauthmanual.pdf
+\documentclass{PoS}
+
+\usepackage[printonlyused,smaller]{acronym}
+
+\title{Batch-oriented software appliances}
+
+\ShortTitle{Batch-oriented software appliances}
+
+\author{Riccardo Murri\\
+        GC3: Grid Computing Competence Center\\
+        University of Zurich \\
+        E-mail: \email{riccardo.murri@gmail.com}}
+
+\author{\speaker{Sergio MAFFIOLETTI}\\
+        GC3: Grid Computing Competence Center\\
+        University of Zurich \\
+         E-mail: \email{sergio.maffioletti@gc3.uzh.ch}}
+
+
+\abstract{This paper presents AppPot, a system for creating Linux
+  software appliances. AppPot can be run as a regular batch or grid
+  job and executed in user space, and requires no special
+  virtualization support in the infrastructure. The main design goal
+  of AppPot is to bring the benefits of a virtualization-based IaaS
+  cloud to existing batch-oriented computing
+  infrastructures. In particular, AppPot addresses the application
+  deployment and configuration on large heterogeneous computing
+  infrastructures: users are enabled to prepare their own customized
+  virtual appliance for providing a safe execution environment for
+  their applications. These appliances can then be executed on
+  virtually any computing infrastructure being in a private or public
+  cloud as well as any batch-controlled computing clusters the user
+  may have access to. We give an overview of AppPot and its features,
+  the technology that makes it possible, and report on experiences
+  running it in production use within the Swiss National Grid
+  infrastructure SMSCG.}
+
+\FullConference{EGI Community Forum 2012 / EMI Second Technical Conference\\
+          26-30 March, 2012\\
+           Munich, Germany}
+
+\begin{document}
+
+\section{Introduction}
+Application deployment and configuration on large heterogeneous
+systems is a complex infrastructure issue that requires
+coordination among various system administrators, end users as well as
+operation teams. This is further complicated when it comes to
+scientific applications that are, most of the time, not supported on
+many Linux distributions.
+
+
+Virtualized infrastructures and software appliances provide an
+effective solution to these problems but do require a specific
+infrastructure and a usage model that is markedly different form the
+batch-oriented processing that is still the backbone of scientific
+computing.
+
+This paper presents a system (nicknamed ``AppPot'') to bring the
+benefits of virtualization-based \acs{IaaS} clouds to existing
+batch-oriented computing infrastructures. 
+
+AppPot comes in the form of a set of \acs{POSIX} shell 
+scripts that are installed into a GNU/Linux system image, and modify
+its start-up sequence to allow controlling task execution via the
+kernel boot command-line.  Another utility is provided to invoke an
+AppPot system image from the shell command line, and request it to
+execute a given command. 
+
+\section{Goals and use cases}
+\label{sec:usecases}
+
+The following scenarios are meant as an illustration of AppPot's
+intended use cases.  Throughout the paper, we shall describe how the
+requirements from these use cases translate into design decisions for
+AppPot, and how well the goals have been met.
+
+\subsection{Deployment of complex applications}
+\label{sec:usecase-deployment}
+
+Some software packages (notably, many scientific codes) require
+complex installation procedures. 
+\begin{enumerate}
+\item\label{R1} 
+  The application depends on software that is not readily
+  available on the host operating system.
+\item\label{R2} 
+  The application has a complex or non-standard compilation
+  procedure, and the documentation is scarce.
+\end{enumerate}
+In a grid infrastructure, this poses an additional problem of scale:
+all systems administrators must be conversant with the installation
+procedures of every software piece, and every application must be
+compatible with all the computing systems available in the
+infrastructure. 
+
+\subsection{Running self-developed code}
+\label{sec:usecase-development}
+
+A large fraction of research groups are developing their own software
+applications; oftentimes for computational experiments that are
+ephemeral, or limited in scope to a local group or niche community.
+
+Leveraging the \acl{UML} \cite{uml} virtualization system, AppPot
+appliances can run on grid and local clusters as regular batch system
+jobs, without the need for sysadmin support or root access.
+This solves both the aforementioned problems:
+\begin{itemize}
+\item AppPot software appliances are a way to implement generic
+  application deployment on a computational grid, and especially to
+  enable users to provide their own software to the computing cluster:
+  a complete AppPot appliance consists of three files, that can be
+  copied to the execution cluster with any available mechanism,
+  including the ``stage in'' facilities provided by most grid and
+  cluster batch systems.
+\item Users can use an AppPot \ac{VM} on their computer for coding,
+  and then run the same \ac{VM} as a Grid jobs or in a Cloud \ac{IaaS}
+  infrastructure for larger tests and production runs.
+\end{itemize}
+
+\section{Architecture and usage}
+\label{sec:architecture}
+
+An AppPot appliance appears to a user as consisting of a few files:
+\begin{enumerate}
+\item an \emph{AppPot disk image}, which is a complete GNU/Linux system
+  installed in a partition image file (in ``raw'' format);
+\item an \acs{UML} Linux kernel;
+\item a shell script \texttt{apppot-start} used to run a command-line
+  program within the AppPot appliance;
+\item a few auxiliary programs that enable optional features of
+  AppPot (networking, I/O streams redirection).
+\end{enumerate}
+All these files can, all or in part, be installed system-wide so that many
+users can benefit from a shared installation.
+
+\subsection{Using AppPot}
+\label{sec:using}
+
+Users receive an AppPot system image, containing a working
+installation of a GNU/Linux distribution.  
+Users have full access rights to the AppPot system image thus they can modify
+it by installing new software, libraries, reference data e.g.,
+their own version of a computational code or a reference dataset that
+will be used during the computational analysis.
+
+There are three main usage modes of AppPot, detailed below.
+
+\paragraph{Interactive local execution} In this case AppPot is
+started on a local machine; the disk image file as well as input data are
+directly available. 
+\paragraph{Batch job on a cluster resource} In a typical cluster
+setup, appliance image file, \ac{UML} kernel and input data are made
+available to the batch cluster execution node; the
+\texttt{apppot-start} command is invoked by the batch job to run a
+command non-interactively within the AppPot appliance.
+
+\paragraph{Grid job} AppPot can also be executed as a grid job on a
+distributed infrastructure. In this case, the disk image file,
+execution script and reference data need to be transferred to the
+destination node before the execution. This is normally achieved by
+specifying those input files as part of the grid job description
+file. 
+
+\section{Real-world usage}
+\label{sec:usage}
+
+Let's see now how the issues illustrated in Section~\ref{sec:usecases}
+can be addressed using AppPot.
+
+\subsection{Deployment of complex applications}
+\label{sec:usage-deployment}
+
+AppPot allows the execution of the appliance through \ac{UML}; in this
+way, the appliance contains the complex application as well as its
+full dependencies and, at the same time, it spares the local site
+administrators to certify and monitor the application deployment. The
+execution within \ac{UML} guarantees that the user cannot gain no more
+privileges than the executing user already can.
+
+\subsection{Running development code}
+\label{sec:usage-development}
+
+In case application source code needs a frequent update cycle,
+re-deploy the software appliance all the time is not a scalable
+deployment model. AppPot provides a snapshot/changes mechanism for
+this: users can create a ``changes'' file that encodes the differences
+of the locally-modified appliance with a ``base'' one. During AppPot
+boot, the \texttt{apppot-init} script will re-create the modified
+appliance from the base one, by merging in the changes.
+
+\subsection{Dynamical expansion of clusters}
+\label{sec:cloudbursting}
+
+A local cluster execution node can be prepared as an AppPot image that
+could executed on an accessible external computing infrastructure (the
+EGI infrastructure or any flavor of public clouds). The specific
+appliance is submitted each time a site seeks to expand its
+resources; the AppPot instance could be customized by the site admin
+to be a replica of the standard compute node, that connects back to
+the home site using a \acs{VPN}. This is similar
+to the ``glide-in'' mechanism implemented in the Condor batch
+execution system \cite{thain+livny:2005}. 
+
+
+\section{Conclusions}
+\label{sec:conclusions}
+
+AppPot is currently used in production within the Swiss National Grid
+Infrastructure \acs{SMSCG}, supporting several use cases like those
+presented in this paper.  We are collecting feedback on the
+effectiveness of AppPot in large-scale grid computations; we would
+like to stress that such effectiveness is not just a function of
+system performance, but should also include consideration of how it
+makes large-scale computing more accessible (on the users' side) and
+manageable (on the systems administrators side).
+
+\appendix
+
+\section{List of acronyms}
+\label{sec:acro}
+\input{acronyms}
+
+
+\begin{thebibliography}{99}
+  \bibitem{thain+livny:2005} Thain, D. and Tannenbaum, T. and Livny,
+    M., Distributed computing in practice: The Condor experience,
+    Concurrency and Computation: Practice and Experience, volume 17
+    2-4, pp 323--356, 2005.
+  \bibitem{uml} Dike J., User Mode Linux, Prentice Hall, 2006, isbn 978-0131865051.
+\end{thebibliography}
+
+\end{document}
+
+
+

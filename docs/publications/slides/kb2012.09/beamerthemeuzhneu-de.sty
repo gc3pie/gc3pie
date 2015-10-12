@@ -1,0 +1,280 @@
+%%
+%% File beamerthemeuzhneu-de.sty
+%% Beamer theme for UZH
+%% (Corporate Design templates for the University of Zurich,
+%%  new version as of October 2010)
+%%
+%% Copyright 2010 by Juergen Spitzmueller <spitzmueller@ds.uzh.ch>
+%%
+%% This template can be redistributed and/or modified under the terms
+%% of the GNU Public License, version 2 or later.
+
+\DeclareOptionBeamer{compress}{\beamer@compresstrue}
+\ProcessOptionsBeamer
+
+\mode<presentation>
+
+%% PERSONAL DATA (ADJUST TO YOUR NEEDS) %%%%%%%%%%%%%%%%
+%
+% Define your unit (e.g. Institute)
+\newcommand\uzhunit{Universit\"atseinheit}
+% If your institute has a key visual ("Kernsujet"),
+% uncomment the following and adjust the file name
+% (key-visual), if necessary:
+%\pgfdeclareimage[height=1.56cm]{kernsujet}{key-visual}
+%
+%% END OF PERSONAL DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% adjust margins
+\setbeamersize{text margin left=1.25cm}
+\setbeamersize{text margin right=1.25cm}
+
+% fonts
+\usefonttheme{default}
+\RequirePackage{bookman}%\RequirePackage{uarial}
+\RequirePackage{eulervm}%
+\setbeamerfont{title}{size={\fontsize{20}{24pt}\selectfont},parent=structure,series=\bfseries}
+\setbeamerfont{subtitle}{size={\fontsize{9}{11pt}\selectfont},series=\mdseries}
+\setbeamerfont{author}{size={\fontsize{9}{11pt}\selectfont},series=\mdseries}
+\setbeamerfont{footline}{size={\fontsize{5}{7pt}\selectfont},shape=\itshape}
+\setbeamercolor{footline}{fg=black}
+\setbeamerfont{frametitle}{parent=structure,size={\fontsize{12}{14pt}\selectfont},series=\bfseries}
+\setbeamerfont{framesubtitle}{parent=frametitle,size=\footnotesize}
+\setbeamerfont{uzhunit}{size={\fontsize{7}{9pt}\selectfont},series=\bfseries}
+
+% colors
+\usecolortheme{default}
+\definecolor{uzh@blue}{RGB}{0,40,165}
+\definecolor{uzh@grey}{RGB}{163,173,183}
+\definecolor{uzh@orange}{RGB}{220,96,39}
+\setbeamercolor{structure}{fg=uzh@blue}
+\setbeamercolor{titlelike}{fg=black}
+\setbeamercolor{title}{fg=uzh@blue}
+\setbeamercolor{frametitlelike}{fg=uzh@blue}
+\setbeamercolor{frametitle}{parent=frametitlelike}
+\setbeamercolor{framesubtitle}{parent=frametitle}
+\setbeamercolor{mini frame}{parent=structure}
+\setbeamercolor{sepline}{fg=uzh@grey,bg=uzh@grey}
+\setbeamercolor{partpage}{fg=white,bg=uzh@grey}
+\setbeamercolor{itemize item}{fg=black}
+\setbeamercolor{enumerate item}{fg=black}
+\RequirePackage{url}
+\def\UrlFont{\sffamily\color{uzh@orange}}
+
+% Logo
+\pgfdeclareimage[height=.9cm]{uzhlogo}{uzh_logo_d_pos}
+
+% Inner Theme
+\useinnertheme{default}
+
+% Layout/placement
+\useoutertheme{default}
+
+% date
+\newcommand{\leadingzero}[1]{\ifnum #1<10 0\the#1\else\the#1\fi}
+\AtBeginDocument{%
+\@ifundefined{addto}{}{%
+\addto\captionsngerman{\def\datengerman{\def\today{\leadingzero{\day}.\leadingzero{\month}.\the\year}}}
+\addto\captionsenglish{\def\dateenglish{\def\today{\leadingzero{\day}/\leadingzero{\month}/\the\year}}}
+}}
+
+% Title page
+\defbeamertemplate*{title page}{uzh}[1][]
+{
+  \vskip.4em
+    \begin{beamercolorbox}[sep=0pt,left,#1]{title}
+      \usebeamerfont{title}\usebeamercolor[fg]{title}\inserttitle\par%
+      \ifx\insertsubtitle\@empty%
+      \else%
+        \vskip0.5em%
+        {\usebeamerfont{subtitle}\usebeamercolor[fg]{titlelike}\insertsubtitle\par}%
+      \fi%
+    \end{beamercolorbox}%
+    \vskip0.5em%
+    \begin{beamercolorbox}[sep=0pt,left,#1]{author}
+      \usebeamerfont{author}\insertauthor\par%
+      \ifx\insertinstitute\@empty%
+      \else%
+        \vskip0.25em%
+        {\usebeamerfont{institute}\insertinstitute\par}%
+      \fi%
+    \end{beamercolorbox}
+    {\usebeamercolor[fg]{titlegraphic}\inserttitlegraphic\par}
+  \vfill
+}
+
+\def\maketitle{%
+\ifbeamer@inframe
+    \titlepage
+\else
+     \setbeamertemplate{footline}[title page]
+     \frame{\titlepage}
+     \setbeamertemplate{footline}[uzh]
+\fi}
+
+% Placement of frame titles
+\defbeamertemplate*{frametitle}{uzh}[1][left]
+{
+  \ifbeamercolorempty[bg]{frametitle}{}{\nointerlineskip}%
+  \@tempdima=\textwidth%
+  \advance\@tempdima by\beamer@leftmargin%
+  \advance\@tempdima by\beamer@rightmargin%
+  \vskip .7em
+  \begin{beamercolorbox}[#1,wd=\the\@tempdima, leftskip=1.25cm]{}
+   \begin{minipage}{\textwidth}
+    \raggedright
+    \usebeamerfont{frametitle}%
+    \if@tempswa\else\csname beamer@fte#1\endcsname\fi%
+    \strut\insertframetitle\strut\par%
+    {%
+      \ifx\insertframesubtitle\@empty%
+      \else%
+      {\usebeamerfont{framesubtitle}\usebeamercolor[fg]{framesubtitle}\insertframesubtitle\strut\par}%
+      \fi
+    }%
+  \end{minipage}
+  \end{beamercolorbox}%
+}
+
+% Part page
+\newlength\frameheightmhead
+\setlength\frameheightmhead{\textheight}
+\addtolength\frameheightmhead{1.55em}
+\newlength\frameheightohead
+\setlength\frameheightohead{\textheight}
+\addtolength\frameheightohead{-.7em}
+
+\defbeamertemplate*{part page}{uzh}[1][left]
+{
+  \ifbeamercolorempty[bg]{frametitle}{}{\nointerlineskip}%
+  \@tempdima=\textwidth%
+  \advance\@tempdima by\beamer@leftmargin%
+  \advance\@tempdima by\beamer@rightmargin%
+%  
+  \vspace*{-.13em}
+  \begin{beamercolorbox}[wd=\the\@tempdima, ht=\frameheightmhead, leftskip=1.25cm]{partpage}
+    \usebeamerfont{frametitle}%
+    \vskip .7em
+    \insertpart\\%
+    \vspace*{\frameheightohead}
+   \end{beamercolorbox}%
+}
+
+\defbeamertemplate{footline}{part page}{}
+
+\AtBeginPart{%
+   \setbeamertemplate{footline}[part page]
+   \frame{\partpage}
+   \setbeamertemplate{footline}[uzh]
+}
+
+% no navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% pagination (excluding appendices)
+\def\insertpresentationframenumber{\inserttotalframenumber}
+
+%\newcommand\framepagination{\insertframenumber\,/\,\insertpresentationframenumber}
+\newcommand\framepagination{Seite \insertframenumber}
+
+\let\oldappendix\appendix
+\renewcommand*\appendix{%
+\if@filesw
+    \immediate\write\@auxout{\string\@writefile{nav}%
+       {\noexpand\headcommand{\noexpand\def\noexpand\insertpresentationframenumber{\the\c@framenumber}}}}
+\fi
+\renewcommand\framepagination{\appendixname\ (\insertframenumber )}
+\oldappendix}
+
+% headline
+\defbeamertemplate*{headline}{uzh}
+{%
+      \begin{beamercolorbox}[sep=0.25cm]{}
+        \pgfuseimage{uzhlogo}\par
+        \vspace*{1.6mm}\hspace*{10mm}\usebeamerfont{uzhunit}\uzhunit
+      \end{beamercolorbox}
+      \vspace*{-1.8mm}
+      \begin{beamercolorbox}[wd=\textwidth,ht=.2mm]{sepline}
+      \end{beamercolorbox}
+      %% Test if a key visual is defined and insert it, if so.
+      {\def\pgf@imagename{pgf@image@kernsujet}%
+       \pgf@tryextensions{\pgf@imagename}{\pgfalternateextension}%
+       \expandafter\pgfutil@ifundefined\expandafter{\pgf@imagename}%
+       {}%
+       {
+        \begin{pgfpicture}
+        \put(186.5,0.75){\pgfuseimage{kernsujet}}
+        \end{pgfpicture}
+       }%
+      }%
+}
+
+% footline
+\defbeamertemplate*{footline}{uzh}
+{\hspace{\beamer@leftmargin}%
+        \usebeamerfont{footline}%
+        \ifx\beamer@shortdate\@empty%
+        \else
+        \insertshortdate\hspace{1em}%
+        \fi
+        \insertshorttitle
+        \hfill
+        %\framepagination%
+        \hspace*{\beamer@rightmargin}
+        \vskip2ex
+}
+
+% footline
+\defbeamertemplate*{footline}{title page}
+{\hspace{\beamer@leftmargin}%
+        \usebeamerfont{footline}%
+        \ifx\beamer@shortdate\@empty%
+        \else
+        \insertshortdate%
+        \fi
+        \hfill
+        %\framepagination%
+        \hspace*{\beamer@rightmargin}
+        \vskip2ex
+}
+
+% Misc.
+\setbeamercovered{transparent}
+\setbeamertemplate{sections in toc}[sections numbered]
+
+% Itemize items
+\defbeamertemplate*{itemize item}{uzh}{\hbox{--}}
+\defbeamertemplate*{itemize subitem}{uzh}{\hbox{--}}
+\defbeamertemplate*{itemize subsubitem}{uzh}{\hbox{--}}
+
+% Bibliography
+\setbeamertemplate{bibliography item}[triangle]
+\renewcommand{\@cite}[2]{\textcolor{structure}{#1\if@tempswa :\,#2\fi}}
+\setbeamertemplate{bibliography entry title}{ }
+\setbeamertemplate{bibliography entry location}{ }
+\setbeamertemplate{bibliography entry note}{ }
+\setbeamercolor{bibliography entry author}{use=structure,fg=structure.fg}
+\setbeamercolor{bibliography entry title}{use=normal text,fg=normal text.fg}
+\setbeamercolor{bibliography entry location}{use=normal text,fg=normal text.fg}
+\setbeamercolor{bibliography entry note}{use=normal text,fg=normal text.fg}
+
+% Notes
+\defbeamertemplate*{note page}{uzh}
+{%
+  {%
+    \scriptsize
+%    \insertvrule{.25\paperheight}{white!90!black}
+%    \vskip-.25\paperheight
+    \nointerlineskip
+    \vbox{
+      \hfill\insertslideintonotes{0.7}\hskip-\Gm@rmargin\hskip0pt%
+%      \vskip-0.25\paperheight%
+      \vfil}%
+  }%
+  \vskip.25em
+  \nointerlineskip
+  \insertnote
+}
+
+\mode
+<all>

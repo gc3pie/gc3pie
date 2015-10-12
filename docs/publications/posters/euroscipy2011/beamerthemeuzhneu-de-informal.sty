@@ -1,0 +1,130 @@
+%%
+%% File beamerthemeuzhneu-de-informal.sty
+%% Beamer theme for UZH, informal version
+%% (Corporate Design templates for the University of Zurich,
+%%  new version as of October 2010)
+%%
+%% Copyright 2010 by Jürgen Spitzmüller <spitzmueller@ds.uzh.ch>
+%%
+%% This template can be redistributed and/or modified under the terms
+%% of the GNU Public License, version 2 or later.
+
+\mode<presentation>
+
+% some values
+\usetheme{uzhneu-de}
+
+% Logo
+\pgfdeclareimage[height=.9cm]{uzhlogo}{uzh_logo_d_pos}
+
+% Variables
+\def\uzh{Universit\"at Z\"urich}
+
+% headline
+\defbeamertemplate{headline}{title page}
+{%
+      \begin{beamercolorbox}[sep=0.25cm]{}
+	\pgfuseimage{uzhlogo}\par
+	\vspace*{1.6mm}\hspace*{10mm}\usebeamerfont{uzhunit}\uzhunit
+      \end{beamercolorbox}
+      \vspace*{-1.8mm}
+      \begin{beamercolorbox}[wd=\textwidth,ht=.2mm]{sepline}
+      \end{beamercolorbox}
+      %% Test if a key visual is defined and insert it, if so.
+      {\def\pgf@imagename{pgf@image@kernsujet}%
+       \pgf@tryextensions{\pgf@imagename}{\pgfalternateextension}%
+       \expandafter\pgfutil@ifundefined\expandafter{\pgf@imagename}%
+       {}%
+       {
+        \begin{pgfpicture}
+        \put(186.5,0.75){\pgfuseimage{kernsujet}}
+        \end{pgfpicture}
+       }%
+      }%
+}
+
+% footline
+\defbeamertemplate*{footline}{informal}
+{\hspace{\beamer@leftmargin}%
+	\usebeamerfont{footline}%
+	\uzh ,
+	\uzhunit\hspace{1em}%
+	\ifx\beamer@shortdate\@empty%
+	\else
+	\insertshortdate\hspace{1em}%
+	\fi
+	\insertshorttitle
+	\hfill
+	\framepagination\hspace*{\beamer@rightmargin}
+	\vskip2ex
+}
+
+\setbeamertemplate{headline}{}
+
+% Title page
+\defbeamertemplate*{title page}{informal}[1][]
+{
+  \vskip4.6em
+    \begin{beamercolorbox}[sep=0pt,left,#1]{title}
+      \usebeamerfont{title}\usebeamercolor[fg]{title}\inserttitle\par%
+      \ifx\insertsubtitle\@empty%
+      \else%
+        \vskip0.5em%
+        {\usebeamerfont{subtitle}\usebeamercolor[fg]{titlelike}\insertsubtitle\par}%
+      \fi%
+    \end{beamercolorbox}%
+    \vskip.7em\par
+    \begin{beamercolorbox}[sep=0pt,left,#1]{author}
+      \usebeamerfont{author}\insertauthor\par%
+      \ifx\insertinstitute\@empty%
+      \else%
+        \vskip0.25em%
+        {\usebeamerfont{institute}\insertinstitute\par}%
+      \fi%
+    \end{beamercolorbox}
+    {\usebeamercolor[fg]{titlegraphic}\inserttitlegraphic\par}
+  \vfill
+}
+
+\def\maketitle{%
+\ifbeamer@inframe
+    \titlepage
+\else
+     \setbeamertemplate{headline}[title page]
+     \setbeamertemplate{footline}[title page]
+     \frame{\titlepage}
+     \setbeamertemplate{headline}{}
+     \setbeamertemplate{footline}[informal]
+\fi}
+
+% Part page
+\defbeamertemplate*{part page}{informal}[1][left]
+{
+  \ifbeamercolorempty[bg]{frametitle}{}{\nointerlineskip}%
+  \@tempdima=\textwidth%
+  \advance\@tempdima by\beamer@leftmargin%
+  \advance\@tempdima by\beamer@rightmargin%
+  \newlength\frameheightmhead
+  \setlength\frameheightmhead{\textheight}
+  \addtolength\frameheightmhead{1.5em}
+  \newlength\frameheightohead
+  \setlength\frameheightohead{\textheight}
+  \addtolength\frameheightohead{-.7em}
+%  
+  \vspace*{-.11em}
+  \begin{beamercolorbox}[wd=\the\@tempdima, ht=\paperheight, leftskip=1.25cm]{partpage}
+    \usebeamerfont{frametitle}%
+    \vskip .7em
+    \insertpart\\%
+    \vspace*{\frameheightohead}
+   \end{beamercolorbox}%
+}
+
+\AtBeginPart{%
+   \setbeamertemplate{footline}[part page]
+   \frame{\partpage}
+   \setbeamertemplate{footline}[informal]
+}
+
+\mode
+<all>

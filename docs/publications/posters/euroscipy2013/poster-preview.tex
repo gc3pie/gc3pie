@@ -1,0 +1,50 @@
+\documentclass[final,english,serif]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+\usepackage{graphicx}
+\usepackage{gc3}
+
+%\title{Py \emph{vs.}~Py}
+%\subtitle{A comparison of Python runtimes on a non-numeric scientific code}
+\author[R.~Murri et~al.]{Riccardo Murri, Sergio Maffioletti, Antonio Messina}
+\institute[GC3]{Grid Computing Competence Center \\ University of Zurich}
+\date{EuroSciPy, Aug.~23--24, 2013}
+
+\def\It{\href{http://gc3pie.googlecode.com/}{GC3Pie}\space}
+
+\begin{document}
+\begin{frame}
+  \frametitle{}
+  \begin{center}
+    {\Large Yet another remote execution framework? ;-)}
+
+    \\ \+
+
+    \emph{\It is \texttt{subprocess} on steroids}: \\ runs commands on virtual
+    machines in the cloud, \\ batch-queueing systems, computational
+    grids, \\ or anything you can SSH into.
+
+    \\ \+
+
+    \begin{sloppypar}
+      \It can compose tasks into a dynamic workflow, \\ and distribute
+      execution  \\ on all available compute power.
+    \end{sloppypar}
+
+    \\ \+
+
+    The poster shows how to \\ run \emph{model calibration} on a large
+    economic model, \\ requiring $O(10^6)$ CPU hours to compute.
+  \end{center}
+\end{frame}
+\end{document}
+
+
+%% Local Variables:
+%% mode: latex
+%% TeX-PDF-mode: t
+%% End:

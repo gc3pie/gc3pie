@@ -1,0 +1,63 @@
+\documentclass[english,9pt]{beamer}
+%\usepackage[T1]{fontenc}
+\usepackage[utf8x]{inputenc}
+\usepackage{babel}
+%\usepackage{enumerate}
+
+%% style
+\usetheme{uzhneu-en-informal}
+\usepackage{bookman}
+\renewcommand{\H}[1]{\+{\Large\bfseries #1}\-}
+\renewcommand\-{\vspace{0.5em}}
+\newcommand\+{\vspace{1.5em}}
+
+\begin{document}
+
+% \title[GC3Pie]{Computational workflows with GC3Pie}
+% \author{Riccardo Murri}
+% \date{\today}
+
+% \maketitle
+
+
+\begin{frame}{%
+    {Computational workflows with GC3Pie}
+    \\
+    {\url{http://gc3pie.googlecode.com/}}
+  }%
+\thispagestyle{empty}\rm
+
+\H{What is GC3Pie?}
+
+A Python library for driving large-scale distributed computations on
+Grids and clusters.
+
+
+\H{Why GC3Pie?}
+
+\begin{columns}[t]
+  \centering
+  \begin{column}{.50\textwidth}
+    {Workflows / task dependencies}
+
+    {\em Task checkpoint / restart}
+  \end{column}
+  \begin{column}{.40\textwidth}
+    {\em Code reuse}
+
+    {Object orientation}
+  \end{column}
+\end{columns}
+
+\H{The Poster}
+
+A real-world example: optimization of an economic model running Ken Price's
+``Differential Evolution'' algorithm.
+
+\end{frame}
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

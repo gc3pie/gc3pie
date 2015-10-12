@@ -51,6 +51,7 @@ GC3Pie documentation is divided in three sections:
   users/index
   programmers/index
   developers/index
+  publications/index
   credits
   glossary
 

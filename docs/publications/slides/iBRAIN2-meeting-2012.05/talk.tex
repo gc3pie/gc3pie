@@ -1,0 +1,187 @@
+% Created 2011-03-14 lun 11:25
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{soul}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{wasysym}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\tolerance=1000
+\providecommand{\alert}[1]{\textbf{#1}}
+\usepackage{pslatex}\usetheme{Madrid}\usecolortheme{default}\setlength{\parskip}{1em}
+\begin{document}
+
+
+\title{GC3Pie}
+\author{Riccardo Murri, GC3, University of Zurich}
+\date{2012-05-26}
+\maketitle
+
+
+\begin{frame}
+  \frametitle{What is GC3Pie?}
+  \label{sec-4}
+
+  GC3Pie consists of:
+
+  \begin{itemize}
+  \item GC3Libs: Python library, aimed at programmers to drive application
+    execution on Grids and clusters.
+  \item GC3Utils: simple command-line interface to the core GC3Libs
+    functionality: submit/monitor/kill a job, retrieve output, etc.
+  \item GRosetta/GGamess/GRunDB/etc.: Driver scripts developed for
+    specific groups, but that may be of independent general interest.
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{GC3Libs application model}
+  \label{sec-7}
+
+  An application is a subclass of the \texttt{gc3libs.Application} class.
+
+  Generic \texttt{Application} class patterned after \href{http://www.nordugrid.org/documents/xrsl.pdf}{ARC's xRSL} model.
+
+  At a minimum: provide applications-specific command-line invocation.
+
+  Advanced users can customize pre- and post-processing, react on
+  state transitions, set computational requirements based on input
+  files, influence scheduling.
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{A stupid example}
+  \label{sec-8}
+
+\begin{verbatim}
+class SquareApplication(Application):
+  """Compute the square of an integer, remotely."""
+  def __init__(self, x):
+    Application.__init__(
+      self,
+      executable = '/usr/bin/expr',
+      arguments = [x, '*', x],
+      inputs = [ ],
+      outputs = [ ],
+      stdout = "stdout.txt",
+    )
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{A less stupid example}
+  \label{sec-9}
+
+\begin{verbatim}
+app = RosettaDockingApplication(
+   100, # number of decoys to compute
+   '1brs.pdb', # input file
+   flags_file='flags.txt', # optional
+)
+\end{verbatim}
+
+  The \texttt{RosettaDockingApplication} class knows how to invoke Rosetta's
+  \texttt{docking\_protocol} program to compute N decoys of a given input file.
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{A not-so-simple GC3Libs script (code)}
+  \label{sec-20}
+
+\begin{verbatim}
+core = Core(read_config_file)
+store = FilesystemStore(directory)
+apps = [ store.load(jobid) 
+         for jobid in file(session, 'r') ]
+for arg in new_args:
+  apps += Application(arg, ...)
+engine = Engine(core, apps, store)
+engine.wait() # call progress() until done
+total_global_postprocess()
+\end{verbatim}
+
+  This is the \textbf{actual} structure of the GRosetta/GGamess/GRunDB
+  scripts!   (But you would just subclass \texttt{SessionBasedScript}.)
+\end{frame}
+
+\begin{frame}
+  \frametitle{Job dependency management}
+  \label{sec-22}
+
+  GC3Libs provides \href{http://en.wikipedia.org/wiki/Directed_acyclic_graph}{Directed Acyclic Graph} support.
+
+  DAGs are created programmatically from Python code.
+
+  Which means, no graphical editor.  But also means you can create
+  workflows on-the-fly as your computation proceeds.
+\end{frame}
+
+\begin{frame}
+  \frametitle{Composition of jobs (I)}
+  \label{sec-23}
+
+  The unit of job composition is called a \texttt{Task} in GC3Libs.
+
+  An \texttt{Application} is the primary instance of a \texttt{Task}.
+
+  However, a single task can be composed of many applications.
+  A task is a composite object: tasks can be composed of other tasks.
+
+  Workflows are built by composing tasks in different ways.
+  A ``workflow'' is a task, too.
+\end{frame}
+
+\begin{frame}
+  \frametitle{Composition of jobs (II)}
+  \label{sec-24}
+
+  The \texttt{SequentialTask} class takes a list of jobs and executes them
+  one after the other. Subclass and override the \texttt{next()} method to
+  determine early exit conditions, or to modify the list dynamically.
+
+  The \texttt{ParallelTask} class takes a list of jobs and executes all of
+  them in parallel.  It's done when all jobs are done: there's an
+  implicit synchronization barrier at the end.
+  
+\end{frame}
+
+\begin{frame}
+  \frametitle{Composition of jobs (III)}
+  \label{sec-25}
+
+  \texttt{Application}, \texttt{SequentialTask} and \texttt{ParallelTask} are all
+  subclasses of the same \texttt{Task} interface.
+
+  So, you can create sequential collections of parallel jobs, parallel
+  collections of sequential collections, etc.
+
+  Any DAG can be expressed as composition of these classes.
+  And collections can be mutated at run-time.
+
+  An \texttt{Engine} really manages a list of tasks, so we are really
+  scripting workflows here.
+\end{frame}
+
+\begin{frame}
+\begin{center}
+  GC3Pie home page: \href{http://gc3pie.googlecode.com}{http://gc3pie.googlecode.com}
+
+  Source code: \texttt{svn co http://gc3pie.googlecode.com/svn}
+
+  Mailing list: gc3pie@googlegroups.com
+
+  Thank you!
+\end{center}
+\end{frame}
+
+
+\end{document}
