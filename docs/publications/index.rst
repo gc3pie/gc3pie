@@ -11,8 +11,9 @@ This is an index of papers, slide decks, and other assorted material
 on GC3Pie. Most recent contributions are listed first.
 
 If you would like to add your contributions here, please send a
-message to the `GC3Pie mailing-list`_ (or use the `GMANE.org web
-interface <http://dir.gmane.org/gmane.comp.python.gc3pie>`_).
+message to the `GC3Pie mailing-list <mailto:gc3pie@googlegroups.com>`_
+(or use the `GMANE.org web interface
+<http://dir.gmane.org/gmane.comp.python.gc3pie>`_).
 
 .. contents::
 
