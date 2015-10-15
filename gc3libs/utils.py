@@ -1523,18 +1523,16 @@ def test_file(path, mode, exception=RuntimeError, isdir=False):
         ...
       RuntimeError: Expected '/bin/cat' to be a directory, but it's not.
     """
+    what = ("directory" if isdir else "file")
     if not os.access(path, os.F_OK):
-        raise exception("Cannot access %s '%s'."
-                        % (ifelse(isdir, "directory", "file"), path))
+        raise exception("Cannot access %s '%s'." % (what, path))
     if isdir and not os.path.isdir(path):
         raise exception(
             "Expected '%s' to be a directory, but it's not." % path)
     if (mode & os.R_OK) and not os.access(path, os.R_OK):
-        raise exception("Cannot read %s '%s'."
-                        % (ifelse(isdir, "directory", "file"), path))
+        raise exception("Cannot read %s '%s'." % (what, path))
     if (mode & os.W_OK) and not os.access(path, os.W_OK):
-        raise exception("Cannot write to %s '%s'."
-                        % (ifelse(isdir, "directory", "file"), path))
+        raise exception("Cannot write to %s '%s'." % (what, path))
     if (mode & os.X_OK) and not os.access(path, os.X_OK):
         if isdir:
             raise exception("Cannot traverse directory '%s':"
