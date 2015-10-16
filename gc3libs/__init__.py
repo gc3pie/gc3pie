@@ -1993,14 +1993,14 @@ class Run(Struct):
 # Factory method to create an Engine instance
 def create_engine(*conf_files, **extra_args):
     """
-    Returns a `gc3libs.core.Engine`:class: class.
+    Make and return a `gc3libs.core.Engine`:class: instance.
 
-    It accepts an optional list of configuration filenames. If the
-    filenames contain a `~` or a variable name, it will be expanded
-    automatically.
+    It accepts an optional list of configuration filenames.  Filenames
+    containing a `~` or an environment variable reference, will be
+    expanded automatically.
 
-    Called without arguments, a configuration file will be searched in
-    ~/.gc3/gc3pie.conf and used, if found .
+    If called without arguments, the paths specified in
+    `gc3libs.Default.CONFIG_FILE_LOCATIONS` will be used.
     """
     from gc3libs.config import Configuration
     from gc3libs.core import Core, Engine
