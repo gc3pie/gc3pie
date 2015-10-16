@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Top-level interface to Grid functionality.
+Top-level classes for task execution and control.
 """
 # Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
