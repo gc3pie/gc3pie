@@ -73,9 +73,10 @@ from gc3libs.session import Session
 # http://docs.python.org/dev/library/argparse.html#type
 
 def nonnegative_int(num):
-    """This function raise an ArgumentTypeError if `num` is a negative
-    integer (<0), and returns int(num) otherwise. `num` can be any
-    object which can be converted to an int.
+    """
+    Raise `ArgumentTypeError` if `num` is a negative integer (<0), and
+    return `int(num)` otherwise. `num` can be any object which can be
+    converted to an int.
 
     >>> nonnegative_int('1')
     1
@@ -112,7 +113,6 @@ def nonnegative_int(num):
     Traceback (most recent call last):
         ...
     ArgumentTypeError: 'ThisWillRaiseAnException' is not a non-negative ...
-
     """
     try:
         value = int(num)
@@ -126,10 +126,10 @@ def nonnegative_int(num):
 
 
 def positive_int(num):
-    """This function raises an ArgumentTypeError if `num` is not
-    a*strictly* positive integer (>0) and returns int(num)
-    otherwise. `num` can be any object which can be converted to an
-    int.
+    """
+    Raise `ArgumentTypeError` if `num` is not a *strictly* positive
+    integer (>0) and return `int(num)` otherwise. `num` can be any
+    object which can be converted to an int.
 
     >>> positive_int('1')
     1
@@ -159,7 +159,6 @@ def positive_int(num):
     Traceback (most recent call last):
     ...
     ArgumentTypeError: '0.1' is not a positive integer number.
-
 
     Please note that `0` is NOT ok:
 
