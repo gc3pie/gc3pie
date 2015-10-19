@@ -23,8 +23,21 @@ if hasattr(sdist, 'finders'):
 ## auxiliary functions
 #
 def read_whole_file(path):
+    """
+    Return file contents as a string.
+    """
     with open(path, 'r') as stream:
         return stream.read()
+
+def read_file_lines(path):
+    """
+    Return list of file lines, stripped of leading and trailing
+    whitespace (including newlines), and of comment lines.
+    """
+    with open(path, 'r') as stream:
+        lines = [line.strip() for line in stream.readlines()]
+        return [line for line in lines
+                if line != '' and not line.startswith('#')]
 
 
 ## test runner setup
@@ -124,34 +137,11 @@ setuptools.setup(
     },
 
     # run-time dependencies
-    install_requires=[
-        # paramiko and pycrypto are required for SSH operations
-        'paramiko',
-        'pycrypto',
-        # prettytable -- format tabular text output
-        'prettytable',
-        # pyCLI -- object-oriented command-line app programming
-        'pyCLI',
-        # Needed by SqlStore
-        # 0.7.9 is the latest version with Python2.4 support
-        'sqlalchemy',
-        # Needed for parsing human-readable dates (gselect uses it).
-        'parsedatetime',
-        # needed by DependentTaskCollection
-        # (but incompatible with Py 2.6, so we include a patched copy)
-        #'toposort==1.0',
-        ],
+    install_requires=read_file_lines('requirements.base.txt'),
     extras_require = {
-        'openstack': [
-            'python-novaclient',
-        ],
-        'ec2': [
-            'boto',
-        ],
-        'optimizer': [
-            # needed by Benjamin's DE optimizer code
-            'numpy',
-        ],
+        'openstack': read_file_lines('requirements.openstack.txt'),
+        'ec2':       read_file_lines('requirements.ec2.txt'),
+        'optimizer': read_file_lines('requirements.optimizer.txt'),
     },
     # Apparently, this list is read from right to left...
     tests_require=[
