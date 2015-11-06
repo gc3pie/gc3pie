@@ -150,7 +150,7 @@ newly-created jobs so that this limit is never exceeded.
         not os.path.exists(self.params.master_script):
             raise gc3libs.exceptions.InvalidUsage(
                 "Input folder '%s' does not exists"
-                % self.params.input_dir)
+                % self.params.master_script)
 
     def new_tasks(self, extra):
         """
