@@ -85,7 +85,7 @@ class GsceuafishApplication(Application):
                                               "gc3libs/etc/gsceuafish.sh")
         inputs[gsceuafish_wrapper_sh] = os.path.basename(gsceuafish_wrapper_sh)
 
-        _command = "./%s %s " % (os.path.basename(gscuafish_wrapper_sh),
+        _command = "./%s %s " % (os.path.basename(gsceuafish_wrapper_sh),
                                  ' '.join(str(x) for x in parameter))
 
         if "main_loop_folder" in extra_args:
