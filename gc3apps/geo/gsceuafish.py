@@ -93,36 +93,46 @@ class GsceuafishApplication(Application):
         inputs = dict()
         outputs = dict()
 
-        command = "MainFunction %s; quit" % ' '.join(str(x) for x in parameter)
+        # execution wrapper needs to be added anyway
+        gscuafish_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
+                                              "gc3libs/etc/gscuafish.sh")
+        inputs[gscuafish_wrapper_sh] = os.path.basename(gscuafish_wrapper_sh)
+
+        _command = "./%s %s " % (os.path.basename(gscuafish_wrapper_sh),
+                                 ' '.join(str(x) for x in parameter))
+
+        # command = "MainFunction %s; quit" % ' '.join(str(x) for x in parameter)
 
         if "main_loop_folder" in extra_args:
             inputs[extra_args['main_loop_folder']] = './data/'
-            command = "addpath('./data/'); "+command
+            # _command += "-p ./data"
+            # command = "addpath('./data/'); "+command
 
-        try:
-            # create script file
-            (handle, self.tmp_filename) = tempfile.mkstemp(prefix='gsceuafish', suffix=extra_args['jobname'])
+        # try:
+        #     # create script file
+        #     (handle, self.tmp_filename) = tempfile.mkstemp(prefix='gsceuafish', suffix=extra_args['jobname'])
 
-            fd = open(self.tmp_filename,'w')
-            fd.write(command)
-            fd.close()
-        except Exception, ex:
-            gc3libs.log.debug("Error creating execution script" +
-                              "Error type: %s." % type(ex) +
-                              "Message: %s"  %ex.message)
-            raise
+        #     fd = open(self.tmp_filename,'w')
+        #     fd.write(command)
+        #     fd.close()
+        # except Exception, ex:
+        #     gc3libs.log.debug("Error creating execution script" +
+        #                       "Error type: %s." % type(ex) +
+        #                       "Message: %s"  %ex.message)
+        #     raise
 
-        inputs[fd.name] = 'runme.m'
+        # inputs[fd.name] = 'runme.m'
 
-        arguments = "matlab -nodesktop -nodisplay -nosplash < ./runme.m"
+        # arguments = "matlab -nodesktop -nodisplay -nosplash < ./runme.m"
         
         Application.__init__(
             self,
-            arguments = arguments,
+            arguments = _command,
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
             stdout = 'gsceuafish.log',
             join=True,
+            executables = "./%s" % os.path.basename(gscuafish_wrapper_sh),
             **extra_args)
 
 
