@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 #
-#   gsceuafish.py -- Front-end script for evaluating R-based 'weight'
-#   function over a large dataset.
+#   gsceuafish.py -- Front-end script for evaluating Matlab functions
+#   function over a large number of parameters.
 #
-#   Copyright (C) 2011, 2012 GC3, University of Zurich
+#   Copyright (C) 2015, 2016 S3IT, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or
 #   modify
@@ -20,40 +20,27 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Front-end script for submitting multiple `R` jobs.
+Front-end script for submitting multiple Matlab jobs.
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gsceuafish.py --help`` for program usage
 instructions.
 
 Input parameters consists of:
-:param str edges file: Path to an .csv file containing input data in
-the for of: 
-    X1   X2
-1  id1  id2
-2  id1  id3
-3  id1  id4
-
+:param str input_csv: Path to an .csv file containing input parameters
+Example:
+1,2,1,4
+1,1,1,1
 ...
-2015-09-29: aggregated result file should be named after the `-o` option
-
-
-XXX: To be clarified:
-. What happen if an error happen at merging time ?
-. Should be possible to re-run a subset of the initial chunk list
-without re-creating a new session ?
-e.g. adding a new argument accepting chunk ranges (-R 3000:7500)
-This would trigger the re-run of the whole workflow only 
-for lines between 3000 and 7500
 """
 
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
-  2013-07-03:
+  2015-11-05:
   * Initial version
 """
-__author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
+__author__ = 'Sergio Maffioletti <sergio.maffioletti@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 
@@ -94,36 +81,15 @@ class GsceuafishApplication(Application):
         outputs = dict()
 
         # execution wrapper needs to be added anyway
-        gscuafish_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
-                                              "gc3libs/etc/gscuafish.sh")
-        inputs[gscuafish_wrapper_sh] = os.path.basename(gscuafish_wrapper_sh)
+        gsceuafish_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
+                                              "gc3libs/etc/gsceuafish.sh")
+        inputs[gsceuafish_wrapper_sh] = os.path.basename(gsceuafish_wrapper_sh)
 
         _command = "./%s %s " % (os.path.basename(gscuafish_wrapper_sh),
                                  ' '.join(str(x) for x in parameter))
 
-        # command = "MainFunction %s; quit" % ' '.join(str(x) for x in parameter)
-
         if "main_loop_folder" in extra_args:
             inputs[extra_args['main_loop_folder']] = './data/'
-            # _command += "-p ./data"
-            # command = "addpath('./data/'); "+command
-
-        # try:
-        #     # create script file
-        #     (handle, self.tmp_filename) = tempfile.mkstemp(prefix='gsceuafish', suffix=extra_args['jobname'])
-
-        #     fd = open(self.tmp_filename,'w')
-        #     fd.write(command)
-        #     fd.close()
-        # except Exception, ex:
-        #     gc3libs.log.debug("Error creating execution script" +
-        #                       "Error type: %s." % type(ex) +
-        #                       "Message: %s"  %ex.message)
-        #     raise
-
-        # inputs[fd.name] = 'runme.m'
-
-        # arguments = "matlab -nodesktop -nodisplay -nosplash < ./runme.m"
         
         Application.__init__(
             self,
@@ -132,16 +98,15 @@ class GsceuafishApplication(Application):
             outputs = gc3libs.ANY_OUTPUT,
             stdout = 'gsceuafish.log',
             join=True,
-            executables = "./%s" % os.path.basename(gscuafish_wrapper_sh),
+            executables = "./%s" % os.path.basename(gsceuafish_wrapper_sh),
             **extra_args)
 
 
 class GsceuafishScript(SessionBasedScript):
     """
-    Splits input .csv file into smaller chunks, each of them of size 
-    'self.params.chunk_size'.
-    Then it submits one execution for each of the created chunked files.
-    
+    Parse the input .csv file. For each line in the input .csv file
+    create a different Matlab execution.
+
     The ``gsceuafish`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
@@ -160,12 +125,8 @@ class GsceuafishScript(SessionBasedScript):
     def __init__(self):
         SessionBasedScript.__init__(
             self,
-            version = __version__, # module version == script version
+            version = __version__,
             application = GsceuafishApplication, 
-            # only display stats for the top-level policy objects
-            # (which correspond to the processed files) omit counting
-            # actual applications because their number varies over
-            # time as checkpointing and re-submission takes place.
             stats_only_for = GsceuafishApplication,
             )
 
@@ -191,17 +152,6 @@ class GsceuafishScript(SessionBasedScript):
         if self.params.main_loop:
             assert os.path.isdir(self.params.main_loop), \
             "Main_Loop.m location %s not found" % self.params.main_loop
-
-        # try:
-        #     assert os.path.isfile(self.params.csv_input_file)
-        # except ValueError:
-        #     raise gc3libs.exceptions.InvalidUsage(
-        #         "Input CSV file %s not found" % self.params.csv_input_file)
-        
-        # if self.params.main_loop:
-        #     if not os.path.isdir(self.params.main_loop):
-        #         raise gc3libs.exceptions.InvalidUsage(
-        #         "Main_Loop.m location %s not found" % self.params.main_loop)
 
     def new_tasks(self, extra):
         """
@@ -238,9 +188,9 @@ class GsceuafishScript(SessionBasedScript):
 
     def _enumerate_csv(self, input_csv):
         """
+        For each line of the input .csv file
+        return list of parameters 
         """
         parameters = pandas.read_csv(input_csv,header=None)
         for i,p in enumerate(parameters.values):
             yield p.tolist()
-
-
