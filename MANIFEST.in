@@ -1,3 +1,4 @@
+include requirements*.txt
 include *.py
 recursive-include gc3libs *.py
 recursive-include gc3apps *.py
