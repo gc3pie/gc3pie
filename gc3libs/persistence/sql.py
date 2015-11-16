@@ -157,12 +157,12 @@ class SqlStore(Store):
             self.table_name,
             self.__meta,
             sqla.Column('id',
-                        sqla.INTEGER(),
+                        sqla.Integer(),
                         primary_key=True, nullable=False),
             sqla.Column('data',
                         sqla.LargeBinary()),
             sqla.Column('state',
-                        sqla.VARCHAR(length=128)))
+                        sqla.String(length=128)))
 
         # create internal rep of table
         self.extra_fields = dict()
