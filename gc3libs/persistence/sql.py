@@ -3,7 +3,7 @@
 """
 SQL-based storage of GC3pie objects.
 """
-# Copyright (C) 2011-2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2012, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -160,7 +160,7 @@ class SqlStore(Store):
                         sqla.INTEGER(),
                         primary_key=True, nullable=False),
             sqla.Column('data',
-                        sqla.BLOB()),
+                        sqla.LargeBinary()),
             sqla.Column('state',
                         sqla.VARCHAR(length=128)))
 
