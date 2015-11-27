@@ -114,8 +114,7 @@ class MatchMaker(object):
         return targets
 
 
-class Core:
-
+class Core(object):
     """
 Core operations: submit, update state, retrieve (a snapshot of)
 output, cancel job.
