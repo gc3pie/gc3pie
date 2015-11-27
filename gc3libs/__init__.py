@@ -36,6 +36,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
+import inspect
 import os
 import os.path
 import string
@@ -1990,20 +1991,44 @@ class Run(Struct):
             return (0, rc)
 
 
-# Factory method to create an Engine instance
-def create_engine(*conf_files, **extra_args):
+# Factory functions to create Core and Engine instances
+
+def _split_specific_args(fn, argdict):
     """
-    Make and return a `gc3libs.core.Engine`:class: instance.
+    Pop any key appears as an argument name in the definition of
+    function `fn` out into a separate dictionary, and return it.
+
+    *Note:* Argument `argdict` is modified in-place!
+    """
+    args, varargs, _, _ = inspect.getargspec(fn)
+    specific_args = {}
+    for n, argname in enumerate(args):
+        if n == 1 and argname == 'self':
+            continue
+        if argname in argdict:
+            specific_args[argname] = argdict.pop(argname)
+    if varargs is not None:
+        if varargs in argdict:
+            specific_args[varargs] = argdict.pop(varargs)
+    return specific_args
+
+
+def create_core(*conf_files, **extra_args):
+    """Make and return a `gc3libs.core.Core`:class: instance.
 
     It accepts an optional list of configuration filenames.  Filenames
     containing a `~` or an environment variable reference, will be
-    expanded automatically.
+    expanded automatically. If called without arguments, the paths
+    specified in `gc3libs.Default.CONFIG_FILE_LOCATIONS` will be
+    used.
 
-    If called without arguments, the paths specified in
-    `gc3libs.Default.CONFIG_FILE_LOCATIONS` will be used.
+    Any keyword argument matching the name of a parameter used by
+    `Core.__init__` is passed to it.  Any leftover keyword argument is
+    passed unchanged to the `gc3libs.config.Configuration`:class:
+    constructor.
     """
     from gc3libs.config import Configuration
-    from gc3libs.core import Core, Engine
+    from gc3libs.core import Core
     conf_files = [
         os.path.expandvars(
             os.path.expanduser(fname)) for fname in conf_files]
@@ -2011,9 +2036,7 @@ def create_engine(*conf_files, **extra_args):
         conf_files = Default.CONFIG_FILE_LOCATIONS[:]
 
     # extract params specific to the `Core` instance
-    core_extra_args = {}
-    if 'resource_errors_are_fatal' in extra_args:
-        core_extra_args['resource_errors_are_fatal'] = extra_args.pop('resource_errors_are_fatal')
+    core_specific_args = _split_specific_args(Core.__init__, extra_args)
 
     # params specific to the `Configuration` instance
     if 'auto_enable_auth' not in extra_args:
@@ -2021,10 +2044,33 @@ def create_engine(*conf_files, **extra_args):
 
     # make 'em all
     cfg = Configuration(*conf_files, **extra_args)
-    core = Core(cfg, **core_extra_args)
-    engine = Engine(core)
+    return Core(cfg, **core_specific_args)
 
-    return engine
+
+def create_engine(*conf_files, **extra_args):
+    """
+    Make and return a `gc3libs.core.Engine`:class: instance.
+
+    It accepts an optional list of configuration filenames.  Filenames
+    containing a `~` or an environment variable reference, will be
+    expanded automatically. If called without arguments, the paths
+    specified in `gc3libs.Default.CONFIG_FILE_LOCATIONS` will be
+    used.
+
+    Any keyword argument that matches the name of a parameter of the
+    constructor for :class:`Engine` is passed to that constructor.
+    Likewise, any keyword argument that matches the name of a parameter
+    used by `Core.__init__` is passed to it.  Any leftover keyword
+    argument is passed unchanged to the
+    `gc3libs.config.Configuration`:class: constructor.
+    """
+    from gc3libs.core import Engine
+
+    # extract `Engine`-specific construction params
+    engine_specific_args = _split_specific_args(Engine.__init__, extra_args)
+
+    core = create_core(*conf_files, **extra_args)
+    return Engine(core, **engine_specific_args)
 
 
 # main: run tests

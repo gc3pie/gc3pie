@@ -27,7 +27,6 @@ import re
 
 # nose
 from nose.tools import raises, assert_equal
-
 try:
     from nose.tools import assert_is_instance
 except ImportError:
@@ -36,10 +35,12 @@ except ImportError:
         assert (isinstance(obj, cls))
 
 # GC3Pie imports
-from gc3libs import Run, Application
+from gc3libs import Run, Application, create_engine
 import gc3libs.config
-from gc3libs.core import Core, Engine
+from gc3libs.core import Core, Engine, MatchMaker
 from gc3libs.quantity import GB, hours
+
+from utils import temporary_config
 
 
 def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
@@ -159,6 +160,46 @@ def test_engine_submit_to_multiple_resources(num_resources=3, num_jobs=50):
     # need to clean up otherwise other tests will see the No-Op
     # backend
     del cfg.TYPE_CONSTRUCTOR_MAP['noop']
+
+
+def test_create_engine_default():
+    """Test `create_engine` with factory defaults."""
+    with temporary_config() as cfgfile:
+        # std factory params
+        engine = create_engine(cfgfile.name)
+        assert_is_instance(engine, Engine)
+
+
+def test_create_engine_non_default1():
+    """Test `create_engine` with one non-default argument."""
+    with temporary_config() as cfgfile:
+        engine = create_engine(cfgfile.name, can_submit=False)
+        assert_equal(engine.can_submit, False)
+
+
+def test_create_engine_non_default2():
+    """Test `create_engine` with several non-default arguments."""
+    with temporary_config() as cfgfile:
+        engine = create_engine(cfgfile.name,
+                               can_submit=False,
+                               max_in_flight=1234)
+        assert_equal(engine.can_submit, False)
+        assert_equal(engine.max_in_flight, 1234)
+
+
+def test_create_engine_with_core_options():
+    """Test `create_engine` with a mix of Engine and Core options."""
+    with temporary_config() as cfgfile:
+        # use a specific MatchMaker instance for equality testing
+        mm = MatchMaker()
+        engine = create_engine(cfgfile.name,
+                               can_submit=False,
+                               matchmaker=mm,
+                               auto_enable_auth=False)
+        assert_equal(engine.can_submit, False)
+        assert_equal(engine._core.matchmaker, mm)
+        assert_equal(engine._core.auto_enable_auth, False)
+
 
 
 if __name__ == "__main__":
