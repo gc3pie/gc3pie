@@ -237,13 +237,8 @@ class Session(list):
             self.store_url, **extra_args)
 
         idx_filename = os.path.join(self.path, self.INDEX_FILENAME)
-        try:
-            idx_fd = open(idx_filename)
-            ids = idx_fd.read().split()
-            idx_fd.close()
-        except:
-            idx_fd.close()
-            raise
+        with open(idx_filename) as idx_file:
+            ids = idx_file.read().split()
 
         try:
             start_file = os.path.join(
