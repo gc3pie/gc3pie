@@ -717,10 +717,15 @@ class Application(Task):
       Output file names are interpreted relative to this base directory.
 
     `requested_cores`,`requested_memory`,`requested_walltime`
-      specify resource requirements for the application:
+      Specify resource requirements for the application:
+
       * the number of independent execution units (CPU cores; all are
-        required to be in the same execution node),
-      * amount of memory (as a `gc3libs.quantity.Memory`:class: object),
+        required to be in the same execution node);
+
+      * amount of memory (as a `gc3libs.quantity.Memory`:class: object)
+        for the task as a whole, i.e., independent of number of CPUs
+        allocated;
+
       * amount of wall-clock time to allocate for the computational job
         (as a `gc3libs.quantity.Duration`:class: object).
 
