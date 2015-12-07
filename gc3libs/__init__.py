@@ -653,6 +653,7 @@ class Application(Task):
 
     """
     Support for running a generic application with the GC3Libs.
+
     The following parameters are *required* to create an `Application`
     instance:
 
@@ -670,16 +671,16 @@ class Application(Task):
       * It can be a Python dictionary: keys are local file paths or
         URLs, values are remote file names.
 
-      * It can be a Python list: each item in the list should be a
-        pair `(source, remote_file_name)`: the `source` can be a
-        local file or a URL; `remote_file_name` is the path
-        (relative to the execution directory) where `source` will be
-        downloaded.  If `remote_file_name` is an absolute path, an
+      * It can be a Python list: each item in the list should be a pair
+        `(source, remote_file_name)`: the `source` can be a local file
+        or a URL; `remote_file_name` is the path (relative to the
+        execution directory) where `source` will be downloaded.  If
+        `remote_file_name` is an absolute path, an
         :class:`InvalidArgument` error is raised.
 
-        A single string `file_name` is allowed instead of the pair
-        and results in the local file `file_name` being copied to
-        `file_name` on the remote host.
+      A single string `file_name` is allowed instead of the pair
+      and results in the local file `file_name` being copied to
+      `file_name` on the remote host.
 
     `outputs`
       Files and directories that will be copied from the remote
@@ -689,20 +690,20 @@ class Application(Task):
 
       There are three possible ways of specifying the `outputs` parameter:
 
-      * It can be a Python dictionary: keys are remote file or
-        directory paths (relative to the execution directory), values
-        are corresponding local names.
+      * It can be a Python dictionary: keys are remote file or directory
+        paths (relative to the execution directory), values are
+        corresponding local names.
 
-      * It can be a Python list: each item in the list should be a
-        pair `(remote_file_name, destination)`: the `destination`
-        can be a local file or a URL; `remote_file_name` is the path
-        (relative to the execution directory) that will be uploaded
-        to `destination`.  If `remote_file_name` is an absolute
-        path, an :class:`InvalidArgument` error is raised.
+      * It can be a Python list: each item in the list should be a pair
+        `(remote_file_name, destination)`: the `destination` can be a
+        local file or a URL; `remote_file_name` is the path (relative to
+        the execution directory) that will be uploaded to `destination`.
+        If `remote_file_name` is an absolute path, an
+        :class:`InvalidArgument` error is raised.
 
-        A single string `file_name` is allowed instead of the pair
-        and results in the remote file `file_name` being copied to
-        `file_name` on the local host.
+      A single string `file_name` is allowed instead of the pair
+      and results in the remote file `file_name` being copied to
+      `file_name` on the local host.
 
       * The constant `gc3libs.ANY_OUTPUT` which instructs GC3Libs to
         copy every file in the remote execution directory back to the
@@ -752,14 +753,14 @@ class Application(Task):
       has the value ``100``, one would use::
 
         Application(...,
-          environment={'LC_ALL':'C', 'HZ':100},
-          ...)
+        environment={'LC_ALL':'C', 'HZ':100},
+        ...)
 
     `output_base_url`
       if not `None`, this is prefixed to all output files (except
-      stdout and stderr, which are always retrieved), so, for instance,
-      having `output_base_url="gsiftp://example.org/data"` will upload
-      output files into that remote directory.
+      stdout and stderr, which are always retrieved), so, for
+      instance, having `output_base_url="gsiftp://example.org/data"`
+      will upload output files into that remote directory.
 
     `stdin`
       file name of a file whose contents will be fed as
@@ -791,8 +792,8 @@ class Application(Task):
     guaranteed to have the following instance attributes:
 
     `arguments`
-      list of strings specifying command-line arguments for executable
-      invocation. The first element must be the executable.
+    list of strings specifying command-line arguments for executable
+    invocation. The first element must be the executable.
 
     `inputs`
       dictionary mapping source URL (a `gc3libs.url.Url`:class:
@@ -813,20 +814,20 @@ class Application(Task):
       a `Run` instance; its state attribute is initially set to ``NEW``
       (Actually inherited from the `Task`:class:)
 
-     `environment`
+    `environment`
       dictionary mapping environment variable names to the requested
       value (string); possibly empty
 
     `stdin`
-      `None` or a string specifying a (local) file name.  If `stdin`
+      ``None`` or a string specifying a (local) file name.  If `stdin`
       is not None, then it matches a key name in `inputs`
 
     `stdout`
-      `None` or a string specifying a (remote) file name.  If `stdout`
+      ``None`` or a string specifying a (remote) file name.  If `stdout`
       is not None, then it matches a key name in `outputs`
 
     `stderr`
-      `None` or a string specifying a (remote) file name.  If `stdout`
+      ``None`` or a string specifying a (remote) file name.  If `stdout`
       is not None, then it matches a key name in `outputs`
 
     `join`
