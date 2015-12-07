@@ -596,6 +596,52 @@ def from_template(template, **extra_args):
     return (template_contents % extra_args)
 
 
+def get_scheduler_and_lock_factory(lib):
+    """
+    Return factories for creating a period task scheduler and locks.
+
+    The scheduler will be a scheduler class from the APScheduler_
+    framework (which see for the API), and the lock factory is an
+    appropriate locking object for synchronizing independently running
+    tasks. Example::
+
+        sched_factory, lock_factory = _get_scheduler_and_lock_factory('threading')
+        sched = sched_factory()
+        sched.add_job(task1, 'interval', seconds=5)
+        sched.add_job(task2, 'interval', seconds=30)
+
+        shared_data_lock = lock_factory()
+
+        def task1():
+          # ...
+          with shared_data_lock:
+            # modify shared data
+
+    Argument `lib` is one of: ``threading``, ``gevent``, ``tornado``,
+    ``asyncio`` (Python 3.5+ "async" system), ``twisted``, ``qt``;
+    each of them selects a scheduler and lock objects compatible with
+    the named framework for concurrent processing.
+
+    .. _APScheduler: https://apscheduler.readthedocs.org/en/latest/userguide.html
+    """
+    if lib == 'threading':
+        from apscheduler.schedulers.background import BackgroundScheduler
+        from threading import Lock
+        return (BackgroundScheduler, Lock)
+    elif lib == 'gevent':
+        from apscheduler.schedulers.gevent import GeventScheduler
+        from gevent.lock import Semaphore
+        return (GeventScheduler, Semaphore)
+    elif lib in ['asyncio', 'tornado', 'twisted', 'qt']:
+        raise NotImplemented(
+            "Support for {lib} is not yet available!"
+            .format(lib=lib))
+    else:
+        raise ValueError(
+            "Library '{lib}' is unknown to `{mod}._get_scheduler_and_lock_factory()`"
+            .format(lib=lib, mod=__name__))
+
+
 def getattr_nested(obj, name):
     """
     Like Python's `getattr`, but perform a recursive lookup if `name` contains
