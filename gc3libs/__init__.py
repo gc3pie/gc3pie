@@ -1428,9 +1428,6 @@ class Application(Task):
         provide appropriate invocation templates and/or add different
         submission options.
         """
-        # sbatch --job-name="jobname" --mem-per-cpu="MBs" --input="filename"
-        # --output="filename" --no-requeue -n "number of slots"
-        # --cpus-per-task=1 --time="minutes" script.sh
         sbatch = list(resource.sbatch)
         sbatch += ['--no-requeue']
         if self.requested_walltime:
