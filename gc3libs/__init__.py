@@ -1435,12 +1435,6 @@ class Application(Task):
             # minutes
             sbatch += ['--time', '%d' %
                        self.requested_walltime.amount(minutes)]
-        if self.requested_memory:
-            # SLURM uses `mem_free` for memory limits; 'M' suffix allowed for
-            # Megabytes
-            sbatch += ['--mem-per-cpu', '%d' %
-                       (self.requested_memory.amount(MB) /
-                        self.requested_cores)]
         if self.stdout:
             sbatch += ['--output', '%s' % self.stdout]
         if self.stdin:
@@ -1453,6 +1447,10 @@ class Application(Task):
             sbatch += ['--ntasks', '1',
                        # require that all cores are on the same node
                        '--cpus-per-task', ('%d' % self.requested_cores)]
+        if self.requested_memory:
+            # SLURM uses `mem_free` for memory limits;
+            # 'M' suffix allowed for Megabytes
+            sbatch += ['--mem', self.requested_memory.amount(MB)]
         if 'jobname' in self and self.jobname:
             sbatch += ['--job-name', ('%s' % self.jobname)]
         return (sbatch, self.cmdline(resource))
