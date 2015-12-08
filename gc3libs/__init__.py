@@ -1811,8 +1811,8 @@ class Run(Struct):
                     # invoke state-transition method
                     handler = value.lower()
                     gc3libs.log.debug(
-                        "Calling state-transition handler '%s' on %s ..."
-                        % (handler, self._ref))
+                        "Calling state-transition handler '%s' on %s ...",
+                        handler, self._ref)
                     getattr(self._ref, handler)()
             self._state = value
         return locals()
