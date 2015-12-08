@@ -1428,6 +1428,7 @@ class Application(Task):
         provide appropriate invocation templates and/or add different
         submission options.
         """
+        cmdline = self.cmdline(resource)
         sbatch = list(resource.sbatch)
         sbatch += ['--no-requeue']
         if self.requested_walltime:
@@ -1447,13 +1448,16 @@ class Application(Task):
             sbatch += ['--ntasks', '1',
                        # require that all cores are on the same node
                        '--cpus-per-task', ('%d' % self.requested_cores)]
+            # we have to run the command through `srun` otherwise
+            # SLURM launches every task as a single-CPU
+            cmdline = ['srun', '--cpus-per-task', self.requested_cores] + cmdline
         if self.requested_memory:
             # SLURM uses `mem_free` for memory limits;
             # 'M' suffix allowed for Megabytes
             sbatch += ['--mem', self.requested_memory.amount(MB)]
         if 'jobname' in self and self.jobname:
             sbatch += ['--job-name', ('%s' % self.jobname)]
-        return (sbatch, self.cmdline(resource))
+        return (sbatch, cmdline)
 
     # Operation error handlers; called when transition from one state
     # to another fails.  The names are formed by suffixing the
