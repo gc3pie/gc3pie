@@ -79,11 +79,11 @@ class GndnApplication(Application):
     going to be executed.
     Just read the content of `command.txt` file in the root of the input folder
     and executed it.
-    A convenient wrapper script is provided to facilitate how the command file 
+    A convenient wrapper script is provided to facilitate how the command file
     is executed on the remote end.
     """
     application_name = 'gndn'
-    
+
     def __init__(self, input_folder, **extra_args):
 
         self.output_dir = extra_args['output_dir']
@@ -126,18 +126,18 @@ class GndnApplication(Application):
 class GndnScript(SessionBasedScript):
     """
     The script takes as input a comma separated list of input folders.
-    Each input folder contains all the information to run a fitModel with a given 
+    Each input folder contains all the information to run a fitModel with a given
     Dataset and a defined model.
     The input folder will contain a command file that will mimic exactly the invocation
     of fitModel.R for the given input folder as executed on a local computer.
-    For each input folder, `gdnd` creates an instance of GndnApplication. 
-    
+    For each input folder, `gdnd` creates an instance of GndnApplication.
+
     The ``gndn`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gndn`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -147,7 +147,7 @@ class GndnScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GndnApplication, 
+            application = GndnApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -161,8 +161,10 @@ class GndnScript(SessionBasedScript):
         """
         for folder_name in self.params.args:
             if not os.path.isdir(folder_name):
-                gc3libs.log.error("Invalid input folder: %s. Removing it from input list" \
-                                  & folder_name)
+                gc3libs.log.error(
+                    "Invalid input folder: {folder_name}."
+                    " Removing it from input list"
+                    .format(folder_name=folder_name))
                 self.params.args.remove(folder_name)
 
     def new_tasks(self, extra):
@@ -183,9 +185,9 @@ class GndnScript(SessionBasedScript):
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 'run_%s' % jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 'run_%s' % jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 'run_%s' % jobname)
-        
+
             tasks.append(GndnApplication(
                 os.path.abspath(input_folder),
                 **extra_args))
-            
+
         return tasks
