@@ -3,7 +3,7 @@
 # @(#)gdemo_simple.py
 #
 #
-# Copyright (C) 2009-2013 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -49,9 +49,10 @@ import gc3libs
 # to set it at least at ERROR level, otherwise some errors from your
 # code could be silently ignored.
 #
-# import logging
-# loglevel = logging.DEBUG
-# gc3libs.configure_logger(loglevel, "gdemo")
+# (The following lines can be commented out to make the output less verbose.)
+import logging
+loglevel = logging.INFO
+gc3libs.configure_logger(loglevel, "gdemo")
 
 class GdemoSimpleApp(gc3libs.Application):
     """
