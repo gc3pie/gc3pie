@@ -30,13 +30,16 @@ from string import ascii_letters, digits
 try:
     from novaclient import client as NovaClient
     from novaclient.exceptions import NotFound
-except ImportError:
+except ImportError as err:
     from gc3libs.exceptions import ConfigurationError
     raise ConfigurationError(
-        "OpenStack backend has been requested but no `python-novaclient`"
-        " package was found. Please, install `python-novaclient` with"
-        "`pip install python-novaclient` or `easy_install python-novaclient`"
-        " and try again, or update your configuration file.")
+        "The OpenStack backend is used but the `novaclient` module"
+        " cannot be used: {err}. Please, either install it with"
+        "`pip install python-novaclient` and verify that it works"
+        " by running `python -c 'import novaclient'`,"
+        " then try again, or update your configuration file and"
+        " disable any OpenStack-based resources."
+        .format(err=err))
 
 # GC3Pie imports
 import gc3libs
