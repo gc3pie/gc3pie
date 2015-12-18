@@ -131,12 +131,27 @@ def configure_logger(
         name=None,
         format=(os.path.basename(sys.argv[0])
                 + ': [%(asctime)s] %(levelname)-8s: %(message)s'),
-        datefmt='%Y-%m-%d %H:%M:%S'):
+        datefmt='%Y-%m-%d %H:%M:%S',
+        colorize='auto'):
     """
     Configure the ``gc3.gc3libs`` logger.
 
     Arguments `level`, `format` and `datefmt` set the corresponding
     arguments in the `logging.basicConfig()` call.
+
+    Argument `colorize` controls the use of the `coloredlogs`_ module to
+    color-code log output lines.  The default value ``auto`` enables log
+    colorization iff the `sys.stderr` stream is connected to a terminal;
+    a ``True`` value will enable it regardless of the log output stream
+    terminal status, and any ``False`` value will disable log
+    colorization altogether.  Note that log colorization can anyway be
+    disabled if `coloredlogs`_ thinks that the terminal is not capable
+    of colored output; see `coloredlogs.terminal_supports_colors`__.
+    If the `coloredlogs`_ module cannot be imported, a warning is logged
+    and log colorization is disabled.
+
+    .. _coloredlogs: https://coloredlogs.readthedocs.org/en/latest/#
+    .. __: http://humanfriendly.readthedocs.org/en/latest/index.html#humanfriendly.terminal.terminal_supports_colors
 
     If a user configuration file exists in file NAME.log.conf in the
     ``Default.RCDIR`` directory (usually ``~/.gc3``), it is read and
@@ -173,6 +188,17 @@ def configure_logger(
         version_info = (1, 5)  # 1.5 or earlier
     if version_info < (2, 5):
         logging.raiseExceptions = False
+    if colorize == 'auto':
+        # set if STDERR is connected to a terminal
+        colorize = sys.stderr.isatty()
+    if colorize:
+        try:
+            import coloredlogs
+            coloredlogs.install(
+                logger=log, reconfigure=True, stream=sys.stderr,
+                level=level, fmt=format, datefmt=datefmt, programname=name)
+        except ImportError as err:
+            log.warning("Could not import `coloredlogs` module: %s", err)
 
 
 UNIGNORE_ERRORS = set(os.environ.get('GC3PIE_NO_CATCH_ERRORS', '').split(','))
