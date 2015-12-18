@@ -1,3 +1,5 @@
 # The following  Python modules  are required by  GC3Pie's `openstack` backend.
 #
 python-novaclient
+# required on Python 2.6: recent versions of OpenStack modules use it
+importlib
