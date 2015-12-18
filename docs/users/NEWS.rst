@@ -34,6 +34,13 @@
 GC3Pie 2.5
 ==========
 
+New features
+------------
+
+* Terminal log output is now colorized according to message level!
+  (Thanks to Adrian Etter for suggesting this feature.)
+
+
 Incompatible changes
 --------------------
 
