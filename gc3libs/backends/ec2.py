@@ -32,13 +32,16 @@ try:
     import boto
     import boto.ec2.regioninfo
     import boto.exception
-except ImportError:
+except ImportError as err:
     from gc3libs.exceptions import ConfigurationError
     raise ConfigurationError(
-        "EC2 backend has been requested but no `boto` package"
-        " was found. Please, install `boto` with `pip install boto`"
-        " or `easy_install boto` and try again, or update your"
-        " configuration file.")
+        "The EC2 backend is used but the `boto` module"
+        " cannot be used: {err}. Please, either install it with"
+        "`pip install boto` and verify that it works"
+        " by running `python -c 'import boto'`,"
+        " then try again, or update your configuration file and"
+        " disable any EC2-based resources."
+        .format(err=err))
 import Crypto
 
 # GC3Pie imports
