@@ -56,6 +56,7 @@ import gc3libs.url
 from gc3libs import Run
 from gc3libs.utils import same_docstring_as
 from gc3libs.backends import LRMS
+from gc3libs.backends.shellcmd import ShellcmdLrms
 from gc3libs.backends.vmpool import VMPool, InstanceNotFound
 from gc3libs.utils import cache_for
 from gc3libs.quantity import MiB
@@ -94,10 +95,12 @@ class OpenStackLrms(LRMS):
                  architecture, max_cores, max_cores_per_job,
                  max_memory_per_core, max_walltime,
                  # these are specific of the OpenStackLrms class
-                 keypair_name, public_key, os_region=None,
-                 image_id=None, os_auth_url=None,
-                 instance_type=None, auth=None, vm_pool_max_size=None,
-                 user_data=None, vm_os_overhead=gc3libs.Default.VM_OS_OVERHEAD,
+                 keypair_name, public_key, vm_auth,
+                 os_region=None, image_id=None, os_auth_url=None,
+                 instance_type=None, auth=None,
+                 vm_pool_max_size=None, user_data=None,
+                 vm_os_overhead=gc3libs.Default.VM_OS_OVERHEAD,
+                 # extra args are used to instanciate "sub-resources"
                  **extra_args):
         LRMS.__init__(
             self, name,
@@ -167,6 +170,15 @@ class OpenStackLrms(LRMS):
         self.subresource_args['max_memory_per_core'] = \
             self['max_memory_per_core']
         self.subresource_args['max_walltime'] = self['max_walltime']
+        # SSH-specific configuration
+        self.subresource_args['transport'] = 'ssh'
+        self.subresource_args['auth'] = vm_auth
+        self.subresource_args['ssh_timeout'] = 7  # FIXME: hard-coded!
+        self.subresource_args['ignore_ssh_host_keys'] = True
+        self.subresource_args['keyfile'] = self.public_key
+        if self.subresource_args['keyfile'].endswith('.pub'):
+            self.subresource_args['keyfile'] = \
+              self.subresource_args['keyfile'][:-len('.pub')]
         # ShellcmdLrms by default trusts the configuration, instead of
         # checking the real amount of memory and number of cpus, but
         # we need the real values instead.
@@ -176,11 +188,6 @@ class OpenStackLrms(LRMS):
         if image_id is None:
             raise ConfigurationError(
                 "No `image_id` specified in the configuration file.")
-
-        # helper for creating sub-resources
-        self._cfgobj = gc3libs.config.Configuration(
-            *gc3libs.Default.CONFIG_FILE_LOCATIONS,
-            auto_enable_auth=True)
 
         # Only API version 1.1 has been tested so far
         self.compute_api_version = '1.1'
@@ -439,19 +446,12 @@ class OpenStackLrms(LRMS):
         ip using configuration file parameters.
         """
         gc3libs.log.debug(
-            "Creating remote ShellcmdLrms resource for ip %s", remote_ip)
+            "Creating remote ShellcmdLrms resource for IP address %s",
+            remote_ip)
         args = self.subresource_args.copy()
         args['frontend'] = remote_ip
-        args['transport'] = "ssh"
-        args['keyfile'] = self.public_key
-        if args['keyfile'].endswith('.pub'):
-            args['keyfile'] = args['keyfile'][:-4]
-        args['ignore_ssh_host_keys'] = True
         args['name'] = "%s@%s" % (id, self.name)
-        args['auth'] = args['vm_auth']
-        args['ssh_timeout'] = 7
-        resource = self._cfgobj._make_resource(args)
-        return resource
+        return ShellcmdLrms(**args)
 
     def _parse_security_group(self):
         """
