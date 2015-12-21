@@ -705,8 +705,9 @@ class Configuration(gc3libs.utils.Struct):
                     ("%s=%r" % (k, v)) for k, v in sorted(resdict.iteritems())
                 ]))
 
-        if 'auth' in resdict:
-            resdict['auth'] = self.make_auth(resdict['auth'])
+        for auth_param in 'auth', 'vm_auth':
+            if auth_param in resdict:
+                resdict[auth_param] = self.make_auth(resdict[auth_param])
 
         try:
             # valid strings can be, e.g., `shellcmd+ssh` or `sge`

@@ -53,6 +53,7 @@ import gc3libs.url
 from gc3libs import Run
 from gc3libs.utils import same_docstring_as, insert_char_every_n_chars
 from gc3libs.backends import LRMS
+from gc3libs.backends.shellcmd import ShellcmdLrms
 from gc3libs.backends.vmpool import VMPool, InstanceNotFound
 
 available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
@@ -117,7 +118,7 @@ class EC2Lrms(LRMS):
                  architecture, max_cores, max_cores_per_job,
                  max_memory_per_core, max_walltime,
                  # these are specific of the EC2Lrms class
-                 ec2_region, keypair_name, public_key,
+                 ec2_region, keypair_name, public_key, vm_auth,
                  image_id=None, image_name=None, ec2_url=None,
                  instance_type=None, auth=None, vm_pool_max_size=None,
                  user_data=None, **extra_args):
@@ -186,6 +187,15 @@ class EC2Lrms(LRMS):
         self.subresource_args['max_memory_per_core'] = \
             self['max_memory_per_core']
         self.subresource_args['max_walltime'] = self['max_walltime']
+        # SSH-specific configuration
+        self.subresource_args['transport'] = 'ssh'
+        self.subresource_args['auth'] = vm_auth
+        self.subresource_args['ssh_timeout'] = 7  # FIXME: hard-coded!
+        self.subresource_args['ignore_ssh_host_keys'] = True
+        self.subresource_args['keyfile'] = self.public_key
+        if self.subresource_args['keyfile'].endswith('.pub'):
+            self.subresource_args['keyfile'] = \
+              self.subresource_args['keyfile'][:-len('.pub')]
         # ShellcmdLrms by default trusts the configuration, instead of
         # checking the real amount of memory and number of cpus, but
         # we need the real values instead.
@@ -196,11 +206,6 @@ class EC2Lrms(LRMS):
             raise ConfigurationError(
                 "No `image_id` or `image_name` has been specified in the"
                 " configuration file.")
-
-        # helper for creating sub-resources
-        self._cfgobj = gc3libs.config.Configuration(
-            *gc3libs.Default.CONFIG_FILE_LOCATIONS,
-            auto_enable_auth=True)
 
     def _connect(self):
         """
@@ -503,19 +508,12 @@ class EC2Lrms(LRMS):
         ip using configuration file parameters.
         """
         gc3libs.log.debug(
-            "Creating remote ShellcmdLrms resource for ip %s", remote_ip)
+            "Creating remote ShellcmdLrms resource for IP address %s",
+            remote_ip)
         args = self.subresource_args.copy()
         args['frontend'] = remote_ip
-        args['transport'] = "ssh"
-        args['keyfile'] = self.public_key
-        if args['keyfile'].endswith('.pub'):
-            args['keyfile'] = args['keyfile'][:-4]
-        args['ignore_ssh_host_keys'] = True
         args['name'] = "%s@%s" % (id, self.name)
-        args['auth'] = args['vm_auth']
-        args['ssh_timeout'] = 7
-        resource = self._cfgobj._make_resource(args)
-        return resource
+        return ShellcmdLrms(**args)
 
     def _parse_security_group(self):
         """
