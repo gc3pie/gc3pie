@@ -215,16 +215,18 @@ architecture=x64_64
 # interface *and* the virtual machines.
 
 # 1) Start VMs using an OpenStack cloud infrastructure.  Values in the
-# example are actually the correct ones for the "Hobbes" IaaS cloud at
-# UZH.
+# example are actually the correct ones for the "Science Cloud" IaaS
+# cloud at UZH.
 
 # Since GC3Pie needs to authenticate to the cloud management system
 # (via an HTTP-based network API) and then to the VMs that runs the
 # jobs (via SSH), two separate authentication sections are needed.
 
-# [auth/hobbes]
+# [auth/sciencecloud]
 #
-# This section is used to authenticate to the cloud management system
+# This section is used to authenticate to the cloud management system.
+# You should rather load the credentials in the environment using
+# OpenStack's RC scripts, rather than hard-coding them here in cleartext.
 #
 #type = openstack
 
@@ -244,14 +246,14 @@ architecture=x64_64
 #os_project_name =
 
 
-# [auth/ssh_gc3user]
+# [auth/ssh_user_ubuntu]
 #
 # This section is used to connect via SSH to VMs that run the computational jobs.
 #
 #type = ssh
 
-# VM images created by the GC3 team have a `gc3-user` account by default.
-#username = gc3-user
+# Ubuntu cloud VMs use the `ubuntu` account by default.
+#username = ubuntu
 
 
 # The `resource` section specifies parameters to deal with the cloud
@@ -261,7 +263,7 @@ architecture=x64_64
 # will create one or more VMs, and then connect to each one via SSH in
 # order to directly execute jobs by starting them through the shell.
 
-#[resource/hobbes]
+#[resource/sciencecloud]
 #
 # For now the only valid type to use with OpenStack-based clouds is
 # `openstack+shellcmd`.
@@ -273,21 +275,21 @@ architecture=x64_64
 # Their meaning is otherwise exactly the same as with all other
 # resources; see, e.g., the `localhost` resource of type `shellcmd`.
 #
-#max_cores_per_job = 8
-#max_memory_per_core = 2 GB
-#max_walltime = 8 hours
+#max_cores_per_job = 32
+#max_memory_per_core = 4 GB
+#max_walltime = 24 hours
 #max_cores = 32
 #architecture = x86_64
 
 #  What authentication credential should be used to talk to the cloud
 #  management interface? (OpenStack Nova API)
 #
-#auth = hobbes
+#auth = sciencecloud
 
 # If `os_auth_url` is empty, then the `OS_AUTH_URL` environment variable
 # is will be used. 
 # 
-#os_auth_url = http://cloud.gc3.uzh.ch:5000/v2.0
+#os_auth_url = http://cloud.s3it.uzh.ch:5000/v2.0
 
 # OpenStack Region for starting VMs.
 #
@@ -299,12 +301,13 @@ architecture=x64_64
 # 
 #vm_pool_max_size = 
 
-# VM flavor for newly-created VMs. If `instance_type` is
-# empty or not defined, `m1.small` will be used instead. If an
-# `Application()` instance has an `os_instance_type` attribute, it
-# will be used instead of the default value configured here.
+# VM flavor for newly-created VMs. If `instance_type` is empty or not
+# defined, the first flavor returned by OpenStack will be used
+# instead. If an `Application()` instance has an `os_instance_type`
+# attribute, it will be used instead of the default value configured
+# here.
 # 
-#instance_type = m1.small
+#instance_type = 1cpu-4ram-hpc
 #
 # Override the default instance type for applications with a specific
 # `application_name` attribute::
@@ -312,8 +315,10 @@ architecture=x64_64
 #<application_name>_instance_type
 
 # Default image id to use (OpenStack's UUID).
-# 
-#image_id = e50e8606-6d12-11e5-82a6-22d3a7a06a51
+#
+# [The following UUID identifies the "Ubuntu Server 14.04.2
+# (2015-08-05)" VM image on Science Cloud.]
+#image_id = acebe825-e0d4-44ee-a1dc-a831561a2ea9
 #
 # Override the default image for applications with name `<application_name>`:
 #
@@ -333,7 +338,7 @@ architecture=x64_64
 # Auth stanza (in the current configuration file) to use for
 # connecting to VMs.
 # 
-#vm_auth = ssh_gc3user
+#vm_auth = ssh_user_ubuntu
 
 # In order to access newly-spawned VMs, they need to be configured to
 # allow passwordless authentication with the user name configured
@@ -382,10 +387,11 @@ architecture=x64_64
 # management system (via an HTTP-based network API) and then to the
 # VMs that runs the jobs (via SSH).
 
-#[auth/ec2hobbes]
+#[auth/ec2]
 #
 # This section is used to authenticate to the cloud management API.
-# The values below are correct for the "Hobbes" IaaS cloud at UZH.
+# You should rather load the credentials in the environment using
+# AWS's RC scripts, rather than hard-coding them here in cleartext.
 #
 #type = ec2
 #
@@ -400,16 +406,7 @@ architecture=x64_64
 #ec2_secret_key =
 
 
-# [auth/ssh_ubuntu]
-#
-# This section is used to connect via SSH to VMs that run the computational jobs.
-#
-#type = ssh
-
-# Ubuntu official cloud images use a "ubuntu" user
-#username = ubuntu
-
-#[resource/ec2hobbes]
+#[resource/ec2]
 #
 # For now the only valid type to use with EC2-compatible clouds is
 # `ec2+shellcmd`.
@@ -430,7 +427,7 @@ architecture=x64_64
 
 # Credentials to use when authenticating to the cloud management API.
 #
-#auth = ec2hobbes
+#auth = ec2
 
 # If `ec2_url` is empty, then the `EC2_URL` environment variable
 # is will be used, if any. If EC2_URL is empty too, the default url
@@ -447,9 +444,10 @@ architecture=x64_64
 #vm_pool_max_size = 
 
 # What `[auth /...]`stanza in the current configuration file to use
-# for connecting to VMs.
+# for connecting to VMs. (For the definition of `auth/ssh_user_ubuntu`
+# look above the "OpenStack" example section.)
 # 
-#vm_auth = ssh_ubuntu
+#vm_auth = ssh_user_ubuntu
 
 # See the "OpenStack" example for an explanation of the
 # keypair-related options.
