@@ -24,15 +24,13 @@ __date__ = '$Date$'
 
 from collections import defaultdict
 from fnmatch import fnmatch
+import itertools
 import os
 import posix
 import sys
 import time
 import tempfile
-import warnings
-warnings.simplefilter("ignore")
-
-from collections import defaultdict
+from warnings import warn, DeprecationWarning
 
 import gc3libs
 import gc3libs.debug
@@ -1211,6 +1209,11 @@ class Engine(object):
         self._core = controller
         self._store = store
         self._tasks_by_id = {}
+
+        # init counters/statistics
+        self._counts = {}
+        self.init_counts_for(Task)  # always gather these
+
         for task in tasks:
             self.add(task)
         # public attributes
@@ -1245,28 +1248,49 @@ class Engine(object):
                 "Unhandled state '%s' in gc3libs.core.Engine." % state)
 
 
+    def __update_task_counts(self, task, state, increment):
+        """
+        Update the counts relative to `task`'s state by `increment`.
+
+        The task state is passed as an independent argument, in order
+        to allow us to decrease counters on the old task state.
+        """
+        for cls in self._counts:
+            if isinstance(task, cls):
+                self._counts[cls]['total'] += increment
+                self._counts[cls][state] += increment
+                if Run.State.TERMINATED == state:
+                    if rc == 0:
+                        self._counts[cls]['ok'] += 1
+                    else:
+                        self._counts[cls]['failed'] += 1
+
+
     def add(self, task):
         """
         Add `task` to the list of tasks managed by this Engine.
         Adding a task that has already been added to this `Engine`
         instance results in a no-op.
         """
-        queue = self._get_queue_for_task(task)
-        if not _contained(task, queue):
-            queue.append(task)
-            if self._store:
-                try:
-                    self._tasks_by_id[task.persistent_id] = task
-                except AttributeError:
-                    gc3libs.log.warning("Task %s has no persistent ID!", task)
-            task.attach(self)
+        queue = self.__get_task_queue(task, state)
+        if _contained(task, queue):
+            # no-op if the task has already been added
+            return
+        # add task to internal data structures
+        queue.append(task)
+        if self._store:
+            try:
+                self._tasks_by_id[task.persistent_id] = task
+            except AttributeError:
+                gc3libs.log.warning("Task %s has no persistent ID!", task)
+        task.attach(self)
+        self.__update_task_counts(task, task.execution.state, +1)
 
 
     def remove(self, task):
-        """
-        Remove a `task` from the list of tasks managed by this Engine.
-        """
-        queue = self._get_queue_for_task(task)
+        """Remove a `task` from the list of tasks managed by this Engine."""
+        state = task.execution.state
+        queue = self.__get_task_queue(task, state)
         queue.remove(task)
         if self._store:
             try:
@@ -1275,6 +1299,7 @@ class Engine(object):
                 # already removed
                 pass
         task.detach()
+        self.__update_task_counts(task, task.execution.state, -1)
 
 
     def find_task_by_id(self, task_id):
@@ -1283,6 +1308,73 @@ class Engine(object):
         If no task has that ID, raise a `KeyError`.
         """
         return self._tasks_by_id[task_id]
+
+
+    def iter_tasks(self, only_cls=None):
+        """
+        Iterate over tasks managed by the Engine.
+
+        If argument `only_cls` is ``None`` (default), then iterate over
+        *all* tasks managed by this Engine.  Otherwise, only return
+        tasks which are instances of a (sub)class `only_cls`.
+        """
+        if only_cls is None:
+            select = self.__iter_all
+        else:
+            select = self.__iter_only
+        return chain(
+            select(self._new, only_cls),
+            select(self._in_flight, only_cls),
+            select(self._stopped, only_cls),
+            select(self._terminating, only_cls),
+            select(self._terminated, only_cls),
+        )
+
+    # helper methods for `iter_tasks`; they are created as
+    # "staticmethod"s instead of `lambda`-functions to save creating a
+    # closure for each invocation of `iter_tasks`
+    @staticmethod
+    def __iter_all(q, _):
+        return iter(q)
+
+    @staticmethod
+    def __iter_only(q, cls):
+        return itertools.ifilter(
+            (lambda task: isinstance(task, cls)), iter(q))
+
+
+    # FIXME: rewrite using `collections.Counter` when we drop support for Py 2.6
+    def init_counts_for(self, cls):
+        """
+        Initialize counters for tasks of class `cls`.
+
+        All statistics are initially computed starting from the current
+        collection of tasks managed by this `Engine` instance; they will
+        be kept up-to-date during task addition/removal/progress.
+
+        .. warning::
+
+          In a future release, the `Engine` might forget about task
+          objects in ``TERMINATED`` state.  Therefore, `init_counts_for`
+          should be called before any tasks reaches ``TERMINATED``
+          state, or the counts for ``TERMINATED``, ``ok``, and
+          ``failed`` jobs will be incorrectly initialized to 0.
+        """
+        counter = self._counts[cls] = defaultdict(int)
+        for task in self.iter_tasks(only_cls):
+            counter['total'] += 1
+            state = task.execution.state
+            counter[state] += 1
+            if state == Run.State.TERMINATED:
+                if task.execution.returncode == 0:
+                    counter['ok'] += 1
+                else:
+                    counter['failed'] += 1
+        if counter[Run.State.TERMINATED] > 0:
+            warn("The Engine class will forget TERMINATED tasks in the near future."
+                 "In order to get correct results, `init_counts_for`"
+                 " should be called before any task reaches TERMINATED state",
+                 FutureWarning)
 
 
     def progress(self):
@@ -1328,10 +1420,14 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._in_flight):
             try:
+                old_state = task.execution.state
                 self._core.update_job_state(task)
                 if self._store and task.changed:
                     self._store.save(task)
                 state = task.execution.state
+                if state != old_state:
+                    self.__update_task_counts(task, old_state, -1)
+                    self.__update_task_counts(task, state, +1)
                 if state == Run.State.SUBMITTED:
                     # only real applications need to be counted
                     # against the limit; policy tasks are exempt
@@ -1453,6 +1549,10 @@ class Engine(object):
                 self._core.kill(task)
                 if self._store:
                     self._store.save(task)
+                state = task.execution.state
+                if state != old_state:
+                    self.__update_task_counts(task, old_state, -1)
+                    self.__update_task_counts(task, state, +1)
                 if old_state == Run.State.SUBMITTED:
                     if isinstance(task, Application):
                         currently_submitted -= 1
@@ -1496,10 +1596,14 @@ class Engine(object):
         transitioned = []
         for index, task in enumerate(self._stopped):
             try:
+                old_state = task.execution.state
                 self._core.update_job_state(task)
                 if self._store and task.changed:
                     self._store.save(task)
                 state = task.execution.state
+                if state != old_state:
+                    self.__update_task_counts(task, old_state, -1)
+                    self.__update_task_counts(task, state, +1)
                 if state in [Run.State.SUBMITTED, Run.State.RUNNING]:
                     if isinstance(task, Application):
                         currently_in_flight += 1
@@ -1580,6 +1684,10 @@ class Engine(object):
                         if isinstance(task, Application):
                             currently_submitted += 1
                             currently_in_flight += 1
+                        # if we get to this point, we know state is not NEW anymore
+                        state = task.execution.state
+                        self.__update_task_counts(task, Run.State.NEW, -1)
+                        self.__update_task_counts(task, state, +1)
 
                         sched.send(task.execution.state)
                     except Exception as err1:
@@ -1685,6 +1793,9 @@ class Engine(object):
                     transitioned.append(index)
                     try:
                         self._core.free(task)
+                        # update counts
+                        self.__update_task_counts(task, Run.State.TERMINATING, -1)
+                        self.__update_task_counts(task, Run.State.TERMINATED, +1)
                     except Exception as err:
                         gc3libs.log.error(
                             "Got error freeing up resources used by task '%s': %s: %s."
@@ -1716,7 +1827,8 @@ class Engine(object):
         self.add(task)
 
 
-    def stats(self, only=None):
+    # FIXME: rewrite using `collections.Counter` when we drop support for Py 2.6
+    def counts(self, only=Task):
         """
         Return a dictionary mapping each state name into the count of
         tasks in that state. In addition, the following keys are defined:
@@ -1729,48 +1841,25 @@ class Engine(object):
 
         If the optional argument `only` is not None, tasks whose
         whose class is not contained in `only` are ignored.
-        : param tuple only: Restrict counting to tasks of these classes.
-        """
-        if only:
-            gc3libs.log.debug(
-                "Engine.stats: Restricting to object of class '%s'",
-                only.__name__)
-        result = defaultdict(lambda: 0)
-        if only:
-            result[Run.State.NEW] = len([task for task in self._new
-                                         if isinstance(task, only)])
-        else:
-            result[Run.State.NEW] = len(self._new)
-        for task in self._in_flight:
-            if only and not isinstance(task, only):
-                continue
-            state = task.execution.state
-            result[state] += 1
-        for task in self._stopped:
-            if only and not isinstance(task, only):
-                continue
-            state = task.execution.state
-            result[state] += 1
-        for task in self._to_kill:
-            if only and not isinstance(task, only):
-                continue
-            # XXX: presumes no task in the `_to_kill` list is TERMINATED
-            state = task.execution.state
-            result[state] += 1
-        if only:
-            _terminating = [task for task in self._terminating
-                            if isinstance(task, only)]
-            result[Run.State.TERMINATING] += len(_terminating)
-        else:
-            result[Run.State.TERMINATING] += len(self._terminating)
-        if only:
-            _terminated = [task for task in self._terminated
-                           if isinstance(task, only)]
-            result[Run.State.TERMINATED] += len(_terminated)
-        else:
-            result[Run.State.TERMINATED] += len(self._terminated)
 
-        # for TERMINATED tasks, compute the number of successes/failures
+        : param class only: Restrict counting to tasks of these classes.
+        """
+        assert only in self._counts
+        return dictproxy(self._counts[only])
+
+
+    def stats(self, only=None):
+        """
+        Please use :meth:`counts` instead.
+
+        .. warning::
+
+          This is deprecated since GC3Pie version 2.5.
+        """
+        warn("Deprecated method `Engine.stats()` called"
+             " -- please use `Engine.counts()` instead",
+             DeprecationWarning, stacklevel=2)
+        return self.counts(only)
         for task in self._terminated:
             if only and not isinstance(task, only):
                 continue

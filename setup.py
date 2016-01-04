@@ -165,6 +165,7 @@ setuptools.setup(
     # run-time dependencies
     install_requires=[
         'coloredlogs',
+        'dictproxyhack',
         # paramiko and pycrypto are required for SSH operations
         'paramiko',
         'pycrypto',
