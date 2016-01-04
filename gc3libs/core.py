@@ -1083,64 +1083,62 @@ def _contained(elt, lst):
 
 
 class Engine(object):
-
     """
-    Submit tasks in a collection, and update their state until a
-    terminal state is reached. Specifically:
+    Manage a collection of tasks, until a terminal state is reached.
+    Specifically:
 
-      * tasks in `NEW` state are submitted;
+    * tasks in `NEW` state are submitted;
 
-      * the state of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state
-        is updated;
+    * the state of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state
+      is updated;
 
-      * when a task reaches `TERMINATED` state, its output is downloaded.
+    * when a task reaches `TERMINATED` state, its output is downloaded.
 
     The behavior of `Engine` instances can be further customized by
     setting the following instance attributes:
 
-      `can_submit`
-        Boolean value: if `False`, no task will be submitted.
+    `can_submit`
+      Boolean value: if `False`, no task will be submitted.
 
-      `can_retrieve`
-        Boolean value: if `False`, no output will ever be retrieved.
+    `can_retrieve`
+      Boolean value: if `False`, no output will ever be retrieved.
 
-      `max_in_flight`
-        If >0, limit the number of tasks in `SUBMITTED` or `RUNNING`
-        state: if the number of tasks in `SUBMITTED`, `RUNNING` or
-        `STOPPED` state is greater than `max_in_flight`, then no new
-        submissions will be attempted.
+    `max_in_flight`
+      If >0, limit the number of tasks in `SUBMITTED` or `RUNNING`
+      state: if the number of tasks in `SUBMITTED`, `RUNNING` or
+      `STOPPED` state is greater than `max_in_flight`, then no new
+      submissions will be attempted.
 
-      `max_submitted`
-        If >0, limit the number of tasks in `SUBMITTED` state: if the
-        number of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state is
-        greater than `max_submitted`, then no new submissions will be
-        attempted.
+    `max_submitted`
+      If >0, limit the number of tasks in `SUBMITTED` state: if the
+      number of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state is
+      greater than `max_submitted`, then no new submissions will be
+      attempted.
 
-      `output_dir`
-        Base directory for job output; if not `None`, each task's
-        results will be downloaded in a subdirectory named after the
-        task's `permanent_id`.
+    `output_dir`
+      Base directory for job output; if not `None`, each task's
+      results will be downloaded in a subdirectory named after the
+      task's `permanent_id`.
 
-      `scheduler`
-        A factory function for creating objects that conform to the
-        `Scheduler` interface to control task submission; see the
-        `Scheduler`:class: documentation for details.  The default
-        value implements a first-come first-serve algorithm: tasks are
-        submitted in the order they have been added to the `Engine`.
+    `scheduler`
+      A factory function for creating objects that conform to the
+      `Scheduler` interface to control task submission; see the
+      `Scheduler`:class: documentation for details.  The default value
+      implements a first-come first-serve algorithm: tasks are
+      submitted in the order they have been added to the `Engine`.
 
-      `retrieve_running`
-        If ``True``, snapshot output from RUNNING jobs at every
-        invocation of `progress`:meth:
+    `retrieve_running`
+      If ``True``, snapshot output from RUNNING jobs at every
+      invocation of `progress`:meth:
 
-      `retrieve_overwrites`
-        If ``True``, overwrite files in the output directory of any
-        job (as opposed to moving destination away and downloading a
-        fresh copy). See `Core.fetch_output`:meth: for details.
+    `retrieve_overwrites`
+      If ``True``, overwrite files in the output directory of any job
+      (as opposed to moving destination away and downloading a fresh
+      copy). See `Core.fetch_output`:meth: for details.
 
-      `retrieve_changed_only`
-        If both this and `overwrite` are ``True``, then only changed
-        files are downloaded. See `Core.fetch_output`:meth: for
-        details.
+    `retrieve_changed_only`
+      If both this and `overwrite` are ``True``, then only changed
+      files are downloaded. See `Core.fetch_output`:meth: for details.
 
       `forget_terminated`
         When ``True``, `Engine.remove`:meth: is automatically called
@@ -1155,9 +1153,9 @@ class Engine(object):
     Any of the above can also be set by passing a keyword argument to
     the constructor (assume ``g`` is a `Core`:class: instance)::
 
-      | >>> e = Engine(g, can_submit=False)
-      | >>> e.can_submit
-      | False
+    | >>> e = Engine(g, can_submit=False)
+    | >>> e.can_submit
+    | False
     """
 
     def __init__(self, controller, tasks=list(), store=None,
