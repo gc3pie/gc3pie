@@ -22,6 +22,7 @@ __docformat__ = 'reStructuredText'
 __date__ = '$Date$'
 
 
+from collections import defaultdict
 from fnmatch import fnmatch
 import os
 import posix
@@ -37,6 +38,7 @@ import gc3libs
 import gc3libs.debug
 from gc3libs import Application, Run, Task
 import gc3libs.exceptions
+from gc3libs.quantity import Duration
 import gc3libs.utils as utils
 
 
@@ -1871,3 +1873,327 @@ class Engine(object):
     @utils.same_docstring_as(Core.get_backend)
     def get_backend(self, name):
         return self._core.get_backend(name)
+
+
+class BgEngine(object):
+    """
+    Run a GC3Pie `Engine`:class: instance in the background.
+
+    A `BgEngine` exposes the same interface as a regular `Engine`
+    class, but proxies all operations for asynchronous execution by
+    the wrapped `Engine` instance.  In practice, this means that all
+    invocations of `Engine` operations on a `BgEngine` always succeed:
+    errors will only be visible in the background thread of execution.
+    """
+    def __init__(self, lib, *args, **kwargs):
+        """
+        Initialize an instance of class `BgEngine`:class:.
+
+        :param str lib:
+            framework to use for background thread scheduling;
+            any value supported by `gc3libs.utils.get_scheduler_and_lock_factory`:func:
+            (which see) is allowed here.
+
+        :param args:
+            Either a single `Engine`:class: instance, or a list of positional
+            arguments to pass to the `Engine`:class: constructor.  In the former
+            case, the instance should be the one and only argument (after `lib`).
+
+        :param kwargs:
+            Keyword arguments to forward to the `Engine`:class: constructor
+            (unless a pre-built `Engine` instance is passed to `BgEngine`,
+            in which case no keyword arguments are allowed.)
+        """
+        sched_factory, lock_factory = utils.get_scheduler_and_lock_factory(lib)
+        self._scheduler = sched_factory()
+
+        # a queue for Engine ops
+        self._q = []
+        self._q_locked = lock_factory()
+
+        assert len(args) > 0, (
+            "`BgEngine()` must be called"
+            " either with an `Engine` instance as first and only argument,"
+            " or with a set of parameters to pass on to the `Engine` constructor.")
+        if isinstance(args[0], gc3libs.core.Engine):
+            # first (and only!) argument is an `Engine` instance, use that
+            self._engine = args[0]
+            assert len(args) == 1, (
+                "If an `Engine` instance is passed to `BgEngine()`"
+                " then it must be the only argument"
+                " after the concurrency framework name.")
+        else:
+            # use supplied parameters to construct an `Engine`
+            self._engine = gc3libs.core.Engine(*args, **kwargs)
+
+        # no result caching until an update is really performed
+        self._progress_last_run = 0
+
+
+    #
+    # control main loop scheduling
+    #
+
+    def start(self, interval):
+        """
+        Start triggering the main loop at the given `interval` frequency.
+
+        :param gc3libs.quantity.Duration interval:
+          Time span between successive calls of `_perform`:meth:
+        """
+        self.running = True
+        self._scheduler.add_job((lambda: self._perform()),
+                                'interval', seconds=(interval.amount(Duration.s)))
+        self._scheduler.start()
+        gc3libs.log.info(
+            "Started background execution of Engine %s every %s",
+            self._engine, interval)
+
+
+    def stop(self, wait=False):
+        """
+        Stop background execution of the main loop.
+
+        Call `start`:meth: to resume running.
+
+        :param bool wait:
+          When ``True``, wait until all pending actions
+          on the background thread have been completed.
+        """
+        gc3libs.log.info(
+            "Stopping background execution of Engine %s ...", self._engine)
+        self.running = False
+        self._scheduler.shutdown(wait)
+
+
+    def _perform(self):
+        """
+        Main loop: runs in a background thread after `start`:meth: has
+        been called.
+
+        There are two tasks that this loop performs:
+
+        - Execute any queued engine commands.
+
+        - Run `Engine.progress()` to ensure that GC3Pie tasks are updated.
+        """
+        gc3libs.log.debug("%s: _perform() started", self)
+        # quickly grab a local copy of the command queue, and
+        # reset it to the empty list -- we do not want to hold
+        # the lock on the queue for a long time, as that would
+        # make the API unresponsive
+        with self._q_locked:
+            q = self._q
+            self._q = list()
+        # execute delayed operations
+        for fn, args, kwargs in q:
+            gc3libs.log.debug(
+                "Executing delayed call %s(*%r, **%r) ...",
+                fn.__name__, args, kwargs)
+            try:
+                fn(*args, **kwargs)
+            except Exception, err:
+                gc3libs.log.warning(
+                    "Ignoring '%s' error,"
+                    " occurred while executing delayed call %s(*%r, **%r): %s",
+                    err.__class__.__name__,
+                    fn.__name__, args, kwargs,
+                    err, exc_info=__debug__)
+        # update GC3Pie tasks
+        gc3libs.log.debug(
+            "%s: calling `progress()` on Engine %s ...",
+            self, self._engine)
+        try:
+            self._engine.progress()
+            self._progress_last_run = time.time()
+        except Exception, err:
+                gc3libs.log.warning(
+                    "Ignoring '%s' error,"
+                    "  occurred while running"
+                    " `Engine.progress()` in the background: %s",
+                err.__class__.__name__, err, exc_info=__debug__)
+        gc3libs.log.debug("%s: _perform() done", self)
+
+
+    @staticmethod
+    def at_most_once_per_cycle(fn):
+        """
+        Ensure the decorated function is not executed more than once per
+        each poll interval.
+
+        Cached results are returned instead, if `Engine.progress()` has
+        not been called in between two separate invocations of the wrapped
+        function.
+
+        .. warning::
+
+          *Keyword arguments are ignored when doing a lookup* for
+          previously-cached function results. This means that the
+          following expressions might all return the same cached
+          value::
+
+            f(), f(foo=1), f(bar=2, baz='a')
+        """
+        @functools.wraps(fn)
+        def wrapper(self, *args, **kwargs):
+            if not self._progress_last_run:
+                return fn(self, *args, **kwargs)
+            else:
+                key = (fn, tuple(id(arg) for arg in args))
+                try:
+                    update = (self._cache_last_updated[key] < self._progress_last_run)
+                except AttributeError:
+                    self._cache_last_updated = defaultdict(float)
+                    self._cache_value = dict()
+                    update = True
+                if update:
+                    self._cache_value[key] = fn(self, *args)
+                    self._cache_last_updated[key] = time.time()
+                # gc3libs.log.debug("%s(%s, ...): Using cached value '%s'",
+                #                  fn.__name__, obj, obj._cache_value[key])
+                return self._cache_value[key]
+        return wrapper
+
+
+    #
+    # Engine interface
+    #
+
+    def add(self, task):
+        """Proxy to `Engine.add`:meth: (which see)."""
+        if self.running:
+            with self._q_locked:
+                self._q.append((self._engine.add, (task,), {}))
+        else:
+            self._engine.add(task)
+
+
+    def close(self):
+        """Proxy to `Engine.close`:meth: (which see)."""
+        if self.running:
+            with self._q_locked:
+                self._q.append((self._engine.close, tuple(), {}))
+        else:
+            self._engine.close()
+
+
+    def fetch_output(self, task, output_dir=None,
+                     overwrite=False, changed_only=True, **extra_args):
+        """Proxy to `Engine.fetch_output`:meth: (which see)."""
+        if self.running:
+            with self._q_locked:
+                self._q.append((self._engine.fetch_output,
+                                (task, output_dir, overwrite, changed_only),
+                                extra_args))
+        else:
+            self._engine.fetch_output(task, output_dir, overwrite,
+                                      changed_only, **extra_args)
+
+
+    def free(self, task, **extra_args):
+        """Proxy to `Engine.free`:meth: (which see)."""
+        if self.running:
+            with self._q_locked:
+                self._q.append((self._engine.free, (task,), extra_args))
+        else:
+            self._engine.free(task, **extra_args)
+
+
+    def get_resources(self):
+        """Proxy to `Engine.get_resources`:meth: (which see)."""
+        if self.running:
+            with self._q_locked:
+                self._q.append((self._engine.get_resources, tuple(), {}))
+        else:
+            self._engine.get_resources()
+
+
+    def get_backend(self, name):
+        """Proxy to `Engine.get_backend`:meth: (which see)."""
+        if self.running:
+            with self._q_locked:
+                self._q.append((self._engine.get_backend, (name,), {}))
+        else:
+            self._engine.get_backend(name)
+
+
+    def iter_tasks(self):
+        """
+        Proxy to `Engine.iter_tasks`:meth: (which see).
+        """
+        return self._engine.iter_tasks()
+
+
+    def kill(self, task, **extra_args):
+        """Proxy to `Engine.kill`:meth: (which see)."""
+        if self.running:
+            with self._q_locked:
+                self._q.append((self._engine.kill, (task,), extra_args))
+        else:
+            self._engine.kill(task, **extra_args)
+
+
+    def peek(self, task, what='stdout', offset=0, size=None, **extra_args):
+        """Proxy to `Engine.peek`:meth: (which see)."""
+        if self.running:
+            with self._q_locked:
+                self._q.append((self._engine.peek,
+                            (task, what, offset, size), extra_args))
+        else:
+            self._engine.peek(task, what, offset, size, **extra_args)
+
+
+    def progress(self):
+        """
+        Proxy to `Engine.progress`.
+
+        If the background thread is already running, this is a no-op,
+        as progressing tasks is already taken care of by the
+        background thread.  Otherwise, just forward the call to the
+        wrapped engine.
+        """
+        if self.running:
+            pass
+        else:
+            self._engine.progress()
+
+
+    def remove(self, task):
+        """Proxy to `Engine.remove`:meth: (which see)."""
+        if self.running:
+            with self._q_locked:
+                self._q.append((self._engine.remove, (task,), {}))
+        else:
+            self._engine.remove(task)
+
+
+    def select_resource(self, match):
+        """Proxy to `Engine.select_resource`:meth: (which see)."""
+        if self.running:
+            with self._q_locked:
+                self._q.append((self._engine.select_resource, (match,), {}))
+        else:
+            self._engine.select_resource(match)
+
+
+    def stats(self, only=None):
+        """Proxy to `Engine.stats`:meth: (which see)."""
+        return self._engine.stats(only)
+
+
+    def submit(self, task, resubmit=False, targets=None, **extra_args):
+        """Proxy to `Engine.submit`:meth: (which see)."""
+        if self.running:
+            with self._q_locked:
+                self._q.append((self._engine.submit, (task, resubmit, targets), extra_args))
+        else:
+            self._engine.submit(task, resubmit, targets, **extra_args)
+
+
+    def update_job_state(self, *tasks, **extra_args):
+        """Proxy to `Engine.update_job_state`:meth: (which see)."""
+        if self.running:
+            with self._q_locked:
+                self._q.append((self._engine.update_job_state, tasks, extra_args))
+        else:
+            self._engine.update_job_state(*tasks, **extra_args)
