@@ -112,17 +112,6 @@ class GcgpsApplication(Application):
         execution_script = """
 #!/bin/sh
 
-# Check environment:
-# check R
-RES=`command R --version 2>&1`
-if [ $? -ne 0 ]; then
-   echo "[failed]"
-   echo $RES
-   exit 1
-else
-   echo "[ok]"
-fi
-
 # Checking 'in' folder
 # Checks first if './in' has been created
 # otherwise try default in '$HOME/in'
@@ -140,9 +129,16 @@ fi
 
 mkdir out
 
+# Install docker
+echo "Installing dockers... "
+if ! command -v docker; then
+  curl https://get.docker.com/ | sudo bash
+fi
+sudo usermod -aG docker $USER
+
 # execute command
-echo "Runnning: %s"
-%s
+echo "Runnning: sudo sudo -u $USER -g docker docker run -i --rm -v "$PWD":/home/docker -w /home/docker -u docker r-base %s"
+sudo sudo -u $USER -g docker docker run -i --rm -v "$PWD":/home/docker -w /home/docker -u docker r-base %s
 RET=$?
 
 echo Program terminated with exit code $RET
