@@ -6,7 +6,7 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -31,6 +31,7 @@ import os.path
 import errno
 import shutil
 import getpass
+import shutil
 
 from gc3libs.utils import same_docstring_as, samefile
 import gc3libs.exceptions
@@ -293,7 +294,7 @@ class Transport(object):
             if os.path.isdir(source):
                 # `source` is a directory, recursively descend it
                 self.makedirs(destination)
-                for entry in os.listdir(source):                 
+                for entry in os.listdir(source):
                     # don't use `os.path.join` for remote path names,
                     # ``/`` is the right separator to use; see
                     # http://code.fabfile.org/issues/show/306
@@ -752,7 +753,27 @@ class SshTransport(Transport):
         """
         Copy remote file `source` to local `destination` using SFTP.
         """
-        self.sftp.get(source, destination)
+        # It seems that Paramiko can fail downloading large files,
+        # see:
+        # http://stackoverflow.com/questions/12486623/paramiko-fails-to-download-large-files-1gb
+        # for details.  According to *Screwtape*'s answer, the problem
+        # lies in Paramiko's `SFTPClient.get()` requesting all blocks
+        # in the file at once; this can exhaust the system's resources
+        # depending on the remote file size and local RAM.  Therefore
+        # the simple solution::
+        #
+        #         self.sftp.get(source, destination)
+        #
+        # will not work reliably in all cases, but we cannot foretell
+        # *when exactly* it will break. So let's switch to the slower
+        # but more reliable method of sequential block copying
+        # unconditionally.
+        with self.sftp.open(source) as fsrc, open(destination, 'w') as fdst:
+            # XXX: a buffer length can be set -- is there a good
+            # number we can fill in there? or is it better to leave it
+            # to `shutil` to use whatever size it thinks best?
+            shutil.copyfileobj(fsrc, fdst)
+
 
     @same_docstring_as(Transport.remove)
     def remove(self, path):
