@@ -6,7 +6,7 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2017 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -30,7 +30,9 @@ import os.path
 import errno
 import shutil
 import getpass
+import shutil
 
+from gc3libs.quantity import Memory, MiB
 from gc3libs.utils import same_docstring_as, samefile
 import gc3libs.exceptions
 
@@ -409,7 +411,10 @@ class SshTransport(Transport):
                  ignore_ssh_host_keys=False,
                  ssh_config=None,
                  username=None, port=None,
-                 keyfile=None, timeout=None):
+                 keyfile=None, timeout=None,
+                 large_file_threshold=None,
+                 large_file_chunk_size=None,
+                 **extra_args):
         """
         Initialize an `SshTransport` object for operating on host `remote_frontend`.
 
@@ -436,6 +441,14 @@ class SshTransport(Transport):
 
         Additional arguments ``user``, ``port``, ``keyfile``, and
         ``timeout``, if given, override the above settings.
+
+        Finally, the two parameters `large_file_threshold` and
+        `large_file_chunk_size` control how file copy is being made:
+        if a file is larger than `large_file_threshold`, then it will
+        be transferred by sequentially copying chunks of
+        `large_file_chunk_size` bytes at a time; else, the entire file
+        will be requested at once, using many parallel block
+        transfers.  See `SshTransport.get()`:meth: for details.
         """
         self.ssh = paramiko.SSHClient()
         self.ignore_ssh_host_keys = ignore_ssh_host_keys
@@ -449,9 +462,52 @@ class SshTransport(Transport):
         if os.path.exists(config_filename):
             with open(config_filename, 'r') as config_file:
                 self._ssh_config.parse(config_file)
-
         self.set_connection_params(remote_frontend, username, keyfile, port, timeout)
 
+        # SSH copy size params; convert to int for more efficiency at time of use
+        self.large_file_threshold = self._memory_to_bytes(
+            large_file_threshold or self._estimate_safe_buffer_size())
+        self.large_file_chunk_size = self._memory_to_bytes(
+            large_file_chunk_size or self._estimate_safe_buffer_size())
+
+        if __debug__ and extra_args:
+            gc3libs.log.debug(
+                "SshTransport: ignoring extra init arguments: %s",
+                ', '.join("{0}={1!r}".format(k, v)
+                          for k,v in extra_args.iteritems()))
+
+    @staticmethod
+    def _estimate_safe_buffer_size():
+        """
+        Return estimate for max size of buffer for file transfers.
+
+        See `SshTransport._get_impl`:meth: for details of how this is
+        used and why it is needed.
+        """
+        avail_mem = gc3libs.utils.get_max_real_memory()
+        if avail_mem is None:
+            # be sure to use no more than 50% of avail mem
+            # if we cannot determine number of processors
+            nproc = gc3libs.utils.get_num_processors() or 2
+            return (avail_mem / nproc)
+        else:
+            # no clue how much memory is available, fall back to
+            # (hard-coded) 32MiB which should be safe on today's computers
+            return 32*MiB
+
+    @staticmethod
+    def _memory_to_bytes(qty):
+        try:
+            return qty.amount(Memory.B, conv=int)
+        except AttributeError:
+            pass
+        try:
+            return int(qty)
+        except (ValueError, TypeError):
+            raise TypeError(
+                "`gc3libs.quantity.Memory` or integer (count of bytes) expected,"
+                " instead gotten {0!r} {1}"
+                .format(qty, type(qty)))
 
     def set_connection_params(self, hostname, username=None, keyfile=None,
                                port=None, timeout=None):
@@ -751,21 +807,60 @@ class SshTransport(Transport):
         """
         self.sftp.put(source, destination)
 
-    @same_docstring_as(Transport.get)
     def get(self, source, destination, ignore_nonexisting=False,
             overwrite=False, changed_only=True):
+        """
+        Copy remote file `source` to local `destination` using SFTP.
+
+        .. note::
+
+          The SSH library Paramiko_ can apparently fail downloading
+          large files, causing Python processes using it to die
+          without a traceback. For more details, see:
+          `<http://stackoverflow.com/questions/12486623/paramiko-fails-to-download-large-files-1gb>`_
+          for details.
+
+          According to user *Screwtape*'s answer, the problem lies in
+          Paramiko's ``SFTPClient.get()``, which requests all blocks
+          in the file at once; this can exhaust the system's resources
+          depending on the remote file size and local RAM.  Therefore
+          the simple code::
+
+                  self.sftp.get(source, destination)
+
+          will not work reliably in all cases, but we cannot foretell
+          *when exactly* it will break.
+
+          The approach taken here is thus the following:
+
+          - use Paramiko's ``SFTPClient.get()`` if the file size
+            exceeds a configured threshold (parameter
+            ``large_file_threshold`` given to the `SshTransport`
+            constructor);
+          - copy the file one chunk at a time, with a configurable
+            chunk size (parameter ``large_file_chunk_size`` given to
+            the `SshTransport` constructor) otherwise.
+
+          The second method is slower but more reliable so, in case of
+          doubt, it's safer to err on the "low threshold" side.
+        """
         gc3libs.log.debug("SshTranport.get(): remote source %s; "
                           "remote host: %s; local destination: %s.",
                           source, self.remote_frontend, destination)
-        self.connect()  # ensure connection is up
+        # ensure connection is up
+        self.connect()
+        # delegate actual transfer to `self._get_impl()`
         Transport.get(self, source, destination,
                       ignore_nonexisting, overwrite, changed_only)
 
     def _get_impl(self, source, destination):
-        """
-        Copy remote file `source` to local `destination` using SFTP.
-        """
-        self.sftp.get(source, destination)
+        if self.stat(destination).st_size < self.large_file_threshold:
+            self.sftp.get(source, destination)
+        else:
+            with self.sftp.open(source) as fsrc:
+                with open(destination, 'w') as fdst:
+                    shutil.copyfileobj(fsrc, fdst,
+                                       self.large_file_chunk_size)
 
     @same_docstring_as(Transport.remove)
     def remove(self, path):
@@ -856,10 +951,16 @@ class LocalTransport(Transport):
     _is_open = False
     _process = None
 
-    def __init__(self):
-        # logging code in class `Transport` assumes a host name is recorded
-        # into `.remote_frontend`
+    def __init__(self, **extra_args):
+        # logging code in class `Transport` assumes
+        # a host name is recorded into `.remote_frontend`
         self.remote_frontend = (platform.node() or 'localhost')
+        if __debug__ and extra_args:
+            gc3libs.log.debug(
+                "LocalTransport: ignoring extra init arguments: %s",
+                ', '.join("{0}={1!r}".format(k, v)
+                          for k,v in extra_args.iteritems()))
+
 
     # pylint: disable=too-many-arguments,unused-argument
     def set_connection_params(self, hostname, username=None, keyfile=None,
