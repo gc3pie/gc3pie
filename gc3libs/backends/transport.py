@@ -768,11 +768,12 @@ class SshTransport(Transport):
         # *when exactly* it will break. So let's switch to the slower
         # but more reliable method of sequential block copying
         # unconditionally.
-        with self.sftp.open(source) as fsrc, open(destination, 'w') as fdst:
-            # XXX: a buffer length can be set -- is there a good
-            # number we can fill in there? or is it better to leave it
-            # to `shutil` to use whatever size it thinks best?
-            shutil.copyfileobj(fsrc, fdst)
+        with self.sftp.open(source) as fsrc:
+            with open(destination, 'w') as fdst:
+                # XXX: a buffer length can be set -- is there a good
+                # number we can fill in there? or is it better to leave it
+                # to `shutil` to use whatever size it thinks best?
+                shutil.copyfileobj(fsrc, fdst)
 
 
     @same_docstring_as(Transport.remove)
