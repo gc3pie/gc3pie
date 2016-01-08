@@ -1227,7 +1227,10 @@ class Engine(object):
         self.forget_terminated = forget_terminated
 
 
-    def _get_queue_for_task(self, task):
+    def __get_task_queue(self, task):
+        """
+        Return the "queue" object to which `task` should be added or removed.
+        """
         state = task.execution.state
         if Run.State.NEW == state:
             return self._new
@@ -1270,7 +1273,7 @@ class Engine(object):
         Adding a task that has already been added to this `Engine`
         instance results in a no-op.
         """
-        queue = self.__get_task_queue(task, state)
+        queue = self.__get_task_queue(task)
         if _contained(task, queue):
             # no-op if the task has already been added
             return
@@ -1287,8 +1290,7 @@ class Engine(object):
 
     def remove(self, task):
         """Remove a `task` from the list of tasks managed by this Engine."""
-        state = task.execution.state
-        queue = self.__get_task_queue(task, state)
+        queue = self.__get_task_queue(task)
         queue.remove(task)
         if self._store:
             try:
