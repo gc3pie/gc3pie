@@ -1208,12 +1208,6 @@ class Engine(object):
         self._store = store
         self._tasks_by_id = {}
 
-        # init counters/statistics
-        self._counts = {}
-        self.init_counts_for(Task)  # always gather these
-
-        for task in tasks:
-            self.add(task)
         # public attributes
         self.can_submit = can_submit
         self.can_retrieve = can_retrieve
@@ -1225,6 +1219,14 @@ class Engine(object):
         self.retrieve_overwrites = retrieve_overwrites
         self.retrieve_changed_only = retrieve_changed_only
         self.forget_terminated = forget_terminated
+
+        # init counters/statistics
+        self._counts = {}
+        self.init_counts_for(Task)  # always gather these
+
+        # Engine fully initialized, add all tasks
+        for task in tasks:
+            self.add(task)
 
 
     def __get_task_queue(self, task):
