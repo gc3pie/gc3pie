@@ -1,0 +1,26 @@
+inputfile for parameters
+
+simulation time (sim_time)
+95
+burn in time (burn_in)
+0
+number of repeats (max_runs)
+10
+variance used for mutation (mut_sd)
+0.1
+mutation rate (mut_rate)
+0.001
+intraspecific competition coefficient (alpha0); this is only true is lambda=1
+0.000002
+alpha-lambda correlation exponent (lamb_exp)
+3
+fertility (lambda_null)
+12
+dispersal-fertility trade-off exponent (trade_off_exp)
+2
+random patch extinction probability (epsilon)
+0
+dispersal mortality (mu0)
+0
+moratlity gradient (mort_grad: yes/no)
+no
