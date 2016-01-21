@@ -6,11 +6,11 @@ Setup file for installing GC3Pie.
 import sys
 
 
-# see http://peak.telecommunity.com/DevCenter/setuptools
-# for an explanation of the keywords and syntax of this file.
-#
+# ensure we run a "recent enough" version of setuptools (CentOS7 still
+# ships with setuptools 0.9.8!); release 8.0 is the first one to fully
+# implement PEP 440 version specifiers
 from ez_setup import use_setuptools
-use_setuptools()
+use_setuptools(version='8.0')
 
 import setuptools
 import setuptools.dist
