@@ -2,7 +2,7 @@
 """
 Run applications as local processes.
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -835,14 +835,22 @@ ReturnCode=%x"""
             # Create the wrapper script
             wrapper_script = self.transport.open(
                 wrapper_script_fname, 'w')
-            wrapper_script.write("""#!/bin/sh
-echo $$ >%s
-cd %s
-exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
-""" % (pidfilename, execdir, self.time_cmd,
-                wrapper_output_filename,
-                ShellcmdLrms.TIMEFMT, redirection_arguments,
-                env_arguments, arguments))
+            wrapper_script.write(
+                r"""#!/bin/sh
+                echo $$ >{pidfilename}
+                cd {execdir}
+                exec '{time_cmd}' -o '{wrapper_out}' -f '{fmt}' \
+                  /bin/sh {redirections} -c {command}
+                """.format(
+                    pidfilename=pidfilename,
+                    execdir=execdir,
+                    time_cmd=self.time_cmd,
+                    wrapper_out=wrapper_output_filename,
+                    fmt=ShellcmdLrms.TIMEFMT,
+                    redirections=redirection_arguments,
+                    command=sh_quote_unsafe(
+                        (env_arguments + arguments)),
+            ))
             wrapper_script.close()
         except gc3libs.exceptions.TransportError:
             log.error("Freeing resources used by failed application")
