@@ -8,7 +8,7 @@ function or class belongs in here is the following: place a function
 or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -906,6 +906,73 @@ def occurs(pattern, filename):
         return True
     except StopIteration:
         return False
+
+
+def parse_range(spec):
+    """
+    Return minimum, maximum, and stepping value for a range.
+
+    Argument `spec` must be a string of the form `LOW:HIGH:STEP`,
+    where LOW, HIGH and STEP are (integer or floating-point) numbers.
+    Example::
+
+      >>> parse_range('1:10:2')
+      (1, 10, 2)
+
+      >>> parse_range('1.0:3.5:0.5')
+      (1.0, 3.5, 0.5)
+
+    Note that, as soon as *any* one of LOW, HIGH, STEP is not an
+    integer, *all* of them are parsed as Python floats::
+
+      >>> parse_range('1:3:0.5')
+      (1.0, 3.0, 0.5)
+
+      >>> parse_range('1.0:3:1')
+      (1.0, 3.0, 1.0)
+
+      >>> parse_range('1:3.0:1')
+      (1.0, 3.0, 1.0)
+
+    The final part `:STEP` can be omitted if the step is `1`::
+
+      >>> parse_range('2:5')
+      (2, 5, 1)
+
+      >>> parse_range('1.0:3.0')
+      (1.0, 3.0, 1.0)
+
+    Finally, note that `parse_range` does not perform any kind of
+    check on the validity of the resulting range; so it is possible to
+    parse a string into an empty range or range specification with
+    stepping 0::
+
+      >>> parse_range('1:-5:10')
+      (1, -5, 10)
+
+      >>> parse_range('1:2:0')
+      (1, 2, 0)
+    """
+    if spec.count(':') == 2:
+        low, high, step = spec.split(':')
+    elif spec.count(':') == 1:
+        low, high = spec.split(':')
+        step = '1' # parsed to int or float later on
+    else:
+        raise ValueError(
+            "Argument `spec` must have the form 'LOW:HIGH:STEP',"
+            " where LOW, HIGH and STEP are (integer or"
+            " floating-point) numbers.")
+    # are low, high, step to floats or ints?
+    if ('.' in low) or ('.' in high) or ('.' in step):
+        low = float(low)
+        high = float(high)
+        step = float(step)
+    else:
+        low = int(low)
+        high = int(high)
+        step = int(step)
+    return low, high, step
 
 
 def prettyprint(
