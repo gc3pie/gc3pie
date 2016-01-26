@@ -113,6 +113,36 @@ def backup(path):
 def basename_sans(path):
     """
     Return base name without the extension.
+
+    This behaves exactly like :func:`os.path.basename` except that the
+    last few characters, up to the rightmost dot, are removed as
+    well::
+
+      >>> basename_sans('/tmp/foo.txt')
+      'foo'
+
+      >>> basename_sans('bar.txt')
+      'bar'
+
+    If there is no dot in the file name, no "extension" is chopped
+    off::
+
+      >>> basename_sans('baz')
+      'baz'
+
+    If there are several dots in the file name, only the last one and
+    trailing characters are removed::
+
+      >>> basename_sans('foo.bar.baz')
+      'foo.bar'
+
+    Leading directory components are chopped off in any case::
+
+      >>> basename_sans('/tmp/foo.bar.baz')
+      'foo.bar'
+
+      >>> basename_sans('/tmp/foo')
+      'foo'
     """
     return os.path.splitext(os.path.basename(path))[0]
 
