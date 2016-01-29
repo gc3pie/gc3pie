@@ -982,12 +982,23 @@ def parse_range(spec):
 
       >>> parse_range('1:2:0')
       (1, 2, 0)
+
+    As a special case to simplify user interfaces, a single number is
+    accepted as a *degenerate* range: it will be parsed as a range
+    whose minimum and maximum are equal to the given number::
+
+      >>> parse_range('42')
+      (42, 42, 1)
     """
-    if spec.count(':') == 2:
+    colons = spec.count(':')
+    if colons == 2:
         low, high, step = spec.split(':')
-    elif spec.count(':') == 1:
+    elif colons == 1:
         low, high = spec.split(':')
-        step = '1' # parsed to int or float later on
+        step = '1'  # parsed to int or float later on
+    elif colons == 0:
+        low = high = spec
+        step = '1'  # parsed to int or float later on
     else:
         raise ValueError(
             "Argument `spec` must have the form 'LOW:HIGH:STEP',"
