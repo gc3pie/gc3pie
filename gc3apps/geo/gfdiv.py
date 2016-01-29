@@ -53,7 +53,7 @@ from pkg_resources import Requirement, resource_filename
 import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, existing_file
-from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
+from gc3libs.quantity import Memory, kB, MB, GB, Duration, days, hours, minutes, seconds
 from gc3libs.utils import basename_sans, irange, parse_range
 
 
@@ -85,9 +85,9 @@ class FunctionalDiversityApplication(Application):
             outputfile = ('output_{inputname}_{radius}.mat'.format(**locals()))
         # default execution params
         extra_args.setdefault('requested_cores',        1)
-        extra_args.setdefault('requested_memory',       3*GB)
+        extra_args.setdefault('requested_memory',       7*GB)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
-        extra_args.setdefault('requested_walltime',     60*Duration.days)
+        extra_args.setdefault('requested_walltime',     6*days)
         # actual app initialization
         Application.__init__(
             self,
@@ -127,7 +127,7 @@ new input files or an extended range is specified in the command line.
 
     def setup_options(self):
         # change default for the memory/walltime options
-        self.actions['memory_per_core'].default = 3*Memory.GB
+        self.actions['memory_per_core'].default = 7*Memory.GB
         self.actions['wctime'].default = '60 days'
 
 
