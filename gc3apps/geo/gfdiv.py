@@ -92,7 +92,7 @@ class FunctionalDiversityApplication(Application):
         Application.__init__(
             self,
             arguments=[
-                'matlab', '-nodisplay', '-nojvm',
+                'matlab', '-nodisplay', '-nojvm', '-singleCompThread',
                 '-r', (self.matlab_cmd.format(**locals()))
             ],
             inputs = [funcfile, inputfile],
