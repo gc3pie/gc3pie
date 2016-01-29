@@ -184,7 +184,7 @@ new input files or an extended range is specified in the command line.
         funcname, funcfile = self.get_function_name_and_file()
         # get range for neighborhood radius
         low, high, step = parse_range(self.params.range)
-        for radius in irange(low, high, step):
+        for radius in irange(low, high+1, step):
             for inputfile in self.params.inputfile:
                 kwargs = extra.copy()
                 base_output_dir = kwargs.pop('output_dir', self.params.output)
