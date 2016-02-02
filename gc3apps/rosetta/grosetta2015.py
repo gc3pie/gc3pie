@@ -51,6 +51,8 @@ import os
 import os.path
 import sys
 
+from pkg_resources import Requirement, resource_filename
+
 # interface to Gc3libs
 import gc3libs
 from gc3libs.application.rosetta import RosettaApplication
@@ -167,6 +169,9 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
             extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
                                                                         'run_%s' % pairname)
             
+            gc3libs.log.debug("Adding task for folder %s" % input_folder)
+
             tasks.append(Rosetta2015Application(
                 self.input_pdbs[input_folder],
                 **extra_args))
+        return tasks

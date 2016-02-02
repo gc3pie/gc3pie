@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/sh -x
 #
 PROG="$(basename $0 .sh)"
 
@@ -131,25 +131,26 @@ if [ -e "${PROG}.flags" ]; then
     flags="`grep ^- ${PROG}.flags`"
 fi
 
-if [ -z "$database_specified_in_flags_file" ]; then
-    case "${PROG}" in
-        minirosetta*)
-            require_environment_variable MINIROSETTA_DB_LOCATION
-            database="-database $MINIROSETTA_DB_LOCATION"
-            $say "Database location not in flags file, using the one from RTE: '$MINIROSETTA_DB_LOCATION'"
-            ;;
-        *)
-            require_environment_variable ROSETTA_DB_LOCATION
-            database="-database $ROSETTA_DB_LOCATION"
-            $say "Database location not in flags file, using the one from RTE: '$ROSETTA_DB_LOCATION'"
-            ;;
-    esac
-fi
+# if [ -z "$database_specified_in_flags_file" ]; then
+#     case "${PROG}" in
+#         # minirosetta*)
+#         #     require_environment_variable MINIROSETTA_DB_LOCATION
+#         #     database="-database $MINIROSETTA_DB_LOCATION"
+#         #     $say "Database location not in flags file, using the one from RTE: '$MINIROSETTA_DB_LOCATION'"
+#         #     ;;
+#         # *)
+#         #     require_environment_variable ROSETTA_DB_LOCATION
+#         #     database="-database $ROSETTA_DB_LOCATION"
+#         #     $say "Database location not in flags file, using the one from RTE: '$ROSETTA_DB_LOCATION'"
+#         #     ;;
+#     esac
+# fi
 
-require_environment_variable ROSETTA_LOCATION
+# require_environment_variable ROSETTA_LOCATION
 
 $say Running: $ROSETTA_LOCATION/${PROG}.linuxgccrelease $database $flags "$@"
 (${ROSETTA_LOCATION}/${PROG}.linuxgccrelease $flags $database "$@" 2>&1; echo $? > ${PROG}.exitcode) | tee ${PROG}.log
+# screen -L mpirun -np 6 /home/ubuntu/Rosetta/main/source/bin/docking_protocol.mpi.linuxgccdebug @docking.options
 
 $say Contents of the execution directory, after processing:
 ls -l
