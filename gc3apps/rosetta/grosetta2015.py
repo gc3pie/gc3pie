@@ -74,24 +74,23 @@ class Rosetta2015Application(Application):
     """
     application_name = 'grosetta2015'
     
-    def __init__(self, input_files_list, **extra_args):
+    def __init__(self, input_folder, command_to_run, **extra_args):
 
         inputs = dict()
         outputs = dict()
 
-        grosetta2015_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
-                                              "gc3libs/etc/rosetta2015.sh")
-        inputs[grosetta2015_wrapper_sh] = os.path.basename(grosetta2015_wrapper_sh)
-        for input in input_files_list:
-            if input.endswith(ROSETTA_OPTION_FILE):
-                inputs[input] = "./options"
-            inputs[input] = os.path.basename(input)
+        # grosetta2015_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
+        #                                       "gc3libs/etc/rosetta2015.sh")
+        # inputs[grosetta2015_wrapper_sh] = os.path.basename(grosetta2015_wrapper_sh)
 
-        arguments = "./%s --no-tar @options" % (inputs[grosetta2015_wrapper_sh])
+        for input in os.listdir(input_folder):
+            inputs[os.path.join(input_folder,input)] = os.path.basename(input)
+            
+        # arguments = "./%s --no-tar @options" % (inputs[grosetta2015_wrapper_sh])
         
         Application.__init__(
             self,
-            arguments = arguments,
+            arguments = command_to_run,
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
             stdout = 'grosetta2015.log',
@@ -134,25 +133,32 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
         self.add_param('input_pdb', type=str,
                        help="Root localtion of input .pdb pais.")
 
+        self.add_param('command_to_run', type=str,
+                       help="Rosetta related command to be executed. "
+                       "Note: no control over the consistency nor the availability "
+                       " of the command will be made.")
+
     def parse_args(self):
 
         self.input_pdbs = dict()
-        
-        for r,d,f in os.walk(self.params.input_pdb):
-            input_pdb = []
-            for infile in f:
-                if any(infile.endswith(pattern) for pattern in INPUT_LIST_PATTERNS):
-                    input_pdb.append(os.path.join(r,infile))
-            # XXX: Validation of input files to be done
-            if input_pdb:
-                self.input_pdbs[r] = input_pdb
 
-        self.log.debug("Found '%d' valid input folders", len(self.input_pdbs))
+        self.input_folders = [ os.path.join(self.params.input_pdb,folder) for folder in os.listdir(self.params.input_pdb) ]
+
+        # for r,d,f in os.walk(self.params.input_pdb):
+        #     input_pdb = []
+        #     for infile in f:
+        #         if any(infile.endswith(pattern) for pattern in INPUT_LIST_PATTERNS):
+        #             input_pdb.append(os.path.join(r,infile))
+        #     # XXX: Validation of input files to be done
+        #     if input_pdb:
+        #         self.input_pdbs[r] = input_pdb
+
+        self.log.debug("Found '%d' valid input folders", len(self.input_folders))
 
     def new_tasks(self, extra):
         tasks = []
         
-        for input_folder in self.input_pdbs.keys():
+        for input_folder in self.input_folders:
             # extract root folder name to be used as jobname
             pairname = input_folder
 
@@ -172,6 +178,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
             gc3libs.log.debug("Adding task for folder %s" % input_folder)
 
             tasks.append(Rosetta2015Application(
-                self.input_pdbs[input_folder],
+                input_folder,
+                self.params.command_to_run,
                 **extra_args))
         return tasks
