@@ -31,6 +31,11 @@ recon-all -base s01.base -tp s01.cross.TP1 -tp s01.cross.TP2 -tp s01.cross.TP3 -
 recon-all -long s01.cross.TP1 s01.base -all -qcache
 recon-all -long s01.cross.TP2 s01.base -all -qcache
 recon-all -long s01.cross.TP3 s01.base -all -qcache
+
+XXX: Allow differnt type of NII extensions. e.g. nii.tgz
+XXX: How to formally verify correctness of output from step 'cross'.
+     For the itme being do nothing on this.
+XXX: Remove simlinks from output folder once completed.
 """
 
 import sys
@@ -72,7 +77,7 @@ def RunFreesurfer(subject, input, output):
 
     # DATA INPUT and  CROSS SECTIONAL PROCESSING
     print "Start DATA INPUT on %d Timepoints" % len(input_nii.keys())
-    for timepoint in input_nii.keys():
+    for timepoint in sorted(input_nii.keys()):
         inputs = '-i '+' -i '.join(x for x in input_nii[timepoint])
         data_input_outputfolder =  "%s.cross.%s" % (subject, timepoint)
         
@@ -98,7 +103,7 @@ def RunFreesurfer(subject, input, output):
 
     # BASE PROCESSING    
     print "Start BASE PROCESSING with %d timepoints" % len(cross_files)
-    inputs = '-tp '+' -tp '.join(x for x in cross_files)
+    inputs = '-tp '+' -tp '.join(x for x in sorted(cross_files))
     basefile = "%s.base" % subject
     command = "recon-all -base %s %s -all" % (basefile,inputs)
     runme(command)
@@ -107,7 +112,7 @@ def RunFreesurfer(subject, input, output):
 
     # LONG PROCESSING s01
     print "Start LONG PROCESSING with %d timepoints" % len(cross_files)
-    for cross in cross_files:
+    for cross in sorted(cross_files):
         # Example: recon-all -long s01.cross.TP1 s01.base -all -qcache
         command = "recon-all -long %s %s -all -qcache" % (cross,basefile)
         runme(command)
