@@ -21,53 +21,53 @@ slides and tutorials are an introduction to the GC3Pie python
 package.
 
 
-`Introduction to GC3Pie <part01.pdf>`_
+`Introduction to GC3Pie <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/part01.pdf>`_
 
     Introduction to the software: what is GC3Pie, what is it for, and
     an overview of its features for writing high-throughput computing
     scripts.
 
-`Basic GC3Pie programming <part03.pdf>`_
+`Basic GC3Pie programming <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/part03.pdf>`_
 
     The `Application` class, the smallest building block of
     GC3Pie. Introduction to the concept of Job, states of an
     application and to the `Core` class.
 
-`Application requirements <part04.pdf>`_
+`Application requirements <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/part04.pdf>`_
 
     How to define extra requirements for an application, such as the
     minimum amount of memory it will use, the number of cores needed
     or the architecture of the CPUs.
 
-`Managing applications: the SessionBasedScript class <part05.pdf>`_
+`Managing applications: the SessionBasedScript class <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/part05.pdf>`_
 
     Introduction to the highest-level interface to build applications
     with GC3Pie, the `SessionBasedScript`. Information on how to
     create simple scripts that take care of the execution of your
     applications, from submission to getting back the final results.
 
-`The GC3Utils commands <part06.pdf>`_
+`The GC3Utils commands <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/part06.pdf>`_
 
     Low-level tools to aid debugging the scripts.
 
-`Introduction to Workflows with GC3Pie <part08.pdf>`_
+`Introduction to Workflows with GC3Pie <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/part08.pdf>`_
 
     Using a practical example (the :ref:`warholize tutorial`) we show
     how workflows are implemented with GC3Pie. The following slides
     will cover in more details the single steps needed to produce a
     complex workflow.
 
-`ParallelTaskCollection <part09.pdf>`_
+`ParallelTaskCollection <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/part09.pdf>`_
 
     Description of the `ParallelTaskCollection` class, used to run
     tasks in parallel.
 
-`StagedTaskCollection <part10.pdf>`_
+`StagedTaskCollection <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/part10.pdf>`_
 
     Description of the `StagedTaskCollection` class, used to run a
     sequence of a fixed number of jobs.
 
-`SequentialTaskCollection <part11.pdf>`_
+`SequentialTaskCollection <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/part11.pdf>`_
 
     Description of the `SequentialTaskCollection` class, used to run a
     sequence of jobs that can be altered during runtime.
