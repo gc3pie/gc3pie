@@ -3,7 +3,7 @@
 """
 Job control on SLURM clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2012-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -336,8 +336,13 @@ class SlurmLrms(batch.BatchSystem):
             # whereas the total `jobID` line carries the exit codes
             # and overall duration/timing information.
             if '.' not in jobid:
-                assert state in ['CANCELLED', 'COMPLETED', 'FAILED',
-                                 'NODE_FAIL', 'PREEMPTED', 'TIMEOUT']
+                assert state in [
+                    'CANCELLED', 'COMPLETED', 'FAILED',
+                    'NODE_FAIL', 'PREEMPTED', 'TIMEOUT'], (
+                        "Unexpected SLURM job state '{state}'"
+                        " encountered in parsing `sacct` output"
+                        .format(state=state)
+                    )
                 # master job record
                 acct['duration'] = SlurmLrms._parse_duration(elapsed)
                 acct['used_cpu_time'] = SlurmLrms._parse_duration(totalcpu)
