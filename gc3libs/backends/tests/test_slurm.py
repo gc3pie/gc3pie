@@ -126,6 +126,17 @@ def scancel_permission_denied(jobid=123):
         "Access/permission denied\n" % jobid)
 
 
+def sacct_notfound(jobid=123):
+    # SLURM 2.6.5 and 14.11.8 on Ubuntu 14.04.2
+    return (
+        # command exitcode (yes, it's really 0!)
+        0,
+        # stdout
+        "",
+        # stderr
+        "")
+
+
 def sacct_done_ok(jobid=123):
     # SLURM 2.6.5 on Ubuntu 14.04.2
     return (
@@ -347,6 +358,30 @@ username=NONEXISTENT
         assert_equal(app.execution.state, State.RUNNING)
 
         self.transport.expected_answer['squeue'] = squeue_recently_completed()
+        self.transport.expected_answer['env'] = sacct_done_ok()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.TERMINATING)
+
+        self._check_parse_sacct_done_ok(app.execution)
+
+    def test_parse_sacct_output_singlecore3(self):
+        """Test `sacct` output with a successful single-core job."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.core.submit(app)
+        assert_equal(app.execution.state, State.SUBMITTED)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+        # if the second `sacct` fails, we should not do any update
+        self.transport.expected_answer['squeue'] = squeue_recently_completed()
+        self.transport.expected_answer['env'] = sacct_notfound()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+        self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_ok()
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.TERMINATING)
