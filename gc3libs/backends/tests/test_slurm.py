@@ -3,7 +3,7 @@
 """
 Test interaction with the SLURM batch-queueing system.
 """
-# Copyright (C) 2011-2013, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2013, 2015, 2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -124,6 +124,20 @@ def scancel_permission_denied(jobid=123):
         # stderr
         "scancel: error: Kill job error on job id %d: "
         "Access/permission denied\n" % jobid)
+
+
+def sacct_done_ok(jobid=123):
+    # SLURM 2.6.5 on Ubuntu 14.04.2
+    return (
+        # command exitcode (yes, it's really 0!)
+        0,
+        # stdout
+        """
+{jobid}|0:0|COMPLETED|1|00:08:07|05:05.002|2016-02-16T12:16:33|2016-02-16T14:24:46|2016-02-16T14:32:53|||
+{jobid}.batch|0:0|COMPLETED|1|00:08:07|05:05.002|2016-02-16T14:24:46|2016-02-16T14:24:46|2016-02-16T14:32:53|1612088K|7889776K|
+        """.strip().format(jobid=jobid),
+        # stderr
+        "")
 
 
 def sacct_done_bad_timestamps(jobid=123):
@@ -301,6 +315,75 @@ username=NONEXISTENT
         # self.transport.expected_answer['sacct'] = sacct_done()
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.TERMINATING)
+
+
+    def test_parse_sacct_output_singlecore1(self):
+        """Test `sacct` output with a successful single-core job."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.core.submit(app)
+        assert_equal(app.execution.state, State.SUBMITTED)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['env'] = sacct_done_ok()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.TERMINATING)
+
+        self._check_parse_sacct_done_ok(app.execution)
+
+    def test_parse_sacct_output_singlecore2(self):
+        """Test `sacct` output with a successful single-core job."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.core.submit(app)
+        assert_equal(app.execution.state, State.SUBMITTED)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+        self.transport.expected_answer['squeue'] = squeue_recently_completed()
+        self.transport.expected_answer['env'] = sacct_done_ok()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.TERMINATING)
+
+        self._check_parse_sacct_done_ok(app.execution)
+
+    def _check_parse_sacct_done_ok(self, job):
+        # common job reporting values (see Issue 78)
+        assert_equal(job.cores, 1)
+        assert_equal(job.exitcode, 0)
+        assert_equal(job.signal, 0)
+        assert_equal(job.duration, 8*minutes + 7*seconds)
+        assert_equal(job.used_cpu_time, 5*minutes + 5.002*seconds)
+        assert_equal(job.max_used_memory, 7889776 * kB)
+        # SLURM-specific values
+        assert_equal(job.slurm_max_used_ram, 1612088 * kB)
+        assert_equal(job.slurm_submission_time,
+                     datetime.datetime(year=2016,
+                                       month=2,
+                                       day=16,
+                                       hour=12,
+                                       minute=16,
+                                       second=33))
+        assert_equal(job.slurm_start_time,
+                     datetime.datetime(year=2016,
+                                       month=2,
+                                       day=16,
+                                       hour=14,
+                                       minute=24,
+                                       second=46))
+        assert_equal(job.slurm_completion_time,
+                     datetime.datetime(year=2016,
+                                       month=2,
+                                       day=16,
+                                       hour=14,
+                                       minute=32,
+                                       second=53))
 
     def test_parse_sacct_output_parallel(self):
         """Test `sacct` output with a successful parallel job."""
