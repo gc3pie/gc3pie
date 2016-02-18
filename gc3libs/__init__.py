@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -1983,16 +1983,43 @@ class Run(Struct):
     @staticmethod
     def shellexit_to_returncode(rc):
         """
-        Convert a shell exit code to a POSIX process return code.
+        Convert shell exit code to POSIX process return code.
+        The "return code" is represented as a pair `(signal,
+        exitcode)` suitable for setting the ``returncode`` property.
 
         A POSIX shell represents the return code of the last-run
         program within its exit code as follows:
 
-        * If the program was terminated by signal `N`, the shell exits
-          with code 128+N,
+        * If the program was terminated by signal ``K``, the shell exits
+          with code ``128+K``,
 
-        * otherwise, if the program terminated with exit code C, the
-          shell exits with code C.
+        * otherwise, if the program terminated with exit code ``X``,
+          the shell exits with code ``X``.  (Yes, the mapping is not
+          bijective and it is possible that a program wants to exit
+          with, e.g., code 137 and this is mistaken for it having been
+          killed by signal 9.  Blame the original UNIX implementors
+          for this.)
+
+        Examples:
+
+        * Shell exit code 137 means that the last program got a
+          SIGKILL. Note that in this case there is no well-defined
+          "exit code" of the program; we use ``-1`` in the place of
+          the exit code to mark it::
+
+            >>> Run.shellexit_to_returncode(137)
+            (9, -1)
+
+        * Shell exit code 75 is a valid program exit code::
+
+            >>> Run.shellexit_to_returncode(75)
+            (0, 75)
+
+        * ...and so is, of course, 0::
+
+            >>> Run.shellexit_to_returncode(0)
+            (0, 0)
+
         """
         # only the less significant 8 bits matter
         rc &= 0xff
