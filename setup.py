@@ -145,7 +145,7 @@ setuptools.setup(
     },
     # Apparently, this list is read from right to left...
     tests_require=[
-        'tox'
+        'tox', 'mock',
     ],
     cmdclass={'test': Tox},
     # additional non-Python files to be bundled in the package

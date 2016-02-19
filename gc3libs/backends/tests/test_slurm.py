@@ -26,6 +26,7 @@ import datetime
 import os
 import tempfile
 
+import mock
 from nose.tools import assert_equal
 
 import gc3libs
@@ -274,6 +275,7 @@ max_walltime=2
 max_cores=80
 architecture=x86_64
 enabled=True
+accounting_delay = 5
 
 [auth/ssh]
 type=ssh
@@ -419,6 +421,67 @@ username=NONEXISTENT
                                        hour=14,
                                        minute=32,
                                        second=53))
+
+    @mock.patch('gc3libs.backends.batch.time')
+    def test_accounting_delay1(self, mock_time):
+        """
+        Test that no state update is performed if both `squeue` and `sacct` fail repeatedly within the accounting delay.
+        """
+        mock_time.time.return_value = 0
+
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+        # fail repeatedly within the acct delay, no changes to `app.execution`
+        for t in 0, 1, 2:
+            mock_time.time.return_value = t
+            self.transport.expected_answer['squeue'] = squeue_notfound()
+            self.transport.expected_answer['env'] = sacct_notfound()
+            self.core.update_job_state(app)
+            assert_equal(app.execution.state, State.RUNNING)
+            assert hasattr(app.execution, 'stat_failed_at')
+            assert_equal(app.execution.stat_failed_at, 0)
+
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['env'] = sacct_done_ok()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.TERMINATING)
+
+    @mock.patch('gc3libs.backends.batch.time')
+    def test_accounting_delay2(self, mock_time):
+        """
+        Test that an error is raised if both `squeue` and `sacct` fail repeatedly, exceeding the accounting delay.
+        """
+        mock_time.time.return_value = 0
+
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+        # fail first within the acct delay, no changes to `app.execution`
+        mock_time.time.return_value = 0
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['env'] = sacct_notfound()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+        assert hasattr(app.execution, 'stat_failed_at')
+        assert_equal(app.execution.stat_failed_at, 0)
+
+        # fail again, outside the accounting delay
+        mock_time.time.return_value = 2000
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['env'] = sacct_notfound()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.UNKNOWN)
 
     def test_parse_sacct_output_parallel(self):
         """Test `sacct` output with a successful parallel job."""
