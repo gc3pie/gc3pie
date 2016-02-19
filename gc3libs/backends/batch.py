@@ -637,7 +637,7 @@ class BatchSystem(LRMS):
                     .format(termstatus, acctinfo['termstatus'])
                 )
 
-        if state is None:
+        if termstatus is None:
             # No *stat command and no *acct command returned correctly.
             try:
                 job.stat_failed_at

@@ -321,6 +321,8 @@ class SlurmLrms(batch.BatchSystem):
             'used_cpu_time':	Duration(0, unit=seconds),
             'max_used_memory':	Memory(0, unit=bytes)
         }
+        exitcode = None
+        signal = None
         for line in stdout.split('\n'):
             line = line.strip()
             if line == '':
@@ -400,7 +402,8 @@ class SlurmLrms(batch.BatchSystem):
                     submit, acct['slurm_submission_time'])
                 acct['slurm_start_time'] = min(start, acct['slurm_start_time'])
         # must compute termination status since it's not provided by `squeue`
-        acct['termstatus'] = (signal & 0x7f) + ((exitcode & 0xff) << 8)
+        if signal is not None and exitcode is not None:
+            acct['termstatus'] = (signal & 0x7f) + ((exitcode & 0xff) << 8)
         return acct
 
     @staticmethod
