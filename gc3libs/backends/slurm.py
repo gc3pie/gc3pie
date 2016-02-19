@@ -217,36 +217,38 @@ class SlurmLrms(batch.BatchSystem):
         """
         Receive the output of ``squeue --noheader -o %i:%T:%r and parse it.
         """
-        jobstatus = dict()
+        state = Run.State.UNKNOWN
         if stdout.strip() == '':
-            # if stdout is empty and `squeue -j` exitcode is 0, then
-            # the job has recently completed;
+            # If stdout is empty and `squeue -j` exitcode is 0, then
+            # the job has recently completed (but we still need to
+            # call `sacct` to reap the termination status).
             #
-            # if the job has been removed from the controllers'
-            # memory, then `squeue -j` exits with code 1
-            jobstatus['state'] = Run.State.TERMINATING
+            # If the job has been removed from the controllers'
+            # memory, then `squeue -j` exits with code 1.
+            state = Run.State.TERMINATING
         else:
             # parse stdout
-            jobid, state, reason = stdout.split('^')
+            job_id, job_state_code, reason = stdout.split('^')
             log.debug("translating SLURM's state '%s' to gc3libs.Run.State",
-                      state)
-            if state in ['PENDING', 'CONFIGURING']:
-                # XXX: see above for a discussion of whether 'CONFIGURING'
-                # should be grouped with 'RUNNING' or not; here it's
-                # likely the correct choice to group it with 'PENDING' as
-                # the "configuring" phase may last a few minutes during
+                      job_state_code)
+            if job_state_code in ['PENDING', 'CONFIGURING']:
+                # XXX: see comments in `count_jobs` for a discussion
+                # of whether 'CONFIGURING' should be grouped with
+                # 'RUNNING' or not; here it's likely the correct
+                # choice to group it with 'PENDING' as the
+                # "configuring" phase may last a few minutes during
                 # which the job is not yet really running.
-                jobstatus['state'] = Run.State.SUBMITTED
-            elif state in ['RUNNING', 'COMPLETING']:
-                jobstatus['state'] = Run.State.RUNNING
-            elif state in ['SUSPENDED']:
-                jobstatus['state'] = Run.State.STOPPED
-            elif state in ['COMPLETED', 'CANCELLED', 'FAILED',
-                           'NODE_FAIL', 'PREEMPTED', 'TIMEOUT']:
-                jobstatus['state'] = Run.State.TERMINATING
+                state = Run.State.SUBMITTED
+            elif job_state_code in ['RUNNING', 'COMPLETING']:
+                state = Run.State.RUNNING
+            elif job_state_code in ['SUSPENDED']:
+                state = Run.State.STOPPED
+            elif job_state_code in ['COMPLETED', 'CANCELLED', 'FAILED',
+                                    'NODE_FAIL', 'PREEMPTED', 'TIMEOUT']:
+                state = Run.State.TERMINATING
             else:
-                jobstatus['state'] = Run.State.UNKNOWN
-        return jobstatus
+                state = Run.State.UNKNOWN
+        return self._stat_result(state, None)  # no term status info
 
     # acct cmd: sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,eligible,reserved,start,end,exitcode,maxrss,maxvmsize,totalcpu -j JOBID  # noqa
     #
@@ -313,12 +315,12 @@ class SlurmLrms(batch.BatchSystem):
                 (self._sacct, job.lrms_jobid))
 
     def _parse_acct_output(self, stdout):
-        acct = dict(
-            exitcode=0,
-            cores=0,
-            duration=Duration(0, unit=seconds),
-            used_cpu_time=Duration(0, unit=seconds),
-            max_used_memory=Memory(0, unit=bytes))
+        acct = {
+            'cores':            0,
+            'duration':         Duration(0, unit=seconds),
+            'used_cpu_time':	Duration(0, unit=seconds),
+            'max_used_memory':	Memory(0, unit=bytes)
+        }
         for line in stdout.split('\n'):
             line = line.strip()
             if line == '':
@@ -327,8 +329,8 @@ class SlurmLrms(batch.BatchSystem):
             jobid, exit, state, ncpus, elapsed, totalcpu, submit,\
                 start, end, maxrss, maxvmsize, _ = line.split('|')
 
-            # In some case the state can contain a specification, as
-            # "CANCELLED by 1000"
+            # In some case the state can contain a specification,
+            # e.g. "CANCELLED by 1000"
             state = state.split()[0]
 
             # SLURM job IDs have the form `jobID[.step]`: only the
@@ -351,14 +353,16 @@ class SlurmLrms(batch.BatchSystem):
                     # `0:0` or `0:1`, but we want to keep track of the
                     # fact that the job was killed by the system (or
                     # the user).
-                    acct['exitcode'] = os.EX_TEMPFAIL
-                    acct['signal'] = int(Run.Signals.RemoteKill)
+                    exitcode = os.EX_TEMPFAIL
+                    signal = int(Run.Signals.RemoteKill)
                 elif state == 'NODE_FAIL':
-                    acct['exitcode'] = os.EX_TEMPFAIL
-                    acct['signal'] = int(Run.Signals.RemoteError)
+                    exitcode = os.EX_TEMPFAIL
+                    signal = int(Run.Signals.RemoteError)
                 else:
                     # compute POSIX exit status
-                    acct['exitcode'], acct['signal'] = exit.split(':')
+                    exitcode_, signal_ = exit.split(':')
+                    exitcode = int(exitcode_)
+                    signal = int(signal_)
                 # XXX: the master job record seems to report the
                 # *requested* slots, whereas the step records report
                 # the actual usage.  In our case these should be the
@@ -379,9 +383,7 @@ class SlurmLrms(batch.BatchSystem):
                 start = SlurmLrms._parse_timestamp(start)
                 end = SlurmLrms._parse_timestamp(end)
                 acct['slurm_submission_time'] = min(submit, start)
-                acct['slurm_start_time'] = end  # will be set when
-                # looping on tasks,
-                # see below
+                acct['slurm_start_time'] = end  # actually computed below
                 acct['slurm_completion_time'] = max(submit, start, end)
             else:
                 # common resource usage records (see Issue 78)
@@ -397,6 +399,8 @@ class SlurmLrms(batch.BatchSystem):
                 acct['slurm_submission_time'] = min(
                     submit, acct['slurm_submission_time'])
                 acct['slurm_start_time'] = min(start, acct['slurm_start_time'])
+        # must compute termination status since it's not provided by `squeue`
+        acct['termstatus'] = (signal & 0x7f) + ((exitcode & 0xff) << 8)
         return acct
 
     @staticmethod

@@ -4,7 +4,7 @@
 Job control on PBS/Torque clusters (possibly connecting to the
 front-end via SSH).
 """
-# Copyright (C) 2009-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014, 2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -53,25 +53,7 @@ _qstat_line_re = re.compile(
     '(?P<state>[^\s]+)\s+'
     '(?P<queue>[^\s]+)')
 
-_tracejob_queued_re = re.compile(
-    '(?P<submission_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
-    'Job Queued at request of .*job name =\s*(?P<job_name>[^,]+),'
-    '\s+queue =\s*(?P<queue>[^,]+)')
-
-_tracejob_run_re = re.compile(
-    '(?P<running_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
-    'Job Run at request of .*')
-
-_tracejob_last_re = re.compile(
-    '(?P<end_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.'
-    '\s+Exit_status=(?P<exit_status>\d+)\s+'
-    'resources_used.cput=(?P<used_cpu_time>[^ ]+)\s+'
-    'resources_used.mem=(?P<mem>[^ ]+)\s+'
-    'resources_used.vmem=(?P<used_memory>[^ ]+)\s+'
-    'resources_used.walltime=(?P<used_walltime>[^ ]+)')
-
 # convert data to GC3Pie internal format
-
 
 def _to_memory(val):
     """
@@ -122,27 +104,6 @@ def _parse_asctime(val):
             "Cannot parse '%s' as a PBS-format time stamp: %s: %s",
             val, err.__class__.__name__, str(err))
         return None
-
-
-_tracejob_keyval_mapping = {
-    # regexp group name
-    # |               `Task.execution` attribute
-    # |               |
-    # |               |                       converter function
-    # |               |                       |
-    # |               |                       |
-    #   ... common backend attrs (see Issue 78) ...
-    'exit_status': ('exitcode', int),
-    'used_cpu_time': ('used_cpu_time', Duration),
-    'used_walltime': ('duration', Duration),
-    'used_memory': ('max_used_memory', _to_memory),
-    #   ... PBS-only attrs ...
-    'mem': ('pbs_max_used_ram', _to_memory),
-    'submission_time': ('pbs_submission_time', _parse_asctime),
-    'running_time': ('pbs_running_time', _parse_asctime),
-    'end_time': ('pbs_end_time', _parse_asctime),
-    'queue': ('pbs_queue', str),
-    'job_name': ('pbs_jobname', str), }
 
 
 # code
@@ -247,72 +208,120 @@ class PbsLrms(batch.BatchSystem):
         return "%s -x -f %s" % (self._qstat, job.lrms_jobid)
 
     def _parse_stat_output(self, stdout):
-        # check that passed object obeys contract
-
         # parse `qstat` output
-        job_status = stdout.split()[4]
-        jobstatus = dict()
-        log.debug("translating PBS/Torque's `qstat` code "
-                  "'%s' to gc3libs.Run.State", job_status)
-        if job_status in ['Q', 'W']:
-            jobstatus['state'] = Run.State.SUBMITTED
-        elif job_status in ['R']:
-            jobstatus['state'] = Run.State.RUNNING
-        elif job_status in ['S', 'H', 'T'] or 'qh' in job_status:
-            jobstatus['state'] = Run.State.STOPPED
-        elif job_status in ['C', 'E', 'F']:
-            jobstatus['state'] = Run.State.TERMINATING
+        pbs_status = stdout.split()[4]
+        log.debug("translating PBS/Torque's `qstat` code"
+                  " '%s' to gc3libs.Run.State", pbs_status)
+        if pbs_status in ['Q', 'W']:
+            state = Run.State.SUBMITTED
+        elif pbs_status in ['R']:
+            state = Run.State.RUNNING
+        elif pbs_status in ['S', 'H', 'T'] or 'qh' in pbs_status:
+            state = Run.State.STOPPED
+        elif pbs_status in ['C', 'E', 'F']:
+            state = Run.State.TERMINATING
         else:
-            jobstatus['state'] = Run.State.UNKNOWN
+            state = Run.State.UNKNOWN
+        return self._stat_result(state, None)  # no term status info
 
-        return jobstatus
+    _tracejob_queued_re = re.compile(
+        '(?P<submission_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
+        'Job Queued at request of .*job name =\s*(?P<job_name>[^,]+),'
+        '\s+queue =\s*(?P<queue>[^,]+)')
+
+    _tracejob_run_re = re.compile(
+        '(?P<running_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
+        'Job Run at request of .*')
+
+    _tracejob_last_re = re.compile(
+        '(?P<end_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.'
+        '\s+Exit_status=(?P<exit_status>\d+)\s+'
+        'resources_used.cput=(?P<used_cpu_time>[^ ]+)\s+'
+        'resources_used.mem=(?P<mem>[^ ]+)\s+'
+        'resources_used.vmem=(?P<used_memory>[^ ]+)\s+'
+        'resources_used.walltime=(?P<used_walltime>[^ ]+)')
+
+    _tracejob_keyval_mapping = {
+        # regexp group name
+        # |               `Task.execution` attribute
+        # |               |
+        # |               |                        converter function
+        # |               |                        |
+        # |               |                        |
+        #   ... common backend attrs (see Issue 78) ...
+        'exit_status':   ('exitcode',              int),
+        'used_cpu_time': ('used_cpu_time',         Duration),
+        'used_walltime': ('duration',              Duration),
+        'used_memory':   ('max_used_memory',       _to_memory),
+        #   ... PBS-only attrs ...
+        'mem':           ('pbs_max_used_ram',      _to_memory),
+        'submission_time': ('pbs_submission_time', _parse_asctime),
+        'running_time':  ('pbs_running_time',      _parse_asctime),
+        'end_time':      ('pbs_end_time',          _parse_asctime),
+        'queue':         ('pbs_queue',             str),
+        'job_name':      ('pbs_jobname',           str),
+    }
 
     def _parse_acct_output(self, stdout):
-        jobstatus = {}
+        """Parse `tracejob` output."""
+        acctinfo = {}
         for line in stdout.split('\n'):
-            # FIXME: make a list of the three regexps and loop over it
-            match = _tracejob_queued_re.match(line)
-            if match:
-                for key, value in match.groupdict().iteritems():
-                    attr, conv = _tracejob_keyval_mapping[key]
-                    jobstatus[attr] = conv(value)
-                continue
-            match = _tracejob_run_re.match(line)
-            if match:
-                for key, value in match.groupdict().iteritems():
-                    attr, conv = _tracejob_keyval_mapping[key]
-                    jobstatus[attr] = conv(value)
-                continue
-            match = _tracejob_last_re.match(line)
-            if match:
-                for key, value in match.groupdict().iteritems():
-                    attr, conv = _tracejob_keyval_mapping[key]
-                    jobstatus[attr] = conv(value)
-                break
-        return jobstatus
+            for pattern, carry_on in [
+                    # regexp                   exit loop?
+                    # =====================    ==========
+                    (self._tracejob_queued_re, True),
+                    (self._tracejob_run_re,    True),
+                    (self._tracejob_last_re,   False),
+            ]:
+                match = pattern.match(line)
+                if match:
+                    for key, value in match.groupdict().iteritems():
+                        attr, conv = self._tracejob_keyval_mapping[key]
+                        acctinfo[attr] = conv(value)
+                    if carry_on:
+                        continue
+                    else:
+                        break
+        assert 'exitcode' in acctinfo, (
+            "Could not extract exit code from `tracejob` output")
+        acctinfo['termstatus'] = Run.shellexit_to_returncode(
+            acctinfo.pop('exitcode'))
+        return acctinfo
+
+    _pbspro_keyval_mapping = {
+        # PBS output key
+        # |               `Task.execution` attribute
+        # |                          |                  converter function
+        # |                          |                  |
+        # |                          |                  |
+        #   ... common backend attrs (see Issue 78) ...
+        'Exit_status':             ('exitcode',         int),
+        'resources_used.cpupt':    ('used_cpu_time',    Duration),
+        'resources_used.cput':     ('used_cpu_time',    Duration),
+        'resources_used.vmem':     ('used_memory',      _to_memory),
+        'resources_used.walltime': ('used_walltime',    Duration),
+        #   ... PBS-only attrs ...
+        'etime':                   ('pbs_queued_at',    _parse_asctime),
+        'queue':                   ('pbs_queue',        str),
+        'resources_used.mem':      ('pbs_max_used_ram', _to_memory),
+        'stime':                   ('pbs_started_at',   _parse_asctime),
+    }
 
     def _parse_secondary_acct_output(self, stdout):
-        jobstatus = {}
+        """Parse `qstat -x -f` output (PBSPro only)."""
+        acctinfo = {}
+        # FIXME: could be a bit smarter and not use a dumb quadratic
+        # complexity algo...
         for line in stdout.split('\n'):
-            if 'queue = ' in line:
-                jobstatus['queue'] = line.split('=')[1].strip()
-            if 'Exit_status =' in line:
-                jobstatus['exitcode'] = line.split('=')[1].strip()
-            if 'resources_used.cpupt = ' in line:
-                jobstatus['used_cpu_time'] = line.split('=')[1].strip()
-            if 'resources_used.cput =' in line:
-                jobstatus['used_cpu_time'] = line.split('=')[1].strip()
-            if 'resources_used.mem =' in line:
-                jobstatus['mem'] = line.split('=')[1].strip()
-            if 'resources_used.vmem =' in line:
-                jobstatus['used_memory'] = line.split('=')[1].strip()
-            if 'resources_used.walltime =' in line:
-                jobstatus['used_walltime'] = line.split('=')[1].strip()
-            if 'stime' in line:
-                jobstatus['pbs_started_at'] = line.split('=')[1].strip()
-            if 'etime' in line:
-                jobstatus['pbs_queued_at'] = line.split('=')[1].strip()
-        return jobstatus
+            for key, (attr, conv) in self._pbspro_keyval_mapping:
+                if (key + ' = ') in line:
+                    value = line.split('=')[1].strip()
+                    acctinfo[attr] = conv(value)
+        assert 'exitcode' in acctinfo, (
+            "Could not extract exit code from `qstat -x -f` output")
+        acctinfo['termstatus'] = Run.shellexit_to_returncode(
+            acctinfo.pop('exitcode'))
+        return acctinfo
 
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._qdel, jobid))
