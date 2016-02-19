@@ -27,17 +27,18 @@ import os
 import tempfile
 
 import mock
-from nose.tools import assert_equal
+from nose.tools import assert_equal, raises
 
 import gc3libs
 import gc3libs.core
 import gc3libs.config
+from gc3libs.exceptions import LRMSError
 from gc3libs.quantity import kB, seconds, minutes
 
 from faketransport import FakeTransport
 
 
-def correct_submit(jobid=123):
+def sbatch_submit_ok(jobid=123):
     return (
         # command exit code
         0,
@@ -46,6 +47,15 @@ def correct_submit(jobid=123):
         # stderr
         '')
 
+def sbatch_submit_failed(jobid=123):
+    return (
+        # command exit code
+        1,
+        # stdout
+        '',
+        # stderr
+        'sbatch: error: Batch job submission failed:'
+        ' Invalid account or account/partition combination specified')
 
 def sacct_no_accounting(jobid=123):
     return (
@@ -303,43 +313,63 @@ username=NONEXISTENT
     def tearDown(self):
         os.remove(self.tmpfile)
 
-    def test_slurm_basic_workflow(self):
+    def test_sbatch_submit_ok(self):
+        """Test `squeue` output parsing with a job in PENDING state."""
         app = FakeApp()
-
-        # Succesful submission:
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         assert_equal(app.execution.state, State.SUBMITTED)
 
-        # Update state. We would expect the job to be SUBMITTED
+    @raises(LRMSError)
+    def test_sbatch_submit_failed(self):
+        """Test `squeue` output parsing with a job in PENDING state."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_failed()
+        self.core.submit(app)
+        #assert_equal(app.execution.state, State.NEW)
+
+    def test_parse_squeue_output_pending(self):
+        """Test `squeue` output parsing with a job in PENDING state."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
         self.transport.expected_answer['squeue'] = squeue_pending()
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.SUBMITTED)
 
-        # Update state. We would expect the job to be RUNNING
-        self.transport.expected_answer['squeue'] = squeue_running()
-        self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.RUNNING)
-
-        # Job done. qstat doesn't find it, tracejob should.
-        self.transport.expected_answer['squeue'] = squeue_recently_completed()
-        # XXX: alternatively:
-        # self.transport.expected_answer['squeue'] = squeue_notfound()
-        # self.transport.expected_answer['sacct'] = sacct_done()
-        self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
-
-
-    def test_parse_sacct_output_singlecore1(self):
-        """Test `sacct` output with a successful single-core job."""
+    def test_parse_squeue_output_pending_then_running(self):
+        """Test `squeue` output parsing with a job in PENDING and then RUNNING state."""
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_pending()
+        self.core.update_job_state(app)
         assert_equal(app.execution.state, State.SUBMITTED)
 
         self.transport.expected_answer['squeue'] = squeue_running()
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.RUNNING)
+
+    def test_parse_squeue_output_immediately_running(self):
+        """Test `squeue` output parsing with a job that turns immediately to RUNNING state."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+    def test_job_termination1(self):
+        """Test that job termination status is correctly reaped if `squeue` fails but `sacct` does not."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
 
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_ok()
@@ -348,16 +378,14 @@ username=NONEXISTENT
 
         self._check_parse_sacct_done_ok(app.execution)
 
-    def test_parse_sacct_output_singlecore2(self):
-        """Test `sacct` output with a successful single-core job."""
+    def test_job_termination2(self):
+        """Test that job termination status is correctly reaped if neither `squeue` nor `sacct` fails."""
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
 
         self.transport.expected_answer['squeue'] = squeue_running()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.RUNNING)
 
         self.transport.expected_answer['squeue'] = squeue_recently_completed()
         self.transport.expected_answer['env'] = sacct_done_ok()
@@ -366,16 +394,14 @@ username=NONEXISTENT
 
         self._check_parse_sacct_done_ok(app.execution)
 
-    def test_parse_sacct_output_singlecore3(self):
-        """Test `sacct` output with a successful single-core job."""
+    def test_job_termination3(self):
+        """Test that no state update is performed if both `squeue` and `sacct` fail."""
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
 
         self.transport.expected_answer['squeue'] = squeue_running()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.RUNNING)
 
         # if the second `sacct` fails, we should not do any update
         self.transport.expected_answer['squeue'] = squeue_recently_completed()
@@ -486,7 +512,7 @@ username=NONEXISTENT
     def test_parse_sacct_output_parallel(self):
         """Test `sacct` output with a successful parallel job."""
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         self.transport.expected_answer['squeue'] = squeue_notfound()
         # self.transport.expected_answer['sacct'] = sacct_done_parallel()
@@ -529,7 +555,7 @@ username=NONEXISTENT
     def test_parse_sacct_output_bad_timestamps(self):
         """Test `sacct` output with out-of-order timestamps."""
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         self.transport.expected_answer['squeue'] = squeue_notfound()
         # self.transport.expected_answer['sacct'] = sacct_done_bad_timestamps()
@@ -571,7 +597,7 @@ username=NONEXISTENT
     def test_parse_sacct_output_fractional_rusage(self):
         """Test `sacct` output with fractional resource usage."""
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_fractional_rusage()
@@ -612,7 +638,7 @@ username=NONEXISTENT
     def test_parse_sacct_output_timeout(self):
         """Test `sacct` when job reaches its time limit"""
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_timeout()
@@ -625,7 +651,7 @@ username=NONEXISTENT
 
     def test_parse_sacct_output_job_cancelled(self):
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_cancelled()
@@ -638,7 +664,7 @@ username=NONEXISTENT
 
     def test_cancel_job1(self):
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
 
         self.transport.expected_answer['scancel'] = scancel_success()
@@ -648,7 +674,7 @@ username=NONEXISTENT
 
     def test_cancel_job2(self):
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         assert_equal(app.execution.state, State.SUBMITTED)
 
