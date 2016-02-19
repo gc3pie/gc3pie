@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2014, 2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -172,7 +172,7 @@ Tue Jul 24 10:05:45: Done successfully. The CPU time used is 2.1 seconds.
 """
     jobstatus = lsf._parse_stat_output(bjobs_output)
     assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.exit_status, 0)
+    assert_equal(jobstatus.termstatus, (0, 0))
 
 
 def test_bjobs_output_for_accounting():
@@ -338,7 +338,7 @@ Mon Jul 30 15:12:56: Done successfully. The CPU time used is 1.7 seconds.
  loadStop      -       -       -       -       -       -       -
 """)
     assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.exit_status, 0)
+    assert_equal(jobstatus.termstatus, (0, 0))
 
 
 def test_bjobs_output_done3():
@@ -381,7 +381,7 @@ Mon Aug  4 12:28:51 2014: Completed <exit>.
  Effective: select[type == local] order[r15s:pg] rusage[mem=2000.00]
 """)
     assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.exit_status, 127)
+    assert_equal(jobstatus.termstatus, (0, 127))
 
 
 def test_bjobs_output_exit_nonzero():
@@ -418,10 +418,9 @@ Tue Jul 24 10:26:53: Completed <exit>.
  loadStop      -       -       -       -       -       -       -
 """)
     assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.exit_status, 42)
+    assert_equal(jobstatus.termstatus, (0, 42))
 
 
-@raises(AssertionError)
 def test_bjobs_incorrect_prefix_length():
     lsf = LsfLrms(name='test',
                   architecture=gc3libs.Run.Arch.X86_64,
@@ -433,7 +432,7 @@ def test_bjobs_incorrect_prefix_length():
                   frontend='localhost',
                   transport='local',
                   lsf_continuation_line_prefix_length=7)
-    jobstatus = lsf._parse_stat_output("""
+    stat_result = lsf._parse_stat_output("""
 Job <2073>, Job Name <GRunApplication.0>, User <markmon>, Project <default>, St
                           atus <EXIT>, Queue <normal>, Command <sh -c inputfile
                           .txt>
@@ -462,7 +461,8 @@ Mon Aug  4 12:28:51 2014: Completed <exit>.
  Combined: select[type == local] order[r15s:pg] rusage[mem=2000.00]
  Effective: select[type == local] order[r15s:pg] rusage[mem=2000.00]
 """)
-    assert 'state' not in jobstatus
+    assert_equal(stat_result.state, gc3libs.Run.State.UNKNOWN)
+    assert_equal(stat_result.termstatus, None)
 
 
 def test_bjobs_correct_explicit_prefix_length():
@@ -476,7 +476,7 @@ def test_bjobs_correct_explicit_prefix_length():
                   frontend='localhost',
                   transport='local',
                   lsf_continuation_line_prefix_length=26)
-    jobstatus = lsf._parse_stat_output("""
+    stat_result = lsf._parse_stat_output("""
 Job <2073>, Job Name <GRunApplication.0>, User <markmon>, Project <default>, St
                           atus <EXIT>, Queue <normal>, Command <sh -c inputfile
                           .txt>
@@ -505,9 +505,8 @@ Mon Aug  4 12:28:51 2014: Completed <exit>.
  Combined: select[type == local] order[r15s:pg] rusage[mem=2000.00]
  Effective: select[type == local] order[r15s:pg] rusage[mem=2000.00]
 """)
-    assert 'state' in jobstatus
-    assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.exit_status, 127)
+    assert_equal(stat_result.state, gc3libs.Run.State.TERMINATING)
+    assert_equal(stat_result.termstatus, (0, 127))
 
 
 def test_bacct_done0():

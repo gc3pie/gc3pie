@@ -4,7 +4,7 @@
 This module provides a generic BatchSystem class from which all
 batch-like backends should inherit.
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -24,6 +24,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
+from collections import namedtuple
 from getpass import getuser
 import os
 import posixpath
@@ -255,16 +256,35 @@ class BatchSystem(LRMS):
             "this should have been defined in a derived class.")
 
     def _parse_stat_output(self, stdout):
-        """This method will parse the output of the stat command and
-        return the current status of the job. The return value will be
-        a dictionary which will be used to update job's information.
+        """
+        Parse the output of the "stat" command and return the current
+        status of the job and its exit status.
 
-        The only expected key is `state`, which must be a valid
-        `Run.State` state.
+        :return: A `_stat_result`:class: instance.
         """
         raise NotImplementedError(
             "Abstract method `_parse_stat_output()` called - "
             "this should have been defined in a derived class.")
+
+    # the only purpose of this class definition is to add a docstring
+    # to the named tuple
+    class _stat_result(namedtuple('_stat_result', ['state', 'termstatus'])):
+        """
+        Result of parsing the "stat" command output.
+        It is a pair ``(state, termstatus)``, where:
+
+        * ``state`` is a valid GC3Pie task state
+          (i.e., instance of `Run.State`:class:, which see);
+
+        * ``termstatus`` is either ``None`` (to indicate that no
+          termination status information is available), or any value
+          that can be used to set GC3Pie's `Run.returncode`:attr: (for
+          instance, a 16-bit POSIX process termination status).
+
+        The ``termstatus`` part is only meaningful when ``state``
+        is ``TERMINATING``.
+        """
+        pass
 
     def _acct_command(self, job):
         """
@@ -522,138 +542,130 @@ class BatchSystem(LRMS):
                 "see log file for errors", self.name)
             raise
 
-    def __do_acct(self, job, cmd, parse):
-        """Run `cmd` to get accounting information and update `job` state
-        accordingly."""
+
+    def __run_command_and_parse_output(self, cmd, parser, kind='accounting'):
+        log.debug("Checking remote job %s info with `%s` ...", kind, cmd)
         exit_code, stdout, stderr = self.transport.execute_command(cmd)
         if exit_code == 0:
-            jobstatus = parse(stdout)
-            job.update(jobstatus)
-            if 'exitcode' in jobstatus:
-                if 'signal' in jobstatus:
-                    job.returncode = (jobstatus['signal'],
-                                      jobstatus['exitcode'])
-                else:
-                    # XXX: we're assuming the batch system executes the
-                    # job through a shell, and collects the shell exit
-                    # code -- IOW, a job is never exec()'d directly from
-                    # the batch system daemon.  I'm not sure this is
-                    # actually true in all cases.
-                    job.returncode = Run.shellexit_to_returncode(
-                        int(jobstatus['exitcode']))
-                job.state = Run.State.TERMINATING
-            return job.state
+            return parser(stdout)
         else:
             raise gc3libs.exceptions.AuxiliaryCommandError(
-                "Failed running accounting command `%s`:"
+                "Failed running %s command `%s`:"
                 " exit code: %d, stderr: '%s'"
-                % (cmd, exit_code, stderr),
+                % (kind, cmd, exit_code, stderr),
                 do_log=True)
+
 
     @same_docstring_as(LRMS.update_job_state)
     @LRMS.authenticated
     def update_job_state(self, app):
+        job = app.execution
         try:
-            job = app.execution
             job.lrms_jobid
         except AttributeError as ex:
             # `job` has no `lrms_jobid`: object is invalid
             raise gc3libs.exceptions.InvalidArgument(
-                "Job object is invalid: %s" % str(ex))
+                "Job object is invalid: {ex}".format(ex=ex))
 
+        self.transport.connect()
+
+        cmd = self._stat_command(job)
         try:
-            self.transport.connect()
-            cmd = self._stat_command(job)
-            log.debug("Checking remote job status with '%s' ..." % cmd)
-            exit_code, stdout, stderr = self.transport.execute_command(cmd)
-            if exit_code == 0:
-                jobstatus = self._parse_stat_output(stdout)
-                job.update(jobstatus)
+            state, termstatus = self.__run_command_and_parse_output(
+                cmd, self._parse_stat_output, 'status')
+            if state != Run.State.TERMINATING:
+                # no need to go further and parse acct info; also,
+                # exit status is not relevant in this case
+                job.state = state
+                log.debug("Task %s state set to %s", app, state)
+                return state
+        except gc3libs.exceptions.AuxiliaryCommandError:
+            # use the special state value ``None`` to signal that
+            # the "status" command failed, we might need this
+            # after the "acct" command has run
+            state, termstatus = None, None
+        assert state is None or state == Run.State.TERMINATING
+        log.debug("Job status command gave state `%s`"
+                  " and termination status `%s` for task %s",
+                  state, termstatus, app)
 
-                job.state = jobstatus.get('state', Run.State.UNKNOWN)
-                if job.state == Run.State.UNKNOWN:
-                    log.warning(
-                        "Unknown batch job status,"
-                        " setting GC3Pie job state to `UNKNOWN`")
-
-                if 'exit_status' in jobstatus:
-                    job.returncode = Run.shellexit_to_returncode(
-                        int(jobstatus['exit_status']))
-
-                # SLURM's `squeue` command exits with code 0 if the
-                # job ID exists in the database (i.e., a job with that
-                # ID has been run) but prints no output.  In this
-                # case, we need to continue and examine the accounting
-                # command output to get the termination status etc.
-                if job.state != Run.State.TERMINATING:
-                    return job.state
-            else:
-                log.error(
-                    "Failed while running the `qstat`/`bjobs` command."
-                    " exit code: %d, stderr: '%s'" % (exit_code, stderr))
-
-            # In some batch systems, jobs disappear from qstat
-            # output as soon as they are finished. In these cases,
-            # we have to check some *accounting* command to check
-            # the exit status.
-            cmd = self._acct_command(job)
-            if cmd:
-                log.debug(
-                    "Retrieving accounting information using command"
-                    " '%s' ..." % cmd)
-                try:
-                    return self.__do_acct(job, cmd, self._parse_acct_output)
-                except gc3libs.exceptions.AuxiliaryCommandError:
-                    # This is used to distinguish between a standard
-                    # Torque installation and a PBSPro where `tracejob`
-                    # does not work but if `job_history_enable=True`,
-                    # then we can actually access information about
-                    # finished jobs with `qstat -x -f`.
-                    try:
-                        cmd = self._secondary_acct_command(job)
-                        if cmd:
-                            log.debug("The primary job accounting command"
-                                      " returned no information; trying"
-                                      " with '%s' instead...", cmd)
-                            return self.__do_acct(
-                                job, cmd, self._parse_secondary_acct_output)
-                    except (gc3libs.exceptions.AuxiliaryCommandError,
-                            NotImplementedError):
-                        # ignore error -- there is nothing we can do
-                        pass
-
-            # No *stat command and no *acct command returned
-            # correctly.
+        # In some batch systems, jobs disappear from qstat
+        # output as soon as they are finished. In these cases,
+        # we have to check some *accounting* command to check
+        # the exit status.
+        acctinfo = {}
+        for cmd_fn, parse_fn in [
+                # this is the regulat sacct/qacct/bjobs command
+                (self._acct_command, self._parse_acct_output),
+                # This is used to distinguish between a standard
+                # Torque installation and a PBSPro where `tracejob`
+                # does not work but if `job_history_enable=True`,
+                # then we can actually access information about
+                # finished jobs with `qstat -x -f`.
+                (self._secondary_acct_command, self._parse_secondary_acct_output),
+        ]:
+            cmd = cmd_fn(job)
             try:
-                if (time.time() - job.stat_failed_at) > self.accounting_delay:
-                    # accounting info should be there, if it's not
-                    # then job is definitely lost
-                    log.critical(
-                        "Failed executing remote command: '%s';"
-                        "exit status %d", cmd, exit_code)
-                    log.debug(
-                        "  remote command returned stdout: '%s'", stdout)
-                    log.debug(
-                        "  remote command returned stderr: '%s'", stderr)
-                    raise gc3libs.exceptions.LRMSError(
-                        "Failed executing remote command: '%s'; exit status %d"
-                        % (cmd, exit_code))
-                else:
-                    # do nothing, let's try later...
-                    return job.state
+                acctinfo = self.__run_command_and_parse_output(
+                    cmd, parse_fn, 'accounting')
+                # use info from the first acct command that succeeds
+                if acctinfo:
+                    log.debug("Gathered accounting info %r for task %s",
+                              acctinfo, app)
+                    break
+            except gc3libs.exceptions.AuxiliaryCommandError:
+                log.debug("Accounting command `%s` failed.", cmd)
+                # try next one
+                pass
+
+        # if no termination status is known and the acct
+        # command provided one, use it
+        if 'termstatus' in acctinfo:
+            # if we have a termination status, then the job has terminated
+            state = Run.State.TERMINATING
+            if termstatus is None:
+                termstatus = acctinfo['termstatus']
+            else:
+                # this should not happen!  but one never knows how new
+                # versions of the software may break old habits and
+                # parsing rules, so better fail loudly here so we get
+                # a bug report and a chance to fix...
+                assert termstatus == acctinfo['termstatus'], (
+                    "Status and accounting commands disagree"
+                    " on job termination status: {1} vs {2}"
+                    .format(termstatus, acctinfo['termstatus'])
+                )
+
+        if state is None:
+            # No *stat command and no *acct command returned correctly.
+            try:
+                job.stat_failed_at
             except AttributeError:
                 # this is the first time `qstat` fails, record a
                 # timestamp and retry later
                 job.stat_failed_at = time.time()
+                return job.state
 
-        except Exception as ex:
-            log.error("Error in querying Batch resource '%s': %s: %s",
-                      self.name, ex.__class__.__name__, str(ex))
-            raise
-        # If we reach this point it means that we don't actually know
-        # the current state of the job.
-        job.state = Run.State.UNKNOWN
-        return job.state
+            if (time.time() - job.stat_failed_at) <= self.accounting_delay:
+                # do nothing, let's try later...
+                return job.state
+            else:
+                # accounting info should be there, if it's not
+                # then job is definitely lost
+                job.state = Run.State.UNKNOWN
+                raise gc3libs.exceptions.LRMSError(
+                    "Could not retrieve status information for task {app}"
+                    .format(app=app))
+
+        # if we got to this point the job is in TERMINATING state
+        # and we know at least the termination status
+        assert state == Run.State.TERMINATING
+
+        job.state = state
+        job.returncode = termstatus
+        job.update(acctinfo)
+
+        return state
 
     @same_docstring_as(LRMS.peek)
     @LRMS.authenticated
