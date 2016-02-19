@@ -153,6 +153,7 @@ class BatchSystem(LRMS):
         else:
             raise gc3libs.exceptions.TransportError(
                 "Unknown transport '%s'" % transport)
+        self.accounting_delay = accounting_delay
 
     def get_jobid_from_submit_output(self, output, regexp):
         """Parse the output of the submission command. Regexp is
