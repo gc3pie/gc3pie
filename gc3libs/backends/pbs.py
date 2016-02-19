@@ -378,5 +378,5 @@ class PbsLrms(batch.BatchSystem):
 
 if "__main__" == __name__:
     import doctest
-    doctest.testmod(name="sge",
+    doctest.testmod(name="pbs",
                     optionflags=doctest.NORMALIZE_WHITESPACE)
