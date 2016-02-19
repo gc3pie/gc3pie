@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 #
 """
-Job control on SGE clusters (possibly connecting to the front-end via SSH).
+Job control on LSF clusters (possibly connecting to the front-end via SSH).
 """
 # Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
