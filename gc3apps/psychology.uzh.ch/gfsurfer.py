@@ -164,7 +164,7 @@ class GfsurferScript(SessionBasedScript):
             raise OSError(ex.message)
 
         self.freesurfer_pipeline = [ step for step in self.params.pipeline if step in FREESURFER_STEPS ]
-        gc3libs.log.debug("Accepted following Freesurfer steps: %s" % self.freesurfer_pipeline
+        gc3libs.log.debug("Accepted following Freesurfer steps: %s" % self.freesurfer_pipeline)
 
     def new_tasks(self, extra):
         """
