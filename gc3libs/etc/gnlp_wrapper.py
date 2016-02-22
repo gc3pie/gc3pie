@@ -13,8 +13,8 @@ SENTIMENTS = [
     'very negative',
     'positive',
     'very positive']
-FIELD = "Field1"
-CONTENT = "Content"
+FIELD = "pdid"
+CONTENT = "content"
 
 
 def Usage():
@@ -81,7 +81,7 @@ def RunParser(input, output):
                 child.text = sentiment[1:]
                 sentiment = ""
             index = line
-            row = root.find("./ROW/[%s='%s']" % (FIELD, index))
+            row = root.find("./row/[%s='%s']" % (FIELD, index))
         elif line.lower() in SENTIMENTS:
             sentiment += ",%s" % line
 

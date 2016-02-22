@@ -302,7 +302,7 @@ class GnlpScript(SessionBasedScript):
                         # Ignore and continue
                         continue
                 
-                    if line.strip() == "<ROW>":
+                    if line.strip() == "<row>":
                         if index % chunk_size == 0:
                             if fout:
                                 # Close existing file and create a new one
