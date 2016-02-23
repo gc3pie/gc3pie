@@ -1279,7 +1279,7 @@ def samefile(path1, path2):
             raise
 
 
-def sh_quote_safe(text):
+def sh_quote_safe(arg):
     """
     Escape a string for safely passing as argument to a shell command.
 
@@ -1294,7 +1294,7 @@ def sh_quote_safe(text):
       ''\\''arg'\\'''
 
     """
-    return ("'%s'" % text.replace("'", r"'\''"))
+    return ("'" + str(arg).replace("'", r"'\''") + "'")
 
 
 def sh_quote_safe_cmdline(args):
@@ -1315,7 +1315,7 @@ _DQUOTE_RE = re.compile(r'(\\*)"')
 """Regular expression for escaping double quotes in strings."""
 
 
-def sh_quote_unsafe(text):
+def sh_quote_unsafe(arg):
     """
     Double-quote a string for passing as argument to a shell command.
 
@@ -1332,7 +1332,7 @@ def sh_quote_unsafe(text):
       "\\"\\\\\\"arg\\\\\\"\\""
 
     """
-    return ('"%s"' % _DQUOTE_RE.sub(r'\1\1\"', text))
+    return ('"' + _DQUOTE_RE.sub(r'\1\1\"', str(arg)) + '"' )
 
 
 def sh_quote_unsafe_cmdline(args):
