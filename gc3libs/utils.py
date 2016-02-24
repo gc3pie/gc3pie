@@ -925,14 +925,30 @@ def move_recursively(src, dst, overwrite=False, changed_only=True):
         movefile(src, dst, overwrite, changed_only)
 
 
-def occurs(pattern, filename):
+def occurs(pattern, filename, match=grep):
     """
-    Return ``True`` if any line in `filename` matches regular expression
-    `pattern`.
+    Return ``True`` if a line in `filename` matches `pattern`.
+
+    The `match` argument selects how exactly `pattern` is searched for
+    in the contents of `filename`:
+
+    * when `match=grep` (default), then `pattern` is a regular
+      expression that is searched for (unanchored) in every line;
+
+    * when `match=fgrep`, then `pattern` is a string that is searched
+      for literally in every line;
+
+    * more in general, the `match` function should return an iterator
+      over matches of `pattern` within the contents of `filename`: if
+      at least one match is found, `occurs` will return ``True``.
+
+    :param str pattern:  Pattern to search for
+    :param str filename: Path name of the file to search into
+    :param match: Function returning iterator over matches
     """
     try:
         # look for the first match -- if one is found, we're done
-        grep(pattern, filename).next()
+        match(pattern, filename).next()
         return True
     except StopIteration:
         return False
