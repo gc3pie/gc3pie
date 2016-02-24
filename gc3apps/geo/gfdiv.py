@@ -144,7 +144,7 @@ class FunctionalDiversityApplication(Application):
         extra_args.setdefault('requested_cores',        1)
         extra_args.setdefault('requested_memory',       3*GB)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
-        extra_args.setdefault('requested_walltime',     6*days)
+        extra_args.setdefault('requested_walltime',     30*days)
         # actual app initialization
         Application.__init__(
             self,
