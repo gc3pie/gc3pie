@@ -54,10 +54,67 @@ import gc3libs
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, existing_file
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, days, hours, minutes, seconds
-from gc3libs.utils import basename_sans, irange, parse_range
+from gc3libs.utils import basename_sans, fgrep, irange, occurs, parse_range
+from gc3libs.workflow import RetryableTask
 
 
 ## custom application class
+
+class MatlabRetryOnOutOfMemory(RetryableTask):
+    """
+    Run a task and retry it if failed with an out-of-memory condition.
+
+    Memory requirements will be increased each time by a configurable
+    amount until a set maximum is reached; when that happens, we just
+    give up retrying and mark the task as failed.
+
+    Proper detection of the out-of-memory condition relies on MATLAB's
+    error message ``Out of memory.`` being detected in the task's
+    STDOUT stream.
+    """
+
+    def __init__(self, task, increment=1*GB, maximum=31*GB, **extra_args):
+        self.increment = increment
+        self.maximum = maximum
+        super(RetryableTask).__init__(self, task, **extra_args)
+
+    def retry(self):
+        last_run = self.task.execution
+        try:
+            requested_memory = self.task.requested_memory
+            if requested_memory is None:
+                requested_memory = last_run.max_used_memory
+        except AttributeError:
+            requested_memory = last_run.max_used_memory
+        generic_memory_error = (
+            last_run.returncode != 0
+            and last_run.max_used_memory > requested_memory)
+        task_stderr = os.path.join(self.task.output_dir, self.task.stderr)
+        matlab_memory_error = (
+            occurs('Out of memory.', task_stderr, fgrep)
+            or occurs('MATLAB:nomem.', task_stderr, fgrep))
+        if generic_memory_error or matlab_memory_error:
+            new_requested_memory = requested_memory + self.increment
+            if new_requested_memory >= self.maximum:
+                gc3libs.log.info(
+                    "%s: Possible out-of-memory condition detected,"
+                    " but increasing memory requirements would"
+                    " exceed set maximum of %s.  Aborting task.",
+                    self.task, self.maximum)
+                return False
+            else:
+                self.task.requested_memory = new_requested_memory
+                gc3libs.log.info(
+                    "%s: Possible out-of-memory condition detected,"
+                    " will request %s for next run.",
+                    self.task, self.task.requested_memory)
+                return True
+        else:
+            gc3libs.log.info(
+                "%s: Task failed for non-memory-related reasons,"
+                " *not* resubmitting it again.", self.task)
+            return False
+
 
 class FunctionalDiversityApplication(Application):
     """
@@ -85,7 +142,7 @@ class FunctionalDiversityApplication(Application):
             outputfile = ('output_{inputname}_{radius}.mat'.format(**locals()))
         # default execution params
         extra_args.setdefault('requested_cores',        1)
-        extra_args.setdefault('requested_memory',       7*GB)
+        extra_args.setdefault('requested_memory',       3*GB)
         extra_args.setdefault('requested_architecture', Run.Arch.X86_64)
         extra_args.setdefault('requested_walltime',     6*days)
         # actual app initialization
@@ -127,7 +184,7 @@ new input files or an extended range is specified in the command line.
 
     def setup_options(self):
         # change default for the memory/walltime options
-        self.actions['memory_per_core'].default = 7*Memory.GB
+        self.actions['memory_per_core'].default = 3*Memory.GB
         self.actions['wctime'].default = '60 days'
 
 
@@ -193,11 +250,14 @@ new input files or an extended range is specified in the command line.
                 jobname = ('{funcname}_{inputname}_{radius}'.format(**locals()))
                 outputfile = ('output_{inputname}_{radius}.mat'.format(**locals()))
                 output_dir = join(base_output_dir, jobname)
-                yield FunctionalDiversityApplication(
-                    funcfile,
-                    radius,
-                    inputfile,
-                    jobname=jobname,
-                    outputfile=outputfile,
-                    output_dir=output_dir,
-                    **kwargs)
+                yield MatlabRetryOnOutOfMemory(
+                    FunctionalDiversityApplication(
+                        funcfile,
+                        radius,
+                        inputfile,
+                        jobname=jobname,
+                        outputfile=outputfile,
+                        output_dir=output_dir,
+                        **kwargs),
+                    increment=4*GB,
+                )
