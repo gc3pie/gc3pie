@@ -2,7 +2,7 @@
 """
 Top-level classes for task execution and control.
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -1360,6 +1360,29 @@ class Engine(object):
                     # task changed state, mark as to remove
                     transitioned.append(index)
                     self._terminated.append(task)
+                else:
+                    # if we got to this point, state has an invalid value
+                    gc3libs.log.error(
+                        "Invalid state '%r' returned by task %s."
+                        state, task)
+                    if not gc3libs.error_ignored(
+                            # context:
+                            # - module
+                            'core',
+                            # - class
+                            'Engine',
+                            # - method
+                            'progress',
+                            # - actual error class
+                            'InternalError',
+                            # - additional keywords
+                            'state',
+                            'update',
+                    ):
+                        # propagate exception to caller
+                        raise InternalError(
+                            "Invalid state '{state!r}' returned by task {task}"
+                            .format(state=state, task=task))
             except gc3libs.exceptions.ConfigurationError:
                 # Unrecoverable; no sense in continuing -- pass
                 # immediately on to client code and let it handle
