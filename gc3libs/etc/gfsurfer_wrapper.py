@@ -24,6 +24,7 @@ recon-all -long s01.cross.TP1 s01.base -all -qcache
 import sys
 import os
 import subprocess
+import argparse
 
 NII_EXTENSION = "nii"
 FSAVERAGE = "fsaverage"
@@ -38,12 +39,8 @@ FS_SEQ=[FS_SEQ_LONG,FS_SEQ_CROSS]
 
 def RunFreesurfer():
     """
-    Walk through `input` and search for every subfolder with at least 1 `nii` file.
-    Record reference to `nii` files per subfolder.
-    Run Data Input, Cross Sectional, Base and Long for all of them.
-    Use only 1 core, run the step sequentially.
+    By default the input files are in the same local directory as the wrapper executed. 
     """
-    import argparse
 
     parser = argparse.ArgumentParser(description='Run Freesurfer.')
     parser.add_argument('subject', metavar='SUBJECT',
@@ -53,47 +50,54 @@ def RunFreesurfer():
     parser.add_argument('output', metavar='OUTPUT',
                         help='Subject dir')
     parser.add_argument('--seq', dest='sequence', action="append",
-                        default=[],
+                        default=[FS_SEQ_CROSS],
                         help='Freesurfer sequence. Valid values %s' % FS_SEQ)
     
     args = parser.parse_args()
 
     # Create output folder and add simlink to FSAVERAGE
-    os.mkdir(output)
-    os.symlink(FS_SUBJECT_FSAVERAGE,os.path.join(output,FSAVERAGE))
+    os.mkdir(args.output)
+    os.symlink(FS_SUBJECT_FSAVERAGE,os.path.join(args.output,FSAVERAGE))
 
     # Verisfy input arguments
     try:
-        assert os.path.isfile(parser.nifti), \
-            "Input NIFTI file %s not found" % parser.nifti
+        assert os.path.isfile(args.nifti), \
+            "Input NIFTI file %s not found" % args.nifti
 
-        if parser.sequence:
-            parser.sequence = FS_SEQ_DEFAULT
+        if args.sequence:
+            args.sequence = FS_SEQ_DEFAULT
     except AssertionError as ex:
         raise OSError(ex.message)
 
     input_nii = dict()
     cross_files = []
-    os.environ["SUBJECTS_DIR"] = output
+    os.environ["SUBJECTS_DIR"] = args.output
+    quality_checker = os.environ["QA_TOOLS"]
 
-    if FS_SEQ_CROSS in parser.sequence:
+    if FS_SEQ_CROSS in args.sequence:
 
         # DATA INPUT and  CROSS SECTIONAL PROCESSING
-        print "Start DATA INPUT on %s" % parser.subject
-        "Example: recon-all -i in_data_path/s01/TP1/T1w_b.nii.gz -subjid s01.cross.TP1"
-        command="recon-all -i %s -subjid %s.cross" % (parser.nifti,parser.sequence)
+        print "Start DATA INPUT on %s" % args.subject
+        "Example: recon-all -i file.nii.gz -subjid s01.cross.TP1"
+        command="recon-all -i %s -subjid %s.crossTP1" % (args.nifti,args.nifti.split(".")[0])
         runme(command)
         
         print "Start CROSS SECTIONAL PROCESSING"
         "Example: recon-all -s s01.cross.TP1 -all"
-        command="recon-all -s %s.cross -all" % parser.sequence
+        command="recon-all -s %s.crossTP1 -all" % args.nifti.split(".")[0]
         runme(command)
 
-    if FS_SEQ_LONG in parser.sequence:
+        print "Start the Quality Control"
+        "Example: $QA_Tools/recon_checker"
+        command="recon_checker -s %s.crossTP1" % args.nifti.split(".")[0]
+        runme(command)
+         
+
+    if FS_SEQ_LONG in args.sequence:
         # LONG PROCESSING s01
-        print "Start LONG PROCESSING on %s" % parser.subject
+        print "Start LONG PROCESSING on %s" % args.subject
         # Example: recon-all -long s01.cross.TP1 s01.base -all -qcache
-        command = "recon-all -long %scross -all -qcache" % parser.subject
+        command = "recon-all -long %scross -all -qcache" % args.subject
         runme(command)
 
 def runme(command):

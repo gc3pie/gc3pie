@@ -23,11 +23,9 @@
 
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
-See the output of ``gfsurfer.py --help`` for program usage
-instructions.
+See the output of ``gfsurfer.py --help`` for program usage instructions.
 
 Input parameters consists of:
-
 ...
 
 Options:
@@ -71,10 +69,9 @@ from gc3libs.workflow import RetryableTask
 DEFAULT_CORES = 1
 DEFAULT_MEMORY = Memory(3000,MB)
 
-DEFAULT_REMOTE_INPUT_FOLDER="./input/"
 DEFAULT_REMOTE_OUTPUT_FOLDER="./output"
 
-INPUT_LIST_PATTERNS = [".nii",".nii.tgz",".nii.tar.gz"]
+INPUT_LIST_PATTERNS = [".nii",".nii.tgz",".nii.gz",".nii.tar.gz"]
 FREESURFER_STEPS = ['cross','long']
 
 ## custom application class
@@ -97,10 +94,8 @@ class GfsurferApplication(Application):
         
         arguments = "./%s %s %s %s" % (inputs[gfsurfer_wrapper],
                                        subject_name,
-                                       DEFAULT_REMOTE_INPUT_FOLDER,
+                                       os.path.basename(input_nifti),
                                        DEFAULT_REMOTE_OUTPUT_FOLDER)
-
-        arguments += "-s "+" -s ".join(freesurfer_steps)
 
         Application.__init__(
             self,
@@ -109,7 +104,7 @@ class GfsurferApplication(Application):
             outputs = [DEFAULT_REMOTE_OUTPUT_FOLDER],
             stdout = 'gfsurfer.log',
             join=True,
-            executables = [os.path.basename(gfsurfer_wrapper)]
+            executables = [os.path.basename(gfsurfer_wrapper)],
             **extra_args)        
 
 class GfsurferScript(SessionBasedScript):
@@ -139,17 +134,12 @@ class GfsurferScript(SessionBasedScript):
             )
  
     def setup_args(self):
-
         self.add_param('input_data', type=str,
                        help="Root localtion of input data. "
                        "Note: expected folder structure: "
-                       " 1 subfodler for each subject. "
-                       " In each subject folder, " 
-                       " 1 subfolder for each TimePoint. "
-                       " Each TimePoint folder should contain 2 input "
-                       "NFTI files.")
+                       " - input files in case of cross sectional runs. "
+                       " - subdirectories with input files for more TP in case of longitudinal ")
 
-    def setup_options(self):
         self.add_param("-P", "--pipeline", metavar="STRING", type=str, 
                        dest="pipeline",
                        default="cross",
@@ -184,13 +174,13 @@ class GfsurferScript(SessionBasedScript):
 
             extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
-                                                                        'run_%s' % subjectname)
+                                                                        'run_%s' % subject_name)
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
-                                                                        'run_%s' % subjectname)
+                                                                        'run_%s' % subject_name)
             extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
-                                                                        'run_%s' % subjectname)
+                                                                        'run_%s' % subject_name)
             extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
-                                                                        'run_%s' % subjectname)
+                                                                        'run_%s' % subject_name)
             
             tasks.append(GfsurferApplication(
                 subject_name,
