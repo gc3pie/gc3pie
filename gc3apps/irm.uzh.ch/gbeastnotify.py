@@ -56,7 +56,7 @@ class GBeastApp(gc3libs.Application):
                 '-threads', ncores,
                 '-beagle_instances', ncores,
                 fname]
-        
+
         gc3libs.Application.__init__(
             self,
             arguments = args,
@@ -102,13 +102,12 @@ class GBeastScript(SessionBasedScript):
 
     def add_new_application(self, fname):
         if fname.endswith('.xml'):
-            if 'BEAST1' in fname:
-                beast = 'beast1'
-            elif 'BEAST2' in fname:
+            beast = 'beast1'
+            if 'BEAST2' in fname:
                 beast = 'beast2'
             else:
-                gc3libs.error("Unable to guess which version of BEAST you want to run. Skipping file %s" % fname)
-                return None
+                gc3libs.log.warning("Unable to guess which version of BEAST you want to run for file %s. Assuming BEAST v1" % fname)
+
             jarfile = self.params.beast1 if beast == 'beast1' else self.params.beast2
             try:
                 # We need to load from a previously saved job extra
@@ -138,7 +137,7 @@ class GBeastScript(SessionBasedScript):
                 self.session.add(app)
                 return app
             except Exception as ex:
-                gc3libs.error("Error while adding application for file %s", fname)
+                gc3libs.log.error("Error while adding application for file %s", fname)
 
     def every_main_loop(self):
         # Check if any new file has been created. The 5 seconds
