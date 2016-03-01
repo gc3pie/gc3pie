@@ -1363,7 +1363,7 @@ class Engine(object):
                 else:
                     # if we got to this point, state has an invalid value
                     gc3libs.log.error(
-                        "Invalid state '%r' returned by task %s."
+                        "Invalid state '%r' returned by task %s.",
                         state, task)
                     if not gc3libs.error_ignored(
                             # context:
