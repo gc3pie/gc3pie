@@ -4,7 +4,7 @@
 This module provides a generic BatchSystem class from which all
 batch-like backends should inherit.
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -566,6 +566,23 @@ class BatchSystem(LRMS):
             cmd = self._stat_command(job)
             log.debug("Checking remote job status with '%s' ..." % cmd)
             exit_code, stdout, stderr = self.transport.execute_command(cmd)
+            if __debug__:
+                if stdout:
+                    log.debug(
+                        "Command `%s` produced the following STDOUT lines:", cmd)
+                    for line in stdout.split('\n'):
+                        log.debug("```%s```", line)
+                else:
+                    log.debug(
+                        "Command `%s` did not produce *any* STDOUT.", cmd)
+                if stderr:
+                    log.debug(
+                        "Command `%s` produced the following STDERR lines:", cmd)
+                    for line in stderr.split('\n'):
+                        log.debug("```%s```", line)
+                else:
+                    log.debug(
+                        "Command `%s` did not produce *any* STDERR.", cmd)
             if exit_code == 0:
                 jobstatus = self._parse_stat_output(stdout)
                 job.update(jobstatus)
