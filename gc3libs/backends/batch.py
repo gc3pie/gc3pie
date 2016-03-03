@@ -596,7 +596,7 @@ class BatchSystem(LRMS):
         # the exit status.
         acctinfo = {}
         for cmd_fn, parse_fn in [
-                # this is the regulat sacct/qacct/bjobs command
+                # this is the regular sacct/qacct/bjobs command
                 (self._acct_command, self._parse_acct_output),
                 # This is used to distinguish between a standard
                 # Torque installation and a PBSPro where `tracejob`
