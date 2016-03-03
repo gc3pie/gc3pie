@@ -26,6 +26,7 @@ import gc3libs
 from gc3libs.cmdline import SessionBasedScript
 import os
 import inotifyx
+from gc3libs.quantity import GiB, MiB
 
 ## main: run tests
 
@@ -45,10 +46,11 @@ class GRunningApp(gc3libs.Task):
 class GBeastApp(gc3libs.Application):
     def __init__(self, beast, jarfile, dirname, fname, ncores, **extra):
         infile = os.path.join(dirname, fname)
+        self.fname = fname
         self.extra = extra
         extra['output_dir'] = fname[:-4] + '.d'
         extra['requested_cores'] = ncores
-        extra['requested_memory'] = ncores*4*GiB
+        extra['requested_memory'] = ncores*4000*GiB
 
         args = ['java',
                 '-Xmx%dm' % extra['requested_memory'].amount(MiB),
@@ -135,9 +137,10 @@ class GBeastScript(SessionBasedScript):
                 ### controller *and* to the session?
                 self._controller.add(app)
                 self.session.add(app)
+                gc3libs.log.info("Added new application to session for file %s", fname)
                 return app
             except Exception as ex:
-                gc3libs.log.error("Error while adding application for file %s", fname)
+                gc3libs.log.error("Error while adding application for file %s: %s", fname, ex)
 
     def every_main_loop(self):
         # Check if any new file has been created. The 5 seconds
@@ -153,7 +156,7 @@ class GBeastScript(SessionBasedScript):
         # have to ensure that there is already an app for each file in
         # the directory, otherwise we create a new app.
 
-        working_files = [app.path for app in self.session if 'path' in app]
+        working_files = [app.fname for app in self.session if 'fname' in app]
         extra = self.session.tasks.values()[0].extra
         for fname in os.listdir(self.params.path):
             if fname not in working_files:
