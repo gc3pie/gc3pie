@@ -548,7 +548,7 @@ class BatchSystem(LRMS):
         log.debug("Checking remote job %s info with `%s` ...", kind, cmd)
         exit_code, stdout, stderr = self.transport.execute_command(cmd)
         if exit_code == 0:
-            return parser(stdout)
+            return parser(stdout, stderr)
         else:
             raise gc3libs.exceptions.AuxiliaryCommandError(
                 "Failed running %s command `%s`:"

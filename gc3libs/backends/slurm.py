@@ -213,7 +213,7 @@ class SlurmLrms(batch.BatchSystem):
         return "%s --noheader -o %%i^%%T^%%r -j %s" % \
             (self._squeue, job.lrms_jobid)
 
-    def _parse_stat_output(self, stdout):
+    def _parse_stat_output(self, stdout, stderr):
         """
         Receive the output of ``squeue --noheader -o %i:%T:%r and parse it.
         """
@@ -314,7 +314,7 @@ class SlurmLrms(batch.BatchSystem):
                 'submit,start,end,maxrss,maxvmsize -j %s' %
                 (self._sacct, job.lrms_jobid))
 
-    def _parse_acct_output(self, stdout):
+    def _parse_acct_output(self, stdout, stderrs):
         acct = {
             'cores':            0,
             'duration':         Duration(0, unit=seconds),

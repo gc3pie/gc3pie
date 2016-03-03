@@ -444,6 +444,7 @@ class LsfLrms(batch.BatchSystem):
                 "Unknown LSF job status '%s', returning `UNKNOWN`", stat)
             return Run.State.UNKNOWN
 
+    _job_not_found_re = re.compile('Job <(?P<jobid>[0-9]+)> is not found')
     _status_re = re.compile(r'Status <(?P<state>[A-Z]+)>', re.M)
     _unsuccessful_exit_re = re.compile(
         r'Exited with exit code (?P<exit_status>[0-9]+).', re.M)
@@ -452,7 +453,7 @@ class LsfLrms(batch.BatchSystem):
     _mem_used_re = re.compile(
         r'MAX MEM:\s+(?P<mem_used>[0-9]+)\s+(?P<mem_unit>[a-zA-Z]+);', re.M)
 
-    def _parse_stat_output(self, stdout):
+    def _parse_stat_output(self, stdout, stderr):
         # LSF `bjobs -l` uses a LDIF-style continuation lines, wherein
         # a line is truncated at 79 characters and continues upon the
         # next one; continuation lines start with a fixed amount of
@@ -579,7 +580,7 @@ class LsfLrms(batch.BatchSystem):
             # XXX: what does LSF use as a default?
             return Memory(int(m), unit=bytes)
 
-    def _parse_acct_output(self, stdout):
+    def _parse_acct_output(self, stdout, stderr):
         # Antonio: this is an ugly fix, but we have issues with bacct
         # on some LSF installation being veeeeery slow, so we have to
         # try and use `bjobs` whenever possible, and fall back to

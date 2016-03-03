@@ -387,7 +387,7 @@ class SgeLrms(batch.BatchSystem):
     def _stat_command(self, job):
         return ("%s | egrep  '^ *%s'" % (self._qstat, job.lrms_jobid))
 
-    def _parse_stat_output(self, stdout):
+    def _parse_stat_output(self, stdout, stderr):
         ge_status_code = stdout.split()[4]
         log.debug(
             "translating SGE's `qstat` code '%s' to gc3libs.Run.State",
@@ -438,7 +438,7 @@ class SgeLrms(batch.BatchSystem):
         'start_time':    ('sge_start_time', _parse_asctime),
     }
 
-    def _parse_acct_output(self, stdout):
+    def _parse_acct_output(self, stdout, stderr):
         acctinfo = {}
         for line in stdout.split('\n'):
             # skip empty and header lines

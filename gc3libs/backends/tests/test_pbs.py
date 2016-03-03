@@ -330,7 +330,7 @@ username=NONEXISTENT
 
     def test_parse_acct_output(self):
         rc, stdout, stderr = correct_tracejob_done()
-        status = self.backend._parse_acct_output(stdout)
+        status = self.backend._parse_acct_output(stdout, stderr)
         # common job reporting values (see Issue 78)
         assert_equal(status['termstatus'], (0, 0))
         assert_equal(status['duration'], 2 * minutes + 5 * seconds)
