@@ -388,6 +388,26 @@ Mon Aug  4 12:28:51 2014: Completed <exit>.
     assert_equal(jobstatus.termstatus, (0, 127))
 
 
+def test_bjobs_output_done_long_ago():
+    """Test parsing `bjobs -l` output for a job that was removed from `mbatchd` core memory"""
+    lsf = LsfLrms(name='test',
+                  architecture=gc3libs.Run.Arch.X86_64,
+                  max_cores=1,
+                  max_cores_per_job=1,
+                  max_memory_per_core=1 * GB,
+                  max_walltime=1 * hours,
+                  auth=None,  # ignored if `transport` is `local`
+                  frontend='localhost',
+                  transport='local')
+    jobstatus = lsf._parse_stat_output(
+        # empty STDOUT
+        '',
+        # STDERR
+        'Job <943186> is not found')
+    assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
+    assert_equal(jobstatus.termstatus, None)
+
+
 def test_bjobs_output_exit_nonzero():
     lsf = LsfLrms(name='test',
                   architecture=gc3libs.Run.Arch.X86_64,
