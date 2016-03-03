@@ -207,7 +207,7 @@ class PbsLrms(batch.BatchSystem):
     def _secondary_acct_command(self, job):
         return "%s -x -f %s" % (self._qstat, job.lrms_jobid)
 
-    def _parse_stat_output(self, stdout):
+    def _parse_stat_output(self, stdout, stderr):
         # parse `qstat` output
         pbs_status = stdout.split()[4]
         log.debug("translating PBS/Torque's `qstat` code"
@@ -262,7 +262,7 @@ class PbsLrms(batch.BatchSystem):
         'job_name':      ('pbs_jobname',           str),
     }
 
-    def _parse_acct_output(self, stdout):
+    def _parse_acct_output(self, stdout, stderr):
         """Parse `tracejob` output."""
         acctinfo = {}
         for line in stdout.split('\n'):
@@ -307,7 +307,7 @@ class PbsLrms(batch.BatchSystem):
         'stime':                   ('pbs_started_at',   _parse_asctime),
     }
 
-    def _parse_secondary_acct_output(self, stdout):
+    def _parse_secondary_acct_output(self, stdout, stderr):
         """Parse `qstat -x -f` output (PBSPro only)."""
         acctinfo = {}
         # FIXME: could be a bit smarter and not use a dumb quadratic
