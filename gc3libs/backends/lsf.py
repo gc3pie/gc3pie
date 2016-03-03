@@ -454,6 +454,18 @@ class LsfLrms(batch.BatchSystem):
         r'MAX MEM:\s+(?P<mem_used>[0-9]+)\s+(?P<mem_unit>[a-zA-Z]+);', re.M)
 
     def _parse_stat_output(self, stdout, stderr):
+        # LSF's `bjobs` can only report info for terminated jobs, if
+        # they finished no longer than ``CLEAN_PERIOD`` seconds
+        # before; for older jobs it just prints ``Job XXX is not
+        # found`` to STDERR.  However, it does the same when passed a
+        # non-existent job ID.  We cannot distinguish the two cases
+        # here; let's just be optimistic and presume that if a job ID
+        # is not found, it must have been terminated since (at least)
+        # we have it in our records so it *was* submitted...  See
+        # issue #513 for details.
+        if self._job_not_found_re.match(stderr):
+            return self._stat_result(Run.State.TERMINATING, None)
+
         # LSF `bjobs -l` uses a LDIF-style continuation lines, wherein
         # a line is truncated at 79 characters and continues upon the
         # next one; continuation lines start with a fixed amount of
