@@ -583,6 +583,20 @@ class AbortOnError(_OnError):
     `self.execution.returncode` mirrors the return code of the last
     finished task.
 
+
+    .. note::
+
+      For the mix-in to take effect, this class should be listed
+      *before* the base task collection class, e.g.::
+
+        # this works
+        class MyTaskCollection(AbortOnError, SequentialTaskCollection):
+          pass
+
+        # this *does not* work
+        class MyOtherTaskCollection(SequentialTaskCollection, AbortOnError):
+          pass
+
     See :meth:`SequentialTaskCollection.next` and `GitHub issue #512`_
     for some caveats on applying this to dynamically-built task
     collections.
@@ -598,6 +612,19 @@ class StopOnError(_OnError):
     A second effect of mixing this class in is that the
     `self.execution.returncode` mirrors the return code of the last
     finished task.
+
+    .. note::
+
+      For the mix-in to take effect, this class should be listed
+      *before* the base task collection class, e.g.::
+
+        # this works
+        class MyTaskCollection(StopOnError, SequentialTaskCollection):
+          pass
+
+        # this *does not* work
+        class MyOtherTaskCollection(SequentialTaskCollection, StopOnError):
+          pass
 
     See :meth:`SequentialTaskCollection.next` and `GitHub issue #512`_
     for some caveats on applying this to dynamically-built task
