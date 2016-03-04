@@ -352,7 +352,7 @@ class SequentialTaskCollection(TaskCollection):
 
     def next(self, done):
         """
-        Return the state or task to run when step number `done` is completed.
+        Return collection state or task to run after step number `done` is terminated.
 
         This method is called when a task is finished; the `done`
         argument contains the index number of the just-finished task
