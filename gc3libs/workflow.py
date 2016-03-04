@@ -10,7 +10,7 @@ patterns of job group execution; they can be combined to form more
 complex workflows.  Hook methods are provided so that derived classes
 can implement problem-specific job control policies.
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -490,18 +490,82 @@ class SequentialTaskCollection(TaskCollection):
 
 class _OnError(object):
     """
-    Mix-in class to make a `SequentialTaskCollection`:class: turn to a
-    specific state state as soon as one of the tasks fail.
+    Mix-in class to make a `SequentialTaskCollection`:class: instance
+    turn to a specific state as soon as one of the tasks fail.
 
-    The final state is set by copying the `_on_error_state` attribute.
+    The final state is set by copying the `_on_error_state` attribute;
+    of course it only makes sense that it is a state that stops
+    further updates from GC3Pie -- like ``STOPPED`` (see
+    `StopOnError`:class:) or ``TERMINATED`` (see
+    `AbortOnError`:class:).
 
     A second effect of mixing this class in is that the
-    `self.execution.returncode` mirrors the return code of the last
-    finished task.
+    `self.execution.returncode` attribute of the task collection
+    instance mirrors the return code of the last finished task.
+
+    .. seealso:: `StopOnError`:class:, `AbortOnError`:class:
     """
+
+    # override in subclasses!
+    _on_error_state = Run.State.UNKNOWN
+
+    def complete(self):
+        """
+        Return ``True`` if the last executed task is the final task of the sequence.
+
+        This is used in the `_OnError.next`:meth: to determine whether
+        the last executed task is actually the last task of the
+        sequence (hence the task collection is TERMINATED even if it
+        failed), or more tasks could be added (hence the final state
+        is set by `_on_error_state`).
+
+        The default implementation always returns ``True``, which
+        ensures that the mix-in classes `AbortOnError`:class: and
+        `StopOnError`:class: work out-of-the-box with
+        `StagedTaskCollection`:class: and
+        `DependentTaskCollection`:task:.
+
+        .. versionadded:: 2.5
+        """
+        return True
+
     def next(self, done):
+        """
+        Return collection state after step number `done` is terminated.
+
+        Note that the task collection state should be set to
+        ``TERMINATED`` after the last task has been executed,
+        regardless of whether it failed or not.  Now, there are two
+        distinct contexts where `next` could be applied in a
+        `SequentialTaskCollection` instance:
+
+        1. After the whole sequence has been built, i.e., when
+           `self.tasks[-1]` is actually the last task that should be
+           executed.  This is, e.g., the case with the stock
+           `StagedTaskCollection`:class: and
+           `DependentTaskCollection`:class: instances.  In this case,
+           the `next` method can confidently mark the task collection
+           as ``TERMINATED`` when the last task has been executed.
+
+        2. While the sequence is still being built: in this case, a
+           failed job should only set the task collection to
+           `_on_error_state` -- as there might be further tasks coming
+           down the road.
+
+        Method `complete`:meth: is available to tell `next` which of
+        these cases applies: if ``self.complete()`` returns ``True``
+        then this class' implementation of `next` takes the behavior
+        described in case 1. above; if `self.complete()` is instead
+        ``False`` then the logic of case 2. above is applied instead.
+
+        See `GitHub issue #512` for a lengthier discussion.
+
+        .. seealso: :meth:`SequentialTaskCollection.next`, `GitHub issue #512`_
+
+        .. _`GitHub issue #512`: https://github.com/uzh/gc3pie/issues/512
+        """
         self.execution.returncode = self.tasks[done].execution.returncode
-        if done == len(self.tasks) - 1:
+        if self.complete() and done == len(self.tasks)-1:
             return Run.State.TERMINATED
         else:
             if self.execution.returncode != 0:
@@ -512,24 +576,32 @@ class _OnError(object):
 
 class AbortOnError(_OnError):
     """
-    Mix-in class to make a `SequentialTaskCollection`:class: turn to TERMINATED
-    state as soon as one of the tasks fail.
+    Mix-in class to make a `SequentialTaskCollection`:class: turn to
+    ``TERMINATED`` state as soon as one of the tasks fail.
 
     A second effect of mixing this class in is that the
     `self.execution.returncode` mirrors the return code of the last
     finished task.
+
+    See :meth:`SequentialTaskCollection.next` and `GitHub issue #512`_
+    for some caveats on applying this to dynamically-built task
+    collections.
     """
     _on_error_state = Run.State.TERMINATED
 
 
 class StopOnError(_OnError):
     """
-    Mix-in class to make a `SequentialTaskCollection`:class: turn to STOPPED
-    state as soon as one of the tasks fail.
+    Mix-in class to make a `SequentialTaskCollection`:class: turn to
+    ``STOPPED`` state as soon as one of the tasks fail.
 
     A second effect of mixing this class in is that the
     `self.execution.returncode` mirrors the return code of the last
     finished task.
+
+    See :meth:`SequentialTaskCollection.next` and `GitHub issue #512`_
+    for some caveats on applying this to dynamically-built task
+    collections.
     """
     _on_error_state = Run.State.STOPPED
 
