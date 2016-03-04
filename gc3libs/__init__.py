@@ -1189,17 +1189,6 @@ class Application(Task):
                     selected.append(lrms)
         return selected
 
-    def fetch_output(
-            self, download_dir, overwrite, changed_only, **extra_args):
-        """
-        Call the corresponding method of the controller.
-        """
-        return self._controller.fetch_output(
-            self,
-            download_dir,
-            overwrite,
-            changed_only,
-            **extra_args)
 
     ##
     # backend interface methods
