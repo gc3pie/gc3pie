@@ -152,15 +152,14 @@ resourcedir = %s
 
     def test_simpledaemon_d(self):
         wdir = os.path.join(self.env.base_path, 'wdir')
-        proc = subprocess.Popen(
-            ['python',
-             os.path.join(self.scriptdir, 'simpledaemon.py',),
-             '-C', '1',
-             '--working-dir', wdir,
-             '--config-files', self.cfgfile,
-             '-r', 'localhost',
-            ],
-        )
+        proc = subprocess.Popen([
+            'python',
+            os.path.join(self.scriptdir, 'simpledaemon.py',),
+            '-C', '1',
+            '--working-dir', wdir,
+            '--config-files', self.cfgfile,
+            '-r', 'localhost',
+        ],)
 
         clean_exit = False
         for i in range(10):
@@ -178,34 +177,32 @@ resourcedir = %s
 
         pid = open(pidfile).read()
         os.kill(int(pid), signal.SIGTERM)
-        
+
         assert_true(clean_exit, "Daemon didn't complete after 10 seconds")
         assert_true(os.path.isdir(wdir))
 
         # Since it's a daemon, this shouldn't be needed
         proc.kill()
-        
 
         # a logfile
         assert_true(os.path.isfile(os.path.join(wdir, 'simpledaemon.log')))
-        
+
         # the output directory
         assert_true(os.path.isdir(os.path.join(wdir, 'EchoApp')))
-        
+
     def test_simpledaemon_inbox(self):
         wdir = os.path.join(self.env.base_path, 'wdir')
         inboxdir = os.path.join(wdir, 'inbox')
-        proc = subprocess.Popen(
-            ['python',
-             os.path.join(self.scriptdir, 'simpledaemon.py',),
-             '-C', '1',
-             '--working-dir', wdir,
-             '--config-files', self.cfgfile,
-             '-r', 'localhost',
-             '-vvv',
-             inboxdir,
-            ],
-        )
+        proc = subprocess.Popen([
+            'python',
+            os.path.join(self.scriptdir, 'simpledaemon.py',),
+            '-C', '1',
+            '--working-dir', wdir,
+            '--config-files', self.cfgfile,
+            '-r', 'localhost',
+            '-vvv',
+            inboxdir,
+        ],)
 
         clean_exit = False
         for i in range(10):
@@ -226,20 +223,19 @@ resourcedir = %s
 
         pid = open(pidfile).read()
         os.kill(int(pid), signal.SIGTERM)
-        
+
         assert_true(clean_exit, "Daemon didn't complete after 10 seconds")
         assert_true(os.path.isdir(wdir))
 
         # Since it's a daemon, this shouldn't be needed
         proc.kill()
-        
 
         # a logfile
         assert_true(os.path.isfile(os.path.join(wdir, 'simpledaemon.log')))
-        
+
         # the output directory
         assert_true(os.path.isdir(os.path.join(wdir, 'EchoApp')))
-    
+
 # main: run tests
 
 if "__main__" == __name__:
