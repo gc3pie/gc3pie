@@ -43,23 +43,28 @@ __docformat__ = 'reStructuredText'
 
 # stdlib modules
 import fnmatch
+from lockfile.pidlockfile import PIDLockFile
 import logging
+from logging.handlers import SysLogHandler
 import math
 import os
 import os.path
+import signal
 import sys
 from prettytable import PrettyTable
 import time
 
 # 3rd party modules
+import daemon
 import cli  # pyCLI
 import cli.app
 import cli._ext.argparse as argparse
+import inotifyx
 
 # interface to Gc3libs
 import gc3libs
-from gc3libs.compat import lockfile
 import gc3libs.config
+from gc3libs.compat import lockfile
 import gc3libs.core
 import gc3libs.exceptions
 import gc3libs.persistence
@@ -470,7 +475,8 @@ class _Script(cli.app.CommandLineApp):
                    " including any output you got by running '%s -vvvv %s'."
                    " (You need to be subscribed to post to the mailing list;"
                    " you can also post without being subscribed by using the"
-                   " web interface at http://dir.gmane.org/gmane.comp.python.gc3pie )")
+                   " web interface at"
+                   " http://dir.gmane.org/gmane.comp.python.gc3pie )")
             if len(sys.argv) > 0:
                 msg %= (ex.__class__.__name__, str(ex),
                         self.name, str.join(' ', sys.argv[1:]))
@@ -484,7 +490,8 @@ class _Script(cli.app.CommandLineApp):
                    " including any output you got by running '%s -vvvv %s'."
                    " (You need to be subscribed to post to the mailing list;"
                    " you can also post without being subscribed by using the"
-                   " web interface at http://dir.gmane.org/gmane.comp.python.gc3pie )"
+                   " web interface at"
+                   " http://dir.gmane.org/gmane.comp.python.gc3pie )"
                    " Thanks for your cooperation!")
             if len(sys.argv) > 0:
                 msg %= (str(ex), self.name, str.join(' ', sys.argv[1:]))
@@ -714,76 +721,15 @@ class GC3UtilsScript(_Script):
                     raise
 
 
-class SessionBasedScript(_Script):
-
+class _SessionBasedCommand(_Script):
     """
-    Base class for ``grosetta``/``ggamess``/``gcodeml`` and like scripts.
-    Implements a long-running script to submit and manage a large number
-    of jobs grouped into a "session".
-
-    The generic scripts implements a command-line like the following::
-
-      PROG [options] INPUT [INPUT ...]
-
-    First, the script builds a list of input files by recursively
-    scanning each of the given INPUT arguments for files matching the
-    `self.input_file_pattern` glob string (you can set it via a
-    keyword argument to the ctor).  To perform a different treatment
-    of the command-line arguments, override the
-    :py:meth:`process_args()` method.
-
-    Then, new jobs are added to the session, based on the results of
-    the `process_args()` method above.  For each tuple of items
-    returned by `process_args()`, an instance of class
-    `self.application` (which you can set by a keyword argument to the
-    ctor) is created, passing it the tuple as init args, and added to
-    the session.
-
-    The script finally proceeds to updating the status of all jobs in
-    the session, submitting new ones and retrieving output as needed.
-    When all jobs are done, the method :py:meth:`done()` is called,
-    and its return value is used as the script's exit code.
-
-    The script's exitcode tracks job status, in the following way.
-    The exitcode is a bitfield; only the 4 least-significant bits
-    are used, with the following meaning:
-
-       ===  ============================================================
-       Bit  Meaning
-       ===  ============================================================
-         0  Set if a fatal error occurred: the script could not complete
-         1  Set if there are jobs in `FAILED` state
-         2  Set if there are jobs in `RUNNING` or `SUBMITTED` state
-         3  Set if there are jobs in `NEW` state
-       ===  ============================================================
-
-    This boils down to the following rules:
-       * exitcode == 0: all jobs terminated successfully, no further action
-       * exitcode == 1: an error interrupted script execution
-       * exitcode == 2: all jobs terminated, not all of them successfully
-       * exitcode > 3: run the script again to progress jobs
-
+    Base class for Session Based scripts (interactive or daemons)
     """
-
     ##
     # CUSTOMIZATION METHODS
     ##
     # The following are meant to be freely customized in derived scripts.
     ##
-
-    def setup_args(self):
-        """
-        Set up command-line argument parsing.
-
-        The default command line parsing considers every argument as
-        an (input) path name; processing of the given path names is
-        done in `parse_args`:meth:
-        """
-        self.add_param('args', nargs='*', metavar='INPUT',
-                       help="Path to input file or directory."
-                       " Directories are recursively scanned for input files"
-                       " matching the glob pattern '%s'"
-                       % self.input_filename_pattern)
 
     def make_directory_path(self, pathspec, jobname):
         """
@@ -812,6 +758,140 @@ class SessionBasedScript(_Script):
                 .replace('NAME', jobname)
                 .replace('DATE', time.strftime('%Y-%m-%d'))
                 .replace('TIME', time.strftime('%H:%M')))
+
+    def make_task_controller(self):
+        """
+        Return a 'Controller' object to be used for progressing tasks
+        and getting statistics.  In detail, a good 'Controller' object
+        has to implement `progress` and `stats` methods with the same
+        interface as `gc3libs.core.Engine`.
+
+        By the time this method is called (from `_main`:meth:), the
+        following instance attributes are already defined:
+
+        * `self._core`: a `gc3libs.core.Core` instance;
+        * `self.session`: the `gc3libs.session.Session` instance
+          that should be used to save/load jobs
+
+        In addition, any other attribute created during initialization
+        and command-line parsing is of course available.
+        """
+        return gc3libs.core.Engine(
+            self._core,
+            self.session,
+            self.session.store,
+            max_submitted=self.params.max_running,
+            max_in_flight=self.params.max_running)
+
+    def add(self, task):
+        """
+        Method to add a task to the session (and the controller)
+        """
+        self.controller.add(task)
+        self.session.add(task)
+
+    def before_main_loop(self):
+        """
+        Hook executed before entering the scripts' main loop.
+
+        This is the last chance to alter the script state as it will
+        be seen by the main loop.
+
+        Override in subclasses to plug any behavior here; the default
+        implementation does nothing.
+        """
+        pass
+
+    def every_main_loop(self):
+        """
+        Hook executed during each round of the main loop.
+
+        This is called from within the main loop.
+
+        Override in subclasses to plug any behavior here; the default
+        implementation does nothing.
+
+        FIXME: While on a SessionBasedScript this method is called
+        *after* processing all the jobs, on a SessionBasedDaemon it is
+        called *before*.
+
+        """
+        pass
+
+    def after_main_loop(self):
+        """
+        Hook executed after exit from the main loop.
+
+        This is called after the main loop has exited (for whatever
+        reason), but *before* the session is finally saved and other
+        connections are finalized.
+
+        Override in subclasses to plug any behavior here; the default
+        implementation does nothing.
+        """
+        pass
+
+    ##
+    # pyCLI INTERFACE METHODS
+    ##
+    # The following methods adapt the behavior of the
+    # `SessionBasedScript` class to the interface expected by pyCLI
+    # applications.  Think twice before overriding them, and read
+    # the pyCLI docs before :-)
+    ##
+
+    # safeguard against programming errors: if the `application` ctor
+    # parameter has not been given to the constructor, the following
+    # method raises a fatal error (this function simulates a class ctor)
+    def __unset_application_cls(*args, **kwargs):
+        """Raise an error if users did not set `application` in
+        `SessionBasedScript` initialization."""
+        raise gc3libs.exceptions.InvalidArgument(
+            "PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
+
+    def __init__(self, **extra_args):
+        """
+        Perform initialization and set the version, help and usage
+        strings.
+
+        The help text to be printed when the script is invoked with the
+        ``-h``/``--help`` option will be taken from (in order of preference):
+          * the keyword argument `description`
+          * the attribute `self.description`
+        If neither is provided, an `AssertionError` is raised.
+
+        The text to output when the the script is invoked with the
+        ``-V``/``--version`` options is taken from (in order of
+        preference):
+          * the keyword argument `version`
+          * the attribute `self.version`
+        If none of these is provided, an `AssertionError` is raised.
+
+        The `usage` keyword argument (if provided) will be used to
+        provide the program help text; if not provided, one will be
+        generated based on the options and positional arguments
+        defined in the code.
+
+        Any additional keyword argument will be used to set a
+        corresponding instance attribute on this Python object.
+        """
+        self.session = None
+        # by default, print stats of all kind of jobs
+        self.stats_only_for = None
+        self.instances_per_file = 1
+        self.instances_per_job = 1
+        self.extra = {}  # extra extra_args arguments passed to `parse_args`
+        # use bogus values that should point ppl to the right place
+        self.input_filename_pattern = 'PLEASE SET `input_filename_pattern`'
+        'IN `SessionBasedScript` CONSTRUCTOR'
+        # catch omission of mandatory `application` ctor param (see above)
+        self.application = _SessionBasedCommand.__unset_application_cls
+        # init base classes
+        _Script.__init__(
+            self,
+            main=self._main,
+            **extra_args
+        )
 
     def process_args(self):
         """
@@ -843,9 +923,11 @@ class SessionBasedScript(_Script):
             self.make_directory_path(
                 self.params.output,
                 'NAME'))
-
         # build job list
         new_jobs = list(self.new_tasks(self.extra.copy()))
+        self._add_new_tasks(new_jobs)
+
+    def _add_new_tasks(self, new_jobs):
         # pre-allocate Job IDs
         if len(new_jobs) > 0:
             # XXX: can't we just make `reserve` part of the `IdFactory`
@@ -929,261 +1011,6 @@ class SessionBasedScript(_Script):
         if 'task' in task:
             # RetryableTask
             self._fix_output_dir(task.task, name)
-
-    def new_tasks(self, extra):
-        """
-        Iterate over jobs that should be added to the current session.
-        Each item yielded must have the form `(jobname, cls, args,
-        kwargs)`, where:
-
-        * `jobname` is a string uniquely identifying the job in the
-          session; if a job with the same name already exists, this
-          item will be ignored.
-
-        * `cls` is a callable that returns an instance of
-          `gc3libs.Application` when called as `cls(*args, **kwargs)`.
-
-        * `args` is a tuple of arguments for calling `cls`.
-
-        * `kwargs` is a dictionary used to provide keyword arguments
-          when calling `cls`.
-
-        This method is called by the default `process_args`:meth:, passing
-        `self.extra` as the `extra` parameter.
-
-        The default implementation of this method scans the arguments
-        on the command-line for files matching the glob pattern
-        `self.input_filename_pattern`, and for each matching file returns
-        a job name formed by the base name of the file (sans
-        extension), the class given by `self.application`, and the
-        full path to the input file as sole argument.
-
-        If `self.instances_per_file` and `self.instances_per_job` are
-        set to a value other than 1, for each matching file N jobs are
-        generated, where N is the quotient of
-        `self.instances_per_file` by `self.instances_per_job`.
-
-        See also: `process_args`:meth:
-        """
-        inputs = self._search_for_input_files(self.params.args)
-
-        for path in inputs:
-            if self.instances_per_file > 1:
-                for seqno in range(1,
-                                   1 + self.instances_per_file,
-                                   self.instances_per_job):
-                    if self.instances_per_job > 1:
-                        yield (
-                            "%s.%d--%s" % (
-                                gc3libs.utils.basename_sans(path),
-                                seqno,
-                                min(seqno + self.instances_per_job - 1,
-                                    self.instances_per_file)),
-                            self.application, [path], extra.copy())
-                    else:
-                        yield ("%s.%d" % (gc3libs.utils.basename_sans(path),
-                                          seqno),
-                               self.application, [path], extra.copy())
-            else:
-                yield (gc3libs.utils.basename_sans(path),
-                       self.application, [path], extra.copy())
-
-    def make_task_controller(self):
-        """
-        Return a 'Controller' object to be used for progressing tasks
-        and getting statistics.  In detail, a good 'Controller' object
-        has to implement `progress` and `stats` methods with the same
-        interface as `gc3libs.core.Engine`.
-
-        By the time this method is called (from `_main`:meth:), the
-        following instance attributes are already defined:
-
-        * `self._core`: a `gc3libs.core.Core` instance;
-        * `self.session`: the `gc3libs.session.Session` instance
-          that should be used to save/load jobs
-
-        In addition, any other attribute created during initialization
-        and command-line parsing is of course available.
-        """
-        return gc3libs.core.Engine(
-            self._core,
-            self.session,
-            self.session.store,
-            max_submitted=self.params.max_running,
-            max_in_flight=self.params.max_running)
-
-    def print_summary_table(self, output, stats):
-        """
-        Print a text summary of the session status to `output`.
-        This is used to provide the "normal" output of the
-        script; when the ``-l`` option is given, the output
-        of the `print_tasks_table` function is appended.
-
-        Override this in subclasses to customize the report that you
-        provide to users.  By default, this prints a table with the
-        count of tasks for each possible state.
-
-        The `output` argument is a file-like object, only the `write`
-        method of which is used.  The `stats` argument is a
-        dictionary, mapping each possible `Run.State` to the count of
-        tasks in that state; see `Engine.stats` for a detailed
-        description.
-
-        """
-        table = PrettyTable(['state', 'n', 'n%'])
-        table.align = 'r'
-        table.align['n%'] = 'c'
-        table.border = False
-        table.header = False
-        total = stats['total']
-        # ensure we display enough decimal digits in percentages when
-        # running a large number of jobs; see Issue 308 for a more
-        # detailed descrition of the problem
-        if total > 0:
-            precision = max(1, math.log10(total) - 1)
-            fmt = '(%%.%df%%%%)' % precision
-            for state in sorted(stats.keys()):
-                table.add_row([
-                    state,
-                    "%d/%d" % (stats[state], total),
-                    fmt % (100.00 * stats[state] / total)
-                ])
-        output.write(str(table))
-        output.write("\n")
-
-    def print_tasks_table(
-            self, output=sys.stdout, states=gc3libs.Run.State, only=object):
-        """
-        Output a text table to stream `output`, giving details about
-        tasks in the given states.
-
-        Optional second argument `states` restricts the listing to
-        tasks that are in one of the specified states.  By default, all
-        task states are allowed.  The `states` argument should be a
-        list or a set of `Run.State` values.
-
-        Optional third argument `only` further restricts the listing
-        to tasks that are instances of a subclass of `only`.  By
-        default, there is no restriction and all tasks are listed. The
-        `only` argument can be a Python class or a tuple -- anything
-        infact, that you can pass as second argument to the
-        `isinstance` operator.
-
-        :param output: An output stream (file-like object)
-        :param states: List of states (`Run.State` items) to consider.
-        :param   only: Root class (or tuple of root classes) of tasks to
-                       consider.
-        """
-        table = PrettyTable(['JobID', 'Job name', 'State', 'Info'])
-        table.align = 'l'
-        for task in self.session:
-            if isinstance(task, only) and task.execution.in_state(*states):
-                table.add_row([task.persistent_id, task.jobname,
-                               task.execution.state, task.execution.info])
-
-        # XXX: uses prettytable's internal implementation detail
-        if len(table._rows) > 0:
-            output.write(str(table))
-            output.write("\n")
-
-    def before_main_loop(self):
-        """
-        Hook executed before entering the scripts' main loop.
-
-        This is the last chance to alter the script state as it will
-        be seen by the main loop.
-
-        Override in subclasses to plug any behavior here; the default
-        implementation does nothing.
-        """
-        pass
-
-    def every_main_loop(self):
-        """
-        Hook executed during each round of the main loop.
-
-        This is called from within the main loop, after progressing
-        all tasks.
-
-        Override in subclasses to plug any behavior here; the default
-        implementation does nothing.
-        """
-        pass
-
-    def after_main_loop(self):
-        """
-        Hook executed after exit from the main loop.
-
-        This is called after the main loop has exited (for whatever
-        reason), but *before* the session is finally saved and other
-        connections are finalized.
-
-        Override in subclasses to plug any behavior here; the default
-        implementation does nothing.
-        """
-        pass
-
-    ##
-    # pyCLI INTERFACE METHODS
-    ##
-    # The following methods adapt the behavior of the
-    # `SessionBasedScript` class to the interface expected by pyCLI
-    # applications.  Think twice before overriding them, and read
-    # the pyCLI docs before :-)
-    ##
-
-    # safeguard against programming errors: if the `application` ctor
-    # parameter has not been given to the constructor, the following
-    # method raises a fatal error (this function simulates a class ctor)
-    def __unset_application_cls(*args, **kwargs):
-        """Raise an error if users did not set `application` in
-        `SessionBasedScript` initialization."""
-        raise gc3libs.exceptions.InvalidArgument(
-            "PLEASE SET `application` in `SessionBasedScript` CONSTRUCTOR")
-
-    def __init__(self, **extra_args):
-        """
-        Perform initialization and set the version, help and usage
-        strings.
-
-        The help text to be printed when the script is invoked with the
-        ``-h``/``--help`` option will be taken from (in order of preference):
-          * the keyword argument `description`
-          * the attribute `self.description`
-        If neither is provided, an `AssertionError` is raised.
-
-        The text to output when the the script is invoked with the
-        ``-V``/``--version`` options is taken from (in order of
-        preference):
-          * the keyword argument `version`
-          * the attribute `self.version`
-        If none of these is provided, an `AssertionError` is raised.
-
-        The `usage` keyword argument (if provided) will be used to
-        provide the program help text; if not provided, one will be
-        generated based on the options and positional arguments
-        defined in the code.
-
-        Any additional keyword argument will be used to set a
-        corresponding instance attribute on this Python object.
-        """
-        self.session = None
-        # by default, print stats of all kind of jobs
-        self.stats_only_for = None
-        self.instances_per_file = 1
-        self.instances_per_job = 1
-        self.extra = {}  # extra extra_args arguments passed to `parse_args`
-        # use bogus values that should point ppl to the right place
-        self.input_filename_pattern = 'PLEASE SET `input_filename_pattern`'
-        'IN `SessionBasedScript` CONSTRUCTOR'
-        # catch omission of mandatory `application` ctor param (see above)
-        self.application = SessionBasedScript.__unset_application_cls
-        # init base classes
-        _Script.__init__(
-            self,
-            main=self._main,
-            **extra_args
-        )
 
     def setup(self):
         """
@@ -1302,21 +1129,6 @@ class SessionBasedScript(_Script):
             " (YYYY-MM-DD); 'TIME' is replaced by the submission time"
             " formatted as HH:MM.  'SESSION' is replaced by the path to the"
             " session directory, with a '.out' appended.")
-        self.add_param(
-            "-l",
-            "--state",
-            action="store",
-            nargs='?',
-            dest="states",
-            default='',
-            const=str.join(
-                ',',
-                gc3libs.Run.State),
-            help="Print a table of jobs including their status."
-            " Optionally, restrict output to jobs with a particular STATE or"
-            " STATES (comma-separated list).  The pseudo-states `ok` and"
-            " `failed` are also allowed for selecting jobs in TERMINATED"
-            " state with exitcode 0 or nonzero, resp.")
         return
 
     def pre_run(self):
@@ -1364,9 +1176,6 @@ class SessionBasedScript(_Script):
                 and 'ITER' not in self.params.output):
             self.params.output = os.path.join(self.params.output, 'NAME')
 
-        # parse the `states` list
-        self.params.states = self.params.states.split(',')
-
     ##
     # INTERNAL METHODS
     ##
@@ -1374,6 +1183,7 @@ class SessionBasedScript(_Script):
     # overridden and customized in derived classes, although there
     # should be no need to do so.
     ##
+
     def _make_session(self, session_uri, store_url):
         """
         Return a `gc3libs.session.Session` instance for use in this script.
@@ -1473,7 +1283,7 @@ class SessionBasedScript(_Script):
             rc = self._main_loop()
             if self.params.wait > 0:
                 self.log.info("sleeping for %d seconds..." % self.params.wait)
-                while rc > 3:
+                while not self._main_loop_done(rc):
                     # Python scripts become unresponsive during
                     # `time.sleep()`, so we just do the wait in small
                     # steps, to allow the interpreter to process
@@ -1501,6 +1311,479 @@ class SessionBasedScript(_Script):
         self._controller.close()
 
         return rc
+
+
+class SessionBasedDaemon(_SessionBasedCommand):
+    """
+    Base class for GC3Pie daemons
+    """
+    # TODO:
+    #
+    # + DAEMONIZE (where? In run()?) Use python-daemon
+    # + option `-F, --foreground` to NOT daemonize
+    # + write logs to <pwd>/<appname>.log by default
+    # * --syslog option to send logs to syslog
+    # * IPC via Check https://pypi.python.org/pypi/oi to:
+    #   - get status of jobs (but you can check the session dir too)
+    #   - abort jobs
+    #   - resubmit jobs
+    #   - ...
+    # * Correctly process SIGTERM and SIGHUP (again python-daemon module)
+    # * Add convenience function for inotify:
+    #   - arguments: "inbox" directory for which you want to run inotify
+    #   - as soon as possible (pre_run?) watch the directories
+    #   - every time a new file is created, call
+    #     `self.new_tasks(extra, path=path)`
+    # * parsing of a configuration file?
+
+    def setup(self):
+        _SessionBasedCommand.setup(self)
+        # change default for the core/memory/walltime options
+        self.actions['wait'].default = 30
+        self.actions['wait'].help = 'Check the status of the jobs every NUM'
+        ' seconds. Default: %(default)s'
+
+    def setup_args(self):
+        self.add_param('-F', '--foreground',
+                       action='store_true',
+                       default=False,
+                       help="Run in foreground. Default: %(default)s")
+
+        self.add_param('--syslog',
+                       action='store_true',
+                       default=False,
+                       help="Send log messages (also) to syslog."
+                       " Default: %(default)s")
+
+        self.add_param('--working-dir',
+                       default=os.getcwd(),
+                       help="Run in WORKING_DIR. Ignored if run in foreground."
+                       " Default: %(default)s")
+
+        avail_events = [event[3:] for event in inotifyx.constants.keys()]
+        self.add_param('--notify-state',
+                       nargs='?',
+                       default='CLOSE_WRITE',
+                       help="Comma separated list of inotify events to watch."
+                       " Default: %(default)s. Available events: " +
+                       str.join(', ', avail_events))
+
+        self.add_param('inbox', nargs='*',
+                       help="`inbox` directories: whenever a new file is"
+                       " created in one of these directories, a callback is"
+                       " triggered to add new jobs")
+
+    def pre_run(self):
+        super(SessionBasedDaemon, self).pre_run()
+
+        # Ensure inbox directories exist
+        for inbox in self.params.inbox:
+            if not os.path.isdir(inbox):
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Inbox path %s is not a directory" % inbox)
+        self.params.inbox = [os.path.abspath(p) for p in self.params.inbox]
+        # Syntax check for notify events
+
+        self.params.notify_state = self.params.notify_state.split(',')
+
+        # Add IN_ as we use shorter names for the command line
+        state_names = ['IN_' + i for i in self.params.notify_state]
+
+        # Build the notify mask, for later use
+        self.inotify_event_mask = 0
+
+        # Ensure all the supplied states are correct
+        for state in self.params.notify_state:
+            istate = 'IN_' + state
+            if istate not in inotifyx.constants.keys():
+                raise gc3libs.exceptions.InvalidUsage(
+                    "Invalid inotify state %s." % state)
+            self.inotify_event_mask |= inotifyx.constants[istate]
+
+    def __setup_logging(self):
+        # FIXME: Apparently, when running in foreground _and_ --syslog
+        # is used, only a few logs are sent to syslog and then nothing
+        # more.
+
+        # We use a function to avoid repetitions: since when
+        # demonizing all open file descriptors are called, we need to
+        # configure logging from *within* the DaemonContext context
+
+        # If --syslog, add a logging handler to send to local syslog
+        if self.params.syslog:
+            self.log.addHandler(
+                SysLogHandler(address="/dev/log",
+                              facility=SysLogHandler.LOG_USER))
+        elif not self.params.foreground:
+            # The default behavior when run in daemon mode
+            # is to log to a file in working directory called
+            # <application>.log
+            self.log.addHandler(
+                logging.FileHandler(
+                    os.path.join(self.params.working_dir,
+                                 self.name + '.log')))
+        # else: log to stdout, which is the default.
+
+    def __setup_inotify(self):
+        # Setup inotify on inbox directories
+        self.inotify_fds = {}
+        for inbox in self.params.inbox:
+            ifd = inotifyx.init()
+            self.inotify_fds[inbox] = ifd
+            inotifyx.add_watch(ifd, inbox, self.inotify_event_mask)
+
+    def _main(self):
+        if self.params.foreground:
+            # If --foreground, then behave like a SessionBasedScript with
+            # the exception that the script will never end.
+            self.__setup_logging()
+            self.__setup_inotify()
+            self.log.info("Running in foreground as requested")
+            return super(SessionBasedDaemon, self)._main()
+        else:
+            # If
+            lock = PIDLockFile(
+                os.path.join(
+                    self.params.working_dir, self.name + '.pid'))
+            context = daemon.DaemonContext(
+                working_directory=self.params.working_dir,
+                umask=0o002,
+                pidfile=lock)
+            with context:
+                self.__setup_logging()
+                self.__setup_inotify()
+                self.log.info("Daemonizing ...")
+                return super(SessionBasedDaemon, self)._main()
+
+    def _main_loop_done(self, rc):
+        # Run until interrupted
+        return False
+
+    def _main_loop(self):
+        """
+        The main loop of the application.  It is in a separate
+        function so that we can call it just once or properly loop
+        around it, as directed by the `self.params.wait` option.
+
+        .. note::
+
+          Overriding this method can disrupt the whole functionality of
+          the script, so be careful.
+
+        Invocation of this method should return a numeric exitcode,
+        that will be used as the scripts' exitcode.  See
+        `_main_loop_exitcode` for an explanation.
+        """
+        # hook method: this is the method used to add new applications
+        # to the session.
+        self.every_main_loop()
+
+        # Check if new files were created. 1s timeout
+        for path, ifd in self.inotify_fds.items():
+            events = inotifyx.get_events(ifd, 1)
+            for event in events:
+                fname = os.path.join(path, event.name)
+                self.log.debug("Received inotify event %s for %s",
+                               event.get_mask_description(), fname)
+                new_jobs = self.new_tasks(self.extra.copy(),
+                                          fname,
+                                          emask=event.mask)
+                self._add_new_tasks(list(new_jobs))
+                for task in list(new_jobs):
+                    self._controller.add(task)
+
+        # advance all jobs
+        self._controller.progress()
+
+        # summary
+        stats = self._controller.stats()
+        # compute exitcode based on the running status of jobs
+        return self._main_loop_exitcode(stats)
+
+    def _main_loop_exitcode(self, stats):
+        # FIXME: Do these exit statuses make sense?
+        """
+        Compute the exit code for the `_main` function.
+        (And, hence, for the whole `SessionBasedScript`.)
+
+        The exitcode is a bitfield; only the 4 least-significant bits
+        are used, with the following meaning:
+
+           ===  ============================================================
+           Bit  Meaning
+           ===  ============================================================
+             0  Set if a fatal error occurred: the script could not complete
+             1  Set if there are jobs in `FAILED` state
+             2  Set if there are jobs in `RUNNING` or `SUBMITTED` state
+             3  Set if there are jobs in `NEW` state
+           ===  ============================================================
+
+        Override this method if you need to alter the termination
+        condition for a `SessionBasedScript`.
+        """
+        rc = 0
+        if stats['failed'] > 0:
+            rc |= 2
+        if stats[gc3libs.Run.State.RUNNING] > 0 \
+                or stats[gc3libs.Run.State.SUBMITTED] > 0 \
+                or stats[gc3libs.Run.State.UNKNOWN]:
+            rc |= 4
+        if stats[gc3libs.Run.State.NEW] > 0:
+            rc |= 8
+        return rc
+
+
+class SessionBasedScript(_SessionBasedCommand):
+
+    """
+    Base class for ``grosetta``/``ggamess``/``gcodeml`` and like scripts.
+    Implements a long-running script to submit and manage a large number
+    of jobs grouped into a "session".
+
+    The generic scripts implements a command-line like the following::
+
+      PROG [options] INPUT [INPUT ...]
+
+    First, the script builds a list of input files by recursively
+    scanning each of the given INPUT arguments for files matching the
+    `self.input_file_pattern` glob string (you can set it via a
+    keyword argument to the ctor).  To perform a different treatment
+    of the command-line arguments, override the
+    :py:meth:`process_args()` method.
+
+    Then, new jobs are added to the session, based on the results of
+    the `process_args()` method above.  For each tuple of items
+    returned by `process_args()`, an instance of class
+    `self.application` (which you can set by a keyword argument to the
+    ctor) is created, passing it the tuple as init args, and added to
+    the session.
+
+    The script finally proceeds to updating the status of all jobs in
+    the session, submitting new ones and retrieving output as needed.
+    When all jobs are done, the method :py:meth:`done()` is called,
+    and its return value is used as the script's exit code.
+
+    The script's exitcode tracks job status, in the following way.
+    The exitcode is a bitfield; only the 4 least-significant bits
+    are used, with the following meaning:
+
+       ===  ============================================================
+       Bit  Meaning
+       ===  ============================================================
+         0  Set if a fatal error occurred: the script could not complete
+         1  Set if there are jobs in `FAILED` state
+         2  Set if there are jobs in `RUNNING` or `SUBMITTED` state
+         3  Set if there are jobs in `NEW` state
+       ===  ============================================================
+
+    This boils down to the following rules:
+       * exitcode == 0: all jobs terminated successfully, no further action
+       * exitcode == 1: an error interrupted script execution
+       * exitcode == 2: all jobs terminated, not all of them successfully
+       * exitcode > 3: run the script again to progress jobs
+
+    """
+
+    ##
+    # CUSTOMIZATION METHODS
+    ##
+    # The following are meant to be freely customized in derived scripts.
+    ##
+
+    def setup_args(self):
+        """
+        Set up command-line argument parsing.
+
+        The default command line parsing considers every argument as
+        an (input) path name; processing of the given path names is
+        done in `parse_args`:meth:
+        """
+        self.add_param('args', nargs='*', metavar='INPUT',
+                       help="Path to input file or directory."
+                       " Directories are recursively scanned for input files"
+                       " matching the glob pattern '%s'"
+                       % self.input_filename_pattern)
+
+    def pre_run(self):
+        super(SessionBasedScript, self).pre_run()
+        # parse the `states` list
+        self.params.states = self.params.states.split(',')
+
+    def new_tasks(self, extra):
+        """
+        Iterate over jobs that should be added to the current session.
+        Each item yielded must have the form `(jobname, cls, args,
+        kwargs)`, where:
+
+        * `jobname` is a string uniquely identifying the job in the
+          session; if a job with the same name already exists, this
+          item will be ignored.
+
+        * `cls` is a callable that returns an instance of
+          `gc3libs.Application` when called as `cls(*args, **kwargs)`.
+
+        * `args` is a tuple of arguments for calling `cls`.
+
+        * `kwargs` is a dictionary used to provide keyword arguments
+          when calling `cls`.
+
+        This method is called by the default `process_args`:meth:, passing
+        `self.extra` as the `extra` parameter.
+
+        The default implementation of this method scans the arguments
+        on the command-line for files matching the glob pattern
+        `self.input_filename_pattern`, and for each matching file returns
+        a job name formed by the base name of the file (sans
+        extension), the class given by `self.application`, and the
+        full path to the input file as sole argument.
+
+        If `self.instances_per_file` and `self.instances_per_job` are
+        set to a value other than 1, for each matching file N jobs are
+        generated, where N is the quotient of
+        `self.instances_per_file` by `self.instances_per_job`.
+
+        See also: `process_args`:meth:
+        """
+        inputs = self._search_for_input_files(self.params.args)
+
+        for path in inputs:
+            if self.instances_per_file > 1:
+                for seqno in range(1,
+                                   1 + self.instances_per_file,
+                                   self.instances_per_job):
+                    if self.instances_per_job > 1:
+                        yield (
+                            "%s.%d--%s" % (
+                                gc3libs.utils.basename_sans(path),
+                                seqno,
+                                min(seqno + self.instances_per_job - 1,
+                                    self.instances_per_file)),
+                            self.application, [path], extra.copy())
+                    else:
+                        yield ("%s.%d" % (gc3libs.utils.basename_sans(path),
+                                          seqno),
+                               self.application, [path], extra.copy())
+            else:
+                yield (gc3libs.utils.basename_sans(path),
+                       self.application, [path], extra.copy())
+
+    def print_summary_table(self, output, stats):
+        """
+        Print a text summary of the session status to `output`.
+        This is used to provide the "normal" output of the
+        script; when the ``-l`` option is given, the output
+        of the `print_tasks_table` function is appended.
+
+        Override this in subclasses to customize the report that you
+        provide to users.  By default, this prints a table with the
+        count of tasks for each possible state.
+
+        The `output` argument is a file-like object, only the `write`
+        method of which is used.  The `stats` argument is a
+        dictionary, mapping each possible `Run.State` to the count of
+        tasks in that state; see `Engine.stats` for a detailed
+        description.
+
+        """
+        table = PrettyTable(['state', 'n', 'n%'])
+        table.align = 'r'
+        table.align['n%'] = 'c'
+        table.border = False
+        table.header = False
+        total = stats['total']
+        # ensure we display enough decimal digits in percentages when
+        # running a large number of jobs; see Issue 308 for a more
+        # detailed descrition of the problem
+        if total > 0:
+            precision = max(1, math.log10(total) - 1)
+            fmt = '(%%.%df%%%%)' % precision
+            for state in sorted(stats.keys()):
+                table.add_row([
+                    state,
+                    "%d/%d" % (stats[state], total),
+                    fmt % (100.00 * stats[state] / total)
+                ])
+        output.write(str(table))
+        output.write("\n")
+
+    def print_tasks_table(
+            self, output=sys.stdout, states=gc3libs.Run.State, only=object):
+        """
+        Output a text table to stream `output`, giving details about
+        tasks in the given states.
+
+        Optional second argument `states` restricts the listing to
+        tasks that are in one of the specified states.  By default, all
+        task states are allowed.  The `states` argument should be a
+        list or a set of `Run.State` values.
+
+        Optional third argument `only` further restricts the listing
+        to tasks that are instances of a subclass of `only`.  By
+        default, there is no restriction and all tasks are listed. The
+        `only` argument can be a Python class or a tuple -- anything
+        infact, that you can pass as second argument to the
+        `isinstance` operator.
+
+        :param output: An output stream (file-like object)
+        :param states: List of states (`Run.State` items) to consider.
+        :param   only: Root class (or tuple of root classes) of tasks to
+                       consider.
+        """
+        table = PrettyTable(['JobID', 'Job name', 'State', 'Info'])
+        table.align = 'l'
+        for task in self.session:
+            if isinstance(task, only) and task.execution.in_state(*states):
+                table.add_row([task.persistent_id, task.jobname,
+                               task.execution.state, task.execution.info])
+
+        # XXX: uses prettytable's internal implementation detail
+        if len(table._rows) > 0:
+            output.write(str(table))
+            output.write("\n")
+
+    ##
+    # pyCLI INTERFACE METHODS
+    ##
+    # The following methods adapt the behavior of the
+    # `SessionBasedScript` class to the interface expected by pyCLI
+    # applications.  Think twice before overriding them, and read
+    # the pyCLI docs before :-)
+    ##
+
+    def setup(self):
+        """
+        Setup standard command-line parsing.
+
+        GC3Libs scripts should probably override `setup_args`:meth:
+        to modify command-line parsing.
+        """
+        # setup of base classes
+        _SessionBasedCommand.setup(self)
+        # add own "standard options"
+        self.add_param(
+            "-l",
+            "--state",
+            action="store",
+            nargs='?',
+            dest="states",
+            default='',
+            const=str.join(
+                ',',
+                gc3libs.Run.State),
+            help="Print a table of jobs including their status."
+            " Optionally, restrict output to jobs with a particular STATE or"
+            " STATES (comma-separated list).  The pseudo-states `ok` and"
+            " `failed` are also allowed for selecting jobs in TERMINATED"
+            " state with exitcode 0 or nonzero, resp.")
+        return
+
+    ##
+    # INTERNAL METHODS
+    ##
+    # The following methods are for internal use; they can be
+    # overridden and customized in derived classes, although there
+    # should be no need to do so.
+    ##
 
     def _main_loop(self):
         """
@@ -1547,6 +1830,7 @@ class SessionBasedScript(_Script):
         return self._main_loop_exitcode(stats)
 
     def _main_loop_exitcode(self, stats):
+        # FIXME: Do these exit statuses make sense?
         """
         Compute the exit code for the `_main` function.
         (And, hence, for the whole `SessionBasedScript`.)
@@ -1576,6 +1860,16 @@ class SessionBasedScript(_Script):
         if stats[gc3libs.Run.State.NEW] > 0:
             rc |= 8
         return rc
+
+    def _main_loop_done(self, rc):
+        """
+        Returns True if the main loop is completed and we don't want to
+        continue the processing. Returns False otherwise.
+        """
+        if rc > 3:
+            return False
+        else:
+            return True
 
     def _search_for_input_files(self, paths, pattern=None):
         """
