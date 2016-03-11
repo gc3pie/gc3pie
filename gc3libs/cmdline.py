@@ -1343,6 +1343,12 @@ class SessionBasedDaemon(_SessionBasedCommand):
         self.actions['wait'].help = 'Check the status of the jobs every NUM'
         ' seconds. Default: %(default)s'
 
+        # Default session dir and output dir are computed from
+        # --working-directory.  Set None here so that we can update it
+        # in pre_run()
+        self.actions['session'].default = None
+        self.actions['output'].default = None
+
     def setup_args(self):
         self.add_param('-F', '--foreground',
                        action='store_true',
@@ -1374,7 +1380,60 @@ class SessionBasedDaemon(_SessionBasedCommand):
                        " triggered to add new jobs")
 
     def pre_run(self):
-        super(SessionBasedDaemon, self).pre_run()
+        ### FIXME: first half of this function is copied from
+        ### _SessionBasedCommand(). The reason is that we want to
+        ### modify the self.params.session default in case
+        ### --working-dir is used, but we cannot until we parse the
+        ### arguments.
+
+        # call base classes first (note: calls `parse_args()`)
+        _Script.pre_run(self)
+        # since it may time quite some time before jobs are created
+        # and the first report is displayed, print a startup banner so
+        # that users get some kind of feedback ...
+        print("Starting %s;"
+              " use the '-v' command-line option to get"
+              " a more verbose report of activity."
+              % (self.name,))
+
+        # consistency checks
+        try:
+            # FIXME: backwards-compatibility, remove after 2.0 release
+            self.params.walltime = Duration(int(self.params.wctime), hours)
+        except ValueError:
+            # cannot convert to `int`, use extended parsing
+            self.params.walltime = Duration(self.params.wctime)
+
+        # determine the session file name (and possibly create an empty index)
+
+        self.params.working_dir = os.path.abspath(self.params.working_dir)
+        # Default session dir is inside the working directory
+        if not self.params.session:
+            self.params.session = os.path.join(
+                self.params.working_dir, self.name)
+        if not self.params.output:
+            self.params.output = self.params.working_dir
+
+        self.session_uri = gc3libs.url.Url(self.params.session)
+        if self.params.store_url == 'sqlite':
+            self.params.store_url = (
+                "sqlite:///%s/jobs.db" % self.session_uri.path)
+        elif self.params.store_url == 'file':
+            self.params.store_url = ("file:///%s/jobs" % self.session_uri.path)
+        self.session = self._make_session(
+            self.session_uri.path, self.params.store_url)
+
+        # keep a copy of the credentials in the session dir
+        self.config.auth_factory.add_params(
+            private_copy_directory=self.session.path)
+
+        # XXX: ARClib errors out if the download directory already exists, so
+        # we need to make sure that each job downloads results in a new one.
+        # The easiest way to do so is to append 'NAME' to the `output_dir`
+        # (if it's not already there).
+        if ('NAME' not in self.params.output
+                and 'ITER' not in self.params.output):
+            self.params.output = os.path.join(self.params.output, 'NAME')
 
         # Ensure inbox directories exist
         for inbox in self.params.inbox:
@@ -1382,8 +1441,13 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 raise gc3libs.exceptions.InvalidUsage(
                     "Inbox path %s is not a directory" % inbox)
         self.params.inbox = [os.path.abspath(p) for p in self.params.inbox]
-        # Syntax check for notify events
 
+        # Create the working directory if it doesn't exsist
+        if not os.path.isdir(self.params.working_dir):
+            self.log.debug("Create working directory %s",
+                           self.params.working_dir)
+            os.mkdir(self.params.working_dir)
+        # Syntax check for notify events
         self.params.notify_state = self.params.notify_state.split(',')
 
         # Add IN_ as we use shorter names for the command line
