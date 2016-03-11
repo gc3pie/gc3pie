@@ -1435,18 +1435,21 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 and 'ITER' not in self.params.output):
             self.params.output = os.path.join(self.params.output, 'NAME')
 
-        # Ensure inbox directories exist
-        for inbox in self.params.inbox:
-            if not os.path.isdir(inbox):
-                raise gc3libs.exceptions.InvalidUsage(
-                    "Inbox path %s is not a directory" % inbox)
-        self.params.inbox = [os.path.abspath(p) for p in self.params.inbox]
-
         # Create the working directory if it doesn't exsist
         if not os.path.isdir(self.params.working_dir):
             self.log.debug("Create working directory %s",
                            self.params.working_dir)
             os.mkdir(self.params.working_dir)
+
+        self.params.inbox = [os.path.abspath(p) for p in self.params.inbox]
+
+        # Ensure inbox directories exist
+        for inbox in self.params.inbox:
+            if not os.path.isdir(inbox):
+                self.log.warning("Create non-existent inbox directory %s",
+                                 inbox)
+                os.mkdir(inbox)
+
         # Syntax check for notify events
         self.params.notify_state = self.params.notify_state.split(',')
 
