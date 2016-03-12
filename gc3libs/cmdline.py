@@ -53,6 +53,7 @@ import signal
 import sys
 from prettytable import PrettyTable
 import time
+# import threading
 
 # 3rd party modules
 import daemon
@@ -60,6 +61,7 @@ import cli  # pyCLI
 import cli.app
 import cli._ext.argparse as argparse
 import inotifyx
+# import oi
 
 # interface to Gc3libs
 import gc3libs
@@ -1374,6 +1376,9 @@ class SessionBasedDaemon(_SessionBasedCommand):
                        " Default: %(default)s. Available events: " +
                        str.join(', ', avail_events))
 
+        # self.add_param('--comm', action='store_true',
+        #                help='Enable communication socket')
+
         self.add_param('inbox', nargs='*',
                        help="`inbox` directories: whenever a new file is"
                        " created in one of these directories, a callback is"
@@ -1508,7 +1513,6 @@ class SessionBasedDaemon(_SessionBasedCommand):
             self.log.info("Running in foreground as requested")
             return super(SessionBasedDaemon, self)._main()
         else:
-            # If
             lock = PIDLockFile(
                 os.path.join(
                     self.params.working_dir, self.name + '.pid'))
@@ -1516,10 +1520,28 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 working_directory=self.params.working_dir,
                 umask=0o002,
                 pidfile=lock)
+
             with context:
                 self.__setup_logging()
                 self.__setup_inotify()
                 self.log.info("Daemonizing ...")
+                # if self.params.comm:
+                #     try:
+                #         name = self.name
+                #         wdir = self.params.working_dir
+                #         def commthread():
+                #             comm = oi.Program(
+                #                 name,
+                #                 "ipc://%s/daemon.sock" % wdir)
+                #             comm.add_command("ping", lambda: "pong")
+                #             self.log.info("Running OI program")
+                #             comm.run()
+                #         self.comm = threading.Thread(target=commthread)
+                #         self.comm.start()
+                #         self.log.info("Communication thread started")
+                #     except Exception as ex:
+                #         self.log.error("Error while trying to run oi comm: %s" % ex)
+
                 return super(SessionBasedDaemon, self)._main()
 
     def _main_loop_done(self, rc):
@@ -1565,6 +1587,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
         # summary
         stats = self._controller.stats()
         # compute exitcode based on the running status of jobs
+        self.session.save_all()
         return self._main_loop_exitcode(stats)
 
     def _main_loop_exitcode(self, stats):
