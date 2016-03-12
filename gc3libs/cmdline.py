@@ -53,7 +53,12 @@ import signal
 import sys
 from prettytable import PrettyTable
 import time
-# import threading
+import threading
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+from collections import defaultdict
 
 # 3rd party modules
 import daemon
@@ -61,7 +66,7 @@ import cli  # pyCLI
 import cli.app
 import cli._ext.argparse as argparse
 import inotifyx
-# import oi
+import oi
 
 # interface to Gc3libs
 import gc3libs
@@ -282,6 +287,12 @@ class _Script(cli.app.CommandLineApp):
         """
         pass
 
+    def cleanup(self):
+        """
+        Method called when the script is interrupted
+        """
+        pass
+
     ##
     # pyCLI INTERFACE METHODS
     ##
@@ -459,6 +470,7 @@ class _Script(cli.app.CommandLineApp):
         except KeyboardInterrupt:
             sys.stderr.write(
                 "%s: Exiting upon user request (Ctrl+C)\n" % self.name)
+            self.cleanup()
             return 13
         except SystemExit as ex:
             #  sys.exit() has been called in `post_run()`.
@@ -1297,6 +1309,7 @@ class _SessionBasedCommand(_Script):
         except KeyboardInterrupt:  # gracefully intercept Ctrl+C
             sys.stderr.write(
                 "%s: Exiting upon user request (Ctrl+C)\n" % self.name)
+            self.cleanup()
             pass
         self.after_main_loop()
 
@@ -1313,6 +1326,73 @@ class _SessionBasedCommand(_Script):
         self._controller.close()
 
         return rc
+
+
+class _CommDaemon(oi.Program):
+    def __init__(self, name, address, daemon):
+        super(_CommDaemon, self).__init__(name, address)
+        self.daemon = daemon
+        self.add_command("ping", lambda: "pong", "Just reply `pong` if alive")
+        self.add_command("list",
+                         self.list_jobs,
+                         "List job IDs")
+        self.add_command("show",
+                         self.show_job,
+                         "usage: show <jobid> [attributes]\n\n"
+                         "Same output as `ginfo -v <jobid> [-p attributes]`")
+        self.add_command("stat",
+                         self.stat_jobs,
+                         "Print how many jobs are in any given state")
+        self.add_command("terminate",
+                         self.terminate,
+                         "Terminate program")
+
+    def list_jobs(self):
+        return str.join(' ', self.daemon.session.list_ids())
+
+    def show_job(self, jobid=None, *attrs):
+        if not jobid:
+            return "Usage: show <jobid> [attributes]"
+        try:
+            out = StringIO()
+            app = self.daemon.session.load(jobid)
+            gc3libs.utils.prettyprint(app,
+                                      indent=4,
+                                      output=out,
+                                      only_keys=attrs)
+            return out.getvalue()
+        except Exception as ex:
+            return "Unable to find job %s" % jobid
+
+    def stat_jobs(self):
+        stats = defaultdict(int)
+        for job in self.daemon.session:
+            stats[job.execution.state] += 1
+        return str.join(' ', ["%s:%s" % x for x in stats.items()])
+
+    def terminate(self):
+        # Send kill signal to current process
+
+        # Start a new thread so that we can reply
+        def killme():
+            self.daemon.log.info("Terminating as requested via IPC")
+            time.sleep(1)
+            os.kill(os.getpid(), signal.SIGTERM)
+        t = threading.Thread(target=killme)
+        t.start()
+        return "Terminating in 1s"
+
+    def run(self):
+        # oi.Program.run(), wants to parse sys.argv. We want to
+        # prevent this because we already parsed it and we accept
+        # totally different options.
+        class FakeArgs:
+            pass
+        args = FakeArgs()
+        args.debug = False
+        args.version = False
+        args.config = None
+        super(_CommDaemon, self).run(args=args)
 
 
 class SessionBasedDaemon(_SessionBasedCommand):
@@ -1337,6 +1417,18 @@ class SessionBasedDaemon(_SessionBasedCommand):
     #   - every time a new file is created, call
     #     `self.new_tasks(extra, path=path)`
     # * parsing of a configuration file?
+
+    def cleanup(self, signume=None, frame=None):
+        if self.params.comm:
+            self.log.debug("Waiting for communication thread to terminate")
+            for worker in self.comm.workers:
+                worker._Thread__stop()
+                worker._Thread__delete()
+                worker.join(1)
+            self.commthread._Thread__stop()
+            self.commthread._Thread__delete()
+            self.commthread.join(1)
+            self.comm.service.stop()
 
     def setup(self):
         _SessionBasedCommand.setup(self)
@@ -1376,8 +1468,8 @@ class SessionBasedDaemon(_SessionBasedCommand):
                        " Default: %(default)s. Available events: " +
                        str.join(', ', avail_events))
 
-        # self.add_param('--comm', action='store_true',
-        #                help='Enable communication socket')
+        self.add_param('--comm', action='store_true',
+                       help='Enable communication socket')
 
         self.add_param('inbox', nargs='*',
                        help="`inbox` directories: whenever a new file is"
@@ -1504,13 +1596,43 @@ class SessionBasedDaemon(_SessionBasedCommand):
             self.inotify_fds[inbox] = ifd
             inotifyx.add_watch(ifd, inbox, self.inotify_event_mask)
 
+    def oi_show(self, x):
+        return "Cippa %s" % x
+
+    def __setup_comm(self):
+        # Communication thread must run on a different thread
+        try:
+            def commthread():
+                self.comm = _CommDaemon(
+                    self.name,
+                    "ipc://%s/daemon.sock" % self.params.working_dir,
+                    self)
+                self.log.info("Running OI program")
+                self.comm.run()
+
+            self.commthread = threading.Thread(target=commthread)
+            self.commthread.start()
+            self.log.info("Communication thread started")
+        except Exception as ex:
+            self.log.error(
+                "Error initializinig Communication thread: %s" % ex)
+
     def _main(self):
+        # FIXME: If we are loading a previous session, arguments
+        # are not parsed. But they are not save in the session
+        # either, so things like output_dir is not present.
+        if not self.extra:
+            self.process_args()
+
         if self.params.foreground:
             # If --foreground, then behave like a SessionBasedScript with
             # the exception that the script will never end.
             self.__setup_logging()
             self.__setup_inotify()
             self.log.info("Running in foreground as requested")
+
+            if self.params.comm:
+                self.__setup_comm()
             return super(SessionBasedDaemon, self)._main()
         else:
             lock = PIDLockFile(
@@ -1521,26 +1643,13 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 umask=0o002,
                 pidfile=lock)
 
+            context.signal_map = {signal.SIGTERM: self.cleanup}
             with context:
                 self.__setup_logging()
                 self.__setup_inotify()
                 self.log.info("Daemonizing ...")
-                # if self.params.comm:
-                #     try:
-                #         name = self.name
-                #         wdir = self.params.working_dir
-                #         def commthread():
-                #             comm = oi.Program(
-                #                 name,
-                #                 "ipc://%s/daemon.sock" % wdir)
-                #             comm.add_command("ping", lambda: "pong")
-                #             self.log.info("Running OI program")
-                #             comm.run()
-                #         self.comm = threading.Thread(target=commthread)
-                #         self.comm.start()
-                #         self.log.info("Communication thread started")
-                #     except Exception as ex:
-                #         self.log.error("Error while trying to run oi comm: %s" % ex)
+                if self.params.comm:
+                    self.__setup_comm()
 
                 return super(SessionBasedDaemon, self)._main()
 
