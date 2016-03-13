@@ -1663,22 +1663,32 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 self.__setup_comm()
             return super(SessionBasedDaemon, self)._main()
         else:
-            lock = PIDLockFile(
-                os.path.join(
-                    self.params.working_dir, self.name + '.pid'))
+            lockfile = os.path.join(self.params.working_dir, self.name + '.pid')
+            lock = PIDLockFile(lockfile)
+            if lock.is_locked():
+                raise gc3libs.exceptions.FatalError(
+                    "PID File %s is already present. Ensure not other daemon"
+                    " is running. Delete file to continue." % lockfile)
             context = daemon.DaemonContext(
                 working_directory=self.params.working_dir,
                 umask=0o002,
-                pidfile=lock)
+                pidfile=lock,
+                stdout=open(
+                    os.path.join(self.params.working_dir,'stdout.txt'),
+                    'w'),
+                stderr=open(
+                    os.path.join(self.params.working_dir, 'stderr.txt'),
+                    'w'),
+            )
 
             context.signal_map = {signal.SIGTERM: self.cleanup}
+            self.log.info("About to daemonize")
             with context:
                 self.__setup_logging()
                 self.__setup_inotify()
                 self.log.info("Daemonizing ...")
                 if self.params.comm:
                     self.__setup_comm()
-
                 return super(SessionBasedDaemon, self)._main()
 
     def _main_loop_done(self, rc):
