@@ -1413,12 +1413,22 @@ class _CommDaemon(ns.Service):
         # Start a new thread so that we can reply
         def killme():
             self.daemon.log.info("Terminating as requested via IPC")
+            self.daemon.cleanup()
             time.sleep(1)
-            # Send kill signal to current process
+            # # Send kill signal to current process
             os.kill(os.getpid(), signal.SIGTERM)
+            time.sleep(5)
+            # SIGINT is interpreted by SessionBasedDaemon class
+            self.daemon.log.warning("Forcing SIGINT signal")
+            os.kill(os.getpid(), signal.SIGINT)
+            time.sleep(5)
+            # Revert back to SIGKILL. This will leave the pidfile
+            # hanging around.
+            self.daemon.log.warning("Forcing SIGKILL signal")
+            os.kill(os.getpid(), signal.SIGKILL)
         t = threading.Thread(target=killme)
         t.start()
-        return "Terminating in 1s"
+        return "Terminating %d in 1s" % os.getpid()
 
 
 class SessionBasedDaemon(_SessionBasedCommand):
