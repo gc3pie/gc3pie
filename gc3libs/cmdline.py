@@ -59,6 +59,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 from collections import defaultdict
+from prettytable import PrettyTable
 
 # 3rd party modules
 import daemon
@@ -1336,7 +1337,7 @@ class _CommDaemon(ns.Service):
         self.register("help", self.help, "Show available commands")
         self.register("list",
                       self.list_jobs,
-                      "List job IDs")
+                      "usage: list [-l]\n\nList jobs")
         self.register("show",
                       self.show_job,
                       "usage: show <jobid> [attributes]\n\n"
@@ -1356,8 +1357,35 @@ class _CommDaemon(ns.Service):
         else:
             return "Unknown command %s" % cmd
 
-    def list_jobs(self):
-        return str.join(' ', self.daemon.session.list_ids())
+    def list_jobs(self, opts=None):        
+        if opts == '-l':
+            def print_app_table(app, indent, recursive):
+                rows = []
+                try:
+                    jobname = app.jobname
+                except AttributeError:
+                    jobname = ''
+
+                rows.append([indent + str(app.persistent_id),
+                             jobname,
+                             app.execution.state,
+                             app.execution.info])
+                if recursive and 'tasks' in app:
+                    indent = " "*len(indent) + '  '
+                    for task in app.tasks:
+                        rows.extend(print_app_table(task, indent, recursive))
+                return rows
+
+            rows = []
+            for app in self.daemon.session.tasks.values():
+                rows.extend(print_app_table(app, '', True))
+            table = PrettyTable(["JobID", "Job name", "State", "Info"])
+            table.align = 'l'
+            for row in rows:
+                table.add_row(row)
+            return str(table)
+        else:
+            return str.join(' ', self.daemon.session.list_ids())
 
     def show_job(self, jobid=None, *attrs):
         if not jobid:
