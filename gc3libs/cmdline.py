@@ -66,7 +66,7 @@ import cli  # pyCLI
 import cli.app
 import cli._ext.argparse as argparse
 import inotifyx
-import oi
+import nanoservice as ns
 
 # interface to Gc3libs
 import gc3libs
@@ -1328,24 +1328,33 @@ class _SessionBasedCommand(_Script):
         return rc
 
 
-class _CommDaemon(oi.Program):
+class _CommDaemon(ns.Service):
     def __init__(self, name, address, daemon):
-        super(_CommDaemon, self).__init__(name, address)
+        super(_CommDaemon, self).__init__(address)
         self.daemon = daemon
-        self.add_command("ping", lambda: "pong", "Just reply `pong` if alive")
-        self.add_command("list",
-                         self.list_jobs,
-                         "List job IDs")
-        self.add_command("show",
-                         self.show_job,
-                         "usage: show <jobid> [attributes]\n\n"
-                         "Same output as `ginfo -v <jobid> [-p attributes]`")
-        self.add_command("stat",
-                         self.stat_jobs,
-                         "Print how many jobs are in any given state")
-        self.add_command("terminate",
-                         self.terminate,
-                         "Terminate program")
+        self.register("ping", lambda: "pong", "Just reply `pong` if alive")
+        self.register("help", self.help, "Show available commands")
+        self.register("list",
+                      self.list_jobs,
+                      "List job IDs")
+        self.register("show",
+                      self.show_job,
+                      "usage: show <jobid> [attributes]\n\n"
+                      "Same output as `ginfo -v <jobid> [-p attributes]`")
+        self.register("stat",
+                      self.stat_jobs,
+                      "Print how many jobs are in any given state")
+        self.register("terminate",
+                      self.terminate,
+                      "Terminate program")
+
+    def help(self, cmd=None):
+        if not cmd:
+            return str.join(", ", self.methods)
+        elif cmd in self.descriptions:
+            return self.descriptions[cmd]
+        else:
+            return "Unknown command %s" % cmd
 
     def list_jobs(self):
         return str.join(' ', self.daemon.session.list_ids())
@@ -1356,6 +1365,8 @@ class _CommDaemon(oi.Program):
         try:
             out = StringIO()
             app = self.daemon.session.load(jobid)
+            if not attrs:
+                attrs = None
             gc3libs.utils.prettyprint(app,
                                       indent=4,
                                       output=out,
@@ -1371,28 +1382,15 @@ class _CommDaemon(oi.Program):
         return str.join(' ', ["%s:%s" % x for x in stats.items()])
 
     def terminate(self):
-        # Send kill signal to current process
-
         # Start a new thread so that we can reply
         def killme():
             self.daemon.log.info("Terminating as requested via IPC")
             time.sleep(1)
+            # Send kill signal to current process
             os.kill(os.getpid(), signal.SIGTERM)
         t = threading.Thread(target=killme)
         t.start()
         return "Terminating in 1s"
-
-    def run(self):
-        # oi.Program.run(), wants to parse sys.argv. We want to
-        # prevent this because we already parsed it and we accept
-        # totally different options.
-        class FakeArgs:
-            pass
-        args = FakeArgs()
-        args.debug = False
-        args.version = False
-        args.config = None
-        super(_CommDaemon, self).run(args=args)
 
 
 class SessionBasedDaemon(_SessionBasedCommand):
@@ -1421,14 +1419,9 @@ class SessionBasedDaemon(_SessionBasedCommand):
     def cleanup(self, signume=None, frame=None):
         if self.params.comm:
             self.log.debug("Waiting for communication thread to terminate")
-            for worker in self.comm.workers:
-                worker._Thread__stop()
-                worker._Thread__delete()
-                worker.join(1)
             self.commthread._Thread__stop()
             self.commthread._Thread__delete()
             self.commthread.join(1)
-            self.comm.service.stop()
 
     def setup(self):
         _SessionBasedCommand.setup(self)
@@ -1608,7 +1601,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                     "ipc://%s/daemon.sock" % self.params.working_dir,
                     self)
                 self.log.info("Running OI program")
-                self.comm.run()
+                self.comm.start()
 
             self.commthread = threading.Thread(target=commthread)
             self.commthread.start()
