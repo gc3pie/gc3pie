@@ -1617,9 +1617,6 @@ class SessionBasedDaemon(_SessionBasedCommand):
             self.inotify_fds[inbox] = ifd
             inotifyx.add_watch(ifd, inbox, self.inotify_event_mask)
 
-    def oi_show(self, x):
-        return "Cippa %s" % x
-
     def __setup_comm(self):
         # Communication thread must run on a different thread
         try:
