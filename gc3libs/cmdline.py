@@ -1333,6 +1333,7 @@ class _CommDaemon(ns.Service):
     def __init__(self, name, address, daemon):
         super(_CommDaemon, self).__init__(address)
         self.daemon = daemon
+        self.log = self.daemon.log
         self.register("ping", lambda: "pong", "Just reply `pong` if alive")
         self.register("help", self.help, "Show available commands")
         self.register("list",
@@ -1357,7 +1358,7 @@ class _CommDaemon(ns.Service):
         else:
             return "Unknown command %s" % cmd
 
-    def list_jobs(self, opts=None):        
+    def list_jobs(self, opts=None):
         if opts == '-l':
             def print_app_table(app, indent, recursive):
                 rows = []
@@ -1409,23 +1410,45 @@ class _CommDaemon(ns.Service):
             stats[job.execution.state] += 1
         return str.join(' ', ["%s:%s" % x for x in stats.items()])
 
+    def stop(self):
+        try:
+            self.socket.close()
+        except Exception as ex:
+            # self.stop() could be called twice, let's assume it's not
+            # an issue but log the event anyway
+            self.log.warning("Ignoring exception caught while closing socket: %s", ex)
+
     def terminate(self):
         # Start a new thread so that we can reply
         def killme():
-            self.daemon.log.info("Terminating as requested via IPC")
-            self.daemon.cleanup()
+            self.log.info("Terminating as requested via IPC")
+            # Wait 1s so that the client connection is not hang up and
+            # we have time to give feedback
             time.sleep(1)
-            # # Send kill signal to current process
+            # daemon cleanup will aslo call self.stop()
+            self.daemon.cleanup()
+
+            # Send kill signal to current process
             os.kill(os.getpid(), signal.SIGTERM)
+
+            # This should be enough, but just in case...
+            self.log.warning("Waiting 5s to see if my sucide attempt succeeded")
             time.sleep(5)
-            # SIGINT is interpreted by SessionBasedDaemon class
-            self.daemon.log.warning("Forcing SIGINT signal")
+
+            # If this is not working, try mor aggressive approach.
+
+            # SIGINT is interpreted by SessionBasedDaemon class. It
+            # will also call self.daemon.cleanup(), again.
+            self.log.warning("Still alive: sending SIGINT signal to myself")
             os.kill(os.getpid(), signal.SIGINT)
+
+            # We whould never reach this point, but Murphy's law...
             time.sleep(5)
             # Revert back to SIGKILL. This will leave the pidfile
             # hanging around.
-            self.daemon.log.warning("Forcing SIGKILL signal")
+            self.log.warning("Still alive: forcing SIGKILL signal.")
             os.kill(os.getpid(), signal.SIGKILL)
+
         t = threading.Thread(target=killme)
         t.start()
         return "Terminating %d in 1s" % os.getpid()
@@ -1435,28 +1458,11 @@ class SessionBasedDaemon(_SessionBasedCommand):
     """
     Base class for GC3Pie daemons
     """
-    # TODO:
-    #
-    # + DAEMONIZE (where? In run()?) Use python-daemon
-    # + option `-F, --foreground` to NOT daemonize
-    # + write logs to <pwd>/<appname>.log by default
-    # * --syslog option to send logs to syslog
-    # * IPC via Check https://pypi.python.org/pypi/oi to:
-    #   - get status of jobs (but you can check the session dir too)
-    #   - abort jobs
-    #   - resubmit jobs
-    #   - ...
-    # * Correctly process SIGTERM and SIGHUP (again python-daemon module)
-    # * Add convenience function for inotify:
-    #   - arguments: "inbox" directory for which you want to run inotify
-    #   - as soon as possible (pre_run?) watch the directories
-    #   - every time a new file is created, call
-    #     `self.new_tasks(extra, path=path)`
-    # * parsing of a configuration file?
 
     def cleanup(self, signume=None, frame=None):
         if self.params.comm:
             self.log.debug("Waiting for communication thread to terminate")
+            self.comm.stop()
             self.commthread._Thread__stop()
             self.commthread._Thread__delete()
             self.commthread.join(1)
