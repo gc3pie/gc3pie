@@ -87,12 +87,6 @@ def RunFreesurfer():
         command="recon-all -s %s.crossTP1 -all" % args.nifti.split(".")[0]
         runme(command)
 
-        print "Start the Quality Control"
-        "Example: $QA_Tools/recon_checker"
-        command="recon_checker -s %s.crossTP1" % args.nifti.split(".")[0]
-        runme(command)
-         
-
     if FS_SEQ_LONG in args.sequence:
         # LONG PROCESSING s01
         print "Start LONG PROCESSING on %s" % args.subject

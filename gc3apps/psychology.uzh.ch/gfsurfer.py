@@ -69,7 +69,7 @@ from gc3libs.workflow import RetryableTask
 DEFAULT_CORES = 1
 DEFAULT_MEMORY = Memory(3000,MB)
 
-DEFAULT_REMOTE_OUTPUT_FOLDER="./output"
+DEFAULT_REMOTE_OUTPUT_FOLDER="./output/"
 
 INPUT_LIST_PATTERNS = [".nii",".nii.tgz",".nii.gz",".nii.tar.gz"]
 FREESURFER_STEPS = ['cross','long']
@@ -82,7 +82,7 @@ class GfsurferApplication(Application):
     
     def __init__(self, subject_name, input_nifti, freesurfer_steps, **extra_args):
 
-        self.output_dir = extra_args['output_dir']
+        output_dir = DEFAULT_REMOTE_OUTPUT_FOLDER + subject_name + ".crossTP1" 
 
         inputs = dict()
         outputs = dict()
@@ -91,6 +91,7 @@ class GfsurferApplication(Application):
                                               "gc3libs/etc/gfsurfer_wrapper.py")
         inputs[gfsurfer_wrapper] = os.path.basename(gfsurfer_wrapper)
         inputs[input_nifti] = os.path.basename(input_nifti)
+        outputs[output_dir] = output_dir
         
         arguments = "./%s %s %s %s" % (inputs[gfsurfer_wrapper],
                                        subject_name,
@@ -101,7 +102,7 @@ class GfsurferApplication(Application):
             self,
             arguments = arguments,
             inputs = inputs,
-            outputs = [DEFAULT_REMOTE_OUTPUT_FOLDER],
+            outputs = outputs,
             stdout = 'gfsurfer.log',
             join=True,
             executables = [os.path.basename(gfsurfer_wrapper)],
