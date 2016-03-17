@@ -38,7 +38,7 @@ from gc3libs import log, Run
 from gc3libs.utils import same_docstring_as
 from gc3libs.utils import Struct, sh_quote_unsafe, defproperty
 from gc3libs.backends import LRMS
-from gc3libs.quantity import Memory, MB
+from gc3libs.quantity import Duration, Memory, MB
 
 
 def _make_remote_and_local_path_pair(transport, job, remote_relpath,
@@ -62,6 +62,79 @@ def _make_remote_and_local_path_pair(transport, job, remote_relpath,
         return result
     else:
         return [(remote_path, local_path)]
+
+
+def _parse_gnu_time_duration(val):
+    """
+    Convert the output of GNU time's `%e` format specifier into a GC3Pie `Duration` object.
+
+    Any of the time formats *HH:MM:SS* (hours, minutes, seconds) or
+    *MM:SS* (minutes, seconds), or even just the number of seconds are
+    acceptable::
+
+      >>> _parse_gnu_time_duration('1:02:03') == Duration('1h') + Duration('2m') + Duration('3s')
+      True
+
+      >>> _parse_gnu_time_duration('01:02') == Duration('1m') + Duration('2s')
+      True
+
+      >>> _parse_gnu_time_duration('42') == Duration(42, unit=Duration.s)
+      True
+
+    The *seconds* portion of the time string can be followed by
+    decimal digits for greater precision::
+
+      >>> _parse_gnu_time_duration('0:00.00') == Duration(0, unit=Duration.s)
+      True
+
+      >>> _parse_gnu_time_duration('4.20') == Duration(4.20, unit=Duration.s)
+      True
+
+    When only the number of seconds is given, an optional trailing
+    unit specified `s` is allowed::
+
+      >>> _parse_gnu_time_duration('4.20s') == Duration(4.20, unit=Duration.s)
+      True
+    """
+    n = val.count(':')
+    if 2 == n:
+        return Duration(val)
+    elif 1 == n:
+        # AA:BB is rejected as ambiguous by `Duration`'s built-in
+        # parser; work around it
+        mm, ss = val.split(':')
+        return (Duration(int(mm, 10), unit=Duration.m)
+                + Duration(float(ss), unit=Duration.s))
+    elif 0 == n:
+        # remove final unit spec, if present
+        if val.endswith('s'):
+            val = val[:-1]
+        # number of seconds with up to 2 decimal precision
+        return Duration(float(val), unit=Duration.s)
+    else:
+        raise ValueError(
+            "Expecting duration in the form HH:MM:SS, MM:SS,"
+            " or just number of seconds,"
+            " got {val} instead".format(val=val))
+
+
+def _parse_percentage(val):
+    """
+    Convert a percentage string into a Python float.
+    The percent sign at the end is optional::
+
+    >>> _parse_percentage('10')
+    10.0
+    >>> _parse_percentage('10%')
+    10.0
+    >>> _parse_percentage('0.1%')
+    0.1
+    """
+    return float(val[:-1]) if val.endswith('%') else float(val)
+
+
+def _parse_returncode_string(val):
+    return Run.shellexit_to_returncode(int(val))
 
 
 class ShellcmdLrms(LRMS):
@@ -156,12 +229,43 @@ SocketReceived=%r
 SocketSent=%s
 Signals=%k
 ReturnCode=%x"""
+
+    # how to translate GNU time output into GC3Pie execution metrics
+    TIMEFMT_CONV = {
+        # GNU time output key    .execution attr                     converter function
+        # |                        |                                  |
+        # v                        v                                  v
+        'WallTime':              ('duration',                         _parse_gnu_time_duration),
+        'KernelTime':            ('shellcmd_kernel_time',             Duration),
+        'UserTime':              ('shellcmd_user_time',               Duration),
+        'CPUUsage':              ('shellcmd_cpu_usage',               _parse_percentage),
+        'MaxResidentMemory':     ('max_used_memory',                  Memory),
+        'AverageResidentMemory': ('shellcmd_average_resident_memory', Memory),
+        'AverageTotalMemory':    ('shellcmd_average_total_memory',    Memory),
+        'AverageUnsharedMemory': ('shellcmd_average_unshared_memory', Memory),
+        'AverageUnsharedStack':  ('shellcmd_average_unshared_stack',  Memory),
+        'AverageSharedMemory':   ('shellcmd_average_shared_memory',   Memory),
+        'PageSize':              ('shellcmd_page_size',               Memory),
+        'MajorPageFaults':       ('shellcmd_major_page_faults',       int),
+        'MinorPageFaults':       ('shellcmd_minor_page_faults',       int),
+        'Swaps':                 ('shellcmd_swapped',                 int),
+        'ForcedSwitches':        ('shellcmd_involuntary_context_switches', int),
+        'WaitSwitches':          ('shellcmd_voluntary_context_switches',   int),
+        'Inputs':                ('shellcmd_filesystem_inputs',       int),
+        'Outputs':               ('shellcmd_filesystem_outputs',      int),
+        'SocketReceived':        ('shellcmd_socket_received',         int),
+        'SocketSent':            ('shellcmd_socket_sent',             int),
+        'Signals':               ('shellcmd_signals_delivered',       int),
+        'ReturnCode':            ('returncode',                       _parse_returncode_string),
+    }
+
     WRAPPER_DIR = '.gc3pie_shellcmd'
     WRAPPER_SCRIPT = 'wrapper_script.sh'
     WRAPPER_OUTPUT_FILENAME = 'resource_usage.txt'
     WRAPPER_PID = 'wrapper.pid'
 
     RESOURCE_DIR = '$HOME/.gc3/shellcmd.d'
+
 
     def __init__(self, name,
                  # these parameters are inherited from the `LRMS` class
@@ -662,8 +766,8 @@ ReturnCode=%x"""
                     % (wrapper_filename, app, err), do_log=True)
             try:
                 outcome = self._parse_wrapper_output(wrapper_file)
-                app.execution.returncode = \
-                    Run.shellexit_to_returncode(int(outcome.ReturnCode))
+                app.execution.update(outcome)
+                app.execution.returncode = outcome.returncode
                 self._delete_job_resource_file(pid)
             finally:
                 wrapper_file.close()
@@ -971,14 +1075,24 @@ ReturnCode=%x"""
         file before reading.
         """
         wrapper_file.seek(0)
-        wrapper_output = Struct()
+        acctinfo = Struct()
         for line in wrapper_file:
             if '=' not in line:
                 continue
             k, v = line.strip().split('=', 1)
-            wrapper_output[k] = v
+            if k not in self.TIMEFMT_CONV:
+                gc3libs.log.warning(
+                    "Unknown key '%s' in wrapper output file - ignoring!", k)
+                continue
+            name, conv = self.TIMEFMT_CONV[k]
+            acctinfo[name] = conv(v)
 
-        return wrapper_output
+        # apprently GNU time does not report the total CPU time, used
+        # so compute it here
+        acctinfo['used_cpu_time'] = (
+            acctinfo['shellcmd_user_time'] + acctinfo['shellcmd_kernel_time'])
+
+        return acctinfo
 
 # main: run tests
 
