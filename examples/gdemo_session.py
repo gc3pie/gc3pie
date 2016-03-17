@@ -180,8 +180,8 @@ class DemoIteration(SequentialTaskCollection):
         computed_value = int(f.read())
         f.close()
 
-        if computed_value == self.limit:
-            self.returncode = 0
+        if computed_value >= self.limit:
+            self.execution.returncode = 0
             return Run.State.TERMINATED
         else:
             self.add(GdemoApplication(computed_value, self.increment, iteration+1))
