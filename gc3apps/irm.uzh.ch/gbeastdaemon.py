@@ -25,7 +25,6 @@ __version__ = '$Revision$'
 import gc3libs
 from gc3libs.cmdline import SessionBasedDaemon
 import os
-import inotifyx
 from gc3libs.quantity import GiB, MiB
 
 class GBeastApp(gc3libs.Application):
@@ -81,7 +80,7 @@ class GBeastDaemon(SessionBasedDaemon):
         if not epath or not epath.endswith('.xml'):
             gc3libs.log.info("Ignoring file %s since it doesn't end in .xml" % epath)
             return []
-            
+
         beast = 'beast1'
         if 'BEAST2' in epath:
             beast = 'beast2'
@@ -116,5 +115,5 @@ class GBeastDaemon(SessionBasedDaemon):
         return []
 
 if "__main__" == __name__:
-    from gbeastnotify import GBeastDaemon
+    from gbeastdaemon import GBeastDaemon
     GBeastDaemon().run()
