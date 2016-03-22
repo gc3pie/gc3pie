@@ -464,6 +464,11 @@ Print job state.
     verbose_logging_threshold = 1
 
     def setup_options(self):
+        self.add_param("-b", "--brief", "--summary",
+                       action="store_true",
+                       dest="summary",
+                       help=("Only print a summary table"
+                             " with count of jobs per each state."))
         self.add_param("-l", "--state",
                        action="store",
                        dest="states",
@@ -620,7 +625,13 @@ Print job state.
                 else:
                     stats['failed'] += 1
 
-        if len(rows) > capacity and self.params.verbose == 0:
+        summary_only = (
+            # requested by user on command-line
+            self.params.summary
+            # automatically determined based on screen size
+            or (len(rows) > capacity and self.params.verbose == 0)
+        )
+        if summary_only:
             # only print table with statistics
             table = PrettyTable(['state', 'num/tot', 'num/tot %'])
             table.header = False
