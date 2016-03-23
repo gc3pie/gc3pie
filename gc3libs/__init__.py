@@ -935,7 +935,7 @@ class Application(Task):
                               gc3libs.quantity.Duration)), \
             ("Expected `Duration` instance for `requested_walltime,"
              " got %r %s instead."
-             % (self.requested_memory, type(self.requested_memory)))
+             % (self.requested_walltime, type(self.requested_walltime)))
         self.requested_architecture = extra_args.pop(
             'requested_architecture', None)
         if self.requested_architecture is not None \
