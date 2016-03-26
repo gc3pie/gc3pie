@@ -69,7 +69,7 @@ from gc3libs.quantity import Memory, kB, MB, MiB, GB, Duration, hours, minutes, 
 from gc3libs.workflow import RetryableTask
 
 DEFAULT_CORES = 1
-DEFAULT_MEMORY = Memory(30000,MB)
+DEFAULT_MEMORY = Memory(62000,MB)
 
 DEFAULT_REMOTE_TEMP="/tmp"
 DEFAULT_REMOTE_INPUT="/data/input"
@@ -96,23 +96,63 @@ class GchelsaApplication(Application):
         else:
             chelsa_script = DEFAULT_CHELSA_SCRIPT
             
-        arguments="R --vanilla \"--args gTIME=c(%s) %s %s %s\" <%s>%s" \
-        % (month,
-           extra_args['temp_data'],
-           extra_args['input_data'],
-           extra_args['output_data'],
-           chelsa_script,
-           DEFAULT_REMOTE_OUTPUT_FILE) 
+        # arguments="R --vanilla \"--args gTIME=c(%s,%s) %s %s %s\" <%s>%s" \
+        # % (month,
+        #    month+1,
+        #    extra_args['temp_data'],
+        #    extra_args['input_data'],
+        #    extra_args['output_data'],
+        #    chelsa_script,
+        #    DEFAULT_REMOTE_OUTPUT_FILE) 
 
-        # extra_args['requested_memory'] = DEFAULT_MEMORY
+        # prepare execution script from command
+        execution_script = """
+#!/bin/sh
+
+tempdir=`mktemp -d -p %s`
+ulimit -a
+# execute command
+R --vanilla --args "gTIME=c(%s,%s) $tempdir/ %s %s" <%s>%s
+RET=$?
+
+echo Program terminated with exit code $RET
+exit $RET
+        """ % (extra_args['temp_data'],
+               month,
+               month+1,
+               extra_args['output_data'],
+               extra_args['input_data'],
+               chelsa_script,
+               DEFAULT_REMOTE_OUTPUT_FILE) 
+
+        try:
+            # create script file
+            (handle, self.tmp_filename) = tempfile.mkstemp(prefix='gchelsa-', suffix=extra_args['jobname'])
+
+            # XXX: use NamedTemporaryFile instead with 'delete' = False
+
+            fd = open(self.tmp_filename,'w')
+            fd.write(execution_script)
+            fd.close()
+            os.chmod(fd.name,0777)
+        except Exception, ex:
+            gc3libs.log.debug("Error creating execution script" +
+                              "Error type: %s." % type(ex) +
+                              "Message: %s"  %ex.message)
+            raise
+
+        inputs[fd.name] = './gchelsa_wrapper.sh'
+        
+        extra_args['requested_memory'] = DEFAULT_MEMORY
         
         Application.__init__(
             self,
-            arguments = arguments,
+            arguments = ['./gchelsa_wrapper.sh'],
             inputs = inputs,
             outputs = [DEFAULT_REMOTE_OUTPUT_FILE],
             stdout = 'gchelsa.log',
             join=True,
+            executables = ['gchelsa_wrapper.sh'],
             **extra_args)        
 
 class GchelsaScript(SessionBasedScript):
@@ -187,7 +227,7 @@ class GchelsaScript(SessionBasedScript):
                 if len(self.input_range) == 1:
                     # Defined only single month
                     gc3libs.log.info("Defined single month to process: '%d'",
-                                     self.input_range)
+                                     self.input_range[0])
                 elif len(self.input_range) == 2:
                     # Defined a range
                     self.input_range = range(self.input_range[0],
@@ -216,7 +256,7 @@ class GchelsaScript(SessionBasedScript):
             # filename example: 0103645_anat.nii.gz
             # extract root folder name to be used as jobname
             extra_args = extra.copy()
-            extra_args['jobname'] = str(month)
+            extra_args['jobname'] = 'chelsa-%s' % str(month)
 
             extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
