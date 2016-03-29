@@ -27,7 +27,7 @@ See the output of ``gchelsa.py --help`` for program usage
 instructions.
 
 Input argument consists of:
-- Month range: integer range (e.g. 1:432)
+- Month range: integer range (e.g. 1:430)
 ...
 
 Options:
@@ -95,17 +95,7 @@ class GchelsaApplication(Application):
             inputs[extra_args['Rscript']] = chelsa_script
         else:
             chelsa_script = DEFAULT_CHELSA_SCRIPT
-            
-        # arguments="R --vanilla \"--args gTIME=c(%s,%s) %s %s %s\" <%s>%s" \
-        # % (month,
-        #    month+1,
-        #    extra_args['temp_data'],
-        #    extra_args['input_data'],
-        #    extra_args['output_data'],
-        #    chelsa_script,
-        #    DEFAULT_REMOTE_OUTPUT_FILE) 
 
-        # prepare execution script from command
         execution_script = """
 #!/bin/sh
 
@@ -119,7 +109,7 @@ echo Program terminated with exit code $RET
 exit $RET
         """ % (extra_args['temp_data'],
                month,
-               month+1,
+               month,
                extra_args['output_data'],
                extra_args['input_data'],
                chelsa_script,
@@ -127,10 +117,10 @@ exit $RET
 
         try:
             # create script file
-            (handle, self.tmp_filename) = tempfile.mkstemp(prefix='gchelsa-', suffix=extra_args['jobname'])
+            (handle, self.tmp_filename) = tempfile.mkstemp(prefix='gchelsa-',
+                                                           suffix=extra_args['jobname'])
 
             # XXX: use NamedTemporaryFile instead with 'delete' = False
-
             fd = open(self.tmp_filename,'w')
             fd.write(execution_script)
             fd.close()
