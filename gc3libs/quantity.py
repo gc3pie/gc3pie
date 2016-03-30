@@ -621,8 +621,10 @@ class Memory(object):
         >>> two_bytes == 2*byte
         True
         >>> half_gigabyte = a_gigabyte / 2
-        >>> half_gigabyte
-        Memory(476.837, unit=MiB)
+        >>> a_gigabyte == half_gigabyte * 2
+        True
+        >>> a_megabyte == a_gigabyte / 1000
+        True
 
     The ratio of two memory quantities is correctly computed as a pure
     (floating-point) number::
@@ -830,6 +832,8 @@ class Duration(object):
 
       >>> two_hours = an_hour + an_hour
       >>> two_hours == 2*an_hour
+      True
+      >>> an_hour == two_hours / 2
       True
 
       >>> one_hour = two_hours - an_hour
