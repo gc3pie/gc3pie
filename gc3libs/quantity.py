@@ -453,6 +453,10 @@ class _Quantity(object):
             return self._new_from_amount_and_unit(
                 amount / unit.amount(self.base), unit)
 
+    # be compatible with `from __future__ import division`
+    __truediv__ = __div__
+
+    # FIXME: why doesn't this do the same as `__div__` (+ rounding down?)
     def __floordiv__(self, other):
         """Return the ratio of two quantities (as a whole number)."""
         assert isinstance(other, self.__class__), \
