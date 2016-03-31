@@ -606,6 +606,11 @@ class BatchSystem(LRMS):
                 (self._secondary_acct_command, self._parse_secondary_acct_output),
         ]:
             cmd = cmd_fn(job)
+            # `._secondary_acct_command` returns ``None`` if no
+            # "secondary" accouting method is defined -- skip to next
+            # iteration, if any
+            if cmd is None:
+                continue
             try:
                 acctinfo = self.__run_command_and_parse_output(
                     cmd, parse_fn, 'accounting')
