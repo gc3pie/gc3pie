@@ -314,7 +314,7 @@ class SlurmLrms(batch.BatchSystem):
                 'submit,start,end,maxrss,maxvmsize -j %s' %
                 (self._sacct, job.lrms_jobid))
 
-    def _parse_acct_output(self, stdout, stderrs):
+    def _parse_acct_output(self, stdout, stderr):
         acct = {
             'cores':            0,
             'duration':         Duration(0, unit=seconds),
