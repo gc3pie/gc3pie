@@ -443,7 +443,7 @@ variable ``GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL`` to ``yes`` or ``1``.
                     except Exception as ex:
                         gc3libs.log.debug(
                             "Error getting status of application '%s': %s: %s",
-                            app, ex.__class__.__name__, str(ex), exc_info=True)
+                            app, ex.__class__.__name__, ex, exc_info=True)
                         state = Run.State.UNKNOWN
                         # run error handler if defined
                         ex = app.update_job_state_error(ex)
