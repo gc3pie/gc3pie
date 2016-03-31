@@ -340,9 +340,16 @@ class SlurmLrms(batch.BatchSystem):
             # whereas the total `jobID` line carries the exit codes
             # and overall duration/timing information.
             if '.' not in jobid:
-                assert state in [
-                    'CANCELLED', 'COMPLETED', 'FAILED',
-                    'NODE_FAIL', 'PREEMPTED', 'TIMEOUT'], (
+                if state not in [
+                        'BOOT_FAIL',
+                        'CANCELLED',
+                        'COMPLETED',
+                        'FAILED',
+                        'NODE_FAIL',
+                        'PREEMPTED',
+                        'TIMEOUT',
+                ]:
+                    raise gc3libs.exceptions.UnexpectedJobState(
                         "Unexpected SLURM job state '{state}'"
                         " encountered in parsing `sacct` output"
                         .format(state=state)

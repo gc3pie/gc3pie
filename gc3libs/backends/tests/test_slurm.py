@@ -254,6 +254,36 @@ def sacct_done_fractional_rusage(jobid=123):
         "")
 
 
+def sacct_almost_done(jobid=123):
+    """All steps completed, but main job still reported as RUNNING."""
+    # SLURM 2.6.5 running on Ubuntu 14.04
+    return (
+        # command exitcode
+        0,
+        # stdout
+        """
+{jobid}|0:0|RUNNING|16|00:00:08|00:00.168|2016-03-31T09:33:25|2016-03-31T09:33:25|Unknown|||
+{jobid}.batch|0:0|COMPLETED|1|00:00:08|00:00.168|2016-03-31T09:33:25|2016-03-31T09:33:25|2016-03-31T09:33:33|22212K|67032K|
+        """.strip().format(jobid=jobid),
+        # stderr
+        "")
+
+
+def sacct_done_ok2(jobid=123):
+    """All steps and job allocation in state COMPLETED."""
+    # SLURM 2.6.5 running on Ubuntu 14.04
+    return (
+        # command exitcode
+        0,
+        # stdout
+        """
+{jobid}|0:0|COMPLETED|16|00:00:08|00:00.168|2016-03-31T09:33:25|2016-03-31T09:33:25|2016-03-31T09:33:33|||
+{jobid}.batch|0:0|COMPLETED|1|00:00:08|00:00.168|2016-03-31T09:33:25|2016-03-31T09:33:25|2016-03-31T09:33:33|22212K|67032K|
+        """.strip().format(jobid=jobid),
+        # stderr
+        "")
+
+
 State = gc3libs.Run.State
 
 
@@ -508,6 +538,36 @@ username=NONEXISTENT
         self.transport.expected_answer['env'] = sacct_notfound()
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.UNKNOWN)
+
+    @mock.patch('gc3libs.backends.batch.time')
+    def test_accounting_delay3(self, mock_time):
+        """
+        Test that no state update is performed if `squeue` and `sacct` disagree on the job status, within the "accounting delay" limit.
+        """
+        mock_time.time.return_value = 0
+
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+        # fail repeatedly within the acct delay, no changes to `app.execution`
+        for t in 1, 2, 3:
+            mock_time.time.return_value = t
+            self.transport.expected_answer['squeue'] = squeue_notfound()
+            self.transport.expected_answer['env'] = sacct_almost_done()
+            self.core.update_job_state(app)
+            assert_equal(app.execution.state, State.RUNNING)
+            assert hasattr(app.execution, 'stat_failed_at')
+            assert_equal(app.execution.stat_failed_at, 1)
+
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['env'] = sacct_done_ok2()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.TERMINATING)
 
     def test_parse_sacct_output_parallel(self):
         """Test `sacct` output with a successful parallel job."""

@@ -623,6 +623,12 @@ class BatchSystem(LRMS):
                 log.debug("Accounting command `%s` failed.", cmd)
                 # try next one
                 pass
+            except gc3libs.exceptions.UnexpectedJobState as ex:
+                log.debug(
+                    "Unexpected output from accounting command `%s`: %s.",
+                    cmd, ex)
+                # try next one
+                pass
 
         # if no termination status is known and the acct
         # command provided one, use it
