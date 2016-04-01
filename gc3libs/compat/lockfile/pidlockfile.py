@@ -170,7 +170,7 @@ def write_pid_to_pidfile(pidfile_path):
     #   example, if crond was process number 25, /var/run/crond.pid
     #   would contain three characters: two, five, and newline.
 
-    # pid = os.getpid()
+    pid = os.getpid()
     line = "%(pid)d\n" % vars()
     pidfile.write(line)
     pidfile.close()
