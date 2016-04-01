@@ -12,7 +12,6 @@ SQLAlchemy==1.0.6
 argparse==1.2.1
 debtcollector==0.5.0
 ecdsa==0.13
-inotifyx==0.2.2
 iso8601==0.1.10
 msgpack-python==0.4.6
 netaddr==0.7.15
