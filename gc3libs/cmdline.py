@@ -61,13 +61,16 @@ except ImportError:
 from collections import defaultdict
 from prettytable import PrettyTable
 
+import SimpleXMLRPCServer as sxmlrpc
+import xmlrpclib
+
 # 3rd party modules
 import daemon
 import cli  # pyCLI
 import cli.app
 import cli._ext.argparse as argparse
 import inotifyx
-import nanoservice as ns
+
 
 # interface to Gc3libs
 import gc3libs
@@ -1329,37 +1332,99 @@ class _SessionBasedCommand(_Script):
         return rc
 
 
-class _CommDaemon(ns.Service):
-    def __init__(self, name, address, daemon):
-        super(_CommDaemon, self).__init__(address)
-        self.daemon = daemon
-        self.log = self.daemon.log
-        self.register("ping", lambda: "pong", "Just reply `pong` if alive")
-        self.register("help", self.help, "Show available commands")
-        self.register("list",
-                      self.list_jobs,
-                      "usage: list [-l]\n\nList jobs")
-        self.register("show",
-                      self.show_job,
-                      "usage: show <jobid> [attributes]\n\n"
-                      "Same output as `ginfo -v <jobid> [-p attributes]`")
-        self.register("stat",
-                      self.stat_jobs,
-                      "Print how many jobs are in any given state")
-        self.register("terminate",
-                      self.terminate,
-                      "Terminate program")
+class _CommDaemon(object):
+    def __init__(self, name, workingdir, parent):
+        self.parent = parent
+        self.log = self.parent.log
+
+        # Start XMLRPC server
+        self.server = sxmlrpc.SimpleXMLRPCServer(("localhost", 0),
+                                                 logRequests=False)
+        self.port = self.server.socket.getsockname()[-1]
+        self.log.info("XMLRPC daemon running on localhost,"
+                      "port %d." % self.port)
+        self.portfile = os.path.join(workingdir, 'daemon.port')
+        ### FIXME: we should check if the file exists already
+        with open(self.portfile, 'w') as fd:
+            self.log.debug("Writing current port (%d) I'm listening to"
+                           " in file %s" % (self.port, self.portfile))
+            fd.write(str(self.port) + '\n')
+
+        # Register XMLRPC methods
+        self.server.register_introspection_functions()
+
+        self.server.register_function(self.help, "help")
+        self.server.register_function(self.list_jobs, "list")
+        self.server.register_function(self.show_job, "show")
+        self.server.register_function(self.stat_jobs, "stat")
+        self.server.register_function(self.terminate, "terminate")
+
+    def start(self):
+        return self.server.serve_forever()
+
+    def stop(self):
+        try:
+            self.server.shutdown()
+            self.server.socket.close()
+            os.remove(self.portfile)
+        except Exception as ex:
+            # self.stop() could be called twice, let's assume it's not
+            # an issue but log the event anyway
+            self.log.warning(
+                "Ignoring exception caught while closing socket: %s", ex)
+
+    def terminate(self):
+        """Terminate daemon"""
+        # Start a new thread so that we can reply
+        def killme():
+            self.log.info("Terminating as requested via IPC")
+            # Wait 1s so that the client connection is not hang up and
+            # we have time to give feedback
+            time.sleep(1)
+            # daemon cleanup will aslo call self.stop()
+            self.parent.cleanup()
+
+            # Send kill signal to current process
+            os.kill(os.getpid(), signal.SIGTERM)
+
+            # This should be enough, but just in case...
+            self.log.warning(
+                "Waiting 5s to see if my sucide attempt succeeded")
+            time.sleep(5)
+
+            # If this is not working, try mor aggressive approach.
+
+            # SIGINT is interpreted by SessionBasedDaemon class. It
+            # will also call self.parent.cleanup(), again.
+            self.log.warning("Still alive: sending SIGINT signal to myself")
+            os.kill(os.getpid(), signal.SIGINT)
+
+            # We whould never reach this point, but Murphy's law...
+            time.sleep(5)
+            # Revert back to SIGKILL. This will leave the pidfile
+            # hanging around.
+            self.log.warning("Still alive: forcing SIGKILL signal.")
+            os.kill(os.getpid(), signal.SIGKILL)
+
+        t = threading.Thread(target=killme)
+        t.start()
+        return "Terminating %d in 1s" % os.getpid()
+
+    ### user visible methods
 
     def help(self, cmd=None):
+        """Show available commands, or get information about a specific
+        command"""
+
         if not cmd:
-            return str.join(", ", self.methods)
-        elif cmd in self.descriptions:
-            return self.descriptions[cmd]
+            return self.server.system_listMethods()
         else:
-            return "Unknown command %s" % cmd
+            return self.server.system_methodHelp(cmd)
 
     def list_jobs(self, opts=None):
-        if opts == '-l':
+        """usage: list [detail]\n\nList jobs"""
+
+        if opts and 'details'.startswith(opts):
             def print_app_table(app, indent, recursive):
                 rows = []
                 try:
@@ -1378,7 +1443,7 @@ class _CommDaemon(ns.Service):
                 return rows
 
             rows = []
-            for app in self.daemon.session.tasks.values():
+            for app in self.parent.session.tasks.values():
                 rows.extend(print_app_table(app, '', True))
             table = PrettyTable(["JobID", "Job name", "State", "Info"])
             table.align = 'l'
@@ -1386,14 +1451,19 @@ class _CommDaemon(ns.Service):
                 table.add_row(row)
             return str(table)
         else:
-            return str.join(' ', self.daemon.session.list_ids())
+            return str.join(' ', self.parent.session.list_ids())
 
     def show_job(self, jobid=None, *attrs):
+        """usage: show <jobid> [attributes]
+
+        Same output as `ginfo -v <jobid> [-p attributes]`
+        """
+
         if not jobid:
             return "Usage: show <jobid> [attributes]"
         try:
             out = StringIO()
-            app = self.daemon.session.load(jobid)
+            app = self.parent.session.load(jobid)
             if not attrs:
                 attrs = None
             gc3libs.utils.prettyprint(app,
@@ -1405,53 +1475,12 @@ class _CommDaemon(ns.Service):
             return "Unable to find job %s" % jobid
 
     def stat_jobs(self):
+        """Print how many jobs are in any given state"""
+
         stats = defaultdict(int)
-        for job in self.daemon.session:
+        for job in self.parent.session:
             stats[job.execution.state] += 1
         return str.join(' ', ["%s:%s" % x for x in stats.items()])
-
-    def stop(self):
-        try:
-            self.socket.close()
-        except Exception as ex:
-            # self.stop() could be called twice, let's assume it's not
-            # an issue but log the event anyway
-            self.log.warning("Ignoring exception caught while closing socket: %s", ex)
-
-    def terminate(self):
-        # Start a new thread so that we can reply
-        def killme():
-            self.log.info("Terminating as requested via IPC")
-            # Wait 1s so that the client connection is not hang up and
-            # we have time to give feedback
-            time.sleep(1)
-            # daemon cleanup will aslo call self.stop()
-            self.daemon.cleanup()
-
-            # Send kill signal to current process
-            os.kill(os.getpid(), signal.SIGTERM)
-
-            # This should be enough, but just in case...
-            self.log.warning("Waiting 5s to see if my sucide attempt succeeded")
-            time.sleep(5)
-
-            # If this is not working, try mor aggressive approach.
-
-            # SIGINT is interpreted by SessionBasedDaemon class. It
-            # will also call self.daemon.cleanup(), again.
-            self.log.warning("Still alive: sending SIGINT signal to myself")
-            os.kill(os.getpid(), signal.SIGINT)
-
-            # We whould never reach this point, but Murphy's law...
-            time.sleep(5)
-            # Revert back to SIGKILL. This will leave the pidfile
-            # hanging around.
-            self.log.warning("Still alive: forcing SIGKILL signal.")
-            os.kill(os.getpid(), signal.SIGKILL)
-
-        t = threading.Thread(target=killme)
-        t.start()
-        return "Terminating %d in 1s" % os.getpid()
 
 
 class SessionBasedDaemon(_SessionBasedCommand):
@@ -1513,6 +1542,16 @@ class SessionBasedDaemon(_SessionBasedCommand):
                        " created in one of these directories, a callback is"
                        " triggered to add new jobs")
 
+        self.add_param('--client',
+                       nargs='+',
+                       metavar="ARGS",
+                       help="Connect to a running instance of '{name}' using"
+                       "XML-RPC. This only works if you ran '{name}' with"
+                       " option `--comm`. The first argument of `--client` is"
+                       " the path to the port file `daemon.port` present in"
+                       " the working directory. All other arguments are passed"
+                       " to the server as they are.".format(name=self.name))
+
     def pre_run(self):
         ### FIXME: first half of this function is copied from
         ### _SessionBasedCommand(). The reason is that we want to
@@ -1522,6 +1561,24 @@ class SessionBasedDaemon(_SessionBasedCommand):
 
         # call base classes first (note: calls `parse_args()`)
         _Script.pre_run(self)
+
+        # Intercept the --client option if present, and ignore all
+        # other arguments.
+        if self.params.client:
+            # When used as client, no other options can be passed.
+            for name, value in self.params._get_kwargs():
+                # Some options are actually fine
+                if name in ('client', 'verbose', 'config_files'):
+                    continue
+                if value and value != self.actions[name].default:
+                    self.argparser.error("--client cannot be used with other"
+                                         " options. Option %s used" % name)
+            if self.params._get_args():
+                self.argparser.error(
+                    "--client cannot be used with other options")
+
+            self.main = self._main_client
+            return
         # since it may time quite some time before jobs are created
         # and the first report is displayed, print a startup banner so
         # that users get some kind of feedback ...
@@ -1639,7 +1696,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             def commthread():
                 self.comm = _CommDaemon(
                     self.name,
-                    "ipc://%s/daemon.sock" % self.params.working_dir,
+                    self.params.working_dir,
                     self)
                 self.log.info("Running OI program")
                 self.comm.start()
@@ -1650,6 +1707,14 @@ class SessionBasedDaemon(_SessionBasedCommand):
         except Exception as ex:
             self.log.error(
                 "Error initializinig Communication thread: %s" % ex)
+
+    def _main_client(self):
+        with open(self.params.client[0], 'r') as fd:
+            port = int(fd.read().strip())
+        server = xmlrpclib.ServerProxy('http://localhost:%d' % port)
+        cmd, args = self.params.client[1], self.params.client[2:]
+        func = getattr(server, cmd)
+        print(func(*args))
 
     def _main(self):
         # FIXME: If we are loading a previous session, arguments
@@ -1669,7 +1734,8 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 self.__setup_comm()
             return super(SessionBasedDaemon, self)._main()
         else:
-            lockfile = os.path.join(self.params.working_dir, self.name + '.pid')
+            lockfile = os.path.join(self.params.working_dir,
+                                    self.name + '.pid')
             lock = PIDLockFile(lockfile)
             if lock.is_locked():
                 raise gc3libs.exceptions.FatalError(
@@ -1680,7 +1746,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 umask=0o002,
                 pidfile=lock,
                 stdout=open(
-                    os.path.join(self.params.working_dir,'stdout.txt'),
+                    os.path.join(self.params.working_dir, 'stdout.txt'),
                     'w'),
                 stderr=open(
                     os.path.join(self.params.working_dir, 'stderr.txt'),
