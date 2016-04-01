@@ -1,4 +1,6 @@
 coloredlogs
+# daemon required for SessionBasedDaemon
+python-daemon
 # paramiko and pycrypto are required for SSH operations
 paramiko
 pycrypto

@@ -14,7 +14,6 @@ debtcollector==0.5.0
 ecdsa==0.13
 inotifyx==0.2.2
 iso8601==0.1.10
-lockfile==0.12.2
 msgpack-python==0.4.6
 netaddr==0.7.15
 netifaces==0.10.4
@@ -28,7 +27,6 @@ pbr==1.2.0
 prettytable==0.7.2
 pyCLI==2.0.3
 pycrypto==2.6.1
-python-daemon==2.1.1
 python-keystoneclient==1.6.0
 python-novaclient==2.26.0
 pytz==2015.4
