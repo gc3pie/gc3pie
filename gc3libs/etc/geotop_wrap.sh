@@ -117,7 +117,7 @@ if [ ! $? -eq 0 ]; then
     echo "[failed]"
     die 1 $MIME_TYPE
 else
-    if [ $MIME_TYPE == "application/x-gzip" ]; then
+    if [ $MIME_TYPE == "application/x-gzip" ] || [ $MIME_TYPE == "application/gzip" ]; then
 	SHARED_FS=0
 	echo "[NON shared]"
     elif [ $MIME_TYPE == "inode/directory" ]; then
