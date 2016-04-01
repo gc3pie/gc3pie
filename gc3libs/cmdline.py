@@ -43,7 +43,6 @@ __docformat__ = 'reStructuredText'
 
 # stdlib modules
 import fnmatch
-from lockfile.pidlockfile import PIDLockFile
 import logging
 from logging.handlers import SysLogHandler
 import math
@@ -76,6 +75,7 @@ import inotifyx
 import gc3libs
 import gc3libs.config
 from gc3libs.compat import lockfile
+from gc3libs.compat.lockfile.pidlockfile import PIDLockFile
 import gc3libs.core
 import gc3libs.exceptions
 import gc3libs.persistence
