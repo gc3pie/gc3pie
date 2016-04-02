@@ -76,8 +76,12 @@ resourcedir = %s
 
     def tearDown(self):
         os.remove(self.cfgfile)
-        shutil.rmtree(self.resourcedir)
         cli.test.FunctionalTest.tearDown(self)
+        try:
+            shutil.rmtree(self.resourcedir)
+        except:
+            # Double check if some dir is still present
+            pass
 
     def test_simplescript(self):
         """Test a very simple script based on `SessionBasedScript`:class:
@@ -223,6 +227,7 @@ resourcedir = %s
 
         pid = open(pidfile).read()
         os.kill(int(pid), signal.SIGTERM)
+        os.kill(int(pid), signal.SIGHUP)
 
         assert_true(clean_exit, "Daemon didn't complete after 10 seconds")
         assert_true(os.path.isdir(wdir))
