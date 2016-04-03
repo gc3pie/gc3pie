@@ -905,10 +905,9 @@ ReturnCode=%x"""
                     self.transport.makedirs(posixpath.join(execdir, stderr_dir))
 
         # set up environment
-        env_arguments = ''
+        env_arguments = ['/usr/bin/env']
         for k, v in app.environment.iteritems():
-            env_arguments += "%s=%s; export %s; " % (k, v, k)
-        arguments = str.join(' ', (sh_quote_unsafe(i) for i in app.arguments))
+            env_arguments.append(sh_quote_unsafe("{k}={v}".format(k=k, v=v)))
 
         # Create the directory in which pid, output and wrapper script
         # files will be stored
@@ -943,8 +942,8 @@ ReturnCode=%x"""
                 r"""#!/bin/sh
                 echo $$ >{pidfilename}
                 cd {execdir}
-                exec '{time_cmd}' -o '{wrapper_out}' -f '{fmt}' \
-                  /bin/sh {redirections} -c {command}
+                exec {redirections}
+                exec '{time_cmd}' -o '{wrapper_out}' -f '{fmt}' {command}
                 """.format(
                     pidfilename=pidfilename,
                     execdir=execdir,
@@ -952,8 +951,7 @@ ReturnCode=%x"""
                     wrapper_out=wrapper_output_filename,
                     fmt=ShellcmdLrms.TIMEFMT,
                     redirections=redirection_arguments,
-                    command=sh_quote_unsafe(
-                        (env_arguments + arguments)),
+                    command=str.join(' ', env_arguments + app.arguments),
             ))
             wrapper_script.close()
         except gc3libs.exceptions.TransportError:
