@@ -2,6 +2,10 @@ language: python
 python:
   - "2.6"
   - "2.7"
+addons:
+  apt:
+    packages:
+    - time
 install:
   - "pip install nose mock"
   - "pip install -e .[openstack,ec2]"
