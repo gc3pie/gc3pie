@@ -1113,7 +1113,7 @@ To get detailed info on a specific command, run:
         subparser = self._add_subcmd(
             'list',
             self.list_jobs,
-            help="List jobs related to a session.")
+            help="Tree-like view of jobs related to a session.")
         subparser.add_argument('-r', '--recursive', action="store_true",
                                default=False,
                                help="Show all jobs contained in a task"
@@ -1204,9 +1204,14 @@ To get detailed info on a specific command, run:
 
     def list_jobs(self):
         """
-        Called when subcommand is `list`.
+        Called with subcommand `list`.
 
-        This method basically call the command "gstat -n -v -s SESSION"
+        List the content of a session, like `gstat -n -v -s SESSION` does.
+        Unlike `gstat`, though, display stops at the top-level jobs
+        unless option `--recursive` is also given.
+
+        With option `--recursive`, indent job ids to show the tree-like
+        organization of jobs in the task collections.
         """
         try:
             self.session = Session(self.params.session, create=False)
