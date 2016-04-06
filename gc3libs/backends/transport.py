@@ -495,6 +495,12 @@ class SshTransport(Transport):
 
     @same_docstring_as(Transport.connect)
     def connect(self):
+        if not self.remote_frontend:
+            self._is_open = False
+            raise gc3libs.exceptions.TransportError(
+                "Cannot connect to remote host:"
+                " no host name/IP address known yet.")
+
         try:
             self.transport_channel = self.ssh.get_transport()
             if not self._is_open or self.transport_channel is None or \
