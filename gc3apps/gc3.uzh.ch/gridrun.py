@@ -64,24 +64,30 @@ class SmartApplication(Application):
     list is scanned for strings that name actual existing files or
     directories, which are automatically added to the `inputs` list.
     """
-    def __init__(self, executable, arguments, inputs=None, **extra_args):
-        # setup for finding actual files
+    def __init__(self, arguments, inputs=None, *more_args, **extra_args):
+        # convert to string here as we want to compare args to file names
         arguments = [ str(x) for x in arguments ]
+
+        # create `inputs` as would be done in the `Application` class ctor
         if inputs is not None:
-            inputs = Application._io_spec_to_dict(gc3libs.url.UrlKeyDict, inputs, True)
+            inputs = Application._io_spec_to_dict(
+                gc3libs.url.UrlKeyDict, inputs, force_abs=True)
         else:
             inputs = gc3libs.url.UrlKeyDict()
 
         # scan command-line for things that look like actual files
+        executable = arguments[0]
         if os.path.exists(executable):
-            inputs[executable] = os.path.basename(executable)
-        for i, arg in enumerate(arguments):
+            executable_name = os.path.basename(executable)
+            inputs[executable] = executable_name
+            arguments[0] = './' + executable_name
+        for i, arg in enumerate(arguments[1:], 1):
             if arg not in inputs and os.path.exists(arg):
                 inputs[arg] = os.path.basename(arg)
                 arguments[i] = os.path.basename(arg)
 
         # recurse into superclass ctor
-        Application.__init__(self, executable, arguments, inputs, **extra_args)
+        Application.__init__(self, arguments, inputs, *more_args, **extra_args)
 
 
 ## the script itself
@@ -95,7 +101,7 @@ The CMD and ARGs words given in the invocation of this command are
 concatenated to form a command-line; in the process, every word that
 matches a substitution parameter (defined with the '-D' option, see
 below) is given an actual value.  The number of resulting actual
-command lines is the Cartesian product of the sets of all possible
+ command lines is the Cartesian product of the sets of all possible
 values of substitution parameters.  The whole set of actual
 command-lines creates a session; every command in the session is
 submitted and managed until successful execution.
@@ -238,7 +244,7 @@ to the remote system as the command to be executed.
                 for name,value in subst.iteritems() ])
 
             # construct argument list, substituting defined parameters
-            arguments = [ ]
+            arguments = [ executable ]
             for arg in self.params.args:
                 if arg in subst:
                     arguments.append(subst[arg])
@@ -251,12 +257,11 @@ to the remote system as the command to be executed.
             extra_args['stdout'] = jobname + '.stdout.txt'
             extra_args['stderr'] = jobname + '.stderr.txt'
             if self.params.retry is not None:
-                yield (jobname, RetryableTask, [
-                    jobname,
-                    SmartApplication(executable, arguments, inputs, **extra_args),
+                yield RetryableTask(
+                    SmartApplication(arguments, inputs, **extra_args),
                     self.params.retry,
-                    ], extra_args)
+                    jobname=jobname,
+                    **extra_args)
             else:
-                yield (jobname, SmartApplication, [
-                    executable, arguments, inputs
-                    ], extra_args)
+                yield SmartApplication(arguments, inputs,
+                                       jobname=jobname, **extra_args)
