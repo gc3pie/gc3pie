@@ -1083,7 +1083,18 @@ ReturnCode=%x"""
                     "Unknown key '%s' in wrapper output file - ignoring!", k)
                 continue
             name, conv = self.TIMEFMT_CONV[k]
-            acctinfo[name] = conv(v)
+            # the `time` man page states that: "Any character
+            # following a percent sign that is not listed in the table
+            # below causes a question mark (`?') to be output [...] to
+            # indicate that an invalid resource specifier was given."
+            # Actually, `time` seems to print a question mark also
+            # when a value is not available (e.g., corresponding data
+            # not available/collected by the kernel) so we just set a
+            # field to ``None`` if there is a question mark in it.
+            if v.startswith('?'):
+                acctinfo[name] = None
+            else:
+                acctinfo[name] = conv(v)
 
         # apprently GNU time does not report the total CPU time, used
         # so compute it here
