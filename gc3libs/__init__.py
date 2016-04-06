@@ -761,7 +761,7 @@ class Application(Task):
       has the value ``100``, one would use::
 
         Application(...,
-        environment={'LC_ALL':'C', 'HZ':100},
+          environment={'LC_ALL':'C', 'HZ':100},
         ...)
 
     `output_base_url`

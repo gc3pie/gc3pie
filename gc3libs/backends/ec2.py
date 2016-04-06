@@ -921,7 +921,7 @@ class EC2Lrms(LRMS):
             " `pending` state. Waiting until the next iteration before"
             " creating a new VM. Pending VM ids: %s", pending_vms)
         raise LRMSSkipSubmissionToNextIteration(
-            "Delaying submission until some of the VMs currently pending"
+            "Delaying submission until one of the VMs currently pending"
             " is ready. Pending VM ids: %s"
             % str.join(', ', pending_vms))
 
