@@ -40,65 +40,24 @@ import gc3libs.config
 from gc3libs.core import Core, Engine, MatchMaker
 from gc3libs.quantity import GB, hours
 
-from helpers import SimpleSequentialTaskCollection, temporary_config, temporary_engine
+from helpers import SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_engine
 
 
 def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
-    cfg = gc3libs.config.Configuration()
-    cfg.TYPE_CONSTRUCTOR_MAP['noop'] = ('gc3libs.backends.noop', 'NoOpLrms')
-    name = 'test'
-    cfg.resources[name].update(
-        name=name,
-        type='noop',
-        auth='none',
-        transport='local',
-        max_cores_per_job=1,
-        max_memory_per_core=1*GB,
-        max_walltime=8*hours,
-        max_cores=2,
-        architecture=Run.Arch.X86_64,
-    )
+    with temporary_engine() as engine:
 
-    core = Core(cfg)
-    rsc = core.get_backend(name)
-    if transition_graph:
-        rsc.transition_graph = transition_graph
-    else:
-        # give each job a 50% chance of moving from one state to the
-        # next one
-        rsc.transition_graph = {
-            Run.State.SUBMITTED: {0.50: Run.State.RUNNING},
-            Run.State.RUNNING:   {0.50: Run.State.TERMINATING},
-        }
+        # generate some no-op tasks
+        for n in range(num_jobs):
+            name = 'app{nr}'.format(nr=n+1)
+            engine.add(SuccessfulApp(name))
 
-    engine = Engine(core)
-
-    # generate some no-op tasks
-    for n in range(num_jobs):
-        name = 'app{nr}'.format(nr=n+1)
-        engine.add(
-            Application(
-                ['/bin/true'],
-                inputs=[],
-                outputs=[],
-                output_dir='/tmp',
-                jobname=name,
-                requested_cores=1,
-            )
-        )
-
-    # run them all
-    current_iter = 0
-    done = engine.stats()[Run.State.TERMINATED]
-    while done < num_jobs and current_iter < max_iter:
-        engine.progress()
+        # run them all
+        current_iter = 0
         done = engine.stats()[Run.State.TERMINATED]
-        current_iter += 1
-
-    # since TYPE_CONSTRUCTOR_MAP is a class-level variable, we
-    # need to clean up otherwise other tests will see the No-Op
-    # backend
-    del cfg.TYPE_CONSTRUCTOR_MAP['noop']
+        while done < num_jobs and current_iter < max_iter:
+            engine.progress()
+            done = engine.stats()[Run.State.TERMINATED]
+            current_iter += 1
 
 
 def test_engine_redo():
@@ -151,16 +110,7 @@ def test_engine_submit_to_multiple_resources(num_resources=3, num_jobs=50):
     # generate 50 no-op tasks
     for n in range(num_jobs):
         name = 'app{nr}'.format(nr=n)
-        engine.add(
-            Application(
-                ['/bin/true'],
-                inputs=[],
-                outputs=[],
-                output_dir='/tmp',
-                jobname=name,
-                requested_cores=1,
-            )
-        )
+        engine.add(SuccessfulApp(name))
     # submit them all
     engine.progress()
     # get handles to the actual backend objects
