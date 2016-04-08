@@ -40,7 +40,7 @@ import gc3libs.config
 from gc3libs.core import Core, Engine, MatchMaker
 from gc3libs.quantity import GB, hours
 
-from helpers import temporary_config
+from helpers import SimpleSequentialTaskCollection, temporary_config, temporary_engine
 
 
 def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
@@ -99,6 +99,28 @@ def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
     # need to clean up otherwise other tests will see the No-Op
     # backend
     del cfg.TYPE_CONSTRUCTOR_MAP['noop']
+
+
+def test_engine_redo():
+    with temporary_engine() as engine:
+        seq = SimpleSequentialTaskCollection(3)
+        engine.add(seq)
+
+        # run through sequence
+        while seq.execution.state != 'TERMINATED':
+            engine.progress()
+        assert seq.stage().jobname == 'stage2'
+        assert seq.stage().execution.state == 'TERMINATED'
+
+        engine.redo(seq, 1)
+        assert seq.stage().jobname == 'stage1'
+        assert seq.stage().execution.state == 'NEW'
+
+        # run through sequence again
+        while seq.execution.state != 'TERMINATED':
+            engine.progress()
+        assert seq.stage().jobname == 'stage2'
+        assert seq.stage().execution.state == 'TERMINATED'
 
 
 def test_engine_submit_to_multiple_resources(num_resources=3, num_jobs=50):
