@@ -1211,51 +1211,46 @@ class Engine(object):
         self.retrieve_overwrites = retrieve_overwrites
         self.retrieve_changed_only = retrieve_changed_only
 
+
+    def _get_queue_for_task(self, task):
+        state = task.execution.state
+        if Run.State.NEW == state:
+            return self._new
+        elif state in [Run.State.SUBMITTED,
+                       Run.State.RUNNING,
+                       Run.State.UNKNOWN]:
+            return self._in_flight
+        elif Run.State.STOPPED == state:
+            return self._stopped
+        elif Run.State.TERMINATING == state:
+            return self._terminating
+        elif Run.State.TERMINATED == state:
+            return self._terminated
+        else:
+            raise AssertionError(
+                "Unhandled state '%s' in gc3libs.core.Engine." % state)
+
+
     def add(self, task):
         """
         Add `task` to the list of tasks managed by this Engine.
         Adding a task that has already been added to this `Engine`
         instance results in a no-op.
         """
-        state = task.execution.state
-        if Run.State.NEW == state:
-            queue = self._new
-        elif state in [Run.State.SUBMITTED,
-                       Run.State.RUNNING,
-                       Run.State.UNKNOWN]:
-            queue = self._in_flight
-        elif Run.State.STOPPED == state:
-            queue = self._stopped
-        elif Run.State.TERMINATING == state:
-            queue = self._terminating
-        elif Run.State.TERMINATED == state:
-            queue = self._terminated
-        else:
-            raise AssertionError(
-                "Unhandled state '%s' in gc3libs.core.Engine." % state)
+        queue = self._get_queue_for_task(task)
         if not _contained(task, queue):
             queue.append(task)
             task.attach(self)
 
+
     def remove(self, task):
-        """Remove a `task` from the list of tasks managed by this Engine."""
-        state = task.execution.state
-        if Run.State.NEW == state:
-            self._new.remove(task)
-        elif (Run.State.SUBMITTED == state or
-                Run.State.RUNNING == state or
-                Run.State.UNKNOWN == state):
-            self._in_flight.remove(task)
-        elif Run.State.STOPPED == state:
-            self._stopped.remove(task)
-        elif Run.State.TERMINATING == state:
-            self._terminating.remove(task)
-        elif Run.State.TERMINATED == state:
-            self._terminated.remove(task)
-        else:
-            raise AssertionError(
-                "Unhandled state '%s' in gc3libs.core.Engine." % state)
+        """
+        Remove a `task` from the list of tasks managed by this Engine.
+        """
+        queue = self._get_queue_for_task(task)
+        queue.remove(task)
         task.detach()
+
 
     def progress(self):
         """
