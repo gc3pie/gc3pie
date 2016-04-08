@@ -30,22 +30,14 @@ from gc3libs.workflow import SequentialTaskCollection
 
 from nose.tools import raises, assert_equal
 
-from helpers import SuccessfulApp, UnsuccessfulApp, temporary_core
-
-
-## aux classes
-
-class _SimpleSequentialTaskCollection(SequentialTaskCollection):
-    def __init__(self, num_tasks, **extra_args):
-        tasks = [SuccessfulApp('stage{n}'.format(n=n)) for n in range(num_tasks)]
-        SequentialTaskCollection.__init__(self, tasks, **extra_args)
+from helpers import SimpleSequentialTaskCollection, SuccessfulApp, UnsuccessfulApp, temporary_core
 
 
 ## tests
 
 def test_SequentialTaskCollection_progress():
     with temporary_core() as core:
-        seq = _SimpleSequentialTaskCollection(3)
+        seq = SimpleSequentialTaskCollection(3)
         seq.attach(core)
 
         # run until terminated
@@ -57,7 +49,7 @@ def test_SequentialTaskCollection_progress():
 
 def test_SequentialTaskCollection_redo1():
     with temporary_core() as core:
-        seq = _SimpleSequentialTaskCollection(3)
+        seq = SimpleSequentialTaskCollection(3)
         seq.attach(core)
 
         # run until terminated
@@ -80,7 +72,7 @@ def test_SequentialTaskCollection_redo1():
 
 def test_SequentialTaskCollection_redo2():
     with temporary_core() as core:
-        seq = _SimpleSequentialTaskCollection(3)
+        seq = SimpleSequentialTaskCollection(3)
         seq.attach(core)
 
         # run until terminated

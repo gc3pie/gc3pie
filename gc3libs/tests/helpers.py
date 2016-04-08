@@ -31,6 +31,7 @@ from gc3libs import Application, Run
 from gc3libs.config import Configuration
 from gc3libs.core import Core, Engine
 from gc3libs.quantity import GB, hours
+from gc3libs.workflow import ParallelTaskCollection, SequentialTaskCollection
 
 
 @contextmanager
@@ -74,7 +75,7 @@ def temporary_core(
 
 @contextmanager
 def temporary_engine(transition_graph=None):
-    with make_test_core(transition_graph) as core:
+    with temporary_core(transition_graph) as core:
         yield Engine(core)
 
 
@@ -139,3 +140,15 @@ class UnsuccessfulApp(Application):
             **extra_args)
     def terminated(self):
         self.execution.returncode = (0, 1)
+
+
+class SimpleParallelTaskCollection(ParallelTaskCollection):
+    def __init__(self, num_tasks, **extra_args):
+        tasks = [SuccessfulApp('stage{n}'.format(n=n)) for n in range(num_tasks)]
+        ParallelTaskCollection.__init__(self, tasks, **extra_args)
+
+
+class SimpleSequentialTaskCollection(SequentialTaskCollection):
+    def __init__(self, num_tasks, **extra_args):
+        tasks = [SuccessfulApp('stage{n}'.format(n=n)) for n in range(num_tasks)]
+        SequentialTaskCollection.__init__(self, tasks, **extra_args)
