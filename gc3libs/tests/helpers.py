@@ -34,7 +34,14 @@ from gc3libs.quantity import GB, hours
 
 
 @contextmanager
-def temporary_core(transition_graph=None):
+def temporary_core(
+        transition_graph=None,
+        max_cores_per_job=1,
+        max_memory_per_core=1*GB,
+        max_walltime=8*hours,
+        max_cores=2,
+        architecture=Run.Arch.X86_64
+):
     cfg = Configuration()
     cfg.TYPE_CONSTRUCTOR_MAP['noop'] = ('gc3libs.backends.noop', 'NoOpLrms')
     name = 'test'
@@ -43,11 +50,11 @@ def temporary_core(transition_graph=None):
         type='noop',
         auth='none',
         transport='local',
-        max_cores_per_job=1,
-        max_memory_per_core=1*GB,
-        max_walltime=8*hours,
-        max_cores=2,
-        architecture=Run.Arch.X86_64,
+        max_cores_per_job=max_cores_per_job,
+        max_memory_per_core=max_memory_per_core,
+        max_walltime=max_walltime,
+        max_cores=max_cores,
+        architecture=architecture,
     )
 
     core = Core(cfg)
