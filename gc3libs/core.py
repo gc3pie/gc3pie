@@ -1666,6 +1666,20 @@ class Engine(object):
             for index in reversed(transitioned):
                 del self._terminating[index]
 
+
+    def redo(self, task, *args, **kwargs):
+        """
+        Reset task's state to NEW so that it will be re-run.
+
+        Any additional arguments will be forwarded to the task's own
+        `.redo()` method; this is useful, e.g., to perform partial
+        re-runs of `SequentialTaskCollection` instances.
+        """
+        self.remove(task)
+        task.redo(*args, **kwargs)
+        self.add(task)
+
+
     def stats(self, only=None):
         """
         Return a dictionary mapping each state name into the count of
