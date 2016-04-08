@@ -405,6 +405,18 @@ class SequentialTaskCollection(TaskCollection):
         self.changed = True
         return self.execution.state
 
+
+    def stage(self):
+        """
+        Return the `Task` that is currently executing, or ``None``
+        (if finished or not yet started).
+        """
+        if self._current_task is None:
+            return None
+        else:
+            return self.tasks[self._current_task]
+
+
     def update_state(self, **extra_args):
         """
         Update state of the collection, based on the jobs' statuses.
