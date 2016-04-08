@@ -36,7 +36,7 @@ except ImportError:
 
 # GC3Pie imports
 from gc3libs import Run
-from gc3libs.workflow import StagedTaskCollection, StopOnError
+from gc3libs.workflow import SequentialTaskCollection, StagedTaskCollection, StopOnError
 
 from helpers import SuccessfulApp, UnsuccessfulApp, temporary_core
 
@@ -73,3 +73,28 @@ def test_staged_task_collection_progress():
             coll.progress()
         assert_equal(coll.execution.state, Run.State.TERMINATED)
         assert_equal(coll.execution.exitcode, 1)
+
+
+def test_staged_task_collection_stage():
+    class TwoStageCollection(StagedTaskCollection):
+        def stage0(self):
+            return SuccessfulApp(name='stage0')
+        def stage1(self):
+            return UnsuccessfulApp(name='stage1')
+
+    with temporary_core() as core:
+        coll = TwoStageCollection()
+        coll.attach(core)
+        coll.submit()
+        stage = coll.stage()
+        assert isinstance(stage, SuccessfulApp), ("stage=%r" % (stage,))
+        assert_equal(stage.jobname, 'stage0')
+
+        # advance to next task
+        while coll.tasks[0].execution.state != Run.State.TERMINATED:
+            coll.progress()
+        stage = coll.stage()
+        assert isinstance(stage, UnsuccessfulApp)
+        assert_equal(stage.jobname, 'stage1')
+
+
