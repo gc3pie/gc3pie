@@ -40,7 +40,7 @@ import gc3libs.config
 from gc3libs.core import Core, Engine, MatchMaker
 from gc3libs.quantity import GB, hours
 
-from utils import temporary_config
+from helpers import temporary_config
 
 
 def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
