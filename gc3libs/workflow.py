@@ -247,9 +247,10 @@ class TaskCollection(Task):
             "Cannot `peek()` on a task collection.")
 
     def progress(self):
-        raise NotImplementedError(
-            "Called abstract method TaskCollection.progress() -"
-            " this should be overridden in derived classes.")
+        assert self._attached
+        for task in self.tasks:
+            task.progress()
+        super(TaskCollection, self).progress()
 
     def stats(self, only=None):
         """
