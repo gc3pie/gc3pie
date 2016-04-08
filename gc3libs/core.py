@@ -384,7 +384,7 @@ variable ``GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL`` to ``yes`` or ``1``.
     def __submit_task(self, task, resubmit, targets, **extra_args):
         """Implementation of `submit` on generic `Task` objects."""
         extra_args.setdefault('auto_enable_auth', self.auto_enable_auth)
-        task.submit(resubmit, **extra_args)
+        task.submit(resubmit, targets, **extra_args)
 
     def update_job_state(self, *apps, **extra_args):
         """
