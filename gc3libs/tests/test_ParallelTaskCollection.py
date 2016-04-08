@@ -30,22 +30,14 @@ from gc3libs.workflow import ParallelTaskCollection
 
 from nose.tools import raises, assert_equal
 
-from helpers import SuccessfulApp, UnsuccessfulApp, temporary_core
-
-
-## aux classes
-
-class _SimpleParallelTaskCollection(ParallelTaskCollection):
-    def __init__(self, num_tasks, **extra_args):
-        tasks = [SuccessfulApp('stage{n}'.format(n=n)) for n in range(num_tasks)]
-        ParallelTaskCollection.__init__(self, tasks, **extra_args)
+from helpers import SimpleParallelTaskCollection, SuccessfulApp, UnsuccessfulApp, temporary_core
 
 
 ## tests
 
 def test_ParallelTaskCollection_progress():
     with temporary_core(max_cores=10) as core:
-        par = _SimpleParallelTaskCollection(5)
+        par = SimpleParallelTaskCollection(5)
         par.attach(core)
 
         # run until terminated
@@ -57,7 +49,7 @@ def test_ParallelTaskCollection_progress():
 
 def test_ParallelTaskCollection_redo():
     with temporary_core(max_cores=10) as core:
-        par = _SimpleParallelTaskCollection(5)
+        par = SimpleParallelTaskCollection(5)
         par.attach(core)
 
         # run until terminated
