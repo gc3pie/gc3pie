@@ -951,8 +951,9 @@ ReturnCode=%x"""
                     wrapper_out=wrapper_output_filename,
                     fmt=ShellcmdLrms.TIMEFMT,
                     redirections=redirection_arguments,
-                    command=(str.join(' ', sh_quote_unsafe(arg)
-                                      for arg in (env_arguments + app.arguments))),
+                    command=(str.join(' ',
+                                      (sh_quote_unsafe(arg)
+                                      for arg in (env_arguments + app.arguments)))),
             ))
             wrapper_script.close()
         except gc3libs.exceptions.TransportError:
