@@ -542,6 +542,25 @@ class Task(Persistable, Struct):
             self.fetch_output()
             return self.execution.returncode
 
+
+    def redo(self):
+        """
+        Reset the state of this Task instance to ``NEW``.
+
+        The task should then be resubmitted to actually resume
+        execution.
+
+        See also `SequentialTaskCollection.redo`:meth:.
+        """
+        assert self.execution.state in [
+            Run.State.STOPPED,
+            Run.State.TERMINATED,
+            Run.State.TERMINATING,
+            Run.State.UNKNOWN,
+        ]
+        self.execution.state = Run.State.NEW
+
+
     def wait(self, interval=60):
         """
         Block until the associated job has reached `TERMINATED` state,

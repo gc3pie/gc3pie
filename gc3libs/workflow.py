@@ -246,11 +246,6 @@ class TaskCollection(Task):
         raise gc3libs.exceptions.InvalidOperation(
             "Cannot `peek()` on a task collection.")
 
-    def progress(self):
-        assert self._attached
-        for task in self.tasks:
-            task.progress()
-        super(TaskCollection, self).progress()
 
     def stats(self, only=None):
         """
@@ -382,6 +377,26 @@ class SequentialTaskCollection(TaskCollection):
             return Run.State.TERMINATED
         else:
             return Run.State.RUNNING
+
+
+    def progress(self):
+        assert self._attached
+        task = self.stage()
+        if task is not None:
+            task.progress()
+        super(SequentialTaskCollection, self).progress()
+
+
+    def redo(self, from_stage=0):
+        """
+        Rewind the sequence to a given stage and reset its state to ``NEW``.
+        """
+        super(SequentialTaskCollection, self).redo()
+        self._current_task = from_stage
+        task = self.stage()
+        if task is not None:
+            task.redo()
+
 
     def submit(self, resubmit=False, targets=None, **extra_args):
         """
@@ -791,9 +806,21 @@ class ParallelTaskCollection(TaskCollection):
     def progress(self):
         """
         Try to advance all jobs in the collection to the next state in
-        a normal lifecycle.  Return list of task execution states.
+        a normal lifecycle.
         """
-        return [task.progress() for task in self.tasks]
+        for task in self.tasks:
+            task.progress()
+        super(ParallelTaskCollection, self).progress()
+
+
+    def redo(self, from_stage=0):
+        """
+        Reset collection and all included tasks to state ``NEW``.
+        """
+        for task in self.tasks:
+            task.redo()
+        super(ParallelTaskCollection, self).redo()
+
 
     def submit(self, resubmit=False, targets=None, **extra_args):
         """
