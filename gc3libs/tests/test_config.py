@@ -757,7 +757,7 @@ def test_invalid_resource_type():
     """Test parsing a configuration file with an unknown resource type."""
     tmpfile = _setup_config_file("""
 [resource/test]
-type = noop
+type = invalid
 auth = none
 transport = local
 max_cores_per_job = 1
