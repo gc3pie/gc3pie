@@ -60,6 +60,18 @@ def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
             current_iter += 1
 
 
+def test_engine_progress_collection():
+    with temporary_engine() as engine:
+        seq = SimpleSequentialTaskCollection(3)
+        engine.add(seq)
+
+        # run through sequence
+        while seq.execution.state != 'TERMINATED':
+            engine.progress()
+        assert seq.stage().jobname == 'stage2'
+        assert seq.stage().execution.state == 'TERMINATED'
+
+
 def test_engine_redo():
     with temporary_engine() as engine:
         seq = SimpleSequentialTaskCollection(3)
