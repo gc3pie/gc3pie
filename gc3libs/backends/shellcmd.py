@@ -36,7 +36,7 @@ import gc3libs.exceptions
 import gc3libs.backends.transport
 from gc3libs import log, Run
 from gc3libs.utils import same_docstring_as
-from gc3libs.utils import Struct, sh_quote_unsafe, defproperty
+from gc3libs.utils import Struct, sh_quote_safe, sh_quote_unsafe, defproperty
 from gc3libs.backends import LRMS
 from gc3libs.quantity import Duration, Memory, MB
 
@@ -905,9 +905,11 @@ ReturnCode=%x"""
                     self.transport.makedirs(posixpath.join(execdir, stderr_dir))
 
         # set up environment
-        env_arguments = ['/usr/bin/env']
+        env_commands = []
         for k, v in app.environment.iteritems():
-            env_arguments.append(sh_quote_unsafe("{k}={v}".format(k=k, v=v)))
+            env_commands.append(
+                "export {k}={v};"
+                .format(k=sh_quote_safe(k), v=sh_quote_unsafe(v)))
 
         # Create the directory in which pid, output and wrapper script
         # files will be stored
@@ -938,11 +940,12 @@ ReturnCode=%x"""
             # Create the wrapper script
             wrapper_script = self.transport.open(
                 wrapper_script_fname, 'w')
-            wrapper_script.write(
+            commands = (
                 r"""#!/bin/sh
                 echo $$ >{pidfilename}
                 cd {execdir}
                 exec {redirections}
+                {environment}
                 exec '{time_cmd}' -o '{wrapper_out}' -f '{fmt}' {command}
                 """.format(
                     pidfilename=pidfilename,
@@ -951,11 +954,14 @@ ReturnCode=%x"""
                     wrapper_out=wrapper_output_filename,
                     fmt=ShellcmdLrms.TIMEFMT,
                     redirections=redirection_arguments,
+                    environment=str.join('\n', env_commands),
                     command=(str.join(' ',
                                       (sh_quote_unsafe(arg)
-                                      for arg in (env_arguments + app.arguments)))),
+                                      for arg in app.arguments))),
             ))
+            wrapper_script.write(commands)
             wrapper_script.close()
+            #log.info("Wrapper script: <<<%s>>>", commands)
         except gc3libs.exceptions.TransportError:
             log.error("Freeing resources used by failed application")
             self.free(app)
