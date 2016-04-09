@@ -464,24 +464,31 @@ class SequentialTaskCollection(TaskCollection):
             nxt = self.next(self._current_task)
             if nxt in Run.State:
                 self.execution.state = nxt
+                collection_state_already_set = True
                 if self.execution.state not in [
                         Run.State.STOPPED,
-                        Run.State.TERMINATED
+                        Run.State.TERMINATED,
+                        Run.State.TERMINATING,
                 ]:
                     self._current_task += 1
             else:
                 # `nxt` must be a valid index into `self.tasks`
                 assert 0 <= nxt < len(self.tasks)
                 self._current_task = nxt
-            # submit next task, unless TERMINATED or STOPPED
+                collection_state_already_set = False
+            # submit next task, unless we're TERMINATED or STOPPED
             if self.execution.state not in [
                     Run.State.STOPPED,
-                    Run.State.TERMINATED
+                    Run.State.TERMINATED,
+                    Run.State.TERMINATING,
             ]:
-                self.changed = True
                 next_task = self.tasks[self._current_task]
                 next_task.attach(self._controller)
-                self.submit(resubmit=True)
+                resubmit_task = (next_task.execution.state != Run.State.NEW)
+                next_task.submit(resubmit=resubmit_task)
+                if not collection_state_already_set:
+                    self.execution.state = Run.State.RUNNING
+                self.changed = True
         # 3. if task stopped, stop the sequence too
         elif (task.execution.state == Run.State.STOPPED):
             self.execution.state = Run.State.STOPPED

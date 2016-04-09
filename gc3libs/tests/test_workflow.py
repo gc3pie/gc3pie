@@ -59,7 +59,7 @@ def test_staged_task_collection_progress():
         # first task is successful
         while coll.tasks[0].execution.state != Run.State.TERMINATED:
             coll.progress()
-        assert_equal(coll.execution.state, Run.State.SUBMITTED)
+        assert coll.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]
         #assert_equal(coll.execution.exitcode, 0)
 
         # second task is successful
@@ -96,5 +96,3 @@ def test_staged_task_collection_stage():
         stage = coll.stage()
         assert isinstance(stage, UnsuccessfulApp)
         assert_equal(stage.jobname, 'stage1')
-
-
