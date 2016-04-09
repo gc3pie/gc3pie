@@ -94,6 +94,62 @@ def test_engine_redo():
         assert seq.stage().execution.state == 'TERMINATED'
 
 
+def test_engine_resubmit():
+    with temporary_engine() as engine:
+        app = SuccessfulApp()
+        engine.add(app)
+
+        # run through sequence
+        while app.execution.state != 'TERMINATED':
+            engine.progress()
+
+        engine.submit(app, resubmit=True)
+        assert app.execution.state == 'NEW'
+
+        # run through sequence again
+        while app.execution.state != 'TERMINATED':
+            engine.progress()
+        assert app.execution.state == 'TERMINATED'
+
+
+def test_engine_submit1():
+    """Engine.submit is equivalent to `add` if a task is not yet managed."""
+    with temporary_engine() as engine:
+        assert engine.stats()['NEW'] == 0
+
+        app = SuccessfulApp()
+        assert app.execution.state == 'NEW'
+        engine.submit(app)
+        assert app.execution.state == 'NEW'
+        assert engine.stats()['NEW'] == 1
+
+        engine.progress()
+        assert app.execution.state in ['SUBMITTED', 'RUNNING']
+        assert engine.stats()['NEW'] == 0
+        assert engine.stats()[app.execution.state] == 1
+
+
+def test_engine_submit2():
+    """Engine.submit is a no-op if a task is already managed."""
+    with temporary_engine() as engine:
+        app = SuccessfulApp()
+        engine.add(app)
+        assert engine.stats()['NEW'] == 1
+
+        engine.submit(app)
+        assert engine.stats()['NEW'] == 1
+
+        engine.progress()
+        state = app.execution.state
+        assert state in ['SUBMITTED', 'RUNNING']
+        assert engine.stats()['NEW'] == 0
+        assert engine.stats()[state] == 1
+
+        engine.submit(app)
+        assert app.execution.state == state
+        assert engine.stats()[state] == 1
+
+
 def test_engine_submit_to_multiple_resources(num_resources=3, num_jobs=50):
     """Test job spread across multiple resources."""
     # sanity check for parameters

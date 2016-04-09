@@ -1764,16 +1764,23 @@ class Engine(object):
         """
         Submit `task` at the next invocation of `progress`.
 
-        The `task` state is reset to ``NEW`` and then added to the
-        collection of managed tasks.
+        The `task` state is reset using the task's own method
+        `.redo()`, and then the task added to the collection of
+        managed tasks.  Note that the use of `redo()` implies that
+        only tasks in a terminal state can be resubmitted!
 
         The `targets` argument is only present for interface
         compatiblity with `Core.submit`:meth: but is otherwise
         ignored.
-
         """
         if resubmit:
-            task.execution.state = Run.State.NEW
+            # since we are going to change the task's state, we need
+            # to expunge it from the queues ...
+            queue = self._get_queue_for_task(task)
+            if _contained(task, queue):
+                queue.remove(task)
+            task.redo()
+        # ... and then add it again with the (possibly) new state
         return self.add(task)
 
     def update_job_state(self, *tasks, **extra_args):
