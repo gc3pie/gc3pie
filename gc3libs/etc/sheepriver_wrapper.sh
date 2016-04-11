@@ -223,7 +223,7 @@ echo "=== ${me}: Starting at `date '+%Y-%m-%d %H:%M:%S'`"
 
 for i in `seq 1 $iterations`; do
      seedN=$(sed -n -e ${i}p $seed)
-     time java -jar $jar $param $hunting $seedN $output/output_$hunting-$i
+     time java -jar $jar $param $hunting $seedN $output/h_$hunting-$i
 done
 
 # Archive the whole output folder
