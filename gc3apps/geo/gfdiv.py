@@ -76,7 +76,7 @@ class MatlabRetryOnOutOfMemory(RetryableTask):
     def __init__(self, task, increment=1*GB, maximum=31*GB, **extra_args):
         self.increment = increment
         self.maximum = maximum
-        super(RetryableTask).__init__(self, task, **extra_args)
+        RetryableTask.__init__(self, task, **extra_args)
 
     def retry(self):
         last_run = self.task.execution
