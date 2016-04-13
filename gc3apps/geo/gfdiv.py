@@ -89,7 +89,8 @@ class MatlabRetryOnOutOfMemory(RetryableTask):
         generic_memory_error = (
             last_run.returncode != 0
             and last_run.max_used_memory > requested_memory)
-        task_stderr = os.path.join(self.task.output_dir, self.task.stderr)
+        task_stderr = os.path.join(self.task.output_dir,
+                                   self.task.stdout if self.task.join else self.task.stderr)
         matlab_memory_error = (
             occurs('Out of memory.', task_stderr, fgrep)
             or occurs('MATLAB:nomem.', task_stderr, fgrep))
