@@ -984,7 +984,10 @@ class Application(Task):
             self.outputs[self.stdout] = self.stdout
 
         self.stderr = extra_args.pop('stderr', None)
-        if self.stderr == self.stdout or self.stderr == subprocess.STDOUT:
+        join_stdout_and_stderr = (self.join
+                                  or self.stderr == self.stdout
+                                  or self.stderr == subprocess.STDOUT)
+        if join_stdout_and_stderr:
             self.join = True
             self.stderr = self.stdout
 
