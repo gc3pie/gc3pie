@@ -855,7 +855,7 @@ error occurred.
                                % (jobid, app.execution.state))
                 if app.execution.state == Run.State.NEW:
                     raise gc3libs.exceptions.InvalidOperation(
-                        "Job '%s' not submitted." % app)
+                        "Job '%s' has never been submitted." % app)
                 if app.execution.state == Run.State.TERMINATED:
                     raise gc3libs.exceptions.InvalidOperation(
                         "Job '%s' is already in terminal state" % app)
