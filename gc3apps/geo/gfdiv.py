@@ -80,41 +80,44 @@ class MatlabRetryOnOutOfMemory(RetryableTask):
 
     def retry(self):
         last_run = self.task.execution
-        try:
-            requested_memory = self.task.requested_memory
-            if requested_memory is None:
-                requested_memory = last_run.max_used_memory
-        except AttributeError:
-            requested_memory = last_run.max_used_memory
-        generic_memory_error = (
-            last_run.returncode != 0
-            and last_run.max_used_memory > requested_memory)
-        task_stderr = os.path.join(self.task.output_dir,
-                                   self.task.stdout if self.task.join else self.task.stderr)
-        matlab_memory_error = (
-            occurs('Out of memory.', task_stderr, fgrep)
-            or occurs('MATLAB:nomem.', task_stderr, fgrep))
-        if generic_memory_error or matlab_memory_error:
-            new_requested_memory = requested_memory + self.increment
-            if new_requested_memory >= self.maximum:
-                gc3libs.log.info(
-                    "%s: Possible out-of-memory condition detected,"
-                    " but increasing memory requirements would"
-                    " exceed set maximum of %s.  Aborting task.",
-                    self.task, self.maximum)
-                return False
-            else:
-                self.task.requested_memory = new_requested_memory
-                gc3libs.log.info(
-                    "%s: Possible out-of-memory condition detected,"
-                    " will request %s for next run.",
-                    self.task, self.task.requested_memory)
-                return True
-        else:
-            gc3libs.log.info(
-                "%s: Task failed for non-memory-related reasons,"
+        if last_run.returncode == 0:
+            gc3libs.log.debug(
+                "%s: Task finished successfully,"
                 " *not* resubmitting it again.", self.task)
             return False
+        else:
+            # task errored out, find out why
+            try:
+                requested_memory = self.task.requested_memory or last_run.max_used_memory
+            except AttributeError:
+                requested_memory = last_run.max_used_memory
+            generic_memory_error = (last_run.max_used_memory > requested_memory)
+            task_stderr = os.path.join(self.task.output_dir,
+                                       self.task.stdout if self.task.join else self.task.stderr)
+            matlab_memory_error = (
+                occurs('Out of memory.', task_stderr, fgrep)
+                or occurs('MATLAB:nomem.', task_stderr, fgrep))
+            if generic_memory_error or matlab_memory_error:
+                new_requested_memory = requested_memory + self.increment
+                if new_requested_memory >= self.maximum:
+                    gc3libs.log.info(
+                        "%s: Possible out-of-memory condition detected,"
+                        " but increasing memory requirements would"
+                        " exceed set maximum of %s.  Aborting task.",
+                        self.task, self.maximum)
+                    return False
+                else:
+                    self.task.requested_memory = new_requested_memory
+                    gc3libs.log.info(
+                        "%s: Possible out-of-memory condition detected,"
+                        " will request %s for next run.",
+                        self.task, self.task.requested_memory)
+                    return True
+            else:
+                gc3libs.log.info(
+                    "%s: Task failed for non-memory-related reasons,"
+                    " *not* resubmitting it again.", self.task)
+                return False
 
 
 class FunctionalDiversityApplication(Application):
