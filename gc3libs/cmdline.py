@@ -1179,7 +1179,7 @@ class _SessionBasedCommand(_Script):
         if (self.params.output and 'NAME' not in self.params.output
                 and 'ITER' not in self.params.output):
             self.params.output = os.path.join(self.params.output, 'NAME')
-    
+
     def pre_run(self):
         """
         Perform parsing of standard command-line options and call into
@@ -1338,7 +1338,7 @@ class _SessionBasedCommand(_Script):
 
 class _CommDaemon(object):
     portfile_name = 'daemon.port'
-    
+
     def __init__(self, name, listenip, workingdir, parent):
         self.parent = parent
         self.log = self.parent.log
@@ -1487,10 +1487,8 @@ class _CommDaemon(object):
     def stat_jobs(self):
         """Print how many jobs are in any given state"""
 
-        stats = defaultdict(int)
-        for job in self.parent.session:
-            stats[job.execution.state] += 1
-        return str.join(' ', ["%s:%s" % x for x in stats.items()])
+        stats = self.parent._controller.stats()
+        return str.join('\n', ["%s:%s" % x for x in stats.items()])
 
 
 class SessionBasedDaemon(_SessionBasedCommand):
@@ -1596,7 +1594,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
 
                 gc3libs.log.info("Using file `%s` as first argument of --client option" % portfile)
                 self.params.client[0] = portfile
-            
+
             # Overwrite main function
             self.main = self._main_client
             return
@@ -1611,7 +1609,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             self.params.output = self.params.working_dir
 
         self._prerun_common_checks()
-        
+
         self.params.working_dir = os.path.abspath(self.params.working_dir)
 
         self.params.inbox = [os.path.abspath(p) for p in self.params.inbox]
@@ -1697,7 +1695,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 "Error initializinig Communication thread: %s" % ex)
 
     def _main_client(self):
-            
+
         with open(self.params.client[0], 'r') as fd:
             try:
                 ip, port = fd.read().split(':')
