@@ -1492,8 +1492,9 @@ class _CommDaemon(object):
 
         try:
             app = self.parent.session.load(jobid)
-            app.attach(self.parent._core)
+            app.attach(self.parent._controller)
             app.kill()
+            return "Job %s successfully killed" % jobid
         except Exception as ex:
             return "Error while killing job %s: %s" % (jobid, ex)
 
