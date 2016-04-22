@@ -159,9 +159,10 @@ resourcedir = %s
         proc = subprocess.Popen([
             'python',
             os.path.join(self.scriptdir, 'simpledaemon.py',),
+            '--config-files', self.cfgfile,
+            'server',
             '-C', '1',
             '--working-dir', wdir,
-            '--config-files', self.cfgfile,
             '-r', 'localhost',
         ],)
 
@@ -200,11 +201,12 @@ resourcedir = %s
         proc = subprocess.Popen([
             'python',
             os.path.join(self.scriptdir, 'simpledaemon.py',),
+            '--config-files', self.cfgfile,
+            '-vvv',
+            'server',
             '-C', '1',
             '--working-dir', wdir,
-            '--config-files', self.cfgfile,
             '-r', 'localhost',
-            '-vvv',
             inboxdir,
         ],)
 
