@@ -29,6 +29,12 @@ See the output of ``gcelljunction --help`` for program usage instructions.
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+* 2016-04-22: Changed 2nd positional arg `values` to
+              accept a *set* of `nHood` values to run.
+              Also, allow setting the actual arguments used
+              in the MATLAB function call.
+* 2016-04-12: Do *not* force MATLAB to run single-threaded.
+* 2016-02-24: Retry each task upon "out of memory" errors.
 * 2016-01-25: Initial release.
 """
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
@@ -44,6 +50,7 @@ if __name__ == '__main__':
 
 # std module imports
 from argparse import ArgumentError
+import itertools
 import os
 from os.path import basename, exists, join, realpath
 import sys
@@ -131,12 +138,12 @@ class FunctionalDiversityApplication(Application):
     # pattern for the MATLAB commands to run
     matlab_cmd = (
         "load('{inputname}.mat');"
-        "outputData={funcname}(inputData,{radius});"
+        "outputData={funcname}({params},{radius});"
         "save('{outputfile}','outputData');"
     )
 
-    def __init__(self, funcfile, radius, inputfile, outputfile=None,
-                 **extra_args):
+    def __init__(self, funcfile, radius, params,
+                 inputfile, outputfile=None, **extra_args):
         funcname = basename_sans(funcfile)
         self.funcname = funcname
         self.radius = radius
@@ -187,6 +194,11 @@ new input files or an extended range is specified in the command line.
 
 
     def setup_options(self):
+        self.add_param(
+            '-p', '--parameters', default='inputData',
+            help=(
+                "List of argument names to pass to the MATLAB function."
+                " The neighborhood radius is always appended at the end."))
         # change default for the memory/walltime options
         self.actions['memory_per_core'].default = 3*Memory.GB
         self.actions['wctime'].default = '60 days'
@@ -196,13 +208,16 @@ new input files or an extended range is specified in the command line.
         self.add_param('funcname', help=(
             "Name of the MATLAB function to apply to the input data."
             " A corresponding `.m` file must exist in the current directory."))
-        self.add_param('range', help=(
-            "Range for the neighborhood radius parameter."
-            " Specify as MIN:MAX (e.g., 1:170) to compute all radii"
+        self.add_param('values', help=(
+            "Values for the neighborhood radius parameter."
+            " Can be any of the following:"
+            " (1) a single numeric value;"
+            " (2) a range MIN:MAX (e.g., 1:170) to compute all radii"
             " from MIN to MAX (inclusive).  Optionally,"
             " the MIN:MAX:STEP form can be used to further specify"
             " an increment; e.g., 1:170:10 would run computations"
-            " with radius 1,11,21,...,161."))
+            " with radius 1,11,21,...,161;"
+            " (3) a comma-separated list of the above two forms."))
         self.add_param('inputfile', nargs='+', type=existing_file,
                        help=("Input data file(s)."))
 
@@ -216,11 +231,6 @@ new input files or an extended range is specified in the command line.
             return pathspec[:-len('/NAME')]
         else:
             return pathspec
-
-
-    # def before_main_loop(self):
-    #     # XXX: should this be done with `make_controller` instead?
-    #     self._controller.retrieve_overwrites = True
 
 
     def get_function_name_and_file(self, funcname=None):
@@ -240,12 +250,16 @@ new input files or an extended range is specified in the command line.
                 .format(**locals()))
         return funcname, funcfile
 
+
     def new_tasks(self, extra):
         # find MATLAB function to run
         funcname, funcfile = self.get_function_name_and_file()
-        # get range for neighborhood radius
-        low, high, step = parse_range(self.params.range)
-        for radius in irange(low, high+1, step):
+        ranges = []
+        for spec in self.params.values.split(','):
+            # get range for neighborhood radius
+            low, high, step = parse_range(spec)
+            ranges.append(irange(low, high+1, step))
+        for radius in itertools.chain(*ranges):
             for inputfile in self.params.inputfile:
                 kwargs = extra.copy()
                 base_output_dir = kwargs.pop('output_dir', self.params.output)
@@ -258,6 +272,7 @@ new input files or an extended range is specified in the command line.
                     FunctionalDiversityApplication(
                         funcfile,
                         radius,
+                        self.params.parameters,
                         inputfile,
                         jobname=jobname,
                         outputfile=outputfile,
