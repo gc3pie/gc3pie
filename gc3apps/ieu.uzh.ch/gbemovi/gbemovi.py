@@ -28,14 +28,15 @@ from gc3libs.cmdline import SessionBasedDaemon
 from gc3libs.workflow import SequentialTaskCollection
 import inotifyx
 
-
 class ParticleLocator(gc3libs.Application):
     application = 'plocator'
-    
+
     def __init__(self, videofile, **extra):
         videofilename = os.path.basename(videofile)
         extra['jobname'] = "%s.%s" % (self.application, extra['videoname'])
         extra['output_dir'] = os.path.join(extra['base_output_dir'], self.application)
+
+        scriptdir = os.path.dirname(__file__)
         
         self.ijoutbase = extra['videoname']+'.ijout.txt'
         outputfile = os.path.join('data',
@@ -45,8 +46,8 @@ class ParticleLocator(gc3libs.Application):
             self,
             arguments = ["./plocator.sh", "locator"],
             inputs = {
-                'plocator.sh': 'plocator.sh',
-                'ParticleLocator.R': 'ParticleLocator.R',
+                os.path.join(scriptdir,  'plocator.sh'): 'plocator.sh',
+                os.path.join(scriptdir, 'ParticleLocator.R'): 'ParticleLocator.R',
                 videofile: os.path.join('data', '1-raw', videofilename)},
             outputs = {outputfile : self.ijoutbase},
             stdout = 'plocator.log',
@@ -64,10 +65,11 @@ class ParticleLinker(gc3libs.Application):
     application = 'plinker'
 
     def __init__(self, particlefile, **extra):
-        extra['jobname'] = "%s.%s" % (self.application, particlefile.replace('.ijout.txt', ''))
-        extra['output_dir'] = os.path.join(extra['base_output_dir'], self.application)
-
         ijoutname = os.path.basename(particlefile)
+        extra['jobname'] = "%s.%s" % (self.application, extra['videoname'])
+        extra['output_dir'] = os.path.join(extra['base_output_dir'], self.application)
+        scriptdir = os.path.dirname(__file__)
+
 
         gc3libs.Application.__init__(
             self,
@@ -76,7 +78,7 @@ class ParticleLinker(gc3libs.Application):
                 particlefile: os.path.join("data",
                                            "2-particle",
                                            os.path.basename(particlefile)),
-                "ParticleLocator.R": "ParticleLocator.R",
+                os.path.join(scriptdir, 'ParticleLocator.R'): 'ParticleLocator.R',
             },
             outputs = {os.path.join('data',
                                     '3-trajectory',
@@ -84,7 +86,7 @@ class ParticleLinker(gc3libs.Application):
             stdout = 'plinker.log',
             join = True,
             **extra)
-        
+
 class BemoviWorkflow(SequentialTaskCollection):
     def __init__(self, videofile, **extra):
         self.videofile = videofile
@@ -97,20 +99,13 @@ class BemoviWorkflow(SequentialTaskCollection):
         extra['base_output_dir'] = extra['output_dir'].replace('NAME', extra['jobname'])
 
         plocator = ParticleLocator(videofile, **extra)
+        plinker = ParticleLinker(
+            os.path.join(extra['base_output_dir'],
+                         ParticleLocator.application,
+                         extra['videoname'] + '.ijout.txt',),
+            **extra)
+        SequentialTaskCollection.__init__(self, [plocator, plinker], **extra)
 
-        SequentialTaskCollection.__init__(self, [plocator], **extra)
-
-    def next(self, done):
-        app = self.tasks[done]
-        if isinstance(app, ParticleLocator):
-            extra = self.extra.copy()
-            plinker = ParticleLinker(app.ijout, **extra)
-            self.add(plinker)
-            return gc3libs.Run.State.RUNNING
-        else:
-            # We are probably done
-            return gc3libs.Run.State.TERMINATED
-    
 
 class GBemoviDaemon(SessionBasedDaemon):
     """Daemon to run bemovi workflow"""
