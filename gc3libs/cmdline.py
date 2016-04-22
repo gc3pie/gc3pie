@@ -1346,15 +1346,15 @@ class _CommDaemon(object):
         # Start XMLRPC server
         self.server = sxmlrpc.SimpleXMLRPCServer((listenip, 0),
                                                  logRequests=False)
-        self.port = self.server.socket.getsockname()[-1]
-        self.log.info("XMLRPC daemon running on localhost,"
-                      "port %d." % self.port)
+        self.ip, self.port = self.server.socket.getsockname()
+        self.log.info("XMLRPC daemon running on %s,"
+                      "port %d.", self.ip, self.port)
         self.portfile = os.path.join(workingdir, self.portfile_name)
         ### FIXME: we should check if the file exists already
         with open(self.portfile, 'w') as fd:
             self.log.debug("Writing current port (%d) I'm listening to"
                            " in file %s" % (self.port, self.portfile))
-            fd.write(str(self.port) + '\n')
+            fd.write("%s:%d\n" % (self.ip, self.port))
 
         # Register XMLRPC methods
         self.server.register_introspection_functions()
@@ -1699,8 +1699,12 @@ class SessionBasedDaemon(_SessionBasedCommand):
     def _main_client(self):
             
         with open(self.params.client[0], 'r') as fd:
-            port = int(fd.read().strip())
-        server = xmlrpclib.ServerProxy('http://localhost:%d' % port)
+            try:
+                ip, port = fd.read().split(':')
+                port = int(port)
+            except Exception as ex:
+                print("Error parsing file %s: %s" % (self.params.client[0], ex))
+        server = xmlrpclib.ServerProxy('http://%s:%d' % (ip, port))
         cmd = self.params.client[1] if len(self.params.client) > 1 else 'help'
         args = self.params.client[2:] if len(self.params.client) > 2 else []
         func = getattr(server, cmd)
