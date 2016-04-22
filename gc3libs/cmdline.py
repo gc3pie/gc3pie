@@ -1619,9 +1619,9 @@ class SessionBasedDaemon(_SessionBasedCommand):
         # Ensure inbox directories exist
         for inbox in self.params.inbox:
             if not os.path.isdir(inbox):
-                self.log.warning("Create non-existent inbox directory %s",
-                                 inbox)
-                os.mkdir(inbox)
+                self.log.warning("Inbox directory `%s` does not exist,"
+                                 " creating it.", inbox)
+                os.makedirs(inbox)
 
         # Syntax check for notify events
         self.params.notify_state = self.params.notify_state.split(',')
@@ -1635,7 +1635,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
         # Ensure all the supplied states are correct
         for state in self.params.notify_state:
             istate = 'IN_' + state
-            if istate not in inotifyx.constants.keys():
+            if istate not in inotifyx.constants:
                 raise gc3libs.exceptions.InvalidUsage(
                     "Invalid inotify state %s." % state)
             self.inotify_event_mask |= inotifyx.constants[istate]
