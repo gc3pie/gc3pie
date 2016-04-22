@@ -29,11 +29,22 @@ import inotifyx
 class SimpleDaemon(SessionBasedDaemon):
     """Simple daemon"""
     version = '1.0'
-    application = 'simpledaemon'
-    # Problem: new_tasks expect a path or not?
+
     def new_tasks(self, extra, epath=None, emask=0):
         app = None
-        if epath:
+        if not epath:
+            # Startup: just submit an Hello World application
+            extra['jobname'] = 'EchoApp'
+            app = gc3libs.Application(
+                ['/bin/echo', 'first run'],
+                [],
+                gc3libs.ANY_OUTPUT,
+                stdout='stdout.txt',
+                stderr='stderr.txt',
+                **extra)
+            return [app]
+        else:
+            # A new file has been created. Process it.
             extra['jobname'] = 'LSApp.%s' % os.path.basename(epath)
             if emask & inotifyx.IN_CLOSE_WRITE:
                 app = gc3libs.Application(
@@ -44,16 +55,6 @@ class SimpleDaemon(SessionBasedDaemon):
                     stderr='stderr.txt',
                     **extra)
                 return [app]
-        else:
-            extra['jobname'] = 'EchoApp'
-            app = gc3libs.Application(
-                ['/bin/echo', 'first run'],
-                [],
-                gc3libs.ANY_OUTPUT,
-                stdout='stdout.txt',
-                stderr='stderr.txt',
-                **extra)
-            return [app]
 
         # No app created, return empty list
         return []
