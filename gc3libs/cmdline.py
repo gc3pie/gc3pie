@@ -1176,7 +1176,7 @@ class _SessionBasedCommand(_Script):
         # we need to make sure that each job downloads results in a new one.
         # The easiest way to do so is to append 'NAME' to the `output_dir`
         # (if it's not already there).
-        if ('NAME' not in self.params.output
+        if (self.params.output and 'NAME' not in self.params.output
                 and 'ITER' not in self.params.output):
             self.params.output = os.path.join(self.params.output, 'NAME')
     
