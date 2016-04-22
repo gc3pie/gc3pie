@@ -1030,34 +1030,23 @@ class _SessionBasedCommand(_Script):
             # RetryableTask
             self._fix_output_dir(task.task, name)
 
-    def setup(self):
-        """
-        Setup standard command-line parsing.
-
-        GC3Libs scripts should probably override `setup_args`:meth:
-        to modify command-line parsing.
-        """
-        # setup of base classes
-        _Script.setup(self)
-
-        # add own "standard options"
-
+    def setup_common_options(self, parser):
         # 1. job requirements
-        self.add_param(
+        parser.add_param(
             "-c", "--cpu-cores", dest="ncores",
             type=positive_int, default=1,  # 1 core
             metavar="NUM",
             help="Set the number of CPU cores required for each job"
             " (default: %(default)s). NUM must be a whole number."
         )
-        self.add_param(
+        parser.add_param(
             "-m", "--memory-per-core", dest="memory_per_core",
             type=Memory, default=2 * GB,  # 2 GB
             metavar="GIGABYTES",
             help="Set the amount of memory required per execution core;"
             " default: %(default)s. Specify this as an integral number"
             " followed by a unit, e.g., '512MB' or '4GB'.")
-        self.add_param(
+        parser.add_param(
             "-r",
             "--resource",
             action="store",
@@ -1067,7 +1056,7 @@ class _SessionBasedCommand(_Script):
             help="Submit jobs to a specific computational resources."
             " NAME is a resource name or comma-separated list of such names."
             " Use the command `gservers` to list available resources.")
-        self.add_param(
+        parser.add_param(
             "-w",
             "--wall-clock-time",
             dest="wctime",
@@ -1080,7 +1069,7 @@ class _SessionBasedCommand(_Script):
             " '8 hours', or a combination thereof, e.g., '2hours 30minutes'.")
 
         # 2. session control
-        self.add_param(
+        parser.add_param(
             "-s",
             "--session",
             dest="session",
@@ -1095,11 +1084,11 @@ class _SessionBasedCommand(_Script):
             " information will be stored in a directory named after PATH with"
             " a suffix '.jobs' appended, and the index file"
             " will be named after PATH with a suffix '.csv' added.")
-        self.add_param("-u", "--store-url",
+        parser.add_param("-u", "--store-url",
                        action="store",
                        metavar="URL",
                        help="URL of the persistent store to use.")
-        self.add_param(
+        parser.add_param(
             "-N",
             "--new-session",
             dest="new_session",
@@ -1110,7 +1099,7 @@ class _SessionBasedCommand(_Script):
             " information about previous jobs is lost.")
 
         # 3. script execution control
-        self.add_param(
+        parser.add_param(
             "-C",
             "--continuous",
             "--watch",
@@ -1121,13 +1110,13 @@ class _SessionBasedCommand(_Script):
             help="Keep running, monitoring jobs and possibly submitting"
             " new ones or fetching results every NUM seconds. Exit when"
             " all jobs are finished.")
-        self.add_param("-J", "--max-running",
+        parser.add_param("-J", "--max-running",
                        type=positive_int, dest="max_running", default=50,
                        metavar="NUM",
                        help="Set the max NUMber of jobs (default: %(default)s)"
                        " in SUBMITTED or RUNNING state."
                        )
-        self.add_param(
+        parser.add_param(
             "-o",
             "--output",
             dest="output",
@@ -1148,6 +1137,19 @@ class _SessionBasedCommand(_Script):
             " formatted as HH:MM.  'SESSION' is replaced by the path to the"
             " session directory, with a '.out' appended.")
         return
+        
+    def setup(self):
+        """
+        Setup standard command-line parsing.
+
+        GC3Libs scripts should probably override `setup_args`:meth:
+        to modify command-line parsing.
+        """
+        # setup of base classes
+        _Script.setup(self)
+
+        # add own "standard options"
+        self.setup_common_options(self)
 
     def _prerun_common_checks(self):
         # consistency checks
@@ -1510,7 +1512,7 @@ class _CommDaemon(object):
         except Exception as ex:
             return "Error while resubmitting job %s: %s" % (jobid, ex)
         return "Successfully resubmitted job %s" % jobid
-    
+
     def stat_jobs(self):
         """Print how many jobs are in any given state"""
 
@@ -1531,7 +1533,27 @@ class SessionBasedDaemon(_SessionBasedCommand):
         self.commthread.join(1)
 
     def setup(self):
-        _SessionBasedCommand.setup(self)
+        _Script.setup(self)
+        subparsers = self.argparser.add_subparsers(title="commands")
+        self.parser_server = subparsers.add_parser('server', help="Run the main daemon script.")
+        self.parser_client = subparsers.add_parser('client', help="Connect to a running daemon.")
+
+        # Wrapper function around add_argument.
+        def _add_param_server(*args, **kwargs):
+            action = self.parser_server.add_argument(*args, **kwargs)
+            self.actions[action.dest] = action
+            return action
+        self.parser_server.add_param = _add_param_server
+        # This method assumes `self.add_param` exists
+        self.setup_common_options(self.parser_server)
+
+        # Also, when subclassing, add_param should add arguments to
+        # the server parser by default.
+        self.add_param = lambda *x, **kw: self.parser_server.add_param(*x, **kw)
+        
+        self.parser_server.set_defaults(func=self._main_server)
+        self.parser_client.set_defaults(func=self._main_client)
+        
         # change default for the `-C`, `--session` and `--output` options
         self.actions['wait'].default = 30
         self.actions['wait'].help = 'Check the status of the jobs every NUM'
@@ -1544,87 +1566,90 @@ class SessionBasedDaemon(_SessionBasedCommand):
         self.actions['output'].default = None
 
     def setup_args(self):
-        self.add_param('-F', '--foreground',
+        self.parser_server.add_param('-F', '--foreground',
                        action='store_true',
                        default=False,
                        help="Run in foreground. Default: %(default)s")
 
-        self.add_param('--syslog',
+        self.parser_server.add_param('--syslog',
                        action='store_true',
                        default=False,
                        help="Send log messages (also) to syslog."
                        " Default: %(default)s")
 
-        self.add_param('--working-dir',
+        self.parser_server.add_param('--working-dir',
                        default=os.getcwd(),
                        help="Run in WORKING_DIR. Ignored if run in foreground."
                        " Default: %(default)s")
 
         avail_events = [event[3:] for event in inotifyx.constants.keys()]
-        self.add_param('--notify-state',
+        self.parser_server.add_param('--notify-state',
                        nargs='?',
                        default='CLOSE_WRITE',
                        help="Comma separated list of inotify events to watch."
                        " Default: %(default)s. Available events: " +
                        str.join(', ', avail_events))
 
-        self.add_param('--listen', default="localhost",
+        self.parser_server.add_param('--listen', default="localhost",
                        help="IP or hostname where the XML-RPC thread should"
                        " listen to. Default: %(default)s")
 
-        self.add_param('inbox', nargs='*',
+        self.parser_server.add_param('inbox', nargs='*',
                        help="`inbox` directories: whenever a new file is"
                        " created in one of these directories, a callback is"
                        " triggered to add new jobs")
 
-        self.add_param('--client',
-                       nargs='+',
-                       metavar="ARGS",
-                       help="Connect to a running instance of '{name}' using"
-                       "XML-RPC. The first argument of `--client` is"
-                       " the path to the port file `daemon.port` present in"
-                       " the working directory. All other arguments are passed"
-                       " to the server as they are.".format(name=self.name))
-
+        self.parser_client.add_argument('-c', '--connect',
+                                        metavar="FILE",
+                                        required=True,
+                                        help="Path to the file containing hostname and port of the"
+                                        " XML-RPC enpdoint of the daemon")
+        self.parser_client.add_argument('cmd',
+                                        metavar='COMMAND',
+                                        help="XML-RPC command. Run `help` to know"
+                                        " which commands are available.")
+        self.parser_client.add_argument('args',
+                                        nargs='*',
+                                        metavar='ARGS',
+                                        help="Optional arguments of CMD.")
+        
     def pre_run(self):
-        ### FIXME: first half of this function is copied from
-        ### _SessionBasedCommand(). The reason is that we want to
-        ### modify the self.params.session default in case
-        ### --working-dir is used, but we cannot until we parse the
-        ### arguments.
+        ### FIXME: Some code copied from _Script.pre_run()
+
+        self.setup_options()
+        self.setup_args()
+        cli.app.CommandLineApp.pre_run(self)
+        loglevel = max(1, logging.WARNING -
+                       10 *
+                       max(0, self.params.verbose -
+                           self.verbose_logging_threshold))
+        gc3libs.configure_logger(loglevel, "gc3utils")  # alternate: self.name
+        # alternate: ('gc3.' + self.name)
+        self.log = logging.getLogger('gc3.gc3utils')
+        self.log.setLevel(loglevel)
+        self.log.propagate = True
+        self.log.info("Starting %s at %s; invoked as '%s'",
+                      self.name, time.asctime(), str.join(' ', sys.argv))
 
         # call base classes first (note: calls `parse_args()`)
-        _Script.pre_run(self)
-
-        # Intercept the --client option if present, and ignore all
-        # other arguments.
-        if self.params.client:
-            # When used as client, no other options can be passed.
-            for name, value in self.params._get_kwargs():
-                # Some options are actually fine
-                if name in ('client', 'verbose', 'config_files'):
-                    continue
-                if value and value != self.actions[name].default:
-                    self.argparser.error("--client cannot be used with other"
-                                         " options. Option %s used" % name)
-            if self.params._get_args():
-                self.argparser.error(
-                    "--client cannot be used with other options")
-
-            # Check if --client first argument is the session directory or a file.
-            portfile = self.params.client[0]
-            if os.path.isdir(portfile):
-                gc3libs.log.debug("First argument of --client is a directory. Checking if file `%s` is present in it" % _CommDaemon.portfile_name)
-                portfile = os.path.join(portfile, _CommDaemon.portfile_name)
-                if not os.path.isfile(portfile):
-                    self.argparser.error("First argument of --client must be a file.")
-
-                gc3libs.log.info("Using file `%s` as first argument of --client option" % portfile)
-                self.params.client[0] = portfile
-
-            # Overwrite main function
-            self.main = self._main_client
+        if self.params.func == self._main_client:
+            # override `process_args` with a noop.
+            self.process_args = lambda *x, **kw: None
             return
+
+        # Read config file(s) from command line
+        self.params.config_files = self.params.config_files.split(',')
+        # interface to the GC3Libs main functionality
+        self.config = self._make_config(self.params.config_files)
+        try:
+            self._core = gc3libs.core.Core(self.config)
+        except gc3libs.exceptions.NoResources:
+            # translate internal error `NoResources` to a
+            # user-readable message.
+            raise gc3libs.exceptions.FatalError(
+                "No computational resources defined."
+                " Please edit the configuration file(s): '%s'."
+                % (str.join("', '", self.params.config_files)))
 
         # Default session dir is inside the working directory
         if not self.params.session:
@@ -1722,24 +1747,31 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 "Error initializinig Communication thread: %s" % ex)
 
     def _main_client(self):
-
-        with open(self.params.client[0], 'r') as fd:
+        portfile = self.params.connect
+        if os.path.isdir(portfile):
+            gc3libs.log.debug("First argument of --client is a directory. Checking if file `%s` is present in it" % _CommDaemon.portfile_name)
+            portfile = os.path.join(portfile, _CommDaemon.portfile_name)
+            if not os.path.isfile(portfile):
+                self.argparser.error("First argument of --client must be a file.")
+            gc3libs.log.info("Using file `%s` as argument of --connect option" % portfile)
+        with open(self.params.connect, 'r') as fd:
             try:
                 ip, port = fd.read().split(':')
                 port = int(port)
             except Exception as ex:
                 print("Error parsing file %s: %s" % (self.params.client[0], ex))
         server = xmlrpclib.ServerProxy('http://%s:%d' % (ip, port))
-        cmd = self.params.client[1] if len(self.params.client) > 1 else 'help'
-        args = self.params.client[2:] if len(self.params.client) > 2 else []
-        func = getattr(server, cmd)
+        func = getattr(server, self.params.cmd)
         try:
-            print(func(*args))
+            print(func(*self.params.args))
         except xmlrpclib.Fault as ex:
-            print("Error while running command `%s`: %s" % (cmd, ex.faultString))
+            print("Error while running command `%s`: %s" % (self.params.cmd, ex.faultString))
             print("Use `help` command to list all available methods")
 
     def _main(self):
+        return self.params.func()
+    
+    def _main_server(self):
         # FIXME: If we are loading a previous session, arguments
         # are not parsed. But they are not save in the session
         # either, so things like output_dir is not present.
