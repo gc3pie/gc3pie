@@ -1443,7 +1443,7 @@ class _CommDaemon(object):
         if recursive and 'tasks' in app:
             indent = " "*len(indent) + '  '
             for task in app.tasks:
-                rows.extend(self.print_app_table(task, indent, recursive))
+                rows.extend(_CommDaemon.print_app_table(task, indent, recursive))
         return rows
 
     def list_jobs(self, opts=None):
