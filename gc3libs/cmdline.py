@@ -1337,17 +1337,19 @@ class _SessionBasedCommand(_Script):
 
 
 class _CommDaemon(object):
-    def __init__(self, name, workingdir, parent):
+    portfile_name = 'daemon.port'
+    
+    def __init__(self, name, listenip, workingdir, parent):
         self.parent = parent
         self.log = self.parent.log
 
         # Start XMLRPC server
-        self.server = sxmlrpc.SimpleXMLRPCServer(("localhost", 0),
+        self.server = sxmlrpc.SimpleXMLRPCServer((listenip, 0),
                                                  logRequests=False)
         self.port = self.server.socket.getsockname()[-1]
         self.log.info("XMLRPC daemon running on localhost,"
                       "port %d." % self.port)
-        self.portfile = os.path.join(workingdir, 'daemon.port')
+        self.portfile = os.path.join(workingdir, self.portfile_name)
         ### FIXME: we should check if the file exists already
         with open(self.portfile, 'w') as fd:
             self.log.debug("Writing current port (%d) I'm listening to"
@@ -1584,6 +1586,18 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 self.argparser.error(
                     "--client cannot be used with other options")
 
+            # Check if --client first argument is the session directory or a file.
+            portfile = self.params.client[0]
+            if os.path.isdir(portfile):
+                gc3libs.log.debug("First argument of --client is a directory. Checking if file `%s` is present in it" % _CommDaemon.portfile_name)
+                portfile = os.path.join(portfile, _CommDaemon.portfile_name)
+                if not os.path.isfile(portfile):
+                    self.argparser.error("First argument of --client must be a file.")
+
+                gc3libs.log.info("Using file `%s` as first argument of --client option" % portfile)
+                self.params.client[0] = portfile
+            
+            # Overwrite main function
             self.main = self._main_client
             return
 
