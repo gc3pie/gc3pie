@@ -1425,30 +1425,34 @@ class _CommDaemon(object):
         else:
             return self.server.system_methodHelp(cmd)
 
+    @staticmethod
+    def print_app_table(app, indent, recursive):
+        """Returns a list of lists containing a summary table of the jobs"""
+        rows = []
+        try:
+            jobname = app.jobname
+        except AttributeError:
+            jobname = ''
+
+        rows.append([indent + str(app.persistent_id),
+                     jobname,
+                     app.execution.state,
+                     app.execution.info])
+        if recursive and 'tasks' in app:
+            indent = " "*len(indent) + '  '
+            for task in app.tasks:
+                rows.extend(self.print_app_table(task, indent, recursive))
+        return rows
+
     def list_jobs(self, opts=None):
-        """usage: list [detail]\n\nList jobs"""
+        """usage: list [detail]
+
+        List jobs"""
 
         if opts and 'details'.startswith(opts):
-            def print_app_table(app, indent, recursive):
-                rows = []
-                try:
-                    jobname = app.jobname
-                except AttributeError:
-                    jobname = ''
-
-                rows.append([indent + str(app.persistent_id),
-                             jobname,
-                             app.execution.state,
-                             app.execution.info])
-                if recursive and 'tasks' in app:
-                    indent = " "*len(indent) + '  '
-                    for task in app.tasks:
-                        rows.extend(print_app_table(task, indent, recursive))
-                return rows
-
             rows = []
             for app in self.parent.session.tasks.values():
-                rows.extend(print_app_table(app, '', True))
+                rows.extend(self.print_app_table(app, '', True))
             table = PrettyTable(["JobID", "Job name", "State", "Info"])
             table.align = 'l'
             for row in rows:
