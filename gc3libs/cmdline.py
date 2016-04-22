@@ -1543,8 +1543,9 @@ class SessionBasedDaemon(_SessionBasedCommand):
                        " Default: %(default)s. Available events: " +
                        str.join(', ', avail_events))
 
-        self.add_param('--comm', action='store_true',
-                       help='Enable communication socket')
+        self.add_param('--listen', default="localhost",
+                       help="IP or hostname where the XML-RPC thread should"
+                       " listen to. Default: %(default)s")
 
         self.add_param('inbox', nargs='*',
                        help="`inbox` directories: whenever a new file is"
@@ -1555,8 +1556,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                        nargs='+',
                        metavar="ARGS",
                        help="Connect to a running instance of '{name}' using"
-                       "XML-RPC. This only works if you ran '{name}' with"
-                       " option `--comm`. The first argument of `--client` is"
+                       "XML-RPC. The first argument of `--client` is"
                        " the path to the port file `daemon.port` present in"
                        " the working directory. All other arguments are passed"
                        " to the server as they are.".format(name=self.name))
@@ -1667,20 +1667,26 @@ class SessionBasedDaemon(_SessionBasedCommand):
     def __setup_inotify(self):
         # Setup inotify on inbox directories
         self.inotify_fds = {}
+
+        # We need to create an inotify file descriptor for each
+        # directory, because events returned by
+        # `inotifyx.get_events()` do not contains the full path to the
+        # file.
         for inbox in self.params.inbox:
             ifd = inotifyx.init()
             self.inotify_fds[inbox] = ifd
             inotifyx.add_watch(ifd, inbox, self.inotify_event_mask)
 
-    def __setup_comm(self):
+    def __setup_comm(self, listen):
         # Communication thread must run on a different thread
         try:
             def commthread():
                 self.comm = _CommDaemon(
                     self.name,
+                    self.params.listen,
                     self.params.working_dir,
                     self)
-                self.log.info("Running OI program")
+                self.log.info("Starting XML-RPC server")
                 self.comm.start()
 
             self.commthread = threading.Thread(target=commthread)
