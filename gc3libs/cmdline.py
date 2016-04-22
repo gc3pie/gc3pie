@@ -1363,6 +1363,8 @@ class _CommDaemon(object):
         self.server.register_function(self.list_jobs, "list")
         self.server.register_function(self.show_job, "show")
         self.server.register_function(self.stat_jobs, "stat")
+        self.server.register_function(self.kill_job, "kill")
+        self.server.register_function(self.resubmit_job, "resubmit")
         self.server.register_function(self.terminate, "terminate")
 
     def start(self):
@@ -1484,6 +1486,30 @@ class _CommDaemon(object):
         except Exception as ex:
             return "Unable to find job %s" % jobid
 
+    def kill_job(self, jobid=None):
+        if not jobid:
+            return "Usage: kill <jobid>"
+
+        try:
+            app = self.parent.session.load(jobid)
+            app.attach(self.parent._core)
+            app.kill()
+        except Exception as ex:
+            return "Error while killing job %s: %s" % (jobid, ex)
+
+    def resubmit_job(self, jobid=None):
+        app = self.parent.session.load(jobid)
+        app.attach(self.parent._core)
+        try:
+            app.kill()
+        except:
+            self.log.info("Ignoring exception while trying to kill application %s" % jobid)
+        try:
+            app.submit(resubmit=True)
+        except Exception as ex:
+            return "Error while resubmitting job %s: %s" % (jobid, ex)
+        return "Successfully resubmitted job %s" % jobid
+    
     def stat_jobs(self):
         """Print how many jobs are in any given state"""
 
