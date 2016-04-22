@@ -129,4 +129,4 @@ var=$1
 export DISPLAY=:1
 xwininfo -root >& /dev/null || Xvfb $DISPLAY -auth /dev/null >& /dev/null &
 
-Rscript ParticleLocator.R $@
+exec Rscript bemovi.R $@

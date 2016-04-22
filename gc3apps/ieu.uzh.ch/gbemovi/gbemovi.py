@@ -44,10 +44,10 @@ class ParticleLocator(gc3libs.Application):
                                   self.ijoutbase)
         gc3libs.Application.__init__(
             self,
-            arguments = ["./plocator.sh", "locator"],
+            arguments = ["./plocator.sh", "locator"] + extra['rparams'],
             inputs = {
                 os.path.join(scriptdir,  'plocator.sh'): 'plocator.sh',
-                os.path.join(scriptdir, 'ParticleLocator.R'): 'ParticleLocator.R',
+                os.path.join(scriptdir, 'bemovi.R'): 'bemovi.R',
                 videofile: os.path.join('data', '1-raw', videofilename)},
             outputs = {outputfile : self.ijoutbase},
             stdout = 'plocator.log',
@@ -73,12 +73,12 @@ class ParticleLinker(gc3libs.Application):
 
         gc3libs.Application.__init__(
             self,
-            arguments = ["Rscript", "ParticleLocator.R", "linker"],
+            arguments = ["Rscript", "bemovi.R", "linker"] + extra['rparams'],
             inputs = {
                 particlefile: os.path.join("data",
                                            "2-particle",
                                            os.path.basename(particlefile)),
-                os.path.join(scriptdir, 'ParticleLocator.R'): 'ParticleLocator.R',
+                os.path.join(scriptdir, 'bemovi.R'): 'bemovi.R',
             },
             outputs = {os.path.join('data',
                                     '3-trajectory',
@@ -111,6 +111,15 @@ class GBemoviDaemon(SessionBasedDaemon):
     """Daemon to run bemovi workflow"""
     version = '1.0'
 
+    def setup_options(self):
+        self.add_param('--fps', default='25')
+        self.add_param('--pixel-to-scale', default='1000/240')
+        self.add_param('--difference-lag', default='10')
+        self.add_param('--thresholds', default='5,255')
+
+    def parse_args(self):
+        self.threshold1, self.threshold2 = self.params.thresholds.split(',')
+        
     def new_tasks(self, extra, epath=None, emask=0):
         if not epath:
             # At startup we don't create any app.
@@ -120,7 +129,15 @@ class GBemoviDaemon(SessionBasedDaemon):
             # Only trigger a new run if a new file has been written
             return []
 
-        return [BemoviWorkflow(epath, **self.extra)]
+        extra['rparams'] = [
+            str(self.params.memory_per_core.amount(unit=gc3libs.quantity.MB)),
+            self.params.fps,
+            self.params.pixel_to_scale,
+            self.params.difference_lag,
+            self.threshold1,
+            self.threshold2,
+        ]
+        return [BemoviWorkflow(epath, **extra)]
 
 if "__main__" == __name__:
     from gbemovi import GBemoviDaemon
