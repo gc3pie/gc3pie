@@ -1697,12 +1697,18 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 "Error initializinig Communication thread: %s" % ex)
 
     def _main_client(self):
+            
         with open(self.params.client[0], 'r') as fd:
             port = int(fd.read().strip())
         server = xmlrpclib.ServerProxy('http://localhost:%d' % port)
-        cmd, args = self.params.client[1], self.params.client[2:]
+        cmd = self.params.client[1] if len(self.params.client) > 1 else 'help'
+        args = self.params.client[2:] if len(self.params.client) > 2 else []
         func = getattr(server, cmd)
-        print(func(*args))
+        try:
+            print(func(*args))
+        except xmlrpclib.Fault as ex:
+            print("Error while running command `%s`: %s" % (cmd, ex.faultString))
+            print("Use `help` command to list all available methods")
 
     def _main(self):
         # FIXME: If we are loading a previous session, arguments
