@@ -4,11 +4,12 @@ library(bemovi)
 to.data <- "data/"
 to.particlelinker <- "/usr/local/ParticleLinker/"
 IJ.path <- "/usr/local/ImageJ/ij.jar"
-memory.alloc <- c(3500)
-fps <- 25
-pixel_to_scale <- 1000/240
-difference.lag <- 10
-thresholds = c(5,255)
+memory.alloc <- args[2]
+fps <- args[3]
+pixel_to_scale <- args[4]
+difference.lag <- args[5]
+thresholds = c(args[6],args[7])
+
 video.description.folder <- "1-raw/"
 video.description.file <- "video.description.txt"
 raw.video.folder <- "1-raw/"
