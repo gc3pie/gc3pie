@@ -1497,16 +1497,15 @@ class SessionBasedDaemon(_SessionBasedCommand):
     """
 
     def cleanup(self, signume=None, frame=None):
-        if self.params.comm:
-            self.log.debug("Waiting for communication thread to terminate")
-            self.comm.stop()
-            self.commthread._Thread__stop()
-            self.commthread._Thread__delete()
-            self.commthread.join(1)
+        self.log.debug("Waiting for communication thread to terminate")
+        self.comm.stop()
+        self.commthread._Thread__stop()
+        self.commthread._Thread__delete()
+        self.commthread.join(1)
 
     def setup(self):
         _SessionBasedCommand.setup(self)
-        # change default for the core/memory/walltime options
+        # change default for the `-C`, `--session` and `--output` options
         self.actions['wait'].default = 30
         self.actions['wait'].help = 'Check the status of the jobs every NUM'
         ' seconds. Default: %(default)s'
@@ -1699,8 +1698,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             self.__setup_inotify()
             self.log.info("Running in foreground as requested")
 
-            if self.params.comm:
-                self.__setup_comm()
+            self.__setup_comm(self.params.listen)
             return super(SessionBasedDaemon, self)._main()
         else:
             lockfile = os.path.join(self.params.working_dir,
@@ -1728,8 +1726,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 self.__setup_logging()
                 self.__setup_inotify()
                 self.log.info("Daemonizing ...")
-                if self.params.comm:
-                    self.__setup_comm()
+                self.__setup_comm(self.params.listen)
                 return super(SessionBasedDaemon, self)._main()
 
     def _main_loop_done(self, rc):
