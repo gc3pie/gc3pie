@@ -1754,12 +1754,12 @@ class SessionBasedDaemon(_SessionBasedCommand):
             if not os.path.isfile(portfile):
                 self.argparser.error("First argument of --client must be a file.")
             gc3libs.log.info("Using file `%s` as argument of --connect option" % portfile)
-        with open(self.params.connect, 'r') as fd:
+        with open(portfile, 'r') as fd:
             try:
                 ip, port = fd.read().split(':')
                 port = int(port)
             except Exception as ex:
-                print("Error parsing file %s: %s" % (self.params.client[0], ex))
+                print("Error parsing file %s: %s" % (portfile, ex))
         server = xmlrpclib.ServerProxy('http://%s:%d' % (ip, port))
         func = getattr(server, self.params.cmd)
         try:
