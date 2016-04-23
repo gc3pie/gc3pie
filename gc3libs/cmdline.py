@@ -1661,6 +1661,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             self.params.output = self.params.working_dir
 
         self._prerun_common_checks()
+        self.parse_args()
 
         self.params.working_dir = os.path.abspath(self.params.working_dir)
 
@@ -1772,11 +1773,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
         return self.params.func()
     
     def _main_server(self):
-        # FIXME: If we are loading a previous session, arguments
-        # are not parsed. But they are not save in the session
-        # either, so things like output_dir is not present.
-        if not self.extra:
-            self.process_args()
+        self.process_args()
 
         if self.params.foreground:
             # If --foreground, then behave like a SessionBasedScript with
