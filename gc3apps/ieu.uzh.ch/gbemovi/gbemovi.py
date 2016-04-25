@@ -27,7 +27,7 @@ import gc3libs
 from gc3libs.cmdline import SessionBasedDaemon
 from gc3libs.workflow import SequentialTaskCollection
 import inotifyx
-
+import time
 
 class ParticleLocator(gc3libs.Application):
     application = 'plocator'
@@ -58,7 +58,7 @@ class ParticleLocator(gc3libs.Application):
             self,
             arguments = ["./plocator.sh", "locator"] + extra_params,
             inputs = {
-                os.path.join(scriptdir,  'plocator.sh'): 'plocator.sh',
+                os.path.join(scriptdir, 'plocator.sh'): 'plocator.sh',
                 os.path.join(scriptdir, 'bemovi.R'): 'bemovi.R',
                 videofile: os.path.join('data', '1-raw', videofilename)},
             outputs = {outputfile : self.ijoutbase,
@@ -87,16 +87,20 @@ class ParticleLinker(gc3libs.Application):
         ]
         gc3libs.Application.__init__(
             self,
-            arguments = ["Rscript", "bemovi.R", "linker"] + extra_params,
+            arguments = ["./plocator.sh", "linker"] + extra_params,
             inputs = {
                 particlefile: os.path.join("data",
                                            "2-particle",
                                            os.path.basename(particlefile)),
+                os.path.join(scriptdir, 'plocator.sh'): 'plocator.sh',
                 os.path.join(scriptdir, 'bemovi.R'): 'bemovi.R',
             },
             outputs = {os.path.join('data',
                                     '3-trajectory',
-                                    'ParticleLinker_' + ijoutname)},
+                                    'ParticleLinker_' + ijoutname),
+                       os.path.join('data',
+                                    '3-trajectory',
+                                    'trajectory.RData')},
             stdout = 'plinker.log',
             join = True,
             **extra)
@@ -167,6 +171,58 @@ class GBemoviDaemon(SessionBasedDaemon):
             # Use directory 'output' as output directory by default
             self.params.output = os.path.join(self.params.working_dir, 'output')
 
+    def before_main_loop(self):
+        # Setup new command
+        self.comm.server.register_function(self.merge_data, "merge")
+
+    def merge_data(self):
+        # Scan all the output directories. Find the plocator.Rdata
+        # files, add a merger for each input directory.
+        scriptdir = os.path.dirname(__file__)
+        msg = ""
+        for inbox in self.params.inbox:
+            # The corresponding directory ends with '.out'
+            outdir = inbox + '.out'
+            # Walk and find any `particle.RData` file, then submit an app
+            infiles = {}
+            index = 0
+            for dirpath, dirnames, fnames in os.walk(outdir):
+                # Stop when we have `plinker` and `plocator` directory
+                if 'plinker' in dirnames and 'plocator' in dirnames:
+                    pdata = os.path.join(dirpath, 'plocator', 'particle.RData')
+                    tdata = os.path.join(dirpath, 'plinker', 'trajectory.RData')
+                    if not os.path.exists(pdata) or not os.path.exists(tdata):
+                        self.log.warning("Ignoring output directory %s as either the trajectory or the particle files are missing", dirpath)
+                    else:
+                        infiles[pdata] = "data/2-particle/particle-%05d.RData" % index
+                        infiles[tdata] = "data/3-trajectory/trajectory-%05d.RData" % index
+                        index += 1
+            if infiles:
+                # We also need a video description file. This is
+                # likely to be in the outdir directory
+                vdescrfile = os.path.join(inbox, "video.description.txt")
+                infiles[vdescrfile] = "data/1-raw/video.description.txt"
+                infiles[os.path.join(scriptdir, "plocator.sh")] = "plocator.sh"
+                infiles[os.path.join(scriptdir, 'bemovi.R')] = 'bemovi.R'
+
+                extra = self.extra.copy()
+                extra['jobname'] = "Merger-%s" % time.strftime("%Y-%m-%d.%H:%M", time.localtime())
+                extra['output_dir'] = os.path.join(outdir, extra['jobname'])
+                # FIXME: Add the output
+                app = gc3libs.Application(
+                    arguments = ["./plocator.sh", "merger"],
+                    inputs = infiles,
+                    outputs = {"data/5-merged/Master.RData": "Master.RData"},
+                    # outputs = gc3libs.ANY_OUTPUT,
+                    stdout = 'merger.log',
+                    join = True,
+                    **extra)
+                self._controller.add(app)
+                self.session.add(app)
+                # FIXME: Submit merger application
+                return "Merging data from %d input videos" % index
+        return "No data to merge"
+        
     def new_tasks(self, extra, epath=None, emask=0):
         extra['rparams'] = {
             'memory': str(self.params.memory_per_core.amount(unit=gc3libs.quantity.MB)),
@@ -182,7 +238,7 @@ class GBemoviDaemon(SessionBasedDaemon):
             # there is a file which is not processed yet.
 
             # First, check which files we already did
-            known_videos = [i.videofile for i in self.session]
+            known_videos = [i.get('videofile', None) for i in self.session]
             new_jobs = []
             for inbox in self.params.inbox:
                 for dirpath, dirnames, fnames in os.walk(inbox):
