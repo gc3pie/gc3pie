@@ -1754,12 +1754,12 @@ class SessionBasedDaemon(_SessionBasedCommand):
     def __setup_comm(self, listen):
         # Communication thread must run on a different thread
         try:
+            self.comm = _CommDaemon(
+                self.name,
+                self.params.listen,
+                self.params.working_dir,
+                self)
             def commthread():
-                self.comm = _CommDaemon(
-                    self.name,
-                    self.params.listen,
-                    self.params.working_dir,
-                    self)
                 self.log.info("Starting XML-RPC server")
                 self.comm.start()
 
