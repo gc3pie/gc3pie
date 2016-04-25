@@ -1588,7 +1588,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                        help="Run in WORKING_DIR. Ignored if run in foreground."
                        " Default: %(default)s")
 
-        avail_events = [event[3:] for event in inotifyx.constants.keys()]
+        avail_events = inotifyx.constants.keys()
         self.parser_server.add_param('--notify-state',
                        nargs='?',
                        default='CLOSE_WRITE',
@@ -1730,9 +1730,24 @@ class SessionBasedDaemon(_SessionBasedCommand):
         # `inotifyx.get_events()` do not contains the full path to the
         # file.
         for inbox in self.params.inbox:
-            ifd = inotifyx.init()
-            self.inotify_fds[inbox] = ifd
-            inotifyx.add_watch(ifd, inbox, self.inotify_event_mask)
+            self.add_inotify_watch(inbox)
+
+    def __add_inotify_watch_single_path(self, path, mask):
+        ifd = inotifyx.init()
+        self.inotify_fds[path] = ifd
+        inotifyx.add_watch(ifd, path, mask, recurse=True)
+
+    def add_inotify_watch(self, path, mask=None, recurse=True):
+        """
+        Add a path to the list of paths already checked via inotify
+        """
+        mask = mask if mask else self.inotify_event_mask
+        self.__add_inotify_watch_single_path(path, mask)
+        if recurse:
+            for dirpath, dirnames, filename in os.walk(path):
+                for dirname in dirnames:
+                    self.__add_inotify_watch_single_path(
+                        os.path.join(dirpath, dirname), mask)
 
     def __setup_comm(self, listen):
         # Communication thread must run on a different thread
@@ -1850,7 +1865,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 self.log.debug("Received inotify event %s for %s",
                                event.get_mask_description(), fname)
                 new_jobs = self.new_tasks(self.extra.copy(),
-                                          fname,
+                                          epath=fname,
                                           emask=event.mask)
                 self._add_new_tasks(list(new_jobs))
                 for task in list(new_jobs):
