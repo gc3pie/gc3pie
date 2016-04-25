@@ -37,11 +37,14 @@ class ParticleLocator(gc3libs.Application):
         extra['output_dir'] = os.path.join(extra['base_output_dir'], self.application)
 
         scriptdir = os.path.dirname(__file__)
-        
+
         self.ijoutbase = extra['videoname']+'.ijout.txt'
         outputfile = os.path.join('data',
                                   '2-particle',
                                   self.ijoutbase)
+        rdatafile = os.path.join('data',
+                                 '2-particle',
+                                 'particle.RData')
         gc3libs.Application.__init__(
             self,
             arguments = ["./plocator.sh", "locator"] + extra['rparams'],
@@ -49,17 +52,12 @@ class ParticleLocator(gc3libs.Application):
                 os.path.join(scriptdir,  'plocator.sh'): 'plocator.sh',
                 os.path.join(scriptdir, 'bemovi.R'): 'bemovi.R',
                 videofile: os.path.join('data', '1-raw', videofilename)},
-            outputs = {outputfile : self.ijoutbase},
+            outputs = {outputfile : self.ijoutbase,
+                       rdatafile: 'particle.RData'},
             stdout = 'plocator.log',
             join = True,
             **extra)
 
-    @property
-    def ijout(self):
-        try:
-            return os.path.join(self.output_dir, self.ijoutbase)
-        except AttributeError:
-            return ""
 
 class ParticleLinker(gc3libs.Application):
     application = 'plinker'
@@ -88,15 +86,19 @@ class ParticleLinker(gc3libs.Application):
             **extra)
 
 class BemoviWorkflow(SequentialTaskCollection):
-    def __init__(self, videofile, **extra):
+    def __init__(self, videofile,  **extra):
         self.videofile = videofile
         videofilename = os.path.basename(videofile)
+        inboxdir = os.path.dirname(videofile)
         videoname = videofilename.rsplit('.', 1)[0]
 
         self.extra = extra
         extra['jobname'] = 'BemoviWorkflow_%s' % videoname
         extra['videoname'] = videoname
-        extra['base_output_dir'] = extra['output_dir'].replace('NAME', extra['jobname'])
+
+        extra['base_output_dir'] = os.path.join(
+            inboxdir + '.out',
+            extra['jobname'])
 
         plocator = ParticleLocator(videofile, **extra)
         plinker = ParticleLinker(
@@ -117,27 +119,48 @@ class GBemoviDaemon(SessionBasedDaemon):
         self.add_param('--difference-lag', default='10')
         self.add_param('--thresholds', default='5,255')
 
+    def setup_args(self):
+        SessionBasedDaemon.setup_args(self)
+        self.actions['notify_state'].default = "CLOSE_WRITE,CREATE"
+        
     def parse_args(self):
         self.threshold1, self.threshold2 = self.params.thresholds.split(',')
-        
+        if not self.params.inbox:
+            # Add a default inbox if not passed from command line
+            self.params.inbox = [os.path.join(self.params.working_dir, 'inbox')]
+        if self.params.output == self.actions['output'].default:
+            # Use directory 'output' as output directory by default
+            self.params.output = os.path.join(self.params.working_dir, 'output')
+
     def new_tasks(self, extra, epath=None, emask=0):
         if not epath:
             # At startup we don't create any app.
             return []
 
-        if not emask & inotifyx.IN_CLOSE_WRITE:
-            # Only trigger a new run if a new file has been written
-            return []
+        # FIXME: for some reason emask & IN_CREATE & IN_ISDIR does not
+        # work as expected. Using os.path.isdir() instead
+        if emask & inotifyx.IN_CREATE and os.path.isdir(epath):
+            # Creation of a directory or a file.  For each directory,
+            # we need to add a new inotify watch to allow users to
+            # organize files into directories.
+            if epath.endswith('.out'):
+                self.log.warning("NOT adding directory %s to the list of input folders as it looks like an OUTPUT folder!" % epath)
+            else:
+                self.log.debug("Adding directory %s to the list of input folders" % epath)
+                self.add_inotify_watch(epath)
 
-        extra['rparams'] = [
-            str(self.params.memory_per_core.amount(unit=gc3libs.quantity.MB)),
-            self.params.fps,
-            self.params.pixel_to_scale,
-            self.params.difference_lag,
-            self.threshold1,
-            self.threshold2,
-        ]
-        return [BemoviWorkflow(epath, **extra)]
+        elif emask & inotifyx.IN_CLOSE_WRITE:
+            extra['rparams'] = [
+                str(self.params.memory_per_core.amount(unit=gc3libs.quantity.MB)),
+                self.params.fps,
+                self.params.pixel_to_scale,
+                self.params.difference_lag,
+                self.threshold1,
+                self.threshold2,
+            ]
+            return [BemoviWorkflow(epath, **extra)]
+        return []
+
 
 if "__main__" == __name__:
     from gbemovi import GBemoviDaemon
