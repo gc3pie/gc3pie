@@ -168,9 +168,33 @@ class GBemoviDaemon(SessionBasedDaemon):
             self.params.output = os.path.join(self.params.working_dir, 'output')
 
     def new_tasks(self, extra, epath=None, emask=0):
+        extra['rparams'] = {
+            'memory': str(self.params.memory_per_core.amount(unit=gc3libs.quantity.MB)),
+            'fps': self.params.fps,
+            'pixel_to_scale': self.params.pixel_to_scale,
+            'difference_lag': self.params.difference_lag,
+            'threshold1': self.params.threshold1,
+            'threshold2': self.params.threshold2,
+        }
+        
         if not epath:
-            # At startup we don't create any app.
-            return []
+            # At startup, scan all the input directories and check if
+            # there is a file which is not processed yet.
+
+            # First, check which files we already did
+            known_videos = [i.videofile for i in self.session]
+            new_jobs = []
+            for inbox in self.params.inbox:
+                for dirpath, dirnames, fnames in os.walk(inbox):
+                    for fname in fnames:
+                        filename = os.path.join(dirpath, fname)
+                        if filename.rsplit('.', 1)[-1] not in self.valid_extensions:
+                            continue
+                        if filename not in known_videos:                        
+                            new_jobs.append(BemoviWorkflow(filename, **extra))
+                        
+                    
+            return new_jobs
 
         # FIXME: for some reason emask & IN_CREATE & IN_ISDIR does not
         # work as expected. Using os.path.isdir() instead
@@ -190,14 +214,6 @@ class GBemoviDaemon(SessionBasedDaemon):
                               epath, str.join(',', self.valid_extensions))
                 return []
 
-            extra['rparams'] = {
-                'memory': str(self.params.memory_per_core.amount(unit=gc3libs.quantity.MB)),
-                'fps': self.params.fps,
-                'pixel_to_scale': self.params.pixel_to_scale,
-                'difference_lag': self.params.difference_lag,
-                'threshold1': self.params.threshold1,
-                'threshold2': self.params.threshold2,
-            }
             return [BemoviWorkflow(epath, **extra)]
         return []
 
