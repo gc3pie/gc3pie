@@ -21,7 +21,7 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-
+import ConfigParser
 import os
 import gc3libs
 from gc3libs.cmdline import SessionBasedDaemon
@@ -46,9 +46,17 @@ class ParticleLocator(gc3libs.Application):
         rdatafile = os.path.join('data',
                                  '2-particle',
                                  'particle.RData')
+        extra_params = [
+            extra['rparams']['memory'],
+            extra['rparams']['fps'],
+            extra['rparams']['pixel_to_scale'],
+            extra['rparams']['difference_lag'],
+            extra['rparams']['threshold1'],
+            extra['rparams']['threshold2'],
+        ]
         gc3libs.Application.__init__(
             self,
-            arguments = ["./plocator.sh", "locator"] + extra['rparams'],
+            arguments = ["./plocator.sh", "locator"] + extra_params,
             inputs = {
                 os.path.join(scriptdir,  'plocator.sh'): 'plocator.sh',
                 os.path.join(scriptdir, 'bemovi.R'): 'bemovi.R',
@@ -69,10 +77,17 @@ class ParticleLinker(gc3libs.Application):
         extra['output_dir'] = os.path.join(extra['base_output_dir'], self.application)
         scriptdir = os.path.dirname(__file__)
 
-
+        extra_params = [
+            extra['rparams']['memory'],
+            extra['rparams']['fps'],
+            extra['rparams']['pixel_to_scale'],
+            extra['rparams']['difference_lag'],
+            extra['rparams']['threshold1'],
+            extra['rparams']['threshold2'],
+        ]
         gc3libs.Application.__init__(
             self,
-            arguments = ["Rscript", "bemovi.R", "linker"] + extra['rparams'],
+            arguments = ["Rscript", "bemovi.R", "linker"] + extra_params,
             inputs = {
                 particlefile: os.path.join("data",
                                            "2-particle",
@@ -91,6 +106,21 @@ class BemoviWorkflow(SequentialTaskCollection):
         self.videofile = videofile
         videofilename = os.path.basename(videofile)
         inboxdir = os.path.dirname(videofile)
+        # Look for a configuration file in the inboxdir to override
+        # bemovi parameters
+        cfgfile = os.path.join(inboxdir, 'gbemovi.conf')
+        cfg = ConfigParser.RawConfigParser(defaults=extra['rparams'])
+        try:
+            cfg.read(cfgfile)
+            extra['rparams'].update(cfg.defaults())
+            if videofilename in cfg.sections():
+                for key in cfg.options(videofilename):
+                    extra['rparams'][key] = cfg.get(videofilename, key)
+
+        except Exception as ex:
+            gc3libs.log.warning("Error while reading configuration file %s: %s. Ignoring",
+                             cfgfile, ex)
+
         videoname = videofilename.rsplit('.', 1)[0]
 
         self.extra = extra
@@ -118,14 +148,18 @@ class GBemoviDaemon(SessionBasedDaemon):
         self.add_param('--fps', default='25')
         self.add_param('--pixel-to-scale', default='1000/240')
         self.add_param('--difference-lag', default='10')
-        self.add_param('--thresholds', default='5,255')
+        self.add_param('--threshold1', default='5')
+        self.add_param('--threshold2', default='255')
+        self.add_param('--valid-extensions', default='avi,cxd,raw',
+                       help="Comma separated list of valid extensions for video file. Files ending with an extension non listed here will be ignored. Default: %(default)s")
 
     def setup_args(self):
         SessionBasedDaemon.setup_args(self)
         self.actions['notify_state'].default = "CLOSE_WRITE,CREATE"
 
     def parse_args(self):
-        self.threshold1, self.threshold2 = self.params.thresholds.split(',')
+        self.valid_extensions = [i.strip() for i in self.params.valid_extensions.split(',')]
+
         if not self.params.inbox:
             # Add a default inbox if not passed from command line
             self.params.inbox = [os.path.join(self.params.working_dir, 'inbox')]
@@ -151,14 +185,19 @@ class GBemoviDaemon(SessionBasedDaemon):
                 self.add_inotify_watch(epath)
 
         elif emask & inotifyx.IN_CLOSE_WRITE:
-            extra['rparams'] = [
-                str(self.params.memory_per_core.amount(unit=gc3libs.quantity.MB)),
-                self.params.fps,
-                self.params.pixel_to_scale,
-                self.params.difference_lag,
-                self.threshold1,
-                self.threshold2,
-            ]
+            if epath.rsplit('.', 1)[-1] not in self.valid_extensions:
+                self.log.info("Ignoring file %s as it does not end with a valid extension (%s)",
+                              epath, str.join(',', self.valid_extensions))
+                return []
+
+            extra['rparams'] = {
+                'memory': str(self.params.memory_per_core.amount(unit=gc3libs.quantity.MB)),
+                'fps': self.params.fps,
+                'pixel_to_scale': self.params.pixel_to_scale,
+                'difference_lag': self.params.difference_lag,
+                'threshold1': self.params.threshold1,
+                'threshold2': self.params.threshold2,
+            }
             return [BemoviWorkflow(epath, **extra)]
         return []
 
