@@ -1540,9 +1540,9 @@ class SessionBasedDaemon(_SessionBasedCommand):
 
     def setup(self):
         _Script.setup(self)
-        subparsers = self.argparser.add_subparsers(title="commands")
-        self.parser_server = subparsers.add_parser('server', help="Run the main daemon script.")
-        self.parser_client = subparsers.add_parser('client', help="Connect to a running daemon.")
+        self.subparsers = self.argparser.add_subparsers(title="commands")
+        self.parser_server = self.subparsers.add_parser('server', help="Run the main daemon script.")
+        self.parser_client = self.subparsers.add_parser('client', help="Connect to a running daemon.")
 
         # Wrapper function around add_argument.
         def _add_param_server(*args, **kwargs):
