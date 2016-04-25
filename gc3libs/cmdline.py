@@ -1527,10 +1527,16 @@ class SessionBasedDaemon(_SessionBasedCommand):
 
     def cleanup(self, signume=None, frame=None):
         self.log.debug("Waiting for communication thread to terminate")
-        self.comm.stop()
-        self.commthread._Thread__stop()
-        self.commthread._Thread__delete()
-        self.commthread.join(1)
+        try:
+            self.comm.stop()
+            self.commthread._Thread__stop()
+            self.commthread._Thread__delete()
+            self.commthread.join(1)
+        except AttributeError:
+            # If the script is interrupted/killed during command line
+            # parsing the `self.comm` daemon is not present and we get
+            # an AttributeError we can safely ignore.
+            pass
 
     def setup(self):
         _Script.setup(self)
