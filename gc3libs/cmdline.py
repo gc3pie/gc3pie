@@ -1137,7 +1137,7 @@ class _SessionBasedCommand(_Script):
             " formatted as HH:MM.  'SESSION' is replaced by the path to the"
             " session directory, with a '.out' appended.")
         return
-        
+
     def setup(self):
         """
         Setup standard command-line parsing.
@@ -1550,10 +1550,10 @@ class SessionBasedDaemon(_SessionBasedCommand):
         # Also, when subclassing, add_param should add arguments to
         # the server parser by default.
         self.add_param = lambda *x, **kw: self.parser_server.add_param(*x, **kw)
-        
+
         self.parser_server.set_defaults(func=self._main_server)
         self.parser_client.set_defaults(func=self._main_client)
-        
+
         # change default for the `-C`, `--session` and `--output` options
         self.actions['wait'].default = 30
         self.actions['wait'].help = 'Check the status of the jobs every NUM'
@@ -1612,7 +1612,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                                         nargs='*',
                                         metavar='ARGS',
                                         help="Optional arguments of CMD.")
-        
+
     def pre_run(self):
         ### FIXME: Some code copied from _Script.pre_run()
 
@@ -1651,6 +1651,8 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 " Please edit the configuration file(s): '%s'."
                 % (str.join("', '", self.params.config_files)))
 
+        self.params.working_dir = os.path.abspath(self.params.working_dir)
+
         # Default session dir is inside the working directory
         if not self.params.session:
             self.params.session = os.path.join(
@@ -1662,8 +1664,6 @@ class SessionBasedDaemon(_SessionBasedCommand):
 
         self._prerun_common_checks()
         self.parse_args()
-
-        self.params.working_dir = os.path.abspath(self.params.working_dir)
 
         self.params.inbox = [os.path.abspath(p) for p in self.params.inbox]
 
@@ -1771,7 +1771,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
 
     def _main(self):
         return self.params.func()
-    
+
     def _main_server(self):
         self.process_args()
 
