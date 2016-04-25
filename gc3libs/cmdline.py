@@ -1637,7 +1637,9 @@ class SessionBasedDaemon(_SessionBasedCommand):
         self.log.info("Starting %s at %s; invoked as '%s'",
                       self.name, time.asctime(), str.join(' ', sys.argv))
 
-        # call base classes first (note: calls `parse_args()`)
+        # FIXME: we need to ignore the process_args method as the
+        # `client` subparser has different options than the `server`
+        # one, and the default is the `server` subparser.
         if self.params.func == self._main_client:
             # override `process_args` with a noop.
             self.process_args = lambda *x, **kw: None
