@@ -1,14 +1,15 @@
 args <- commandArgs(trailingOnly = TRUE)
-
-library(bemovi)
-to.data <- "data/"
-to.particlelinker <- "/usr/local/ParticleLinker/"
-IJ.path <- "/usr/local/ImageJ/ij.jar"
+# arg[1] = (locator|linker)
 memory.alloc <- args[2]
 fps <- args[3]
 pixel_to_scale <- args[4]
 difference.lag <- args[5]
 thresholds = c(args[6],args[7])
+
+library(bemovi)
+to.data <- "data/"
+to.particlelinker <- "/usr/local/ParticleLinker/"
+IJ.path <- "/usr/local/ImageJ/ij.jar"
 
 video.description.folder <- "1-raw/"
 video.description.file <- "video.description.txt"
