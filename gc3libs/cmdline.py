@@ -1732,12 +1732,12 @@ class SessionBasedDaemon(_SessionBasedCommand):
         # `inotifyx.get_events()` do not contains the full path to the
         # file.
         for inbox in self.params.inbox:
-            self.add_inotify_watch(inbox)
+            self.add_inotify_watch(inbox, recurse=True)
 
     def __add_inotify_watch_single_path(self, path, mask):
         ifd = inotifyx.init()
         self.inotify_fds[path] = ifd
-        inotifyx.add_watch(ifd, path, mask, recurse=True)
+        inotifyx.add_watch(ifd, path, mask)
 
     def add_inotify_watch(self, path, mask=None, recurse=True):
         """
