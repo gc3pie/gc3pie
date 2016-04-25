@@ -3,7 +3,8 @@
 """
 Tests for the cmdline module
 """
-# Copyright (C) 2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2016 S3IT, Zentrale Informatik, University of
+# Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -24,8 +25,11 @@ __version__ = '$Revision$'
 
 import os
 import shutil
+import signal
+import subprocess
 import tempfile
 import re
+import time
 
 import cli.test
 from nose.tools import assert_true
@@ -72,8 +76,12 @@ resourcedir = %s
 
     def tearDown(self):
         os.remove(self.cfgfile)
-        shutil.rmtree(self.resourcedir)
         cli.test.FunctionalTest.tearDown(self)
+        try:
+            shutil.rmtree(self.resourcedir)
+        except:
+            # Double check if some dir is still present
+            pass
 
     def test_simplescript(self):
         """Test a very simple script based on `SessionBasedScript`:class:
@@ -146,6 +154,94 @@ resourcedir = %s
                     gc3libs.session.Session.STORE_URL_FILENAME,
                 )))
 
+    def test_simpledaemon_d(self):
+        wdir = os.path.join(self.env.base_path, 'wdir')
+        proc = subprocess.Popen([
+            'python',
+            os.path.join(self.scriptdir, 'simpledaemon.py',),
+            '--config-files', self.cfgfile,
+            'server',
+            '-C', '1',
+            '--working-dir', wdir,
+            '-r', 'localhost',
+        ],)
+
+        clean_exit = False
+        for i in range(10):
+            # Wait up to 10 seconds
+            time.sleep(1)
+
+            if os.path.isdir(os.path.join(wdir, 'EchoApp')):
+                clean_exit = True
+                break
+
+        # Kill the daemon
+        # We should have a pidfile
+        pidfile = os.path.join(wdir, 'simpledaemon.pid')
+        assert_true(os.path.isfile(pidfile))
+
+        pid = open(pidfile).read()
+        os.kill(int(pid), signal.SIGTERM)
+
+        assert_true(clean_exit, "Daemon didn't complete after 10 seconds")
+        assert_true(os.path.isdir(wdir))
+
+        # Since it's a daemon, this shouldn't be needed
+        proc.kill()
+
+        # a logfile
+        assert_true(os.path.isfile(os.path.join(wdir, 'simpledaemon.log')))
+
+        # the output directory
+        assert_true(os.path.isdir(os.path.join(wdir, 'EchoApp')))
+
+    def test_simpledaemon_inbox(self):
+        wdir = os.path.join(self.env.base_path, 'wdir')
+        inboxdir = os.path.join(wdir, 'inbox')
+        proc = subprocess.Popen([
+            'python',
+            os.path.join(self.scriptdir, 'simpledaemon.py',),
+            '--config-files', self.cfgfile,
+            '-vvv',
+            'server',
+            '-C', '1',
+            '--working-dir', wdir,
+            '-r', 'localhost',
+            inboxdir,
+        ],)
+
+        clean_exit = False
+        for i in range(10):
+            # Wait up to 10 seconds
+            time.sleep(1)
+            # Create fake file
+            fd = open(os.path.join(inboxdir, 'foo'), 'w+')
+            fd.close()
+
+            if os.path.isdir(os.path.join(wdir, 'LSApp.foo')):
+                clean_exit = True
+                break
+
+        # Kill the daemon
+        # We should have a pidfile
+        pidfile = os.path.join(wdir, 'simpledaemon.pid')
+        assert_true(os.path.isfile(pidfile))
+
+        pid = open(pidfile).read()
+        os.kill(int(pid), signal.SIGTERM)
+        os.kill(int(pid), signal.SIGHUP)
+
+        assert_true(clean_exit, "Daemon didn't complete after 10 seconds")
+        assert_true(os.path.isdir(wdir))
+
+        # Since it's a daemon, this shouldn't be needed
+        proc.kill()
+
+        # a logfile
+        assert_true(os.path.isfile(os.path.join(wdir, 'simpledaemon.log')))
+
+        # the output directory
+        assert_true(os.path.isdir(os.path.join(wdir, 'EchoApp')))
 
 # main: run tests
 
