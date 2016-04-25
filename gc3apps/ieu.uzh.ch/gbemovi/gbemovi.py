@@ -28,6 +28,7 @@ from gc3libs.cmdline import SessionBasedDaemon
 from gc3libs.workflow import SequentialTaskCollection
 import inotifyx
 
+
 class ParticleLocator(gc3libs.Application):
     application = 'plocator'
 
@@ -122,7 +123,7 @@ class GBemoviDaemon(SessionBasedDaemon):
     def setup_args(self):
         SessionBasedDaemon.setup_args(self)
         self.actions['notify_state'].default = "CLOSE_WRITE,CREATE"
-        
+
     def parse_args(self):
         self.threshold1, self.threshold2 = self.params.thresholds.split(',')
         if not self.params.inbox:
