@@ -42,7 +42,9 @@ except ImportError as err:
         " then try again, or update your configuration file and"
         " disable any EC2-based resources."
         .format(err=err))
-import Crypto
+
+import Crypto.PublicKey.DSA
+import Crypto.PublicKey.RSA
 
 # GC3Pie imports
 import gc3libs
