@@ -547,17 +547,26 @@ class Task(Persistable, Struct):
         """
         Reset the state of this Task instance to ``NEW``.
 
+        This is only allowed for tasks which are already in a terminal
+        state, or one of ``STOPPED``, ``UNKNOWN``, or ``NEW`;
+        otherwise an `AssertionError` is raised.
+
         The task should then be resubmitted to actually resume
         execution.
 
         See also `SequentialTaskCollection.redo`:meth:.
+
+        :raises AssertionError: if this Task's state is not terminal.
         """
         assert self.execution.state in [
+            Run.State.NEW,  # allow re-doing partially run TaskCollections
             Run.State.STOPPED,
             Run.State.TERMINATED,
             Run.State.TERMINATING,
             Run.State.UNKNOWN,
-        ]
+        ], ("Can only re-do a Task which is in a terminal state;"
+            " task {0} is in state {1} instead."
+            .format(self, self.execution.state))
         self.execution.state = Run.State.NEW
 
 

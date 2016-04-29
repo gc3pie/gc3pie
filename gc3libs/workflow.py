@@ -820,9 +820,14 @@ class ParallelTaskCollection(TaskCollection):
         super(ParallelTaskCollection, self).progress()
 
 
-    def redo(self, from_stage=0):
+    def redo(self):
         """
         Reset collection and all included tasks to state ``NEW``.
+
+        If not all included tasks should are in a terminal state or
+        ``NEW``, an `AssertionError` exception will be thrown.
+        See also `Task.redo`:meth: for a listing of allowed run states
+        when ``redo()`` is called.
         """
         for task in self.tasks:
             task.redo()

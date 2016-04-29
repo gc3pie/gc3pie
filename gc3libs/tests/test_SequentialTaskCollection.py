@@ -93,6 +93,31 @@ def test_SequentialTaskCollection_redo2():
         assert seq.stage().execution.state == Run.State.TERMINATED
 
 
+def test_SequentialTaskCollection_redo3():
+    """Test that we can re-do a partially terminated sequence."""
+    with temporary_core() as core:
+        seq = SimpleSequentialTaskCollection(3)
+        seq.attach(core)
+
+        # run until stage1 is terminated
+        while seq.tasks[1].execution.state != Run.State.TERMINATED:
+            seq.progress()
+        assert seq.stage().jobname == 'stage2'
+
+        core.kill(seq)
+
+        seq.redo(0)
+        assert seq.stage().jobname == 'stage0'
+        assert seq.stage().execution.state == Run.State.NEW
+        assert seq.execution.state == Run.State.NEW
+
+        # run until terminated
+        while seq.execution.state != Run.State.TERMINATED:
+            seq.progress()
+        assert seq.stage().jobname == 'stage2'
+        assert seq.stage().execution.state == Run.State.TERMINATED
+
+
 # main: run tests
 
 if "__main__" == __name__:
