@@ -141,6 +141,7 @@ setuptools.setup(
     extras_require = {
         'openstack': read_file_lines('requirements.openstack.txt'),
         'ec2':       read_file_lines('requirements.ec2.txt'),
+        'daemon':    read_file_lines('requirements.daemon.txt'),
         'optimizer': read_file_lines('requirements.optimizer.txt'),
     },
     # Apparently, this list is read from right to left...
