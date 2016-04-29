@@ -82,17 +82,11 @@ def test_task_redo2():
         task.redo()
 
 
-@raises(AssertionError)
 def test_task_redo3():
-    """Test that `.redo()` raises if called on a Task that is not TERMINATED."""
+    """Test that `.redo()` is a no-op if the Task is still NEW."""
     with temporary_core() as core:
         task = SuccessfulApp()
         task.attach(core)
-        task.submit()
-        while task.execution.state == Run.State.SUBMITTED:
-            task.progress()
-
-        # cannot redo a task that is not yet terminated
         task.redo()
 
 
