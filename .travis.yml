@@ -8,5 +8,5 @@ addons:
     - time
 install:
   - "pip install nose mock"
-  - "pip install -e .[openstack,ec2]"
+  - "pip install -e .[openstack,ec2,daemon]"
 script: nosetests -v
