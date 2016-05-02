@@ -69,6 +69,8 @@ from distutils.util import strtobool
 # for use in `download_from_pypi`
 from distutils.version import LooseVersion
 
+from fnmatch import fnmatch
+
 import os
 from os import path
 
