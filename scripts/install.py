@@ -308,7 +308,7 @@ Please run 'deactivate', then run this script again.
     # RPATH, see Issue 479
     if 'Anaconda' in sys.version:
         python_is_anaconda = True
-        fix_virtualenv_issue_with_anaconda(python, destdir)
+        anaconda_root_dir = fix_virtualenv_issue_with_anaconda(python, destdir)
     else:
         python_is_anaconda = False
 
@@ -614,6 +614,8 @@ $ ls -l {anaconda_root_dir}/lib/
         dst = path.join(dest_lib_dir, filename)
         os.symlink(src, dst)
         logging.info("%s -> %s", src, dst)
+
+    return anaconda_root_dir
 
 
 __have_command_cache = {}
