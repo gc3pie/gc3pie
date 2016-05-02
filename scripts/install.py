@@ -604,7 +604,7 @@ $ ls -l {anaconda_root_dir}/lib/
             """.format(version=sys.version, **locals()))
 
     # actually do the patching
-    loggin.info(
+    logging.info(
         "Applying workaround for Anaconda Python's"
         " incompatibility with virtualenv ...")
     dest_lib_dir = path.join(destdir, 'lib')
