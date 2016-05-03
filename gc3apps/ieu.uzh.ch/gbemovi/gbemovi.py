@@ -158,6 +158,7 @@ class BemoviWorkflow(SequentialTaskCollection):
                         extra['rparams']['threshold2'] = line[5]
         except IOError:
             # File not found, ignore
+            pass
         except Exception as ex:
             self.log.warning("Error while reading CSV configuration file %s: Ignoring."
                              " Error was: %s",
