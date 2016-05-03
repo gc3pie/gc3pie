@@ -118,7 +118,7 @@ class BemoviWorkflow(SequentialTaskCollection):
         cfg = ConfigParser.RawConfigParser(defaults=extra['rparams'])
         try:
             cfg.read(cfgfile)
-            gc3libs.log.debug("Reading configuration file %s for video file %s"
+            gc3libs.log.debug("Reading configuration file %s for video file %s",
                               cfgfile, videofile)
             extra['rparams'].update(cfg.defaults())
             if videofilename in cfg.sections():
