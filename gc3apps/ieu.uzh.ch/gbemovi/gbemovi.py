@@ -135,7 +135,7 @@ class BemoviWorkflow(SequentialTaskCollection):
         try:
             with open(csvcfgfile) as fd:
                 gc3libs.log.debug(
-                    "Reading CSV configuration file %s for video file %s"
+                    "Reading CSV configuration file %s for video file %s",
                     csvcfgfile, videofile)
                 cr = csv.reader(fd)
                 for line in cr:
