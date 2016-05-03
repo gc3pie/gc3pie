@@ -206,7 +206,7 @@ class GBemoviDaemon(SessionBasedDaemon):
                 infiles[os.path.join(scriptdir, 'bemovi.R')] = 'bemovi.R'
 
                 extra = self.extra.copy()
-                extra['jobname'] = "Merger-%s" % time.strftime("%Y-%m-%d.%H:%M", time.localtime())
+                extra['jobname'] = "Merger_%s" % time.strftime("%Y-%m-%d_%H.%M", time.localtime())
                 extra['output_dir'] = os.path.join(outdir, extra['jobname'])
                 # FIXME: Add the output
                 app = gc3libs.Application(
@@ -222,7 +222,7 @@ class GBemoviDaemon(SessionBasedDaemon):
                 # FIXME: Submit merger application
                 return "Merging data from %d input videos" % index
         return "No data to merge"
-        
+
     def new_tasks(self, extra, epath=None, emask=0):
         extra['rparams'] = {
             'memory': str(self.params.memory_per_core.amount(unit=gc3libs.quantity.MB)),
@@ -232,7 +232,7 @@ class GBemoviDaemon(SessionBasedDaemon):
             'threshold1': self.params.threshold1,
             'threshold2': self.params.threshold2,
         }
-        
+
         if not epath:
             # At startup, scan all the input directories and check if
             # there is a file which is not processed yet.
@@ -246,10 +246,10 @@ class GBemoviDaemon(SessionBasedDaemon):
                         filename = os.path.join(dirpath, fname)
                         if filename.rsplit('.', 1)[-1] not in self.valid_extensions:
                             continue
-                        if filename not in known_videos:                        
+                        if filename not in known_videos:
                             new_jobs.append(BemoviWorkflow(filename, **extra))
-                        
-                    
+
+
             return new_jobs
 
         # FIXME: for some reason emask & IN_CREATE & IN_ISDIR does not
