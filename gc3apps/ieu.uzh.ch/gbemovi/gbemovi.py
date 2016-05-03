@@ -186,11 +186,11 @@ class GBemoviDaemon(SessionBasedDaemon):
     version = '1.0'
 
     def setup_options(self):
-        self.add_param('--fps', default='25')
-        self.add_param('--pixel-to-scale', default='1000/240')
-        self.add_param('--difference-lag', default='10')
-        self.add_param('--threshold1', default='5')
-        self.add_param('--threshold2', default='255')
+        self.add_param('--fps', default='25', help="Video FPS. Default: %(default)s")
+        self.add_param('--pixel-to-scale', default='1000/240', help="Default: %(default)s")
+        self.add_param('--difference-lag', default='10', help="Default: %(default)s")
+        self.add_param('--threshold1', default='5', help="Default: %(default)s")
+        self.add_param('--threshold2', default='255', help="Default: %(default)s")
         self.add_param('--valid-extensions', default='avi,cxd,raw',
                        help="Comma separated list of valid extensions for video file. Files ending with an extension non listed here will be ignored. Default: %(default)s")
 
