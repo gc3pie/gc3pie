@@ -283,8 +283,12 @@ class GBemoviDaemon(SessionBasedDaemon):
                         filename = os.path.join(dirpath, fname)
                         if filename.rsplit('.', 1)[-1] not in self.valid_extensions:
                             continue
+                        if filename.startswith('._'):
+                            self.log.warning("Ignoring file %s as it starts with '._'", filename)
+                            continue
                         if filename not in known_videos:
                             new_jobs.append(BemoviWorkflow(filename, **extra))
+                            known_videos.append(filename)
 
 
             return new_jobs
