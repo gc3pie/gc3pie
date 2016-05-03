@@ -28,6 +28,8 @@ from gc3libs.cmdline import SessionBasedDaemon
 from gc3libs.workflow import SequentialTaskCollection
 import inotifyx
 import time
+import csv
+
 
 class ParticleLocator(gc3libs.Application):
     application = 'plocator'
@@ -116,6 +118,8 @@ class BemoviWorkflow(SequentialTaskCollection):
         cfg = ConfigParser.RawConfigParser(defaults=extra['rparams'])
         try:
             cfg.read(cfgfile)
+            gc3libs.log.debug("Reading configuration file %s for video file %s"
+                              cfgfile, videofile)
             extra['rparams'].update(cfg.defaults())
             if videofilename in cfg.sections():
                 for key in cfg.options(videofilename):
@@ -125,6 +129,39 @@ class BemoviWorkflow(SequentialTaskCollection):
             gc3libs.log.warning("Error while reading configuration file %s: %s. Ignoring",
                              cfgfile, ex)
 
+        # As requested by Frank and Owne, also provide the ability to read a CSV file
+        csvcfgfile = os.path.join(inboxdir, 'gbemovi.csv')
+        csvdata = {}
+        try:
+            with open(csvcfgfile) as fd:
+                gc3libs.log.debug(
+                    "Reading CSV configuration file %s for video file %s"
+                    csvcfgfile, videofile)
+                cr = csv.reader(fd)
+                for line in cr:
+                    if len(line) != 6:
+                        gc3libs.log.warning(
+                            "Ignoring line '%s' in csv configuration file %s",
+                            line, csvcfgfile)
+                    elif line[0] in csvdata:
+                        gc3libs.log.warning(
+                            "Ignoring dupliacate key in '%s' csv configuration file: '%s'",
+                            csvcfgfile, line[0])
+                    elif line[0].lower() == "default" or line[0] == videofilename:
+                        gc3libs.log.debug(
+                            "Matching line '%s' inc CSV config file %s for videofile %s",
+                            line, csvcfgfile, videofilename)
+                        extra['rparams'][fps] = line[1]
+                        extra['rparams']['pixel_to_scale'] = line[2]
+                        extra['rparams']['difference_lag'] = line[3]
+                        extra['rparams']['threshold1'] = line[4]
+                        extra['rparams']['threshold2'] = line[5]
+        except IOError:
+            # File not found, ignore
+        except Exception as ex:
+            self.log.warning("Error while reading CSV configuration file %s: Ignoring."
+                             " Error was: %s",
+                             csvcfgfile, ex)
         videoname = videofilename.rsplit('.', 1)[0]
 
         self.extra = extra
