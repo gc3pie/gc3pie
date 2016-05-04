@@ -30,6 +30,7 @@ import inotifyx
 import time
 import csv
 
+log = logging.getLogger('gc3.gc3utils')
 
 class ParticleLocator(gc3libs.Application):
     application = 'plocator'
@@ -131,7 +132,7 @@ class BemoviWorkflow(SequentialTaskCollection):
         cfg = ConfigParser.RawConfigParser(defaults=extra['rparams'])
         try:
             cfg.read(cfgfile)
-            gc3libs.log.debug("Reading configuration file %s for video file %s",
+            log.debug("Reading configuration file %s for video file %s",
                               cfgfile, videofile)
             extra['rparams'].update(cfg.defaults())
             if videofilename in cfg.sections():
@@ -139,7 +140,7 @@ class BemoviWorkflow(SequentialTaskCollection):
                     extra['rparams'][key] = cfg.get(videofilename, key)
 
         except Exception as ex:
-            gc3libs.log.warning("Error while reading configuration file %s: %s. Ignoring",
+            log.warning("Error while reading configuration file %s: %s. Ignoring",
                              cfgfile, ex)
 
         # As requested by Frank and Owne, also provide the ability to
@@ -148,21 +149,21 @@ class BemoviWorkflow(SequentialTaskCollection):
         csvdata = {}
         try:
             with open(csvcfgfile) as fd:
-                gc3libs.log.debug(
+                log.debug(
                     "Reading CSV configuration file %s for video file %s",
                     csvcfgfile, videofile)
                 cr = csv.reader(fd)
                 for line in cr:
                     if len(line) != 6:
-                        gc3libs.log.warning(
+                        log.warning(
                             "Ignoring line '%s' in csv configuration file %s",
                             line, csvcfgfile)
                     elif line[0] in csvdata:
-                        gc3libs.log.warning(
+                        log.warning(
                             "Ignoring dupliacate key in '%s' csv configuration file: '%s'",
                             csvcfgfile, line[0])
                     elif line[0].lower() == "default" or line[0] == videofilename:
-                        gc3libs.log.debug(
+                        log.debug(
                             "Matching line '%s' inc CSV config file %s for videofile %s",
                             line, csvcfgfile, videofilename)
                         extra['rparams']['fps'] = line[1]
@@ -174,7 +175,7 @@ class BemoviWorkflow(SequentialTaskCollection):
             # File not found, ignore
             pass
         except Exception as ex:
-            gc3libs.log.warning(
+            log.warning(
                 "Error while reading CSV configuration file %s: Ignoring."
                 " Error was: %s",
                 csvcfgfile, ex)
@@ -202,13 +203,45 @@ class GBemoviDaemon(SessionBasedDaemon):
     version = '1.0'
 
     def setup_options(self):
-        self.add_param('--fps', default='25', help="Video FPS. Default: %(default)s")
-        self.add_param('--pixel-to-scale', default='1000/240', help="Default: %(default)s")
-        self.add_param('--difference-lag', default='10', help="Default: %(default)s")
-        self.add_param('--threshold1', default='5', help="Default: %(default)s")
-        self.add_param('--threshold2', default='255', help="Default: %(default)s")
-        self.add_param('--valid-extensions', default='avi,cxd,raw',
-                       help="Comma separated list of valid extensions for video file. Files ending with an extension non listed here will be ignored. Default: %(default)s")
+        self.add_param(
+            '--fps',
+            default='25',
+            help="Framerate of the video in seconds (frame per second). Default: %(default)s")
+        self.add_param(
+            '--pixel-to-scale',
+            default='1000/240',
+            help="A conversion factor to scale videos (in pixel) to real"
+            " dimensions (e.g.  micrometer). The conversion factor needs to"
+            " be determined by the experimenter by measuring an object of"
+            " known size (e.g. micrometer) with the used microscope/video"
+            " settings (magnification, resolution etc.)."
+            " Default: %(default)s")
+        self.add_param(
+            '--difference-lag',
+            default='10',
+            help="Lag between two frames, the former being the target frame"
+            " to be segmented, the latter the frame subtracted from the former"
+            " to create the difference image. Lag is specified in frames, but"
+            " can be converted into time (difference-lag of 25 of a video"
+            " taken with 25 fps translates into a difference-lag of 1 second)."
+            " Default: %(default)s")
+        self.add_param(
+            '--threshold1',
+            default='5',
+            help="Threshold applied to the difference image. Threshold has to"
+            " be in the range of 0 to 255. The lower the threshold, the more"
+            " greyish pixels will be considered when the image is binarized."
+            " Default: %(default)s")
+        self.add_param(
+            '--threshold2',
+            default='255',
+            help="Default: %(default)s")
+        self.add_param(
+            '--valid-extensions',
+            default='avi,cxd,raw',
+            help="Comma separated list of valid extensions for video file."
+            " Files ending with an extension non listed here will be ignored."
+            " Default: %(default)s")
 
     def setup_args(self):
         SessionBasedDaemon.setup_args(self)
