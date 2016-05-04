@@ -48,6 +48,13 @@ class ParticleLocator(gc3libs.Application):
         rdatafile = os.path.join('data',
                                  '2-particle',
                                  'particle.RData')
+
+        self.fps = extra['rparams']['fps']
+        self.pixel_to_scale = extra['rparams']['pixel_to_scale']
+        self.difference_lag = extra['rparams']['difference_lag']
+        self.threshold1 = extra['rparams']['threshold1']
+        self.threshold2 = extra['rparams']['threshold2']
+
         extra_params = [
             extra['rparams']['memory'],
             extra['rparams']['fps'],
@@ -78,6 +85,12 @@ class ParticleLinker(gc3libs.Application):
         extra['jobname'] = "%s.%s" % (self.application, extra['videoname'])
         extra['output_dir'] = os.path.join(extra['base_output_dir'], self.application)
         scriptdir = os.path.dirname(__file__)
+
+        self.fps = extra['rparams']['fps']
+        self.pixel_to_scale = extra['rparams']['pixel_to_scale']
+        self.difference_lag = extra['rparams']['difference_lag']
+        self.threshold1 = extra['rparams']['threshold1']
+        self.threshold2 = extra['rparams']['threshold2']
 
         extra_params = [
             extra['rparams']['memory'],
@@ -160,9 +173,10 @@ class BemoviWorkflow(SequentialTaskCollection):
             # File not found, ignore
             pass
         except Exception as ex:
-            self.log.warning("Error while reading CSV configuration file %s: Ignoring."
-                             " Error was: %s",
-                             csvcfgfile, ex)
+            gc3libs.log.warning(
+                "Error while reading CSV configuration file %s: Ignoring."
+                " Error was: %s",
+                csvcfgfile, ex)
         videoname = videofilename.rsplit('.', 1)[0]
 
         self.extra = extra
