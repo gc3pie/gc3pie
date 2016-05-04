@@ -142,7 +142,8 @@ class BemoviWorkflow(SequentialTaskCollection):
             gc3libs.log.warning("Error while reading configuration file %s: %s. Ignoring",
                              cfgfile, ex)
 
-        # As requested by Frank and Owne, also provide the ability to read a CSV file
+        # As requested by Frank and Owne, also provide the ability to
+        # read a CSV file
         csvcfgfile = os.path.join(inboxdir, 'gbemovi.csv')
         csvdata = {}
         try:
@@ -164,7 +165,7 @@ class BemoviWorkflow(SequentialTaskCollection):
                         gc3libs.log.debug(
                             "Matching line '%s' inc CSV config file %s for videofile %s",
                             line, csvcfgfile, videofilename)
-                        extra['rparams'][fps] = line[1]
+                        extra['rparams']['fps'] = line[1]
                         extra['rparams']['pixel_to_scale'] = line[2]
                         extra['rparams']['difference_lag'] = line[3]
                         extra['rparams']['threshold1'] = line[4]
