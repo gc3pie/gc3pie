@@ -235,7 +235,9 @@ class GBemoviDaemon(SessionBasedDaemon):
         self.add_param(
             '--threshold2',
             default='255',
-            help="Default: %(default)s")
+            help="Upper threshold applied to the difference image. Value of"
+            " `--threshold2` has to be larger than `--threshold1` (lower"
+            " threshold). Default: %(default)s")
         self.add_param(
             '--valid-extensions',
             default='avi,cxd,raw',
@@ -257,6 +259,9 @@ class GBemoviDaemon(SessionBasedDaemon):
             # Use directory 'output' as output directory by default
             self.params.output = os.path.join(self.params.working_dir, 'output')
 
+        if int(self.params.threshold2) <= int(self.params.threshold1):
+            gc3libs.exceptions.InvalidUsage(
+                "Value of `--threshold2` should be greater than `--threshold1`")
     def before_main_loop(self):
         # Setup new command
         self.comm.server.register_function(self.merge_data, "merge")
