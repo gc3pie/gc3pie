@@ -1710,14 +1710,17 @@ class SessionBasedDaemon(_SessionBasedCommand):
 
         # If --syslog, add a logging handler to send to local syslog
         if self.params.syslog:
-            self.log.addHandler(
+            # Update the root logger, not just 'gc3utils'
+            logging.root.addHandler(
                 SysLogHandler(address="/dev/log",
                               facility=SysLogHandler.LOG_USER))
         elif not self.params.foreground:
             # The default behavior when run in daemon mode
             # is to log to a file in working directory called
             # <application>.log
-            self.log.addHandler(
+            #
+            # Also, update the root logger, not just 'gc3utils'
+            logging.root.addHandler(
                 logging.FileHandler(
                     os.path.join(self.params.working_dir,
                                  self.name + '.log')))
