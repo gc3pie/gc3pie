@@ -82,6 +82,23 @@ Note: remember to detach from the running screen session using the:
 ...or check the content of the `screen` log file:
     $ less screen.log
 
+Why all these ERROR messages ?
+==============================
+
+If you see ERROR messages like the follwoing:
+gc3.gc3libs: ERROR: Got error in submitting task
+... LRMSSkipSubmissionToNextIteration: Delaying submission until some
+of the VMs currently pending is ready.
+
+or:
+gc3.gc3libs: ERROR: Could not create ssh connection to 172.23....:
+NoValidConnectionsError: [Errno None] Unable to connect to port 22 on
+or 172.23...
+
+these are to be considered as transient errors: Errors that are
+induced during the resouce provisioning step of the workflow and that
+are supposed to be resolved as soon as the resources and ready to be used.
+
 Temporally stop a running ``gsPhenotypicalHomologyExample`` session
 ====================================================================
 
