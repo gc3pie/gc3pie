@@ -25,6 +25,9 @@ execution will go through (the -I option).
 Running ``gsPhenotypicalHomologyExample``
 ==========================================
 
+## Step 0: Activate GC3Pie virtual environment
+    $ source ~/gc3pie/bin/activate
+
 ## Step 1: Activate ScienceCloud API authentication
     $ source ~/gc3pie/bin/sc-authenticate.sh
 
