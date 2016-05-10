@@ -1367,6 +1367,7 @@ class _CommDaemon(object):
         self.server.register_function(self.stat_jobs, "stat")
         self.server.register_function(self.kill_job, "kill")
         self.server.register_function(self.resubmit_job, "resubmit")
+        self.server.register_function(self.remove_job, "remove")
         self.server.register_function(self.terminate, "terminate")
 
     def start(self):
@@ -1500,6 +1501,22 @@ class _CommDaemon(object):
         except Exception as ex:
             return "Error while killing job %s: %s" % (jobid, ex)
 
+    def remove_job(self, jobid=None):
+        if not jobid:
+            return "Usage: remove <jobid>"
+
+        if jobid not in self.parent.session.tasks:
+            return "Job %s not found in session" % jobid
+        app = self.parent.session.load(jobid)
+        if app.execution.state != gc3libs.Run.State.TERMINATED:
+            return "Error: you can only remove a terminated job. Current status is: %s" % app.execution.state
+        try:
+            self.parent._controller.remove(app)
+            self.parent.session.remove(jobid)
+            return "Job %s successfully removed" % jobid
+        except Exception as ex:
+            return "Error while removing job %s: %s" % (jobid, ex)
+        
     def resubmit_job(self, jobid=None):
         app = self.parent.session.load(jobid)
         app.attach(self.parent._core)
