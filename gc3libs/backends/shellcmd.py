@@ -400,8 +400,13 @@ ReturnCode=%x"""
                    type(app.execution.lrms_jobid)))
 
         self.transport.connect()
+        # Kill all the processes belonging to the same session as the
+        # pid we actually started.
+
+        # On linux, kill '$(ps -o pid= -g $(ps -o sess= -p %d))' would
+        # be enough, but on MacOSX it doesn't work.
         exit_code, stdout, stderr = self.transport.execute_command(
-            'kill %d' % pid)
+            'kill $(ps -ax -o sess=,pid= | egrep "^[ \t]*$(ps -p %d  -o sess=)[ \t]")' % pid)
         # XXX: should we check that the process actually died?
         if exit_code != 0:
             # Error killing the process. It may not exists or we don't
