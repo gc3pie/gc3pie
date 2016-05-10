@@ -111,6 +111,15 @@ class Persistable(object):
         except AttributeError:
             return super(Persistable, self).__str__()
 
+    def __eq__(self, other):
+        try:
+            return self.persistent_id == other.persistent_id
+        except AttributeError:
+            # fall back to Python object comparison
+            return super(Persistable, self) == other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 # registration mechanism
 
