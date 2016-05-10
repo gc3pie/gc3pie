@@ -29,6 +29,7 @@ from gc3libs.workflow import SequentialTaskCollection
 import inotifyx
 import time
 import csv
+import logging
 
 log = logging.getLogger('gc3.gc3utils')
 
