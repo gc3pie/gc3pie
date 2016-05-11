@@ -12,7 +12,7 @@ if(args[1] == "locator" || args[1] == "linker"){
 library(bemovi)
 to.data <- "data/"
 to.particlelinker <- "/usr/local/ParticleLinker/"
-IJ.path <- "/usr/local/ImageJ/ij.jar"
+IJ.path <- "/usr/local/ImageJ"
 
 video.description.folder <- "1-raw/"
 video.description.file <- "video.description.txt"
