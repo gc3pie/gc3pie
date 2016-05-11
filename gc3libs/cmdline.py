@@ -1465,6 +1465,8 @@ class _CommDaemon(object):
             for row in rows:
                 table.add_row(row)
             return str(table)
+        elif opts and 'all'.startswith(opts):
+            return str.join(' ', [i.persistent_id for i in self.parent.session.iter_workflow()])
         else:
             return str.join(' ', self.parent.session.list_ids())
 
@@ -1476,9 +1478,17 @@ class _CommDaemon(object):
 
         if not jobid:
             return "Usage: show <jobid> [attributes]"
+
+        if jobid not in self.parent.session.tasks:
+            all_tasks = dict((i.persistent_id,i) for i in self.parent.session.iter_workflow() if hasattr(i, 'persistent_id'))
+            if jobid not in all_tasks:
+                return "Job %s not found in session" % jobid
+            else:
+                app = all_tasks[jobid]
+        else:
+            app = self.parent.session.tasks[jobid]
         try:
             out = StringIO()
-            app = self.parent.session.load(jobid)
             if not attrs:
                 attrs = None
             gc3libs.utils.prettyprint(app,
@@ -1493,8 +1503,15 @@ class _CommDaemon(object):
         if not jobid:
             return "Usage: kill <jobid>"
 
+        if jobid not in self.parent.session.tasks:
+            all_tasks = dict((i.persistent_id,i) for i in self.parent.session.iter_workflow() if hasattr(i, 'persistent_id'))
+            if jobid not in all_tasks:
+                return "Job %s not found in session" % jobid
+            else:
+                app = all_tasks[jobid]
+        else:
+            app = self.parent.session.tasks[jobid]
         try:
-            app = self.parent.session.load(jobid)
             app.attach(self.parent._controller)
             app.kill()
             return "Job %s successfully killed" % jobid
@@ -1516,16 +1533,21 @@ class _CommDaemon(object):
             return "Job %s successfully removed" % jobid
         except Exception as ex:
             return "Error while removing job %s: %s" % (jobid, ex)
-        
+
     def resubmit_job(self, jobid=None):
-        app = self.parent.session.load(jobid)
-        app.attach(self.parent._core)
+        if not jobid:
+            return "Usage: resubmit <jobid>"
+        if jobid not in self.parent.session.tasks:
+            all_tasks = dict((i.persistent_id,i) for i in self.parent.session.iter_workflow() if hasattr(i, 'persistent_id'))
+            if jobid not in all_tasks:
+                return "Job %s not found in session" % jobid
+            else:
+                app = all_tasks[jobid]
+        else:
+            app = self.parent.session.tasks[jobid]
+
         try:
-            app.kill()
-        except:
-            self.log.info("Ignoring exception while trying to kill application %s" % jobid)
-        try:
-            app.submit(resubmit=True)
+            self.parent._controller.redo(app)
         except Exception as ex:
             return "Error while resubmitting job %s: %s" % (jobid, ex)
         return "Successfully resubmitted job %s" % jobid
