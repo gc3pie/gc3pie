@@ -164,6 +164,10 @@ class FilePoller(Poller):
     def __init__(self, url, mask, **kw):
         Poller.__init__(self, url, mask, **kw)
         self._path = self.url.path
+        if not os.path.exists(self.url.path):
+            log.warning("Inbox directory `%s` does not exist,"
+                        " creating it.", self.url.path)
+            os.makedirs(self.url.path)
         self._known_files = {}
         for path in os.listdir(self._path):
             abspath = os.path.join(self._path, path)
