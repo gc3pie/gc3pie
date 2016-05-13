@@ -107,6 +107,9 @@ class Poller(object):
 
 def register_poller(scheme, cls):
     # We might want to add some check here...
+    log.debug("Registering poller '%s' for url scheme '%s'",
+              cls.__name__, scheme)
+
     available_pollers[scheme] = cls
 
 
@@ -188,9 +191,10 @@ class FilePoller(Poller):
                 raise
 
         # check if some file was deleted
-        for path in self._known_files:
+        for path in list(self._known_files):
             if path not in dircontents:
                 newevents.append((Url(path), events['IN_DELETE']))
+                self._known_files.pop(path)
         return newevents
 
 if not inotifyx:
@@ -198,7 +202,86 @@ if not inotifyx:
 
 
 class SwiftPoller(Poller):
-    pass
+    """Poller that periodically checks a swift bucket and trigger new
+    events when new objects are created.
+
+    Right now, a valid url MUST be in the form:
+
+    swift://user+tenant:password@<keystone-url>?container
+
+    and we assume auth version 2 is used (keystone)
+    
+    """
+    def __init__(self, url, mask, **kw):
+        Poller.__init__(self, url, mask, **kw)
+
+        try:
+            self.username, self.project_name = self.url.username.split('+')
+        except ValueError:
+            raise gc3libs.exceptions.InvalidValue(
+                "Missing tenant name in swift url '%s'", self.url)
+        self.password = self.url.password
+        self.container = self.url.query
+        
+        if not self.container:
+            raise gc3libs.exceptions.InvalidValue(
+                "Missing bucket name in swift url '%s'", self.url)
+        # also check for hostname and password?
+
+        auth_url = 'https://%s' % self.url.hostname
+        if self.url.port:
+            auth_url += ":%d" % self.url.port
+        if self.url.path:            
+            auth_url += self.url.path
+        self.auth_url = auth_url
+
+        self.conn = swiftclient.Connection(
+            authurl=self.auth_url,
+            user=self.username,
+            key=self.password,
+            os_options = {
+                "auth_url": self.auth_url,
+                "project_name": self.project_name,
+                "username": self.username,
+                "password": self.password},
+            auth_version='2')
+
+        # List containers
+        accstat, containers = self.conn.get_account()
+        log.debug("Successfully connected to storage '%s'. %d containers found",
+                  self.conn.url, len(containers))
+        if self.container not in [a.get('name') for a in containers]:
+            log.warning("Container %s not found for swift url '%s'",
+                        self.container, self.url)
+
+        constat, objects = self.conn.get_container(self.container)
+
+        self._known_objects = {}
+        for obj in objects:
+            url = Url(str(self.url) + '&name=%s' % obj['name'])
+            self._known_objects[url] = obj
+
+    def get_events(self):
+        # List objects in container
+        constat, objects = self.conn.get_container(self.container)
+        newevents = []
+
+        objurls = []
+        for obj in objects:
+            url = Url(str(self.url) + '&name=%s' % obj['name'])
+            objurls.append(url)
+            if url not in self._known_objects:
+                self._known_objects[url] = obj
+                # Here it's correct not to put IN_CREATE because on
+                # swift you will see an object only when it has been
+                # completely uploaded.
+                newevents.append((url, events['IN_CLOSE_WRITE']))
+        for url in list(self._known_objects):
+            if url not in objurls:
+                newevents.append((url, events['IN_DELETE']))
+                self._known_objects.pop(url)
+        return newevents
+        
 
 if swiftclient:
     register_poller('swift', SwiftPoller)
