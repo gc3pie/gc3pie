@@ -26,9 +26,15 @@ import urllib
 import urllib2
 import json
 import os
+import logging
+import sys
 
+log = logging.getLogger()
+log.addHandler(logging.StreamHandler(sys.stderr))
+log.setLevel(logging.DEBUG)
 
 def open_http(url):
+    log.info("Sending request to %s", url.geturl())
     return urllib2.urlopen(url.geturl())
 
 
@@ -45,8 +51,22 @@ def open_swift(url):
         auth_url += url.path
 
     # Get a token from keystone
-    data = json.dumps({'auth' : {'tenantName' : tenant, 'passwordCredentials' : {'username' : username, 'password' : password}}})
-    kreq = urllib2.Request(auth_url+'/tokens', data)
+    data = json.dumps(
+        {
+            'auth' : {
+                'tenantName' : tenant,
+                'passwordCredentials' : {
+                    'username' : username,
+                    'password' : password
+                }
+            }
+        }
+    )
+    token_url = auth_url+'/tokens'
+    log.info("Getting token from '%s' for user '%s', tenant '%s'",
+             token_url, username, tenant)
+
+    kreq = urllib2.Request(token_url, data)
     kreq.add_header("Content-type", "application/json")
     
     fp = urllib2.urlopen(kreq)
@@ -59,7 +79,8 @@ def open_swift(url):
     for endpoint in authresp['access']['serviceCatalog']:
         if endpoint['type'] == 'object-store':
             storage_url = endpoint['endpoints'][0]['publicURL']
-    
+    log.info("Token recovered: %s, storage_url: %s",
+              token, storage_url)
     # Get the object from swift
     object_url = os.path.join(
         storage_url,
@@ -67,6 +88,7 @@ def open_swift(url):
         object_name)
     sreq = urllib2.Request(object_url)
     sreq.add_header('X-Auth-Token', token)
+    log.info("Sending request to %s", object_url)
     return urllib2.urlopen(sreq)
 
 
