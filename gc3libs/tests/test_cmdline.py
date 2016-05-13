@@ -211,12 +211,23 @@ resourcedir = %s
         ],)
 
         clean_exit = False
+        # Wait until the daemon is up and running.
+        # It will create the directory, so let's wait until then.
+        daemon_running = False
+        for i in range(10):
+            if os.path.isdir(inboxdir):
+                daemon_running = True
+                break
+            time.sleep(1)
+
+        assert_true(daemon_running)
+        fd = open(os.path.join(inboxdir, 'foo'), 'w+')
+        fd.close()
+
         for i in range(10):
             # Wait up to 10 seconds
             time.sleep(1)
             # Create fake file
-            fd = open(os.path.join(inboxdir, 'foo'), 'w+')
-            fd.close()
 
             if os.path.isdir(os.path.join(wdir, 'LSApp.foo')):
                 clean_exit = True
