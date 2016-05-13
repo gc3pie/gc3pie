@@ -406,22 +406,29 @@ ReturnCode=%x"""
         # On linux, kill '$(ps -o pid= -g $(ps -o sess= -p %d))' would
         # be enough, but on MacOSX it doesn't work.
         exit_code, stdout, stderr = self.transport.execute_command(
-            'kill $(ps -ax -o sess=,pid= | egrep "^[ \t]*$(ps -p %d  -o sess=)[ \t]")' % pid)
-        # XXX: should we check that the process actually died?
-        if exit_code != 0:
-            # Error killing the process. It may not exists or we don't
-            # have permission to kill it.
+            "ps -p %d  -o sess=" % pid)
+        if exit_code != 0 or not stdout.strip():
+            # No PID found. We cannot recover the session group of the
+            # process, so we cannot kill any remaining orphan process.
+            log.error("Unable to find job '%s': no pid found." % pid)
+        else:
             exit_code, stdout, stderr = self.transport.execute_command(
-                "ps ax | grep -E '^ *%d '" % pid)
-            if exit_code == 0:
-                # The PID refers to an existing process, but we
-                # couldn't kill it.
-                log.error("Could not kill job '%s': %s", pid, stderr)
-            else:
-                # The PID refers to a non-existing process.
-                log.error(
-                    "Could not kill job '%s'. It refers to non-existent"
-                    " local process %s.", app, app.execution.lrms_jobid)
+                'kill $(ps -ax -o sess=,pid= | egrep "^[ \t]*%s[ \t]")' % stout.strip())
+            # XXX: should we check that the process actually died?
+            if exit_code != 0:
+                # Error killing the process. It may not exists or we don't
+                # have permission to kill it.
+                exit_code, stdout, stderr = self.transport.execute_command(
+                    "ps ax | grep -E '^ *%d '" % pid)
+                if exit_code == 0:
+                    # The PID refers to an existing process, but we
+                    # couldn't kill it.
+                    log.error("Could not kill job '%s': %s", pid, stderr)
+                else:
+                    # The PID refers to a non-existing process.
+                    log.error(
+                        "Could not kill job '%s'. It refers to non-existent"
+                        " local process %s.", app, app.execution.lrms_jobid)
         self._delete_job_resource_file(pid)
 
     @same_docstring_as(LRMS.close)
