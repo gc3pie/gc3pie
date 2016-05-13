@@ -261,6 +261,7 @@ ReturnCode=%x"""
 
     WRAPPER_DIR = '.gc3pie_shellcmd'
     WRAPPER_SCRIPT = 'wrapper_script.sh'
+    WRAPPER_DOWNLOADER = 'downloader.py'
     WRAPPER_OUTPUT_FILENAME = 'resource_usage.txt'
     WRAPPER_PID = 'wrapper.pid'
 
@@ -860,6 +861,8 @@ ReturnCode=%x"""
 
         # Copy input files to remote dir
         for local_path, remote_path in app.inputs.items():
+            if local_path.scheme != 'file':
+                continue
             remote_path = posixpath.join(execdir, remote_path)
             remote_parent = os.path.dirname(remote_path)
             try:
@@ -938,6 +941,23 @@ ReturnCode=%x"""
                 self.free(app)
                 raise
 
+        # Set up scripts to download the swift/http files
+        downloadfiles=[]
+        wrapper_downloader_filename = posixpath.join(
+            wrapper_dir,
+            ShellcmdLrms.WRAPPER_DOWNLOADER)
+        for url, outfile in app.inputs.items():
+            if url.scheme in ['swift', 'http', 'https']:
+                downloadfiles.append("python '%s' '%s' '%s'" % (wrapper_downloader_filename, str(url), outfile))
+        if downloadfiles:
+            # Also copy the downloader.
+            with open(posixpath.join(
+                    os.path.dirname(__file__), 'shellcmd.d', 'downloader.py')) as fd:
+                wrapper_downloader = self.transport.open(
+                    wrapper_downloader_filename, 'w')
+                wrapper_downloader.write(fd.read())
+                wrapper_downloader.close()
+
         # Build
         pidfilename = posixpath.join(wrapper_dir,
                                      ShellcmdLrms.WRAPPER_PID)
@@ -958,6 +978,7 @@ ReturnCode=%x"""
                 cd {execdir}
                 exec {redirections}
                 {environment}
+                {downloadfiles}
                 exec '{time_cmd}' -o '{wrapper_out}' -f '{fmt}' {command}
                 """.format(
                     pidfilename=pidfilename,
@@ -967,6 +988,7 @@ ReturnCode=%x"""
                     fmt=ShellcmdLrms.TIMEFMT,
                     redirections=redirection_arguments,
                     environment=str.join('\n', env_commands),
+                    downloadfiles=str.join('\n', downloadfiles),
                     command=(str.join(' ',
                                       (sh_quote_unsafe(arg)
                                       for arg in app.arguments))),
@@ -1078,7 +1100,7 @@ ReturnCode=%x"""
         The `shellcmd`:mod: backend can only handle ``file`` URLs.
         """
         for url in data_file_list:
-            if url.scheme not in ['file']:
+            if url.scheme not in ['file', 'swift', 'http', 'https']:
                 return False
         return True
 
