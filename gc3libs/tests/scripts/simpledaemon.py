@@ -45,11 +45,10 @@ class SimpleDaemon(SessionBasedDaemon):
             return [app]
         else:
             # A new file has been created. Process it.
-            extra['jobname'] = 'LSApp_%s' % str(epath)
+            extra['jobname'] = 'LSApp.%s' % os.path.basename(epath.path)
             # inputs = [epath] if epath.scheme == 'file' else []
             inputs = {epath:'foo'}
             if emask & inotifyx.IN_CLOSE_WRITE:
-                import pdb; pdb.set_trace()
                 app = gc3libs.Application(
                     ['/bin/echo', epath],
                     inputs,
