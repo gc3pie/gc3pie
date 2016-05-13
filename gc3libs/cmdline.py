@@ -68,7 +68,6 @@ import daemon
 import cli  # pyCLI
 import cli.app
 import cli._ext.argparse as argparse
-import inotifyx
 
 
 # interface to Gc3libs
@@ -83,7 +82,7 @@ import gc3libs.utils
 import gc3libs.url
 from gc3libs.quantity import Memory, GB, Duration, hours
 from gc3libs.session import Session
-
+from gc3libs.poller import get_poller, get_mask_description, events as notify_events
 
 # types for command-line parsing; see
 # http://docs.python.org/dev/library/argparse.html#type
@@ -1627,13 +1626,12 @@ class SessionBasedDaemon(_SessionBasedCommand):
                        help="Run in WORKING_DIR. Ignored if run in foreground."
                        " Default: %(default)s")
 
-        avail_events = inotifyx.constants.keys()
         self.parser_server.add_param('--notify-state',
                        nargs='?',
                        default='CLOSE_WRITE',
-                       help="Comma separated list of inotify events to watch."
+                       help="Comma separated list of notify events to watch."
                        " Default: %(default)s. Available events: " +
-                       str.join(', ', avail_events))
+                       str.join(', ', [i[3:] for i in notify_events.keys()]))
 
         self.parser_server.add_param('--listen', default="localhost",
                        help="IP or hostname where the XML-RPC thread should"
@@ -1668,10 +1666,11 @@ class SessionBasedDaemon(_SessionBasedCommand):
                        10 *
                        max(0, self.params.verbose -
                            self.verbose_logging_threshold))
-        gc3libs.configure_logger(loglevel, "gc3utils")  # alternate: self.name
+        gc3libs.configure_logger(loglevel, "gc3.gc3utils")  # alternate: self.name
+        logging.root.setLevel(loglevel)
         # alternate: ('gc3.' + self.name)
         self.log = logging.getLogger('gc3.gc3utils')
-        self.log.setLevel(loglevel)
+        self.log.setLevel(loglevel)        
         self.log.propagate = True
         self.log.info("Starting %s at %s; invoked as '%s'",
                       self.name, time.asctime(), str.join(' ', sys.argv))
@@ -1712,15 +1711,6 @@ class SessionBasedDaemon(_SessionBasedCommand):
         self._prerun_common_checks()
         self.parse_args()
 
-        self.params.inbox = [os.path.abspath(p) for p in self.params.inbox]
-
-        # Ensure inbox directories exist
-        for inbox in self.params.inbox:
-            if not os.path.isdir(inbox):
-                self.log.warning("Inbox directory `%s` does not exist,"
-                                 " creating it.", inbox)
-                os.makedirs(inbox)
-
         # Syntax check for notify events
         self.params.notify_state = self.params.notify_state.split(',')
 
@@ -1728,15 +1718,14 @@ class SessionBasedDaemon(_SessionBasedCommand):
         state_names = ['IN_' + i for i in self.params.notify_state]
 
         # Build the notify mask, for later use
-        self.inotify_event_mask = 0
+        self.notify_event_mask = 0
 
         # Ensure all the supplied states are correct
-        for state in self.params.notify_state:
-            istate = 'IN_' + state
-            if istate not in inotifyx.constants:
+        for istate in state_names:
+            if istate not in notify_events:
                 raise gc3libs.exceptions.InvalidUsage(
-                    "Invalid inotify state %s." % state)
-            self.inotify_event_mask |= inotifyx.constants[istate]
+                    "Invalid notify state %s." % state)
+            self.notify_event_mask |= notify_events[istate]
 
     def __setup_logging(self):
         # FIXME: Apparently, when running in foreground _and_ --syslog
@@ -1765,33 +1754,16 @@ class SessionBasedDaemon(_SessionBasedCommand):
                                  self.name + '.log')))
         # else: log to stdout, which is the default.
 
-    def __setup_inotify(self):
+    def __setup_pollers(self):
         # Setup inotify on inbox directories
-        self.inotify_fds = {}
-
+        self.pollers = []
         # We need to create an inotify file descriptor for each
         # directory, because events returned by
         # `inotifyx.get_events()` do not contains the full path to the
         # file.
         for inbox in self.params.inbox:
-            self.add_inotify_watch(inbox, recurse=True)
-
-    def __add_inotify_watch_single_path(self, path, mask):
-        ifd = inotifyx.init()
-        self.inotify_fds[path] = ifd
-        inotifyx.add_watch(ifd, path, mask)
-
-    def add_inotify_watch(self, path, mask=None, recurse=True):
-        """
-        Add a path to the list of paths already checked via inotify
-        """
-        mask = mask if mask else self.inotify_event_mask
-        self.__add_inotify_watch_single_path(path, mask)
-        if recurse:
-            for dirpath, dirnames, filename in os.walk(path):
-                for dirname in dirnames:
-                    self.__add_inotify_watch_single_path(
-                        os.path.join(dirpath, dirname), mask)
+            # self.pollers.append(get_poller(inbox, self.notify_event_mask, recurse=True))
+            self.pollers.append(get_poller(inbox, recurse=True))
 
     def __setup_comm(self, listen):
         # Communication thread must run on a different thread
@@ -1844,7 +1816,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             # If --foreground, then behave like a SessionBasedScript with
             # the exception that the script will never end.
             self.__setup_logging()
-            self.__setup_inotify()
+            self.__setup_pollers()
             self.log.info("Running in foreground as requested")
 
             self.__setup_comm(self.params.listen)
@@ -1873,7 +1845,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             self.log.info("About to daemonize")
             with context:
                 self.__setup_logging()
-                self.__setup_inotify()
+                self.__setup_pollers()
                 self.log.info("Daemonizing ...")
                 self.__setup_comm(self.params.listen)
                 return super(SessionBasedDaemon, self)._main()
@@ -1902,15 +1874,15 @@ class SessionBasedDaemon(_SessionBasedCommand):
         self.every_main_loop()
 
         # Check if new files were created. 1s timeout
-        for path, ifd in self.inotify_fds.items():
-            events = inotifyx.get_events(ifd, 1)
-            for event in events:
-                fname = os.path.join(path, event.name)
-                self.log.debug("Received inotify event %s for %s",
-                               event.get_mask_description(), fname)
+        for poller in self.pollers:
+            events = poller.get_events()
+            for url, mask in events:
+                self.log.debug("Received notify event %s for %s",
+                               get_mask_description(mask), url)
+            
                 new_jobs = self.new_tasks(self.extra.copy(),
-                                          epath=fname,
-                                          emask=event.mask)
+                                          epath=url,
+                                          emask=mask)
                 self._add_new_tasks(list(new_jobs))
                 for task in list(new_jobs):
                     self._controller.add(task)

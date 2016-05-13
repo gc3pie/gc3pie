@@ -44,6 +44,7 @@ class SimpleDaemon(SessionBasedDaemon):
                 **extra)
             return [app]
         else:
+            epath = epath.path
             # A new file has been created. Process it.
             extra['jobname'] = 'LSApp.%s' % os.path.basename(epath)
             if emask & inotifyx.IN_CLOSE_WRITE:
