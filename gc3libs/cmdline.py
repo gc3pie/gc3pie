@@ -1704,6 +1704,8 @@ class SessionBasedDaemon(_SessionBasedCommand):
             self.params.session = os.path.join(
                 self.params.working_dir, self.name)
 
+        # Convert inbox to Url objects
+        self.params.inbox = [gc3libs.url.Url(i) for i in self.params.inbox]
         # Default output directory is the working directory.
         if not self.params.output:
             self.params.output = self.params.working_dir
@@ -1762,7 +1764,6 @@ class SessionBasedDaemon(_SessionBasedCommand):
         # `inotifyx.get_events()` do not contains the full path to the
         # file.
         for inbox in self.params.inbox:
-            # self.pollers.append(get_poller(inbox, self.notify_event_mask, recurse=True))
             self.pollers.append(get_poller(inbox, self.notify_event_mask, recurse=True))
 
     def __setup_comm(self, listen):
