@@ -145,7 +145,7 @@ class Url(tuple):
                 return tuple.__new__(cls, (
                     urlstring.scheme, urlstring.netloc, urlstring.path,
                     urlstring.hostname, urlstring.port,
-                    urlstring.username, urlstring.password,
+                    urlstring.username, urlstring.password, urlstring.query
                 ))
             else:
                 # parse `urlstring` and use kwd arguments as default values
