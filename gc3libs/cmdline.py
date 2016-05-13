@@ -1763,7 +1763,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
         # file.
         for inbox in self.params.inbox:
             # self.pollers.append(get_poller(inbox, self.notify_event_mask, recurse=True))
-            self.pollers.append(get_poller(inbox, recurse=True))
+            self.pollers.append(get_poller(inbox, self.notify_event_mask, recurse=True))
 
     def __setup_comm(self, listen):
         # Communication thread must run on a different thread
