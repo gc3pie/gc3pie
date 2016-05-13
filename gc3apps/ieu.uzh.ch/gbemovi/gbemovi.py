@@ -23,15 +23,18 @@ __version__ = '$Revision$'
 
 import ConfigParser
 import os
-import gc3libs
-from gc3libs.cmdline import SessionBasedDaemon
-from gc3libs.workflow import SequentialTaskCollection
-import inotifyx
 import time
 import csv
 import logging
 
+import gc3libs
+import gc3libs.poller as plr
+from gc3libs.cmdline import SessionBasedDaemon
+from gc3libs.workflow import SequentialTaskCollection
+
+
 log = logging.getLogger('gc3.gc3utils')
+
 
 class ParticleLocator(gc3libs.Application):
     application = 'plocator'
@@ -315,7 +318,7 @@ class GBemoviDaemon(SessionBasedDaemon):
                 return "Merging data from %d input videos" % index
         return "No data to merge"
 
-    def new_tasks(self, extra, epath=None, emask=0):
+    def new_tasks(self, extra, url=None, emask=0):
         extra['rparams'] = {
             'memory': str(self.params.memory_per_core.amount(unit=gc3libs.quantity.MB)),
             'fps': self.params.fps,
@@ -325,7 +328,7 @@ class GBemoviDaemon(SessionBasedDaemon):
             'threshold2': self.params.threshold2,
         }
 
-        if not epath:
+        if not url:
             # At startup, scan all the input directories and check if
             # there is a file which is not processed yet.
 
@@ -350,7 +353,8 @@ class GBemoviDaemon(SessionBasedDaemon):
 
         # FIXME: for some reason emask & IN_CREATE & IN_ISDIR does not
         # work as expected. Using os.path.isdir() instead
-        if emask & inotifyx.IN_CREATE and os.path.isdir(epath):
+        if emask & plr.events['IN_CREATE'] and os.path.isdir(url.path):
+            epath = url.path
             # Creation of a directory or a file.  For each directory,
             # we need to add a new inotify watch to allow users to
             # organize files into directories.
@@ -360,7 +364,7 @@ class GBemoviDaemon(SessionBasedDaemon):
                 self.log.debug("Adding directory %s to the list of input folders" % epath)
                 self.add_inotify_watch(epath)
 
-        elif emask & inotifyx.IN_CLOSE_WRITE:
+        elif emask & plr.events['IN_CLOSE_WRITE']:
             if epath.rsplit('.', 1)[-1] not in self.valid_extensions:
                 self.log.info("Ignoring file %s as it does not end with a valid extension (%s)",
                               epath, str.join(',', self.valid_extensions))
