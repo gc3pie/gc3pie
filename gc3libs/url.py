@@ -311,13 +311,21 @@ class Url(tuple):
             >>> str(u3)
             'http://www.example.org/data/moredata/evenmore'
 
+        Optional query attribute is left untouched::
+
+            >>> u4 = Url('http://www.example.org?bar')
+            >>> u5 = u4.adjoin('foo')
+            >>> str(u5)
+            'http://www.example.org/foo?bar'
+
         """
         if relpath.startswith('/'):
             relpath = relpath[1:]
         return Url(scheme=self.scheme, netloc=self.netloc,
                    path=os.path.join((self.path or '/'), relpath),
                    hostname=self.hostname, port=self.port,
-                   username=self.username, password=self.password)
+                   username=self.username, password=self.password,
+                   query=self.query)
 
 
 class UrlKeyDict(dict):
