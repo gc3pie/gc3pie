@@ -126,7 +126,7 @@ def download_file(url, outfile, bufsize=2**20):
             data = fd.read(bufsize)
     fd.close()
     etime = time.time()
-    log.info("File '%s' downloaded to '%s' in %f seconds", url.geturl(), outfile, etime-stime)
+    log.info("File '%s' downloaded to '%s' in %f seconds (%d bytes/s)", url.geturl(), outfile, etime-stime, os.stat(outfile).st_size/(etime-stime))
 
 def upload_file(url, local, bufsize=2**20):
     url = urllib2.urlparse.urlparse(url)
@@ -156,7 +156,7 @@ def upload_file(url, local, bufsize=2**20):
                             content_length=clength,
                             content_data=localfd.read())
     etime = time.time()
-    log.info("File '%s' uploaded to '%s' in %f seconds", local, url.geturl(), etime-stime)
+    log.info("File '%s' uploaded to '%s' in %f seconds (%d bytes/s)", local, url.geturl(), etime-stime, clength/(etime-stime))
 
 
 ## main: run tests
