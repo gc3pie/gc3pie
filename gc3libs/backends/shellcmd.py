@@ -714,6 +714,8 @@ ReturnCode=%x"""
         # directory references.
         stageout = list()
         for remote_relpath, local_url in app.outputs.iteritems():
+            if local_url.scheme in ['swift']:
+                continue
             local_relpath = local_url.path
             if remote_relpath == gc3libs.ANY_OUTPUT:
                 remote_relpath = ''
@@ -941,15 +943,21 @@ ReturnCode=%x"""
                 self.free(app)
                 raise
 
-        # Set up scripts to download the swift/http files
-        downloadfiles=[]
+        # Set up scripts to download/upload the swift/http files
+        downloadfiles = []
+        uploadfiles = []
         wrapper_downloader_filename = posixpath.join(
             wrapper_dir,
             ShellcmdLrms.WRAPPER_DOWNLOADER)
+
         for url, outfile in app.inputs.items():
             if url.scheme in ['swift', 'http', 'https']:
-                downloadfiles.append("python '%s' '%s' '%s'" % (wrapper_downloader_filename, str(url), outfile))
-        if downloadfiles:
+                downloadfiles.append("python '%s' download '%s' '%s'" % (wrapper_downloader_filename, str(url), outfile))
+
+        for infile, url in app.outputs.items():
+            if url.scheme in ['swift']:
+                uploadfiles.append("python '%s' upload '%s' '%s'" % (wrapper_downloader_filename, str(url), infile))
+        if downloadfiles or uploadfiles:
             # Also copy the downloader.
             with open(posixpath.join(
                     os.path.dirname(__file__), 'shellcmd.d', 'downloader.py')) as fd:
@@ -979,7 +987,11 @@ ReturnCode=%x"""
                 exec {redirections}
                 {environment}
                 {downloadfiles}
-                exec '{time_cmd}' -o '{wrapper_out}' -f '{fmt}' {command}
+                '{time_cmd}' -o '{wrapper_out}' -f '{fmt}' {command}
+                rc=$?
+                {uploadfiles}
+                rc2=$?
+                if [ $rc -ne 0 ]; then exit $rc; else exit $rc2
                 """.format(
                     pidfilename=pidfilename,
                     execdir=execdir,
@@ -989,6 +1001,7 @@ ReturnCode=%x"""
                     redirections=redirection_arguments,
                     environment=str.join('\n', env_commands),
                     downloadfiles=str.join('\n', downloadfiles),
+                    uploadfiles=str.join('\n', uploadfiles),
                     command=(str.join(' ',
                                       (sh_quote_unsafe(arg)
                                       for arg in app.arguments))),
