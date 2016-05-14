@@ -991,7 +991,7 @@ ReturnCode=%x"""
                 rc=$?
                 {uploadfiles}
                 rc2=$?
-                if [ $rc -ne 0 ]; then exit $rc; else exit $rc2
+                if [ $rc -ne 0 ]; then exit $rc; else exit $rc2; fi
                 """.format(
                     pidfilename=pidfilename,
                     execdir=execdir,
