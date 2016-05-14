@@ -22,14 +22,15 @@ __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
 import argparse
+import json
+import logging
+import mimetypes
+import os
+import sys
+import time
 import urllib
 import urllib2
-import json
-import os
-import logging
-import sys
 
-import mimetypes
 try:
     import magic
 except ImportError:
@@ -112,6 +113,7 @@ def open_swift(url, method='get', content_type=None, content_length=0, content_d
 
 def download_file(url, outfile, bufsize=2**20):
     url = urllib2.urlparse.urlparse(url)
+    stime = time.time()
     if url.scheme in ['http', 'https']:
         fd = open_http(url)
     elif url.scheme == 'swift':
@@ -123,9 +125,12 @@ def download_file(url, outfile, bufsize=2**20):
             outfd.write(data)
             data = fd.read(bufsize)
     fd.close()
+    etime = time.time()
+    log.info("File '%s' downloaded to '%s' in %f seconds", url.geturl(), outfile, etime-stime)
 
 def upload_file(url, local, bufsize=2**20):
     url = urllib2.urlparse.urlparse(url)
+    stime = time.time()
     if url.scheme in ['http', 'https']:
         log.error("Unable to upload to '%s'", url.scheme)
         return 1
@@ -150,6 +155,8 @@ def upload_file(url, local, bufsize=2**20):
                             content_type=ctype,
                             content_length=clength,
                             content_data=localfd.read())
+    etime = time.time()
+    log.info("File '%s' uploaded to '%s' in %f seconds", local, url.geturl(), etime-stime)
 
 
 ## main: run tests
