@@ -130,11 +130,11 @@ class Url(tuple):
     __slots__ = ()
 
     _fields = ['scheme', 'netloc', 'path',
-               'hostname', 'port', 'username', 'password', 'query']
+               'hostname', 'port', 'query', 'username', 'password']
 
     def __new__(cls, urlstring=None, force_abs=True,
-                scheme='file', netloc='', path='', query='',
-                hostname=None, port=None, username=None, password=None):
+                scheme='file', netloc='', path='', 
+                hostname=None, port=None, query='', username=None, password=None):
         """
         Create a new `Url` object.  See the `Url`:class: documentation
         for invocation syntax.
@@ -144,8 +144,8 @@ class Url(tuple):
                 # copy constructor
                 return tuple.__new__(cls, (
                     urlstring.scheme, urlstring.netloc, urlstring.path,
-                    urlstring.hostname, urlstring.port,
-                    urlstring.username, urlstring.password, urlstring.query
+                    urlstring.hostname, urlstring.port, urlstring.query,
+                    urlstring.username, urlstring.password
                 ))
             else:
                 # parse `urlstring` and use kwd arguments as default values
@@ -162,10 +162,10 @@ class Url(tuple):
                         urldata.path or path,
                         urldata.hostname or hostname,
                         urldata.port or port,
+                        urldata.query or query,
                         urldata.username or username,
                         urldata.password or password,
-                        urldata.query or query,
-                    ))
+                        ))
                 except (ValueError, TypeError, AttributeError) as ex:
                     raise ValueError(
                         "Cannot parse string '%s' as a URL: %s: %s" %
@@ -174,8 +174,8 @@ class Url(tuple):
             # no `urlstring`, use kwd arguments
             return tuple.__new__(cls, (
                 scheme, netloc, path,
-                hostname, port,
-                username, password, query
+                hostname, port, query,
+                username, password
             ))
 
     def __getattr__(self, name):
@@ -189,7 +189,7 @@ class Url(tuple):
         """Support pickling/unpickling `Url` class objects."""
         return (None, False,  # urlstring, force_abs
                 self.scheme, self.netloc, self.path, self.hostname, self.port,
-                self.username, self.password)
+                self.query, self.username, self.password)
 
     def __repr__(self):
         """
