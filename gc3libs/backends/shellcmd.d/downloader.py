@@ -29,6 +29,12 @@ import os
 import logging
 import sys
 
+import mimetypes
+try:
+    import magic
+except ImportError:
+    magic = None
+
 log = logging.getLogger()
 log.addHandler(logging.StreamHandler(sys.stderr))
 log.setLevel(logging.DEBUG)
@@ -38,7 +44,7 @@ def open_http(url):
     return urllib2.urlopen(url.geturl())
 
 
-def open_swift(url):
+def open_swift(url, method='get', content_type=None, content_length=0, content_data=None):
     username, tenant = url.username.split('+')
     password = url.password
     auth_url = 'https://%s' % url.hostname
@@ -68,7 +74,7 @@ def open_swift(url):
 
     kreq = urllib2.Request(token_url, data)
     kreq.add_header("Content-type", "application/json")
-    
+
     fp = urllib2.urlopen(kreq)
     authresp = json.loads(fp.read())
     fp.close()
@@ -85,9 +91,21 @@ def open_swift(url):
     object_url = os.path.join(
         storage_url,
         container,
-        object_name)
-    sreq = urllib2.Request(object_url)
+        object_name).encode('utf-8')
+
+    # If this is a GET, we just download it
+    sreq = urllib2.Request(object_url, content_data)
     sreq.add_header('X-Auth-Token', token)
+
+    # If it's a PUT, we also need to set more information
+    if method.upper() == 'PUT':
+        sreq.get_method = lambda: 'PUT'
+        sreq.add_header('Content-Length', len(content_data))
+        if content_type:
+            sreq.add_header('Content-Type', content_type)
+        else:
+            sreq.add_header('Content-Type', 'application/octect-stream')
+    log.info("Headers: %s" % sreq.headers)
     log.info("Sending request to %s", object_url)
     return urllib2.urlopen(sreq)
 
@@ -106,11 +124,45 @@ def download_file(url, outfile, bufsize=2**20):
             data = fd.read(bufsize)
     fd.close()
 
+def upload_file(url, local, bufsize=2**20):
+    url = urllib2.urlparse.urlparse(url)
+    if url.scheme in ['http', 'https']:
+        log.error("Unable to upload to '%s'", url.scheme)
+        return 1
+
+    if url.scheme == 'swift':
+        # Guess the content-type of the file.
+        try:
+            # magic module might not be installed, but it works way
+            # better than `mimetypes`
+            m = magic.open(magic.MAGIC_MIME)
+            m.load()
+            ctype = m.file(local)
+        except:
+            # revert back to mime types, which is only checking the
+            # file extension
+            ctype = mimetypes.guess_type(local)[0]
+        # length can be
+        clength = os.stat(local).st_size
+        with open(local, 'r') as localfd:
+            fd = open_swift(url,
+                            method='put',
+                            content_type=ctype,
+                            content_length=clength,
+                            content_data=localfd.read())
+
+
 ## main: run tests
 
 if "__main__" == __name__:
     parser = argparse.ArgumentParser()
-    parser.add_argument('input')
-    parser.add_argument('output')
+    parser.add_argument('action', choices=['upload', 'download'])
+    parser.add_argument('remote')
+    parser.add_argument('local')
     cfg = parser.parse_args()
-    download_file(cfg.input, cfg.output)
+    if cfg.action == 'download':
+        download_file(cfg.remote, cfg.local)
+    else:
+        if not os.path.isfile(cfg.local):
+            parser.error("File '%s' not found. Unable to upload it." % cfg.local)
+        upload_file(cfg.remote, cfg.local)
