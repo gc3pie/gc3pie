@@ -209,9 +209,17 @@ class SwiftPoller(Poller):
     """Poller that periodically checks a swift bucket and trigger new
     events when new objects are created.
 
-    Right now, a valid url MUST be in the form:
+    Right now, a valid url can be one of the following form:
 
-    swift://user+tenant:password@<keystone-url>?container
+    If the keystone endpoint is reachable via http, either one of:
+
+    swift://<user>+<tenant>:<password>@<keystone-url>?container
+    swt://<user>+<tenant>:<password>@<keystone-url>?container
+
+    if the keystone endpoint is reachable via https, either one of:
+
+    swifts://<user>+<tenant>:<password>@<keystone-url>?container
+    swts://<user>+<tenant>:<password>@<keystone-url>?container
 
     and we assume auth version 2 is used (keystone)
     
@@ -232,7 +240,10 @@ class SwiftPoller(Poller):
                 "Missing bucket name in swift url '%s'", self.url)
         # also check for hostname and password?
 
-        auth_url = 'https://%s' % self.url.hostname
+        if url.scheme in ['swifts', 'swts']:
+            auth_url = 'https://%s' % self.url.hostname
+        else:
+            auth_url = 'http://%s' % self.url.hostname
         if self.url.port:
             auth_url += ":%d" % self.url.port
         if self.url.path:            

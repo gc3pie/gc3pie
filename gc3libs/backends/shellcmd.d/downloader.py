@@ -48,7 +48,10 @@ def open_http(url):
 def open_swift(url, method='get', content_type=None, content_length=0, content_data=None):
     username, tenant = url.username.split('+')
     password = url.password
-    auth_url = 'https://%s' % url.hostname
+    if url.scheme in ['swifts', 'swts']:
+        auth_url = 'https://%s' % url.hostname
+    else:
+        auth_url = 'http://%s' % url.hostname
     query = url.query.split('&')
     container = query[0]
     object_name = query[1].rsplit('=',1)[-1]
@@ -116,8 +119,11 @@ def download_file(url, outfile, bufsize=2**20):
     stime = time.time()
     if url.scheme in ['http', 'https']:
         fd = open_http(url)
-    elif url.scheme == 'swift':
+    elif url.scheme in ['swift', 'swt', 'swifts', 'swts']:
         fd = open_swift(url)
+    if not fd:
+        log.error("Unrecognized scheme %s", url.scheme)
+        return 1
 
     with open(outfile, 'w') as outfd:
         data = fd.read(bufsize)
@@ -135,7 +141,7 @@ def upload_file(url, local, bufsize=2**20):
         log.error("Unable to upload to '%s'", url.scheme)
         return 1
 
-    if url.scheme == 'swift':
+    if url.scheme in ['swift', 'swifts', 'swt', 'swts']:
         # Guess the content-type of the file.
         try:
             # magic module might not be installed, but it works way
@@ -168,8 +174,8 @@ if "__main__" == __name__:
     parser.add_argument('local')
     cfg = parser.parse_args()
     if cfg.action == 'download':
-        download_file(cfg.remote, cfg.local)
+        sys.exit(download_file(cfg.remote, cfg.local))
     else:
         if not os.path.isfile(cfg.local):
             parser.error("File '%s' not found. Unable to upload it." % cfg.local)
-        upload_file(cfg.remote, cfg.local)
+        sys.exit(upload_file(cfg.remote, cfg.local))

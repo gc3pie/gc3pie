@@ -940,7 +940,7 @@ class OpenStackLrms(LRMS):
         Supported protocols: file
         """
         for url in data_file_list:
-            if url.scheme not in ['file', 'http', 'https', 'swift']:
+            if url.scheme not in ['file', 'http', 'https', 'swift', 'swifts', 'swt', 'swts']:
                 return False
         return True
 
