@@ -714,7 +714,7 @@ ReturnCode=%x"""
         # directory references.
         stageout = list()
         for remote_relpath, local_url in app.outputs.iteritems():
-            if local_url.scheme in ['swift']:
+            if local_url.scheme in ['swift', 'swt', 'swifts', 'swts']:
                 continue
             local_relpath = local_url.path
             if remote_relpath == gc3libs.ANY_OUTPUT:
@@ -951,11 +951,11 @@ ReturnCode=%x"""
             ShellcmdLrms.WRAPPER_DOWNLOADER)
 
         for url, outfile in app.inputs.items():
-            if url.scheme in ['swift', 'http', 'https']:
+            if url.scheme in ['swift', 'swifts', 'swt', 'swts', 'http', 'https']:
                 downloadfiles.append("python '%s' download '%s' '%s'" % (wrapper_downloader_filename, str(url), outfile))
 
         for infile, url in app.outputs.items():
-            if url.scheme in ['swift']:
+            if url.scheme in ['swift', 'swt', 'swifts', 'swts']:
                 uploadfiles.append("python '%s' upload '%s' '%s'" % (wrapper_downloader_filename, str(url), infile))
         if downloadfiles or uploadfiles:
             # Also copy the downloader.
