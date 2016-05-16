@@ -59,9 +59,11 @@ except ImportError:
     from StringIO import StringIO
 from collections import defaultdict
 from prettytable import PrettyTable
-
 import SimpleXMLRPCServer as sxmlrpc
 import xmlrpclib
+
+import json
+import yaml
 
 # 3rd party modules
 import daemon
@@ -1368,6 +1370,7 @@ class _CommDaemon(object):
         self.server.register_function(self.resubmit_job, "resubmit")
         self.server.register_function(self.remove_job, "remove")
         self.server.register_function(self.terminate, "terminate")
+        self.server.register_function(self.json_list, "json_list")
 
     def start(self):
         return self.server.serve_forever()
@@ -1469,6 +1472,20 @@ class _CommDaemon(object):
         else:
             return str.join(' ', self.parent.session.list_ids())
 
+    def json_list(self):
+        """usage: json_show jobid
+
+        List jobs"""
+
+        jobids = [i.persistent_id for i in self.parent.session.iter_workflow()]
+        jobs = []
+        for jobid in jobids:
+            app = self.parent.session.store.load(jobid)
+            sapp = StringIO()
+            gc3libs.utils.prettyprint(app, output=sapp)
+            jobs.append(yaml.load(sapp.getvalue()))
+        return json.dumps(jobs)
+            
     def show_job(self, jobid=None, *attrs):
         """usage: show <jobid> [attributes]
 
