@@ -807,8 +807,8 @@ class History(object):
     def __str__(self):
         """Return all messages texts in a single string, separated by newline
         characters."""
-        return str.join('\n', [self.format_message(record)
-                               for record in self._messages])
+        return '- ' + str.join('\n- ', [self.format_message(record)
+                               for record in self._messages]) + '\n'
 
 
 def mkdir(path, mode=0o777):
@@ -1092,7 +1092,10 @@ def prettyprint(
         # ignore excluded items
         if id(v) in _exclude:
             continue
-        first = str.join('', [leading_spaces, str(k), ': '])
+        # To make a 'key' valid in YAML it must not start with one of the following chars
+        sk = str(k)
+        sk = sk if sk[0] not in  u'\0 \t\r\n\x85\u2028\u2029-?:,[]{}#&*!|>\'\"%@`' else  "'%s'" % sk
+        first = str.join('', [leading_spaces, sk, ': '])
         if isinstance(
                 v, (dict, UserDict.DictMixin, UserDict.UserDict, OrderedDict)):
             if maxdepth is None or maxdepth > 0:
