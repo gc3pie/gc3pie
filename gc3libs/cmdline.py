@@ -1371,6 +1371,7 @@ class _CommDaemon(object):
         self.server.register_function(self.remove_job, "remove")
         self.server.register_function(self.terminate, "terminate")
         self.server.register_function(self.json_list, "json_list")
+        self.server.register_function(self.json_show_job, "json_show")
 
     def start(self):
         return self.server.serve_forever()
@@ -1485,7 +1486,28 @@ class _CommDaemon(object):
             gc3libs.utils.prettyprint(app, output=sapp)
             jobs.append(yaml.load(sapp.getvalue()))
         return json.dumps(jobs)
-            
+
+    def json_show_job(self, jobid=None, *attrs):
+        """usage: json_show <jobid>
+
+        Same output as `ginfo -v <jobid>
+        """
+
+        if not jobid:
+            return "Usage: show <jobid>"
+
+        if jobid not in self.parent.session.tasks:
+            all_tasks = dict((i.persistent_id,i) for i in self.parent.session.iter_workflow() if hasattr(i, 'persistent_id'))
+            if jobid not in all_tasks:
+                return "Job %s not found in session" % jobid
+            else:
+                app = all_tasks[jobid]
+        else:
+            app = self.parent.session.tasks[jobid]
+        sapp = StringIO()
+        gc3libs.utils.prettyprint(app, output=sapp)
+        return json.dumps(yaml.load(sapp.getvalue()))
+
     def show_job(self, jobid=None, *attrs):
         """usage: show <jobid> [attributes]
 
@@ -1687,7 +1709,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
         logging.root.setLevel(loglevel)
         # alternate: ('gc3.' + self.name)
         self.log = logging.getLogger('gc3.gc3utils')
-        self.log.setLevel(loglevel)        
+        self.log.setLevel(loglevel)
         self.log.propagate = True
         self.log.info("Starting %s at %s; invoked as '%s'",
                       self.name, time.asctime(), str.join(' ', sys.argv))
@@ -1897,7 +1919,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             for url, mask in events:
                 self.log.debug("Received notify event %s for %s",
                                get_mask_description(mask), url)
-            
+
                 new_jobs = self.new_tasks(self.extra.copy(),
                                           epath=url,
                                           emask=mask)
