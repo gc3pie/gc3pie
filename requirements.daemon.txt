@@ -3,3 +3,4 @@
 # optional feature ...
 python-daemon
 inotifyx
+pyyaml
