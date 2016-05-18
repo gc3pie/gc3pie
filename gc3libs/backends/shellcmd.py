@@ -959,8 +959,8 @@ ReturnCode=%x"""
                 uploadfiles.append("python '%s' upload '%s' '%s'" % (wrapper_downloader_filename, str(url), infile))
         if downloadfiles or uploadfiles:
             # Also copy the downloader.
-            with open(posixpath.join(
-                    os.path.dirname(__file__), 'shellcmd.d', 'downloader.py')) as fd:
+            with open(resource_filename(Requirement.parse("gc3pie"),
+                                        "gc3libs/etc/downloader.py")) as fd:
                 wrapper_downloader = self.transport.open(
                     wrapper_downloader_filename, 'w')
                 wrapper_downloader.write(fd.read())
