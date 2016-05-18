@@ -158,6 +158,8 @@ setuptools.setup(
             'etc/run_R.sh',
             'etc/turbomole.sh',
             'etc/run_matlab.sh',
+            # Downloader script
+            'etc/downloader.py',
             # example files
             'etc/gc3pie.conf.example',
             'etc/logging.conf.example',
