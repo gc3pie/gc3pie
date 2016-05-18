@@ -49,7 +49,9 @@ if __name__ == "__main__":
     import gtree
     gtree.GtreeScript().run()
 
+from argparse import ArgumentError
 import os
+from os.path import basename, exists, join, realpath
 import sys
 import time
 import tempfile
@@ -80,16 +82,14 @@ class GtreeApplication(Application):
     """
     application_name = 'gtree'
 
-    def __init__(self, **extra_args):
+    def __init__(self, input_function, input_dataSet, **extra_args):
 
         self.output_dir = extra_args['output_dir']
-        input_folder = '.'
-        self.input_folder = input_folder
+        self.input_function = input_function
         #
         inputs = dict()
         # outputs = dict()
         #
-        print Requirement.parse("gc3pie")
         # gtree_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
         #                                   "gc3libs/etc/gtree_wrapper.sh")
         gtree_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
@@ -98,10 +98,11 @@ class GtreeApplication(Application):
         inputs[gtree_wrapper_sh] = os.path.basename(gtree_wrapper_sh)
         # inputs['foo'] = 'foo'
         #
-        inputs[input_folder] = "%s/" % os.path.basename(input_folder)
-        # outputs[os.path.join(os.path.basename(input_folder),"results")] = "results/"
+        inputs[input_function] = "%s" % os.path.basename(input_function)
+        inputs[input_dataSet] = "%s" % os.path.basename(input_dataSet)
+
         #
-        arguments = "./%s %s" % (inputs[gtree_wrapper_sh],inputs[input_folder])
+        arguments = "./%s %s %s" % (inputs[gtree_wrapper_sh], inputs[input_function], inputs[input_dataSet])
         # print 'hello'
         Application.__init__(
             self,
@@ -110,7 +111,7 @@ class GtreeApplication(Application):
             outputs = ["./results"],
             stdout = 'gtree.log',
             join=True,
-            executables = "./%s" % os.path.basename(input_folder),
+            executables = "./%s" % os.path.basename(input_function),
             **extra_args)
 
     def terminated(self):
@@ -126,12 +127,8 @@ class GtreeApplication(Application):
 
 class GtreeScript(SessionBasedScript):
     """
-    The script takes as input a comma separated list of input folders.
-    Each input folder contains all the information to run a fitModel with a given
-    Dataset and a defined model.
-    The input folder will contain a command file that will mimic exactly the invocation
-    of fitModel.R for the given input folder as executed on a local computer.
-    For each input folder, `gdnd` creates an instance of GtreeApplication.
+    The script takes as input a rscript, the number of parallel jobs to run and the
+    dataset to be processed
 
     The ``gtree`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
@@ -156,6 +153,13 @@ class GtreeScript(SessionBasedScript):
             stats_only_for = GtreeApplication,
             )
 
+    def setup_args(self):
+        self.add_param('rscript', help=(
+            "Name of the R script to apply to the dataset."
+            "A corresponding `.R` file must exist in the current directory."))
+        self.add_param('P', type=int, help=("Value for the number of parallel executions"))
+        self.add_param('dataset', help=(
+            "Name of the dataset to be processed."))
     # def parse_args(self):
     #     """
     #     Check that each element in args is at least a valid folder
@@ -168,14 +172,32 @@ class GtreeScript(SessionBasedScript):
     #                 .format(folder_name=folder_name))
     #             self.params.args.remove(folder_name)
 
+    def get_function_name_and_file(self, rscript):
+        if rscript.endswith('.R'):
+            rscript_r = rscript
+            rscript = rscript[:-len('.R')]
+        else:
+            rscript_r = rscript + '.R'
+        r_file = join(os.getcwd(), rscript_r)
+        if not exists(r_file):
+            raise ArgumentError(
+                self.actions['rscript'],
+                ("Cannot read file '{r_file}'"
+                 " providing R-script '{rscript}'.")
+                .format(**locals()))
+        return rscript, r_file
+
     def new_tasks(self, extra):
         """
         For each N, create an instance of GtreeApplication
         """
         tasks = []
 
+        input_function, input_file = self.get_function_name_and_file(self.params.rscript)
+
         # for node in xrange(self.params.N):
-        for node in xrange(1):
+        extra_args = extra.copy()
+        for node in xrange(self.params.P):
             jobname = "gtree-%s" % node
 
             extra_args = extra.copy()
@@ -185,22 +207,5 @@ class GtreeScript(SessionBasedScript):
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 'run_%s' % jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 'run_%s' % jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 'run_%s' % jobname)
-            tasks.append(GtreeApplication(**extra_args))
-        # for input_folder in self.params.args:
-        #
-        #     # extract root folder name to be used as jobname
-        #     jobname = os.path.basename(input_folder)
-        #
-        #     extra_args = extra.copy()
-        #
-        #     extra_args['output_dir'] = self.params.output
-        #     extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 'run_%s' % jobname)
-        #     extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 'run_%s' % jobname)
-        #     extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 'run_%s' % jobname)
-        #     extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 'run_%s' % jobname)
-        #
-        #     tasks.append(GtreeApplication(
-        #         os.path.abspath(input_folder),
-        #         **extra_args))
-
+            tasks.append(GtreeApplication(input_file, self.params.dataset, **extra_args))
         return tasks
