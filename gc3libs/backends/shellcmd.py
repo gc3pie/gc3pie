@@ -29,6 +29,7 @@ import os
 import os.path
 import posixpath
 import time
+from pkg_resources import Requirement, resource_filename
 
 # GC3Pie imports
 import gc3libs
@@ -1113,7 +1114,7 @@ ReturnCode=%x"""
         The `shellcmd`:mod: backend can only handle ``file`` URLs.
         """
         for url in data_file_list:
-            if url.scheme not in ['file', 'swift', 'http', 'https']:
+            if url.scheme not in ['file', 'swift', 'swifts', 'swt', 'swts', 'http', 'https']:
                 return False
         return True
 
