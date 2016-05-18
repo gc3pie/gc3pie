@@ -24,11 +24,13 @@ diversity" calculations.
 
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
-See the output of ``gcelljunction --help`` for program usage instructions.
+See the output of ``gfdiv --help`` for program usage instructions.
 """
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
+* 2016-05-18: Allow repeating set of arguments to form
+              a composite session.
 * 2016-04-22: Changed 2nd positional arg `values` to
               accept a *set* of `nHood` values to run.
               Also, allow setting the actual arguments used
@@ -205,21 +207,30 @@ new input files or an extended range is specified in the command line.
 
 
     def setup_args(self):
-        self.add_param('funcname', help=(
-            "Name of the MATLAB function to apply to the input data."
-            " A corresponding `.m` file must exist in the current directory."))
-        self.add_param('values', help=(
-            "Values for the neighborhood radius parameter."
-            " Can be any of the following:"
-            " (1) a single numeric value;"
-            " (2) a range MIN:MAX (e.g., 1:170) to compute all radii"
-            " from MIN to MAX (inclusive).  Optionally,"
-            " the MIN:MAX:STEP form can be used to further specify"
-            " an increment; e.g., 1:170:10 would run computations"
-            " with radius 1,11,21,...,161;"
-            " (3) a comma-separated list of the above two forms."))
-        self.add_param('inputfile', nargs='+', type=existing_file,
-                       help=("Input data file(s)."))
+        self.add_param(
+            'args', nargs='+',
+            help=(
+                "A series of arguments for building a composite session:"
+                " consists of one or more triplets of parameters, separated"
+                " by a literal `::`."
+                ""
+                " Each triplet consists of the following items:"
+                ""
+                " - Name of the MATLAB function to apply to the input data."
+                "   A corresponding `.m` file must exist in the current directory."
+                ""
+                " - Values for the neighborhood radius parameter."
+                "   Can be any of the following:"
+                "   (1) a single numeric value;"
+                "   (2) a range MIN:MAX (e.g., 1:170) to compute all radii"
+                "       from MIN to MAX (inclusive).  Optionally,"
+                "       the MIN:MAX:STEP form can be used to further specify"
+                "       an increment; e.g., 1:170:10 would run computations"
+                "       with radius 1,11,21,...,161;"
+                "   (3) a comma-separated list of the above two forms."
+                ""
+                " - Input data file(s)."
+            ))
 
 
     def make_directory_path(self, pathspec, jobname):
@@ -233,9 +244,8 @@ new input files or an extended range is specified in the command line.
             return pathspec
 
 
-    def get_function_name_and_file(self, funcname=None):
-        if funcname is None:
-            funcname = self.params.funcname
+    @staticmethod
+    def get_function_name_and_file(funcname):
         if funcname.endswith('.m'):
             funcname_m = funcname
             funcname = funcname[:-len('.m')]
@@ -252,15 +262,40 @@ new input files or an extended range is specified in the command line.
 
 
     def new_tasks(self, extra):
+        while self.params.args:
+            # get next chunk of arguments
+            if '::' in self.params.args:
+                up_to = self.params.args.index('::')
+                args = self.params.args[:up_to]
+                self.params.args = self.params.args[(up_to+1):]
+            else:
+                args = self.params.args
+                self.params.args = []
+            # process it
+            assert len(args) > 2
+            funcname = args[0]
+            values = args[1]
+            inputfiles = args[2:]
+            for inputfile in inputfiles:
+                assert existing_file(inputfile)
+            # add tasks to session
+            for task in self.new_tasks1(funcname, values, inputfiles, **extra):
+                yield task
+
+
+    def new_tasks1(self, funcname, values, inputfiles, **extra):
+        """
+        Iterate over tasks with a common processing function.
+        """
         # find MATLAB function to run
-        funcname, funcfile = self.get_function_name_and_file()
+        funcname, funcfile = self.get_function_name_and_file(funcname)
         ranges = []
-        for spec in self.params.values.split(','):
+        for spec in values.split(','):
             # get range for neighborhood radius
             low, high, step = parse_range(spec)
             ranges.append(irange(low, high+1, step))
         for radius in itertools.chain(*ranges):
-            for inputfile in self.params.inputfile:
+            for inputfile in inputfiles:
                 kwargs = extra.copy()
                 base_output_dir = kwargs.pop('output_dir', self.params.output)
                 inputfile = realpath(inputfile)
@@ -279,4 +314,5 @@ new input files or an extended range is specified in the command line.
                         output_dir=output_dir,
                         **kwargs),
                     increment=4*GB,
+                    jobname=jobname,
                 )
