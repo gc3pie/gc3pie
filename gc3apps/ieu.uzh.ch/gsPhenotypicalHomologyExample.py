@@ -38,6 +38,9 @@ __version__ = 'development version (SVN $Revision$)'
 __changelog__ = """
   2016-03-29:
   * Initial version
+  2016-05-06:
+  * TODO: allow 0 as hunting value
+  * TODO: check consistency of seed file
 """
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@uzh.ch>'
 __docformat__ = 'reStructuredText'
@@ -76,7 +79,7 @@ DEFAULT_OUTPUT_ARCHIVE="results.tgz"
 class GsPhenotypicalHomologyExampleApplication(Application):
     """
     """
-    application_name = 'gsPhenotypicalHomologyExample'
+    application_name = 'gsphenotypicalhomologyexample'
     
     def __init__(self, hunting, **extra_args):
         """
@@ -189,7 +192,7 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
                        help="Location of the seeds file. "
                        "Default: %(default)s")
 
-        self.add_param("-I", "--iterations", metavar="INT", type=int, 
+        self.add_param("-I", "--replications", metavar="INT", type=int, 
                        dest="iterations",
                        default=DEFAULT_ITERATIONS,
                        help="Number of repeating iterations. "
@@ -222,7 +225,7 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
             try:
                 # Check whether only single value has been passed
                 try:
-                    assert int(self.params.range)
+                    assert isinstance(int(self.params.range),int)
                     self.input_range = [int(self.params.range)]
                 except ValueError as ex:
                     # Identify the separator
@@ -236,7 +239,7 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
                                 raise ValueError("No valid input range. "
                                                  "Format: [int],[int]|[int]:[int]. E.g 1:432|3")
                             self.input_range = range(start,end+1)
-                        except TypeError as ex:
+                        except (TypeError, ValueError) as ex:
                             gc3libs.log.critical(ex.message)
                             raise ValueError("No valid input range. "
                                              "Format: [int],[int]|[int]:[int]. E.g 1:432|3")

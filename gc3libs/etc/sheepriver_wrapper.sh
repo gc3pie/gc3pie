@@ -164,6 +164,7 @@ echo -e "Param:\t\t$param"
 echo -e "Seed:\t\t$seed"
 echo -e "Iterations:\t$iterations"
 echo -e "Output:\t\t$output"
+echo -e "Hunting value:\t\t$hunting"
 
 cur_dir="$PWD"
 
