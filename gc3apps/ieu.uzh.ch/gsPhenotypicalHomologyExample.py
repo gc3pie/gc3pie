@@ -218,7 +218,7 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
                     "Jar file %s not found" % self.params.jar
 
                 
-            assert int(self.params.iterations), \
+            assert isinstance(int(self.params.iterations),int), \
                 "Iterations should be a positive integer"
                 
             # Validate month range
@@ -234,7 +234,7 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
                         try:
                             start,end = [ int(mrange) for mrange in \
                                           self.params.range.split(":") \
-                                          if int(mrange) ]
+                                          if isinstance(int(mrange),int) ]
                             if end <= start:
                                 raise ValueError("No valid input range. "
                                                  "Format: [int],[int]|[int]:[int]. E.g 1:432|3")
@@ -247,7 +247,7 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
                         # Use ',' as separator
                         self.input_range = [ int(mrange) for mrange in \
                                              self.params.range.split(",") \
-                                             if int(mrange) ]
+                                             if isinstance(int(self.params.range),int) ]
                     else:
                         # Anything else should fail
                         raise ValueError("No valid input range. "
