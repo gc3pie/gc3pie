@@ -194,12 +194,15 @@ def make_store(uri, *args, **extra_args):
             return gc3libs.persistence.filesystem.make_filesystemstore(
                 uri, *args, **extra_args)
         elif scheme in [
+                # DBs supported in SQLAlchemy core as of version 1.1,
+                # see: http://docs.sqlalchemy.org/en/latest/dialects/index.html
                 'firebird',
                 'mssql',
                 'mysql',
                 'oracle',
                 'postgresql',
                 'sqlite',
+                'sybase',
         ]:
             import gc3libs.persistence.sql
             return gc3libs.persistence.sql.make_sqlstore(
