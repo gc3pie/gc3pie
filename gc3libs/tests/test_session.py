@@ -266,13 +266,11 @@ class TestSession(object):
 
 class StubForSqlSession(TestSession):
 
-    def test_sqlite_store(self):
+    def test_sql_store(self):
         jobid = self.sess.save(_PStruct(a=1, b='foo'))
         self.sess.flush()
-
-        q = sql.select([self.sess.store.t_store.c.id]
-                       ).where(self.sess.store.t_store.c.id == jobid
-                               )
+        q = (sql.select([self.sess.store.t_store.c.id])
+             .where(self.sess.store.t_store.c.id == jobid))
         conn = self.sess.store._engine.connect()
         results = conn.execute(q)
         rows = results.fetchall()
@@ -302,11 +300,12 @@ class TestSqliteSession(StubForSqlSession):
                 raise SkipTest("No SQLite module installed.")
 
     def setUp(self):
-        tmpdir = tempfile.mktemp(dir='.')
-        self.tmpdir = os.path.basename(tmpdir)
+        self.tmpdir = os.path.abspath(tempfile.mktemp(dir=os.getcwd()))
+        #import pdb; pdb.set_trace()  ### DEBUG
         self.sess = Session(
-            tmpdir,
-            store_url="sqlite:///%s/store.db" % os.path.abspath(self.tmpdir))
+            self.tmpdir,
+            create=True,
+            store_or_url="sqlite:///{0}/store.db".format(self.tmpdir))
 
     def tearDown(self):
         if os.path.exists(self.tmpdir):

@@ -33,6 +33,7 @@ import shutil
 import gc3libs
 import gc3libs.exceptions
 import gc3libs.persistence
+import gc3libs.persistence.store
 import gc3libs.utils
 from gc3libs.workflow import TaskCollection
 
@@ -132,32 +133,33 @@ class Session(list):
 
     DEFAULT_JOBS_DIR = 'jobs'
 
-    def __init__(self, path, store_url=None, create=True, **extra_args):
+    def __init__(self, path, create=True, store_or_url=None, **extra_args):
         """
         First argument `path` is the path to the session directory.
 
-        The `store_url` argument is the URL of the store, as would be
-        passed to function `gc3libs.persistence.store.make_store`:func:;
-        any additional keyword arguments are passed to `make_store` unchanged.
+        The `create` argument is used to control the behavior in case the
+        session directory does not exists already:
+
+        * If `create` is ``True`` (default) and the session directory
+          does not exists then a new session will be created.
+
+        * If `create` is ``False`` and the session directory does not
+          exists an error will be raised.
+
+        Optional argument `store_or_url` is *either* an existing valid
+        `gc3libs.persistence.store.Store` instance, *or* the URL of
+        the store, as would be passed to function
+        `gc3libs.persistence.store.make_store`:func:; any additional
+        keyword arguments are passed to `make_store` unchanged.
 
         .. note::
 
-          The optional `store_url` argument and following keyword arguments
+          The optional `store_or_url` argument and following keyword arguments
           are used if and only if a new session is being *created*; they are
           ignored when loading existing sessions!
 
-        The `create` argument is used to control the behavior in case the
-        session does not exists.
-
-        If `create` is `False` and the session does not exists an error
-        will be raised.
-
-        If `create` is `True` and the session does not exists then a new
-        session will be created.
-
         By default `gc3libs.persistence.filesystem.FileSystemStore`:class:
-        (which see) is used for providing the session with a store.
-
+        (which see) is used for providing a new session with a store.
         """
         self.path = os.path.abspath(path)
         self.name = os.path.basename(self.path)
@@ -173,14 +175,13 @@ class Session(list):
             try:
                 self._load_session(**extra_args)
             except IOError as err:
-                gc3libs.log.debug(
-                    "Cannot load session '%s': %s", path, str(err))
-                if err.errno == 2:  # "No such file or directory"
+                gc3libs.log.debug("Cannot load session '%s': %s", path, err)
+                if err.errno == os.errno.ENOENT:  # "No such file or directory"
                     if create:
                         gc3libs.log.debug(
                             "Assuming session is incomplete or corrupted,"
                             " creating it again.")
-                        self._create_session(store_url, **extra_args)
+                        self._create_session(store_or_url, **extra_args)
                     else:
                         raise gc3libs.exceptions.InvalidArgument(
                             "Directory '%s' does not contain a valid session" %
@@ -189,22 +190,23 @@ class Session(list):
                     raise
         else:
             if create:
-                self._create_session(store_url, **extra_args)
+                self._create_session(store_or_url, **extra_args)
             else:
                 raise gc3libs.exceptions.InvalidArgument(
                     "Session '%s' not found" % self.path)
 
-    def _create_session(self, store_url, **extra_args):
-        if store_url:
-            self.store_url = store_url
+    def _create_session(self, store_or_url, **extra_args):
+        if isinstance(store_or_url, gc3libs.persistence.store.Store):
+            self.store = store_or_url
         else:
-            self.store_url = os.path.join(self.path, self.DEFAULT_JOBS_DIR)
-        # Must create its directory before `make_store` is called,
-        # or SQLite raises an "OperationalError: unable to open
-        # database file None None"
-        gc3libs.utils.mkdir(self.path)
-        self.store = gc3libs.persistence.make_store(
-            self.store_url, **extra_args)
+            if store_or_url is None:
+                store_or_url = os.path.join(self.path, self.DEFAULT_JOBS_DIR)
+            # Ensure session directory exists before `make_store` is
+            # called, or else SQLite raises an "OperationalError:
+            # unable to open database file None None"
+            gc3libs.utils.mkdir(self.path)
+            self.store = gc3libs.persistence.make_store(store_or_url, **extra_args)
+        self.store_url = self.store.url
         self._save_store_url_file()
         self._save_index_file()
 
@@ -233,8 +235,12 @@ class Session(list):
             gc3libs.log.info(
                 "Unable to load session: file %s is missing." % (store_fname))
             raise
-        self.store = gc3libs.persistence.make_store(
-            self.store_url, **extra_args)
+        if 'store' in extra_args:
+            self.store = extra_args['store']
+            self.store_url = self.store.url
+        else:
+            self.store = gc3libs.persistence.make_store(
+                self.store_url, **extra_args)
 
         idx_filename = os.path.join(self.path, self.INDEX_FILENAME)
         with open(idx_filename) as idx_file:
@@ -486,7 +492,7 @@ class Session(list):
         be created; if it exists, it will be overwritten.
         """
         store_url_filename = os.path.join(self.path, self.STORE_URL_FILENAME)
-        gc3libs.utils.write_contents(store_url_filename, self.store_url)
+        gc3libs.utils.write_contents(store_url_filename, str(self.store_url))
 
     def _touch_file(self, filename, time=None):
         """

@@ -1220,7 +1220,7 @@ class _SessionBasedCommand(_Script):
         passed parameters or add new ones, as long as the returned
         object implements the `Session` interface.
         """
-        return Session(session_uri, store_url)
+        return Session(session_uri, create=True, store_or_url=store_url)
 
     def _main(self, *args):
         """
