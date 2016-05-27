@@ -181,15 +181,19 @@ def make_store(uri, *args, **extra_args):
     """
     if not isinstance(uri, Url):
         uri = Url(uri)
-    # create and return store
+
+    # since SQLAlchemy allows URIs of the form `db+driver://...`
+    # (e.g., `postresql+psycopg://...`) we need to examine the URI
+    # scheme only up to the first `+`
+    scheme = uri.scheme.split('+')[0]
+
     try:
         # hard-code schemes that are supported by GC3Pie itself
         if uri.scheme == 'file':
             import gc3libs.persistence.filesystem
             return gc3libs.persistence.filesystem.make_filesystemstore(
                 uri, *args, **extra_args)
-        elif uri.scheme in [
-                # XXX: list all supported SQLAlchemy back-ends
+        elif scheme in [
                 'firebird',
                 'mssql',
                 'mysql',
