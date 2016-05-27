@@ -543,7 +543,7 @@ class Task(Persistable, Struct):
             return self.execution.returncode
 
 
-    def redo(self):
+    def redo(self, *args, **kwargs):
         """
         Reset the state of this Task instance to ``NEW``.
 
