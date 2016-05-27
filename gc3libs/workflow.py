@@ -344,6 +344,7 @@ class SequentialTaskCollection(TaskCollection):
             self.tasks[self._current_task].kill(**extra_args)
         self.execution.state = Run.State.TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
+
         self.changed = True
 
     def next(self, done):

@@ -558,8 +558,8 @@ class Task(Persistable, Struct):
 
         :raises AssertionError: if this Task's state is not terminal.
         """
-        assert self.execution.state in [
-            Run.State.NEW,  # allow re-doing partially run TaskCollections
+        if isinstance(self, Application):
+            assert self.execution.state in [
             Run.State.STOPPED,
             Run.State.TERMINATED,
             Run.State.TERMINATING,
@@ -567,6 +567,8 @@ class Task(Persistable, Struct):
         ], ("Can only re-do a Task which is in a terminal state;"
             " task {0} is in state {1} instead."
             .format(self, self.execution.state))
+        # Task collections can be in RUNNING state also when an
+        # application is in NEW state.
         self.execution.state = Run.State.NEW
 
 
