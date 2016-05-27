@@ -194,7 +194,7 @@ def make_store(uri, *args, **extra_args):
                 'mssql',
                 'mysql',
                 'oracle',
-                'postgres',
+                'postgresql',
                 'sqlite',
         ]:
             import gc3libs.persistence.sql
