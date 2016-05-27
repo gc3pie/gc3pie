@@ -72,8 +72,13 @@ class FilesystemStore(Store):
                  idfactory=IdFactory(),
                  protocol=DEFAULT_PROTOCOL,
                  **extra_args):
+        # In my opinion, not the path, but the url should be parsed to the
+        # constructor for compatibility with SqlStore!
         if isinstance(directory, gc3libs.url.Url):
+            super(FilesystemStore, self).__init__(directory)
             directory = directory.path
+        else:
+            super(FilesystemStore, self).__init__()
         self._directory = directory
 
         self.idfactory = idfactory
@@ -246,3 +251,4 @@ if "__main__" == __name__:
     import doctest
     doctest.testmod(name="filesystem",
                     optionflags=doctest.NORMALIZE_WHITESPACE)
+
