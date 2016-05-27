@@ -47,6 +47,9 @@ class Store(object):
         parts of the code.
     """
 
+    def __init__(self, url=None):
+        self.url = url
+
     def list(self, **extra_args):
         """
         Return list of IDs of saved `Job` objects.

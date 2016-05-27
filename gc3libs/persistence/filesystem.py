@@ -29,7 +29,7 @@ import sys
 import gc3libs
 import gc3libs.exceptions
 from gc3libs.utils import same_docstring_as
-import gc3libs.url
+from gc3libs.url import Url
 
 from gc3libs.persistence.idfactory import IdFactory
 from gc3libs.persistence.serialization import (DEFAULT_PROTOCOL, make_pickler,
@@ -72,8 +72,12 @@ class FilesystemStore(Store):
                  idfactory=IdFactory(),
                  protocol=DEFAULT_PROTOCOL,
                  **extra_args):
-        if isinstance(directory, gc3libs.url.Url):
+        if isinstance(directory, Url):
+            super(FilesystemStore, self).__init__(directory)
             directory = directory.path
+        else:
+            super(FilesystemStore, self).__init__(
+                Url(scheme='file', path=os.path.abspath(directory)))
         self._directory = directory
 
         self.idfactory = idfactory
@@ -232,11 +236,11 @@ def make_filesystemstore(url, *args, **extra_args):
 
     Examples::
 
-      >>> fs1 = make_filesystemstore(gc3libs.url.Url('file:///tmp'))
+      >>> fs1 = make_filesystemstore(Url('file:///tmp'))
       >>> fs1.__class__.__name__
       'FilesystemStore'
     """
-    assert isinstance(url, gc3libs.url.Url)
+    assert isinstance(url, Url)
     return FilesystemStore(url.path, *args, **extra_args)
 
 
