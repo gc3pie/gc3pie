@@ -147,6 +147,7 @@ class SqlStore(Store):
         url. It will use the correct backend (MySQL, psql, sqlite3)
         based on the url.scheme value
         """
+        super(SqlStore, self).__init__(url)
         self._engine = sqla.create_engine(str(url))
         self.table_name = table_name
 
@@ -308,3 +309,4 @@ if "__main__" == __name__:
     import doctest
     doctest.testmod(name="sql",
                     optionflags=doctest.NORMALIZE_WHITESPACE)
+
