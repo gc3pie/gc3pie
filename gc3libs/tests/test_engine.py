@@ -40,7 +40,7 @@ import gc3libs.config
 from gc3libs.core import Core, Engine, MatchMaker
 from gc3libs.quantity import GB, hours
 
-from helpers import SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_engine
+from helpers import SimpleParallelTaskCollection, SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_engine
 
 
 def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
@@ -72,7 +72,7 @@ def test_engine_progress_collection():
         assert seq.stage().execution.state == 'TERMINATED'
 
 
-def test_engine_redo():
+def test_engine_redo_SequentialTaskCollection():
     with temporary_engine() as engine:
         seq = SimpleSequentialTaskCollection(3)
         engine.add(seq)
@@ -92,6 +92,63 @@ def test_engine_redo():
             engine.progress()
         assert seq.stage().jobname == 'stage2'
         assert seq.stage().execution.state == 'TERMINATED'
+
+
+def test_engine_redo_ParallelTaskCollection():
+    with temporary_engine() as engine:
+        par = SimpleParallelTaskCollection(5)
+        engine.add(par)
+
+        # run until terminated
+        while par.execution.state != Run.State.TERMINATED:
+            engine.progress()
+
+        engine.redo(par)
+        assert par.execution.state == Run.State.NEW
+        for task in par.tasks:
+            assert task.execution.state == Run.State.NEW
+
+
+def test_engine_redo_Task1():
+    """Test correct use of `Engine.redo()` with a `Task` instance."""
+    with temporary_engine() as engine:
+        task = SuccessfulApp()
+        engine.add(task)
+
+        # run until terminated
+        while task.execution.state != Run.State.TERMINATED:
+            engine.progress()
+        assert task.execution.state == Run.State.TERMINATED
+
+        # no do it all over again
+        engine.redo(task)
+        assert task.execution.state == Run.State.NEW
+
+        engine.progress()
+        assert task.execution.state != Run.State.NEW
+        assert task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]
+
+
+@raises(AssertionError)
+def test_engine_redo_Task2():
+    """Test that `Engine.redo()` raises if called on a Task that is not TERMINATED."""
+    with temporary_engine() as engine:
+        task = SuccessfulApp()
+        engine.add(task)
+
+        engine.progress()
+        assert task.execution.state != Run.State.NEW
+
+        # cannot redo a task that is not yet terminated
+        task.redo()
+
+
+def test_engine_redo_Task3():
+    """Test that `Engine.redo()` is a no-op if the Task is still NEW."""
+    with temporary_engine() as engine:
+        task = SuccessfulApp()
+        engine.add(task)
+        task.redo()
 
 
 def test_engine_resubmit():
