@@ -195,16 +195,20 @@ class Session(list):
                     "Session '%s' not found" % self.path)
 
     def _create_session(self, store_url, **extra_args):
-        if store_url:
-            self.store_url = store_url
-        else:
-            self.store_url = os.path.join(self.path, self.DEFAULT_JOBS_DIR)
         # Must create its directory before `make_store` is called,
         # or SQLite raises an "OperationalError: unable to open
         # database file None None"
         gc3libs.utils.mkdir(self.path)
-        self.store = gc3libs.persistence.make_store(
-            self.store_url, **extra_args)
+        if 'store' in extra_args:
+            self.store = extra_args['store']
+            self.store_url = self.store.url
+        else:
+            self.store = gc3libs.persistence.make_store(
+                self.store_url, **extra_args)
+            if store_url:
+                self.store_url = store_url
+            else:
+                self.store_url = os.path.join(self.path, self.DEFAULT_JOBS_DIR)
         self._save_store_url_file()
         self._save_index_file()
 
@@ -233,8 +237,12 @@ class Session(list):
             gc3libs.log.info(
                 "Unable to load session: file %s is missing." % (store_fname))
             raise
-        self.store = gc3libs.persistence.make_store(
-            self.store_url, **extra_args)
+        if 'store' in extra_args:
+            self.store = extra_args['store']
+            self.store_url = self.store.url
+        else:
+            self.store = gc3libs.persistence.make_store(
+                self.store_url, **extra_args)
 
         idx_filename = os.path.join(self.path, self.INDEX_FILENAME)
         with open(idx_filename) as idx_file:
