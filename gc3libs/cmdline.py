@@ -1447,6 +1447,7 @@ class _CommDaemon(object):
         rows.append([indent + str(app.persistent_id),
                      jobname,
                      app.execution.state,
+                     app.execution.returncode,
                      app.execution.info])
         if recursive and 'tasks' in app:
             indent = " "*len(indent) + '  '
@@ -1463,7 +1464,7 @@ class _CommDaemon(object):
             rows = []
             for app in self.parent.session.tasks.values():
                 rows.extend(self.print_app_table(app, '', True))
-            table = PrettyTable(["JobID", "Job name", "State", "Info"])
+            table = PrettyTable(["JobID", "Job name", "State", "rc", "Info"])
             table.align = 'l'
             for row in rows:
                 table.add_row(row)
