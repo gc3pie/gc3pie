@@ -105,6 +105,52 @@ def test_engine_kill_SequentialTaskCollection():
         )
         assert_equal(seq.execution.state, 'TERMINATED')
 
+
+def test_engine_kill_redo_SequentialTaskCollection():
+    with temporary_engine() as engine:
+        seq = SimpleSequentialTaskCollection(3)
+        engine.add(seq)
+
+        while seq.execution.state != 'RUNNING':
+            engine.progress()
+
+        # Because of our noop engine, as soon as the sequential is in
+        # running we will have a job in TERMINATED and the others in
+        # NEW.
+        assert_equal(
+            ['TERMINATED', 'NEW', 'NEW'],
+            [i.execution.state for i in seq.tasks],
+        )
+
+        # Killing a sequential should put all the applications in
+        # TERMINATED state. However, we will need an extra run of
+        # engine.progress() to update the status of all the jobs.
+        engine.kill(seq)
+        assert_equal(
+            ['TERMINATED', 'NEW', 'NEW'],
+            [i.execution.state for i in seq.tasks],
+        )
+
+        engine.progress()
+
+        assert_equal(
+            ['TERMINATED', 'TERMINATED', 'TERMINATED'],
+            [i.execution.state for i in seq.tasks],
+        )
+        assert_equal(seq.execution.state, 'TERMINATED')
+
+        engine.redo(seq)
+        assert_equal(
+            ['NEW', 'NEW', 'NEW'],
+            [i.execution.state for i in seq.tasks],
+        )
+        assert_equal(seq.execution.state, 'NEW')
+        engine.progress()
+        assert_equal(
+            ['SUBMITTED', 'NEW', 'NEW'],
+            [i.execution.state for i in seq.tasks],
+        )
+        
 def test_engine_kill_ParallelTaskCollection():
     # Creates an engine with 2 cores.
     with temporary_engine(max_cores=2) as engine:
