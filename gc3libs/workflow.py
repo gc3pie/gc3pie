@@ -340,9 +340,11 @@ class SequentialTaskCollection(TaskCollection):
         Stop execution of this sequence.  Kill currently-running task
         (if any), then set collection state to TERMINATED.
         """
-        for task in self.tasks:
-            self._controller.add(task)
-            task.kill(**extra_args)
+        if self._current_task is not None:
+            self.tasks[self._current_task].kill(**extra_args)
+            for i in range(self._current_task+1, len(self.tasks)):
+                self.tasks[i].execution.state = Run.State.TERMINATED
+                self.execution.returned = (Run.Signals.Cancelled, -1)
         self.execution.state = Run.State.TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
         self.changed = True
@@ -397,7 +399,9 @@ class SequentialTaskCollection(TaskCollection):
         task = self.stage()
         if task is not None:
             task.redo()
-
+        # All other tasks should be put in NEW again
+        for i in range(from_stage+1, len(self.tasks)):
+            self.tasks[i].execution.state = Run.State.NEW
 
     def submit(self, resubmit=False, targets=None, **extra_args):
         """
