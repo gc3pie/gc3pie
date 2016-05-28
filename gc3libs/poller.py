@@ -116,10 +116,11 @@ def register_poller(scheme, cls):
 class INotifyPoller(Poller):
     """Poller implementation that uses inotifyx to track new events on the
     filesystem"""
-    
+
     def __init__(self, url, mask, recurse=False, **kw):
         Poller.__init__(self, url, mask, **kw)
 
+        self._recurse = recurse
         self._ifds = {}
         # Ensure inbox directory exists
         if not os.path.exists(self.url.path):
@@ -128,11 +129,11 @@ class INotifyPoller(Poller):
             os.makedirs(self.url.path)
 
         ifd = inotifyx.init()
-        inotifyx.add_watch(ifd, self.url.path, mask)
+        inotifyx.add_watch(ifd, self.url.path, self.mask)
         log.debug("Adding watch for path %s" % self.url.path)
         self._ifds[self.url.path] = ifd
 
-        if recurse:
+        if self._recurse:
             for dirpath, dirnames, filename in os.walk(self.url.path):
                 for dirname in dirnames:
                     ifd = inotifyx.init()
@@ -140,7 +141,7 @@ class INotifyPoller(Poller):
                                            dirpath,
                                            dirname)
                     log.debug("Adding watch for path %s" % abspath)
-                    inotifyx.add_watch(abspath, mask)
+                    inotifyx.add_watch(ifd, abspath, self.mask)
                     self._ifds[abspath] = ifd
 
     def get_events(self):
@@ -149,9 +150,17 @@ class INotifyPoller(Poller):
             ievents = inotifyx.get_events(ifd, 0)
             for event in ievents:
                 # if `name` is empty, it's the same directory
-                url = Url(os.path.join(path, event.name)) if event.name else self.url
-                newevents.append(
-                    (url, event.mask))
+                abspath = os.path.join(path, event.name)
+                url = Url(abspath) if event.name else self.url
+                newevents.append((url, event.mask))
+                if self._recurse and \
+                   event.mask & inotifyx.IN_ISDIR and \
+                   event.mask & inotifyx.IN_CREATE:
+                    # Add this dir to inotify
+                    ifd = inotifyx.init()
+                    log.debug("Adding watch for path %s" % abspath)
+                    inotifyx.add_watch(ifd, abspath, self.mask)
+                    self._ifds[abspath] = ifd
         return newevents
 
 if inotifyx:
@@ -173,7 +182,7 @@ class FilePoller(Poller):
             abspath = os.path.join(self._path, path)
             stat = os.stat(abspath)
             self._known_files[path] = stat
-                
+
     def get_events(self):
         dircontents = [os.path.join(self._path, path) for path in os.listdir(self._path)]
         # Check if new files have been created or old ones updated
@@ -182,9 +191,9 @@ class FilePoller(Poller):
             stat = os.stat(path)
 
             # We can only check if:
-            # 
+            #
             if path not in self._known_files:
-                # We can only get 
+                # We can only get
                 event = events['IN_CLOSE_WRITE']|events['IN_CREATE']
                 if os.path.isdir(path):
                     event|=events['IN_ISDIR']
@@ -222,7 +231,7 @@ class SwiftPoller(Poller):
     swts://<user>+<tenant>:<password>@<keystone-url>?container
 
     and we assume auth version 2 is used (keystone)
-    
+
     """
     def __init__(self, url, mask, **kw):
         Poller.__init__(self, url, mask, **kw)
@@ -234,7 +243,7 @@ class SwiftPoller(Poller):
                 "Missing tenant name in swift url '%s'", self.url)
         self.password = self.url.password
         self.container = self.url.query
-        
+
         if not self.container:
             raise gc3libs.exceptions.InvalidValue(
                 "Missing bucket name in swift url '%s'", self.url)
@@ -246,7 +255,7 @@ class SwiftPoller(Poller):
             auth_url = 'http://%s' % self.url.hostname
         if self.url.port:
             auth_url += ":%d" % self.url.port
-        if self.url.path:            
+        if self.url.path:
             auth_url += self.url.path
         self.auth_url = auth_url
 
@@ -296,7 +305,7 @@ class SwiftPoller(Poller):
                 newevents.append((url, events['IN_DELETE']))
                 self._known_objects.pop(url)
         return newevents
-        
+
 
 if swiftclient:
     register_poller('swift', SwiftPoller)
