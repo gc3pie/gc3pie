@@ -628,11 +628,11 @@ class GBemoviDaemon(SessionBasedDaemon):
                 self.log.info("Creating FinalMerger for inbox %s",
                               os.path.dirname(vdescrfile))
                 inputs = []
-                email_to = []
+                email_to = set()
                 stats = []
                 for task in tasks:
                     plinker, ptracker = task.tasks
-                    email_to.append(bemovicfg.get(task.videofile).get('email_to'))
+                    email_to.add(bemovicfg.get(task.videofile).get('email_to'))
                     stats.append("""Video file {}
   Linker
     duration: {}
