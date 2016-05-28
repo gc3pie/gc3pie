@@ -26,12 +26,14 @@ import os
 import time
 import csv
 import logging
+from collections import defaultdict
 
 import gc3libs
 import gc3libs.poller as plr
 from gc3libs.cmdline import SessionBasedDaemon
 from gc3libs.workflow import SequentialTaskCollection
-
+from gc3libs import Run
+from gc3libs.quantity import Duration
 
 log = logging.getLogger('gc3.gc3utils')
 
@@ -53,7 +55,8 @@ class ParticleLocator(gc3libs.Application):
         rdatafile = os.path.join('data',
                                  '2-particle',
                                  'particle.RData')
-
+        self.rdatafile = os.path.join(extra['output_dir'],
+                                      'particle.RData')
         self.fps = extra['rparams']['fps']
         self.pixel_to_scale = extra['rparams']['pixel_to_scale']
         self.difference_lag = extra['rparams']['difference_lag']
@@ -90,7 +93,11 @@ class ParticleLinker(gc3libs.Application):
         extra['jobname'] = "%s.%s" % (self.application, extra['videoname'])
         extra['output_dir'] = os.path.join(extra['base_output_dir'], self.application)
         scriptdir = os.path.dirname(__file__)
-
+        rdatafile = os.path.join('data',
+                                 '3-trajectory',
+                                 'trajectory.RData')
+        self.rdatafile = os.path.join(extra['output_dir'],
+                                      'trajectory.RData')
         self.fps = extra['rparams']['fps']
         self.pixel_to_scale = extra['rparams']['pixel_to_scale']
         self.difference_lag = extra['rparams']['difference_lag']
@@ -118,37 +125,30 @@ class ParticleLinker(gc3libs.Application):
             outputs = {os.path.join('data',
                                     '3-trajectory',
                                     'ParticleLinker_' + ijoutname),
-                       os.path.join('data',
-                                    '3-trajectory',
-                                    'trajectory.RData')},
+                       rdatafile},
             stdout = 'plinker.log',
             join = True,
             **extra)
 
 class BemoviWorkflow(SequentialTaskCollection):
+    appname = 'bemoviworkflow'
     def __init__(self, videofile,  **extra):
         self.videofile = videofile
         videofilename = os.path.basename(videofile)
+
         inboxdir = os.path.dirname(videofile)
-        # Look for a configuration file in the inboxdir to override
+        self.vdescrfile = os.path.join(inboxdir, 'video.description.txt')
+        self.inboxdir = inboxdir
+        self.email = ''
+        self.video_is_needed = True
+
+        # Look for a 'configuration' file in the inboxdir to override
         # bemovi parameters
-        cfgfile = os.path.join(inboxdir, 'gbemovi.conf')
-        cfg = ConfigParser.RawConfigParser(defaults=extra['rparams'])
-        try:
-            cfg.read(cfgfile)
-            log.debug("Reading configuration file %s for video file %s",
-                              cfgfile, videofile)
-            extra['rparams'].update(cfg.defaults())
-            if videofilename in cfg.sections():
-                for key in cfg.options(videofilename):
-                    extra['rparams'][key] = cfg.get(videofilename, key)
+        #
+        # Format of CSV file:
+        # Case,FPS,PIXEL_TO_SCALE,DIFFERENCE_LAG,THRESHOLD_1,THRESHOLD_2,walltime,mandatory,email
+        #
 
-        except Exception as ex:
-            log.warning("Error while reading configuration file %s: %s. Ignoring",
-                             cfgfile, ex)
-
-        # As requested by Frank and Owne, also provide the ability to
-        # read a CSV file
         csvcfgfile = os.path.join(inboxdir, 'gbemovi.csv')
         csvdata = {}
         try:
@@ -157,11 +157,13 @@ class BemoviWorkflow(SequentialTaskCollection):
                     "Reading CSV configuration file %s for video file %s",
                     csvcfgfile, videofile)
                 cr = csv.reader(fd)
+                lineno = 0
                 for line in cr:
-                    if len(line) != 6:
+                    lineno +=1
+                    if len(line) != 9:
                         log.warning(
-                            "Ignoring line '%s' in csv configuration file %s",
-                            line, csvcfgfile)
+                            "Ignoring line '%d' in csv configuration file %s: wrong number of fields (%d != 9)",
+                            lineno, csvcfgfile, len(line))
                     elif line[0] in csvdata:
                         log.warning(
                             "Ignoring dupliacate key in '%s' csv configuration file: '%s'",
@@ -175,6 +177,16 @@ class BemoviWorkflow(SequentialTaskCollection):
                         extra['rparams']['difference_lag'] = line[3]
                         extra['rparams']['threshold1'] = line[4]
                         extra['rparams']['threshold2'] = line[5]
+                        try:
+                            extra['max_walltime'] = Duration(line[6])
+                        except ValueError as ex:
+                            log.error("Unable to parse walltime %s for file %s:"
+                                      " %s. Using default value of %s",
+                                      line[6], self.videofile, ex,
+                                      extra['max_walltime'])
+                        self.video_is_needed = False if line[7].lower() == 'optional' else True
+                        self.email = line[6]
+
         except IOError:
             # File not found, ignore
             pass
@@ -200,6 +212,14 @@ class BemoviWorkflow(SequentialTaskCollection):
                          extra['videoname'] + '.ijout.txt',),
             **extra)
         SequentialTaskCollection.__init__(self, [plocator, plinker], **extra)
+
+    def should_resubmit(self):
+        """Return True or False if the job should be resubmitted or not"""
+        for task in self.tasks:
+            if task.execution.state == Run.State.TERMINATED and \
+               task.execution.exitcode != 0:
+                return True
+        return False
 
 
 class GBemoviDaemon(SessionBasedDaemon):
@@ -275,50 +295,60 @@ class GBemoviDaemon(SessionBasedDaemon):
         # files, add a merger for each input directory.
         scriptdir = os.path.dirname(__file__)
         msg = ""
-        for inbox in self.params.inbox:
-            # The corresponding directory ends with '.out'
-            outdir = inbox + '.out'
-            # Walk and find any `particle.RData` file, then submit an app
-            infiles = {}
-            index = 0
-            for dirpath, dirnames, fnames in os.walk(outdir):
-                # Stop when we have `plinker` and `plocator` directory
-                if 'plinker' in dirnames and 'plocator' in dirnames:
-                    pdata = os.path.join(dirpath, 'plocator', 'particle.RData')
-                    tdata = os.path.join(dirpath, 'plinker', 'trajectory.RData')
-                    if not os.path.exists(pdata) or not os.path.exists(tdata):
-                        self.log.warning("Ignoring output directory %s as either the trajectory or the particle files are missing", dirpath)
-                    else:
-                        infiles[pdata] = "data/2-particle/particle-%05d.RData" % index
-                        infiles[tdata] = "data/3-trajectory/trajectory-%05d.RData" % index
-                        index += 1
-            if infiles:
-                # We also need a video description file. This is
-                # likely to be in the outdir directory
-                vdescrfile = os.path.join(inbox, "video.description.txt")
-                infiles[vdescrfile] = "data/1-raw/video.description.txt"
-                infiles[os.path.join(scriptdir, "plocator.sh")] = "plocator.sh"
-                infiles[os.path.join(scriptdir, 'bemovi.R')] = 'bemovi.R'
+        # Walk through our jobs, group "experiments" and run a merger for each of them
+        mergers = defaultdict(list)
+        for task in self.session:
+            try:
+                if task.appname != 'bemoviworkflow':
+                    continue
+            except:
+                continue
+            if task.execution.state != Run.State.TERMINATED:
+                # only merge completed jobs
+                continue
+            # find plinker radata files
+            plinker = task.tasks[0]
+            ptracker = task.tasks[1]
+            linkerdata = plinker.rdatafile
+            trackerdata = ptracker.rdatafile
+            mergers[task.vdescrfile].append((task.base_output_dir, linkerdata, trackerdata))
 
-                extra = self.extra.copy()
-                extra['jobname'] = "Merger_%s" % time.strftime("%Y-%m-%d_%H.%M", time.localtime())
-                extra['output_dir'] = os.path.join(outdir, extra['jobname'])
-                # FIXME: Add the output
-                app = gc3libs.Application(
-                    arguments = ["./plocator.sh", "merger"],
-                    inputs = infiles,
-                    outputs = {"data/5-merged/Master.RData": "Master.RData"},
-                    # outputs = gc3libs.ANY_OUTPUT,
-                    stdout = 'merger.log',
-                    join = True,
-                    **extra)
-                self._controller.add(app)
-                self.session.add(app)
-                # FIXME: Submit merger application
-                return "Merging data from %d input videos" % index
-        return "No data to merge"
+        for vdescrfile, inputs in mergers.items():
+            if not os.path.exists(vdescrfile):
+                self.log.warning("Ignoring inbox directory %s as there is no video.description.txt file", os.path.dirname(vdescrfile))
+                continue
+            # Rename files in destination folder
+            scriptdir = os.path.dirname(__file__)
+            infiles = {
+                os.path.join(scriptdir, 'plocator.sh'): 'plocator.sh',
+                os.path.join(scriptdir, 'bemovi.R'): 'bemovi.R',
+                vdescrfile: 'data/1-raw/video.description.txt',
+            }
+            for index, (outputdir, ldata, tdata) in enumerate(inputs):
+                infiles[ldata] = 'data/2-particle/particle-%05d.RData' % index
+                infiles[tdata] = 'data/3-trajectory/trajectory-%05d.RData' % index
+            extra = self.extra.copy()
+            extra['jobname'] = "Merger_%d_%s" % (index, time.strftime("%Y-%m-%d_%H.%M", time.localtime()))
+            extra['output_dir'] = os.path.join(os.path.dirname(outputdir), extra['jobname'])
+            app = gc3libs.Application(
+                arguments = ["./plocator.sh", "merger"],
+                inputs = infiles,
+                outputs = {"data/5-merged/Master.RData": "Master.RData"},
+                # outputs = gc3libs.ANY_OUTPUT,
+                stdout = 'merger.log',
+                join = True,
+                **extra)
+            self._controller.add(app)
+            self.session.add(app)
+            # FIXME: Submit merger application
+            self.log.info("Merging data from %d input videos" % index)
 
-    def new_tasks(self, extra, url=None, emask=0):
+        if mergers:
+            return "Merged videos from followinig directories: %s" % str.join(', ', mergers.keys())
+        else:
+            return "No data to merge"
+
+    def new_tasks(self, extra, epath=None, emask=0):
         extra['rparams'] = {
             'memory': str(self.params.memory_per_core.amount(unit=gc3libs.quantity.MB)),
             'fps': self.params.fps,
@@ -328,14 +358,16 @@ class GBemoviDaemon(SessionBasedDaemon):
             'threshold2': self.params.threshold2,
         }
 
-        if not url:
+        if not epath:
             # At startup, scan all the input directories and check if
             # there is a file which is not processed yet.
 
             # First, check which files we already did
-            known_videos = [i.get('videofile', None) for i in self.session]
+            known_videos = {i.get('videofile', None): i for i in self.session}
             new_jobs = []
-            for inbox in self.params.inbox:
+            for inboxurl in self.params.inbox:
+                # WARNING: we assume this is a filesystem directory
+                inbox = inboxurl.path
                 for dirpath, dirnames, fnames in os.walk(inbox):
                     for fname in fnames:
                         filename = os.path.join(dirpath, fname)
@@ -347,30 +379,55 @@ class GBemoviDaemon(SessionBasedDaemon):
                         if filename not in known_videos:
                             new_jobs.append(BemoviWorkflow(filename, **extra))
                             known_videos.append(filename)
-
-
+                        else:
+                            # In case it exists, but the application
+                            # termianted with an exit code, then we
+                            # want to resubmit the job anyway
+                            job = known_videos[filename]
+                            if job.should_resubmit():
+                                self.log.info("File %s might have been overwritten. Resubmitting job %s",
+                                              filename, job.persistent_id)
+                                # Remove from session
+                                # self.session.remove(job.persistent_id)
+                                # new_jobs.append(BemoviWorkflow(filename, **extra))
             return new_jobs
 
-        # FIXME: for some reason emask & IN_CREATE & IN_ISDIR does not
-        # work as expected. Using os.path.isdir() instead
-        if emask & plr.events['IN_CREATE'] and os.path.isdir(url.path):
-            epath = url.path
-            # Creation of a directory or a file.  For each directory,
-            # we need to add a new inotify watch to allow users to
-            # organize files into directories.
-            if epath.endswith('.out'):
-                self.log.warning("NOT adding directory %s to the list of input folders as it looks like an OUTPUT folder!" % epath)
-            else:
-                self.log.debug("Adding directory %s to the list of input folders" % epath)
-                self.add_inotify_watch(epath)
+        fpath = epath.path
+        if emask & plr.events['IN_CREATE'] and False:
+            # FIXME: for some reason emask & IN_CREATE & IN_ISDIR does not
+            # work as expected. Using os.path.isdir() instead
+            if emask&plr.events['IN_ISDIR'] or os.path.isdir(epath.path):
+
+                # Creation of a directory or a file.  For each directory,
+                # we need to add a new inotify watch to allow users to
+                # organize files into directories.
+                if fpath.endswith('.out'):
+                    self.log.warning("NOT adding directory %s to the list of input folders as it looks like an OUTPUT folder!" % fpath)
+                else:
+                    self.log.debug("Adding directory %s to the list of input folders" % fpath)
+                    self.pollers.append(plr.get_poller(fpath, self.notify_event_mask, recurse=True))
 
         elif emask & plr.events['IN_CLOSE_WRITE']:
-            if epath.rsplit('.', 1)[-1] not in self.valid_extensions:
+            if fpath.rsplit('.', 1)[-1] not in self.valid_extensions:
                 self.log.info("Ignoring file %s as it does not end with a valid extension (%s)",
-                              epath, str.join(',', self.valid_extensions))
+                              fpath, str.join(',', self.valid_extensions))
                 return []
 
-            return [BemoviWorkflow(epath, **extra)]
+            # Only resubmit the job if it failed
+            for job in self.session.tasks.values():
+                if job.videofile == fpath:
+                    if job.should_resubmit():
+                        self.log.info("Re-submitting job %s as file %s has been overwritten",
+                                      job.persistent_id, fpath)
+                        self._controller.kill(job)
+                        self._controller.progress()
+                        self._controller.redo(job, from_stage=0)
+
+                    else:
+                        self.log.info("Ignoring already successfully processed file %s", fpath)
+                    # In both case, do not return any new job
+                    return []
+            return [BemoviWorkflow(fpath, **extra)]
         return []
 
 
