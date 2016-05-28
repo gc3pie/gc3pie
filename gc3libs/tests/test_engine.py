@@ -72,6 +72,74 @@ def test_engine_progress_collection():
         assert seq.stage().execution.state == 'TERMINATED'
 
 
+def test_engine_kill_SequentialTaskCollection():
+    with temporary_engine() as engine:
+        seq = SimpleSequentialTaskCollection(3)
+        engine.add(seq)
+
+        while seq.execution.state != 'RUNNING':
+            engine.progress()
+
+        # Because of our noop engine, as soon as the sequential is in
+        # running we will have a job in TERMINATED and the others in
+        # NEW.
+        assert_equal(
+            ['TERMINATED', 'NEW', 'NEW'],
+            [i.execution.state for i in seq.tasks],
+        )
+
+        # Killing a sequential should put all the applications in
+        # TERMINATED state. However, we will need an extra run of
+        # engine.progress() to update the status of all the jobs.
+        engine.kill(seq)
+        assert_equal(
+            ['TERMINATED', 'NEW', 'NEW'],
+            [i.execution.state for i in seq.tasks],
+        )
+
+        engine.progress()
+
+        assert_equal(
+            ['TERMINATED', 'TERMINATED', 'TERMINATED'],
+            [i.execution.state for i in seq.tasks],
+        )
+        assert_equal(seq.execution.state, 'TERMINATED')
+
+def test_engine_kill_ParallelTaskCollection():
+    # Creates an engine with 2 cores.
+    with temporary_engine(max_cores=2) as engine:
+        par = SimpleParallelTaskCollection(3)
+        engine.add(par)
+
+        while par.execution.state != 'RUNNING':
+            engine.progress()
+
+        # Because of our noop engine, as soon as the parallel is in
+        # running we will have all jobs in SUBMITTED and the others in
+        # NEW.
+        assert_equal(
+            ['TERMINATED', 'SUBMITTED', 'NEW'],
+            [i.execution.state for i in par.tasks],
+        )
+
+        # Killing a parallel should put all the applications in
+        # TERMINATED state. However, we need a run of
+        # engine.progress() to update the status of all the jobs
+        engine.kill(par)
+        
+        assert_equal(
+            ['TERMINATED', 'SUBMITTED', 'NEW'],
+            [i.execution.state for i in par.tasks],
+        )
+        engine.progress()
+        
+        assert_equal(
+            ['TERMINATED', 'TERMINATED', 'TERMINATED'],
+            [i.execution.state for i in par.tasks],
+        )
+        assert_equal(par.execution.state, 'TERMINATED')
+        
+
 def test_engine_redo_SequentialTaskCollection():
     with temporary_engine() as engine:
         seq = SimpleSequentialTaskCollection(3)
