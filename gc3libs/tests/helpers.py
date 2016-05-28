@@ -74,8 +74,8 @@ def temporary_core(
 
 
 @contextmanager
-def temporary_engine(transition_graph=None):
-    with temporary_core(transition_graph) as core:
+def temporary_engine(transition_graph=None, **kw):
+    with temporary_core(transition_graph, **kw) as core:
         yield Engine(core)
 
 
