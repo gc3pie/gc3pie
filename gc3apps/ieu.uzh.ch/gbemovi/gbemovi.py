@@ -21,18 +21,18 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-import ConfigParser
-import os
-import time
 import csv
 import logging
-from collections import defaultdict
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
-import socket
+import os
 import pwd
+import smtplib
+import socket
+import time
+
+from collections import defaultdict
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import gc3libs
 import gc3libs.poller as plr
@@ -42,6 +42,75 @@ from gc3libs import Run
 from gc3libs.quantity import Duration
 
 log = logging.getLogger('gc3.gc3utils')
+
+
+class BemoviCSVConf(object):
+    def __init__(self, path, default_walltime='3h'):
+        self.path = path
+        self.cfg = {}
+        self.defaults = {}
+        with open(path) as fd:
+            log.debug("Reading CSV configuration file %s", path)
+            cr = csv.reader(fd)
+            lineno = 0
+            for line in cr:
+                lineno += 1
+                if len(line) != 9:
+                    log.warning("Ignoring line '%d' in csv configuration file %s: wrong number of fields (%d != 9)",
+                    lineno, path, len(line))
+                    continue
+                if line[0] in self.cfg:
+                    log.warning(
+                        "Overwriting dupliacate key in '%s' csv configuration file: '%s'",
+                        csvcfgfile, line[0])
+
+                try:
+                    # Check if this is an header line. These values
+                    # should always be integers.
+                    int(line[1])
+                    int(line[3])
+                    int(line[4])
+                    int(line[5])
+                except ValueError:
+                    log.debug("Ignoring line '%d' of file %s, some values do not convert to integer as expected.",
+                              lineno, path)
+                    continue
+                data = {
+                    'fps': line[1],
+                    'pixel_to_scale': line[2],
+                    'difference_lag': line[3],
+                    'threshold1': line[4],
+                    'threshold2': line[5],
+                    'video_is_needed': False if line[7].lower() == 'optional' else True,
+                    'email_to': line[8],
+                }
+                try:
+                    data['max_walltime'] = Duration(line[6])
+                except ValueError as ex:
+                    log.error("Unable to parse walltime '%s' for key %s in file"
+                              " %s: %s. Using default value of %s",
+                              line[6], line[0], path, ex, default_walltime)
+                    data['max_walltime'] = Duration(default_walltime)
+                key = line[0]
+                if key.lower() == "default":
+                    self.defaults = data
+                else:
+                    self.cfg[key] = data
+
+    def get(self, key):
+        """Return configuration key for `path` entry, or default value (if any"""
+        if key in self.cfg:
+            return self.cfg[key].copy()
+        elif os.path.basename(key) in self.cfg:
+            return self.cfg[os.path.basename(key)].copy()
+        else:
+            return self.defaults.copy()
+
+    def keys(self):
+        return ['default'] + self.cfg.keys()
+
+    def __iter__(self):
+        return iter(self.keys())
 
 
 class ParticleLocator(gc3libs.Application):
@@ -140,6 +209,7 @@ class ParticleLinker(gc3libs.Application):
             join = True,
             **extra)
 
+
 class BemoviWorkflow(SequentialTaskCollection):
     appname = 'bemoviworkflow'
     def __init__(self, videofile, email_from, smtp_server, **extra):
@@ -156,57 +226,26 @@ class BemoviWorkflow(SequentialTaskCollection):
 
         # Look for a 'configuration' file in the inboxdir to override
         # bemovi parameters
-        #
-        # Format of CSV file:
-        # Case,FPS,PIXEL_TO_SCALE,DIFFERENCE_LAG,THRESHOLD_1,THRESHOLD_2,walltime,mandatory,email
-        #
 
         csvcfgfile = os.path.join(inboxdir, 'gbemovi.csv')
-        csvdata = {}
         try:
-            with open(csvcfgfile) as fd:
-                log.debug(
-                    "Reading CSV configuration file %s for video file %s",
-                    csvcfgfile, videofile)
-                cr = csv.reader(fd)
-                lineno = 0
-                for line in cr:
-                    lineno +=1
-                    if len(line) != 9:
-                        log.warning(
-                            "Ignoring line '%d' in csv configuration file %s: wrong number of fields (%d != 9)",
-                            lineno, csvcfgfile, len(line))
-                    elif line[0] in csvdata:
-                        log.warning(
-                            "Ignoring dupliacate key in '%s' csv configuration file: '%s'",
-                            csvcfgfile, line[0])
-                    elif line[0].lower() == "default" or line[0] == videofilename:
-                        log.debug(
-                            "Matching line '%s' inc CSV config file %s for videofile %s",
-                            line, csvcfgfile, videofilename)
-                        extra['rparams']['fps'] = line[1]
-                        extra['rparams']['pixel_to_scale'] = line[2]
-                        extra['rparams']['difference_lag'] = line[3]
-                        extra['rparams']['threshold1'] = line[4]
-                        extra['rparams']['threshold2'] = line[5]
-                        try:
-                            extra['max_walltime'] = Duration(line[6])
-                        except ValueError as ex:
-                            log.error("Unable to parse walltime %s for file %s:"
-                                      " %s. Using default value of %s",
-                                      line[6], self.videofile, ex,
-                                      extra['max_walltime'])
-                        self.video_is_needed = False if line[7].lower() == 'optional' else True
-                        self.email_to = line[8]
-
+            cfg = BemoviCSVConf(csvcfgfile).get(videofile)
+            extra['rparams']['fps'] = cfg.get('fps')
+            extra['rparams']['pixel_to_scale'] = cfg.get('pixel_to_scale')
+            extra['rparams']['difference_lag'] = cfg.get('difference_lag')
+            extra['rparams']['threshold1'] = cfg.get('threshold1')
+            extra['rparams']['threshold2'] = cfg.get('threshold2')
+            extra['max_walltime'] = cfg.get('max_walltime')
+            self.video_is_needed = cfg.get('video_is_needed')
+            self.email_to = cfg.get('email_to')
         except IOError:
-            # File not found, ignore
             pass
         except Exception as ex:
             log.warning(
                 "Error while reading CSV configuration file %s: Ignoring."
                 " Error was: %s",
                 csvcfgfile, ex)
+        
         videoname = videofilename.rsplit('.', 1)[0]
 
         self.extra = extra
@@ -283,6 +322,92 @@ ParticleLinker exited with status {}
                 attachments=[plocator.logfile,
                              plinker.logfile]
             )
+
+
+class Merger(gc3libs.Application):
+    appname = "merger"
+    def __init__(self, vdescrfile, inputs, **extra):
+        # Rename files in destination folder
+        scriptdir = os.path.dirname(__file__)
+        self.vdescrfile = vdescrfile
+        self.inboxdir = os.path.dirname(vdescrfile)
+        infiles = {
+            os.path.join(scriptdir, 'plocator.sh'): 'plocator.sh',
+            os.path.join(scriptdir, 'bemovi.R'): 'bemovi.R',
+            vdescrfile: 'data/1-raw/video.description.txt',
+        }
+        for index, (ldata, tdata) in enumerate(inputs):
+            infiles[ldata] = 'data/2-particle/particle-%05d.RData' % index
+            infiles[tdata] = 'data/3-trajectory/trajectory-%05d.RData' % index
+        extra['jobname'] = "Merger_%d_%s" % (index, time.strftime("%Y-%m-%d_%H.%M", time.localtime()))
+        extra['output_dir'] = os.path.join(self.inboxdir + '.out', extra['jobname'])
+        gc3libs.Application.__init__(
+            self,
+            arguments = ["./plocator.sh", "merger"],
+            inputs = infiles,
+            outputs = {"data/5-merged/Master.RData": "Master.RData"},
+            # outputs = gc3libs.ANY_OUTPUT,
+            stdout = 'merger.log',
+            join = True,
+            **extra)
+
+
+class FinalMerger(Merger):
+    """This application is exactly like Merger, but when it's terminated
+    it will delete its input files"""
+    appname = "final_merger"
+    def __init__(self, vdescrfile, tasks, email_from, email_to, smtp_server, stats, session, **extra):
+        self.email_from = email_from
+        self.email_to = email_to
+        self.smtp_server = smtp_server
+        self.stats = stats
+        self.videotasks = tasks
+        self.videofiles = [t.videofile for t in tasks]
+        self.session = session
+        inputs = []
+        for task in tasks:
+            plinker, ptracker = task.tasks
+            inputs.append((plinker.rdatafile, ptracker.rdatafile))
+        Merger.__init__(self, vdescrfile, inputs, **extra)
+
+    def terminated(self):
+        # if terminated with success, delete input files and send
+        # notification
+        try:
+            text = """Report from inbox {}
+
+Files processed:
+{}
+
+Statistics:
+{}
+""".format(os.path.dirname(self.vdescrfile), str.join('\n', self.videofiles), self.stats)
+            msg = MIMEText(text)
+            msg['Subject'] = "GBemovi: Experiment in %s ended successfully." % os.path.dirname(self.vdescrfile)
+            msg['From'] = self.email_from
+            msg['To'] = str.join(', ', self.email_to)
+            s = smtplib.SMTP(self.smtp_server)
+            s.sendmail(self.email_from, self.email_to, msg.as_string())
+            s.quit()
+            log.info("Successfully sent email to %s", str.join(', ', self.email_to))
+        except Exception as ex:
+            log.error("Error while sending an email to %s via %s: %s",
+                      self.email_to, self.smtp_server, ex)
+
+        for videofile in self.videofiles:
+            try:
+                os.remove(videofile)
+                log.info("Removed input file %s", videofile)
+            except Exception as ex:
+                log.warning("Ignorinig error while removing input file %s: %s",
+                            videofile, ex)
+
+        for task in self.videotasks:
+            try:
+                self.session.remove(task.persistent_id)
+                task._controller.remove(task)
+            except Exception as ex:
+                log.warning("Ignoring error while removing task %s from session: %s", task.jobname, ex)
 
     
 class GBemoviDaemon(SessionBasedDaemon):
@@ -364,64 +489,177 @@ class GBemoviDaemon(SessionBasedDaemon):
     def before_main_loop(self):
         # Setup new command
         self.comm.server.register_function(self.merge_data, "merge")
+        self.comm.server.register_function(self.cleanup_session, "cleanup")
 
     def merge_data(self):
         # Scan all the output directories. Find the plocator.Rdata
         # files, add a merger for each input directory.
         scriptdir = os.path.dirname(__file__)
-        msg = ""
+
         # Walk through our jobs, group "experiments" and run a merger for each of them
         mergers = defaultdict(list)
+        newapps = []
         for task in self.session:
             try:
                 if task.appname != 'bemoviworkflow':
                     continue
-            except:
+            except AttributeError:
+                # Some class might not have appname attribute
                 continue
             if task.execution.state != Run.State.TERMINATED:
                 # only merge completed jobs
                 continue
+            # FIXME: We should also avoid running the merger twice for
+            # the same job
+            
             # find plinker radata files
             plinker = task.tasks[0]
             ptracker = task.tasks[1]
             linkerdata = plinker.rdatafile
             trackerdata = ptracker.rdatafile
-            mergers[task.vdescrfile].append((task.base_output_dir, linkerdata, trackerdata))
+            mergers[task.vdescrfile].append((linkerdata, trackerdata))
 
         for vdescrfile, inputs in mergers.items():
             if not os.path.exists(vdescrfile):
                 self.log.warning("Ignoring inbox directory %s as there is no video.description.txt file", os.path.dirname(vdescrfile))
                 continue
-            # Rename files in destination folder
-            scriptdir = os.path.dirname(__file__)
-            infiles = {
-                os.path.join(scriptdir, 'plocator.sh'): 'plocator.sh',
-                os.path.join(scriptdir, 'bemovi.R'): 'bemovi.R',
-                vdescrfile: 'data/1-raw/video.description.txt',
-            }
-            for index, (outputdir, ldata, tdata) in enumerate(inputs):
-                infiles[ldata] = 'data/2-particle/particle-%05d.RData' % index
-                infiles[tdata] = 'data/3-trajectory/trajectory-%05d.RData' % index
-            extra = self.extra.copy()
-            extra['jobname'] = "Merger_%d_%s" % (index, time.strftime("%Y-%m-%d_%H.%M", time.localtime()))
-            extra['output_dir'] = os.path.join(os.path.dirname(outputdir), extra['jobname'])
-            app = gc3libs.Application(
-                arguments = ["./plocator.sh", "merger"],
-                inputs = infiles,
-                outputs = {"data/5-merged/Master.RData": "Master.RData"},
-                # outputs = gc3libs.ANY_OUTPUT,
-                stdout = 'merger.log',
-                join = True,
-                **extra)
+            app = Merger(vdescrfile, inputs, **self.extra)
+            newapps.append(app)
             self._controller.add(app)
             self.session.add(app)
             # FIXME: Submit merger application
-            self.log.info("Merging data from %d input videos" % index)
+            self.log.info("Creating Merger application from %d input videos" % len(inputs))
 
-        if mergers:
-            return "Merged videos from followinig directories: %s" % str.join(', ', mergers.keys())
+        msg = []
+        for app in newapps:
+            msg.append("Merger application created from directory %s" % app.inboxdir)
+        if msg:
+            return "Merging data for %d experiments.\n%s" % (len(msg), str.join('\n', msg))
+
+    def cleanup_session(self):
+        # - if all the movies (not ignored) in gbemovi.csv file have completed
+        #   successfully:
+        # for each experiment:
+        #   => run "final" merger
+        #   => delete input files
+        #   => cleanup session
+        #   => send report ("Experiment XXX final report")
+        #
+        # actually, we have to:
+        # * submit final merger
+        #
+        # * the merger has a terminated() that remove the files and
+        #   send a notification
+        # * finally, the merger removes the previous jobs from the session.
+
+        # group running jobs by their vdescrfile attribute
+        experiments = defaultdict(list)
+        not_completed = set()
+        newapps = []
+        for task in self.session:
+            try:
+                if task.appname != 'bemoviworkflow':
+                    continue
+            except AttributeError:
+                continue
+            if task.execution.state != Run.State.TERMINATED:
+                continue
+            experiments[task.vdescrfile].append(task)        
+
+        # Now we must filter non-completed experiments. There are two kinds:
+        # 1) experiments with mandatory video files that failed
+        # 2) experiments with files not yet processed.
+        #
+        # not_completed currently contains jobs of the first kind
+        for vdescrfile, tasks in experiments.items():
+            inboxdir = os.path.dirname(vdescrfile)
+            try:
+                bemovicfg = BemoviCSVConf(os.path.join(inboxdir, 'gbemovi.csv'))
+            except Exception as ex:
+                # Ignoring
+                self.log.error(
+                    "Unable to run FinalMerger application when gbemovi.csv is"
+                    " missing or invalid. Ignoring directory %s: %s", inboxdir, ex)
+                not_completed.add(vdescrfile)
+                continue
+            for task in tasks:
+                if task.should_resubmit():
+                    # We could access task.video_is_needed but the csv
+                    # file might have been changed in the meantime.
+                    if bemovicfg.get(task.videofile).get('video_is_needed'):
+                        # Cannot merge this, experiment is not finished.
+                        not_completed.add(task.vdescrfile)
+                        continue
+            if vdescrfile in not_completed:
+                self.log.warning("Ignoring directory %s: some mandatory video were not correctly processed.", inboxdir)
+                continue
+            
+            if os.path.exists(vdescrfile):
+                # We need now to check if all the videos in the
+                # experiment were processed
+                videofiles = [os.path.basename(t.videofile) for t in tasks]
+                fd = open(vdescrfile)
+                data = fd.read().replace('\r', '\n')
+                fd.close()
+                # Note: we ignore the header line
+                descriptions = [i.split()[0] for i in data.splitlines()[1:]]
+
+                # Descriptions could miss the extension.
+                intersection = set(descriptions).intersection(videofiles)
+                fileext = ''
+                if not intersection:
+                    # description file are probably missing the extension.
+                    for descr in descriptions:
+                        for key in videofiles:
+                            if key.startswith(descr):
+                                fileext = key[len(descr):]
+                                break
+                        if fileext:
+                            break
+                descriptions = [i+fileext for i in descriptions]
+
+                # Now we know the experiment is complete iff
+                # descriptions is exactly the list of videofiles.
+                if set(descriptions) != set(videofiles):
+                    self.log.info("Inbox %s not yet completed",
+                                  os.path.dirname(vdescrfile))
+                    continue
+                
+                self.log.info("Creating FinalMerger for inbox %s",
+                              os.path.dirname(vdescrfile))
+                inputs = []
+                email_to = []
+                stats = []
+                for task in tasks:
+                    plinker, ptracker = task.tasks
+                    email_to.append(bemovicfg.get(task.videofile).get('email_to'))
+                    stats.append("""Video file {}
+  Linker
+    duration: {}
+    exitcode: {}
+
+  Tracker
+    duration: {}
+    exitcode: {}
+""".format(task.videofile,
+           plinker.execution.duration, plinker.execution.exitcode,
+           ptracker.execution.duration, ptracker.execution.exitcode))
+
+                app = FinalMerger(vdescrfile,
+                                  tasks,
+                                  self.params.email_from,
+                                  email_to,
+                                  self.params.smtp_server,
+                                  str.join('\n', stats),
+                                  self.session,
+                                  **self.extra)
+                newapps.append(app)
+                self._controller.add(app)
+                self.session.add(app)
+        if newapps:
+            return "Running FinalMerger for the following inboxes:\n%s" % str.join('\n', [app.inboxdir for app in newapps])
         else:
-            return "No data to merge"
+            return "No experiment is done yet"
 
     def new_tasks(self, extra, epath=None, emask=0):
         extra['rparams'] = {
