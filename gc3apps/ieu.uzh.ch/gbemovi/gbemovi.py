@@ -27,6 +27,12 @@ import time
 import csv
 import logging
 from collections import defaultdict
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+import socket
+import pwd
 
 import gc3libs
 import gc3libs.poller as plr
@@ -57,6 +63,8 @@ class ParticleLocator(gc3libs.Application):
                                  'particle.RData')
         self.rdatafile = os.path.join(extra['output_dir'],
                                       'particle.RData')
+        self.logfile = os.path.join(extra['output_dir'],
+                                    'plocator.log')
         self.fps = extra['rparams']['fps']
         self.pixel_to_scale = extra['rparams']['pixel_to_scale']
         self.difference_lag = extra['rparams']['difference_lag']
@@ -98,6 +106,8 @@ class ParticleLinker(gc3libs.Application):
                                  'trajectory.RData')
         self.rdatafile = os.path.join(extra['output_dir'],
                                       'trajectory.RData')
+        self.logfile = os.path.join(extra['output_dir'],
+                                    'plinker.log')
         self.fps = extra['rparams']['fps']
         self.pixel_to_scale = extra['rparams']['pixel_to_scale']
         self.difference_lag = extra['rparams']['difference_lag']
@@ -132,14 +142,16 @@ class ParticleLinker(gc3libs.Application):
 
 class BemoviWorkflow(SequentialTaskCollection):
     appname = 'bemoviworkflow'
-    def __init__(self, videofile,  **extra):
+    def __init__(self, videofile, email_from, smtp_server, **extra):
         self.videofile = videofile
         videofilename = os.path.basename(videofile)
 
         inboxdir = os.path.dirname(videofile)
         self.vdescrfile = os.path.join(inboxdir, 'video.description.txt')
         self.inboxdir = inboxdir
-        self.email = ''
+        self.email_to = ''
+        self.email_from = email_from
+        self.smtp_server = smtp_server
         self.video_is_needed = True
 
         # Look for a 'configuration' file in the inboxdir to override
@@ -185,7 +197,7 @@ class BemoviWorkflow(SequentialTaskCollection):
                                       line[6], self.videofile, ex,
                                       extra['max_walltime'])
                         self.video_is_needed = False if line[7].lower() == 'optional' else True
-                        self.email = line[6]
+                        self.email_to = line[8]
 
         except IOError:
             # File not found, ignore
@@ -221,7 +233,58 @@ class BemoviWorkflow(SequentialTaskCollection):
                 return True
         return False
 
+    def _send_notification(self, subject, body, attachments=None, debug=False):
+        log.info("Sending notification to %s with subject \"%s\".", self.email_to, subject)
+        if debug:
+            log.debug("Subject: \"%s\"", subject)
+            log.debug("Body: \"%s\"", body)
+        else:
+            try:
+                msg = MIMEMultipart()
+                msg['Subject'] = subject
+                msg['From'] = self.email_from
+                msg['To'] = self.email_to
+                msg.attach(MIMEText(body))
+                if attachments:
+                    for attachment in attachments:
+                        with open(attachment) as fd:
+                            msg.attach(
+                                MIMEApplication(fd.read(),
+                                                name=attachment)
+                            )
+                s = smtplib.SMTP(self.smtp_server)
+                s.sendmail(self.email_from, [self.email_to], msg.as_string())
+                s.quit()
+                log.info("Successfully sent email to %s", self.email_to)
+            except Exception as ex:
+                log.error("Error while sending an email to %s via %s: %s",
+                          self.email_to, self.smtp_server, ex)
+            
 
+    def terminated(self):
+        """Check if the processing went fine, otherwise send an email."""
+        plocator, plinker = self.tasks
+        if plocator.execution.exitcode != 0 or \
+           plinker.execution.exitcode != 0:
+            # Send notification
+            
+            # path of self.videofile should be relative to the inbox dir.
+            shortvideofile = self.videofile.replace(os.path.dirname(self.inboxdir), '<inbox>')
+            subject = "GBemovi: Failed processing file %s" % shortvideofile
+            msg = """File {} failed processing.
+ParticleLocator exited with status {}
+ParticleLinker exited with status {}
+""".format(shortvideofile,
+           plocator.execution.exitcode,
+           plinker.execution.exitcode)
+            self._send_notification(
+                subject,
+                msg,
+                attachments=[plocator.logfile,
+                             plinker.logfile]
+            )
+
+    
 class GBemoviDaemon(SessionBasedDaemon):
     """Daemon to run bemovi workflow"""
     version = '1.0'
@@ -268,6 +331,18 @@ class GBemoviDaemon(SessionBasedDaemon):
             help="Comma separated list of valid extensions for video file."
             " Files ending with an extension non listed here will be ignored."
             " Default: %(default)s")
+        hostname = socket.gethostname()
+        user = pwd.getpwuid(os.getuid()).pw_name
+        email_from = '%s+gbemovi@%s' % (user, hostname)
+
+        self.add_param(
+            '--email-from',
+            default=email_from,
+            help="Email to use when sending notifications. Default: %(default)s")
+        self.add_param(
+            '--smtp-server',
+            default='localhost',
+            help="SMTP server to use to send notifications. Default: %(default)s")
 
     def setup_args(self):
         SessionBasedDaemon.setup_args(self)
@@ -377,7 +452,10 @@ class GBemoviDaemon(SessionBasedDaemon):
                             self.log.warning("Ignoring file %s as it starts with '._'", filename)
                             continue
                         if filename not in known_videos:
-                            new_jobs.append(BemoviWorkflow(filename, **extra))
+                            new_jobs.append(BemoviWorkflow(filename,
+                                                           self.params.email_from,
+                                                           self.params.smtp_server,
+                                                           **extra))
                             known_videos.append(filename)
                         else:
                             # In case it exists, but the application
@@ -387,27 +465,13 @@ class GBemoviDaemon(SessionBasedDaemon):
                             if job.should_resubmit():
                                 self.log.info("File %s might have been overwritten. Resubmitting job %s",
                                               filename, job.persistent_id)
-                                # Remove from session
-                                # self.session.remove(job.persistent_id)
-                                # new_jobs.append(BemoviWorkflow(filename, **extra))
+                                # self._controller.kill(job)
+                                # self._controller.progress()
+                                # self._controller.redo(job, from_stage=0)
             return new_jobs
 
         fpath = epath.path
-        if emask & plr.events['IN_CREATE'] and False:
-            # FIXME: for some reason emask & IN_CREATE & IN_ISDIR does not
-            # work as expected. Using os.path.isdir() instead
-            if emask&plr.events['IN_ISDIR'] or os.path.isdir(epath.path):
-
-                # Creation of a directory or a file.  For each directory,
-                # we need to add a new inotify watch to allow users to
-                # organize files into directories.
-                if fpath.endswith('.out'):
-                    self.log.warning("NOT adding directory %s to the list of input folders as it looks like an OUTPUT folder!" % fpath)
-                else:
-                    self.log.debug("Adding directory %s to the list of input folders" % fpath)
-                    self.pollers.append(plr.get_poller(fpath, self.notify_event_mask, recurse=True))
-
-        elif emask & plr.events['IN_CLOSE_WRITE']:
+        if emask & plr.events['IN_CLOSE_WRITE']:
             if fpath.rsplit('.', 1)[-1] not in self.valid_extensions:
                 self.log.info("Ignoring file %s as it does not end with a valid extension (%s)",
                               fpath, str.join(',', self.valid_extensions))
@@ -427,7 +491,10 @@ class GBemoviDaemon(SessionBasedDaemon):
                         self.log.info("Ignoring already successfully processed file %s", fpath)
                     # In both case, do not return any new job
                     return []
-            return [BemoviWorkflow(fpath, **extra)]
+            return [BemoviWorkflow(fpath,
+                                   self.params.email_from,
+                                   self.params.smtp_server,
+                                   **extra)]
         return []
 
 
