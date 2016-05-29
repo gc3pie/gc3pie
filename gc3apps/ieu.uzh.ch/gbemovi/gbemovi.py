@@ -85,12 +85,12 @@ class BemoviCSVConf(object):
                     'email_to': line[8],
                 }
                 try:
-                    data['max_walltime'] = Duration(line[6])
+                    data['requested_walltime'] = Duration(line[6])
                 except ValueError as ex:
                     log.error("Unable to parse walltime '%s' for key %s in file"
                               " %s: %s. Using default value of %s",
                               line[6], line[0], path, ex, default_walltime)
-                    data['max_walltime'] = Duration(default_walltime)
+                    data['requested_walltime'] = Duration(default_walltime)
                 key = line[0]
                 if key.lower() == "default":
                     self.defaults = data
@@ -112,8 +112,22 @@ class BemoviCSVConf(object):
     def __iter__(self):
         return iter(self.keys())
 
+class BemoviApp(gc3libs.Application):
+    def update_configuration(self, extra):
+        self.rparams.update(extra['rparams'])
+        self.requested_walltime = extra['requested_walltime']
+        extra_params = [
+            self.rparams['memory'],
+            self.rparams['fps'],
+            self.rparams['pixel_to_scale'],
+            self.rparams['difference_lag'],
+            self.rparams['threshold1'],
+            self.rparams['threshold2'],
+        ]
+        self.arguments[2:] = extra_params
 
-class ParticleLocator(gc3libs.Application):
+
+class ParticleLocator(BemoviApp):
     application = 'plocator'
 
     def __init__(self, videofile, **extra):
@@ -162,7 +176,7 @@ class ParticleLocator(gc3libs.Application):
             **extra)
 
 
-class ParticleLinker(gc3libs.Application):
+class ParticleLinker(BemoviApp):
     application = 'plinker'
 
     def __init__(self, particlefile, **extra):
@@ -227,25 +241,6 @@ class BemoviWorkflow(SequentialTaskCollection):
         # Look for a 'configuration' file in the inboxdir to override
         # bemovi parameters
 
-        csvcfgfile = os.path.join(inboxdir, 'gbemovi.csv')
-        try:
-            cfg = BemoviCSVConf(csvcfgfile).get(videofile)
-            extra['rparams']['fps'] = cfg.get('fps')
-            extra['rparams']['pixel_to_scale'] = cfg.get('pixel_to_scale')
-            extra['rparams']['difference_lag'] = cfg.get('difference_lag')
-            extra['rparams']['threshold1'] = cfg.get('threshold1')
-            extra['rparams']['threshold2'] = cfg.get('threshold2')
-            extra['max_walltime'] = cfg.get('max_walltime')
-            self.video_is_needed = cfg.get('video_is_needed')
-            self.email_to = cfg.get('email_to')
-        except IOError:
-            pass
-        except Exception as ex:
-            log.warning(
-                "Error while reading CSV configuration file %s: Ignoring."
-                " Error was: %s",
-                csvcfgfile, ex)
-        
         videoname = videofilename.rsplit('.', 1)[0]
 
         self.extra = extra
@@ -256,6 +251,8 @@ class BemoviWorkflow(SequentialTaskCollection):
             inboxdir + '.out',
             extra['jobname'])
 
+        self.update_configuration()
+
         plocator = ParticleLocator(videofile, **extra)
         plinker = ParticleLinker(
             os.path.join(extra['base_output_dir'],
@@ -264,6 +261,29 @@ class BemoviWorkflow(SequentialTaskCollection):
             **extra)
         SequentialTaskCollection.__init__(self, [plocator, plinker], **extra)
 
+    def update_configuration(self):
+        csvcfgfile = os.path.join(self.inboxdir, 'gbemovi.csv')
+        try:
+            cfg = BemoviCSVConf(csvcfgfile).get(self.videofile)
+            self.extra['rparams']['fps'] = cfg.get('fps')
+            self.extra['rparams']['pixel_to_scale'] = cfg.get('pixel_to_scale')
+            self.extra['rparams']['difference_lag'] = cfg.get('difference_lag')
+            self.extra['rparams']['threshold1'] = cfg.get('threshold1')
+            self.extra['rparams']['threshold2'] = cfg.get('threshold2')
+            self.extra['requested_walltime'] = cfg.get('requested_walltime')
+            self.video_is_needed = cfg.get('video_is_needed')
+            self.email_to = cfg.get('email_to')
+            for task in self.tasks:
+                task.update_configuration(self.extra)
+        except IOError:
+            pass
+        except Exception as ex:
+            log.warning(
+                "Error while reading CSV configuration file %s: Ignoring."
+                " Error was: %s",
+                csvcfgfile, ex)
+        
+        
     def should_resubmit(self):
         """Return True or False if the job should be resubmitted or not"""
         for task in self.tasks:
@@ -696,11 +716,12 @@ class GBemoviDaemon(SessionBasedDaemon):
                             self.log.warning("Ignoring file %s as it starts with '._'", filename)
                             continue
                         if filename not in known_videos:
-                            new_jobs.append(BemoviWorkflow(filename,
-                                                           self.params.email_from,
-                                                           self.params.smtp_server,
-                                                           **extra))
-                            known_videos.append(filename)
+                            app = BemoviWorkflow(filename,
+                                                 self.params.email_from,
+                                                 self.params.smtp_server,
+                                                 **extra)
+                            new_jobs.append(app)
+                            known_videos[filename] = app
                         else:
                             # In case it exists, but the application
                             # termianted with an exit code, then we
@@ -727,6 +748,7 @@ class GBemoviDaemon(SessionBasedDaemon):
                     if job.should_resubmit():
                         self.log.info("Re-submitting job %s as file %s has been overwritten",
                                       job.persistent_id, fpath)
+                        job.update_configuration()
                         self._controller.kill(job)
                         self._controller.progress()
                         self._controller.redo(job, from_stage=0)
