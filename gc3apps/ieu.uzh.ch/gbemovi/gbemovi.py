@@ -373,15 +373,24 @@ class FinalMerger(Merger):
     def terminated(self):
         # if terminated with success, delete input files and send
         # notification
+        if self.execution.exitcode != 0:
+            # nothing to do
+            del self.videotasks
+            return
         try:
-            text = """Report from inbox {}
+            text = """Report from experiment in inbox {}
+
+Path to merged file: {}
 
 Files processed:
 {}
 
 Statistics:
 {}
-""".format(os.path.dirname(self.vdescrfile), str.join('\n', self.videofiles), self.stats)
+""".format(os.path.dirname(self.vdescrfile),
+           os.path.join(self.output_dir, 'merger.log'),
+           str.join('\n', self.videofiles),
+           self.stats)
             msg = MIMEText(text)
             msg['Subject'] = "GBemovi: Experiment in %s ended successfully." % os.path.dirname(self.vdescrfile)
             msg['From'] = self.email_from
@@ -408,7 +417,8 @@ Statistics:
                 task._controller.remove(task)
             except Exception as ex:
                 log.warning("Ignoring error while removing task %s from session: %s", task.jobname, ex)
-
+        # This is useful when the daemon is restarted...
+        del self.videotasks
     
 class GBemoviDaemon(SessionBasedDaemon):
     """Daemon to run bemovi workflow"""
@@ -537,20 +547,16 @@ class GBemoviDaemon(SessionBasedDaemon):
             return "Merging data for %d experiments.\n%s" % (len(msg), str.join('\n', msg))
 
     def cleanup_session(self):
-        # - if all the movies (not ignored) in gbemovi.csv file have completed
-        #   successfully:
         # for each experiment:
         #   => run "final" merger
         #   => delete input files
         #   => cleanup session
         #   => send report ("Experiment XXX final report")
         #
-        # actually, we have to:
-        # * submit final merger
-        #
-        # * the merger has a terminated() that remove the files and
-        #   send a notification
-        # * finally, the merger removes the previous jobs from the session.
+        # This is implemented via the FinalMerger application, which
+        # is similar to the Merger application but is also responsible
+        # for deleting the input files and sending a report after
+        # termination.
 
         # group running jobs by their vdescrfile attribute
         experiments = defaultdict(list)
