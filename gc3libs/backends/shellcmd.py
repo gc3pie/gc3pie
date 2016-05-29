@@ -415,7 +415,7 @@ ReturnCode=%x"""
             log.error("Unable to find job '%s': no pid found." % pid)
         else:
             exit_code, stdout, stderr = self.transport.execute_command(
-                'kill $(ps -ax -o sess=,pid= | egrep "^[ \t]*%s[ \t]")' % stout.strip())
+                'kill $(ps -ax -o sess=,pid= | egrep "^[ \t]*%s[ \t]")' % stdout.strip())
             # XXX: should we check that the process actually died?
             if exit_code != 0:
                 # Error killing the process. It may not exists or we don't
@@ -758,6 +758,18 @@ ReturnCode=%x"""
                 # Job is running. Check manpage of ps both on linux
                 # and BSD to know the meaning of these statuses.
                 app.execution.state = Run.State.RUNNING
+            # Check if we need to cancel the job
+            exit_code2, stdout2, stderr2 = self.transport.execute_command(
+                "ps -p %d -o etimes=" % pid)
+            elapsed = Duration(stdout2.strip() + 'seconds')
+            if elapsed > self.max_walltime or elapsed > app.requested_walltime:
+                log.warning("Job %s ran for %s, exceeding requested_walltime %s or max_walltime %s of resource: cancelling.",
+                            app, elapsed.to_timedelta(), app.requested_walltime, self.max_walltime)
+                self.cancel_job(app)
+                app.execution.state = Run.State.TERMINATING
+                # We also need to set the signal
+                app.execution.returncode = (15, 1)
+                return app.execution.state
         else:
             log.debug(
                 "Process with PID %d not found."
