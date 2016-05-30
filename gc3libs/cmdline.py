@@ -17,8 +17,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-"""
-Prototype classes for GC3Libs-based scripts.
+"""Prototype classes for GC3Libs-based scripts.
 
 Classes implemented in this file provide common and recurring
 functionality for GC3Libs command-line utilities and scripts.  User
@@ -35,6 +34,10 @@ There are currently two public classes provided here:
   Base class for the ``grosetta``/``ggamess``/``gcodeml`` scripts.
   Implements a long-running script to submit and manage a large number
   of jobs grouped into a "session".
+
+:class:`SessionBasedDaemon`
+  Base class for GC3Pie daemons. Implements a long-running daemon with
+  XML-RPC interface and support for file/http/swift based inboxes
 
 """
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
@@ -1599,8 +1602,54 @@ class _CommDaemon(object):
 
 
 class SessionBasedDaemon(_SessionBasedCommand):
-    """
-    Base class for GC3Pie daemons
+    """Base class for GC3Pie daemons. Implements a long-running script
+    that can daemonize, provides an XML-RPC interface to interact with
+    the current workflow and implement the concept of "inbox" to
+    trigger the creation of new jobs as soon as a new file is created
+    on a folder, or is available on an HTTP(s) or SWIFT endpoint.
+
+    The generic script impelemnts a command line like the following::
+
+      PROG [global options] server|client [specific options]
+
+    When running as a `server` it will accepts the same options as a
+    :py:class:`SessionBasedScript()` class, plus some extra options:
+
+      PROG server [server options] [INBOX [INBOX]]
+
+    Available options:
+
+    `-F, --foreground`
+      do not daemonize.
+
+    `--syslog`
+      send logs to syslog instead of writing it to a file
+
+    `--working-dir`
+      working directory of the daemon, where the session
+      will be stored and some auxiliary files will be saved
+
+    `--notify-state [EVENT,[EVENT]]`
+      a comma separated list of events
+      on the inbox we want to be notified of
+
+    `--listen IP`
+      IP or hostname we want to listen to. Default is localhost.
+
+    `INBOX`
+      path or url of one or more folder/url that will be watched for
+      new events.
+
+    When running as client instead::
+
+      PROG client [-c FILE] ARGS
+
+    `-c`
+      file written by the server conatining the hostname and port the
+      server is listening to. Also accepts a path to the directory
+      (the value of `--working-dir` the server was started with) where
+      the `daemon.port` file created by the server is stored.
+
     """
 
     def cleanup(self, signume=None, frame=None):
@@ -1673,9 +1722,12 @@ class SessionBasedDaemon(_SessionBasedCommand):
                        " Default: %(default)s. Available events: " +
                        str.join(', ', [i[3:] for i in notify_events.keys()]))
 
-        self.parser_server.add_param('--listen', default="localhost",
-                       help="IP or hostname where the XML-RPC thread should"
-                       " listen to. Default: %(default)s")
+        self.parser_server.add_param(
+            '--listen',
+            default="localhost",
+            metavar="IP",
+            help="IP or hostname where the XML-RPC thread should"
+            " listen to. Default: %(default)s")
 
         self.parser_server.add_param('inbox', nargs='*',
                        help="`inbox` directories: whenever a new file is"
@@ -1968,6 +2020,33 @@ class SessionBasedDaemon(_SessionBasedCommand):
         if stats[gc3libs.Run.State.NEW] > 0:
             rc |= 8
         return rc
+
+    def new_tasks(self, extra, epath=None, emask=0):
+        """
+        This method is called every time the daemon is started with
+        `epath=None` and `emask=0`. Similarly to
+        :py:meth:`SessionBasedScript.new_tasks()` method it is
+        supposed to return a list of :py:class:`Task()` instances to
+        be added to the session.
+
+        It is also called for each event in INBOX (for instance every
+        time a file is created), depending on the value of
+        `--notify-state` option. In this case the method will be
+        called for each file with the file path and the mask of the
+        event as arguments.
+
+        :param extra: by default: `self.extra`
+
+        :param epath: an instance of :py:class:`gc3libs.url.Url`
+                      containing the path to the updated file or
+                      directory :param
+
+        :param emask: mask explaining the event type. This reflects
+                      the inotify events, and are defined in
+                      :py:const:`gc3libs.poller.events`
+
+        """
+        return []
 
 
 class SessionBasedScript(_SessionBasedCommand):
