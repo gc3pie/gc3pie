@@ -92,14 +92,26 @@ available_pollers = {}
 
 
 class Poller(object):
-    """Base class for all Pollers.
+    """Abstract class for an Url Poller.
+
+    A :py:class:`Poller` is a class that tracks new events on a
+    specific :py:class:`Url`. When calling the :py:meth:`get_events()`
+    it will return a list of tuples (Url, mask) containing the events
+    occurred for each one of the underlying url.
+
     """
     def __init__(self, url, mask, **kw):
         self.url = Url(url)
         self.mask = mask
 
     def get_events(self):
-        """Returns a list of tuple (url, mask)"""
+        """
+        Returns a list of tuple (url, mask).
+
+        Depending on the implementation, some events will make no
+        sense as they are not clearly defined, or it's not possible to
+        listen for those events.
+        """
         raise NotImplementedError(
             "Abstract method `Poller.get_events()` called "
             " - this should have been defined in a derived class.")
@@ -115,7 +127,15 @@ def register_poller(scheme, cls):
 
 class INotifyPoller(Poller):
     """Poller implementation that uses inotifyx to track new events on the
-    filesystem"""
+    specified Url.
+
+    :params recurse: When set to `True`, automatically track also
+    events in any already existing or newly created subfolder.
+
+    This poller is used by default when the system supports INotify
+    and the Url has a `file` schema
+
+    """
 
     def __init__(self, url, mask, recurse=False, **kw):
         Poller.__init__(self, url, mask, **kw)
@@ -169,7 +189,12 @@ if inotifyx:
 
 class FilePoller(Poller):
     """Poller implementation that uses regular `os` module to track for
-    new events on a filesystem."""
+    new events on a filesystem.
+
+    This implementation is used to track Url with `file` schema
+    whenever :py:mod:`inotifyx` module is not available.
+
+    """
     def __init__(self, url, mask, **kw):
         Poller.__init__(self, url, mask, **kw)
         self._path = self.url.path
@@ -312,6 +337,12 @@ if swiftclient:
 
 
 def get_poller(url, mask=events['IN_ALL_EVENTS'], **kw):
+    """
+    Constructor method that returns the right poller for the specified
+    :py:mod:`gc3libs.url.Url`.
+
+    """
+
     url = Url(url)
     try:
         pollercls = available_pollers[url.scheme]
