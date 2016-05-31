@@ -390,15 +390,15 @@ class SequentialTaskCollection(TaskCollection):
         super(SequentialTaskCollection, self).progress()
 
 
-    def redo(self, from_stage=0):
+    def redo(self, from_stage=0, *args, **kwargs):
         """
         Rewind the sequence to a given stage and reset its state to ``NEW``.
         """
-        super(SequentialTaskCollection, self).redo()
+        super(SequentialTaskCollection, self).redo(*args, **kwargs)
         self._current_task = from_stage
         task = self.stage()
         if task is not None:
-            task.redo()
+            task.redo(*args, **kwargs)
         # All other tasks should be put in NEW again
         for i in range(from_stage+1, len(self.tasks)):
             self.tasks[i].execution.state = Run.State.NEW
@@ -825,7 +825,7 @@ class ParallelTaskCollection(TaskCollection):
         super(ParallelTaskCollection, self).progress()
 
 
-    def redo(self):
+    def redo(self, *args, **kwargs):
         """
         Reset collection and all included tasks to state ``NEW``.
 
@@ -835,8 +835,8 @@ class ParallelTaskCollection(TaskCollection):
         when ``redo()`` is called.
         """
         for task in self.tasks:
-            task.redo()
-        super(ParallelTaskCollection, self).redo()
+            task.redo(*args, **kwargs)
+        super(ParallelTaskCollection, self).redo(*args, **kwargs)
 
 
     def submit(self, resubmit=False, targets=None, **extra_args):
