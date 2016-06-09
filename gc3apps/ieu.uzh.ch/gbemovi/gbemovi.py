@@ -49,7 +49,7 @@ class BemoviCSVConf(object):
         self.path = path
         self.cfg = {}
         self.defaults = {}
-        with open(path) as fd:
+        with open(path, 'rU') as fd:
             log.debug("Reading CSV configuration file %s", path)
             cr = csv.reader(fd)
             lineno = 0
@@ -282,8 +282,8 @@ class BemoviWorkflow(SequentialTaskCollection):
                 "Error while reading CSV configuration file %s: Ignoring."
                 " Error was: %s",
                 csvcfgfile, ex)
-        
-        
+
+
     def should_resubmit(self):
         """Return True or False if the job should be resubmitted or not"""
         for task in self.tasks:
@@ -318,7 +318,7 @@ class BemoviWorkflow(SequentialTaskCollection):
             except Exception as ex:
                 log.error("Error while sending an email to %s via %s: %s",
                           self.email_to, self.smtp_server, ex)
-            
+
 
     def terminated(self):
         """Check if the processing went fine, otherwise send an email."""
@@ -326,7 +326,7 @@ class BemoviWorkflow(SequentialTaskCollection):
         if plocator.execution.exitcode != 0 or \
            plinker.execution.exitcode != 0:
             # Send notification
-            
+
             # path of self.videofile should be relative to the inbox dir.
             shortvideofile = self.videofile.replace(os.path.dirname(self.inboxdir), '<inbox>')
             subject = "GBemovi: Failed processing file %s" % shortvideofile
@@ -439,7 +439,7 @@ Statistics:
                 log.warning("Ignoring error while removing task %s from session: %s", task.jobname, ex)
         # This is useful when the daemon is restarted...
         del self.videotasks
-    
+
 class GBemoviDaemon(SessionBasedDaemon):
     """Daemon to run bemovi workflow"""
     version = '1.0'
@@ -541,7 +541,7 @@ class GBemoviDaemon(SessionBasedDaemon):
                 continue
             # FIXME: We should also avoid running the merger twice for
             # the same job
-            
+
             # find plinker radata files
             plinker = task.tasks[0]
             ptracker = task.tasks[1]
@@ -590,7 +590,7 @@ class GBemoviDaemon(SessionBasedDaemon):
                 continue
             if task.execution.state != Run.State.TERMINATED:
                 continue
-            experiments[task.vdescrfile].append(task)        
+            experiments[task.vdescrfile].append(task)
 
         # Now we must filter non-completed experiments. There are two kinds:
         # 1) experiments with mandatory video files that failed
@@ -619,7 +619,7 @@ class GBemoviDaemon(SessionBasedDaemon):
             if vdescrfile in not_completed:
                 self.log.warning("Ignoring directory %s: some mandatory video were not correctly processed.", inboxdir)
                 continue
-            
+
             if os.path.exists(vdescrfile):
                 # We need now to check if all the videos in the
                 # experiment were processed
@@ -650,7 +650,7 @@ class GBemoviDaemon(SessionBasedDaemon):
                     self.log.info("Inbox %s not yet completed",
                                   os.path.dirname(vdescrfile))
                     continue
-                
+
                 self.log.info("Creating FinalMerger for inbox %s",
                               os.path.dirname(vdescrfile))
                 inputs = []
