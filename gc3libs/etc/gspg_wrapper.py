@@ -30,8 +30,6 @@ import argparse
 import time
 import csv
 
-import pandas
-
 DEFAULT_BINARY="ctx-linkdyn-ordprm-sirs.p4"
 RESULT_FILE="results.csv"
 
@@ -80,34 +78,12 @@ def runctx(args):
                 results[index_of_dat] = out.strip().split('\t')
             else:
                 print "ERROR %d. message: %s" % (exitcode,err)
-            
-    # # Prepare input file from inputcsv
-    # reader = pandas.read_csv(arguments.inputcsv, header=0)
-    # for index in range(0,len(reader)-1):
-    #     indata = reader.ix[index]
-    #     indata = reader[index:index+1]
-    #     # index_of_dat = indata.pop('id')
-    #     indata.to_csv("./input.dat",header=False,index=True,sep="\t")
-    #     _process = subprocess.Popen(command,stdout=subprocess.PIPE,
-    #                                stderr=subprocess.PIPE,
-    #                                close_fds=True, shell=True)
-    #     stime = time.time()
-    #     (out,err) = _process.communicate()
-    #     ftime = time.time()
-    #     print "Index %d processed in %d" % (index,(ftime-stime))
-    #     exitcode = _process.returncode
-
-    #     if exitcode == 0:
-    #         results[index_of_dat] = out.strip().split('\t')
 
     # collect all results into a single .csv file
     print("Aggregating results")
     with open(RESULT_FILE,'wb') as rd:
         for idx,line in results.items():
             rd.write(idx + "," + ",".join(x for x in line) + "\n")
-    # # s = pandas.Series(results.values(), results.keys())
-    # s = pandas.DataFrame.from_dict(results,orient='index')
-    # s.to_csv('results.csv', header=False,index=True)
     print "Done"
     
 if __name__ == '__main__':
