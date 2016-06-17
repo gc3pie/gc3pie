@@ -156,13 +156,18 @@ class INotifyPoller(Poller):
         if self._recurse:
             for dirpath, dirnames, filename in os.walk(self.url.path):
                 for dirname in dirnames:
-                    ifd = inotifyx.init()
                     abspath = os.path.join(self.url.path,
                                            dirpath,
                                            dirname)
                     log.debug("Adding watch for path %s" % abspath)
-                    inotifyx.add_watch(ifd, abspath, self.mask)
-                    self._ifds[abspath] = ifd
+                    self._add_watch(abspath)
+
+    def _add_watch(self, path):
+        if path not in self._ifds:
+            log.debug("Adding watch for path %s" % path)
+            ifd = inotifyx.init()
+            inotifyx.add_watch(ifd, path, self.mask)
+            self._ifds[path] = ifd
 
     def get_events(self):
         newevents = []
@@ -176,11 +181,18 @@ class INotifyPoller(Poller):
                 if self._recurse and \
                    event.mask & inotifyx.IN_ISDIR and \
                    event.mask & inotifyx.IN_CREATE:
-                    # Add this dir to inotify
-                    ifd = inotifyx.init()
-                    log.debug("Adding watch for path %s" % abspath)
-                    inotifyx.add_watch(ifd, abspath, self.mask)
-                    self._ifds[abspath] = ifd
+                    # New directory has been created. We need to add a
+                    # watch for this directory too and for all its
+                    # subdirectories. Also, we need to trigger new
+                    # events for any other file created in it
+
+                    for (rootdir, dirnames, filenames) in os.walk(abspath):
+                        for dirname in dirnames:
+                            self._add_watch(os.path.join(rootdir, dirname))
+                        for filename in filenames:
+                            # Trigger a fake event
+                            newevents.append((Url(os.path.join(rootdir, filename)),
+                                              events['IN_CLOSE_WRITE']|events['IN_ALL_EVENTS']))
         return newevents
 
 if inotifyx:
