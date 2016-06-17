@@ -39,6 +39,7 @@ import gc3libs.poller as plr
 from gc3libs.cmdline import SessionBasedDaemon
 from gc3libs.workflow import SequentialTaskCollection
 from gc3libs import Run
+from gc3libs.url import Url
 from gc3libs.quantity import Duration
 
 log = logging.getLogger('gc3.gc3utils')
@@ -508,7 +509,7 @@ class GBemoviDaemon(SessionBasedDaemon):
 
         if not self.params.inbox:
             # Add a default inbox if not passed from command line
-            self.params.inbox = [os.path.join(self.params.working_dir, 'inbox')]
+            self.params.inbox = [Url(os.path.join(self.params.working_dir, 'inbox'))]
         if self.params.output == self.actions['output'].default:
             # Use directory 'output' as output directory by default
             self.params.output = os.path.join(self.params.working_dir, 'output')
@@ -706,7 +707,11 @@ class GBemoviDaemon(SessionBasedDaemon):
             new_jobs = []
             for inboxurl in self.params.inbox:
                 # WARNING: we assume this is a filesystem directory
-                inbox = inboxurl.path
+                try:
+                    inbox = inboxurl.path
+                except:
+                    inboxurl = Url(inboxurl)
+                    inbox = inboxurl.path
                 for dirpath, dirnames, fnames in os.walk(inbox):
                     for fname in fnames:
                         filename = os.path.join(dirpath, fname)
