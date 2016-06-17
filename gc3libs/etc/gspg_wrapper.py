@@ -27,10 +27,13 @@ import os
 import sys
 import subprocess
 import argparse
+import time
+import csv
 
 import pandas
-import time
 
+DEFAULT_BINARY="ctx-linkdyn-ordprm-sirs.p4"
+RESULT_FILE="results.csv"
 
 def runctx(args):
 
@@ -49,32 +52,62 @@ def runctx(args):
     if arguments.ctx:
         command = "%s " % arguments.ctx
     else:
-        command =  "ctx-linkdyn-ordprm-sirs.p4 "
+        command =  DEFAULT_BINARY
     command += " -i ./input.dat"
 
-    # Prepare input file from inputcsv
-    reader = pandas.read_csv(arguments.inputcsv, header=0)
-    for index in range(0,len(reader)-1):
-        indata = reader.ix[index]
-        index_of_dat = indata.pop('id')
-        indata.to_csv("./input.dat",header=False,index=True,sep="\t")
-        _process = subprocess.Popen(command,stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   close_fds=True, shell=True)
-        stime = time.time()
-        (out,err) = _process.communicate()
-        ftime = time.time()
-        print "Index %d processed in %d" % (index,(ftime-stime))
-        exitcode = _process.returncode
+    # use csv package only
+    with open(arguments.inputcsv,'rb') as rd:
+        reader = csv.reader(rd)
+        columns = reader.next()
+        # open destination file
+        for line in reader:
+            index_of_dat = line[-1]
+            with open("./input.dat",'wb') as fd:
+                for index in range(0,len(line)-1):
+                    fd.write("%s\t%s\n" % (columns[index],line[index]))
 
-        if exitcode == 0:
-            results[index_of_dat] = out.strip().split('\t')
+            _process = subprocess.Popen(command,stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        close_fds=True, shell=True)
+
+            stime = time.time()
+            (out,err) = _process.communicate()
+            ftime = time.time()
+            print "Index %s processed in %d" % (index_of_dat,(ftime-stime))
+            exitcode = _process.returncode
+            
+            if exitcode == 0:
+                results[index_of_dat] = out.strip().split('\t')
+            else:
+                print "ERROR %d. message: %s" % (exitcode,err)
+            
+    # # Prepare input file from inputcsv
+    # reader = pandas.read_csv(arguments.inputcsv, header=0)
+    # for index in range(0,len(reader)-1):
+    #     indata = reader.ix[index]
+    #     indata = reader[index:index+1]
+    #     # index_of_dat = indata.pop('id')
+    #     indata.to_csv("./input.dat",header=False,index=True,sep="\t")
+    #     _process = subprocess.Popen(command,stdout=subprocess.PIPE,
+    #                                stderr=subprocess.PIPE,
+    #                                close_fds=True, shell=True)
+    #     stime = time.time()
+    #     (out,err) = _process.communicate()
+    #     ftime = time.time()
+    #     print "Index %d processed in %d" % (index,(ftime-stime))
+    #     exitcode = _process.returncode
+
+    #     if exitcode == 0:
+    #         results[index_of_dat] = out.strip().split('\t')
 
     # collect all results into a single .csv file
     print("Aggregating results")
-    # s = pandas.Series(results.values(), results.keys())
-    s = pandas.DataFrame.from_dict(results,orient='index')
-    s.to_csv('results.csv', header=False,index=True)
+    with open(RESULT_FILE,'wb') as rd:
+        for idx,line in results.items():
+            rd.write(idx + "," + ",".join(x for x in line) + "\n")
+    # # s = pandas.Series(results.values(), results.keys())
+    # s = pandas.DataFrame.from_dict(results,orient='index')
+    # s.to_csv('results.csv', header=False,index=True)
     print "Done"
     
 if __name__ == '__main__':
