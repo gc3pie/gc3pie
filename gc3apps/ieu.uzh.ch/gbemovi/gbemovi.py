@@ -388,7 +388,8 @@ class FinalMerger(Merger):
         inputs = []
         for task in tasks:
             plinker, ptracker = task.tasks
-            inputs.append((plinker.rdatafile, ptracker.rdatafile))
+            if plinker.execution.exitcode == ptracker.execution.exitcode == 0:
+                inputs.append((plinker.rdatafile, ptracker.rdatafile))
         Merger.__init__(self, vdescrfile, inputs, **extra)
 
     def terminated(self):
@@ -546,6 +547,11 @@ class GBemoviDaemon(SessionBasedDaemon):
             # find plinker radata files
             plinker = task.tasks[0]
             ptracker = task.tasks[1]
+            # If linker or tracker failed, skip the rdata file, as
+            # it's likely to be empty and bemove will not like it.
+            if plinker.execution.exitcode != 0 or \
+               ptracker.execution.exitcode != 0:
+                continue
             linkerdata = plinker.rdatafile
             trackerdata = ptracker.rdatafile
             mergers[task.vdescrfile].append((linkerdata, trackerdata))
