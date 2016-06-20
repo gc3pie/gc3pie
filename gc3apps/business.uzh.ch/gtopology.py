@@ -239,6 +239,7 @@ class GtopologyScript(SessionBasedScript):
                                                                                      jobname))
 
             extra_args['source'] = self.params.source
+            extra_args['master_script'] = self.params.master_script
             
             self.log.debug("Creating Task for index : %d - %d" %
                            (index_chunk, (index_chunk + self.params.chunk_size)))
