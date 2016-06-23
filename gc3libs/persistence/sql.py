@@ -148,41 +148,53 @@ class SqlStore(Store):
         based on the url.scheme value
         """
         super(SqlStore, self).__init__(url)
-        self._engine = sqla.create_engine(str(url))
+	self.__engine = None
+	self._t_store = None
+	self._extra_fields = extra_fields
         self.table_name = table_name
-
-        self.__meta = sqla.MetaData(bind=self._engine)
-
-        # create schema
-        table = sqla.Table(
-            self.table_name,
-            self.__meta,
-            sqla.Column('id',
-                        sqla.Integer(),
-                        primary_key=True, nullable=False),
-            sqla.Column('data',
-                        sqla.LargeBinary()),
-            sqla.Column('state',
-                        sqla.String(length=128)))
-
-        # create internal rep of table
-        self.extra_fields = dict()
-        for col, func in extra_fields.iteritems():
-            assert isinstance(col, sqla.Column)
-            table.append_column(col.copy())
-            self.extra_fields[col.name] = func
-
-        current_metadata = sqla.MetaData(bind=self._engine)
-        current_metadata.reflect()
-        # check if the db exists and already has a 'store' table
-        if create and self.table_name not in current_metadata.tables:
-            self.__meta.create_all()
-
-        self.t_store = self.__meta.tables[self.table_name]
 
         self.idfactory = idfactory
         if not idfactory:
             self.idfactory = IdFactory(id_class=IntId)
+
+    @property
+    def _engine(self):
+	if self.__engine is None:
+	    self.__engine = sqla.create_engine(str(self.url))
+
+            # check if the db exists and already has a 'store' table
+            # if create and self.table_name not in current_metadata.tables:
+            #     self.__meta.create_all()
+
+	return self.__engine
+
+    @property
+    def t_store(self):
+	if self._t_store is None:
+            self.__meta = sqla.MetaData(bind=self._engine)
+            # create schema
+            table = sqla.Table(
+                self.table_name,
+                self.__meta,
+                sqla.Column('id',
+                            sqla.Integer(),
+                            primary_key=True, nullable=False),
+                sqla.Column('data',
+                            sqla.LargeBinary()),
+                sqla.Column('state',
+                            sqla.String(length=128)))
+
+            # create internal rep of table
+            self.extra_fields = dict()
+            for col, func in self._extra_fields.iteritems():
+                assert isinstance(col, sqla.Column)
+                table.append_column(col.copy())
+                self.extra_fields[col.name] = func
+
+            current_metadata = sqla.MetaData(bind=self._engine)
+            current_metadata.reflect()
+	    self._t_store = self.__meta.tables[self.table_name]
+	return self._t_store
 
     @same_docstring_as(Store.list)
     def list(self):
@@ -219,6 +231,7 @@ class SqlStore(Store):
             fields['state'] = Run.State.UNKNOWN
 
         # insert into db
+	self.t_store
         for column in self.extra_fields:
             try:
                 fields[column] = self.extra_fields[column](obj)
@@ -239,8 +252,6 @@ class SqlStore(Store):
             conn.execute(q)
         else:
             # it's an update
-            # NOTE: the primary keys should not be updated, because they are
-            # used for PostgresXL distribution
             fields.pop('id')
             fields.pop('submission_id')
             q = self.t_store.update().where(
@@ -313,4 +324,3 @@ if "__main__" == __name__:
     import doctest
     doctest.testmod(name="sql",
                     optionflags=doctest.NORMALIZE_WHITESPACE)
-
