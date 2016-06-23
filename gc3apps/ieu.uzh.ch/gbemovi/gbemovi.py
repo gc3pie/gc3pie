@@ -755,6 +755,11 @@ class GBemoviDaemon(SessionBasedDaemon):
 
             # Only resubmit the job if it failed
             for job in self.session.tasks.values():
+                try:
+                    job.videofile
+                except AttributeError:
+                    # Not a GBemoviWorkflow application
+                    continue
                 if job.videofile == fpath:
                     if job.should_resubmit():
                         self.log.info("Re-submitting job %s as file %s has been overwritten",
