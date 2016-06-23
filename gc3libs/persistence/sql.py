@@ -239,6 +239,10 @@ class SqlStore(Store):
             conn.execute(q)
         else:
             # it's an update
+            # NOTE: the primary keys should not be updated, because they are
+            # used for PostgresXL distribution
+            fields.pop('id')
+            fields.pop('submission_id')
             q = self.t_store.update().where(
                 self.t_store.c.id == id_).values(**fields)
             conn.execute(q)
