@@ -252,7 +252,7 @@ class SqlStore(Store):
             conn.execute(q)
         else:
             # it's an update
-            for pk in self.t_store.primary_key
+            for pk in self.t_store.primary_key:
                 # Prevent update of primary keys
                 fields.pop(pk.name)
             q = self.t_store.update().where(
