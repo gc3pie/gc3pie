@@ -252,8 +252,9 @@ class SqlStore(Store):
             conn.execute(q)
         else:
             # it's an update
-            fields.pop('id')
-            fields.pop('submission_id')
+            for pk in self.t_store.primary_key
+                # Prevent update of primary keys
+                fields.pop(pk.name)
             q = self.t_store.update().where(
                 self.t_store.c.id == id_).values(**fields)
             conn.execute(q)
