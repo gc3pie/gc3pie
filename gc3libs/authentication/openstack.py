@@ -66,7 +66,6 @@ class OpenStackAuth(object):
         self.__dict__.update(auth)
 
     def check(self):
-        gc3libs.log.debug('Checking auth: OpenStackAuth')
         return True
 
     def enable(self):

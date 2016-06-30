@@ -166,7 +166,6 @@ class NoneAuth(object):
         return True
 
     def check(self):
-        gc3libs.log.debug("Checking auth: NoneAuth (always successful).")
         return True
 
     def enable(self):
