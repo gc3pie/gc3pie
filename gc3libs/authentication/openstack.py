@@ -43,9 +43,12 @@ class OpenStackAuth(object):
 
         try:
             for (key, var) in (
-                    ('os_username', 'OS_USERNAME'),
-                    ('os_password', 'OS_PASSWORD'),
+                    # list of mandatory env vars taken from:
+                    # http://docs.openstack.org/user-guide/common/cli_set_environment_variables_using_openstack_rc.html
+                    ('os_auth_url',     'OS_AUTH_URL'),
+                    ('os_password',     'OS_PASSWORD'),
                     ('os_project_name', 'OS_TENANT_NAME'),
+                    ('os_username',     'OS_USERNAME'),
             ):
                 if key not in auth:
                     auth[key] = os.getenv(var)
