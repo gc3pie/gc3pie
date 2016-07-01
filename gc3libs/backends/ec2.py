@@ -42,7 +42,9 @@ except ImportError as err:
         " then try again, or update your configuration file and"
         " disable any EC2-based resources."
         .format(err=err))
-import Crypto
+
+import Crypto.PublicKey.DSA
+import Crypto.PublicKey.RSA
 
 # GC3Pie imports
 import gc3libs
@@ -921,7 +923,7 @@ class EC2Lrms(LRMS):
             " `pending` state. Waiting until the next iteration before"
             " creating a new VM. Pending VM ids: %s", pending_vms)
         raise LRMSSkipSubmissionToNextIteration(
-            "Delaying submission until some of the VMs currently pending"
+            "Delaying submission until one of the VMs currently pending"
             " is ready. Pending VM ids: %s"
             % str.join(', ', pending_vms))
 

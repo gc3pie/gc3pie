@@ -3,7 +3,7 @@
 """
 Test interaction with the SLURM batch-queueing system.
 """
-# Copyright (C) 2011-2013, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2013, 2015, 2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -26,17 +26,19 @@ import datetime
 import os
 import tempfile
 
-from nose.tools import assert_equal
+import mock
+from nose.tools import assert_equal, raises
 
 import gc3libs
 import gc3libs.core
 import gc3libs.config
+from gc3libs.exceptions import LRMSError
 from gc3libs.quantity import kB, seconds, minutes
 
 from faketransport import FakeTransport
 
 
-def correct_submit(jobid=123):
+def sbatch_submit_ok(jobid=123):
     return (
         # command exit code
         0,
@@ -45,6 +47,15 @@ def correct_submit(jobid=123):
         # stderr
         '')
 
+def sbatch_submit_failed(jobid=123):
+    return (
+        # command exit code
+        1,
+        # stdout
+        '',
+        # stderr
+        'sbatch: error: Batch job submission failed:'
+        ' Invalid account or account/partition combination specified')
 
 def sacct_no_accounting(jobid=123):
     return (
@@ -126,6 +137,31 @@ def scancel_permission_denied(jobid=123):
         "Access/permission denied\n" % jobid)
 
 
+def sacct_notfound(jobid=123):
+    # SLURM 2.6.5 and 14.11.8 on Ubuntu 14.04.2
+    return (
+        # command exitcode (yes, it's really 0!)
+        0,
+        # stdout
+        "",
+        # stderr
+        "")
+
+
+def sacct_done_ok(jobid=123):
+    # SLURM 2.6.5 on Ubuntu 14.04.2
+    return (
+        # command exitcode (yes, it's really 0!)
+        0,
+        # stdout
+        """
+{jobid}|0:0|COMPLETED|1|00:08:07|05:05.002|2016-02-16T12:16:33|2016-02-16T14:24:46|2016-02-16T14:32:53|||
+{jobid}.batch|0:0|COMPLETED|1|00:08:07|05:05.002|2016-02-16T14:24:46|2016-02-16T14:24:46|2016-02-16T14:32:53|1612088K|7889776K|
+        """.strip().format(jobid=jobid),
+        # stderr
+        "")
+
+
 def sacct_done_bad_timestamps(jobid=123):
     #    $ sudo sacct --noheader --parsable --format jobid,ncpus,cputimeraw,\
     #            elapsed,submit,start,end,exitcode,maxrss,maxvmsize,totalcpu \
@@ -135,9 +171,9 @@ def sacct_done_bad_timestamps(jobid=123):
         0,
         # stdout
         """
-123|0:0|COMPLETED|1|00:01:06|00:00:00|2012-09-24T10:48:34|2012-09-24T10:47:28|2012-09-24T10:48:34|||
-123.0|0:0|COMPLETED|1|00:01:05|00:00:00|2012-09-24T10:47:29|2012-09-24T10:47:29|2012-09-24T10:48:34|0|0|
-        """.strip(),
+{jobid}|0:0|COMPLETED|1|00:01:06|00:00:00|2012-09-24T10:48:34|2012-09-24T10:47:28|2012-09-24T10:48:34|||
+{jobid}.0|0:0|COMPLETED|1|00:01:05|00:00:00|2012-09-24T10:47:29|2012-09-24T10:47:29|2012-09-24T10:48:34|0|0|
+        """.strip().format(jobid=jobid),
         # stderr
         "")
 
@@ -149,9 +185,9 @@ def sacct_done_parallel(jobid=123):
         0,
         # stdout
         """
-123|0:0|COMPLETED|64|00:00:23|00:01.452|2012-09-04T11:18:06|2012-09-04T11:18:24|2012-09-04T11:18:47|||
-123.batch|0:0|COMPLETED|1|00:00:23|00:01.452|2012-09-04T11:18:24|2012-09-04T11:18:24|2012-09-04T11:18:47|7884K|49184K|
-        """.strip(),
+{jobid}|0:0|COMPLETED|64|00:00:23|00:01.452|2012-09-04T11:18:06|2012-09-04T11:18:24|2012-09-04T11:18:47|||
+{jobid}.batch|0:0|COMPLETED|1|00:00:23|00:01.452|2012-09-04T11:18:24|2012-09-04T11:18:24|2012-09-04T11:18:47|7884K|49184K|
+        """.strip().format(jobid=jobid),
         # stderr
         "")
 
@@ -161,9 +197,9 @@ def sacct_done_cancelled(jobid=123):
         0,
         # stdout
         """
-123|0:0|CANCELLED by 1000|4|00:00:05|00:00:00|2014-12-11T17:13:39|2014-12-11T17:13:39|2014-12-11T17:13:44|||
-123.batch|0:15|CANCELLED|1|00:00:05|00:00:00|2014-12-11T17:13:39|2014-12-11T17:13:39|2014-12-11T17:13:44|0|0|
-        """.strip(),
+{jobid}|0:0|CANCELLED by 1000|4|00:00:05|00:00:00|2014-12-11T17:13:39|2014-12-11T17:13:39|2014-12-11T17:13:44|||
+{jobid}.batch|0:15|CANCELLED|1|00:00:05|00:00:00|2014-12-11T17:13:39|2014-12-11T17:13:39|2014-12-11T17:13:44|0|0|
+        """.strip().format(jobid=jobid),
         # stderr
         "")
 
@@ -173,9 +209,9 @@ def sacct_done_timeout(jobid=123):
         0,
         # stdout
         """
-123|0:1|TIMEOUT|4|00:01:11|00:00:00|2014-12-11T17:10:23|2014-12-11T17:10:23|2014-12-11T17:11:34|||
-123.batch|0:15|CANCELLED|1|00:01:11|00:00:00|2014-12-11T17:10:23|2014-12-11T17:10:23|2014-12-11T17:11:34|0|0|
-        """.strip(),
+{jobid}|0:1|TIMEOUT|4|00:01:11|00:00:00|2014-12-11T17:10:23|2014-12-11T17:10:23|2014-12-11T17:11:34|||
+{jobid}.batch|0:15|CANCELLED|1|00:01:11|00:00:00|2014-12-11T17:10:23|2014-12-11T17:10:23|2014-12-11T17:11:34|0|0|
+        """.strip().format(jobid=jobid),
         # stderr
         "")
 
@@ -186,10 +222,10 @@ def sacct_done_relative_timestamps(jobid=123):
         0,
         # stdout
         """
-123|0:0|COMPLETED|64|00:00:23|00:01.452|4 Sep 11:18|4 Sep 11:18|4 Sep 11:18|||
-123.batch|0:0|COMPLETED|1|00:00:23|00:01.452|4 Sep 11:18|4 Sep 11:18|\
+{jobid}|0:0|COMPLETED|64|00:00:23|00:01.452|4 Sep 11:18|4 Sep 11:18|4 Sep 11:18|||
+{jobid}.batch|0:0|COMPLETED|1|00:00:23|00:01.452|4 Sep 11:18|4 Sep 11:18|\
 4 Sep 11:18|7884K|49184K|
-        """.strip(),
+        """.strip().format(jobid=jobid),
         # stderr
         "")
 
@@ -201,19 +237,49 @@ def sacct_done_fractional_rusage(jobid=123):
         0,
         # stdout
         """
-123|0:0|COMPLETED|16|00:07:29|58:10.420|2013-08-30T23:16:22|2013-08-30T23:16:22|2013-08-30T23:23:51|||
-123.batch|0:0|COMPLETED|1|00:07:29|00:02.713|2013-08-30T23:16:22|2013-08-30T23:16:22|2013-08-30T23:23:51|62088K|4115516K|
-123.0|0:0|COMPLETED|1|00:06:56|05:44.992|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:26|73784K|401040K|
-123.1|0:0|COMPLETED|1|00:07:01|05:44.968|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:31|74360K|401656K|
-123.2|0:0|COMPLETED|1|00:07:13|05:51.685|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:43|74360K|401720K|
-123.3|0:0|COMPLETED|1|00:07:21|06:01.088|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:51|73644K|401656K|
-123.4|0:0|COMPLETED|1|00:07:16|05:52.315|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:46|69092K|401096K|
-123.5|0:0|COMPLETED|1|00:07:01|05:46.964|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:31|74364K|401104K|
-123.6|0:0|COMPLETED|1|00:07:10|05:46.222|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:40|69148K|401108K|
-123.7|0:0|COMPLETED|1|00:07:10|05:49.074|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:40|74364K|401592K|
-123.8|0:0|COMPLETED|1|00:07:06|05:44.432|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:36|74404K|401688K|
-123.9|0:0|COMPLETED|1|00:07:04|05:45.962|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:34|72.50M|401652K|
-        """.strip(),
+{jobid}|0:0|COMPLETED|16|00:07:29|58:10.420|2013-08-30T23:16:22|2013-08-30T23:16:22|2013-08-30T23:23:51|||
+{jobid}.batch|0:0|COMPLETED|1|00:07:29|00:02.713|2013-08-30T23:16:22|2013-08-30T23:16:22|2013-08-30T23:23:51|62088K|4115516K|
+{jobid}.0|0:0|COMPLETED|1|00:06:56|05:44.992|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:26|73784K|401040K|
+{jobid}.1|0:0|COMPLETED|1|00:07:01|05:44.968|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:31|74360K|401656K|
+{jobid}.2|0:0|COMPLETED|1|00:07:13|05:51.685|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:43|74360K|401720K|
+{jobid}.3|0:0|COMPLETED|1|00:07:21|06:01.088|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:51|73644K|401656K|
+{jobid}.4|0:0|COMPLETED|1|00:07:16|05:52.315|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:46|69092K|401096K|
+{jobid}.5|0:0|COMPLETED|1|00:07:01|05:46.964|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:31|74364K|401104K|
+{jobid}.6|0:0|COMPLETED|1|00:07:10|05:46.222|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:40|69148K|401108K|
+{jobid}.7|0:0|COMPLETED|1|00:07:10|05:49.074|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:40|74364K|401592K|
+{jobid}.8|0:0|COMPLETED|1|00:07:06|05:44.432|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:36|74404K|401688K|
+{jobid}.9|0:0|COMPLETED|1|00:07:04|05:45.962|2013-08-30T23:16:30|2013-08-30T23:16:30|2013-08-30T23:23:34|72.50M|401652K|
+        """.strip().format(jobid=jobid),
+        # stderr
+        "")
+
+
+def sacct_almost_done(jobid=123):
+    """All steps completed, but main job still reported as RUNNING."""
+    # SLURM 2.6.5 running on Ubuntu 14.04
+    return (
+        # command exitcode
+        0,
+        # stdout
+        """
+{jobid}|0:0|RUNNING|16|00:00:08|00:00.168|2016-03-31T09:33:25|2016-03-31T09:33:25|Unknown|||
+{jobid}.batch|0:0|COMPLETED|1|00:00:08|00:00.168|2016-03-31T09:33:25|2016-03-31T09:33:25|2016-03-31T09:33:33|22212K|67032K|
+        """.strip().format(jobid=jobid),
+        # stderr
+        "")
+
+
+def sacct_done_ok2(jobid=123):
+    """All steps and job allocation in state COMPLETED."""
+    # SLURM 2.6.5 running on Ubuntu 14.04
+    return (
+        # command exitcode
+        0,
+        # stdout
+        """
+{jobid}|0:0|COMPLETED|16|00:00:08|00:00.168|2016-03-31T09:33:25|2016-03-31T09:33:25|2016-03-31T09:33:33|||
+{jobid}.batch|0:0|COMPLETED|1|00:00:08|00:00.168|2016-03-31T09:33:25|2016-03-31T09:33:25|2016-03-31T09:33:33|22212K|67032K|
+        """.strip().format(jobid=jobid),
         # stderr
         "")
 
@@ -249,6 +315,7 @@ max_walltime=2
 max_cores=80
 architecture=x86_64
 enabled=True
+accounting_delay = 5
 
 [auth/ssh]
 type=ssh
@@ -276,36 +343,236 @@ username=NONEXISTENT
     def tearDown(self):
         os.remove(self.tmpfile)
 
-    def test_slurm_basic_workflow(self):
+    def test_sbatch_submit_ok(self):
+        """Test `squeue` output parsing with a job in PENDING state."""
         app = FakeApp()
-
-        # Succesful submission:
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         assert_equal(app.execution.state, State.SUBMITTED)
 
-        # Update state. We would expect the job to be SUBMITTED
+    @raises(LRMSError)
+    def test_sbatch_submit_failed(self):
+        """Test `squeue` output parsing with a job in PENDING state."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_failed()
+        self.core.submit(app)
+        #assert_equal(app.execution.state, State.NEW)
+
+    def test_parse_squeue_output_pending(self):
+        """Test `squeue` output parsing with a job in PENDING state."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
         self.transport.expected_answer['squeue'] = squeue_pending()
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.SUBMITTED)
 
-        # Update state. We would expect the job to be RUNNING
+    def test_parse_squeue_output_pending_then_running(self):
+        """Test `squeue` output parsing with a job in PENDING and then RUNNING state."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_pending()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.SUBMITTED)
+
         self.transport.expected_answer['squeue'] = squeue_running()
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.RUNNING)
 
-        # Job done. qstat doesn't find it, tracejob should.
+    def test_parse_squeue_output_immediately_running(self):
+        """Test `squeue` output parsing with a job that turns immediately to RUNNING state."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+    def test_job_termination1(self):
+        """Test that job termination status is correctly reaped if `squeue` fails but `sacct` does not."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['env'] = sacct_done_ok()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.TERMINATING)
+
+        self._check_parse_sacct_done_ok(app.execution)
+
+    def test_job_termination2(self):
+        """Test that job termination status is correctly reaped if neither `squeue` nor `sacct` fails."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+
         self.transport.expected_answer['squeue'] = squeue_recently_completed()
-        # XXX: alternatively:
-        # self.transport.expected_answer['squeue'] = squeue_notfound()
-        # self.transport.expected_answer['sacct'] = sacct_done()
+        self.transport.expected_answer['env'] = sacct_done_ok()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.TERMINATING)
+
+        self._check_parse_sacct_done_ok(app.execution)
+
+    def test_job_termination3(self):
+        """Test that no state update is performed if both `squeue` and `sacct` fail."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+
+        # if the second `sacct` fails, we should not do any update
+        self.transport.expected_answer['squeue'] = squeue_recently_completed()
+        self.transport.expected_answer['env'] = sacct_notfound()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['env'] = sacct_done_ok()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.TERMINATING)
+
+        self._check_parse_sacct_done_ok(app.execution)
+
+    def _check_parse_sacct_done_ok(self, job):
+        # common job reporting values (see Issue 78)
+        assert_equal(job.cores, 1)
+        assert_equal(job.exitcode, 0)
+        assert_equal(job.signal, 0)
+        assert_equal(job.duration, 8*minutes + 7*seconds)
+        assert_equal(job.used_cpu_time, 5*minutes + 5.002*seconds)
+        assert_equal(job.max_used_memory, 7889776 * kB)
+        # SLURM-specific values
+        assert_equal(job.slurm_max_used_ram, 1612088 * kB)
+        assert_equal(job.slurm_submission_time,
+                     datetime.datetime(year=2016,
+                                       month=2,
+                                       day=16,
+                                       hour=12,
+                                       minute=16,
+                                       second=33))
+        assert_equal(job.slurm_start_time,
+                     datetime.datetime(year=2016,
+                                       month=2,
+                                       day=16,
+                                       hour=14,
+                                       minute=24,
+                                       second=46))
+        assert_equal(job.slurm_completion_time,
+                     datetime.datetime(year=2016,
+                                       month=2,
+                                       day=16,
+                                       hour=14,
+                                       minute=32,
+                                       second=53))
+
+    @mock.patch('gc3libs.backends.batch.time')
+    def test_accounting_delay1(self, mock_time):
+        """
+        Test that no state update is performed if both `squeue` and `sacct` fail repeatedly within the accounting delay.
+        """
+        mock_time.time.return_value = 0
+
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+        # fail repeatedly within the acct delay, no changes to `app.execution`
+        for t in 0, 1, 2:
+            mock_time.time.return_value = t
+            self.transport.expected_answer['squeue'] = squeue_notfound()
+            self.transport.expected_answer['env'] = sacct_notfound()
+            self.core.update_job_state(app)
+            assert_equal(app.execution.state, State.RUNNING)
+            assert hasattr(app.execution, 'stat_failed_at')
+            assert_equal(app.execution.stat_failed_at, 0)
+
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['env'] = sacct_done_ok()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.TERMINATING)
+
+    @mock.patch('gc3libs.backends.batch.time')
+    def test_accounting_delay2(self, mock_time):
+        """
+        Test that an error is raised if both `squeue` and `sacct` fail repeatedly, exceeding the accounting delay.
+        """
+        mock_time.time.return_value = 0
+
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+        # fail first within the acct delay, no changes to `app.execution`
+        mock_time.time.return_value = 0
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['env'] = sacct_notfound()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+        assert hasattr(app.execution, 'stat_failed_at')
+        assert_equal(app.execution.stat_failed_at, 0)
+
+        # fail again, outside the accounting delay
+        mock_time.time.return_value = 2000
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['env'] = sacct_notfound()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.UNKNOWN)
+
+    @mock.patch('gc3libs.backends.batch.time')
+    def test_accounting_delay3(self, mock_time):
+        """
+        Test that no state update is performed if `squeue` and `sacct` disagree on the job status, within the "accounting delay" limit.
+        """
+        mock_time.time.return_value = 0
+
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+        assert_equal(app.execution.state, State.RUNNING)
+
+        # fail repeatedly within the acct delay, no changes to `app.execution`
+        for t in 1, 2, 3:
+            mock_time.time.return_value = t
+            self.transport.expected_answer['squeue'] = squeue_notfound()
+            self.transport.expected_answer['env'] = sacct_almost_done()
+            self.core.update_job_state(app)
+            assert_equal(app.execution.state, State.RUNNING)
+            assert hasattr(app.execution, 'stat_failed_at')
+            assert_equal(app.execution.stat_failed_at, 1)
+
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['env'] = sacct_done_ok2()
         self.core.update_job_state(app)
         assert_equal(app.execution.state, State.TERMINATING)
 
     def test_parse_sacct_output_parallel(self):
         """Test `sacct` output with a successful parallel job."""
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         self.transport.expected_answer['squeue'] = squeue_notfound()
         # self.transport.expected_answer['sacct'] = sacct_done_parallel()
@@ -348,7 +615,7 @@ username=NONEXISTENT
     def test_parse_sacct_output_bad_timestamps(self):
         """Test `sacct` output with out-of-order timestamps."""
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         self.transport.expected_answer['squeue'] = squeue_notfound()
         # self.transport.expected_answer['sacct'] = sacct_done_bad_timestamps()
@@ -390,7 +657,7 @@ username=NONEXISTENT
     def test_parse_sacct_output_fractional_rusage(self):
         """Test `sacct` output with fractional resource usage."""
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_fractional_rusage()
@@ -431,7 +698,7 @@ username=NONEXISTENT
     def test_parse_sacct_output_timeout(self):
         """Test `sacct` when job reaches its time limit"""
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_timeout()
@@ -444,7 +711,7 @@ username=NONEXISTENT
 
     def test_parse_sacct_output_job_cancelled(self):
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_cancelled()
@@ -457,7 +724,7 @@ username=NONEXISTENT
 
     def test_cancel_job1(self):
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
 
         self.transport.expected_answer['scancel'] = scancel_success()
@@ -467,7 +734,7 @@ username=NONEXISTENT
 
     def test_cancel_job2(self):
         app = FakeApp()
-        self.transport.expected_answer['sbatch'] = correct_submit()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
         assert_equal(app.execution.state, State.SUBMITTED)
 

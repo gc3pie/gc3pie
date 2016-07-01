@@ -3,7 +3,7 @@
 """
 Job control on SGE clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2009-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2014, 2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -387,25 +387,29 @@ class SgeLrms(batch.BatchSystem):
     def _stat_command(self, job):
         return ("%s | egrep  '^ *%s'" % (self._qstat, job.lrms_jobid))
 
-    def _parse_stat_output(self, stdout):
-        job_status = stdout.split()[4]
-        log.debug("translating SGE's `qstat` code '%s' to gc3libs.Run.State",
-                  job_status)
-
-        jobstatus = dict()
-        if job_status in ['s', 'S', 'T'] or job_status.startswith('h'):
-            jobstatus['state'] = Run.State.STOPPED
-        elif 'qw' in job_status:
-            jobstatus['state'] = Run.State.SUBMITTED
-        elif 'r' in job_status or 'R' in job_status or 't' in job_status:
-            jobstatus['state'] = Run.State.RUNNING
-        elif job_status == 'E':  # error condition
-            jobstatus['state'] = Run.State.TERMINATING
+    def _parse_stat_output(self, stdout, stderr):
+        ge_status_code = stdout.split()[4]
+        log.debug(
+            "translating SGE's `qstat` code '%s' to gc3libs.Run.State",
+            ge_status_code)
+        if (ge_status_code in ['s', 'S', 'T']
+            or ge_status_code.startswith('h')):
+            state = Run.State.STOPPED
+        elif 'qw' in ge_status_code:
+            state = Run.State.SUBMITTED
+        elif ('r' in ge_status_code
+              or 'R' in ge_status_code
+              or 't' in ge_status_code):
+            state = Run.State.RUNNING
+        elif ge_status_code == 'E':  # error condition
+            state = Run.State.TERMINATING
         else:
             log.warning("unknown SGE job status '%s', returning `UNKNOWN`",
-                        job_status)
-            jobstatus['state'] = Run.State.UNKNOWN
-        return jobstatus
+                        ge_status_code)
+            state = Run.State.UNKNOWN
+        # to get the exit status information we'll have to parse
+        # `qacct` output so put ``None`` here
+        return self._stat_result(state, None)
 
     def _acct_command(self, job):
         return ("%s -j %s" % (self._qacct, job.lrms_jobid))
@@ -418,23 +422,24 @@ class SgeLrms(batch.BatchSystem):
         # |              |                       |
         # |              |                       |
         #   ... common backend attrs (see Issue 78) ...
-        'slots': ('cores', int),
-        'exit_status': ('exitcode', int),
-        'cpu': ('used_cpu_time', _to_duration),
-        'ru_wallclock': ('duration', _to_duration),
-        'maxvmem': ('max_used_memory', _to_memory),
+        'slots':         ('cores',               int),
+        'exit_status':   ('exitcode',            int),
+        'cpu':           ('used_cpu_time',       _to_duration),
+        'ru_wallclock':  ('duration',            _to_duration),
+        'maxvmem':       ('max_used_memory',     _to_memory),
         #   ... SGE-only attrs ...
-        'end_time': ('sge_completion_time', _parse_asctime),
-        'failed': ('sge_failed', int),
-        'granted_pe': ('sge_granted_pe', str),
-        'hostname': ('sge_hostname', str),
-        'jobname': ('sge_jobname', str),
-        'qname': ('sge_queue', str),
-        'qsub_time': ('sge_submission_time', _parse_asctime),
-        'start_time': ('sge_start_time', _parse_asctime), }
+        'end_time':      ('sge_completion_time', _parse_asctime),
+        'failed':        ('sge_failed',          int),
+        'granted_pe':    ('sge_granted_pe',      str),
+        'hostname':      ('sge_hostname',        str),
+        'jobname':       ('sge_jobname',         str),
+        'qname':         ('sge_queue',           str),
+        'qsub_time':     ('sge_submission_time', _parse_asctime),
+        'start_time':    ('sge_start_time', _parse_asctime),
+    }
 
-    def _parse_acct_output(self, stdout):
-        jobstatus = dict()
+    def _parse_acct_output(self, stdout, stderr):
+        acctinfo = {}
         for line in stdout.split('\n'):
             # skip empty and header lines
             line = line.strip()
@@ -448,16 +453,20 @@ class SgeLrms(batch.BatchSystem):
                 value = value.split()[0]
             try:
                 dest, conv = self._qacct_keyval_mapping[key]
-                jobstatus[dest] = conv(value)
+                acctinfo[dest] = conv(value)
             except KeyError:
                 # no conversion by default -- keep it a string
-                jobstatus['sge_' + key] = value
+                acctinfo['sge_' + key] = value
             except (ValueError, TypeError) as err:
                 log.error(
                     "Cannot parse value '%s' for qacct parameter '%s': %s: %s",
                     value, key, err.__class__.__name__, str(err))
-                jobstatus[dest] = None
-        return jobstatus
+                acctinfo[dest] = None
+        assert 'exitcode' in acctinfo, (
+            "Could not extract exit code from `tracejob` output")
+        acctinfo['termstatus'] = Run.shellexit_to_returncode(
+            acctinfo.pop('exitcode'))
+        return acctinfo
 
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._qdel, jobid))

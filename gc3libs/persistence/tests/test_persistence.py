@@ -83,6 +83,31 @@ def test_store_ctor_with_extra_arguments():
         if os.path.exists(tmpdir):
             shutil.rmtree(tmpdir)
 
+def test_eq_persisted_objects():
+    """Test that the comparison of two persisted objects are the same
+    whenever `persistent_id` attribute is the same"""
+    a = Persistable()
+    b = Persistable()
+    c = Persistable()
+    a.persistent_id = '1'
+    b.persistent_id = '1'
+    c.persistnet_id = '2'
+    assert a == b
+    assert a is not b
+    assert a != c
+    L = [a, b, c]
+    L.remove(a)
+    L.remove(a)
+    assert len(L) == 1
+
+def test_eq_non_persisted_objects():
+    """Test that the comparison of two not (yet) persisted objects falls
+    back to default Python comparison"""
+    a = Persistable()
+    b = Persistable()
+    assert a != b
+    assert a is not b
+    
 # for testing basic functionality we do no need fully-fledged GC3Pie
 # objects; let's define some simple make-do's.
 

@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 #
 """
-Job control on SGE clusters (possibly connecting to the front-end via SSH).
+Job control on LSF clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -444,6 +444,7 @@ class LsfLrms(batch.BatchSystem):
                 "Unknown LSF job status '%s', returning `UNKNOWN`", stat)
             return Run.State.UNKNOWN
 
+    _job_not_found_re = re.compile('Job <(?P<jobid>[0-9]+)> is not found')
     _status_re = re.compile(r'Status <(?P<state>[A-Z]+)>', re.M)
     _unsuccessful_exit_re = re.compile(
         r'Exited with exit code (?P<exit_status>[0-9]+).', re.M)
@@ -452,7 +453,19 @@ class LsfLrms(batch.BatchSystem):
     _mem_used_re = re.compile(
         r'MAX MEM:\s+(?P<mem_used>[0-9]+)\s+(?P<mem_unit>[a-zA-Z]+);', re.M)
 
-    def _parse_stat_output(self, stdout):
+    def _parse_stat_output(self, stdout, stderr):
+        # LSF's `bjobs` can only report info for terminated jobs, if
+        # they finished no longer than ``CLEAN_PERIOD`` seconds
+        # before; for older jobs it just prints ``Job XXX is not
+        # found`` to STDERR.  However, it does the same when passed a
+        # non-existent job ID.  We cannot distinguish the two cases
+        # here; let's just be optimistic and presume that if a job ID
+        # is not found, it must have been terminated since (at least)
+        # we have it in our records so it *was* submitted...  See
+        # issue #513 for details.
+        if self._job_not_found_re.match(stderr):
+            return self._stat_result(Run.State.TERMINATING, None)
+
         # LSF `bjobs -l` uses a LDIF-style continuation lines, wherein
         # a line is truncated at 79 characters and continues upon the
         # next one; continuation lines start with a fixed amount of
@@ -477,25 +490,26 @@ class LsfLrms(batch.BatchSystem):
         # now rebuild stdout by joining the reconstructed lines
         stdout = str.join('\n', lines)
 
-        jobstatus = gc3libs.utils.Struct()
+        state = Run.State.UNKNOWN
+        termstatus = None
+
         # XXX: this only works if the current status is the first one
         # reported in STDOUT ...
         match = LsfLrms._status_re.search(stdout)
         if match:
-            stat = match.group('state')
-            jobstatus.state = LsfLrms._lsf_state_to_gc3pie_state(stat)
-            if stat == 'DONE':
+            lsf_job_state = match.group('state')
+            state = LsfLrms._lsf_state_to_gc3pie_state(lsf_job_state)
+            if lsf_job_state == 'DONE':
                 # DONE = success
-                jobstatus.exit_status = 0
-            elif stat == 'EXIT':
+                termstatus = (0, 0)
+            elif lsf_job_state == 'EXIT':
                 # EXIT = job exited with exit code != 0
                 match = LsfLrms._unsuccessful_exit_re.search(stdout)
                 if match:
-                    jobstatus.exit_status = int(match.group('exit_status'))
+                    exit_status = int(match.group('exit_status'))
+                    termstatus = Run.shellexit_to_returncode(exit_status)
 
-        if 'state' not in jobstatus:
-            jobstatus.state = Run.State.UNKNOWN
-        return jobstatus
+        return self._stat_result(state, termstatus)
 
     @staticmethod
     def _guess_continuation_line_prefix_len(stdout):
@@ -578,7 +592,7 @@ class LsfLrms(batch.BatchSystem):
             # XXX: what does LSF use as a default?
             return Memory(int(m), unit=bytes)
 
-    def _parse_acct_output(self, stdout):
+    def _parse_acct_output(self, stdout, stderr):
         # Antonio: this is an ugly fix, but we have issues with bacct
         # on some LSF installation being veeeeery slow, so we have to
         # try and use `bjobs` whenever possible, and fall back to
@@ -589,59 +603,60 @@ class LsfLrms(batch.BatchSystem):
         # calling the correct function to parse the output of the acct
         # command.
         if self._bacct.startswith('bacct'):
-            return self.__parse_acct_output_w_bacct(stdout)
+            parser = self.__parse_acct_output_w_bacct
         elif self._bacct.startswith('bjobs'):
-            return self.__parse_acct_output_w_bjobs(stdout)
+            parser = self.__parse_acct_output_w_bjobs
         else:
             log.warning(
                 "Unknown acct command `%s`. Assuming its output is compatible"
-                " with `bacct`" % self._bacct)
-            return self.__parse_acct_output_w_bacct(stdout)
+                " with `bacct`", self._bacct)
+            parser = self.__parse_acct_output_w_bacct
+        return parser(stdout)
 
     _parse_secondary_acct_output = _parse_acct_output
 
     @staticmethod
     def __parse_acct_output_w_bjobs(stdout):
-        data = dict()
+        acctinfo = {}
 
         # Try to parse used cputime
         match = LsfLrms._cpu_time_re.search(stdout)
         if match:
             cpu_time = match.group('cputime')
-            data['used_cpu_time'] = Duration(float(cpu_time), unit=seconds)
+            acctinfo['used_cpu_time'] = Duration(float(cpu_time), unit=seconds)
 
         # Parse memory usage
         match = LsfLrms._mem_used_re.search(stdout)
         if match:
             mem_used = match.group('mem_used')
             # mem_unit should always be Mbytes
-            data['max_used_memory'] = Memory(float(mem_used), unit=MB)
+            acctinfo['max_used_memory'] = Memory(float(mem_used), unit=MB)
 
         # Find submission time and completion time
-        lines = iter(stdout.split('\n'))
-        for line in lines:
+        for line in stdout.split('\n'):
             match = LsfLrms._EVENT_RE.match(line)
             if match:
                 timestamp = line.split(': ')[0]
                 event = match.group('event')
                 if event == 'Submitted':
-                    data['lsf_submission_time'] = \
+                    acctinfo['lsf_submission_time'] = \
                         LsfLrms._parse_timespec(timestamp)
                 elif event in ['Dispatched', 'Started']:
-                    data['lsf_start_time'] = \
+                    acctinfo['lsf_start_time'] = \
                         LsfLrms._parse_timespec(timestamp)
                 elif event in ['Completed', 'Done successfully']:
-                    data['lsf_completion_time'] = \
+                    acctinfo['lsf_completion_time'] = \
                         LsfLrms._parse_timespec(timestamp)
                 continue
-        if 'lsf_completion_time' in data and 'lsf_start_time' in data:
-            data['duration'] = Duration(
-                data['lsf_completion_time'] - data['lsf_start_time'])
+        if 'lsf_completion_time' in acctinfo and 'lsf_start_time' in acctinfo:
+            acctinfo['duration'] = Duration(
+                acctinfo['lsf_completion_time'] - acctinfo['lsf_start_time'])
         else:
             # XXX: what should we use for jobs that did not run at all?
-            data['duration'] = Duration(0, unit=seconds)
+            acctinfo['duration'] = Duration(0, unit=seconds)
 
-        return data
+        return acctinfo
+
 
     _RESOURCE_USAGE_RE = re.compile(r'^\s+ CPU_T \s+ '
                                     'WAIT \s+ '
@@ -659,21 +674,21 @@ class LsfLrms(batch.BatchSystem):
 
     @staticmethod
     def __parse_acct_output_w_bacct(stdout):
-        data = dict()
-        lines = iter(stdout.split('\n'))
+        acctinfo = {}
+        lines = iter(stdout.split('\n'))  # need to lookup next line in the loop
         for line in lines:
             match = LsfLrms._EVENT_RE.match(line)
             if match:
                 timestamp = line.split(': ')[0]
                 event = match.group('event')
                 if event == 'Submitted':
-                    data['lsf_submission_time'] = \
+                    acctinfo['lsf_submission_time'] = \
                         LsfLrms._parse_timespec(timestamp)
                 elif event == 'Dispatched':
-                    data['lsf_start_time'] = \
+                    acctinfo['lsf_start_time'] = \
                         LsfLrms._parse_timespec(timestamp)
                 elif event == 'Completed':
-                    data['lsf_completion_time'] = \
+                    acctinfo['lsf_completion_time'] = \
                         LsfLrms._parse_timespec(timestamp)
                 continue
             match = LsfLrms._RESOURCE_USAGE_RE.match(line)
@@ -683,21 +698,23 @@ class LsfLrms(batch.BatchSystem):
                 cpu_t, wait, turnaround, status, hog_factor, mem, swap = \
                     rusage.split()
                 # common backend attrs (see Issue 78)
-                if 'lsf_completion_time' in data and 'lsf_start_time' in data:
-                    data['duration'] = Duration(
-                        data['lsf_completion_time'] - data['lsf_start_time'])
+                if 'lsf_completion_time' in acctinfo and 'lsf_start_time' in acctinfo:
+                    acctinfo['duration'] = Duration(
+                        acctinfo['lsf_completion_time'] - acctinfo['lsf_start_time'])
                 else:
                     # XXX: what should we use for jobs that did not run at all?
-                    data['duration'] = Duration(0, unit=seconds)
-                data['used_cpu_time'] = Duration(float(cpu_t), unit=seconds)
-                data['max_used_memory'] = LsfLrms._parse_memspec(mem)\
+                    acctinfo['duration'] = Duration(0, unit=seconds)
+                acctinfo['used_cpu_time'] = Duration(float(cpu_t), unit=seconds)
+                acctinfo['max_used_memory'] = LsfLrms._parse_memspec(mem)\
                     + LsfLrms._parse_memspec(swap)
                 # the resource usage line is the last interesting line
                 break
-        return data
+        return acctinfo
+
 
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._bkill, jobid))
+
 
     @gc3libs.utils.cache_for(gc3libs.Default.LSF_CACHE_TIME)
     @LRMS.authenticated

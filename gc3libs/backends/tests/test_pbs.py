@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, 2012, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2016, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -330,9 +330,9 @@ username=NONEXISTENT
 
     def test_parse_acct_output(self):
         rc, stdout, stderr = correct_tracejob_done()
-        status = self.backend._parse_acct_output(stdout)
+        status = self.backend._parse_acct_output(stdout, stderr)
         # common job reporting values (see Issue 78)
-        assert_equal(status['exitcode'], 0)
+        assert_equal(status['termstatus'], (0, 0))
         assert_equal(status['duration'], 2 * minutes + 5 * seconds)
         assert_equal(status['max_used_memory'], 190944 * kB)
         assert_equal(status['used_cpu_time'], 0 * seconds)

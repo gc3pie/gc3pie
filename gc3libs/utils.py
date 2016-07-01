@@ -8,7 +8,7 @@ function or class belongs in here is the following: place a function
 or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -113,6 +113,36 @@ def backup(path):
 def basename_sans(path):
     """
     Return base name without the extension.
+
+    This behaves exactly like :func:`os.path.basename` except that the
+    last few characters, up to the rightmost dot, are removed as
+    well::
+
+      >>> basename_sans('/tmp/foo.txt')
+      'foo'
+
+      >>> basename_sans('bar.txt')
+      'bar'
+
+    If there is no dot in the file name, no "extension" is chopped
+    off::
+
+      >>> basename_sans('baz')
+      'baz'
+
+    If there are several dots in the file name, only the last one and
+    trailing characters are removed::
+
+      >>> basename_sans('foo.bar.baz')
+      'foo.bar'
+
+    Leading directory components are chopped off in any case::
+
+      >>> basename_sans('/tmp/foo.bar.baz')
+      'foo.bar'
+
+      >>> basename_sans('/tmp/foo')
+      'foo'
     """
     return os.path.splitext(os.path.basename(path))[0]
 
@@ -777,8 +807,8 @@ class History(object):
     def __str__(self):
         """Return all messages texts in a single string, separated by newline
         characters."""
-        return str.join('\n', [self.format_message(record)
-                               for record in self._messages])
+        return '- ' + str.join('\n- ', [self.format_message(record)
+                               for record in self._messages]) + '\n'
 
 
 def mkdir(path, mode=0o777):
@@ -895,17 +925,111 @@ def move_recursively(src, dst, overwrite=False, changed_only=True):
         movefile(src, dst, overwrite, changed_only)
 
 
-def occurs(pattern, filename):
+def occurs(pattern, filename, match=grep):
     """
-    Return ``True`` if any line in `filename` matches regular expression
-    `pattern`.
+    Return ``True`` if a line in `filename` matches `pattern`.
+
+    The `match` argument selects how exactly `pattern` is searched for
+    in the contents of `filename`:
+
+    * when `match=grep` (default), then `pattern` is a regular
+      expression that is searched for (unanchored) in every line;
+
+    * when `match=fgrep`, then `pattern` is a string that is searched
+      for literally in every line;
+
+    * more in general, the `match` function should return an iterator
+      over matches of `pattern` within the contents of `filename`: if
+      at least one match is found, `occurs` will return ``True``.
+
+    :param str pattern:  Pattern to search for
+    :param str filename: Path name of the file to search into
+    :param match: Function returning iterator over matches
     """
     try:
         # look for the first match -- if one is found, we're done
-        grep(pattern, filename).next()
+        match(pattern, filename).next()
         return True
     except StopIteration:
         return False
+
+
+def parse_range(spec):
+    """
+    Return minimum, maximum, and stepping value for a range.
+
+    Argument `spec` must be a string of the form `LOW:HIGH:STEP`,
+    where LOW, HIGH and STEP are (integer or floating-point) numbers.
+    Example::
+
+      >>> parse_range('1:10:2')
+      (1, 10, 2)
+
+      >>> parse_range('1.0:3.5:0.5')
+      (1.0, 3.5, 0.5)
+
+    Note that, as soon as *any* one of LOW, HIGH, STEP is not an
+    integer, *all* of them are parsed as Python floats::
+
+      >>> parse_range('1:3:0.5')
+      (1.0, 3.0, 0.5)
+
+      >>> parse_range('1.0:3:1')
+      (1.0, 3.0, 1.0)
+
+      >>> parse_range('1:3.0:1')
+      (1.0, 3.0, 1.0)
+
+    The final part `:STEP` can be omitted if the step is `1`::
+
+      >>> parse_range('2:5')
+      (2, 5, 1)
+
+      >>> parse_range('1.0:3.0')
+      (1.0, 3.0, 1.0)
+
+    Finally, note that `parse_range` does not perform any kind of
+    check on the validity of the resulting range; so it is possible to
+    parse a string into an empty range or range specification with
+    stepping 0::
+
+      >>> parse_range('1:-5:10')
+      (1, -5, 10)
+
+      >>> parse_range('1:2:0')
+      (1, 2, 0)
+
+    As a special case to simplify user interfaces, a single number is
+    accepted as a *degenerate* range: it will be parsed as a range
+    whose minimum and maximum are equal to the given number::
+
+      >>> parse_range('42')
+      (42, 42, 1)
+    """
+    colons = spec.count(':')
+    if colons == 2:
+        low, high, step = spec.split(':')
+    elif colons == 1:
+        low, high = spec.split(':')
+        step = '1'  # parsed to int or float later on
+    elif colons == 0:
+        low = high = spec
+        step = '1'  # parsed to int or float later on
+    else:
+        raise ValueError(
+            "Argument `spec` must have the form 'LOW:HIGH:STEP',"
+            " where LOW, HIGH and STEP are (integer or"
+            " floating-point) numbers.")
+    # are low, high, step to floats or ints?
+    if ('.' in low) or ('.' in high) or ('.' in step):
+        low = float(low)
+        high = float(high)
+        step = float(step)
+    else:
+        low = int(low)
+        high = int(high)
+        step = int(step)
+    return low, high, step
 
 
 def prettyprint(
@@ -968,7 +1092,10 @@ def prettyprint(
         # ignore excluded items
         if id(v) in _exclude:
             continue
-        first = str.join('', [leading_spaces, str(k), ': '])
+        # To make a 'key' valid in YAML it must not start with one of the following chars
+        sk = str(k)
+        sk = sk if sk[0] not in  u'\0 \t\r\n\x85\u2028\u2029-?:,[]{}#&*!|>\'\"%@`' else  "'%s'" % sk
+        first = str.join('', [leading_spaces, sk, ': '])
         if isinstance(
                 v, (dict, UserDict.DictMixin, UserDict.UserDict, OrderedDict)):
             if maxdepth is None or maxdepth > 0:
@@ -1171,7 +1298,7 @@ def samefile(path1, path2):
             raise
 
 
-def sh_quote_safe(text):
+def sh_quote_safe(arg):
     """
     Escape a string for safely passing as argument to a shell command.
 
@@ -1186,7 +1313,7 @@ def sh_quote_safe(text):
       ''\\''arg'\\'''
 
     """
-    return ("'%s'" % text.replace("'", r"'\''"))
+    return ("'" + str(arg).replace("'", r"'\''") + "'")
 
 
 def sh_quote_safe_cmdline(args):
@@ -1207,7 +1334,7 @@ _DQUOTE_RE = re.compile(r'(\\*)"')
 """Regular expression for escaping double quotes in strings."""
 
 
-def sh_quote_unsafe(text):
+def sh_quote_unsafe(arg):
     """
     Double-quote a string for passing as argument to a shell command.
 
@@ -1224,7 +1351,7 @@ def sh_quote_unsafe(text):
       "\\"\\\\\\"arg\\\\\\"\\""
 
     """
-    return ('"%s"' % _DQUOTE_RE.sub(r'\1\1\"', text))
+    return ('"' + _DQUOTE_RE.sub(r'\1\1\"', str(arg)) + '"' )
 
 
 def sh_quote_unsafe_cmdline(args):

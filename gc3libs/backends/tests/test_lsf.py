@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2014, 2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -170,9 +170,9 @@ Tue Jul 24 10:05:45: Done successfully. The CPU time used is 2.1 seconds.
  loadSched 4000.0      -       -       -       -       -       -
  loadStop      -       -       -       -       -       -       -
 """
-    jobstatus = lsf._parse_stat_output(bjobs_output)
+    jobstatus = lsf._parse_stat_output(bjobs_output, '')
     assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.exit_status, 0)
+    assert_equal(jobstatus.termstatus, (0, 0))
 
 
 def test_bjobs_output_for_accounting():
@@ -224,7 +224,7 @@ Tue Jul 24 10:05:45: Done successfully. The CPU time used is 2.1 seconds.
 """
 
     # Also parse the output of jobs to get accounting information
-    acct = lsf._parse_acct_output(bjobs_output)
+    acct = lsf._parse_acct_output(bjobs_output, '')
     assert_equal(acct['duration'], Duration('86s'))
     assert_equal(acct['used_cpu_time'], Duration('2.1s'))
     assert_equal(acct['max_used_memory'], Memory('41MB'))
@@ -336,9 +336,11 @@ Mon Jul 30 15:12:56: Done successfully. The CPU time used is 1.7 seconds.
           scratch      xs       s       m       l      xl      sp
  loadSched20000.0      -       -       -       -       -       -
  loadStop      -       -       -       -       -       -       -
-""")
+""",
+    # STDERR
+    '')
     assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.exit_status, 0)
+    assert_equal(jobstatus.termstatus, (0, 0))
 
 
 def test_bjobs_output_done3():
@@ -379,9 +381,31 @@ Mon Aug  4 12:28:51 2014: Completed <exit>.
  RESOURCE REQUIREMENT DETAILS:
  Combined: select[type == local] order[r15s:pg] rusage[mem=2000.00]
  Effective: select[type == local] order[r15s:pg] rusage[mem=2000.00]
-""")
+    """,
+    # STDERR
+    '')
     assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.exit_status, 127)
+    assert_equal(jobstatus.termstatus, (0, 127))
+
+
+def test_bjobs_output_done_long_ago():
+    """Test parsing `bjobs -l` output for a job that was removed from `mbatchd` core memory"""
+    lsf = LsfLrms(name='test',
+                  architecture=gc3libs.Run.Arch.X86_64,
+                  max_cores=1,
+                  max_cores_per_job=1,
+                  max_memory_per_core=1 * GB,
+                  max_walltime=1 * hours,
+                  auth=None,  # ignored if `transport` is `local`
+                  frontend='localhost',
+                  transport='local')
+    jobstatus = lsf._parse_stat_output(
+        # empty STDOUT
+        '',
+        # STDERR
+        'Job <943186> is not found')
+    assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
+    assert_equal(jobstatus.termstatus, None)
 
 
 def test_bjobs_output_exit_nonzero():
@@ -416,12 +440,13 @@ Tue Jul 24 10:26:53: Completed <exit>.
           scratch      xs       s       m       l      xl      sp
  loadSched20000.0      -       -       -       -       -       -
  loadStop      -       -       -       -       -       -       -
-""")
+    """,
+    # STDERR
+    '')
     assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.exit_status, 42)
+    assert_equal(jobstatus.termstatus, (0, 42))
 
 
-@raises(AssertionError)
 def test_bjobs_incorrect_prefix_length():
     lsf = LsfLrms(name='test',
                   architecture=gc3libs.Run.Arch.X86_64,
@@ -433,7 +458,7 @@ def test_bjobs_incorrect_prefix_length():
                   frontend='localhost',
                   transport='local',
                   lsf_continuation_line_prefix_length=7)
-    jobstatus = lsf._parse_stat_output("""
+    stat_result = lsf._parse_stat_output("""
 Job <2073>, Job Name <GRunApplication.0>, User <markmon>, Project <default>, St
                           atus <EXIT>, Queue <normal>, Command <sh -c inputfile
                           .txt>
@@ -461,8 +486,11 @@ Mon Aug  4 12:28:51 2014: Completed <exit>.
  RESOURCE REQUIREMENT DETAILS:
  Combined: select[type == local] order[r15s:pg] rusage[mem=2000.00]
  Effective: select[type == local] order[r15s:pg] rusage[mem=2000.00]
-""")
-    assert 'state' not in jobstatus
+""",
+    # STDERR
+    '')
+    assert_equal(stat_result.state, gc3libs.Run.State.UNKNOWN)
+    assert_equal(stat_result.termstatus, None)
 
 
 def test_bjobs_correct_explicit_prefix_length():
@@ -476,7 +504,7 @@ def test_bjobs_correct_explicit_prefix_length():
                   frontend='localhost',
                   transport='local',
                   lsf_continuation_line_prefix_length=26)
-    jobstatus = lsf._parse_stat_output("""
+    stat_result = lsf._parse_stat_output("""
 Job <2073>, Job Name <GRunApplication.0>, User <markmon>, Project <default>, St
                           atus <EXIT>, Queue <normal>, Command <sh -c inputfile
                           .txt>
@@ -504,10 +532,11 @@ Mon Aug  4 12:28:51 2014: Completed <exit>.
  RESOURCE REQUIREMENT DETAILS:
  Combined: select[type == local] order[r15s:pg] rusage[mem=2000.00]
  Effective: select[type == local] order[r15s:pg] rusage[mem=2000.00]
-""")
-    assert 'state' in jobstatus
-    assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.exit_status, 127)
+""",
+    # STDERR
+    '')
+    assert_equal(stat_result.state, gc3libs.Run.State.TERMINATING)
+    assert_equal(stat_result.termstatus, (0, 127))
 
 
 def test_bacct_done0():
@@ -559,7 +588,9 @@ SUMMARY:      ( time unit: second )
  Average hog factor of a job:  0.00 ( cpu time / turnaround time )
  Maximum hog factor of a job:  0.00      Minimum hog factor of a job:  0.00
 
-    """)
+    """,
+    # STDERR
+    '')
     assert_equal(acct['duration'], Duration('67s'))
     assert_equal(acct['used_cpu_time'], Duration('0.08s'))
     assert_equal(acct['max_used_memory'], Memory('227MB'))
@@ -620,7 +651,9 @@ SUMMARY:      ( time unit: second )
  Maximum turnaround time:        73      Minimum turnaround time:        73
  Average hog factor of a job:  0.00 ( cpu time / turnaround time )
  Maximum hog factor of a job:  0.00      Minimum hog factor of a job:  0.00
-    """)
+    """,
+    # STDERR
+    '')
     assert_equal(acct['duration'], Duration('6s'))
     assert_equal(acct['used_cpu_time'], Duration('0.04s'))
     assert_equal(acct['max_used_memory'], Memory('37MB'))
@@ -681,7 +714,9 @@ SUMMARY:      ( time unit: second )
  Maximum turnaround time:       115      Minimum turnaround time:       115
  Average hog factor of a job:  0.00 ( cpu time / turnaround time )
  Maximum hog factor of a job:  0.00      Minimum hog factor of a job:  0.00
-""")
+""",
+    # STDERR
+    '')
     assert_equal(acct['duration'], Duration('55s'))
     assert_equal(acct['used_cpu_time'], Duration('0.04s'))
     assert_equal(acct['max_used_memory'], Memory('35MB'))

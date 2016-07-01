@@ -237,13 +237,8 @@ class Session(list):
             self.store_url, **extra_args)
 
         idx_filename = os.path.join(self.path, self.INDEX_FILENAME)
-        try:
-            idx_fd = open(idx_filename)
-            ids = idx_fd.read().split()
-            idx_fd.close()
-        except:
-            idx_fd.close()
-            raise
+        with open(idx_filename) as idx_file:
+            ids = idx_file.read().split()
 
         try:
             start_file = os.path.join(
@@ -517,7 +512,7 @@ class Session(list):
         creation/modification time will be used to know when the
         session has sarted.
         """
-        self.created = self._touch_file(self.TIMESTAMP_FILES['start'])
+        self.created = self._touch_file(self.TIMESTAMP_FILES['start'], time)
 
     def set_end_timestamp(self, time=None):
         """
@@ -529,7 +524,7 @@ class Session(list):
         finished, so this method should be called by a
         `SessionBasedScript`:class: class.
         """
-        self.finished = self._touch_file(self.TIMESTAMP_FILES['end'])
+        self.finished = self._touch_file(self.TIMESTAMP_FILES['end'], time)
 
 
 # main: run tests

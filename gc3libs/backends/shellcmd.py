@@ -2,7 +2,7 @@
 """
 Run applications as local processes.
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -29,6 +29,7 @@ import os
 import os.path
 import posixpath
 import time
+from pkg_resources import Requirement, resource_filename
 
 # GC3Pie imports
 import gc3libs
@@ -36,9 +37,9 @@ import gc3libs.exceptions
 import gc3libs.backends.transport
 from gc3libs import log, Run
 from gc3libs.utils import same_docstring_as
-from gc3libs.utils import Struct, sh_quote_unsafe, defproperty
+from gc3libs.utils import Struct, sh_quote_safe, sh_quote_unsafe, defproperty
 from gc3libs.backends import LRMS
-from gc3libs.quantity import Memory, MB
+from gc3libs.quantity import Duration, Memory, MB
 
 
 def _make_remote_and_local_path_pair(transport, job, remote_relpath,
@@ -62,6 +63,79 @@ def _make_remote_and_local_path_pair(transport, job, remote_relpath,
         return result
     else:
         return [(remote_path, local_path)]
+
+
+def _parse_gnu_time_duration(val):
+    """
+    Convert the output of GNU time's `%e` format specifier into a GC3Pie `Duration` object.
+
+    Any of the time formats *HH:MM:SS* (hours, minutes, seconds) or
+    *MM:SS* (minutes, seconds), or even just the number of seconds are
+    acceptable::
+
+      >>> _parse_gnu_time_duration('1:02:03') == Duration('1h') + Duration('2m') + Duration('3s')
+      True
+
+      >>> _parse_gnu_time_duration('01:02') == Duration('1m') + Duration('2s')
+      True
+
+      >>> _parse_gnu_time_duration('42') == Duration(42, unit=Duration.s)
+      True
+
+    The *seconds* portion of the time string can be followed by
+    decimal digits for greater precision::
+
+      >>> _parse_gnu_time_duration('0:00.00') == Duration(0, unit=Duration.s)
+      True
+
+      >>> _parse_gnu_time_duration('4.20') == Duration(4.20, unit=Duration.s)
+      True
+
+    When only the number of seconds is given, an optional trailing
+    unit specified `s` is allowed::
+
+      >>> _parse_gnu_time_duration('4.20s') == Duration(4.20, unit=Duration.s)
+      True
+    """
+    n = val.count(':')
+    if 2 == n:
+        return Duration(val)
+    elif 1 == n:
+        # AA:BB is rejected as ambiguous by `Duration`'s built-in
+        # parser; work around it
+        mm, ss = val.split(':')
+        return (Duration(int(mm, 10), unit=Duration.m)
+                + Duration(float(ss), unit=Duration.s))
+    elif 0 == n:
+        # remove final unit spec, if present
+        if val.endswith('s'):
+            val = val[:-1]
+        # number of seconds with up to 2 decimal precision
+        return Duration(float(val), unit=Duration.s)
+    else:
+        raise ValueError(
+            "Expecting duration in the form HH:MM:SS, MM:SS,"
+            " or just number of seconds,"
+            " got {val} instead".format(val=val))
+
+
+def _parse_percentage(val):
+    """
+    Convert a percentage string into a Python float.
+    The percent sign at the end is optional::
+
+    >>> _parse_percentage('10')
+    10.0
+    >>> _parse_percentage('10%')
+    10.0
+    >>> _parse_percentage('0.1%')
+    0.1
+    """
+    return float(val[:-1]) if val.endswith('%') else float(val)
+
+
+def _parse_returncode_string(val):
+    return Run.shellexit_to_returncode(int(val))
 
 
 class ShellcmdLrms(LRMS):
@@ -156,12 +230,44 @@ SocketReceived=%r
 SocketSent=%s
 Signals=%k
 ReturnCode=%x"""
+
+    # how to translate GNU time output into GC3Pie execution metrics
+    TIMEFMT_CONV = {
+        # GNU time output key    .execution attr                     converter function
+        # |                        |                                  |
+        # v                        v                                  v
+        'WallTime':              ('duration',                         _parse_gnu_time_duration),
+        'KernelTime':            ('shellcmd_kernel_time',             Duration),
+        'UserTime':              ('shellcmd_user_time',               Duration),
+        'CPUUsage':              ('shellcmd_cpu_usage',               _parse_percentage),
+        'MaxResidentMemory':     ('max_used_memory',                  Memory),
+        'AverageResidentMemory': ('shellcmd_average_resident_memory', Memory),
+        'AverageTotalMemory':    ('shellcmd_average_total_memory',    Memory),
+        'AverageUnsharedMemory': ('shellcmd_average_unshared_memory', Memory),
+        'AverageUnsharedStack':  ('shellcmd_average_unshared_stack',  Memory),
+        'AverageSharedMemory':   ('shellcmd_average_shared_memory',   Memory),
+        'PageSize':              ('shellcmd_page_size',               Memory),
+        'MajorPageFaults':       ('shellcmd_major_page_faults',       int),
+        'MinorPageFaults':       ('shellcmd_minor_page_faults',       int),
+        'Swaps':                 ('shellcmd_swapped',                 int),
+        'ForcedSwitches':        ('shellcmd_involuntary_context_switches', int),
+        'WaitSwitches':          ('shellcmd_voluntary_context_switches',   int),
+        'Inputs':                ('shellcmd_filesystem_inputs',       int),
+        'Outputs':               ('shellcmd_filesystem_outputs',      int),
+        'SocketReceived':        ('shellcmd_socket_received',         int),
+        'SocketSent':            ('shellcmd_socket_sent',             int),
+        'Signals':               ('shellcmd_signals_delivered',       int),
+        'ReturnCode':            ('returncode',                       _parse_returncode_string),
+    }
+
     WRAPPER_DIR = '.gc3pie_shellcmd'
     WRAPPER_SCRIPT = 'wrapper_script.sh'
+    WRAPPER_DOWNLOADER = 'downloader.py'
     WRAPPER_OUTPUT_FILENAME = 'resource_usage.txt'
     WRAPPER_PID = 'wrapper.pid'
 
     RESOURCE_DIR = '$HOME/.gc3/shellcmd.d'
+
 
     def __init__(self, name,
                  # these parameters are inherited from the `LRMS` class
@@ -296,23 +402,35 @@ ReturnCode=%x"""
                    type(app.execution.lrms_jobid)))
 
         self.transport.connect()
+        # Kill all the processes belonging to the same session as the
+        # pid we actually started.
+
+        # On linux, kill '$(ps -o pid= -g $(ps -o sess= -p %d))' would
+        # be enough, but on MacOSX it doesn't work.
         exit_code, stdout, stderr = self.transport.execute_command(
-            'kill %d' % pid)
-        # XXX: should we check that the process actually died?
-        if exit_code != 0:
-            # Error killing the process. It may not exists or we don't
-            # have permission to kill it.
+            "ps -p %d  -o sess=" % pid)
+        if exit_code != 0 or not stdout.strip():
+            # No PID found. We cannot recover the session group of the
+            # process, so we cannot kill any remaining orphan process.
+            log.error("Unable to find job '%s': no pid found." % pid)
+        else:
             exit_code, stdout, stderr = self.transport.execute_command(
-                "ps ax | grep -E '^ *%d '" % pid)
-            if exit_code == 0:
-                # The PID refers to an existing process, but we
-                # couldn't kill it.
-                log.error("Could not kill job '%s': %s", pid, stderr)
-            else:
-                # The PID refers to a non-existing process.
-                log.error(
-                    "Could not kill job '%s'. It refers to non-existent"
-                    " local process %s.", app, app.execution.lrms_jobid)
+                'kill $(ps -ax -o sess=,pid= | egrep "^[ \t]*%s[ \t]")' % stout.strip())
+            # XXX: should we check that the process actually died?
+            if exit_code != 0:
+                # Error killing the process. It may not exists or we don't
+                # have permission to kill it.
+                exit_code, stdout, stderr = self.transport.execute_command(
+                    "ps ax | grep -E '^ *%d '" % pid)
+                if exit_code == 0:
+                    # The PID refers to an existing process, but we
+                    # couldn't kill it.
+                    log.error("Could not kill job '%s': %s", pid, stderr)
+                else:
+                    # The PID refers to a non-existing process.
+                    log.error(
+                        "Could not kill job '%s'. It refers to non-existent"
+                        " local process %s.", app, app.execution.lrms_jobid)
         self._delete_job_resource_file(pid)
 
     @same_docstring_as(LRMS.close)
@@ -597,6 +715,8 @@ ReturnCode=%x"""
         # directory references.
         stageout = list()
         for remote_relpath, local_url in app.outputs.iteritems():
+            if local_url.scheme in ['swift', 'swt', 'swifts', 'swts']:
+                continue
             local_relpath = local_url.path
             if remote_relpath == gc3libs.ANY_OUTPUT:
                 remote_relpath = ''
@@ -662,8 +782,8 @@ ReturnCode=%x"""
                     % (wrapper_filename, app, err), do_log=True)
             try:
                 outcome = self._parse_wrapper_output(wrapper_file)
-                app.execution.returncode = \
-                    Run.shellexit_to_returncode(int(outcome.ReturnCode))
+                app.execution.update(outcome)
+                app.execution.returncode = outcome.returncode
                 self._delete_job_resource_file(pid)
             finally:
                 wrapper_file.close()
@@ -744,6 +864,8 @@ ReturnCode=%x"""
 
         # Copy input files to remote dir
         for local_path, remote_path in app.inputs.items():
+            if local_path.scheme != 'file':
+                continue
             remote_path = posixpath.join(execdir, remote_path)
             remote_parent = os.path.dirname(remote_path)
             try:
@@ -801,10 +923,11 @@ ReturnCode=%x"""
                     self.transport.makedirs(posixpath.join(execdir, stderr_dir))
 
         # set up environment
-        env_arguments = ''
+        env_commands = []
         for k, v in app.environment.iteritems():
-            env_arguments += "%s=%s; export %s; " % (k, v, k)
-        arguments = str.join(' ', (sh_quote_unsafe(i) for i in app.arguments))
+            env_commands.append(
+                "export {k}={v};"
+                .format(k=sh_quote_safe(k), v=sh_quote_unsafe(v)))
 
         # Create the directory in which pid, output and wrapper script
         # files will be stored
@@ -821,6 +944,29 @@ ReturnCode=%x"""
                 self.free(app)
                 raise
 
+        # Set up scripts to download/upload the swift/http files
+        downloadfiles = []
+        uploadfiles = []
+        wrapper_downloader_filename = posixpath.join(
+            wrapper_dir,
+            ShellcmdLrms.WRAPPER_DOWNLOADER)
+
+        for url, outfile in app.inputs.items():
+            if url.scheme in ['swift', 'swifts', 'swt', 'swts', 'http', 'https']:
+                downloadfiles.append("python '%s' download '%s' '%s'" % (wrapper_downloader_filename, str(url), outfile))
+
+        for infile, url in app.outputs.items():
+            if url.scheme in ['swift', 'swt', 'swifts', 'swts']:
+                uploadfiles.append("python '%s' upload '%s' '%s'" % (wrapper_downloader_filename, str(url), infile))
+        if downloadfiles or uploadfiles:
+            # Also copy the downloader.
+            with open(resource_filename(Requirement.parse("gc3pie"),
+                                        "gc3libs/etc/downloader.py")) as fd:
+                wrapper_downloader = self.transport.open(
+                    wrapper_downloader_filename, 'w')
+                wrapper_downloader.write(fd.read())
+                wrapper_downloader.close()
+
         # Build
         pidfilename = posixpath.join(wrapper_dir,
                                      ShellcmdLrms.WRAPPER_PID)
@@ -835,15 +981,35 @@ ReturnCode=%x"""
             # Create the wrapper script
             wrapper_script = self.transport.open(
                 wrapper_script_fname, 'w')
-            wrapper_script.write("""#!/bin/sh
-echo $$ >%s
-cd %s
-exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
-""" % (pidfilename, execdir, self.time_cmd,
-                wrapper_output_filename,
-                ShellcmdLrms.TIMEFMT, redirection_arguments,
-                env_arguments, arguments))
+            commands = (
+                r"""#!/bin/sh
+                echo $$ >{pidfilename}
+                cd {execdir}
+                exec {redirections}
+                {environment}
+                {downloadfiles}
+                '{time_cmd}' -o '{wrapper_out}' -f '{fmt}' {command}
+                rc=$?
+                {uploadfiles}
+                rc2=$?
+                if [ $rc -ne 0 ]; then exit $rc; else exit $rc2; fi
+                """.format(
+                    pidfilename=pidfilename,
+                    execdir=execdir,
+                    time_cmd=self.time_cmd,
+                    wrapper_out=wrapper_output_filename,
+                    fmt=ShellcmdLrms.TIMEFMT,
+                    redirections=redirection_arguments,
+                    environment=str.join('\n', env_commands),
+                    downloadfiles=str.join('\n', downloadfiles),
+                    uploadfiles=str.join('\n', uploadfiles),
+                    command=(str.join(' ',
+                                      (sh_quote_unsafe(arg)
+                                      for arg in app.arguments))),
+            ))
+            wrapper_script.write(commands)
             wrapper_script.close()
+            #log.info("Wrapper script: <<<%s>>>", commands)
         except gc3libs.exceptions.TransportError:
             log.error("Freeing resources used by failed application")
             self.free(app)
@@ -948,7 +1114,7 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
         The `shellcmd`:mod: backend can only handle ``file`` URLs.
         """
         for url in data_file_list:
-            if url.scheme not in ['file']:
+            if url.scheme not in ['file', 'swift', 'swifts', 'swt', 'swts', 'http', 'https']:
                 return False
         return True
 
@@ -963,14 +1129,35 @@ exec %s -o %s -f '%s' /bin/sh %s -c '%s %s'
         file before reading.
         """
         wrapper_file.seek(0)
-        wrapper_output = Struct()
+        acctinfo = Struct()
         for line in wrapper_file:
             if '=' not in line:
                 continue
             k, v = line.strip().split('=', 1)
-            wrapper_output[k] = v
+            if k not in self.TIMEFMT_CONV:
+                gc3libs.log.warning(
+                    "Unknown key '%s' in wrapper output file - ignoring!", k)
+                continue
+            name, conv = self.TIMEFMT_CONV[k]
+            # the `time` man page states that: "Any character
+            # following a percent sign that is not listed in the table
+            # below causes a question mark (`?') to be output [...] to
+            # indicate that an invalid resource specifier was given."
+            # Actually, `time` seems to print a question mark also
+            # when a value is not available (e.g., corresponding data
+            # not available/collected by the kernel) so we just set a
+            # field to ``None`` if there is a question mark in it.
+            if v.startswith('?'):
+                acctinfo[name] = None
+            else:
+                acctinfo[name] = conv(v)
 
-        return wrapper_output
+        # apprently GNU time does not report the total CPU time, used
+        # so compute it here
+        acctinfo['used_cpu_time'] = (
+            acctinfo['shellcmd_user_time'] + acctinfo['shellcmd_kernel_time'])
+
+        return acctinfo
 
 # main: run tests
 

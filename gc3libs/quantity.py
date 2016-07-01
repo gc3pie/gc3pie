@@ -453,6 +453,10 @@ class _Quantity(object):
             return self._new_from_amount_and_unit(
                 amount / unit.amount(self.base), unit)
 
+    # be compatible with `from __future__ import division`
+    __truediv__ = __div__
+
+    # FIXME: why doesn't this do the same as `__div__` (+ rounding down?)
     def __floordiv__(self, other):
         """Return the ratio of two quantities (as a whole number)."""
         assert isinstance(other, self.__class__), \
@@ -617,8 +621,10 @@ class Memory(object):
         >>> two_bytes == 2*byte
         True
         >>> half_gigabyte = a_gigabyte / 2
-        >>> half_gigabyte
-        Memory(476.837, unit=MiB)
+        >>> a_gigabyte == half_gigabyte * 2
+        True
+        >>> a_megabyte == a_gigabyte / 1000
+        True
 
     The ratio of two memory quantities is correctly computed as a pure
     (floating-point) number::
@@ -826,6 +832,8 @@ class Duration(object):
 
       >>> two_hours = an_hour + an_hour
       >>> two_hours == 2*an_hour
+      True
+      >>> an_hour == two_hours / 2
       True
 
       >>> one_hour = two_hours - an_hour
