@@ -1143,6 +1143,10 @@ class Engine(object):
         files are downloaded. See `Core.fetch_output`:meth: for
         details.
 
+      `forget_terminated`
+        When ``True``, `Engine.remove`:meth: is automatically called
+        on tasks when their state turns to ``TERMINATED``.
+
     Any of the above can also be set by passing a keyword argument to
     the constructor (assume ``g`` is a `Core`:class: instance)::
 
@@ -1158,7 +1162,8 @@ class Engine(object):
                  scheduler=first_come_first_serve,
                  retrieve_running=False,
                  retrieve_overwrites=False,
-                 retrieve_changed_only=True):
+                 retrieve_changed_only=True,
+                 forget_terminated=False):
         """
         Create a new `Engine` instance.  Arguments are as follows:
 
@@ -1210,6 +1215,7 @@ class Engine(object):
         self.retrieve_running = retrieve_running
         self.retrieve_overwrites = retrieve_overwrites
         self.retrieve_changed_only = retrieve_changed_only
+        self.forget_terminated = forget_terminated
 
 
     def _get_queue_for_task(self, task):
@@ -1648,17 +1654,20 @@ class Engine(object):
                         raise
 
             for index, task in enumerate(self._terminating):
-                try:
-                    if task.execution.state == Run.State.TERMINATED:
-                        self._terminated.append(task)
-                        transitioned.append(index)
+                if task.execution.state == Run.State.TERMINATED:
+                    transitioned.append(index)
+                    try:
                         self._core.free(task)
-                except Exception as err:
-                    gc3libs.log.error(
-                        "Got error freeing up resources used by task '%s': %s: %s."
-                        " (For cloud-based resources, it's possible that the VM"
-                        " has been destroyed already.)",
-                        task, err.__class__.__name__, err)
+                    except Exception as err:
+                        gc3libs.log.error(
+                            "Got error freeing up resources used by task '%s': %s: %s."
+                            " (For cloud-based resources, it's possible that the VM"
+                            " has been destroyed already.)",
+                            task, err.__class__.__name__, err)
+                    if self.forget_terminated:
+                        self.remove(task)
+                    else:
+                        self._terminated.append(task)
 
                 if self._store and task.changed:
                     self._store.save(task)
