@@ -1147,6 +1147,12 @@ class Engine(object):
         When ``True``, `Engine.remove`:meth: is automatically called
         on tasks when their state turns to ``TERMINATED``.
 
+        .. warning::
+
+          For historical reasons, the default for this option is
+          ``False`` but this can (and should!) be changed in future
+          releases.
+
     Any of the above can also be set by passing a keyword argument to
     the constructor (assume ``g`` is a `Core`:class: instance)::
 
