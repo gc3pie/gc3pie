@@ -1,0 +1,73 @@
+#
+# Ansible script to set up a Ubuntu 14.04 VM with the files etc.
+# used in the "GC3Pie tools" training.
+#
+---
+
+- name: Configure VM for the "GC3Pie tools" training
+  hosts: all
+  tasks:
+
+    - name: "Replace /etc/motd with welcome message stating purpose and scope of VM"
+      copy:
+        path=/etc/motd
+        src=files/motd
+        mode=0444
+        owner=root
+        group=root
+      become: yes
+
+    - name: "Disable Ubuntu's 'dynamic motd'"
+      lineinfile:
+        dest=/etc/pam.d/sshd
+        regexp="(?x) ^\s* session \s+ optional \s+ pam_motd.so \s+ motd=/run/motd.dynamic .*$"
+        state=absent
+        create=no
+      become: yes
+
+    - name: Install needed SW
+      package:
+        name='{{item}}'
+        state=present
+      with_items:
+        - g++
+        - gcc
+        - git
+        - imagemagick
+        - libffi-dev
+        - python-dev
+
+    - name: Download GC3Pie install script
+      get_url:
+        dest='{{ansible_user_dir}}/gc3pie-install.sh'
+        url=https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
+        mode=0755
+
+    - name: Run GC3Pie install script
+      command:
+        '{{ansible_user_dir}}/gc3pie-install.sh --yes --feature openstack --overwrite --develop --no-gc3apps'
+        
+    - name: Create GC3Pie config directory
+      file:
+        path='{{ansible_user_dir}}/.gc3'
+        state=directory
+
+    - name: Deploy GC3Pie configuration file
+      copy:
+        path='{{ansible_user_dir}}/.gc3/gc3pie.conf'
+        src=files/gc3pie.conf
+        state=present
+
+    - name: Copy other course material
+      copy:
+        path='{{ansible_user_dir}}/{{item}}'
+        src='files/{{item}}'
+      with_items:
+        - 'sc-authenticate.sh'
+        - 'uzh-logo.png'
+
+    - name: Make the "warholize" script available in home dir
+      file:
+        path='{{ansible_user_dir}}/warholize.py'
+        dest='{{ansible_user_dir}}/gc3pie/src/examples/warholize.py'
+        state=link
