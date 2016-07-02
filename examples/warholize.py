@@ -118,9 +118,9 @@ import os
 
 class WarholizeScript(SessionBasedScript):
     """
-    Demo script to create a `Warholized` version of an image.
+    Demo script to create a "warholized" version of an image.
     """
-    version='1.0'
+    version='1.0.1'
 
 # Please note that you must either write a small docstring for that
 # class, or add a `description` attribute.
@@ -144,7 +144,8 @@ class WarholizeScript(SessionBasedScript):
 
     def setup_options(self):
         self.add_param('--copies', default=4, type=int,
-                       help="Number of copyes (Default:4). It has to be a perfect square!")
+                       help=("Number of colored tiles, defaults to 4."
+                             " It has to be a square number!"))
         self.add_param('--size', default=None,
                        help="Size of the resulting image. "
                        "Please note that the resulting image will be a bit "
@@ -467,7 +468,7 @@ class TricolorizeImage(SequentialTaskCollection):
         self.warhol_dir = warhol_dir
         self.jobname = 'TricolorizeImage'
         self.output_file = output_file
-        
+
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         self.extra_args = extra_args

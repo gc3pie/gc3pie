@@ -66,7 +66,7 @@
 
 
 \begin{frame}
-  \frametitle{Outline of this training, 1}
+  \frametitle{About this training, 1}
   \begin{enumerate}
   \item Concepts and glossary
   \item Usage of a session-based script
@@ -76,7 +76,7 @@
 
 
 \begin{frame}
-  \frametitle{Outline of this training, 2}
+  \frametitle{About this training, 2}
   \begin{center}
     We'd like the training to be \\ as interactive and informal as possible.
 
@@ -108,7 +108,7 @@
   \frametitle{A typical GC3Pie script?}
 
 \begin{semiverbatim}
-    > ./warholize.py uzh-logo.png --watch 1
+    > ./warholize.py uzh-logo.png -{}-watch 1
 \end{semiverbatim}
 
   \begin{tabular}[c]{ccc}
@@ -283,9 +283,9 @@
   \\
   and runs all the jobs in it until completion.
 
-  \+ Create session \texttt{logo-session}:
+  \+ Create session \texttt{logo}:
 \begin{semiverbatim}
-    > ./warholize.py uzh-logo.png -s logo-session
+    > ./warholize.py uzh-logo.png -s logo
 \end{semiverbatim}
 \end{frame}
 
@@ -297,10 +297,10 @@
   \\
   and \alert{runs all the jobs in it until completion.}
 
-  \+ Run jobs in session \texttt{logo-session},
+  \+ Run jobs in session \texttt{logo},
   polling for updates every 5 seconds:
 \begin{semiverbatim}
-    > ./warholize.py -s logo-session -{}-watch 5
+    > ./warholize.py uzh-logo.png -s logo -{}-watch 5
 \end{semiverbatim}
 
   \+ \uncover<2>{
@@ -313,9 +313,9 @@
 \begin{frame}
   \frametitle{Alternate display of session contents, I}
 
-  Display top-level tasks in session \texttt{logo-session}:
+  Display top-level tasks in session \texttt{logo}:
 \begin{semiverbatim}
-    > gsession list logo-session
+    > gsession list logo
 \end{semiverbatim}
 
   \begin{exercise}
@@ -327,11 +327,11 @@
 \begin{frame}[fragile]
   \frametitle{WTF??}
   \begin{stdout}
-> gsession list warholize
-gc3.gc3libs: WARNING: Failed loading file '/home/ubuntu/warholize/jobs/WarholizeWorkflow.108': ImportError: No module named warholize
+> gsession list logo
+gc3.gc3libs: WARNING: Failed loading file '/home/ubuntu/logo/jobs/WarholizeWorkflow.108': ImportError: No module named warholize
   ^\ldots^
-LoadError: Failed retrieving object from file '/home/ubuntu/warholize/jobs/WarholizeWorkflow.108': ImportError: No module named warholize
-gc3.gc3libs: WARNING: Ignoring error from loading 'ParallelTaskCollection.107': Failed retrieving object from file '/home/ubuntu/warholize/jobs/ParallelTaskCollection.107': LoadError: Failed retrieving object from file '/home/ubuntu/warholize/jobs/WarholizeWorkflow.108': ImportError: No module named warholize
+LoadError: Failed retrieving object from file '/home/ubuntu/logo/jobs/WarholizeWorkflow.108': ImportError: No module named warholize
+gc3.gc3libs: WARNING: Ignoring error from loading 'ParallelTaskCollection.107': Failed retrieving object from file '/home/ubuntu/logo/jobs/ParallelTaskCollection.107': LoadError: Failed retrieving object from file '/home/ubuntu/logo/jobs/WarholizeWorkflow.108': ImportError: No module named warholize
 +-------+----------+-------+------+
 | JobID | Job name | State | Info |
 +-------+----------+-------+------+
@@ -353,9 +353,9 @@ gc3.gc3libs: WARNING: Ignoring error from loading 'ParallelTaskCollection.107': 
 \begin{frame}
   \frametitle{Alternate display of session contents, II}
 
-  Display \emph{all} tasks in session \texttt{logo-session}:
+  Display \emph{all} tasks in session \texttt{logo}:
 \begin{semiverbatim}
-    > gsession list -{}-recursive logo-session
+    > gsession list -{}-recursive logo
 \end{semiverbatim}
 
   \+
@@ -368,9 +368,9 @@ gc3.gc3libs: WARNING: Ignoring error from loading 'ParallelTaskCollection.107': 
 \begin{frame}
   \frametitle{Alternate display of session contents, III}
 
-  Display summary of tasks in session \texttt{logo-session}:
+  Display summary of tasks in session \texttt{logo}:
 \begin{semiverbatim}
-    > gstat -n -b -s logo-session
+    > gstat -n -b -s logo
 \end{semiverbatim}
 \end{frame}
 
@@ -378,13 +378,14 @@ gc3.gc3libs: WARNING: Ignoring error from loading 'ParallelTaskCollection.107': 
 \begin{frame}
   \frametitle{Display session history}
 
-  Show log of activity on tasks in session \texttt{logo-session}:
+  Show log of activity on tasks in session \texttt{logo}:
 \begin{semiverbatim}
-    > gsession log logo-session
+    > gsession log logo
 \end{semiverbatim}
 \end{frame}
 
 
+\part{Resource definition}
 \begin{frame}[fragile]
   \frametitle{The \texttt{gservers} command}
 
@@ -412,254 +413,9 @@ gc3.gc3libs: WARNING: Ignoring error from loading 'ParallelTaskCollection.107': 
 \uncover<2>{%
   \small \alert<2>{Resources are defined in file \texttt{\$HOME/.gc3/gc3pie.conf}}
 }
-
-  \+
-  \begin{flushright}
-    \hyperlink{resources}{\beamergotobutton{Examples of resource definitions}}
-  \end{flushright}
 \end{frame}
 
 
-\begin{frame}
-  \frametitle{Hands-on time!}
-  \begin{exercise}
-    Get the \texttt{gservers} command to access the \texttt{sciencecloud}.
-  \end{exercise}
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{Select execution resource}
-
-  Select where applications will be run with option \texttt{-r}:
-\begin{semiverbatim}
-    > ./warholize.py -s logo-session -r localhost
-\end{semiverbatim}
-
-  \+ The resource name must exists in the configuration file (i.e.,
-  check \texttt{gservers}' output).
-
-  \+ Stopping a script and re-starting it with a different resource
-  will likely result in an error: old tasks can no longer be found.
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{Passing requirements to the application}
-  Some options are used to specify some requirements of \emph{all}
-  applications in a session:
-  \begin{description}
-  \item[-c NUM] Set the number of CPU cores required for each job.
-  \item[-m GB] Set the amount of memory required per execution core
-  \item[-w DURATION] Set the time limit for each job; default is script-dependent.
-  \end{description}
-
-  \+ These options have proven not to be much useful except for
-  debugging/experimentation, \\ so \alert{they might be removed in a
-    future release!}
-\end{frame}
-
-
-\part{Cloud backend management}
-
-\begin{frame}
-  \frametitle{Hands-on time!}
-  \begin{exercise}
-    Run the ``Warholize'' workflow on the ScienceCloud.
-  \end{exercise}
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{See what VMs are in use}
-
-  Use the \texttt{gcloud} command to show cloud usage:
-\begin{semiverbatim}
-    > gcloud list
-\end{semiverbatim}
-
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{Limit concurrently-running jobs}
-
-  Limit the maximum number of concurrently-running tasks
-  with option \texttt{-J}:
-\begin{semiverbatim}
-    > ./warholize.py -s logo-session -J 1
-\end{semiverbatim}
-
-  \+ In large computational campaigns, it is important not to flood the
-  execution resources with too many tasks.
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{Hands-on time!}
-
-    \begin{exercise}
-      \begin{enumerate}
-      \item Run the ``Warholize'' workflow on the ScienceCloud.  Stop
-        the script while it's running.  Now start it again.  What
-        happens?
-
-      \item Run the ``Warholize'' workflow on the ScienceCloud.  Stop
-        the script while it's running; list the jobs in the session
-        and note down the IDs.  Now run the script again,
-        \textbf{adding the ``\texttt{-N}'' option}.  When the script
-        terminates, inspect the session again and note the IDs. What has
-        happened? Why?
-      \end{enumerate}
-    \end{exercise}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Use \texttt{-N} with caution!}
-
-  \small
-  From the session-based script's \texttt{--help} output:
-\begin{semiverbatim}
--N, --new-session
-  Discard any information saved in the session dir
-  (see '--session' option) and start a new session
-  afresh. {\bf Any information about previous jobs is lost.}
-\end{semiverbatim}
-
-\end{frame}
-
-
-% \begin{frame}
-%   \frametitle{Force startup of a new VM}
-
-%   Use the \texttt{gcloud run} command to start a new VM:
-% \begin{semiverbatim}
-%     > gcloud run
-% \end{semiverbatim}
-
-%   \+ This is a quicker alternative to the
-%   OpenStack or EC2 command-line clients.
-
-%   \+ But it can only start the default type of VM from the
-%   configuration file, so not much flexibility here.
-% \end{frame}
-
-
-\begin{frame}
-  \frametitle{Cleanup unused VMs}
-
-  Use the \texttt{gcloud} command again:
-
-  \begin{itemize}
-  \item To stop \emph{all} unused VMs:
-\begin{semiverbatim}
-    > gcloud cleanup
-\end{semiverbatim}
-
-    \begin{exercise}
-      Do it. Now.
-    \end{exercise}
-
-  \item To stop \emph{all} a specific VM
-\begin{semiverbatim}
-    > gcloud terminate f031d6ad-bd6c-439e-9a98-4d649656d81a
-\end{semiverbatim}
-  \end{itemize}
-\end{frame}
-
-
-\part{Session management}
-
-\begin{frame}
-  \frametitle{Aborting a single task}
-
-  To stop and abort a single task, use the \texttt{gkill} command:
-\begin{semiverbatim}
-    > gkill -s logo-session MyApplication.123
-\end{semiverbatim}
-
-  \pause
-  \begin{exercise*}
-    What happens if you try to abort a task collection?
-  \end{exercise*}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Aborting a whole session}
-
-  \alert{Kill all the running tasks} in a session again using the
-  \texttt{gkill} command:
-\begin{semiverbatim}
-    > gkill -s logo-session -A
-\end{semiverbatim}
-
-  \+ (GC3Pie also features a \texttt{gsession abort} command, but it's
-  broken in the current release.)
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Selecting tasks from a session, I}
-
-  The \texttt{gselect} command is the go-to tool for selective listing
-  of tasks in a session.  For example, to list finished tasks:
-\begin{semiverbatim}
-    > gselect -s logo-session -{}-state TERMINATED
-\end{semiverbatim}
-
-  \+ The output of \texttt{gselect} is a list of task, IDs, to be fed
-  into another GC3Pie command.  For example, to kill all queued tasks:
-  \begin{stdout}
-    > gselect -s logo-session --state SUBMITTED | xargs gkill -s logo-session
-  \end{stdout}
-\end{frame}
-
-\begin{frame}[fragile]
-  \frametitle{Selecting tasks from a session, II}
-
-  The \texttt{gselect} command has many different \\ options to select tasks:
-  \begin{stdout}
-> gselect --help
-usage: gselect [-h] [-V] [-v] [--config-files CONFIG_FILES] -s SESSION
-               [--error-message REGEXP] [--input-file FILENAME]
-               [--jobname REGEXP] [--jobid REGEXP] [-l STATES]
-               [--output-file FILENAME] [--output-message REGEXP]
-               [--successful] [--submitted-after DATE]
-               [--submitted-before DATE] [--unsuccessful]
-  \end{stdout}
-
-  \+
-  \begin{exercise*}
-    Use \texttt{gselect} to print the IDs of the ``TricolorizeImage''
-    tasks in the last ``Warholize'' session.
-  \end{exercise*}
-\end{frame}
-
-% \begin{frame}[fragile]
-%   \frametitle{Task resubmission}
-%   Use the \texttt{gresub} command to re-run a task:
-% \begin{stdout}
-% > gresub -s logo-session TricolorizeImage.123
-% \end{stdout}
-% \end{frame}
-
-
-\section{The End}
-
-\begin{frame}
-  % \frametitle{Thank you!}
-  \begin{center}
-    {\Huge Thank you!}
-    \\[2em]
-    \textbf{Any questions?}
-    \\[0.5em]
-    \includegraphics[width=0.6\textwidth]{fig/questions.png}
-  \end{center}
-\end{frame}
-
-
-\part{Resource definition}
 \begin{frame}[fragile,label=resources]
   \frametitle{Example execution resources: local host}
   \begin{columns}[t]
@@ -711,7 +467,7 @@ architecture = x86_64
 prologue_content =
   module load cluster/largemem
 
-[auth/ssh_user_ubuntu]
+[auth/ssh_user_rmurri]
 type=ssh
 username=rmurri
 \end{stdout}
@@ -740,7 +496,7 @@ network_ids=
 
 # definition of a single execution VM
 instance_type=1cpu-4ram-hpc
-image_id=acebe825-e0d4-44ee-a1dc-a831561a2ea9
+image_id=2b227d15-8f6a-42b0-b744-ede52ebe59f7
 
 max_cores_per_job = 8
 max_memory_per_core = 4 GiB
@@ -768,8 +524,269 @@ username=ubuntu
 # the `OS\_*` environment variables
 type = openstack
       \end{stdout}
+
+      \+\+\+
+      Allow running tasks on the ``ScienceCloud'' VM infrastructure.
+
+      % \+ \footnotesize
+      % Cloud-based submission happens in two steps:
+      % \emph{(1)} create a VM, \emph{(2)} SSH to it and run jobs.  Each
+      % step requires different connection and authentication.
     \end{column}
   \end{columns}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Hands-on time!}
+  \begin{exercise}
+    Change the configuration file
+    \texttt{{\textasciitilde}/.gc3/gc3pie.conf} to enable the
+    \texttt{sciencecloud} resource.  Verify with the \texttt{gservers}
+    command that it works.
+  \end{exercise}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Select execution resource}
+
+  Select where applications will be run with option \texttt{-r}:
+\begin{semiverbatim}
+    > ./warholize.py -s logo -r localhost
+\end{semiverbatim}
+
+  \+ The resource name must exists in the configuration file (i.e.,
+  check \texttt{gservers}' output).
+
+  \+ Stopping a script and re-starting it with a different resource
+  will likely result in an error: old tasks can no longer be found.
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Passing requirements to the application}
+  Some options are used to specify some requirements of \emph{all}
+  applications in a session:
+  \begin{description}
+  \item[-c NUM] Set the number of CPU cores required for each job.
+  \item[-m GB] Set the amount of memory required per execution core
+  \item[-w DURATION] Set the time limit for each job; default is script-dependent.
+  \end{description}
+
+  \+ These options have proven not to be much useful except for
+  debugging/experimentation, \\ so \alert{they might be removed in a
+    future release!}
+\end{frame}
+
+
+\part{Cloud backend management}
+
+\begin{frame}
+  \frametitle{Hands-on time!}
+  \begin{exercise}
+    Run the ``Warholize'' workflow on the ScienceCloud.
+
+    Does it succeed? Why?
+  \end{exercise}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{See what VMs are in use}
+
+  Use the \texttt{gcloud} command to show cloud usage:
+\begin{semiverbatim}
+    > gcloud list
+\end{semiverbatim}
+
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Limit concurrently-running jobs}
+
+  Limit the maximum number of concurrently-running tasks
+  with option \texttt{-J}:
+\begin{semiverbatim}
+    > ./warholize.py -s logo -J 1
+\end{semiverbatim}
+
+  \+ In large computational campaigns, it is important not to flood the
+  execution resources with too many tasks.
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Hands-on time!}
+
+    \begin{exercise}
+      \begin{enumerate}
+      \item Run the ``Warholize'' workflow on the ScienceCloud.  Stop
+        the script while it's running.  Now start it again.  What
+        happens?
+
+      \item Run the ``Warholize'' workflow on the ScienceCloud.  Stop
+        the script while it's running; list the jobs in the session
+        and note down the IDs.  Now run the script again,
+        \textbf{adding the ``\texttt{-N}'' option}.  When the script
+        terminates, inspect the session again and note the IDs. What has
+        happened? Why?
+      \end{enumerate}
+    \end{exercise}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Use \texttt{-N} with caution!}
+
+  \small
+  From the session-based script's \texttt{-{}-help} output:
+\begin{semiverbatim}
+-N, -{}-new-session
+  Discard any information saved in the session dir
+  (see '-{}-session' option) and start a new session
+  afresh. {\bf Any information about previous jobs is lost.}
+\end{semiverbatim}
+
+\end{frame}
+
+
+% \begin{frame}
+%   \frametitle{Force startup of a new VM}
+
+%   Use the \texttt{gcloud run} command to start a new VM:
+% \begin{semiverbatim}
+%     > gcloud run
+% \end{semiverbatim}
+
+%   \+ This is a quicker alternative to the
+%   OpenStack or EC2 command-line clients.
+
+%   \+ But it can only start the default type of VM from the
+%   configuration file, so not much flexibility here.
+% \end{frame}
+
+
+\begin{frame}
+  \frametitle{Cleanup unused VMs}
+
+  Use the \texttt{gcloud} command again:
+
+  \begin{itemize}
+  \item To stop \emph{all} unused VMs:
+\begin{semiverbatim}
+    > gcloud cleanup
+\end{semiverbatim}
+
+    \begin{exercise}
+      Do it. Now.
+    \end{exercise}
+
+  \item To stop a specific VM:
+\begin{semiverbatim}
+    > gcloud terminate f031d6ad-bd6c-439e-9a98-4d649656d81a
+\end{semiverbatim}
+  \end{itemize}
+\end{frame}
+
+
+\part{Session management}
+
+\begin{frame}
+  \frametitle{Aborting a single task}
+
+  To stop and abort a single task, use the \texttt{gkill} command:
+\begin{semiverbatim}
+    > gkill -s logo MyApplication.123
+\end{semiverbatim}
+
+  \pause
+  \begin{exercise*}
+    What happens if you try to abort a task collection?
+  \end{exercise*}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Aborting a whole session}
+
+  \alert{Kill all the running tasks} in a session again using the
+  \texttt{gkill} command:
+\begin{semiverbatim}
+    > gkill -s logo -A
+\end{semiverbatim}
+
+  Alternatively you can use \texttt{gsession abort}:
+\begin{semiverbatim}
+    > gsession abort logo
+\end{semiverbatim}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Selecting tasks from a session, I}
+
+  The \texttt{gselect} command is the go-to tool for selective listing
+  of tasks in a session.  For example, to list finished tasks:
+\begin{semiverbatim}
+    > gselect -s logo -{}-state TERMINATED
+\end{semiverbatim}
+
+  \+ The output of \texttt{gselect} is a list of task IDs, to be fed
+  into another GC3Pie command.  For example, to kill all queued tasks:
+  \begin{stdout}
+    > gselect -s logo --state SUBMITTED | xargs gkill -s logo
+  \end{stdout}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Selecting tasks from a session, II}
+
+  The \texttt{gselect} command has many different \\ options to select tasks:
+  \begin{stdout}
+> gselect --help
+usage: gselect [-h] [-V] [-v] [--config-files CONFIG_FILES] -s SESSION
+               [--error-message REGEXP] [--input-file FILENAME]
+               [--jobname REGEXP] [--jobid REGEXP] [-l STATES]
+               [--output-file FILENAME] [--output-message REGEXP]
+               [--successful] [--submitted-after DATE]
+               [--submitted-before DATE] [--unsuccessful]
+  \end{stdout}
+
+  \+
+  \begin{exercise*}
+    Use \texttt{gselect} to print the IDs of the ``TricolorizeImage''
+    tasks in the last ``Warholize'' session.
+  \end{exercise*}
+\end{frame}
+
+% \begin{frame}[fragile]
+%   \frametitle{Task resubmission}
+%   Use the \texttt{gresub} command to re-run a task:
+% \begin{stdout}
+% > gresub -s logo TricolorizeImage.123
+% \end{stdout}
+% \end{frame}
+
+
+\section{The End}
+
+\begin{frame}[fragile]
+  % \frametitle{Thank you!}
+  \begin{center}
+    Thank you!
+
+    \+
+    {\Huge \textbf{Any questions?}}
+
+    \+\+
+    GC3Pie manual: \url{http://gc3pie.readthedocs.io/}
+
+    \+\+
+    Mailing-list: \url{gc3pie@googlegroups.com} \\
+    or read online at \\
+    \url{http://dir.gmane.org/gmane.comp.python.gc3pie}
+  \end{center}
 \end{frame}
 
 
@@ -932,9 +949,6 @@ How do we ``warholize'' an arbitrary image?
   \+
   \includegraphics[width=0.70\textwidth]{fig/warholize-WarholizeWorkflow}
 \end{frame}
-
-
-\appendix
 
 \end{document}
 
