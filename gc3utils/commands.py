@@ -1149,8 +1149,10 @@ To get detailed info on a specific command, run:
             self.session = Session(self.params.session, create=False)
         except gc3libs.exceptions.InvalidArgument:
             raise RuntimeError(
-                "Session %s not found. Please specify a valid session"
-                " directory as argument" % self.params.session)
+                "Session '{0}' not found."
+                " Please specify a valid session"
+                " directory as argument"
+                .format(self.params.session))
 
         rc = len(self.session.tasks)
         for task_id in self.session.tasks.keys():
@@ -1216,8 +1218,10 @@ To get detailed info on a specific command, run:
         try:
             self.session = Session(self.params.session, create=False)
         except gc3libs.exceptions.InvalidArgument:
-            raise RuntimeError('Session %s not found. Please specify a valid" \
-            " session directory as argument' % self.params.session)
+            raise RuntimeError(
+                "Session '{0}' not found. Please specify a valid"
+                " session directory as argument"
+                .format(self.params.session))
 
         def print_app_table(app, indent, recursive):
             rows = []
@@ -1255,8 +1259,10 @@ To get detailed info on a specific command, run:
         try:
             self.session = Session(self.params.session, create=False)
         except gc3libs.exceptions.InvalidArgument:
-            raise RuntimeError('Session %s not found. Please specify a valid" \
-            " session directory as argument' % self.params.session)
+            raise RuntimeError(
+                "Session '{0}' not found. Please specify a valid"
+                " session directory as argument"
+                .format(self.params.session))
         timestamps = []
         task_queue = list(self.session.tasks.values())
         while task_queue:
