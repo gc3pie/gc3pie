@@ -165,17 +165,17 @@ class WarholizeScript(SessionBasedScript):
     def new_tasks(self, extra):
         if self.params.size:
             extra['size'] = self.params.size
-        gc3libs.log.info("Creating main sequential task")
         tasks = []
         for (i, input_file) in enumerate(self.params.args):
             if not os.path.isfile(input_file):
-                gc3libs.log.error("Argument `%s` is NOT a file. Ignoring" % input_file)
+                gc3libs.log.error("Argument `%s` is NOT a file. Ignoring", input_file)
                 continue
+            gc3libs.log.info("Creating sequential task for processing file `%s`", input_file)
             extra_args = extra.copy()
             extra_args['output_dir'] = os.path.join(
                 extra_args.get('output_dir', os.getcwd()),
                 'Warholized.' + os.path.basename(input_file)
-            )
+            ).replace('/NAME/', '/')  ## yes, it's a bug
             tasks.append(WarholizeWorkflow(input_file,
                                            self.params.copies,
                                            self.params.num_colors, **extra_args))
