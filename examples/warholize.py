@@ -173,7 +173,10 @@ class WarholizeScript(SessionBasedScript):
                 gc3libs.log.error("Argument `%s` is NOT a file. Ignoring" % input_file)
                 continue
             extra_args = extra.copy()
-            extra_args['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
+            extra_args['output_dir'] = os.path.join(
+                extra_args.get('output_dir', os.getcwd()),
+                'Warholized.' + os.path.basename(input_file)
+            )
             tasks.append(WarholizeWorkflow(input_file,
                                            self.params.copies,
                                            self.params.num_colors, **extra_args))
