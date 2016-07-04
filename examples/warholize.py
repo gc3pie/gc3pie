@@ -120,7 +120,7 @@ class WarholizeScript(SessionBasedScript):
     """
     Demo script to create a "warholized" version of an image.
     """
-    version='1.0.1'
+    version='1.0.2'
 
 # Please note that you must either write a small docstring for that
 # class, or add a `description` attribute.
@@ -329,8 +329,12 @@ class ApplicationWithCachedResults(gc3libs.Application):
                 all_outputs_available = False
         if all_outputs_available:
             # skip execution altogether
-            gc3libs.log.info("Skipping execution since all output files are availables")
+            gc3libs.log.info(
+                "All output files are already available:"
+                " assuming last run was correct and skipping new one.")
             self.execution.state = Run.State.TERMINATED
+            self.execution.returncode = (0, 0)
+
 
 # and then we create our GrayScaleConvertApplication as::
 
