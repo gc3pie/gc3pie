@@ -427,7 +427,7 @@ class TricolorizeMultipleImages(ParallelTaskCollection):
         self.ncolors = ncolors
         ### XXX Why I have to use basename???
         self.output_dir = os.path.join(
-            os.path.basename(output_dir), 'tricolorize')
+            output_dir, 'tricolorize')
         self.warhol_dir = output_dir
 
         # Compute a unique sequence of random combination of
