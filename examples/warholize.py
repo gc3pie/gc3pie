@@ -163,7 +163,6 @@ class WarholizeScript(SessionBasedScript):
 # case it will be something like::
 
     def new_tasks(self, extra):
-        extra
         if self.params.size:
             extra['size'] = self.params.size
         gc3libs.log.info("Creating main sequential task")
