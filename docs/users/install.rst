@@ -88,7 +88,7 @@ With the default configuration file, GC3Pie is set up to only run
 jobs on the computer where it is installed.  To run jobs on remote
 resources, you need to edit the configuration file; `the
 Configuration file documentation
-<http://gc3pie.readthedocs.org/en/latest/users/configuration.html>`_
+<http://gc3pie.readthedocs.io/en/latest/users/configuration.html>`_
 provides an explanation of the syntax.
 
 
@@ -304,7 +304,7 @@ Installation into a virtualenv has two distinct advantages:
    jobs on the computer where it is installed.  To run jobs on remote
    resources, you need to edit the configuration file; `the
    configuration file documentation
-   <http://gc3pie.readthedocs.org/en/latest/users/configuration.html>`_
+   <http://gc3pie.readthedocs.io/en/latest/users/configuration.html>`_
    provides an explanation of the syntax.
 
 
@@ -401,7 +401,7 @@ HTML Documentation
 HTML documentation for the GC3Libs programming interface can be
 read online at:
 
-  http://gc3pie.readthedocs.org/
+  http://gc3pie.readthedocs.io/
 
 If you installed GC3Pie manually, or if you installed it using the
 ``install.sh`` script with the ``--develop`` option, you can also

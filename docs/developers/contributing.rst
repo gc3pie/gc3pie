@@ -113,7 +113,7 @@ easy.
 
 .. _`Test Driven Development`: http://en.wikipedia.org/wiki/Test-driven_development
 .. _`tox`: http://tox.testrun.org/latest/
-.. _`nose`: http://readthedocs.org/docs/nose/en/latest/
+.. _`nose`: http://readthedocs.io/docs/nose/en/latest/
 
 
 Running the tests
