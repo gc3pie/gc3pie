@@ -22,6 +22,7 @@ Table of Contents
   install
   configuration
   env-vars
+  tutorial/index
   gc3apps/index
   gc3utils
   troubleshooting

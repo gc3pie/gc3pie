@@ -430,6 +430,22 @@ class UnknownJob(Error, ValueError):
     pass
 
 
+class UnexpectedJobState(RecoverableError, ValueError):
+    """
+    Raised when a job state is gotten from the execution code, that
+    does not match what GC3Pie expects for the task.
+
+    Typically this is a synchronization issue (different parts of a
+    system update at different times), hence this error is marked as
+    "recoverable".
+
+    For instance, a task might be ``TERMINATED`` according to GC3Pie
+    but the batch system accounting commands still report it as
+    running.
+    """
+    pass
+
+
 class UnknownJobState(Error, AssertionError):
 
     """

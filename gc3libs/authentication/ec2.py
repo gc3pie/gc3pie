@@ -63,7 +63,6 @@ class EC2Auth(object):
         auth['ec2_access_key'] = auth['ec2_access_key'].strip('"').strip("'")
 
     def check(self):
-        gc3libs.log.debug('Checking auth: EC2Auth')
         return True
 
     def enable(self):

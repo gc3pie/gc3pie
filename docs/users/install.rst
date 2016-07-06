@@ -34,7 +34,7 @@ the latest release of GC3Pie and all its dependencies into it.
 Alternatively, you can also perform both steps at the terminal prompt::
 
     # use this if the `wget` command is installed
-    wget https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
+    wget -O install.py https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
     python install.py
 
     # use this if the `curl` command is installed instead

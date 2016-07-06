@@ -6,11 +6,11 @@ Setup file for installing GC3Pie.
 import sys
 
 
-# see http://peak.telecommunity.com/DevCenter/setuptools
-# for an explanation of the keywords and syntax of this file.
-#
+# ensure we run a "recent enough" version of setuptools (CentOS7 still
+# ships with setuptools 0.9.8!); release 8.0 is the first one to fully
+# implement PEP 440 version specifiers
 from ez_setup import use_setuptools
-use_setuptools()
+use_setuptools(version='8.0')
 
 import setuptools
 import setuptools.dist
@@ -141,11 +141,12 @@ setuptools.setup(
     extras_require = {
         'openstack': read_file_lines('requirements.openstack.txt'),
         'ec2':       read_file_lines('requirements.ec2.txt'),
+        'daemon':    read_file_lines('requirements.daemon.txt'),
         'optimizer': read_file_lines('requirements.optimizer.txt'),
     },
     # Apparently, this list is read from right to left...
     tests_require=[
-        'tox'
+        'tox', 'mock',
     ],
     cmdclass={'test': Tox},
     # additional non-Python files to be bundled in the package
@@ -157,6 +158,8 @@ setuptools.setup(
             'etc/run_R.sh',
             'etc/turbomole.sh',
             'etc/run_matlab.sh',
+            # Downloader script
+            'etc/downloader.py',
             # example files
             'etc/gc3pie.conf.example',
             'etc/logging.conf.example',

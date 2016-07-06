@@ -911,7 +911,7 @@ class OpenStackLrms(LRMS):
             " `pending` state. Waiting until the next iteration before"
             " creating a new VM. Pending VM ids: %s", pending_vms)
         raise LRMSSkipSubmissionToNextIteration(
-            "Delaying submission until some of the VMs currently pending"
+            "Delaying submission until one of the VMs currently pending"
             " is ready. Pending VM ids: %s"
             % str.join(', ', pending_vms))
 
@@ -940,7 +940,7 @@ class OpenStackLrms(LRMS):
         Supported protocols: file
         """
         for url in data_file_list:
-            if url.scheme not in ['file']:
+            if url.scheme not in ['file', 'http', 'https', 'swift', 'swifts', 'swt', 'swts']:
                 return False
         return True
 

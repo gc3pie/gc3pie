@@ -43,26 +43,29 @@ class OpenStackAuth(object):
 
         try:
             for (key, var) in (
-                    ('os_username', 'OS_USERNAME'),
-                    ('os_password', 'OS_PASSWORD'),
+                    # list of mandatory env vars taken from:
+                    # http://docs.openstack.org/user-guide/common/cli_set_environment_variables_using_openstack_rc.html
+                    ('os_auth_url',     'OS_AUTH_URL'),
+                    ('os_password',     'OS_PASSWORD'),
                     ('os_project_name', 'OS_TENANT_NAME'),
+                    ('os_username',     'OS_USERNAME'),
             ):
                 if key not in auth:
                     auth[key] = os.getenv(var)
-                    assert auth[key], \
-                        "Configuration error. Missing mandatory "\
-                        "`%s` key" % key
+                    assert auth[key], (
+                        "Missing mandatory configuration parameter for {name} auth:"
+                        " either define the `{key}` configuration key,"
+                        " or set the `{var}` environmental variable."
+                        .format(name=("'" + auth['name'] + "'"), key=key, var=var,))
                     # Strip quotes from os_* in case someone put
                     # it in the configuration file
                     auth[key] = auth[key].strip('"').strip("'")
         except AssertionError as x:
-            raise gc3libs.exceptions.ConfigurationError(
-                'Erroneous configuration parameter: %s' % str(x))
+            raise gc3libs.exceptions.ConfigurationError(str(x))
 
         self.__dict__.update(auth)
 
     def check(self):
-        gc3libs.log.debug('Checking auth: OpenStackAuth')
         return True
 
     def enable(self):

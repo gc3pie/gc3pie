@@ -464,6 +464,11 @@ Print job state.
     verbose_logging_threshold = 1
 
     def setup_options(self):
+        self.add_param("-b", "--brief", "--summary",
+                       action="store_true",
+                       dest="summary",
+                       help=("Only print a summary table"
+                             " with count of jobs per each state."))
         self.add_param("-l", "--state",
                        action="store",
                        dest="states",
@@ -620,7 +625,13 @@ Print job state.
                 else:
                     stats['failed'] += 1
 
-        if len(rows) > capacity and self.params.verbose == 0:
+        summary_only = (
+            # requested by user on command-line
+            self.params.summary
+            # automatically determined based on screen size
+            or (len(rows) > capacity and self.params.verbose == 0)
+        )
+        if summary_only:
             # only print table with statistics
             table = PrettyTable(['state', 'num/tot', 'num/tot %'])
             table.header = False
@@ -844,7 +855,7 @@ error occurred.
                                % (jobid, app.execution.state))
                 if app.execution.state == Run.State.NEW:
                     raise gc3libs.exceptions.InvalidOperation(
-                        "Job '%s' not submitted." % app)
+                        "Job '%s' has never been submitted." % app)
                 if app.execution.state == Run.State.TERMINATED:
                     raise gc3libs.exceptions.InvalidOperation(
                         "Job '%s' is already in terminal state" % app)
@@ -1102,7 +1113,7 @@ To get detailed info on a specific command, run:
         subparser = self._add_subcmd(
             'list',
             self.list_jobs,
-            help="List jobs related to a session.")
+            help="Tree-like view of jobs related to a session.")
         subparser.add_argument('-r', '--recursive', action="store_true",
                                default=False,
                                help="Show all jobs contained in a task"
@@ -1138,8 +1149,10 @@ To get detailed info on a specific command, run:
             self.session = Session(self.params.session, create=False)
         except gc3libs.exceptions.InvalidArgument:
             raise RuntimeError(
-                "Session %s not found. Please specify a valid session"
-                " directory as argument" % self.params.session)
+                "Session '{0}' not found."
+                " Please specify a valid session"
+                " directory as argument"
+                .format(self.params.session))
 
         rc = len(self.session.tasks)
         for task_id in self.session.tasks.keys():
@@ -1193,15 +1206,22 @@ To get detailed info on a specific command, run:
 
     def list_jobs(self):
         """
-        Called when subcommand is `list`.
+        Called with subcommand `list`.
 
-        This method basically call the command "gstat -n -v -s SESSION"
+        List the content of a session, like `gstat -n -v -s SESSION` does.
+        Unlike `gstat`, though, display stops at the top-level jobs
+        unless option `--recursive` is also given.
+
+        With option `--recursive`, indent job ids to show the tree-like
+        organization of jobs in the task collections.
         """
         try:
             self.session = Session(self.params.session, create=False)
         except gc3libs.exceptions.InvalidArgument:
-            raise RuntimeError('Session %s not found. Please specify a valid" \
-            " session directory as argument' % self.params.session)
+            raise RuntimeError(
+                "Session '{0}' not found. Please specify a valid"
+                " session directory as argument"
+                .format(self.params.session))
 
         def print_app_table(app, indent, recursive):
             rows = []
@@ -1239,8 +1259,10 @@ To get detailed info on a specific command, run:
         try:
             self.session = Session(self.params.session, create=False)
         except gc3libs.exceptions.InvalidArgument:
-            raise RuntimeError('Session %s not found. Please specify a valid" \
-            " session directory as argument' % self.params.session)
+            raise RuntimeError(
+                "Session '{0}' not found. Please specify a valid"
+                " session directory as argument"
+                .format(self.params.session))
         timestamps = []
         task_queue = list(self.session.tasks.values())
         while task_queue:

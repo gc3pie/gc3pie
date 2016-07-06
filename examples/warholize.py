@@ -118,9 +118,9 @@ import os
 
 class WarholizeScript(SessionBasedScript):
     """
-    Demo script to create a `Warholized` version of an image.
+    Demo script to create a "warholized" version of an image.
     """
-    version='1.0'
+    version='1.0.2'
 
 # Please note that you must either write a small docstring for that
 # class, or add a `description` attribute.
@@ -144,7 +144,8 @@ class WarholizeScript(SessionBasedScript):
 
     def setup_options(self):
         self.add_param('--copies', default=4, type=int,
-                       help="Number of copyes (Default:4). It has to be a perfect square!")
+                       help=("Number of colored tiles, defaults to 4."
+                             " It has to be a square number!"))
         self.add_param('--size', default=None,
                        help="Size of the resulting image. "
                        "Please note that the resulting image will be a bit "
@@ -162,17 +163,19 @@ class WarholizeScript(SessionBasedScript):
 # case it will be something like::
 
     def new_tasks(self, extra):
-        extra
         if self.params.size:
             extra['size'] = self.params.size
-        gc3libs.log.info("Creating main sequential task")
         tasks = []
         for (i, input_file) in enumerate(self.params.args):
             if not os.path.isfile(input_file):
-                gc3libs.log.error("Argument `%s` is NOT a file. Ignoring" % input_file)
+                gc3libs.log.error("Argument `%s` is NOT a file. Ignoring", input_file)
                 continue
+            gc3libs.log.info("Creating sequential task for processing file `%s`", input_file)
             extra_args = extra.copy()
-            extra_args['output_dir'] = 'Warholized.%s' % os.path.basename(input_file)
+            extra_args['output_dir'] = os.path.join(
+                extra_args.get('output_dir', os.getcwd()),
+                'Warholized.' + os.path.basename(input_file)
+            ).replace('/NAME/', '/')  ## yes, it's a bug
             tasks.append(WarholizeWorkflow(input_file,
                                            self.params.copies,
                                            self.params.num_colors, **extra_args))
@@ -328,8 +331,12 @@ class ApplicationWithCachedResults(gc3libs.Application):
                 all_outputs_available = False
         if all_outputs_available:
             # skip execution altogether
-            gc3libs.log.info("Skipping execution since all output files are availables")
+            gc3libs.log.info(
+                "All output files are already available:"
+                " assuming last run was correct and skipping new one.")
             self.execution.state = Run.State.TERMINATED
+            self.execution.returncode = (0, 0)
+
 
 # and then we create our GrayScaleConvertApplication as::
 
@@ -420,7 +427,7 @@ class TricolorizeMultipleImages(ParallelTaskCollection):
         self.ncolors = ncolors
         ### XXX Why I have to use basename???
         self.output_dir = os.path.join(
-            os.path.basename(output_dir), 'tricolorize')
+            output_dir, 'tricolorize')
         self.warhol_dir = output_dir
 
         # Compute a unique sequence of random combination of
@@ -467,7 +474,7 @@ class TricolorizeImage(SequentialTaskCollection):
         self.warhol_dir = warhol_dir
         self.jobname = 'TricolorizeImage'
         self.output_file = output_file
-        
+
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         self.extra_args = extra_args

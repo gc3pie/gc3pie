@@ -2,7 +2,7 @@
 """
 Top-level classes for task execution and control.
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -384,7 +384,7 @@ variable ``GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL`` to ``yes`` or ``1``.
     def __submit_task(self, task, resubmit, targets, **extra_args):
         """Implementation of `submit` on generic `Task` objects."""
         extra_args.setdefault('auto_enable_auth', self.auto_enable_auth)
-        task.submit(resubmit, **extra_args)
+        task.submit(resubmit, targets, **extra_args)
 
     def update_job_state(self, *apps, **extra_args):
         """
@@ -443,7 +443,7 @@ variable ``GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL`` to ``yes`` or ``1``.
                     except Exception as ex:
                         gc3libs.log.debug(
                             "Error getting status of application '%s': %s: %s",
-                            app, ex.__class__.__name__, str(ex), exc_info=True)
+                            app, ex.__class__.__name__, ex, exc_info=True)
                         state = Run.State.UNKNOWN
                         # run error handler if defined
                         ex = app.update_job_state_error(ex)
@@ -1143,6 +1143,16 @@ class Engine(object):
         files are downloaded. See `Core.fetch_output`:meth: for
         details.
 
+      `forget_terminated`
+        When ``True``, `Engine.remove`:meth: is automatically called
+        on tasks when their state turns to ``TERMINATED``.
+
+        .. warning::
+
+          For historical reasons, the default for this option is
+          ``False`` but this can (and should!) be changed in future
+          releases.
+
     Any of the above can also be set by passing a keyword argument to
     the constructor (assume ``g`` is a `Core`:class: instance)::
 
@@ -1158,7 +1168,8 @@ class Engine(object):
                  scheduler=first_come_first_serve,
                  retrieve_running=False,
                  retrieve_overwrites=False,
-                 retrieve_changed_only=True):
+                 retrieve_changed_only=True,
+                 forget_terminated=False):
         """
         Create a new `Engine` instance.  Arguments are as follows:
 
@@ -1210,6 +1221,27 @@ class Engine(object):
         self.retrieve_running = retrieve_running
         self.retrieve_overwrites = retrieve_overwrites
         self.retrieve_changed_only = retrieve_changed_only
+        self.forget_terminated = forget_terminated
+
+
+    def _get_queue_for_task(self, task):
+        state = task.execution.state
+        if Run.State.NEW == state:
+            return self._new
+        elif state in [Run.State.SUBMITTED,
+                       Run.State.RUNNING,
+                       Run.State.UNKNOWN]:
+            return self._in_flight
+        elif Run.State.STOPPED == state:
+            return self._stopped
+        elif Run.State.TERMINATING == state:
+            return self._terminating
+        elif Run.State.TERMINATED == state:
+            return self._terminated
+        else:
+            raise AssertionError(
+                "Unhandled state '%s' in gc3libs.core.Engine." % state)
+
 
     def add(self, task):
         """
@@ -1217,45 +1249,20 @@ class Engine(object):
         Adding a task that has already been added to this `Engine`
         instance results in a no-op.
         """
-        state = task.execution.state
-        if Run.State.NEW == state:
-            queue = self._new
-        elif state in [Run.State.SUBMITTED,
-                       Run.State.RUNNING,
-                       Run.State.UNKNOWN]:
-            queue = self._in_flight
-        elif Run.State.STOPPED == state:
-            queue = self._stopped
-        elif Run.State.TERMINATING == state:
-            queue = self._terminating
-        elif Run.State.TERMINATED == state:
-            queue = self._terminated
-        else:
-            raise AssertionError(
-                "Unhandled state '%s' in gc3libs.core.Engine." % state)
+        queue = self._get_queue_for_task(task)
         if not _contained(task, queue):
             queue.append(task)
             task.attach(self)
 
+
     def remove(self, task):
-        """Remove a `task` from the list of tasks managed by this Engine."""
-        state = task.execution.state
-        if Run.State.NEW == state:
-            self._new.remove(task)
-        elif (Run.State.SUBMITTED == state or
-                Run.State.RUNNING == state or
-                Run.State.UNKNOWN == state):
-            self._in_flight.remove(task)
-        elif Run.State.STOPPED == state:
-            self._stopped.remove(task)
-        elif Run.State.TERMINATING == state:
-            self._terminating.remove(task)
-        elif Run.State.TERMINATED == state:
-            self._terminated.remove(task)
-        else:
-            raise AssertionError(
-                "Unhandled state '%s' in gc3libs.core.Engine." % state)
+        """
+        Remove a `task` from the list of tasks managed by this Engine.
+        """
+        queue = self._get_queue_for_task(task)
+        queue.remove(task)
         task.detach()
+
 
     def progress(self):
         """
@@ -1360,6 +1367,29 @@ class Engine(object):
                     # task changed state, mark as to remove
                     transitioned.append(index)
                     self._terminated.append(task)
+                else:
+                    # if we got to this point, state has an invalid value
+                    gc3libs.log.error(
+                        "Invalid state '%r' returned by task %s.",
+                        state, task)
+                    if not gc3libs.error_ignored(
+                            # context:
+                            # - module
+                            'core',
+                            # - class
+                            'Engine',
+                            # - method
+                            'progress',
+                            # - actual error class
+                            'InternalError',
+                            # - additional keywords
+                            'state',
+                            'update',
+                    ):
+                        # propagate exception to caller
+                        raise InternalError(
+                            "Invalid state '{state!r}' returned by task {task}"
+                            .format(state=state, task=task))
             except gc3libs.exceptions.ConfigurationError:
                 # Unrecoverable; no sense in continuing -- pass
                 # immediately on to client code and let it handle
@@ -1630,23 +1660,40 @@ class Engine(object):
                         raise
 
             for index, task in enumerate(self._terminating):
-                try:
-                    if task.execution.state == Run.State.TERMINATED:
-                        self._terminated.append(task)
-                        transitioned.append(index)
+                if task.execution.state == Run.State.TERMINATED:
+                    transitioned.append(index)
+                    try:
                         self._core.free(task)
-                except Exception as err:
-                    gc3libs.log.error(
-                        "Got error freeing up resources used by task '%s': %s: %s."
-                        " (For cloud-based resources, it's possible that the VM"
-                        " has been destroyed already.)",
-                        task, err.__class__.__name__, err)
+                    except Exception as err:
+                        gc3libs.log.error(
+                            "Got error freeing up resources used by task '%s': %s: %s."
+                            " (For cloud-based resources, it's possible that the VM"
+                            " has been destroyed already.)",
+                            task, err.__class__.__name__, err)
+                    if self.forget_terminated:
+                        self.remove(task)
+                    else:
+                        self._terminated.append(task)
 
                 if self._store and task.changed:
                     self._store.save(task)
             # remove tasks for which final output has been retrieved
             for index in reversed(transitioned):
                 del self._terminating[index]
+
+
+    def redo(self, task, *args, **kwargs):
+        """
+        Reset task's state to NEW so that it will be re-run.
+
+        Any additional arguments will be forwarded to the task's own
+        `.redo()` method; this is useful, e.g., to perform partial
+        re-runs of `SequentialTaskCollection` instances.
+        """
+        self.remove(task)
+        task.redo(*args, **kwargs)
+        self.add(task)
+
 
     def stats(self, only=None):
         """
@@ -1732,16 +1779,23 @@ class Engine(object):
         """
         Submit `task` at the next invocation of `progress`.
 
-        The `task` state is reset to ``NEW`` and then added to the
-        collection of managed tasks.
+        The `task` state is reset using the task's own method
+        `.redo()`, and then the task added to the collection of
+        managed tasks.  Note that the use of `redo()` implies that
+        only tasks in a terminal state can be resubmitted!
 
         The `targets` argument is only present for interface
         compatiblity with `Core.submit`:meth: but is otherwise
         ignored.
-
         """
         if resubmit:
-            task.execution.state = Run.State.NEW
+            # since we are going to change the task's state, we need
+            # to expunge it from the queues ...
+            queue = self._get_queue_for_task(task)
+            if _contained(task, queue):
+                queue.remove(task)
+            task.redo()
+        # ... and then add it again with the (possibly) new state
         return self.add(task)
 
     def update_job_state(self, *tasks, **extra_args):

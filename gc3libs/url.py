@@ -112,6 +112,12 @@ class Url(tuple):
         >>> u.path
         '/tmp/foo'
 
+      Query attributes are also supported:
+
+        >>> u = Url('http://www.example.org?foo=bar')
+        >>> u.query
+        'foo=bar'
+
     * By passing keyword arguments only, to construct an `Url` object
       with exactly those values for the named fields::
 
@@ -124,11 +130,11 @@ class Url(tuple):
     __slots__ = ()
 
     _fields = ['scheme', 'netloc', 'path',
-               'hostname', 'port', 'username', 'password']
+               'hostname', 'port', 'query', 'username', 'password']
 
     def __new__(cls, urlstring=None, force_abs=True,
-                scheme='file', netloc='', path='',
-                hostname=None, port=None, username=None, password=None):
+                scheme='file', netloc='', path='', 
+                hostname=None, port=None, query='', username=None, password=None):
         """
         Create a new `Url` object.  See the `Url`:class: documentation
         for invocation syntax.
@@ -138,8 +144,8 @@ class Url(tuple):
                 # copy constructor
                 return tuple.__new__(cls, (
                     urlstring.scheme, urlstring.netloc, urlstring.path,
-                    urlstring.hostname, urlstring.port,
-                    urlstring.username, urlstring.password,
+                    urlstring.hostname, urlstring.port, urlstring.query,
+                    urlstring.username, urlstring.password
                 ))
             else:
                 # parse `urlstring` and use kwd arguments as default values
@@ -156,9 +162,10 @@ class Url(tuple):
                         urldata.path or path,
                         urldata.hostname or hostname,
                         urldata.port or port,
+                        urldata.query or query,
                         urldata.username or username,
                         urldata.password or password,
-                    ))
+                        ))
                 except (ValueError, TypeError, AttributeError) as ex:
                     raise ValueError(
                         "Cannot parse string '%s' as a URL: %s: %s" %
@@ -167,8 +174,8 @@ class Url(tuple):
             # no `urlstring`, use kwd arguments
             return tuple.__new__(cls, (
                 scheme, netloc, path,
-                hostname, port,
-                username, password,
+                hostname, port, query,
+                username, password
             ))
 
     def __getattr__(self, name):
@@ -182,7 +189,7 @@ class Url(tuple):
         """Support pickling/unpickling `Url` class objects."""
         return (None, False,  # urlstring, force_abs
                 self.scheme, self.netloc, self.path, self.hostname, self.port,
-                self.username, self.password)
+                self.query, self.username, self.password)
 
     def __repr__(self):
         """
@@ -191,12 +198,13 @@ class Url(tuple):
         """
         return (
             "Url(scheme=%r, netloc=%r, path=%r, hostname=%r,"
-            " port=%r, username=%r, password=%r)" %
+            " port=%r, query=%r, username=%r, password=%r)" %
             (self.scheme,
              self.netloc,
              self.path,
              self.hostname,
              self.port,
+             self.query,
              self.username,
              self.password))
 
@@ -207,6 +215,9 @@ class Url(tuple):
             >>> u = Url('gsiftp://gridftp.example.org:2811/data')
             >>> str(u)
             'gsiftp://gridftp.example.org:2811/data'
+            >>> u = Url('swift://swift.example.org:8080/v1?querystring')
+            >>> str(u)
+            'swift://swift.example.org:8080/v1?querystring'
 
         If the URL was constructed by parsing a URL string, a
         different string can result, although equivalent according to
@@ -225,6 +236,8 @@ class Url(tuple):
             url = '//' + (self.netloc or '') + url
         if self.scheme:
             url = self.scheme + ':' + url
+        if self.query:
+            url += '?%s' % self.query
         return url
 
     def __eq__(self, other):
@@ -252,6 +265,9 @@ class Url(tuple):
           False
 
           >>> u == 42
+          False
+
+          >>> u == Url('file:///tmp/foo?bar')
           False
 
         """
@@ -295,13 +311,21 @@ class Url(tuple):
             >>> str(u3)
             'http://www.example.org/data/moredata/evenmore'
 
+        Optional query attribute is left untouched::
+
+            >>> u4 = Url('http://www.example.org?bar')
+            >>> u5 = u4.adjoin('foo')
+            >>> str(u5)
+            'http://www.example.org/foo?bar'
+
         """
         if relpath.startswith('/'):
             relpath = relpath[1:]
         return Url(scheme=self.scheme, netloc=self.netloc,
                    path=os.path.join((self.path or '/'), relpath),
                    hostname=self.hostname, port=self.port,
-                   username=self.username, password=self.password)
+                   username=self.username, password=self.password,
+                   query=self.query)
 
 
 class UrlKeyDict(dict):
@@ -433,7 +457,7 @@ class UrlValueDict(dict):
     URL-type value, regardless of how it was set::
 
         >>> repr(d[1]) == "Url(scheme='file', netloc='', path='/tmp/foo', " \
-        "hostname=None, port=None, username=None, password=None)"
+        "hostname=None, port=None, query='', username=None, password=None)"
         True
 
     Class `UrlValueDict` supports initialization by any of the

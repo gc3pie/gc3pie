@@ -40,65 +40,285 @@ import gc3libs.config
 from gc3libs.core import Core, Engine, MatchMaker
 from gc3libs.quantity import GB, hours
 
-from utils import temporary_config
+from helpers import SimpleParallelTaskCollection, SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_engine
 
 
 def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
-    cfg = gc3libs.config.Configuration()
-    cfg.TYPE_CONSTRUCTOR_MAP['noop'] = ('gc3libs.backends.noop', 'NoOpLrms')
-    name = 'test'
-    cfg.resources[name].update(
-        name=name,
-        type='noop',
-        auth='none',
-        transport='local',
-        max_cores_per_job=1,
-        max_memory_per_core=1*GB,
-        max_walltime=8*hours,
-        max_cores=2,
-        architecture=Run.Arch.X86_64,
-    )
+    with temporary_engine() as engine:
 
-    core = Core(cfg)
-    rsc = core.get_backend(name)
-    if transition_graph:
-        rsc.transition_graph = transition_graph
-    else:
-        # give each job a 50% chance of moving from one state to the
-        # next one
-        rsc.transition_graph = {
-            Run.State.SUBMITTED: {0.50: Run.State.RUNNING},
-            Run.State.RUNNING:   {0.50: Run.State.TERMINATING},
-        }
+        # generate some no-op tasks
+        for n in range(num_jobs):
+            name = 'app{nr}'.format(nr=n+1)
+            engine.add(SuccessfulApp(name))
 
-    engine = Engine(core)
+        # run them all
+        current_iter = 0
+        done = engine.stats()[Run.State.TERMINATED]
+        while done < num_jobs and current_iter < max_iter:
+            engine.progress()
+            done = engine.stats()[Run.State.TERMINATED]
+            current_iter += 1
 
-    # generate some no-op tasks
-    for n in range(num_jobs):
-        name = 'app{nr}'.format(nr=n+1)
-        engine.add(
-            Application(
-                ['/bin/true'],
-                inputs=[],
-                outputs=[],
-                output_dir='/tmp',
-                jobname=name,
-                requested_cores=1,
-            )
+
+def test_engine_progress_collection():
+    with temporary_engine() as engine:
+        seq = SimpleSequentialTaskCollection(3)
+        engine.add(seq)
+
+        # run through sequence
+        while seq.execution.state != 'TERMINATED':
+            engine.progress()
+        assert seq.stage().jobname == 'stage2'
+        assert seq.stage().execution.state == 'TERMINATED'
+
+
+def test_engine_kill_SequentialTaskCollection():
+    with temporary_engine() as engine:
+        seq = SimpleSequentialTaskCollection(3)
+        engine.add(seq)
+
+        while seq.execution.state != 'RUNNING':
+            engine.progress()
+
+        # Because of our noop engine, as soon as the sequential is in
+        # running we will have a job in TERMINATED and the others in
+        # NEW.
+        assert_equal(
+            ['TERMINATED', 'NEW', 'NEW'],
+            [i.execution.state for i in seq.tasks],
         )
 
-    # run them all
-    current_iter = 0
-    done = engine.stats()[Run.State.TERMINATED]
-    while done < num_jobs and current_iter < max_iter:
-        engine.progress()
-        done = engine.stats()[Run.State.TERMINATED]
-        current_iter += 1
+        # Killing a sequential should put all the applications in
+        # TERMINATED state. However, we will need an extra run of
+        # engine.progress() to update the status of all the jobs.
+        engine.kill(seq)
+        assert_equal(
+            ['TERMINATED', 'NEW', 'NEW'],
+            [i.execution.state for i in seq.tasks],
+        )
 
-    # since TYPE_CONSTRUCTOR_MAP is a class-level variable, we
-    # need to clean up otherwise other tests will see the No-Op
-    # backend
-    del cfg.TYPE_CONSTRUCTOR_MAP['noop']
+        engine.progress()
+
+        assert_equal(
+            ['TERMINATED', 'TERMINATED', 'TERMINATED'],
+            [i.execution.state for i in seq.tasks],
+        )
+        assert_equal(seq.execution.state, 'TERMINATED')
+
+
+def test_engine_kill_redo_SequentialTaskCollection():
+    with temporary_engine() as engine:
+        seq = SimpleSequentialTaskCollection(3)
+        engine.add(seq)
+
+        while seq.execution.state != 'RUNNING':
+            engine.progress()
+
+        # Because of our noop engine, as soon as the sequential is in
+        # running we will have a job in TERMINATED and the others in
+        # NEW.
+        assert_equal(
+            ['TERMINATED', 'NEW', 'NEW'],
+            [i.execution.state for i in seq.tasks],
+        )
+
+        # Killing a sequential should put all the applications in
+        # TERMINATED state. However, we will need an extra run of
+        # engine.progress() to update the status of all the jobs.
+        engine.kill(seq)
+        assert_equal(
+            ['TERMINATED', 'NEW', 'NEW'],
+            [i.execution.state for i in seq.tasks],
+        )
+
+        engine.progress()
+
+        assert_equal(
+            ['TERMINATED', 'TERMINATED', 'TERMINATED'],
+            [i.execution.state for i in seq.tasks],
+        )
+        assert_equal(seq.execution.state, 'TERMINATED')
+
+        engine.redo(seq)
+        assert_equal(
+            ['NEW', 'NEW', 'NEW'],
+            [i.execution.state for i in seq.tasks],
+        )
+        assert_equal(seq.execution.state, 'NEW')
+        engine.progress()
+        assert_equal(
+            ['SUBMITTED', 'NEW', 'NEW'],
+            [i.execution.state for i in seq.tasks],
+        )
+        
+def test_engine_kill_ParallelTaskCollection():
+    # Creates an engine with 2 cores.
+    with temporary_engine(max_cores=2) as engine:
+        par = SimpleParallelTaskCollection(3)
+        engine.add(par)
+
+        while par.execution.state != 'RUNNING':
+            engine.progress()
+
+        # Because of our noop engine, as soon as the parallel is in
+        # running we will have all jobs in SUBMITTED and the others in
+        # NEW.
+        assert_equal(
+            ['TERMINATED', 'SUBMITTED', 'NEW'],
+            [i.execution.state for i in par.tasks],
+        )
+
+        # Killing a parallel should put all the applications in
+        # TERMINATED state. However, we need a run of
+        # engine.progress() to update the status of all the jobs
+        engine.kill(par)
+        
+        assert_equal(
+            ['TERMINATED', 'SUBMITTED', 'NEW'],
+            [i.execution.state for i in par.tasks],
+        )
+        engine.progress()
+        
+        assert_equal(
+            ['TERMINATED', 'TERMINATED', 'TERMINATED'],
+            [i.execution.state for i in par.tasks],
+        )
+        assert_equal(par.execution.state, 'TERMINATED')
+        
+
+def test_engine_redo_SequentialTaskCollection():
+    with temporary_engine() as engine:
+        seq = SimpleSequentialTaskCollection(3)
+        engine.add(seq)
+
+        # run through sequence
+        while seq.execution.state != 'TERMINATED':
+            engine.progress()
+        assert seq.stage().jobname == 'stage2'
+        assert seq.stage().execution.state == 'TERMINATED'
+
+        engine.redo(seq, 1)
+        assert seq.stage().jobname == 'stage1'
+        assert seq.stage().execution.state == 'NEW'
+
+        # run through sequence again
+        while seq.execution.state != 'TERMINATED':
+            engine.progress()
+        assert seq.stage().jobname == 'stage2'
+        assert seq.stage().execution.state == 'TERMINATED'
+
+
+def test_engine_redo_ParallelTaskCollection():
+    with temporary_engine() as engine:
+        par = SimpleParallelTaskCollection(5)
+        engine.add(par)
+
+        # run until terminated
+        while par.execution.state != Run.State.TERMINATED:
+            engine.progress()
+
+        engine.redo(par)
+        assert par.execution.state == Run.State.NEW
+        for task in par.tasks:
+            assert task.execution.state == Run.State.NEW
+
+
+def test_engine_redo_Task1():
+    """Test correct use of `Engine.redo()` with a `Task` instance."""
+    with temporary_engine() as engine:
+        task = SuccessfulApp()
+        engine.add(task)
+
+        # run until terminated
+        while task.execution.state != Run.State.TERMINATED:
+            engine.progress()
+        assert task.execution.state == Run.State.TERMINATED
+
+        # no do it all over again
+        engine.redo(task)
+        assert task.execution.state == Run.State.NEW
+
+        engine.progress()
+        assert task.execution.state != Run.State.NEW
+        assert task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]
+
+
+@raises(AssertionError)
+def test_engine_redo_Task2():
+    """Test that `Engine.redo()` raises if called on a Task that is not TERMINATED."""
+    with temporary_engine() as engine:
+        task = SuccessfulApp()
+        engine.add(task)
+
+        engine.progress()
+        assert task.execution.state != Run.State.NEW
+
+        # cannot redo a task that is not yet terminated
+        task.redo()
+
+
+def test_engine_redo_Task3():
+    """Test that `Engine.redo()` is a no-op if the Task is still NEW."""
+    with temporary_engine() as engine:
+        task = SuccessfulApp()
+        engine.add(task)
+        task.redo()
+
+
+def test_engine_resubmit():
+    with temporary_engine() as engine:
+        app = SuccessfulApp()
+        engine.add(app)
+
+        # run through sequence
+        while app.execution.state != 'TERMINATED':
+            engine.progress()
+
+        engine.submit(app, resubmit=True)
+        assert app.execution.state == 'NEW'
+
+        # run through sequence again
+        while app.execution.state != 'TERMINATED':
+            engine.progress()
+        assert app.execution.state == 'TERMINATED'
+
+
+def test_engine_submit1():
+    """Engine.submit is equivalent to `add` if a task is not yet managed."""
+    with temporary_engine() as engine:
+        assert engine.stats()['NEW'] == 0
+
+        app = SuccessfulApp()
+        assert app.execution.state == 'NEW'
+        engine.submit(app)
+        assert app.execution.state == 'NEW'
+        assert engine.stats()['NEW'] == 1
+
+        engine.progress()
+        assert app.execution.state in ['SUBMITTED', 'RUNNING']
+        assert engine.stats()['NEW'] == 0
+        assert engine.stats()[app.execution.state] == 1
+
+
+def test_engine_submit2():
+    """Engine.submit is a no-op if a task is already managed."""
+    with temporary_engine() as engine:
+        app = SuccessfulApp()
+        engine.add(app)
+        assert engine.stats()['NEW'] == 1
+
+        engine.submit(app)
+        assert engine.stats()['NEW'] == 1
+
+        engine.progress()
+        state = app.execution.state
+        assert state in ['SUBMITTED', 'RUNNING']
+        assert engine.stats()['NEW'] == 0
+        assert engine.stats()[state] == 1
+
+        engine.submit(app)
+        assert app.execution.state == state
+        assert engine.stats()[state] == 1
 
 
 def test_engine_submit_to_multiple_resources(num_resources=3, num_jobs=50):
@@ -129,16 +349,7 @@ def test_engine_submit_to_multiple_resources(num_resources=3, num_jobs=50):
     # generate 50 no-op tasks
     for n in range(num_jobs):
         name = 'app{nr}'.format(nr=n)
-        engine.add(
-            Application(
-                ['/bin/true'],
-                inputs=[],
-                outputs=[],
-                output_dir='/tmp',
-                jobname=name,
-                requested_cores=1,
-            )
-        )
+        engine.add(SuccessfulApp(name))
     # submit them all
     engine.progress()
     # get handles to the actual backend objects

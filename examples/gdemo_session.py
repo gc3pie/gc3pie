@@ -57,19 +57,21 @@ import gc3libs.utils
 class GdemoApplication(Application):
 
     def __init__(self, value_a, value_b, iteration, **extra_args):
-
-        gc3libs.log.info("Calling GdemoApplication.__init__(%d,%d,%d) ... " % (value_a,value_b,iteration))
-
+        gc3libs.log.info(
+            "Calling GdemoApplication.__init__(%d,%d,%d) ... ",
+            value_a, value_b, iteration)
         self.iteration = iteration
-        gc3libs.Application.__init__(self,
-                                     arguments = ["/usr/bin/expr", str(value_a), "+", str(value_b)],
-                                     inputs = [],
-                                     outputs = [],
-                                     output_dir = os.path.join(os.getcwd(),"Gdemo_result",str(iteration)),
-                                     stdout = "stdout.txt",
-                                     stderr = "stderr.txt",
-                                     **extra_args
-                                     )
+        gc3libs.Application.__init__(
+            self,
+            arguments = ["/usr/bin/expr", value_a, "+", value_b],
+            inputs = [],
+            outputs = [],
+            output_dir = os.path.join(os.getcwd(),"Gdemo_result",str(iteration)),
+            stdout = "stdout.txt",
+            stderr = "stderr.txt",
+            **extra_args
+        )
+
 
 class Gdemo(SessionBasedScript):
     """
@@ -101,11 +103,11 @@ class Gdemo(SessionBasedScript):
         gc3libs.log.info("Calling Gdemo.new_task() ... ")
         return [
             DemoIteration(
-            self.init_value,
-            self.add_value,
-            self.params.iterations,
-            **extra_args),
-            ]
+                self.init_value,
+                self.add_value,
+                self.params.iterations,
+                **extra_args),
+        ]
 
 
 
@@ -149,7 +151,7 @@ class DemoIteration(SequentialTaskCollection):
         self.init = init_value
         self.increment = add_value
         self.limit = iterations
-        self.jobname = "Gdemo_Iternation"
+        self.jobname = "Gdemo_Iteration"
 
         gc3libs.log.info("Calling DemoIteration.__init__() ... ")
 
@@ -170,7 +172,7 @@ class DemoIteration(SequentialTaskCollection):
         of the contract that this method must implement.
         """
 
-        gc3libs.log.info("Calling GdemoIteration.next(%d) ... " % int(iteration))
+        gc3libs.log.info("Calling GdemoIteration.next(%d) ... ", iteration)
 
         last_application = self.tasks[iteration]
 
@@ -178,8 +180,8 @@ class DemoIteration(SequentialTaskCollection):
         computed_value = int(f.read())
         f.close()
 
-        if computed_value == self.limit:
-            self.returncode = 0
+        if computed_value >= self.limit:
+            self.execution.returncode = 0
             return Run.State.TERMINATED
         else:
             self.add(GdemoApplication(computed_value, self.increment, iteration+1))

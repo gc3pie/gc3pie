@@ -293,7 +293,7 @@ class Transport(object):
             if os.path.isdir(source):
                 # `source` is a directory, recursively descend it
                 self.makedirs(destination)
-                for entry in os.listdir(source):                 
+                for entry in os.listdir(source):
                     # don't use `os.path.join` for remote path names,
                     # ``/`` is the right separator to use; see
                     # http://code.fabfile.org/issues/show/306
@@ -495,6 +495,12 @@ class SshTransport(Transport):
 
     @same_docstring_as(Transport.connect)
     def connect(self):
+        if not self.remote_frontend:
+            self._is_open = False
+            raise gc3libs.exceptions.TransportError(
+                "Cannot connect to remote host:"
+                " no host name/IP address known yet.")
+
         try:
             self.transport_channel = self.ssh.get_transport()
             if not self._is_open or self.transport_channel is None or \
@@ -611,8 +617,8 @@ class SshTransport(Transport):
                                 " command.")
 
             raise gc3libs.exceptions.TransportError(
-                "Failed while connecting to remote host '%s': %s"
-                % (self.remote_frontend, str(ex)))
+                "Failed connecting to remote host '{hostname}': {msg}"
+                .format(hostname=self.remote_frontend, msg=ex))
 
     @same_docstring_as(Transport.chmod)
     def chmod(self, path, mode):

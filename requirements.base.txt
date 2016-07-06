@@ -1,3 +1,4 @@
+coloredlogs
 # paramiko and pycrypto are required for SSH operations
 paramiko
 pycrypto

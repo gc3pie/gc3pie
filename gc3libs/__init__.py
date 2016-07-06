@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -131,12 +131,27 @@ def configure_logger(
         name=None,
         format=(os.path.basename(sys.argv[0])
                 + ': [%(asctime)s] %(levelname)-8s: %(message)s'),
-        datefmt='%Y-%m-%d %H:%M:%S'):
+        datefmt='%Y-%m-%d %H:%M:%S',
+        colorize='auto'):
     """
     Configure the ``gc3.gc3libs`` logger.
 
     Arguments `level`, `format` and `datefmt` set the corresponding
     arguments in the `logging.basicConfig()` call.
+
+    Argument `colorize` controls the use of the `coloredlogs`_ module to
+    color-code log output lines.  The default value ``auto`` enables log
+    colorization iff the `sys.stderr` stream is connected to a terminal;
+    a ``True`` value will enable it regardless of the log output stream
+    terminal status, and any ``False`` value will disable log
+    colorization altogether.  Note that log colorization can anyway be
+    disabled if `coloredlogs`_ thinks that the terminal is not capable
+    of colored output; see `coloredlogs.terminal_supports_colors`__.
+    If the `coloredlogs`_ module cannot be imported, a warning is logged
+    and log colorization is disabled.
+
+    .. _coloredlogs: https://coloredlogs.readthedocs.org/en/latest/#
+    .. __: http://humanfriendly.readthedocs.org/en/latest/index.html#humanfriendly.terminal.terminal_supports_colors
 
     If a user configuration file exists in file NAME.log.conf in the
     ``Default.RCDIR`` directory (usually ``~/.gc3``), it is read and
@@ -155,24 +170,17 @@ def configure_logger(
     log = logging.getLogger("gc3.gc3libs")
     log.setLevel(level)
     log.propagate = 1
-    # Up to Python 2.5, the `logging` library disables all existing
-    # loggers upon reconfiguration, and fails to re-create them when
-    # getLogger() is called again.  We work around this the hard way:
-    # using an undocumented internal variable, ignore errors, and hope
-    # for the best.
-    try:
-        log.disabled = 0
-    except:
-        pass
-    # due to a bug in Python 2.4.x (see
-    # https://bugzilla.redhat.com/show_bug.cgi?id=573782 )
-    # we need to disable `logging` reporting of exceptions.
-    try:
-        version_info = sys.version_info
-    except AttributeError:
-        version_info = (1, 5)  # 1.5 or earlier
-    if version_info < (2, 5):
-        logging.raiseExceptions = False
+    if colorize == 'auto':
+        # set if STDERR is connected to a terminal
+        colorize = sys.stderr.isatty()
+    if colorize:
+        try:
+            import coloredlogs
+            coloredlogs.install(
+                logger=log, reconfigure=True, stream=sys.stderr,
+                level=level, fmt=format, datefmt=datefmt, programname=name)
+        except ImportError as err:
+            log.warning("Could not import `coloredlogs` module: %s", err)
 
 
 UNIGNORE_ERRORS = set(os.environ.get('GC3PIE_NO_CATCH_ERRORS', '').split(','))
@@ -534,6 +542,34 @@ class Task(Persistable, Struct):
             self.fetch_output()
             return self.execution.returncode
 
+
+    def redo(self, *args, **kwargs):
+        """
+        Reset the state of this Task instance to ``NEW``.
+
+        This is only allowed for tasks which are already in a terminal
+        state, or one of ``STOPPED``, ``UNKNOWN``, or ``NEW`;
+        otherwise an `AssertionError` is raised.
+
+        The task should then be resubmitted to actually resume
+        execution.
+
+        See also `SequentialTaskCollection.redo`:meth:.
+
+        :raises AssertionError: if this Task's state is not terminal.
+        """
+        assert self.execution.state in [
+            Run.State.NEW,  # allow re-doing partially run TaskCollections
+            Run.State.STOPPED,
+            Run.State.TERMINATED,
+            Run.State.TERMINATING,
+            Run.State.UNKNOWN,
+        ], ("Can only re-do a Task which is in a terminal state;"
+            " task {0} is in state {1} instead."
+            .format(self, self.execution.state))
+        self.execution.state = Run.State.NEW
+
+
     def wait(self, interval=60):
         """
         Block until the associated job has reached `TERMINATED` state,
@@ -753,7 +789,7 @@ class Application(Task):
       has the value ``100``, one would use::
 
         Application(...,
-        environment={'LC_ALL':'C', 'HZ':100},
+          environment={'LC_ALL':'C', 'HZ':100},
         ...)
 
     `output_base_url`
@@ -927,7 +963,7 @@ class Application(Task):
                               gc3libs.quantity.Duration)), \
             ("Expected `Duration` instance for `requested_walltime,"
              " got %r %s instead."
-             % (self.requested_memory, type(self.requested_memory)))
+             % (self.requested_walltime, type(self.requested_walltime)))
         self.requested_architecture = extra_args.pop(
             'requested_architecture', None)
         if self.requested_architecture is not None \
@@ -957,7 +993,10 @@ class Application(Task):
             self.outputs[self.stdout] = self.stdout
 
         self.stderr = extra_args.pop('stderr', None)
-        if self.stderr == self.stdout or self.stderr == subprocess.STDOUT:
+        join_stdout_and_stderr = (self.join
+                                  or self.stderr == self.stdout
+                                  or self.stderr == subprocess.STDOUT)
+        if join_stdout_and_stderr:
             self.join = True
             self.stderr = self.stdout
 
@@ -1181,17 +1220,6 @@ class Application(Task):
                     selected.append(lrms)
         return selected
 
-    def fetch_output(
-            self, download_dir, overwrite, changed_only, **extra_args):
-        """
-        Call the corresponding method of the controller.
-        """
-        return self._controller.fetch_output(
-            self,
-            download_dir,
-            overwrite,
-            changed_only,
-            **extra_args)
 
     ##
     # backend interface methods
@@ -1975,16 +2003,43 @@ class Run(Struct):
     @staticmethod
     def shellexit_to_returncode(rc):
         """
-        Convert a shell exit code to a POSIX process return code.
+        Convert shell exit code to POSIX process return code.
+        The "return code" is represented as a pair `(signal,
+        exitcode)` suitable for setting the ``returncode`` property.
 
         A POSIX shell represents the return code of the last-run
         program within its exit code as follows:
 
-        * If the program was terminated by signal `N`, the shell exits
-          with code 128+N,
+        * If the program was terminated by signal ``K``, the shell exits
+          with code ``128+K``,
 
-        * otherwise, if the program terminated with exit code C, the
-          shell exits with code C.
+        * otherwise, if the program terminated with exit code ``X``,
+          the shell exits with code ``X``.  (Yes, the mapping is not
+          bijective and it is possible that a program wants to exit
+          with, e.g., code 137 and this is mistaken for it having been
+          killed by signal 9.  Blame the original UNIX implementors
+          for this.)
+
+        Examples:
+
+        * Shell exit code 137 means that the last program got a
+          SIGKILL. Note that in this case there is no well-defined
+          "exit code" of the program; we use ``-1`` in the place of
+          the exit code to mark it::
+
+            >>> Run.shellexit_to_returncode(137)
+            (9, -1)
+
+        * Shell exit code 75 is a valid program exit code::
+
+            >>> Run.shellexit_to_returncode(75)
+            (0, 75)
+
+        * ...and so is, of course, 0::
+
+            >>> Run.shellexit_to_returncode(0)
+            (0, 0)
+
         """
         # only the less significant 8 bits matter
         rc &= 0xff

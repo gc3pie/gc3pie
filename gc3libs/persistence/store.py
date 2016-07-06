@@ -47,6 +47,9 @@ class Store(object):
         parts of the code.
     """
 
+    def __init__(self, url=None):
+        self.url = url
+
     def list(self, **extra_args):
         """
         Return list of IDs of saved `Job` objects.
@@ -111,6 +114,15 @@ class Persistable(object):
         except AttributeError:
             return super(Persistable, self).__str__()
 
+    def __eq__(self, other):
+        try:
+            return self.persistent_id == other.persistent_id
+        except AttributeError:
+            # fall back to Python object comparison
+            return super(Persistable, self) == other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 # registration mechanism
 
@@ -172,21 +184,28 @@ def make_store(uri, *args, **extra_args):
     """
     if not isinstance(uri, Url):
         uri = Url(uri)
-    # create and return store
+
+    # since SQLAlchemy allows URIs of the form `db+driver://...`
+    # (e.g., `postresql+psycopg://...`) we need to examine the URI
+    # scheme only up to the first `+`
+    scheme = uri.scheme.split('+')[0]
+
     try:
         # hard-code schemes that are supported by GC3Pie itself
         if uri.scheme == 'file':
             import gc3libs.persistence.filesystem
             return gc3libs.persistence.filesystem.make_filesystemstore(
                 uri, *args, **extra_args)
-        elif uri.scheme in [
-                # XXX: list all supported SQLAlchemy back-ends
+        elif scheme in [
+                # DBs supported in SQLAlchemy core as of version 1.1,
+                # see: http://docs.sqlalchemy.org/en/latest/dialects/index.html
                 'firebird',
                 'mssql',
                 'mysql',
                 'oracle',
-                'postgres',
+                'postgresql',
                 'sqlite',
+                'sybase',
         ]:
             import gc3libs.persistence.sql
             return gc3libs.persistence.sql.make_sqlstore(
