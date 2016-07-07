@@ -38,7 +38,7 @@ GC3Pie documentation is divided in three sections:
   use the GC3Pie libraries to write their own scripts and
   applications.
 
-* :ref:`Developer Documentation`: detailed information on how to
+* :ref:`Contributor Documentation`: detailed information on how to
   contribute to GC3Pie and get your code included in the main library.
 
 
@@ -50,7 +50,7 @@ GC3Pie documentation is divided in three sections:
 
   users/index
   programmers/index
-  developers/index
+  contributors/index
   publications/index
   credits
   glossary

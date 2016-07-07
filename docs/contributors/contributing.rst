@@ -404,7 +404,7 @@ When running using `nosetests`:command you cannot just execute
 Coding style
 ------------
 
-**Python code should be written according to PEP 8 recommendations.**
+**Python code should be written according to `PEP 8`_ recommendations.**
 (And by this we mean not just the code style.)
 
 .. _`pep 8`: http://www.python.org/dev/peps/pep-0008/
@@ -418,7 +418,7 @@ Anyway, here's a short summary for the impatient:
 * use English nouns to name variables and classes; use verbs to
   name object methods.
 
-* use 4 spaces to indent code; never use TABs.
+* use 4 spaces to indent code; never use TAB characters.
 
 * use lowercase letters for method and variable names; use underscores
   ``_`` to separate words in multi-word identifiers (e.g.,
@@ -458,6 +458,7 @@ for each of them.
   (Think especially of people who have to bugfix a module they didn't
   write in the first place.)
 
+
 * When calling methods or functions that accept both positional and
   optional arguments like::
 
@@ -479,6 +480,7 @@ for each of them.
   arguments, so this change can happen any time, although changing
   *positional* arguments will break backward compatibility, and thus
   it's usually well advertised and tested.
+
 
 * Use double quotes ``"`` to enclose strings representing messages meant
   for human consumption (e.g., log messages, or strings that will be
@@ -545,7 +547,7 @@ GC3Pie documentation is divided in three sections:
   use the GC3Pie libraries to write their own scripts and
   applications.
 
-* :ref:`Developer Documentation`: detailed information on how to
+* :ref:`Contributor Documentation`: detailed information on how to
   contribute to GC3Pie and get your code included in the main library.
 
 The :ref:`GC3Libs programming API` is the most relevant part of the
@@ -573,7 +575,7 @@ procedures:
 - Execute the script `docs/programmers/api/makehier.sh`:file:, which
   automates the above.  Note that the `makehier.sh`:file: script will
   re-create all ``.rst`` files for all GC3Pie modules, so check if
-  there were some unexpected changes (e.g., with ``svn status``)
+  there were some unexpected changes (e.g., with ``git status``)
   before you commit!
 
 Docstrings are written in reStructuredText_ format.  To be able to
