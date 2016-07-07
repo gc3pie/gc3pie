@@ -1,4 +1,11 @@
 \documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
+
 \usepackage{gc3}
 
 \title[GC3Pie basics]{%
@@ -20,23 +27,23 @@
 
   Run commands.
 
-  \+ 
+  \+
   Just like the terminal, except GC3Pie can run them on
   \emph{remote} computing resources.
 
   \+
   (And it can run large collections of commands, but that's for later.)
-  
+
 \end{frame}
 
 
 \begin{frame}
   \frametitle{Specifying commands to run, I}
-  
+
   You need to ``describe'' an application to GC3Pie, in order for
   GC3Pie to use it.
 
-  \+ 
+  \+
   This ``description'' is a blueprint from which many actual
   command instances can be created.
 
@@ -74,7 +81,7 @@ class SquareApplication(Application):
     Application.__init__(
       self,
       arguments=[
-        '/usr/bin/expr', 
+        '/usr/bin/expr',
         x, '*', x],
       inputs=[ ],
       outputs=[ ],
@@ -98,7 +105,7 @@ class SquareApplication@\HL{(Application)}@:
     Application.__init__(
       self,
       arguments=[
-        '/usr/bin/expr', 
+        '/usr/bin/expr',
         x, '*', x],
       inputs=[ ],
       outputs=[ ],
@@ -121,7 +128,7 @@ class SquareApplication(Application):
     Application.__init__(
       self,
       arguments=[
-        '/usr/bin/expr', 
+        '/usr/bin/expr',
         x, '*', x],
       inputs=[ ],
       outputs=[ ],
@@ -143,7 +150,7 @@ class SquareApplication(Application):
     @\HL{Application.\_\_init\_\_(}@
       self,
       arguments=[
-        '/usr/bin/expr', 
+        '/usr/bin/expr',
         x, '*', x],
       inputs=[ ],
       outputs=[ ],
@@ -239,7 +246,7 @@ class SquareApplication(Application):
     Application.__init__(
       self,
       arguments=[
-        '/usr/bin/expr', 
+        '/usr/bin/expr',
         x, '*', x],
       @\HL{inputs=[ ],}@
       outputs=[ ],
@@ -283,7 +290,7 @@ class SquareApplication(Application):
     Application.__init__(
       self,
       arguments=[
-        '/usr/bin/expr', 
+        '/usr/bin/expr',
         x, '*', x],
       inputs=[ ],
       @\HL{outputs=[ ],}@
@@ -303,15 +310,15 @@ class SquareApplication(Application):
     outputs = [ 'result.dat', 'program.log' ]
   \end{lstlisting}
 
-  \+ 
+  \+
   (Contrast with input files, which must be specified by
   \emph{absolute path}, e.g., \texttt{/home/rmurri/values.dat})
 
-  \+ 
+  \+
   Any file with the given name that is found in the execution
   directory will be copied back. (\emph{Where?} See next slides!)
 
-  \+ 
+  \+
   If an output file is \emph{not} found, this is \emph{not} an
   error. In other words, output files are optional.
 
@@ -332,7 +339,7 @@ class SquareApplication(Application):
     Application.__init__(
       self,
       arguments=[
-        '/usr/bin/expr', 
+        '/usr/bin/expr',
         x, '*', x],
       inputs=[ ],
       outputs=[ ],
@@ -345,7 +352,7 @@ class SquareApplication(Application):
 
 \begin{frame}[fragile]
   \frametitle{The \emph{output\_dir} parameter, II}
-  
+
   By default, GC3Pie does not overwrite an existing output directory:
   it will move the existing one to a backup name.
 
@@ -374,7 +381,7 @@ class SquareApplication(Application):
     Application.__init__(
       self,
       arguments=[
-        '/usr/bin/expr', 
+        '/usr/bin/expr',
         x, '*', x],
       inputs=[ ],
       outputs=[ ],
@@ -399,7 +406,7 @@ class SquareApplication(Application):
     Application.__init__(
       self,
       arguments=[
-        '/usr/bin/expr', 
+        '/usr/bin/expr',
         x, '*', x],
       inputs=[ ],
       outputs=[ ],
@@ -486,13 +493,13 @@ Core operations are \textbf{blocking}.
   core = gc3libs.core.Core(cfg)
 \end{lstlisting}
 
-\+ 
+\+
 Likely, you will only ever need no more than \emph{one single}
 instance of \texttt{Core} in your scripts.
 
 \+
 \begin{references}
-  \url{http://gc3pie.readthedocs.org/en/latest/gc3libs/api.html#module-gc3libs.config}
+  \url{http://gc3pie.readthedocs.io/en/master/programmers/api/gc3libs/config.html}
 \end{references}
 \end{frame}
 
@@ -512,7 +519,7 @@ instance of \texttt{Core} in your scripts.
 
 \+
 \begin{references}
-  \url{http://gc3pie.readthedocs.org/en/latest/gc3libs/api.html#gc3libs.core.Core}
+  \url{http://gc3pie.readthedocs.io/en/master/programmers/api/gc3libs/core.html#gc3libs.core.Core}
 \end{references}
 \end{frame}
 
@@ -529,7 +536,7 @@ The current state is stored in the \texttt{.execution.state} instance attribute.
 
 \+
 \begin{references}
-  \url{http://gc3pie.readthedocs.org/en/latest/gc3libs/api.html#gc3libs.Run.state}
+  \url{http://gc3pie.readthedocs.io/en/master/programmers/api/gc3libs.html#gc3libs.Run.state}
 \end{references}
 \end{frame}
 
@@ -543,8 +550,8 @@ The current state is stored in the \texttt{.execution.state} instance attribute.
     \raggedleft
 
   \textbf{NEW} is the state of ``just created'' Application objects.
-  
-  \+ 
+
+  \+
   The Application has not yet been sent off to a compute resource:
   it only exists locally.
   \end{column}
@@ -564,7 +571,7 @@ The current state is stored in the \texttt{.execution.state} instance attribute.
     \emph{SUBMITTED} applications have been successfully sent to a
     computational resource.
 
-    \+ 
+    \+
     (The transition to \emph{RUNNING} happens automatically, as we
     do not control the remote execution.)
   \end{column}
@@ -619,7 +626,7 @@ The current state is stored in the \texttt{.execution.state} instance attribute.
     A job is \emph{TERMINATED} when its final output has been
     retrieved and is available locally.
 
-    \+ 
+    \+
     The exit code of \emph{TERMINATED} jobs can be inspected to
     find out whether the termination was successful or unsuccessful,
     or if the program was forcibly ended.
@@ -634,16 +641,16 @@ The current state is stored in the \texttt{.execution.state} instance attribute.
 
   There's a \emph{single TERMINATED state}, whatever the job outcome.
 
-  \+ 
+  \+
   You have to inspect the exit code and signals to determine the
   cause of ``job death''.
 
-  \+ 
+  \+
   The \texttt{.execution.exitcode} instance attribute holds the
   numeric exitcode of the executed command, or \texttt{None} if the
   command has not finished running yet.
-  
-  \+ 
+
+  \+
   The \texttt{.execution.signal} instance attribute is non-zero if
   the program was killed by a signal (e.g., memory error / segmentation fault).
 \end{frame}
@@ -663,12 +670,12 @@ The current state is stored in the \texttt{.execution.state} instance attribute.
   \end{column}
 \end{columns}
 
-\+ 
+\+
 A job is in \emph{STOPPED} state when its execution has been
 blocked at the remote site and GC3Pie cannot recover
 automatically.  User or sysadmin intervention is required.
 
-\+ 
+\+
 A job is in \emph{UNKNOWN} state when GC3Pie can no longer
 monitor it at the remote site. (As this might be due to network
 failures, jobs \emph{can} get out of \emph{UNKNOWN}
@@ -716,9 +723,9 @@ running \texttt{expr x * x}.
 
 \begin{frame}[fragile]
   \frametitle{Putting it all together}
-  
+
   The script
-  \href{http://www.gc3.uzh.ch/teaching/gc3pie2012/square.py}{square.py}
+  \href{https://github.com/uzh/gc3pie/blob/master/docs/programmers/tutorials/bottom-up/square.py}{square.py}
   provides an example of how all these work together.
 \end{frame}
 
@@ -726,7 +733,7 @@ running \texttt{expr x * x}.
 \begin{frame}
   \begin{exercise}
     Copy the
-    \href{http://www.gc3.uzh.ch/teaching/gc3pie2012/square.py}{square.py}
+    \href{https://github.com/uzh/gc3pie/blob/master/docs/programmers/tutorials/bottom-up/square.py}{square.py}
     script to a file \texttt{cpuinfo.py} and modify it to run the
     command \texttt{cat /proc/cpuinfo} instead of squaring a number.
     Run it and verify that it gave correct information about your computer's CPU.
@@ -744,7 +751,7 @@ running \texttt{expr x * x}.
 
 \end{document}
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: t
-%%% End: 
+%%% End:

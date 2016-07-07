@@ -1,6 +1,7 @@
 %% gc3.sty
 %%
-%% LaTeX style file with common commands and settings for the GC3 trainings.
+%% LaTeX style file with common commands and settings for the GC3
+%% presentations and documents.
 %%
 
 %% generic LaTeX packages/helpers
@@ -10,7 +11,7 @@
 \usepackage{fixltx2e}
 
 \usepackage{relsize}
-\usepackage[normalem]{ulem}
+%\usepackage[normalem]{ulem}
 
 %% symbol families
 \usepackage{marvosym}
@@ -19,7 +20,7 @@
 \usepackage{amssymb}
 
 %% graphics and color
-\usepackage{color}
+\usepackage{xcolor}
   % for the color names, see: http://en.wikibooks.org/wiki/LaTeX/Colors#Predefined_colors
   % Apricot     Aquamarine      Bittersweet     Black
   % Blue        BlueGreen       BlueViolet      BrickRed
@@ -57,7 +58,7 @@
 
 %% programming languages support
 \usepackage[procnames]{listings}%
-  \lstloadlanguages{python,sh}%
+  \lstloadlanguages{python,sh,tex}%
   \lstset{
     language=python,%
     % --- basic appearance ---
@@ -74,7 +75,7 @@
     emph={self},%
     emphstyle=\bfseries\color{gray},%
     % --- escaping and special displays ---
-    escapechar=@,% text between "@" will be rendered as normal TeX
+    escapechar=~,% text between "~" will be rendered as normal TeX
     %moredelim=[il][\small\itshape]{\#},% ditto for text beween "#" and end-of-line
     texcl,%
     mathescape=false,%
@@ -93,10 +94,10 @@
   \lstnewenvironment{sh}{\lstset{language=sh}}{}%
 
 \usepackage{hyperref}
-  % for a summary of hyperrf options,see: http://www.andy-roberts.net/writing/latex/pdfs
+  % for a summary of hyperref options,see: http://www.andy-roberts.net/writing/latex/pdfs
   \hypersetup{%
     colorlinks=true,%
-    urlcolor=orange,% defined in `beamerthemeneu-de.sty`
+    urlcolor=uzh@orange,% defined in `beamerthemeneu-de.sty`
     % the following controls how the PDF is opened in the viewer
     % there should be no reason to change it
     pdfstartview=Fit,%
@@ -106,14 +107,6 @@
 \usepackage{url}
 
 
-%% keep this last, as it loads some packages (which we cannot reload
-%% later with different options)
-% \usetheme{uzhneu-en-informal}
-
-%% Make completely invisible stuff which comes after \pause when it
-%% should not be visible.
-\setbeamercovered{transparent=0}
-
 %% Use `\largeskip` or its alias `\+` to get a larger vertical white
 %% space between two lines/paragraphs:
 \newcommand{\largeskip}{\vspace{1em}}
@@ -121,17 +114,17 @@
 \setlength{\parsep}{1.0em}
 
 %% use `\HL` to highlight a region of text within a code listing
-\newcommand{\HL}{\colorbox{RedViolet!35}}
+\newcommand{\HL}[1][\relax]{\colorbox{\ifx#1\relax uzh@orange!25 \else #1 \fi}}
 
 %% use `\hl` for highlighting items in listings, etc.
-\newcommand{\hl}[1]{{\bfseries\color{blue} #1}} 
+\newcommand{\hl}[1]{{\bfseries\color{uzh@blue} #1}}
 
 %% for questions interspersed in the text
-\newenvironment{question}{\+ \em \textbf{Question:}\bgroup}{\egroup}
+\newenvironment{question}{\+ \em \textbf{Q:}\bgroup}{\egroup}
 
 %% for the `References: ...` at the bottom of the slide
 \newenvironment{references}{%
-  \largeskip \small%
+  \largeskip \scriptsize%
   \emph{Reference:}%
   \bgroup
 }{%
@@ -155,7 +148,7 @@
   \egroup%
 }
 
-%% exercises (numbered starting from 1)
+%% exercises (numbered with uppercase letters starting from "A")
 \newcounter{exerciseno}%
 \setcounter{exerciseno}{1}%
 \newenvironment{exercise}{%
@@ -163,4 +156,9 @@
 }{%
   \egroup%
   \addtocounter{exerciseno}{1}%
+}
+\newenvironment{exercise*}[1][\relax]{%
+  \textbf{Exercise~#1:}~\bgroup%
+}{%
+  \egroup%
 }

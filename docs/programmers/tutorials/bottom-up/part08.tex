@@ -1,4 +1,11 @@
 \documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
+
 \usepackage{gc3}
 
 \title[Workflows]{%
@@ -35,11 +42,11 @@
 
 
 \begin{frame}
-  
+
 So far we've seen how to write scripts that control many instances of
 a single application.
 
-\+ 
+\+
 Now it's time to introduce the GC3Pie classes that allow
 orchestrating the execution of jobs of several different types. (For
 instance, specify that certain applications should be executed in a
@@ -64,7 +71,7 @@ Let's start with a colorful example.
 
 
 \begin{frame}
-How do we ``warholize'' an arbitrary image?  
+How do we ``warholize'' an arbitrary image?
 
 \+
 \begin{enumerate}
@@ -75,21 +82,21 @@ How do we ``warholize'' an arbitrary image?
 
 \+
 \begin{references}
-  \url{http://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/gc3libs/tutorial/warholize.html}
+  \url{http://gc3pie.readthedocs.io/en/master/programmers/tutorials/index.html#warholize-tutorial}
 \end{references}
 \end{frame}
 
 
 \begin{frame}
   \frametitle{The GC3Pie approach to workflows, II}
-  
+
   The basic unit of work in a GC3Pie workflow is called a \texttt{Task}.
 
-  \+ 
+  \+
   The \texttt{Application} class that you already know is a kind of
   \texttt{Task} (indeed, it's a derived class).
 
-  \+ 
+  \+
   From now on, we'll speak of \texttt{Task}s rather than
   applications.  Examples of \texttt{Task} instances that are not
   applications will arrive shortly.
@@ -102,7 +109,7 @@ How do we ``warholize'' an arbitrary image?
   To run tasks in an ordered sequence, one after the other, GC3Pie
   provides a \texttt{SequentialTaskCollection} class.
 
-  \+ 
+  \+
   It is created with a list of tasks, and runs all of them in the
   order given.  The sequenceis dynamic, in that you can add new tasks
   on the fly, re-run existing ones, or remove future tasks.
@@ -118,7 +125,7 @@ How do we ``warholize'' an arbitrary image?
   To run tasks in parallel (i.e., they have no inter-dependency),
   GC3Pie provides a \texttt{ParallelTaskCollection} class.
 
-  \+ 
+  \+
   It is created with a (Python) list of tasks, and runs all of them
   in parallel (compatibly with the computational resource limits).
 
@@ -137,7 +144,7 @@ How do we ``warholize'' an arbitrary image?
   \item \texttt{ParallelTaskCollection}s.
   \end{itemize}
 
-  \+ 
+  \+
   So you can nest them, and create parallelly-running sequences, or
   sequences of ``job explosions'' (many jobs in parallel), or any
   combination of this.
@@ -146,9 +153,9 @@ How do we ``warholize'' an arbitrary image?
 
 \begin{frame}
   \frametitle{The Warholize workflow, I}
-  
+
   1. Convert the original image to grayscale.
-  
+
   \+
   \includegraphics[width=0.75\textwidth]{fig/warholize-wkf1}
 \end{frame}
@@ -156,9 +163,9 @@ How do we ``warholize'' an arbitrary image?
 
 \begin{frame}
   \frametitle{The Warholize workflow, II}
-  
+
   2. Colorize the grayscale image using three different colors for each tile.
-  
+
   \+
   \includegraphics[width=0.75\textwidth]{fig/warholize-wkf2}
 \end{frame}
@@ -166,9 +173,9 @@ How do we ``warholize'' an arbitrary image?
 
 \begin{frame}
   \frametitle{The Warholize workflow, III}
-  
+
   3. Arrange all the colorized images into an $N\times N$ frame.
-  
+
   \+
   \includegraphics[width=0.75\textwidth]{fig/warholize-wkf3}
 \end{frame}
@@ -176,13 +183,13 @@ How do we ``warholize'' an arbitrary image?
 
 \begin{frame}
   \frametitle{The Warholize workflow, IV}
-  
+
   Step 2 actually entails two sub-steps:
   \begin{enumerate}[a)]
   \item mapping greyscale levels to random colors,
   \item applying this mapping to produce new images
   \end{enumerate}
-  
+
   \+
   \includegraphics[width=0.75\textwidth]{fig/warholize-wkf2a}
 \end{frame}
@@ -190,10 +197,10 @@ How do we ``warholize'' an arbitrary image?
 
 \begin{frame}
   \frametitle{The Warholize workflow, V}
-  
+
   So, Step~2 is a \texttt{SequentialTaskCollection}-type task. Let's
   call this two-pass sequence \texttt{TricolorizeImage} .
-  
+
   \+
   \includegraphics[width=0.75\textwidth]{fig/warholize-TricolorizeImage}
 \end{frame}
@@ -201,23 +208,23 @@ How do we ``warholize'' an arbitrary image?
 
 \begin{frame}
   \frametitle{The Warholize workflow, VI}
-  
+
   All the \texttt{TricolorizeImage} instances run in parallel. Collect
   them into a \texttt{ParallelTaskCollection}-type task, called
   \texttt{TricolorizeMultipleImages}.
-  
+
   \+
   \includegraphics[width=0.75\textwidth]{fig/warholize-TricolorizeMultipleImages}
 \end{frame}
 
 \begin{frame}
   \frametitle{The Warholize workflow, VII}
-  
+
   Now we are left with a three-step sequence: greyscale,
   \texttt{TricolorizeMultipleImages}, montage.  This can be defined
   again as a \texttt{SequentialTaskCollection}-type task, the
   \texttt{WarholizeWorkflow}.
-  
+
   \+
   \includegraphics[width=0.70\textwidth]{fig/warholize-WarholizeWorkflow}
 \end{frame}
@@ -225,7 +232,7 @@ How do we ``warholize'' an arbitrary image?
 
 \end{document}
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: t
-%%% End: 
+%%% End:
