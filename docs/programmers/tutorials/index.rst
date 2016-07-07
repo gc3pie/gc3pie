@@ -73,6 +73,31 @@ package.
     sequence of jobs that can be altered during runtime.
 
 
+.. _`Warholize Tutorial`:
+
+The "Warholize" Workflow Tutorial
+---------------------------------
+
+In this tutorial we show how to use the GC3Pie libraries in order
+to build a command line script which runs a complex workflow with
+both parallelly- and sequentially-executing tasks.
+
+The tutorial itself contains the complete source code of the
+application (see `Literate Programming`_ on Wikipedia), so that you
+will be able to test/modify it and produce a working ``warholize.py``
+script by downloading the ``pylit.py``:file: script from the `PyLit
+Homepage`_ and running the following command on the
+``docs/programmers/tutorials/warholize/warholize.rst`` file,
+from within the source tree of GC3Pie::
+
+  $ ./pylit warholize.rst warholize.py
+
+
+.. toctree::
+
+  warholize/warholize
+
+
 Example scripts
 ---------------
 
@@ -96,7 +121,7 @@ Example scripts
 
 `warholize.py`_
 
-    an enhanched version of the `warholize` script proposed in the
+    an enhanced version of the `warholize` script proposed in the
     :ref:`Warholize Tutorial`
 
 .. _`gdemo_simple.py`: https://github.com/uzh/gc3pie/tree/master/examples/gdemo_simple.py
@@ -106,32 +131,8 @@ Example scripts
 
 
 
-.. _`Warholize Tutorial`:
-
-Warholize Tutorial
-------------------
-
-In this tutorial we will show you how to use GC3Pie libraries in order
-to build a command line script which will run a complex workflow with
-both parallel and sequential tasks.
-
-The tutorial itself contains the complete source code of the
-application (cfr. `Literate Programming`_ on Wikipedia), so that you
-will be able to test/modify it and produce a working ``warholize.py``
-script by downloading the ``pylit.py``:file: script from the `PyLit
-Homepage`_ and running the following command on the
-``docs/programmers/tutorials/warholize/warholize.rst`` file,
-from within the source tree of GC3Pie::
-
-  $ ./pylit warholize.rst warholize.py
-
-
-.. toctree::
-
-  warholize/warholize
+.. References:
 
 .. _`GC3Pie 2012 Training event`: https://www.gc3.uzh.ch/edu/gc3pie2012/
-
 .. _`Literate Programming`: http://en.wikipedia.org/wiki/Literate_programming
-
 .. _`PyLit Homepage`: https://github.com/gmilde/PyLit
