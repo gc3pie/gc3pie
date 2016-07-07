@@ -1776,24 +1776,26 @@ class Run(Struct):
         The value of `Run.state` must always be a value from the
         `Run.State` enumeration, i.e., one of the following values.
 
-        +---------------+--------------------------------------------------------------+----------------------+    # noqa
-        |Run.State value|purpose                                                       |can change to         |    # noqa
-        +===============+==============================================================+======================+    # noqa
-        |NEW            |Job has not yet been submitted/started (i.e., gsub not called)|SUBMITTED (by gsub)   |    # noqa
-        +---------------+--------------------------------------------------------------+----------------------+    # noqa
-        |SUBMITTED      |Job has been sent to execution resource                       |RUNNING, STOPPED      |    # noqa
-        +---------------+--------------------------------------------------------------+----------------------+    # noqa
-        |STOPPED        |Trap state: job needs manual intervention (either user-       |TERMINATING(by gkill),|    # noqa
-        |               |or sysadmin-level) to resume normal execution                 |SUBMITTED (by miracle)|    # noqa
-        +---------------+--------------------------------------------------------------+----------------------+    # noqa
-        |RUNNING        |Job is executing on remote resource                           |TERMINATING           |    # noqa
-        +---------------+--------------------------------------------------------------+----------------------+    # noqa
-        |TERMINATING    |Job has finished execution on remote resource;                |TERMINATED            |    # noqa
-        |               |output not yet retrieved                                      |                      |    # noqa
-        +---------------+--------------------------------------------------------------+----------------------+    # noqa
-        |TERMINATED     |Job execution is finished (correctly or not)                  |None: final state     |    # noqa
-        |               |and will not be resumed; output has been retrieved            |                      |    # noqa
-        +---------------+--------------------------------------------------------------+----------------------+    # noqa
+        =============== ============================================= ======================
+        Run.State value purpose                                       can change to
+        =============== ============================================= ======================
+        NEW             Job has not yet been submitted/started        SUBMITTED
+
+        SUBMITTED       Job has been sent to execution resource       RUNNING, STOPPED
+
+        STOPPED         Trap state: job needs manual intervention     TERMINATING(by gkill),
+                        (either user- or sysadmin-level)              SUBMITTED (by miracle)
+                        to resume normal execution
+
+        RUNNING         Job is executing on resource                  TERMINATING
+
+        TERMINATING     Job has finished execution                    TERMINATED
+                        on (possibly remote) resource;
+                        output not yet retrieved
+
+        TERMINATED      Job execution is finished (correctly or not)  None: **final state**
+                        and output has been retrieved
+        =============== ============================================= ======================
 
         When a :class:`Run` object is first created, it is assigned
         the state NEW.  After a successful invocation of
