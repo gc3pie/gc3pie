@@ -215,7 +215,7 @@ class GepecellScript(SessionBasedScript):
 
         with open(self.params.csv_input_file) as fd:
             for line in fd:
-                jobname = "gepecell-%s" % (line)
+                jobname = "gepecell-%s" % (line.strip().replace(",","_"))
 
                 extra_args = extra.copy()
                 extra_args['jobname'] = jobname
