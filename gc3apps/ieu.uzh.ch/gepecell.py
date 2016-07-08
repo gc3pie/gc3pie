@@ -82,8 +82,8 @@ import gc3libs.utils
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
-DEFAULT_REMOTE_OUTPUT_FOLDER = "./results"
-    
+DEFAULT_REMOTE_OUTPUT_FOLDER = "./output"
+DEFAULT_EPICELL_BINARY="robustnessintime"    
 ## custom application class
 class GepecellApplication(Application):
     """
@@ -97,11 +97,19 @@ class GepecellApplication(Application):
         inputs = dict()
         outputs = dict()
 
-        arguments = "./epicell "
+        if 'binary' in extra_args:
+            binary_name = os.path.basename(extra_args['binary'])
+            arguments = "./%s" % binary_name
+            inputs[extra_args['binary']] = binary_name
+            executables.append(binary_name)
+        else:
+            arguments = DEFAULT_EPICELL_BINARY
+
         for param in parameter_string.strip().split(','):
             arguments += " %s " % param
         # Set output
         outputs[DEFAULT_REMOTE_OUTPUT_FOLDER] = DEFAULT_REMOTE_OUTPUT_FOLDER
+        arguments += DEFAULT_REMOTE_OUTPUT_FOLDER
 
         gc3libs.log.debug("Creating application for executing: %s",
                           arguments)
@@ -170,6 +178,12 @@ class GepecellScript(SessionBasedScript):
                        dest="chunk_size", default=1000,
                        help="How to split the edges input data set.")
 
+        self.add_param("-B", "--binary",
+                       dest="binary", default=None,
+                       help="Path to alternative 'Robustnessintime' binary file." \
+                       " Note: binary fily MUST be statically linked.")
+
+        
     def parse_args(self):
         """
         Check presence of input folder (should contains R scripts).
@@ -185,6 +199,10 @@ class GepecellScript(SessionBasedScript):
                 "Chunk value must be an interger."
             self.params.chunk_size = int(self.params.chunk_size)
 
+            if self.params.binary:
+                assert os.path.isfile(self.params.binary), \
+                    "'Robustnessintime' binary file '%s' not found" % self.params.binary
+            
         except AssertionError as ex:
             raise ValueError(ex.message)            
 
@@ -208,6 +226,9 @@ class GepecellScript(SessionBasedScript):
                 extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', jobname)
                 extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', jobname)
 
+                if self.params.binary:
+                    extra_args['binary'] = self.params.binary
+                
                 tasks.append(GepecellApplication(
                     line,
                     **extra_args))
