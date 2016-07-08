@@ -13,15 +13,28 @@
 
 .. contents::
 
-   Table of Contents:
-    GC3Pie programming tutorials
-      Building workflows with GC3Pie: a bottom-up presentation
-      The "Warholize" Workflow Tutorial
-      Example scripts
+
+Implementing scientific workflows with GC3Pie
+---------------------------------------------
+
+This is the course material prepared for the `GC3Pie for programmers training`__,
+held at the University of Zurich on July 11-14, 2016.
+
+.. __: http://www.s3it.uzh.ch/en/scienceit/support/training/gc3pie/programmers.html
+
+The course aims at showing how to implement patterns commonly seen
+in scientific computational workflows using Python and GC3Pie, and
+provide users with enough knowledge of the tools available in GC3Pie
+to extend and adapt the examples provided.
+
+`Introduction to the training <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part00.pdf>`_
+
+  A presentation of the training material and outline of the course.
+  Probably not much useful unless you're actually sitting in class.
 
 
-Building workflows with GC3Pie: a bottom-up presentation
---------------------------------------------------------
+A bottom-up introduction to programming with GC3Pie
+---------------------------------------------------
 
 This is the course material made for the `GC3Pie 2012 Training event`_
 held at the University of Zurich on October 1-2, 2012.
