@@ -69,11 +69,11 @@ Installation instructions and further reading
 =============================================
 
 For up-to-date information, please read the GC3Pie documentation at:
-http://gc3pie.readthedocs.org/
+http://gc3pie.readthedocs.io/
 
 Installation instructions are in the `INSTALL.rst`_ file (in this
 same directory), or can be read online at:
-http://gc3pie.readthedocs.org/en/latest/users/install.html
+http://gc3pie.readthedocs.io/en/latest/users/install.html
 
 .. _`INSTALL.rst`: https://github.com/uzh/gc3pie/docs/users/install.txt
 

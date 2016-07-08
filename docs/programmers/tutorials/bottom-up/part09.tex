@@ -1,4 +1,11 @@
 \documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
+
 \usepackage{gc3}
 
 \title{%
@@ -21,7 +28,7 @@
 
   \texttt{ParallelTaskCollection} provides an interface for
   running jobs in parallel.
-  
+
   \+
   \begin{center}
     \includegraphics[width=0.75\textwidth]{fig/warholize-wkf2}
@@ -112,9 +119,9 @@ class ParallelHello(ParallelTaskCollection):
   \begin{lstlisting}[basicstyle=\tt\scriptsize]
     def terminated(self):
         """
-        Called when the job state transitions to `TERMINATED`, 
-        i.e., the job has finished execution (with whatever exit 
-        status, see `returncode`) and the final output has been 
+        Called when the job state transitions to `TERMINATED`,
+        i.e., the job has finished execution (with whatever exit
+        status, see `returncode`) and the final output has been
         retrieved.
 
         Default implementation for `TaskCollection` is to set the
@@ -150,7 +157,7 @@ class ParallelHello(ParallelTaskCollection):
 
 \begin{frame}
   \frametitle{Exercise 9.C}
-  
+
   Create a new script that takes one or more directories from command
   line, creates a job for each file inside those directories and
   execute the \lstinline|md5sum| command on each file in parallel.
@@ -172,7 +179,7 @@ class ParallelHello(ParallelTaskCollection):
 
 \end{document}
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: t
-%%% End: 
+%%% End:

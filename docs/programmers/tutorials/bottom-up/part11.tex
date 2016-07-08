@@ -1,4 +1,10 @@
 \documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
 \usepackage{gc3}
 
 \usepackage{graphicx}
@@ -39,7 +45,7 @@
   \end{block}
   \begin{block}{}
     the return value of the \texttt{next} method is then made the collection
-    \texttt{execution.state}.  
+    \texttt{execution.state}.
   \end{block}
 
   \begin{block}{}
@@ -53,13 +59,13 @@
 \begin{lstlisting}
 class DemoIteration@\HL{(SequentialTaskCollection)}@:
    def __init__(self, ...):
-        
+
       # create initial task and register it
       initial_task = GdemoApplication(...)
       SequentialTaskCollection.__init__(
-         self, 
+         self,
          [initial_task]
-         ) 
+         )
       \end{lstlisting}
 \end{frame}
 
@@ -72,8 +78,8 @@ class DemoIteration(SequentialTaskCollection):
      # create initial task and register it
       @\HL{initial\_task}@= GdemoApplication(...)
      SequentialTaskCollection.__init__(
-         self, 
-         @\HL{[initial\_task]}@ 
+         self,
+         @\HL{[initial\_task]}@
          )
   \end{lstlisting}
 \end{frame}
@@ -89,8 +95,8 @@ class DemoIteration(SequentialTaskCollection):
           return Run.State.TERMINATED
       else:
           self.add(GdemoApplication(
-                    computed_value, 
-                    self.increment, 
+                    computed_value,
+                    self.increment,
                     iteration+1
                     )
                    )
@@ -112,8 +118,8 @@ class DemoIteration(SequentialTaskCollection):
           return Run.State.TERMINATED
       else:
           self.add(GdemoApplication(
-                    computed_value, 
-                    self.increment, 
+                    computed_value,
+                    self.increment,
                     iteration+1
                     )
                    )
@@ -132,8 +138,8 @@ class DemoIteration(SequentialTaskCollection):
           @\HL{return Run.State.TERMINATED}@
       else:
           self.add(GdemoApplication(
-                    computed_value, 
-                    self.increment, 
+                    computed_value,
+                    self.increment,
                     iteration+1
                     )
                    )
@@ -148,13 +154,13 @@ def next(self, iteration):
   if self.generations_done < self.generations_to_do:
      self.add(
         GMhcCoevApplication(
-          self.N, 
-          self.p_mut_coeff, 
-          self.choose_or_rand, 
-          self.sick_or_not, 
+          self.N,
+          self.p_mut_coeff,
+          self.choose_or_rand,
+          self.sick_or_not,
           self.off_v_last,
           output_dir = os.path.join(
-                      self.output_dir, 
+                      self.output_dir,
                       'tmp'),
           latest_work = latest_work,
           executable = self.executable,
@@ -175,8 +181,8 @@ def next(self, iteration):
           return Run.State.TERMINATED
       else:
           @\HL{self.add(GdemoApplication(}@
-                    computed_value, 
-                    self.increment, 
+                    computed_value,
+                    self.increment,
                     iteration+1
                     )
                    )

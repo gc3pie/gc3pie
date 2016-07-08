@@ -1,4 +1,11 @@
 \documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
+
 \usepackage{gc3}
 
 \title{%
@@ -23,7 +30,7 @@
   constructing sequences of jobs, but it only applies when the number
   and content of steps is \emph{known and fixed} at programming time.
 
-  \+ 
+  \+
   (By contrast, the most general \texttt{SequentialTaskCollection}
   can alter the sequence on the fly, insert new stages while running
   and loop back. But the code is also harder to write.)
@@ -107,7 +114,7 @@ class Pipeline(StagedTaskCollection):
   def stage0(self):
     # run 1st step
     @\HL{return Application}@(
-      ['convert', self.source, 
+      ['convert', self.source,
        '-colorspace', 'gray',
        'grayscale_' + self.source],
       inputs = [self.source],
@@ -117,7 +124,7 @@ class Pipeline(StagedTaskCollection):
       \end{lstlisting}
     \end{column}
     \begin{column}{0.4\textwidth}
-      \raggedleft 
+      \raggedleft
 
       Each \texttt{stage$N$} method can return a \texttt{Task}
       instance, that will run as step $N$ in the sequence.
@@ -149,7 +156,7 @@ class Pipeline(StagedTaskCollection):
     \begin{column}{0.4\textwidth}
       \raggedleft
 
-      \+\+\+\+\+ 
+      \+\+\+\+\+
       In later stages you can check the exit code of
       earlier ones, and decide whether to continue the sequence or
       abort.
@@ -227,8 +234,8 @@ class Pipeline(StagedTaskCollection):
   \begin{lstlisting}[language=sh]
     $ convert @\emph{image1}@ -colorspace gray @\emph{image2}@
   \end{lstlisting}%$
-  
-  \+ 
+
+  \+
   It reads the image in file \emph{image1}, converts it to a
   black\&white picture, and saves the result into file \emph{image2}.
 
@@ -250,8 +257,8 @@ class Pipeline(StagedTaskCollection):
   \begin{lstlisting}[language=sh]
     $ convert @\emph{image1}@ +negate @\emph{image2}@
   \end{lstlisting}%$
-  
-  \+ 
+
+  \+
   It reads the image in file \emph{image1}, inverts colors (black
   $\to$ white and reverse), and saves the result into file
   \emph{image2}.
@@ -274,8 +281,8 @@ class Pipeline(StagedTaskCollection):
   \begin{lstlisting}[language=sh]
     $ montage @\emph{image1}@ @\emph{image2}@ -tile 2x1 @\emph{image3}@
   \end{lstlisting}%$
-  
-  \+ 
+
+  \+
   It reads files \emph{image1} and \emph{image2}, creates a
   combined picture by putting the two side-by-side\footnote{a tile
     with $2$ columns by $1$ row} and saves the result into file
@@ -295,9 +302,9 @@ class Pipeline(StagedTaskCollection):
 
 \begin{frame}[fragile]
   \begin{exercise}
-    Write a \emph{SideBySide} sequence. 
+    Write a \emph{SideBySide} sequence.
 
-    \+ 
+    \+
     The sequence is initialized with the file name of a picture:
     \begin{lstlisting}
       sbs = SideBySide('fig/lena.jpg')
@@ -311,7 +318,7 @@ class Pipeline(StagedTaskCollection):
     \item Mount the two images side by side and write them into a final output image.
     \end{enumerate}
 
-    \+ 
+    \+
     Plug this class into your standard session based script and
     verify that it works.
   \end{exercise}
@@ -320,7 +327,7 @@ class Pipeline(StagedTaskCollection):
 
 \end{document}
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: t
-%%% End: 
+%%% End:

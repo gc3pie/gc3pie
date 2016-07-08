@@ -1,12 +1,18 @@
 \documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
 \usepackage{gc3}
 
 \usepackage{graphicx}
 \usepackage{alltt}
 \usepackage{ulem}
 
-\title[Introduction on GC3Pie]{%
-  Introduction on GC3Pie
+\title[Introduction to GC3Pie]{%
+  Introduction to GC3Pie
 }
 \author[Sergio Maffioletti]{%
   GC3: Grid Computing Competence Center, \\
@@ -22,7 +28,7 @@
 %% quick general intro to GC3Pie 15'
 %%     purpose: toolkit for building "application control logic" in Python
 %%     demo of a simple use case [ with video from ggamess ]
-%%     links to documentation 
+%%     links to documentation
 
 %% intro to GC3Pie programming 30'
 %%     form: a library of Python object, mostly customized by inheritance ("Template method" pattern)
@@ -37,12 +43,12 @@
 
 \begin{frame}
   \frametitle{high-throughput (HTC) use cases I}
-  
+
   \begin{block}{}
     Run application on a {\color{Blue} range} of different inputs.
     Each input is a different file (or a set of files).
   \end{block}
-    
+
   \begin{block}{}
     Then {\color{Blue} collect} output files and post-process them, e.g., gather some
     statistics.
@@ -104,7 +110,7 @@
   \end{block}
 
   \begin{block}{}
-    it provides the building blocks to write Python scripts to run large {\color{Blue} computational campaigns} and 
+    it provides the building blocks to write Python scripts to run large {\color{Blue} computational campaigns} and
   \end{block}
 
   \begin{block}{}
@@ -117,7 +123,7 @@
 \frametitle{What is GC3Pie ?}
 
   GC3Pie consists of three main components:
-  
+
   \begin{block}{GC3Libs:} Python library for controlling the life-cycle of computational job collections. \end{block}
   \begin{block}{GC3Apps:} A collection of driver scripts to run large job campaigns. \end{block}
   \begin{block}{GC3Utils:} This is a small set of low-level utilities exposing the main functionality provided by GC3Libs. \end{block}
@@ -127,9 +133,9 @@
   \frametitle{An example: ggamess}
   \begin{alltt}
 import gc3libs
-from gc3libs.application.gamess 
+from gc3libs.application.gamess
      {\color{Blue}import} GamessApplication
-from gc3libs.cmdline 
+from gc3libs.cmdline
      {\color{Blue}import} SessionBasedScript
 
 class {\color{Violet} GGamessScript}({\color{Violet}SessionBasedScript}):
@@ -139,7 +145,7 @@ class {\color{Violet} GGamessScript}({\color{Violet}SessionBasedScript}):
        application = {\color{Violet}GamessApplication},
        input_filename_pattern = '{\color{Green}*.inp}'
     )
-             
+
 if \_\_name\_\_ == '{\color{Green}\_\_main\_\_}':
   GGamessScript().{\color{Blue}run()}
 \end{alltt}
@@ -159,7 +165,7 @@ if \_\_name\_\_ == '{\color{Green}\_\_main\_\_}':
       Programming model based on customization of base classes through
       inheritance ({\color{Blue}Template method} pattern)
     \end{block}
-    
+
     \begin{block}{}
       Different level of {\color{Blue}interfaces} depending on the control required
     \end{block}
@@ -171,17 +177,17 @@ if \_\_name\_\_ == '{\color{Green}\_\_main\_\_}':
 
 \begin{frame}
   \frametitle{How is GC3Pie different? (I)}
-  
+
   \begin{block}{}
     GC3Pie runs specific \textbf{applications}, not generic jobs.
   \end{block}
-  
+
    \begin{block}{}
      That is, GC3Pie exposes \texttt{Application} classes whose programming
     interface is adapted to the specific task/computation a scientific
     application performs.
   \end{block}
-    
+
   \begin{block}{}
     You can add your own application by specializing the generic
     \texttt{Application} class.
@@ -190,18 +196,18 @@ if \_\_name\_\_ == '{\color{Green}\_\_main\_\_}':
 
 \begin{frame}
   \frametitle{How is GC3Pie different? (II)}
-  
+
   \begin{block}{}
     GC3Pie can run applications in parallel, or sequentially, or any
     combination of the two, and do arbitrary processing of data in the
     middle.
   \end{block}
-  
+
   \begin{block}{}
     Think of {\color{Blue}workflows}, except you can write them in the Python
     programming language.
   \end{block}
-  
+
   \begin{block}{}
     Which means, you can create them dynamically at runtime, adapting
     the schema to your problem.
@@ -229,7 +235,7 @@ if \_\_name\_\_ == '{\color{Green}\_\_main\_\_}':
   \end{block}
   \end{columns}
 \end{frame}
-  
+
 \begin{frame}
   \frametitle{GC3Pie Execution model}
   \begin{columns}
@@ -269,7 +275,7 @@ if \_\_name\_\_ == '{\color{Green}\_\_main\_\_}':
 
 \begin{frame}
   \frametitle{A simple high-throughput script structure\ldots{}}
-  
+
   \begin{enumerate}
   \item Initialize computational resource (e.g., authentication step)
   \item Prepare files for submission
@@ -283,7 +289,7 @@ if \_\_name\_\_ == '{\color{Green}\_\_main\_\_}':
 
 \begin{frame}
   \frametitle{A high-throughput script with GC3Pie, revisited}
-  
+
   \begin{enumerate}
   \item \emph{Create a gc3libs.core.Core instance}
   \item \emph{Create a gc3libs.persistence.FilesystemStore instance}
@@ -294,7 +300,7 @@ if \_\_name\_\_ == '{\color{Green}\_\_main\_\_}':
   \item \sout{Retrieve results} (the \texttt{Engine} does it)
   \item Postprocess and display
   \end{enumerate}
-  
+
   Steps 1-4, and 6-7 are automatically done by the
   \texttt{SessionBasedScript} class.
 \end{frame}
