@@ -32,6 +32,17 @@ to extend and adapt the examples provided.
   A presentation of the training material and outline of the course.
   Probably not much useful unless you're actually sitting in class.
 
+`Overview of GC3Pie use cases <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part01.pdf>`_
+
+  A quick overview of the kind of computational use cases that GC3Pie
+  can easily solve.
+
+`GC3Pie basics <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part02.pdf>`_
+
+  The basics needed to write simple GC3Pie scripts: the minimal
+  session-based script scaffolding, and the properties and features of
+  the `Application`:class: object.
+
 
 A bottom-up introduction to programming with GC3Pie
 ---------------------------------------------------
