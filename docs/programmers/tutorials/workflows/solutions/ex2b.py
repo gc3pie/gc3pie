@@ -9,7 +9,7 @@ from gc3libs.cmdline import SessionBasedScript
 
 
 if __name__ == '__main__':
-    from ex1b import AScript
+    from ex2b import AScript
     AScript().run()
 
 
