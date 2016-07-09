@@ -102,8 +102,8 @@ from gc3libs.cmdline \
   import SessionBasedScript
 
 if __name__ == '__main__':
-  import day1
-  day1.AScript().run()
+  import ex2a
+  ex2a.AScript().run()
 
 class AScript(SessionBasedScript):
   """
@@ -117,7 +117,7 @@ class AScript(SessionBasedScript):
 \end{python}
     \end{column}
     \begin{column}{0.3\linewidth}
-      \href{https://raw.githubusercontent.com/uzh/gc3pie/master/docs/programmers/tutorials/workflows/day1.py}{Download} this code into a file named \texttt{day1.py}
+      \href{https://raw.githubusercontent.com/uzh/gc3pie/master/docs/programmers/tutorials/workflows/solutions/ex2a.py}{Download} this code into a file named \texttt{ex2a.py}
 
       \+
       Open it in your favorite text editor.
@@ -130,19 +130,19 @@ class AScript(SessionBasedScript):
   \begin{exercise*}[2.A]
 
     \+
-    \href{https://raw.githubusercontent.com/uzh/gc3pie/master/docs/programmers/tutorials/workflows/day1.py}{Download this code} into a file named \texttt{day1.py}
+    \href{https://raw.githubusercontent.com/uzh/gc3pie/master/docs/programmers/tutorials/workflows/solutions/ex2a.py}{Download this code} into a file named \texttt{ex2a.py}
 
     \begin{enumerate}
     \item Run the following command:
 \begin{sh}
-> python day1.py --help
+> python ex2a.py --help
 \end{sh}
         Where does the program description in the help text come from?
         Is there anything weird in other parts of the help text?
 
     \item Run the following command:
 \begin{sh}
-> python day1.py
+> python ex2a.py
 \end{sh}
         What happens?
       \end{enumerate}
@@ -158,8 +158,8 @@ from gc3libs.cmdline \
   import SessionBasedScript
 
 ~\HL{if \_\_name\_\_ == '\_\_main\_\_':}~
-  ~\HL{import day1}~
-  ~\HL{day1.AScript().run()}~
+  ~\HL{import ex2a}~
+  ~\HL{ex2a.AScript().run()}~
 
 class AScript(SessionBasedScript):
   """
@@ -192,8 +192,8 @@ from gc3libs.cmdline \
   import SessionBasedScript
 
 if __name__ == '__main__':
-  import ~\HL{day1}~
-  ~\HL{day1}~.AScript().run()
+  import ~\HL{ex2a}~
+  ~\HL{ex2a}~.AScript().run()
 
 class AScript(SessionBasedScript):
   """
@@ -224,8 +224,8 @@ from gc3libs.cmdline \
   import SessionBasedScript
 
 if __name__ == '__main__':
-  import day1
-  day1.AScript().run()
+  import ex2a
+  ex2a.AScript().run()
 
 class AScript(SessionBasedScript):
   """
@@ -255,8 +255,8 @@ from gc3libs.cmdline \
   import SessionBasedScript
 
 if __name__ == '__main__':
-  import day1
-  day1.AScript().run()
+  import ex2a
+  ex2a.AScript().run()
 
 class AScript(SessionBasedScript):
   """
@@ -286,8 +286,8 @@ from gc3libs.cmdline \
   import SessionBasedScript
 
 if __name__ == '__main__':
-  import day1
-  day1.AScript().run()
+  import ex2a
+  ex2a.AScript().run()
 
 class AScript(SessionBasedScript):
   """
@@ -726,7 +726,7 @@ class AScript(SessionBasedScript):
   \begin{exercise*}[2.B]
 
     \+
-    Edit the \texttt{day1.py} file: insert the code to define the
+    Edit the \texttt{ex2a.py} file: insert the code to define the
     \href{https://raw.githubusercontent.com/uzh/gc3pie/master/docs/programmers/tutorials/workflows/grayscale_app.py}{\texttt{GrayscaleApp}}
     application, and modify the \texttt{new\_tasks()} method to return
     one instance of it (as in the previous slide).
