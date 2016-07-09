@@ -757,6 +757,176 @@ class AScript(SessionBasedScript):
 \end{frame}
 
 
+\section{Resource definition}
+\part{Resource definition}
+
+\begin{frame}[fragile]
+  \frametitle{The \texttt{gservers} command}
+
+  The \texttt{gservers} command is used to see \alert<2>{configured} and
+  available resources.
+
+\+
+\begin{stdout}
+> gservers
++---------------------+--------------------------+-----------+
+|                     | localhost                |           |
++---------------------+--------------------------+-----------+
+|            frontend | ( Frontend host name )   | localhost |
+|                type | ( Access mode )          | shellcmd  |
+|             updated | ( Accessible? )          | True      |
+|              queued | ( Total queued jobs )    | 0         |
+|         user_queued | ( Own queued jobs )      | 0         |
+|            user_run | ( Own running jobs )     | 6         |
+|   max_cores_per_job | ( Max cores per job )    | 4         |
+| max_memory_per_core | ( Max memory per core )  | 8GiB      |
+|        max_walltime | ( Max walltime per job ) | 8hour     |
++---------------------+--------------------------+-----------+
+\end{stdout}
+
+\uncover<2>{%
+  \small \alert<2>{Resources are defined in file \texttt{\$HOME/.gc3/gc3pie.conf}}
+}
+\end{frame}
+
+
+\begin{frame}[fragile,label=resources]
+  \frametitle{Example execution resources: local host}
+  \begin{columns}[t]
+    \begin{column}{0.5\textwidth}
+      Allow GC3Pie to run tasks on the local computer.
+
+      \+ This is the default installed by GC3Pie
+      into \lstinline|$HOME/.gc3/gc3pie.conf| %$
+    \end{column}
+    \begin{column}{0.5\textwidth}
+  \begin{stdout}
+[resource/localhost]
+enabled = yes
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2GiB
+max_walltime = 8 hours
+max_cores = 2
+architecture = x86_64
+auth = none
+override = no
+\end{stdout}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Example execution resources: SLURM}
+  \begin{columns}[t]
+    \begin{column}{0.5\textwidth}
+      Allow submission of jobs to the ``Hydra'' cluster.
+    \end{column}
+    \begin{column}{0.5\textwidth}
+\begin{stdout}
+[resource/hydra]
+enabled = no
+type = slurm
+frontend = login.s3it.uzh.ch
+transport = ssh
+auth = ssh_user_rmurri
+max_walltime = 1 day
+max_cores = 96
+max_cores_per_job = 64
+max_memory_per_core = 1 TiB
+architecture = x86_64
+prologue_content =
+  module load cluster/largemem
+
+[auth/ssh_user_rmurri]
+type=ssh
+username=rmurri
+\end{stdout}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Example execution resources: OpenStack}
+  \begin{columns}[t]
+    \begin{column}{0.5\textwidth}
+\begin{stdout}
+[resource/sciencecloud]
+enabled=no
+type=openstack+shellcmd
+auth=openstack
+
+vm_pool_max_size = 32
+security_group_name=default
+security_group_rules=
+  tcp:22:22:0.0.0.0/0,
+  icmp:-1:-1:0.0.0.0/0
+network_ids=
+  c86b320c-9542-4032-a951-c8a068894cc2
+
+# definition of a single execution VM
+instance_type=1cpu-4ram-hpc
+image_id=2b227d15-8f6a-42b0-b744-ede52ebe59f7
+
+max_cores_per_job = 8
+max_memory_per_core = 4 GiB
+max_walltime = 90 days
+max_cores = 32
+architecture = x86_64
+
+# how to connect
+vm_auth=ssh_user_ubuntu
+keypair_name=rmurri
+public_key=~/.ssh/id_dsa.pub
+\end{stdout}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{stdout}
+[auth/ssh_user_ubuntu]
+# default user on Ubuntu VM images
+type=ssh
+username=ubuntu
+
+
+[auth/openstack]
+# only need to set the `type` here;
+# any other value will be taken from
+# the `OS\_*` environment variables
+type = openstack
+      \end{stdout}
+
+      \+\+\+
+      Allow running tasks on the ``ScienceCloud'' VM infrastructure.
+
+      % \+ \footnotesize
+      % Cloud-based submission happens in two steps:
+      % \emph{(1)} create a VM, \emph{(2)} SSH to it and run jobs.  Each
+      % step requires different connection and authentication.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}
+  \begin{exercise*}[2.D]
+    Change the configuration file
+    \texttt{{\textasciitilde}/.gc3/gc3pie.conf} to enable the
+    \texttt{sciencecloud} resource.  Verify with the \texttt{gservers}
+    command that it works.
+  \end{exercise*}
+
+  \+
+  \begin{exercise*}[2.E]
+    Run the grayscale converter on Science Cloud.  Do you need to
+    change anything in the code?
+  \end{exercise*}
+\end{frame}
+
+
 \end{document}
 
 %%% Local Variables:
