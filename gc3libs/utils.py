@@ -1067,7 +1067,7 @@ def prettyprint(
     if _exclude is None:
         _exclude = set()
     _exclude.add(id(D))
-    for k, v in D.iteritems():
+    for k, v in sorted(D.iteritems()):
         leading_spaces = indent * ' '
         full_name = "%s%s" % (_key_prefix, k)
         if only_keys is not None:
