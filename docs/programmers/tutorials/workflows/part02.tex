@@ -374,11 +374,12 @@ from gc3libs import Application
 class GrayscaleApp(Application):
   """Convert an image file to grayscale."""
   def __init__(self, img):
-    out = "gray-" + basename(img)
+    inp = basename(img)
+    out = "gray-" + inp
     Application.__init__(
       self,
       arguments=[
-        "convert", img, "-colorspace", "gray", out],
+        "convert", inp, "-colorspace", "gray", out],
       inputs=[img],
       outputs=[out],
       output_dir="grayscale.d",
@@ -398,11 +399,12 @@ class GrayscaleApp(Application):
 class GrayscaleApp~\HL{(Application)}~:
   """Convert an image file to grayscale."""
   def __init__(self, img):
-    out = "gray-" + basename(img)
+    inp = basename(img)
+    out = "gray-" + inp
     Application.__init__(
       self,
       arguments=[
-        "convert", img, "-colorspace", "gray", out],
+        "convert", inp, "-colorspace", "gray", out],
       inputs=[img],
       outputs=[out],
       output_dir="grayscale.d",
@@ -421,11 +423,12 @@ class GrayscaleApp~\HL{(Application)}~:
 class GrayscaleApp(Application):
   """Convert an image file to grayscale."""
   def __init__(self, img):
-    out = "gray-" + basename(img)
+    inp = basename(img)
+    out = "gray-" + inp
     Application.__init__(
       self,
       ~\HL{arguments=[}~
-        ~\HL{"convert", img, "-colorspace", "gray", out],}~
+        ~\HL{"convert", inp, "-colorspace", "gray", out],}~
       inputs=[img],
       outputs=[out],
       output_dir="grayscale.d",
@@ -443,11 +446,12 @@ The first item in the \texttt{arguments} list is the name or path to the command
 class GrayscaleApp(Application):
   """Convert an image file to grayscale."""
   def __init__(self, img):
-    out = "gray-" + basename(img)
+    inp = basename(img)
+    out = "gray-" + inp
     Application.__init__(
       self,
       arguments=[
-        ~\HL{"convert"}~, img, "-colorspace", "gray", out],
+        ~\HL{"convert"}~, inp, "-colorspace", "gray", out],
       inputs=[img],
       outputs=[out],
       output_dir="grayscale.d",
@@ -466,11 +470,12 @@ them at the shell prompt.
 class GrayscaleApp(Application):
   """Convert an image file to grayscale."""
   def __init__(self, img):
-    out = "gray-" + basename(img)
+    inp = basename(img)
+    out = "gray-" + inp
     Application.__init__(
       self,
       arguments=[
-        "convert", ~\HL{img, "-colorspace", "gray", out}~],
+        "convert", ~\HL{inp, "-colorspace", "gray", out}~],
       inputs=[img],
       outputs=[out],
       output_dir="grayscale.d",
@@ -491,11 +496,12 @@ this might be a remote computer!)
 class GrayscaleApp(Application):
   """Convert an image file to grayscale."""
   def __init__(self, img):
-    out = "gray-" + basename(img)
+    inp = basename(img)
+    out = "gray-" + inp
     Application.__init__(
       self,
       arguments=[
-        "convert", img, "-colorspace", "gray", out],
+        "convert", inp, "-colorspace", "gray", out],
       ~\HL{inputs=[img]}~,
       outputs=[out],
       output_dir="grayscale.d",
