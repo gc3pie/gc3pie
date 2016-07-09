@@ -43,6 +43,15 @@ to extend and adapt the examples provided.
   session-based script scaffolding, and the properties and features of
   the `Application`:class: object.
 
+`Useful debugging commands <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part03.pdf>`_
+
+  Recall a few GC3Pie utilities that are especially useful when
+  debugging code.
+
+`Application control and post-processing <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part04.pdf>`_
+
+  How to check and react on the termination status of a GC3Pie Task/Application.
+
 
 A bottom-up introduction to programming with GC3Pie
 ---------------------------------------------------
