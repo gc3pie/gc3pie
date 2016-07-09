@@ -92,6 +92,9 @@
   }%
   \lstnewenvironment{python}{\lstset{language=python}}{}%
   \lstnewenvironment{sh}{\lstset{language=sh}}{}%
+  \lstnewenvironment{stdout}{%
+    \lstset{language=sh,basicstyle=\tiny\ttfamily\bfseries,escapechar=^}
+  }{}%
 
 \usepackage{hyperref}
   % for a summary of hyperref options,see: http://www.andy-roberts.net/writing/latex/pdfs
