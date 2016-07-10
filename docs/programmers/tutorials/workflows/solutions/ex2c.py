@@ -9,7 +9,7 @@ from gc3libs.cmdline import SessionBasedScript
 
 
 if __name__ == '__main__':
-    from ex2b import AScript
+    from ex2c import AScript
     AScript().run()
 
 
@@ -20,9 +20,13 @@ class AScript(SessionBasedScript):
     def __init__(self):
         super(AScript, self).__init__(version='1.0')
     def new_tasks(self, extra):
-        input_file = abspath(self.params.args[0])
-        app = GrayscaleApp(input_file)
-        return [app]
+        # since `self.params.args` is already a list of file names,
+        # just iterate over it to build the list of apps to run...
+        apps_to_run = []
+        for input_file in self.params.args:
+            input_file = abspath(input_file)
+            apps_to_run.append(GrayscaleApp(input_file))
+        return apps_to_run
 
 
 class GrayscaleApp(Application):
