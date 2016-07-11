@@ -41,7 +41,7 @@ class GrayscaleApp(Application):
                 "convert", inp, "-colorspace", "gray", out],
             inputs=[img],
             outputs=[out],
-            output_dir="grayscale.d",
+            output_dir=("gray-" + inp + ".d"),
             stdout="stdout.txt",
             stderr="stderr.txt",
             # this is needed to circumvent GC3Pie issue #559, see
