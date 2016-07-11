@@ -7,7 +7,7 @@
 
 \usepackage{gc3}
 
-\title[Introduction]{%
+\title[Post-processing]{%
   Application control and post-processing
 }
 \author[R. Murri, S3IT UZH]{%
@@ -225,8 +225,9 @@ $ ./grayscale.py lena.jpg
   \+
   The path to the output directory is available as
   \lstinline|self.output_dir|; if \texttt{stdout} and \texttt{srderr}
-  have been captured, the paths to the capture files are available as
-  \lstinline|self.stdout| and \lstinline|self.stderr|.
+  have been captured, the \textbf{relative} paths to the capture files
+  are available as \lstinline|self.stdout| and
+  \lstinline|self.stderr|.
 \end{frame}
 
 
@@ -239,9 +240,9 @@ $ ./grayscale.py lena.jpg
 class MyApp(Application):
   # ...
   def terminated(self):
-    error_file = self.output_dir+"/"+self.stderr
-    error_size = os.stat(error_file).st_size
-    if error_size > 0:
+    stderr_file = self.output_dir+"/"+self.stderr
+    stderr_size = os.stat(stderr_file).st_size
+    if stderr_size > 0:
       gc3libs.log.warn(
         "Application %s reported errors!", self)
 \end{python}
@@ -295,8 +296,9 @@ class MyApp(Application):
 \begin{frame}[fragile]
   \frametitle{Termination signal, II}
 
-  Read \texttt{man 7 signal} for a list of OS signals and their
-  numeric values.
+  Read
+  \href{http://man7.org/linux/man-pages/man7/signal.7.html}{\texttt{man
+      7 signal}} for a list of OS signals and their numeric values.
 
   \+
   {\bfseries Note that GC3Pie overloads some signal codes (unused
@@ -309,6 +311,10 @@ class MyApp(Application):
 >>> print(app.execution.signal)
 121
 \end{python}
+
+\begin{references}
+  \tiny\url{https://github.com/uzh/gc3pie/blob/master/gc3libs/__init__.py#L1579}
+\end{references}
 \end{frame}
 
 
@@ -336,8 +342,8 @@ class MyApp(Application):
   \begin{exercise*}[3.B]
 
     Write a \texttt{TermStatusApp} application, which is like a
-    generic \texttt{Application} class with the addition that ---upon
-    termination--- it prints:
+    generic \texttt{Application} class with the addition that upon
+    termination it prints:
     \begin{itemize}
     \item whether the program has been killed by a signal, and the signal number;
     \item whether the program has terminated by exiting, and the exit code.
@@ -346,6 +352,36 @@ class MyApp(Application):
     Verify that it works by plugging the class into the ``grayscale''
     session-based script.
   \end{exercise*}
+\end{frame}
+
+
+\begin{frame}[fragile]\small
+  \frametitle{Application-specific configuration}
+
+  Application classes may be tagged so that parts of the configuration
+  file can be overridden just for them.
+
+  \+
+  Suppose you tag the \texttt{GrayscaleApp} class by giving it this name:
+\begin{python}
+  class GrayscaleApp(Application):
+    application_name = 'grayscale'
+    # ~\itshape [\ldots]~
+\end{python}
+  then you can provide a specific VM image just for
+  ``\texttt{grayscale}'' applications:
+  \begin{stdout}
+  # in the GC3Pie config file:
+  [resource/sciencecloud]
+  # ~\itshape [\ldots]~
+  image_id=2b227d15-8f6a-42b0-b744-ede52ebe59f7
+  grayscale_image_id=0cca5346-ca12-4cb4-8007-8875c10cce02
+  \end{stdout}
+
+  \+ Other configuration items that can be specialized are:
+  \lstinline|instance_type|, \lstinline|user_data| (cloud),
+  and \lstinline|prolog_file|, \lstinline|epilog_file|
+  (batch-systems).
 \end{frame}
 
 
@@ -358,10 +394,10 @@ class MyApp(Application):
     Write a \texttt{MatlabApp} application, which:
     \begin{itemize}
     \item is constructed by giving the path to a MATLAB `\texttt{.m}'
-      script file, like this: \texttt{app = MatlabApp("ra.m")};
+      script file, like this: \texttt{app = MatlabApp("\href{https://github.com/uzh/gc3pie/blob/training-july-2016/docs/programmers/tutorials/workflows/downloads/ra.m}{ra.m}")};
     \item Runs the following command:
 \begin{semiverbatim}
-matlab -nosplash -nodesktop -nojvm \emph{file.m}
+matlab -nodesktop -nojvm \emph{file.m}
 \end{semiverbatim}
       where \emph{file.m} is the file given to the
       \texttt{MatlabApp()} constructor.
@@ -370,9 +406,10 @@ matlab -nosplash -nodesktop -nojvm \emph{file.m}
       occurs in it, sets the application exitcode to 11.
     \end{itemize}
 
-    Verify that it works by running a MATLAB script that allocates an
-    array of random size. (For some random values, the size will
-    exceed the amount of available memory.)
+    Verify that it works by running MATLAB script
+    \href{https://github.com/uzh/gc3pie/blob/training-july-2016/docs/programmers/tutorials/workflows/downloads/ra.m}{\texttt{ra.m}}
+    many times over.  The script initializes a array of random size:
+    for some values, the size exceeds the amount of available memory.
   \end{exercise*}
 \end{frame}
 
