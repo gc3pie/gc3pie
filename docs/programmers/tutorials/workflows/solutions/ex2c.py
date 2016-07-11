@@ -6,6 +6,7 @@ import sys
 
 from gc3libs import Application
 from gc3libs.cmdline import SessionBasedScript
+from gc3libs.quantity import GB
 
 
 if __name__ == '__main__':
@@ -42,4 +43,7 @@ class GrayscaleApp(Application):
             outputs=[out],
             output_dir="grayscale.d",
             stdout="stdout.txt",
-            stderr="stderr.txt")
+            stderr="stderr.txt",
+            # this is needed to circumvent GC3Pie issue #559, see
+            # <https://github.com/uzh/gc3pie/issues/559>
+            requested_memory=1*GB)
