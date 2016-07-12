@@ -9,33 +9,22 @@ from gc3libs.cmdline import SessionBasedScript
 
 
 if __name__ == '__main__':
-    from ex2b import AScript
-    AScript().run()
+    from ex2b import GrayscalingScript
+    GrayscalingScript().run()
 
 
-class AScript(SessionBasedScript):
+# alternatively, you can just copy+paste
+# the code for `GrayscaleApp` here
+from grayscale_app import GrayscaleApp
+
+
+class GrayscalingScript(SessionBasedScript):
     """
-    Minimal workflow scaffolding.
+    Convert an image to grayscale.
     """
     def __init__(self):
-        super(AScript, self).__init__(version='1.0')
+        super(GrayscalingScript, self).__init__(version='1.0')
     def new_tasks(self, extra):
         input_file = abspath(self.params.args[0])
-        app = GrayscaleApp(input_file)
-        return [app]
-
-
-class GrayscaleApp(Application):
-    """Convert a single image file to grayscale."""
-    def __init__(self, img):
-        inp = basename(img)
-        out = "gray-" + inp
-        Application.__init__(
-            self,
-            arguments=[
-                "convert", inp, "-colorspace", "gray", out],
-            inputs=[img],
-            outputs=[out],
-            output_dir="grayscale.d",
-            stdout="stdout.txt",
-            stderr="stderr.txt")
+        apps_to_run = [ GrayscaleApp(input_file) ]
+        return apps_to_run

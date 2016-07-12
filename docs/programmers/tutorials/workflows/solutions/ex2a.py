@@ -6,7 +6,7 @@ import sys
 from gc3libs.cmdline import SessionBasedScript
 
 if __name__ == '__main__':
-    from day1 import AScript
+    from ex2a import AScript
     AScript().run()
 
 class AScript(SessionBasedScript):

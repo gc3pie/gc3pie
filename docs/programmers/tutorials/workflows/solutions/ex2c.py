@@ -10,16 +10,16 @@ from gc3libs.quantity import GB
 
 
 if __name__ == '__main__':
-    from ex2c import AScript
-    AScript().run()
+    from ex2c import GrayscaleScript
+    GrayscaleScript().run()
 
 
-class AScript(SessionBasedScript):
+class GrayscaleScript(SessionBasedScript):
     """
-    Minimal workflow scaffolding.
+    Convert images to grayscale.
     """
     def __init__(self):
-        super(AScript, self).__init__(version='1.0')
+        super(GrayscaleScript, self).__init__(version='1.0')
     def new_tasks(self, extra):
         # since `self.params.args` is already a list of file names,
         # just iterate over it to build the list of apps to run...
@@ -30,6 +30,8 @@ class AScript(SessionBasedScript):
         return apps_to_run
 
 
+# alternatively, you could use
+# `from grayscale_app import GrayscaleApp` above
 class GrayscaleApp(Application):
     """Convert a single image file to grayscale."""
     def __init__(self, img):
@@ -41,6 +43,9 @@ class GrayscaleApp(Application):
                 "convert", inp, "-colorspace", "gray", out],
             inputs=[img],
             outputs=[out],
+            # need to use a different output dir per set of
+            # construction params, otherwise the output of one task
+            # will be overwritten by another task's output ...
             output_dir=("gray-" + inp + ".d"),
             stdout="stdout.txt",
             stderr="stderr.txt",
