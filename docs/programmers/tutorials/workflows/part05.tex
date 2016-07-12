@@ -7,8 +7,8 @@
 
 \usepackage{gc3}
 
-\title[Introduction]{%
-  Customizing \\ session-based scripts
+\title[Post-processing]{%
+  Application control and post-processing
 }
 \author[R. Murri, S3IT UZH]{%
   Riccardo Murri \texttt{<riccardo.murri@uzh.ch>}
@@ -25,446 +25,403 @@
 \maketitle
 
 
-\begin{frame}
-  \frametitle{Outline}
-  \begin{enumerate}
-  \item Customize positional argument processing
-  \item Customize option processing
-  \item More complex \texttt{new\_tasks()} implementations
-  \end{enumerate}
-\end{frame}
-
+\section{Application run states}
+\part{Application run states}
 
 \begin{frame}[fragile]
-  \frametitle{What is command-line argument processing?}
+\frametitle{Application lifecycle}
 
-  Problem:
-\begin{sh}
-$ python ex5a.py --foo=1 bar baz
-\end{sh}%$
-
-  \+
-  How do we translate the above shell command invocation into a
-  Python procedure call \\ \texttt{ex5a('bar', 'baz', foo=1)}?
-
-  \+
-  In other words: how do we access the command-line arguments given
-  to the shell from Python code?
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{Command-line argument processing in GC3Pie}
-
-  GC3Pie scripts use the standard Python
-  library~\href{https://docs.python.org/2/howto/argparse.html}{\texttt{argparse}}.
-
-  \+
-  However, differently from \texttt{argparse}, GC3Pie scripts use
-  separate ways to configure processing of options and positional
-  arguments.
-\end{frame}
-
-\begin{frame}[fragile]
-  \frametitle{Positional argument processing}
-
-  Positional arguments are defined in a method called
-  \lstinline|setup_args()|; override it in derived classes to change
-  what arguments are accepted, their names and number.
-
-  \+
-  This is the default implementation:
-\begin{python}
-  def setup_args(self):
-    self.add_param(
-      'args', nargs='*', metavar='INPUT',
-      help="Path to input file or directory.")
-\end{python}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Positional argument processing}
-
-\begin{python}
-  def setup_args(self):
-    self.add_param(
-      ~\HL{'args'}~, nargs='*', metavar='INPUT',
-      help="Path to input file or directory.")
-\end{python}
-
-  \+
-  The value of this command-line argument will be recorded in the
-  variable \texttt{self.params.\HL{args}} in Python code.
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Positional argument processing}
-
-\begin{python}
-  def setup_args(self):
-    self.add_param(
-      'args', ~\HL{nargs='*'}~, metavar='INPUT',
-      help="Path to input file or directory.")
-\end{python}
-
-  \+
-  There are 0 or more arguments of this kind.  \\
-  Makes \lstinline|self.params.args| into a Python list.
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Positional argument processing}
-
-\begin{python}
-  def setup_args(self):
-    self.add_param('args', ~\HL{nargs=\ldots}~, ~{\em [\ldots]}~)
-\end{python}
-
-  \+
-  Other possible values for the \texttt{nargs} parameter are:
-  \begin{itemize}
-  \item \texttt{nargs='+'} --- there are \emph{1 or more} arguments,
-    i.e., at least one argument is required.
-  \item \texttt{nargs=$N$} --- there are exactly $N > 1$ arguments of this kind.
-  \item \texttt{nargs=$1$} (default) --- one single argument of this
-    kind; \textbf{in this case \lstinline|self.params.args| is a
-    \emph{string}, not a list.}
-  \end{itemize}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Positional argument processing}
-
-\begin{python}
-  def setup_args(self):
-    self.add_param(
-      'args', nargs='*', ~\HL{metavar='INPUT'}~,
-      help="Path to input file or directory.")
-\end{python}
-
-  \+
-  The name of the command-line argument as displayed to users in
-  usage and help texts:
-\begin{sh}
-$ python solutions/ex2c.py --help
-usage: ex2c [-h] [-V] [-v] [--config-files CONFIG_FILES] [-c NUM]
-            [-m GIGABYTES] [-r NAME] [-w DURATION] [-s PATH] [-u URL] [-N]
-            [-C NUM] [-J NUM] [-o DIRECTORY] [-l [STATES]]
-            ~\HL{[INPUT [INPUT ...]]}~
-\end{sh}%$
-
-  \+
-  If not given, defaults to the uppercased version of the ``internal'' name.
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Positional argument processing}
-
-\begin{python}
-  def setup_args(self):
-    self.add_param(
-      'args', nargs='*', metavar='INPUT',
-      ~\HL{help="Path to input file or directory.")}~
-\end{python}
-
-  \+
-  Description of the command-line argument in \texttt{-{}-help} text.
-
-\begin{sh}
-$ python solutions/ex2c.py --help
-usage: ex2c [-h] ~{\em [\ldots]}~
-
-positional arguments:
-  ~\HL{INPUT}~         ~\HL{Path to input file or directory.}~
-\end{sh}%$
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Positional argument processing}
-
-  Calls to \lstinline|self.add_param()| can be repeated to
-  parse many different command-line arguments in sequence:
-\begin{python}
-class AScript(SessionBasedScript):
-  # ~\em [\ldots]~
-  def setup_args(self):
-    self.add_param('input',  help="Input file")
-    self.add_param('radius', help="Convolution radius")
-    self.add_param('sigma',  help="Threshold")
-\end{python}
-
-  \+
-  With the above definition, the following command-line:
-\begin{sh}
-  $ python example.py file.img 10 2.1
-\end{sh}%$
-  generates the equivalent of the following Python code:
-  \begin{python}
-  self.params.input = 'example.py'
-  self.params.radius = '10'  # it's a string!
-  self.params.sigma = '2.1'  # this one too!
-  \end{python}
-
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Detour: From grayscale to colors}
-\begin{sh}
-$ convert gray-lena.jpg \
-    ( xc:blue xc:magenta xc:yellow +append ) \
-    -clut color-lena.jpg
-\end{sh}%$
-\begin{tabular}{ccc}
-  {\includegraphics[width=0.4\linewidth]{fig/gray-lena.jpg}}
-  &
-  {\includegraphics[width=0.1\linewidth,totalheight=0.45\textheight]{fig/arrow.pdf}}
-  &
-  {\includegraphics[width=0.4\linewidth]{fig/rgb-lena.jpg}}
-\end{tabular}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \begin{exercise*}[5.A]
-    Write a \texttt{colorize.py} script to apply this colorization process to a set of grayscale images.
+\begin{columns}[c]
+  \begin{column}{0.5\textwidth}
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,keywordstyle=\normalfont]
+$ ./grayscale.py lena.jpg
+~\em [\ldots]~
+         NEW  1/1  (100.0%)
+     RUNNING  0/1   (0.0%)
+     STOPPED  0/1   (0.0%)
+   SUBMITTED  0/1   (0.0%)
+  TERMINATED  0/1   (0.0%)
+ TERMINATING  0/1   (0.0%)
+     UNKNOWN  0/1   (0.0%)
+       total  1/1  (100.0%)
+\end{lstlisting}%$
+  \end{column}
+  \begin{column}{0.5\textwidth}
+    \raggedleft
+    \texttt{Application} objects can be in one of several states.
 
     \+
-    The \texttt{colorize.py} script shall be invoked like this:
-\begin{sh}
-$ python colorize.py ~\em c1~ ~\em c2~ ~\em c3~ ~\em img1~ ~[\em img2 \ldots]~
-\end{sh}%$
-    where \texttt{\em c1}, \texttt{\em c2}, \texttt{\em c3} are color
-    names and \texttt{\em img1}, \texttt{\em img2} are image files.
+    (A session-based script prints a table of all managed applications and their states.)
+  \end{column}
+\end{columns}
 
-    \+
-    Each image shall be processed in a separate colorization task.
-  \end{exercise*}
-\end{frame}
+\+
+\begin{columns}[c]
+  \begin{column}{0.5\textwidth}
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily]
+>>> print(app.execution.state)
+'TERMINATED'
+\end{lstlisting}
+  \end{column}
+  \begin{column}{0.5\textwidth}
+    \raggedleft
+    The current state is stored in the \texttt{.execution.state} instance attribute.
+  \end{column}
+\end{columns}
 
-
-\begin{frame}[fragile]
-  \frametitle{Argument types}
-
-  You can ask
-  \href{https://docs.python.org/2/howto/argparse.html}{\texttt{argparse}}
-  and GC3Pie to convert a command-line argument to a certain Python type.
-
-  \+ For example:
-\begin{python}
-class AScript(SessionBasedScript):
-  # ~\em [\ldots]~
-  def setup_args(self):
-
-    # this argument is a string (default type)
-    self.add_param('input',  type=str,   help="...")
-
-    # the `radius` argument is an integer
-    self.add_param('radius', type=int,   help="...")
-
-    # the `sigma` argument is a floating-point number
-    self.add_param('sigma',  type=float, help="...")
-\end{python}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Argument types}
-
-  Declaring argument types makes for better usability: if an argument
-  does not match its type, the script exists immediately and the user
-  is notified with a clear error message.
-
-  \+
-\begin{sh}
-$ python downloads/argp.py foo.txt 123 x
-usage: argparse [-h] ~\em [\ldots]~
-                input radius sigma
-argp: error: argument sigma: invalid float value: 'x'
-\end{sh}%$
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Argument types}\small
-
-  In addition to the standard Python types, GC3Pie provides other
-  validation functions to ensure arguments meet commonly-found
-  conditions.
-
-\begin{python}
-from gc3libs.cmdline import \
-  existing_file, positive_int
-
-class AScript(SessionBasedScript):
-  # ~\em [\ldots]~
-  def setup_args(self):
-    # reject non-existent input files outright
-    self.add_param('input',  type=existing_file, ~\ldots~)
-    # force radius to be > 0
-    self.add_param('radius', type=positive_int, ~\ldots~)
-    #  sigma is a floating-point number
-    self.add_param('sigma',  type=float, ~\ldots~)
-\end{python}
-
+\+
 \begin{references}
-  \tiny\url{http://gc3pie.readthedocs.io/en/master/programmers/api/gc3libs/cmdline.html}
+  \tiny
+  \url{http://gc3pie.readthedocs.io/en/master/programmers/api/gc3libs.html#gc3libs.Run.state}
 \end{references}
 \end{frame}
 
 
 \begin{frame}[fragile]
-  \frametitle{Command-line option processing}
+\frametitle{Application lifecycle: state NEW}
 
-  Command-line options can be \textbf{added} to a session-based script
-  by overriding the \lstinline|setup_options()| method:
-  \begin{python}
-class AScript(SessionBasedScript):
-  # ~\em [\ldots]~
-  def setup_options(self):
-    self.add_param('--e-value', '-e', dest='e_value',
-                   type=float, default=10.0,
-                   help="Expectation value")
-  \end{python}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Command-line option processing}
-
-  \begin{python}
-class AScript(SessionBasedScript):
-  # ~\em [\ldots]~
-  def setup_options(self):
-    self.add_param('--e-value', ~\HL{'-e'}~, dest='e_value',
-                   type=float, default=10.0,
-                   help="Expectation value")
-  \end{python}
-
-  \+
-  Aliases and abbreviations for options can be defined.
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Command-line option processing}
-
-  \begin{python}
-class AScript(SessionBasedScript):
-  # ~\em [\ldots]~
-  def setup_options(self):
-    self.add_param('--e-value', '-e', ~\HL{dest='e\_value'}~,
-                   type=float, default=10.0,
-                   help="Expectation value")
-  \end{python}
-
-  \+
-  The value of this option will be stored in \lstinline|self.params.|\texttt{\HL{e\_value}}.
-
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Command-line option processing}
-
-  \begin{python}
-class AScript(SessionBasedScript):
-  # ~\em [\ldots]~
-  def setup_options(self):
-    self.add_param('--e-value', '-e', dest='e_value',
-                   ~\HL{type=float}~, default=10.0,
-                   help="Expectation value")
-  \end{python}
-
-  \+
-  Types work exactly as for positional arguments.
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Command-line option processing}
-
-  \begin{python}
-class AScript(SessionBasedScript):
-  # ~\em [\ldots]~
-  def setup_options(self):
-    self.add_param('--e-value', '-e', dest='e_value',
-                   type=float, ~\HL{default=10.0}~,
-                   help="Expectation value")
-  \end{python}
-
-  \+
-  If the option is not present on the command-line, the associated
-  Python variable (here,
-  \lstinline|self.params.|\texttt{\HL{e\_value}}) takes this value.
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Detour: BLAST}
-
-  BLAST is a suite of programs to perform search and alignment of
-  nucleotides and proteins.
-
-  \+ One common use of BLAST is the following: given a file describing
-  a new organism, compare it one-to-one to a set of known organisms to
-  find similarities.
-
-  \+ The command-line invocation for one such comparison would look like this:
-\begin{sh}
-$ blastpgp -i new.faa -d known.faa \
-  -e 1e-6 -m 9 -o output.txt
-\end{sh}%$
-\end{frame}
-
-\begin{frame}[fragile]
-  \begin{exercise*}[5.B]\small
-    Write a \texttt{topblast.py} script to perform 1-1 BLAST comparisons.
+\begin{columns}[c]
+  \begin{column}{0.5\textwidth}
+    \includegraphics[height=0.7\textheight]{fig/states-NEW}
+  \end{column}
+  \begin{column}{0.5\textwidth}
+    \raggedleft
+    \textbf{NEW} is the state of ``just created'' Application objects.
 
     \+
-    The \texttt{topblast.py} script shall be invoked like this:
-\begin{sh}
-$ python topblast.py [-e ~$T$~] [-m ~$F$~] \
-    new.faa k1.faa [k2.faa ...]
-\end{sh}%$
-    where:
-    \begin{itemize}
-    \item Option \texttt{-e} (alias: \texttt{-{}-e-value}) takes a floating point threshold argument $T$;
-    \item Option \texttt{-m} (alias: \texttt{--output-format}) takes a single-digit integer argument $F$;
-    \item Arguments \texttt{new.faa}, \texttt{k1.faa}, etc. are files.
-    \end{itemize}
-
-    \+ The script should generate and run comparisons between
-    \texttt{new.faa} and each of the {k$N$.faa}.  Each 1-1 comparison
-    should run as a separate task.  All of them share the same
-    settings for the \texttt{-e} and \texttt{-m} options for \texttt{blastpgp}.
-  \end{exercise*}
+    The Application has not yet been sent off to a compute
+    resource: it only exists locally.
+  \end{column}
+\end{columns}
 \end{frame}
 
 
 \begin{frame}[fragile]
-  \begin{exercise*}[5.C] \emph{(Homework)}
+\frametitle{Application lifecycle: state SUBMITTED}
 
-    Modify the \texttt{topblast.py} script that you've written in Exercise 5.B
-    to be invoked like this:
-\begin{sh}
-$ python topblast.py [-e ~$T$~] [-m ~$F$~] new.faa dir
-\end{sh}%$
+\begin{columns}[c]
+  \begin{column}{0.5\textwidth}
+    \includegraphics[height=0.7\textheight]{fig/states-SUBMITTED}
+  \end{column}
+  \begin{column}{0.5\textwidth}
+    \raggedleft
+    \emph{SUBMITTED} applications have been successfully sent to a
+    computational resource.
 
-    \+ Input files describing the ``known'' subjects should be found by
-    recursively scanning the given directory path.
+    \+
+    (The transition to \emph{RUNNING} happens automatically, as we
+    do not control the remote execution.)
+  \end{column}
+\end{columns}
+\end{frame}
 
-    \+ Bonus points if the modified script exists with a correct error
-    message in case \texttt{new.faa} is not an existing file, or
-    \texttt{dir} is not a valid directory path.
+
+\begin{frame}[fragile]
+\frametitle{Application lifecycle: state RUNNING}
+
+\begin{columns}[c]
+  \begin{column}{0.5\textwidth}
+    \includegraphics[height=0.7\textheight]{fig/states-RUNNING}
+  \end{column}
+  \begin{column}{0.5\textwidth}
+    \raggedleft
+    \emph{RUNNING} state happens when the computational job associated to an
+    application starts executing on the computational resource.
+  \end{column}
+\end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Application lifecycle: state STOPPED}
+
+\begin{columns}[c]
+  \begin{column}{0.5\textwidth}
+    \includegraphics[height=0.7\textheight]{fig/states-STOPPED}
+  \end{column}
+  \begin{column}{0.5\textwidth}
+    \raggedleft
+    A task is in \emph{STOPPED} state when its execution has been
+    blocked at the remote site and GC3Pie cannot recover
+    automatically.
+
+    \+
+    User or sysadmin intervention is required for a task to get out
+    of \emph{STOPPED} state.
+  \end{column}
+\end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Application lifecycle: state UNKNOWN}
+
+\begin{columns}[c]
+  \begin{column}{0.5\textwidth}
+    \includegraphics[height=0.7\textheight]{fig/states-UNKNOWN}
+  \end{column}
+  \begin{column}{0.5\textwidth}
+    \raggedleft
+    A task is in \emph{UNKNOWN} state when GC3Pie can no
+    longer monitor it at the remote site.
+
+    \+
+    (As this might be due to network failures, jobs \emph{can} get
+    out of \emph{UNKNOWN} automatically.)
+  \end{column}
+\end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Application lifecycle: state TERMINATING}
+
+\begin{columns}[c]
+  \begin{column}{0.5\textwidth}
+    \includegraphics[height=0.7\textheight]{fig/states-TERMINATING}
+  \end{column}
+  \begin{column}{0.5\textwidth}
+    \raggedleft
+    \emph{TERMINATING} state when a computational job has finished
+    running, for whatever reason.
+
+    \+
+    (Transition to \emph{TERMINATED} only happens when \texttt{fetch\_output} is called.)
+  \end{column}
+\end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Application lifecycle: state TERMINATED}
+
+\begin{columns}[c]
+  \begin{column}{0.5\textwidth}
+    \includegraphics[height=0.7\textheight]{fig/states-TERMINATED}
+  \end{column}
+  \begin{column}{0.5\textwidth}
+    \raggedleft
+    A job is \emph{TERMINATED} when its final output has been
+    retrieved and is available locally.
+
+    \+
+    The exit code of \emph{TERMINATED} jobs can be inspected to
+    find out whether the termination was successful or unsuccessful,
+    or if the program was forcibly ended.
+  \end{column}
+\end{columns}
+\end{frame}
+
+
+\section{Post-processing}
+\part{Post-processing}
+
+\begin{frame}[fragile]
+  \frametitle{Post-processing features, I}
+
+  When the remote computation is done, the \texttt{terminated} method
+  of the application instance is called.
+
+  \+
+  The path to the output directory is available as
+  \lstinline|self.output_dir|; if \texttt{stdout} and \texttt{stderr}
+  have been captured, the \textbf{relative} paths to the capture files
+  are available as \lstinline|self.stdout| and
+  \lstinline|self.stderr|.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Post-processing features, II}
+
+  For example, the following code logs a warning message if the
+  standard error output is non-empty:
+\begin{python}
+class MyApp(Application):
+  # ...
+  def terminated(self):
+    stderr_file = self.output_dir+"/"+self.stderr
+    stderr_size = os.stat(stderr_file).st_size
+    if stderr_size > 0:
+      gc3libs.log.warn(
+        "Application %s reported errors!", self)
+\end{python}
+\end{frame}
+
+
+\begin{frame}
+  \begin{exercise*}[5.A]
+
+    Modify the \texttt{GrayscaleApp} application to print a message
+    ``\texttt{Conversion of '\emph{filename}' done.}'' whenever
+    running the \texttt{convert} program terminates.
   \end{exercise*}
 \end{frame}
+
+
+\section{Termination status}
+\part{Termination status}
+
+\begin{frame}
+  \frametitle{A successful run or not?}
+
+  There's a \emph{single TERMINATED state}, whatever the task outcome.
+  You have to inspect the ``return code'' to determine the
+  cause of ``task death''.
+
+  \+
+  Attribute `.execution.returncode` provides a numeric termination
+  status (with the same format and meaning as the POSIX termination
+  status).
+
+  \+
+  The termination status combines two fields: the ``termination
+  signal'' and the ``exit code''.
+
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Termination signal, I}
+
+  The \texttt{.execution.signal} instance attribute is non-zero if
+  the program was killed by a signal (e.g., memory error / segmentation fault).
+
+  \+
+  The \texttt{.execution.signal} instance attribute is zero only if
+  the program run until termination. (\textbf{Beware!} This does not
+  mean that it run \emph{correctly}: just that it halted by itself.)
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Termination signal, II}
+
+  Read
+  \href{http://man7.org/linux/man-pages/man7/signal.7.html}{\texttt{man
+      7 signal}} for a list of OS signals and their numeric values.
+
+  \+
+  {\bfseries Note that GC3Pie overloads some signal codes (unused
+    by the OS) to represent its own specific errors.}
+
+  \+
+  For instance, if program \texttt{app} was cancelled by the user,
+  \texttt{.execution.signal} will take the value 121:
+\begin{python}
+>>> print(app.execution.signal)
+121
+\end{python}
+
+\begin{references}
+  \tiny\url{https://github.com/uzh/gc3pie/blob/master/gc3libs/__init__.py#L1579}
+\end{references}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Exit code}
+
+  The \texttt{.execution.exitcode} instance attribute holds the
+  numeric exitcode of the executed command, or \texttt{None} if the
+  command has not finished running yet.
+
+  \+
+  {\bfseries Note that the \texttt{.execution.exitcode} is guaranteed
+    to have a valid value only if the \texttt{.execution.signal}
+    attribute has the value 0.}
+
+  \+
+  The \texttt{.execution.exitcode} is the same exitcode that you
+  would see when running a command directly in the terminal shell. (By
+  convention, code 0 is successful termination, every other value
+  indicates an error.)
+\end{frame}
+
+
+\begin{frame}
+  \begin{exercise*}[5.B]
+
+    Modify the grayscaling script \texttt{ex2c} (or the code it
+    depends upon) so that, when a \texttt{GrayscaleApp} task has
+    terminated execution, it prints:
+    \begin{itemize}
+    \item whether the program has been killed by a signal, and the signal number;
+    \item whether the program has terminated by exiting, and the exit code.
+    \end{itemize}
+  \end{exercise*}
+\end{frame}
+
+
+\begin{frame}
+  \begin{exercise*}[5.B+] \emph{(Bonus points)} Abstract the verbose
+    \texttt{terminated} method from exercise 3.B into an application
+    class \texttt{TermStatusApp}.
+
+    \+
+    Use Python class inheritance to add the \texttt{TermStatusApp}
+    functionality into \texttt{GrayscaleApp}.
+  \end{exercise*}
+\end{frame}
+
+
+\begin{frame}[fragile]\small
+  \frametitle{Application-specific configuration}
+
+  Application classes may be tagged so that parts of the configuration
+  file can be overridden just for them.
+
+  \+
+  Suppose you tag the \texttt{GrayscaleApp} class by giving it this name:
+\begin{python}
+  class GrayscaleApp(Application):
+    application_name = 'grayscale'
+    # ~\itshape [\ldots]~
+\end{python}
+  then you can provide a specific VM image just for
+  ``\texttt{grayscale}'' applications:
+  \begin{stdout}
+  # in the GC3Pie config file:
+  [resource/sciencecloud]
+  # ~\itshape [\ldots]~
+  image_id=2b227d15-8f6a-42b0-b744-ede52ebe59f7
+  grayscale_image_id=0cca5346-ca12-4cb4-8007-8875c10cce02
+  \end{stdout}
+
+  \+ Other configuration items that can be specialized are:
+  \lstinline|instance_type|, \lstinline|user_data| (cloud),
+  and \lstinline|prolog_file|, \lstinline|epilog_file|
+  (batch-systems).
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{exercise*}[5.C] \emph{(Difficult)} \small
+
+    MATLAB has the annoying habit of exiting with code 0 even when some error occurred.
+
+    \+
+    Write a \texttt{MatlabApp} application, which:
+    \begin{itemize}
+    \item is constructed by giving the path to a MATLAB `\texttt{.m}'
+      script file, like this: \texttt{app = MatlabApp("\href{https://github.com/uzh/gc3pie/blob/training-july-2016/docs/programmers/tutorials/workflows/downloads/ra.m}{ra.m}")};
+    \item Runs the following command:
+\begin{semiverbatim}
+matlab -nodesktop -nojvm \emph{file.m}
+\end{semiverbatim}
+      where \emph{file.m} is the file given to the
+      \texttt{MatlabApp()} constructor.
+    \item captures the standard error output (\texttt{stderr}) of the
+      MATLAB script and, if the string ``\texttt{Out of memory.}''
+      occurs in it, sets the application exitcode to 11.
+    \end{itemize}
+
+    Verify that it works by running MATLAB script
+    \href{https://github.com/uzh/gc3pie/blob/training-july-2016/docs/programmers/tutorials/workflows/downloads/ra.m}{\texttt{ra.m}}
+    many times over.  The script initializes a array of random size:
+    for some values, the size exceeds the amount of available memory.
+  \end{exercise*}
+\end{frame}
+
 
 \end{document}
 
