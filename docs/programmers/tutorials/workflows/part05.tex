@@ -1,0 +1,474 @@
+\documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
+\usepackage{gc3}
+
+\title[Introduction]{%
+  Customizing \\ session-based scripts
+}
+\author[R. Murri, S3IT UZH]{%
+  Riccardo Murri \texttt{<riccardo.murri@uzh.ch>}
+  \\[1ex]
+  \emph{S3IT: Services and Support for Science IT}
+  \\[1ex]
+  University of Zurich
+}
+\date{July~11--14, 2016}
+
+\begin{document}
+
+% title frame
+\maketitle
+
+
+\begin{frame}
+  \frametitle{Outline}
+  \begin{enumerate}
+  \item Customize positional argument processing
+  \item Customize option processing
+  \item More complex \texttt{new\_tasks()} implementations
+  \end{enumerate}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{What is command-line argument processing?}
+
+  Problem:
+\begin{sh}
+$ python ex5a.py --foo=1 bar baz
+\end{sh}%$
+
+  \+
+  How do we translate the above shell command invocation into a
+  Python procedure call \\ \texttt{ex5a('bar', 'baz', foo=1)}?
+
+  \+
+  In other words: how do we access the command-line arguments given
+  to the shell from Python code?
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Command-line argument processing in GC3Pie}
+
+  GC3Pie's scripts use the standard Python library
+  \href{https://docs.python.org/2/howto/argparse.html}{\texttt{argparse}}.
+
+  \+
+  However, differently from \texttt{argparse}, GC3Pie scripts use
+  separate ways to configure processing of options and positional
+  arguments.
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Positional argument processing}
+
+  Positional arguments are defined in a method called
+  \texttt{setup\_args}; override it in derived classes to change what
+  arguments are accepted, their names and number.
+
+  \+
+  This is the default implementation:
+\begin{python}
+  def setup_args(self):
+    self.add_param(
+      'args', nargs='*', metavar='INPUT',
+      help="Path to input file or directory.")
+\end{python}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Positional argument processing}
+
+\begin{python}
+  def setup_args(self):
+    self.add_param(
+      ~\HL{'args'}~, nargs='*', metavar='INPUT',
+      help="Path to input file or directory.")
+\end{python}
+
+  \+
+  The value of this command-line argument will be recorded in the
+  variable \texttt{self.params.\HL{args}} in Python code.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Positional argument processing}
+
+\begin{python}
+  def setup_args(self):
+    self.add_param(
+      'args', ~\HL{nargs='*'}~, metavar='INPUT',
+      help="Path to input file or directory.")
+\end{python}
+
+  \+
+  There are 0 or more arguments of this kind.  \\
+  Makes \lstinline|self.params.args| into a Python list.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Positional argument processing}
+
+\begin{python}
+  def setup_args(self):
+    self.add_param('args', ~\HL{nargs=\ldots}~, ~{\em [\ldots]}~)
+\end{python}
+
+  \+
+  Other possible values for the \texttt{nargs} parameter are:
+  \begin{itemize}
+  \item \texttt{nargs='+'} --- there are \emph{1 or more} arguments,
+    i.e., at least one argument is required.
+  \item \texttt{nargs=$N$} --- there are exactly $N > 1$ arguments of this kind.
+  \item \texttt{nargs=$1$} (default) --- one single argument of this
+    kind; \textbf{in this case \lstinline|self.params.args| is a
+    \emph{string}, not a list.}
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Positional argument processing}
+
+\begin{python}
+  def setup_args(self):
+    self.add_param(
+      'args', nargs='*', ~\HL{metavar='INPUT'}~,
+      help="Path to input file or directory.")
+\end{python}
+
+  \+
+  The name of the command-line argument as displayed to users in
+  usage and help texts:
+\begin{sh}
+$ python solutions/ex2c.py --help
+usage: ex2c [-h] [-V] [-v] [--config-files CONFIG_FILES] [-c NUM]
+            [-m GIGABYTES] [-r NAME] [-w DURATION] [-s PATH] [-u URL] [-N]
+            [-C NUM] [-J NUM] [-o DIRECTORY] [-l [STATES]]
+            ~\HL{[INPUT [INPUT ...]]}~
+\end{sh}%$
+
+  \+
+  If not given, defaults to the uppercased version of the ``internal'' name.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Positional argument processing}
+
+\begin{python}
+  def setup_args(self):
+    self.add_param(
+      'args', nargs='*', metavar='INPUT',
+      ~\HL{help="Path to input file or directory.")}~
+\end{python}
+
+  \+
+  Description of the command-line argument in \texttt{-{}-help} text.
+
+\begin{sh}
+$ python solutions/ex2c.py --help
+usage: ex2c [-h] ~{\em [\ldots]}~
+
+positional arguments:
+  ~\HL{INPUT}~         ~\HL{Path to input file or directory.}~
+\end{sh}%$
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Positional argument processing}
+
+  Calls to \lstinline|self.add_param()| can be repeated to
+  parse many different command-line arguments in sequence:
+\begin{python}
+class AScript(SessionBasedScript):
+  # ~\em [\ldots]~
+  def setup_args(self):
+    self.add_param('input',  help="Input file")
+    self.add_param('radius', help="Convolution radius")
+    self.add_param('sigma',  help="Threshold")
+\end{python}
+
+  \+
+  With the above definition, the following command-line:
+\begin{sh}
+  $ python example.py file.img 10 2.1
+\end{sh}%$
+  generates the equivalent of the following Python code:
+  \begin{python}
+  self.params.input = 'example.py'
+  self.params.radius = '10'  # it's a string!
+  self.params.sigma = '2.1'  # this one too!
+  \end{python}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{From grayscale to colors}
+\begin{sh}
+$ convert gray-lena.jpg \
+    ( xc:blue xc:magenta xc:yellow +append ) \
+    -clut color-lena.jpg
+\end{sh}%$
+\begin{tabular}{ccc}
+  {\includegraphics[width=0.4\linewidth]{fig/gray-lena.jpg}}
+  &
+  {\includegraphics[width=0.1\linewidth,totalheight=0.45\textheight]{fig/arrow.pdf}}
+  &
+  {\includegraphics[width=0.4\linewidth]{fig/rgb-lena.jpg}}
+\end{tabular}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{exercise*}[5.A]
+    Write a \texttt{colorize.py} script to apply this colorization process to a set of grayscale images.
+
+    \+
+    The \texttt{colorize.py} script shall be invoked like this:
+\begin{sh}
+$ python colorize.py ~\em c1~ ~\em c2~ ~\em c3~ ~\em img1~ ~[\em img2 \ldots]~
+\end{sh}%$
+    where \texttt{\em c1}, \texttt{\em c2}, \texttt{\em c3} are color
+    names and \texttt{\em img1}, \texttt{\em img2} are image files.
+
+    \+
+    Each image shall be processed in a separate colorization task.
+  \end{exercise*}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Argument types}
+
+  You can ask
+  \href{https://docs.python.org/2/howto/argparse.html}{\texttt{argparse}}
+  and GC3Pie to convert a command-line argument to a certain Python type.
+
+  \+ For example:
+\begin{python}
+class AScript(SessionBasedScript):
+  # ~\em [\ldots]~
+  def setup_args(self):
+
+    # this argument is a string (default type)
+    self.add_param('input',  type=str,   help="...")
+
+    # the `radius` argument is an integer
+    self.add_param('radius', type=int,   help="...")
+
+    # the `sigma` argument is a floating-point number
+    self.add_param('sigma',  type=float, help="...")
+\end{python}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Argument types}
+
+  Declaring argument types makes for better usability: if an argument
+  does not match its type, the script exists immediately and the user
+  is notified with a clear error message.
+
+  \+
+\begin{sh}
+$ python downloads/argp.py foo.txt 123 x
+usage: argparse [-h] ~\em [\ldots]~
+                input radius sigma
+argp: error: argument sigma: invalid float value: 'x'
+\end{sh}%$
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Argument types}\small
+
+  In addition to the standard Python types, GC3Pie provides other
+  validation functions to ensure arguments meet commonly-found
+  conditions.
+
+\begin{python}
+from gc3libs.cmdline import \
+  existing_file, positive_int
+
+class AScript(SessionBasedScript):
+  # ~\em [\ldots]~
+  def setup_args(self):
+    # reject non-existent input files outright
+    self.add_param('input',  type=existing_file, ~\ldots~)
+    # force radius to be > 0
+    self.add_param('radius', type=positive_int, ~\ldots~)
+    #  sigma is a floating-point number
+    self.add_param('sigma',  type=float, ~\ldots~)
+\end{python}
+
+\begin{references}
+  \tiny\url{http://gc3pie.readthedocs.io/en/master/programmers/api/gc3libs/cmdline.html}
+\end{references}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Command-line option processing}
+
+  Command-line options can be \textbf{added} to a session-based script
+  by overriding the \lstinline|setup_options()| method:
+  \begin{python}
+class AScript(SessionBasedScript):
+  # ~\em [\ldots]~
+  def setup_options(self):
+    self.add_param('--e-value', '-e', dest='e_value',
+                   type=float, default=10.0,
+                   help="Expectation value")
+  \end{python}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Command-line option processing}
+
+  \begin{python}
+class AScript(SessionBasedScript):
+  # ~\em [\ldots]~
+  def setup_options(self):
+    self.add_param('--e-value', ~\HL{'-e'}~, dest='e_value',
+                   type=float, default=10.0,
+                   help="Expectation value")
+  \end{python}
+
+  \+
+  Aliases and abbreviations for options can be defined.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Command-line option processing}
+
+  \begin{python}
+class AScript(SessionBasedScript):
+  # ~\em [\ldots]~
+  def setup_options(self):
+    self.add_param('--e-value', '-e', ~\HL{dest='e\_value'}~,
+                   type=float, default=10.0,
+                   help="Expectation value")
+  \end{python}
+
+  \+
+  The value of this option will be stored in \lstinline|self.params.|\texttt{\HL{e\_value}}.
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Command-line option processing}
+
+  \begin{python}
+class AScript(SessionBasedScript):
+  # ~\em [\ldots]~
+  def setup_options(self):
+    self.add_param('--e-value', '-e', dest='e_value',
+                   ~\HL{type=float}~, default=10.0,
+                   help="Expectation value")
+  \end{python}
+
+  \+
+  Types work exactly as for positional arguments.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Command-line option processing}
+
+  \begin{python}
+class AScript(SessionBasedScript):
+  # ~\em [\ldots]~
+  def setup_options(self):
+    self.add_param('--e-value', '-e', dest='e_value',
+                   type=float, ~\HL{default=10.0}~,
+                   help="Expectation value")
+  \end{python}
+
+  \+
+  If the option is not present on the command-line, the associated
+  Python variable (here,
+  \lstinline|self.params.|\texttt{\HL{e\_value}}) takes this value.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{BLAST}
+
+  BLAST is a suite of programs to perform search and alignment of
+  nucleotides and proteins.
+
+  \+ One common use of BLAST is the following: given a file describing
+  a new organism, compare it one-to-one to a set of known organisms to
+  find similarities.
+
+  \+ The command-line invocation for one such comparison would look like this:
+\begin{sh}
+$ blastpgp -i new.faa -d known.faa \
+  -e 1e6 -m 9 -o output.txt
+\end{sh}%$
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{exercise*}[5.B]\small
+    Write a \texttt{topblast.py} script to perform 1-1 BLAST comparisons.
+
+    \+
+    The \texttt{topblast.py} script shall be invoked like this:
+\begin{sh}
+$ python topblast.py [-e ~$T$~] [-m ~$F$~] \
+    new.faa k1.faa [k2.faa ...]
+\end{sh}%$
+    where:
+    \begin{itemize}
+    \item Option \texttt{-e} (alias: \texttt{-{}-e-value}) takes a floating point threshold argument $T$;
+    \item Option \texttt{-m} (alias: \texttt{--output-format}) takes a single-digit integer argument $F$;
+    \item Arguments \texttt{new.faa}, \texttt{k1.faa}, etc. are files.
+    \end{itemize}
+
+    \+ The script should generate and run comparisons between
+    \texttt{new.faa} and each of the {k$N$.faa}.  Each 1-1 comparison
+    should run as a separate task.  All of them share the same
+    settings for the \texttt{-e} and \texttt{-m} options for \texttt{blastpgp}.
+  \end{exercise*}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{exercise*}[5.C] \emph{(Homework)}
+
+    Modify the \texttt{topblast.py} script that you've written in Exercise 5.B
+    to be invoked like this:
+\begin{sh}
+$ python topblast.py [-e ~$T$~] [-m ~$F$~] new.faa dir
+\end{sh}%$
+
+    \+ Input files describing the ``known'' subjects should be found by
+    recursively scanning the given directory path.
+
+    \+ Bonus points if the modified script exists with a correct error
+    message in case \texttt{new.faa} is not an existing file, or
+    \texttt{dir} is not a valid directory path.
+  \end{exercise*}
+\end{frame}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
