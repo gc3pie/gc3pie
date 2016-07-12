@@ -341,16 +341,25 @@ class MyApp(Application):
 \begin{frame}
   \begin{exercise*}[4.B]
 
-    Write a \texttt{TermStatusApp} application, which is like a
-    generic \texttt{Application} class with the addition that upon
-    termination it prints:
+    Modify the grayscaling script \texttt{ex2c} (or the code it
+    depends upon) so that, when a \texttt{GrayscaleApp} task has
+    terminated execution, it prints:
     \begin{itemize}
     \item whether the program has been killed by a signal, and the signal number;
     \item whether the program has terminated by exiting, and the exit code.
     \end{itemize}
+  \end{exercise*}
+\end{frame}
 
-    Verify that it works by plugging the class into the ``grayscale''
-    session-based script.
+
+\begin{frame}
+  \begin{exercise*}[4.B+] \emph{(Bonus points)} Abstract the verbose
+    \texttt{terminated} method from exercise 3.B into an application
+    class \texttt{TermStatusApp}.
+
+    \+
+    Use Python class inheritance to add the \texttt{TermStatusApp}
+    functionality into \texttt{GrayscaleApp}.
   \end{exercise*}
 \end{frame}
 
