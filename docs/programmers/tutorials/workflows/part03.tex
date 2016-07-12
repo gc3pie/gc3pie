@@ -7,8 +7,8 @@
 
 \usepackage{gc3}
 
-\title[Introduction]{%
-  Useful debugging commands
+\title[Debugging commands]{%
+  Useful \\ debugging commands
 }
 \author[R. Murri, S3IT UZH]{%
   Riccardo Murri \texttt{<riccardo.murri@uzh.ch>}
@@ -137,6 +137,30 @@ $ ^\HL{gsession abort ex2b}^
   running on a single computer: after launching a few tasks, GC3Pie
   will stop and refuse to run anything.
 \end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Manual cleanup of the {\ttfamily localhost} resource}
+
+  In case of incomplete cleanup, you will still run into this error:
+\begin{stdout}
+  ERROR: Resource localhost already running maximum allowed number of jobs
+\end{stdout}
+
+  \+
+  As a last resort, you can inspect directory \lstinline|$HOME/.gc3/shellcmd.d|:
+\begin{stdout}
+  $ ls $HOME/.gc3/shellcmd.d
+  15843
+\end{stdout}
+  Each of these files is an allocated execution slot in the \texttt{localhost} resource.
+  Delete the files to free up the slot.
+
+  \+ (The file name is the PID of the process, in case you want to
+  check if a command is still running before you make GC3Pie forget
+  about it.)
+\end{frame}
+
 
 \end{document}
 
