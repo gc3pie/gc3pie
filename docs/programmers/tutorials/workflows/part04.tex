@@ -224,7 +224,7 @@ $ ./grayscale.py lena.jpg
 
   \+
   The path to the output directory is available as
-  \lstinline|self.output_dir|; if \texttt{stdout} and \texttt{srderr}
+  \lstinline|self.output_dir|; if \texttt{stdout} and \texttt{stderr}
   have been captured, the \textbf{relative} paths to the capture files
   are available as \lstinline|self.stdout| and
   \lstinline|self.stderr|.
@@ -250,7 +250,7 @@ class MyApp(Application):
 
 
 \begin{frame}
-  \begin{exercise*}[3.A]
+  \begin{exercise*}[4.A]
 
     Modify the \texttt{GrayscaleApp} application to print a message
     ``\texttt{Conversion of '\emph{filename}' done.}'' whenever
@@ -339,7 +339,7 @@ class MyApp(Application):
 
 
 \begin{frame}
-  \begin{exercise*}[3.B]
+  \begin{exercise*}[4.B]
 
     Write a \texttt{TermStatusApp} application, which is like a
     generic \texttt{Application} class with the addition that upon
@@ -386,7 +386,7 @@ class MyApp(Application):
 
 
 \begin{frame}[fragile]
-  \begin{exercise*}[3.C] \emph{(Difficult)} \small
+  \begin{exercise*}[4.C] \emph{(Difficult)} \small
 
     MATLAB has the annoying habit of exiting with code 0 even when some error occurred.
 

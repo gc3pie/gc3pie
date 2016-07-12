@@ -56,8 +56,8 @@ $ python ex5a.py --foo=1 bar baz
 \begin{frame}
   \frametitle{Command-line argument processing in GC3Pie}
 
-  GC3Pie's scripts use the standard Python library
-  \href{https://docs.python.org/2/howto/argparse.html}{\texttt{argparse}}.
+  GC3Pie scripts use the standard Python
+  library~\href{https://docs.python.org/2/howto/argparse.html}{\texttt{argparse}}.
 
   \+
   However, differently from \texttt{argparse}, GC3Pie scripts use
@@ -69,8 +69,8 @@ $ python ex5a.py --foo=1 bar baz
   \frametitle{Positional argument processing}
 
   Positional arguments are defined in a method called
-  \texttt{setup\_args}; override it in derived classes to change what
-  arguments are accepted, their names and number.
+  \lstinline|setup_args()|; override it in derived classes to change
+  what arguments are accepted, their names and number.
 
   \+
   This is the default implementation:
@@ -215,7 +215,7 @@ class AScript(SessionBasedScript):
 
 
 \begin{frame}[fragile]
-  \frametitle{From grayscale to colors}
+  \frametitle{Detour: From grayscale to colors}
 \begin{sh}
 $ convert gray-lena.jpg \
     ( xc:blue xc:magenta xc:yellow +append ) \
@@ -407,7 +407,7 @@ class AScript(SessionBasedScript):
 
 
 \begin{frame}[fragile]
-  \frametitle{BLAST}
+  \frametitle{Detour: BLAST}
 
   BLAST is a suite of programs to perform search and alignment of
   nucleotides and proteins.
@@ -419,7 +419,7 @@ class AScript(SessionBasedScript):
   \+ The command-line invocation for one such comparison would look like this:
 \begin{sh}
 $ blastpgp -i new.faa -d known.faa \
-  -e 1e6 -m 9 -o output.txt
+  -e 1e-6 -m 9 -o output.txt
 \end{sh}%$
 \end{frame}
 
