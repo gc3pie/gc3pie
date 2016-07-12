@@ -52,7 +52,7 @@ to extend and adapt the examples provided.
 
   How to set up command-line argument and option processing in GC3Pie's `SessionBasedScript`:class:
 
-`Application control and post-processing <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part05.pdf>`_
+`Application control and post-processing <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part06.pdf>`_
 
   How to check and react on the termination status of a GC3Pie Task/Application.
 
