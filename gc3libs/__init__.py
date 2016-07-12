@@ -1795,6 +1795,9 @@ class Run(Struct):
 
         TERMINATED      Job execution is finished (correctly or not)  None: **final state**
                         and output has been retrieved
+
+        UNKNOWN         GC3Pie can no longer monitor Job at the       Any other state except
+                        remote site                                   for NEW
         =============== ============================================= ======================
 
         When a :class:`Run` object is first created, it is assigned
