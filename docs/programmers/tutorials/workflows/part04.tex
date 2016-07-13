@@ -418,8 +418,8 @@ class AScript(SessionBasedScript):
 
   \+ The command-line invocation for one such comparison would look like this:
 \begin{sh}
-$ blastpgp -i new.faa -d known.faa \
-  -e 1e-6 -m 9 -o output.txt
+$ blastp -query new.faa -subject known.faa \
+  -evalue 1e-6 -outfmt 9
 \end{sh}%$
 \end{frame}
 
@@ -436,14 +436,15 @@ $ python topblast.py [-e ~$T$~] [-m ~$F$~] \
     where:
     \begin{itemize}
     \item Option \texttt{-e} (alias: \texttt{-{}-e-value}) takes a floating point threshold argument $T$;
-    \item Option \texttt{-m} (alias: \texttt{--output-format}) takes a single-digit integer argument $F$;
+    \item Option \texttt{-m} (alias: \texttt{-{}-output-format}) takes a single-digit integer argument $F$;
     \item Arguments \texttt{new.faa}, \texttt{k1.faa}, etc. are files.
     \end{itemize}
 
     \+ The script should generate and run comparisons between
     \texttt{new.faa} and each of the {k$N$.faa}.  Each 1-1 comparison
     should run as a separate task.  All of them share the same
-    settings for the \texttt{-e} and \texttt{-m} options for \texttt{blastpgp}.
+    settings for the \texttt{-evalue} and \texttt{-outfmt} options for
+    \texttt{blastp}.
   \end{exercise*}
 \end{frame}
 
