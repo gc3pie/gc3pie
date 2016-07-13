@@ -430,6 +430,45 @@ matlab -nodesktop -nojvm \emph{file.m}
 \end{frame}
 
 
+% \begin{frame}[fragile]
+%   \frametitle{Global post-processing}
+%   To add some code which will be executed \emph{just before the script
+%     exits,} add a \lstinline|after_main_loop| method:
+
+%   \begin{python}
+% def after_main_loop(self):
+%   model_names = {}
+%   for app in ~\HL{self.session.tasks.values()}~:
+%     if app.execution.state != Run.State.TERMINATED:
+%       return
+%     if app.model_name in model_names:
+%         model_names[app.model_name] += 1
+%     else:
+%         model_names[app.model_name] = 1
+%   \end{python}
+
+%   \begin{itemize}
+%   \item \lstinline|self.session.tasks| is a map
+%     \lstinline|JobID|~$\Rightarrow$~\lstinline|Application| object
+%   \item \lstinline|self.session.tasks.values()| thus contains a list
+%     of all the \textbf{Application}s created by the \lstinline|new_tasks|
+%   \end{itemize}
+% \end{frame}
+
+
+\begin{frame}
+  \frametitle{Global post-processing}
+Further options for customizing a session-based script:
+\begin{description}
+\item [\texttt{before\_main\_loop(self)}] to execute some code
+  \emph{before} the submission of the jobs.
+\item [\texttt{after\_main\_loop(self)}] to execute some code
+  \emph{after} the main loop. A list of all Application objects is
+  available in the \lstinline|self.session.tasks.values()| list.
+\end{description}
+\end{frame}
+
+
 \end{document}
 
 %%% Local Variables:
