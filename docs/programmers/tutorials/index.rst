@@ -50,11 +50,18 @@ to extend and adapt the examples provided.
 
 `Customizing command-line processing <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part04.pdf>`_
 
-  How to set up command-line argument and option processing in GC3Pie's `SessionBasedScript`:class:
+  How to set up command-line argument and option processing in
+  GC3Pie's `SessionBasedScript`:class:
+
+`Application requirements <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part05.pdf>`_
+
+  How to specify running requirements for `Application`:class: tasks,
+  e.g., how much memory is needed to run.
 
 `Application control and post-processing <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part06.pdf>`_
 
-  How to check and react on the termination status of a GC3Pie Task/Application.
+  How to check and react on the termination status of a GC3Pie
+  Task/Application.
 
 
 A bottom-up introduction to programming with GC3Pie
