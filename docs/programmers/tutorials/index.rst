@@ -63,6 +63,10 @@ to extend and adapt the examples provided.
   How to check and react on the termination status of a GC3Pie
   Task/Application.
 
+`Introduction to workflows <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part07.pdf>`_
+
+  A worked-out example of a many-step workflow.
+
 
 A bottom-up introduction to programming with GC3Pie
 ---------------------------------------------------
