@@ -70,8 +70,8 @@ QDF_PATTERN = "qdf"
 DEFAULT_ITERATIONS=10000
 DEFAULT_RANDOM_LIMIT=1000000
 DEFAULT_STEPS=1000
-DEFAULT_QHMAIN_COMMAND="QHGMain --events='write|geo|climate|veg@[1000],"\
-    "write|pop:Sapiens_ooa@[3000]+10000,write|stats@10000' --output-prefix=ooa "
+DEFAULT_EVENTS='write|geo|climate|veg@[1000],write|pop:Sapiens_ooa@[3000]+10000,write|stats@10000'
+DEFAULT_QHMAIN_COMMAND="QHGMain --output-prefix=ooa "
 
 ## custom application class
 class GqhgApplication(Application):
@@ -94,12 +94,17 @@ class GqhgApplication(Application):
             grid_filename = os.path.basename(extra_args['grid'])
             inputs[extra_args['grid']] = grid_filename
 
+        for input_file in extra_args['event_files']:
+            inputs[input_file]=os.path.basename(input_file)
+            extra_args['event'] = extra_args['event'].replace(input_file,os.path.basename(input_file))
+            
         arguments = DEFAULT_QHMAIN_COMMAND
         arguments += " --grid=%s " % grid_filename
         arguments += " --output-dir=%s " % DEFAULT_REMOTE_OUTPUT_FOLDER
         arguments += " --pops=%s " % qdf_filename
         arguments += " --shuffle=%d " %  seed
         arguments += " -n %d " % steps
+        arguments += " --events=%s " % extra_args['event']
         arguments += " --log-file=%s.log > %s.out " % (output_logfile, output_logfile)
         
         Application.__init__(
@@ -158,6 +163,16 @@ class GqhgScript(SessionBasedScript):
                        dest="master", default=None,
                        help="Use alternative binanry file. "
                        "Note: binary has to be statically compiled")
+
+        self.add_param("-E", "--events",
+                       dest="events", default=DEFAULT_EVENTS,
+                       help="Use specific `events` directive. " \
+                       "assumes: "
+                       "-- each event file has suffix .qdf "
+                       "-- 'env' type events only (e.g. not 'write')"
+                       "-- each event is separated by a comma"
+                       "-- everything between : and .qdf is the filename"
+                       "Default: %(default)s.")
         
     def setup_args(self):
 
@@ -196,6 +211,8 @@ class GqhgScript(SessionBasedScript):
         For each input folder, create an instance of GqhgApplication
         """
         tasks = []
+
+        list_input_qdf = parse_event_string(self.params.events)
         
         for qdf_file in self.qdf_files:
 
@@ -215,7 +232,10 @@ class GqhgScript(SessionBasedScript):
                 
                 if self.params.grid:
                     extra_args['grid'] = os.path.abspath(self.params.grid)
-            
+
+                extra_args['event_files'] = list_input_qdf
+                extra_args['event'] = self.params.events
+                    
                 tasks.append(GqhgApplication(
                     qdf_file,
                     seed,
@@ -223,3 +243,36 @@ class GqhgScript(SessionBasedScript):
                     **extra_args))
             
         return tasks
+
+def parse_event_string(eventstring):  
+    """Return a list of input event files given the command line event string."""
+    """assumes: -- each event file has suffix .qdf 
+                -- 'env' type events only (e.g. not 'write')
+                -- each event is separated by a comma   
+                -- events string begins with '-events='
+                -- everything between : and .qdf is the filename
+   """
+    import string
+    filesuffix = ".qdf"  
+    eventfilelist = []
+    events = eventstring.split(",")
+    for thisevent in events:   
+        if "=" in thisevent:   #   (e.g. '-events='.......)
+            thisevent = thisevent.split("=")[1]
+        first3letters = ""
+        iletter = 0
+        for thischar in thisevent: #   check 1st 3 letters for event 'tag' of env
+            if thischar in string.ascii_letters:
+                first3letters += thischar
+                iletter += 1
+            if iletter == 3:
+                break
+        if first3letters[:3] != "env":
+            continue   # not the event we are looking for 
+
+        # filename starts after the ":" 
+        stringtmp = thisevent.split(":")[1].strip() # strip any space before filename
+        stringtmp = stringtmp.split(filesuffix)[0]
+        stringtmp += filesuffix
+        eventfilelist.append(stringtmp)
+    return eventfilelist
