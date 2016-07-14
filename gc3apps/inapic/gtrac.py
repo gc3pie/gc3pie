@@ -86,7 +86,14 @@ class GtracApplication(Application):
         inputs[subject_folder] = DEFAULT_REMOTE_INPUT_FOLDER
 
         # arguments = "trac-all -prep -c %s -debug" % dmrirc
-        arguments = DEFAULT_TRAC_COMMAND.format(dmrirc=dmrirc)
+        # arguments = DEFAULT_TRAC_COMMAND.format(dmrirc=dmrirc)
+
+        wrapper = resource_filename(Requirement.parse("gc3pie"),
+                                    "gc3libs/etc/gtrac_wrapper.py")
+        inputs[wrapper] = os.path.basename(wrapper)
+
+        arguments = "./%s %s" % (inputs[wrapper],
+                                 dmrirc)
 
         if extra_args['requested_memory'] < DEFAULT_MEMORY:
             gc3libs.log.warning("GtracApplication for subject %s running with memory allocation " \
