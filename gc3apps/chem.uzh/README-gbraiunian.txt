@@ -22,7 +22,7 @@ GC3Pie installation.
 
 ## Step 2: Execute gbraunian in `screen`
 Example:
-    $ screen `which python` ./gbraunian.py 100 ./brownian_cloud-s3it.m ./3d_case1.txt -s 20160714 -vvvv
+    $ screen `which python` ./gbraunian.py 100 ./brownian_cloud_s3it.m ./3d_case1.txt -s 20160714 -vvvv
 
 From the provided example, one could customize:
 * Number of total events: 100
