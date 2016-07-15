@@ -82,7 +82,7 @@ import gc3libs.utils
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
-DEFAULT_REMOTE_OUTPUT_FOLDER = "./output"
+DEFAULT_REMOTE_OUTPUT_FOLDER = "output"
 DEFAULT_EPICELL_BINARY="robustnessintime"    
 ## custom application class
 class GepecellApplication(Application):
@@ -108,7 +108,7 @@ class GepecellApplication(Application):
         for param in parameter_string.strip().split(','):
             arguments += " %s " % param
         # Set output
-        outputs[DEFAULT_REMOTE_OUTPUT_FOLDER] = DEFAULT_REMOTE_OUTPUT_FOLDER
+        outputs[DEFAULT_REMOTE_OUTPUT_FOLDER] = os.path.basename(DEFAULT_REMOTE_OUTPUT_FOLDER)
         arguments += DEFAULT_REMOTE_OUTPUT_FOLDER
 
         gc3libs.log.debug("Creating application for executing: %s",
@@ -118,7 +118,7 @@ class GepecellApplication(Application):
             self,
             arguments = arguments,
             inputs = inputs,
-            outputs = outputs,
+            outputs = gc3libs.ANY_OUTPUT
             stdout = 'gepecell.log',
             join=True,
             executables = executables,
