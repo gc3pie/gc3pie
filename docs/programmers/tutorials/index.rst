@@ -67,6 +67,21 @@ to extend and adapt the examples provided.
 
   A worked-out example of a many-step workflow.
 
+`Running tasks in a sequence <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part08.pdf>`_
+
+  How to run tasks in sequence: basic usage of
+  `SequentialTaskCollection`:class: and `StagedTaskCollection`:class:
+
+`Running tasks in parallel <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part09.pdf>`_
+
+  How to run independent tasks in parallel: the `ParallelTaskCollection`:class:
+
+`More workflow constructs <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part10.pdf>`_
+
+  Other workflow construction tools: the
+  `DependentTaskCollection`:class: for automated arrangement of tasks
+  given dependencies, and the unbounded `SequentialTaskCollection`.
+
 
 A bottom-up introduction to programming with GC3Pie
 ---------------------------------------------------
