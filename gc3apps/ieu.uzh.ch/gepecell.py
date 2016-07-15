@@ -118,7 +118,7 @@ class GepecellApplication(Application):
             self,
             arguments = arguments,
             inputs = inputs,
-            outputs = gc3libs.ANY_OUTPUT
+            outputs = gc3libs.ANY_OUTPUT,
             stdout = 'gepecell.log',
             join=True,
             executables = executables,
