@@ -135,6 +135,14 @@ class INotifyPoller(Poller):
     This poller is used by default when the system supports INotify
     and the Url has a `file` schema
 
+    WARNING: on Linux the maximum number of inotify descriptors that
+    an user can open is limited by the kernel parameters:
+
+    * fs.inotify.max_user_instances
+    * fs.inotify.max_user_watches
+    * fs.inotify.max_queued_events
+
+    also cfr. inotify(7) manpage http://linux.die.net/man/7/inotify
     """
 
     def __init__(self, url, mask, recurse=False, **kw):
