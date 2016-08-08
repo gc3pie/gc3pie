@@ -1797,7 +1797,8 @@ class Run(Struct):
                         and output has been retrieved
 
         UNKNOWN         GC3Pie can no longer monitor Job at the       Any other state except
-                        remote site                                   for NEW
+                        remote site: job may not need manual          for NEW
+                        intervention.
         =============== ============================================= ======================
 
         When a :class:`Run` object is first created, it is assigned
