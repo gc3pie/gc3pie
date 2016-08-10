@@ -18,7 +18,7 @@ import subprocess
 FSAVERAGE = "fsaverage"
 FS_SUBJECT_FSAVERAGE = os.path.join(os.environ["FREESURFER_HOME"],"subjects",FSAVERAGE)
 
-TRAC_CMD_STEP1="rac-all -prep -c {dmrirc} -debug"
+TRAC_CMD_STEP1="trac-all -prep -c {dmrirc} -debug"
 TRAC_CMD_STEP2="trac-all -bedp -c {dmrirc}"
 TRAC_CMD_STEP3="trac-all -path -c {dmrirc}"
 
