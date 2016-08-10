@@ -7,8 +7,10 @@ Requirements for running ``gtrac``
 Note: expected folder structure:
 * 1 subfodler for each subject.
 * In each subject folder, 
-* 1 subfolder for each TimePoint.
-* Each TimePoint folder should contain 2 input NFTI files. 
+* 1 'dmrirc' file
+  * Note: paths within the 'dmrirc' files should be *all* relative
+* bvals file
+* raw data folders as specified in the 'dmrirc' file
 
 ``gtrac`` help
 ===============
@@ -25,14 +27,14 @@ Provide UZH Webpass shortname and password at prompt as requested.
 
 ## Step 2: Execute gtrac in `screen`
 Example:
-    $ screen -L `which gtrac` data/in/ -C 30 -s 20151104 -o data/out -N
+    $ screen -L `which gtrac` data/trac-in/ -C 30 -s 20151104 -o data/trac-out -N
 
 From the provided example, one could customize:
 
-* location of input folder: instead of `data/in/`, provide the
-full path of an alternative input folder where the NIFTI files are.
+* location of input folder: instead of `data/trac-in/`, provide the
+full path of an alternative input folder where the subject files are.
 
-* Location of result folder: instead of `data/out` provide the
+* Location of result folder: instead of `data/trac-out` provide the
 alternative path to the result folder (where all the results will be
 stored)
 
