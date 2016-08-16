@@ -109,22 +109,11 @@ class GcsvBulkApplication(Application):
             self,
             arguments = arguments,
             inputs = inputs,
-            outputs = ["./results"],
+            outputs = gc3libs.ANY_OUTPUT,
             stdout = 'gcsvBulk.log',
             join=True,
             executables = "./%s" % os.path.basename(input_function),
             **extra_args)
-
-    def terminated(self):
-        """
-        Move results into original results folder
-        """
-        gc3libs.log.info("Application terminated with exit code %s" % self.execution.exitcode)
-        for result in os.listdir(os.path.join(self.output_dir,"results/")):
-            shutil.move(os.path.join(self.output_dir,"results/",result),
-                        os.path.join(self.input_folder,"results",os.path.basename(result)))
-        # Cleanup
-        os.removedirs(os.path.join(self.output_dir,"results/"))
 
 class GcsvBulkScript(SessionBasedScript):
     """
