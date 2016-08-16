@@ -103,7 +103,7 @@ class GcsvBulkApplication(Application):
         inputs[input_file] = "%s" % os.path.basename(input_file)
         inputs[input_csvfile] = "%s" % os.path.basename(input_csvfile)
         #
-        arguments = "matlab -nodesktop -nodisplay -nojvm -nosplash -r \"%s('%s', '%s', %d, %d);\"" % (inputs[gcsvBulk_wrapper_m][:-2], input_function, inputs[input_csvfile], limit, skip)
+        arguments = "matlab -nodesktop -nodisplay -nojvm -nosplash -r \"%s %s %s %d %d;exit();\"" % (inputs[gcsvBulk_wrapper_m][:-2], input_function, inputs[input_csvfile], limit, skip)
         # print 'hello'
         Application.__init__(
             self,
