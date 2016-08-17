@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 #
-#   gthechemostat.py -- Front-end script for evaluating R-based 'weight'
-#   function over a large dataset.
+#   gthechemostat.py -- Front-end script for running Matlab function
+#   function over a large parameter range.
 #
-#   Copyright (C) 2011, 2012 GC3, University of Zurich
+#   Copyright (c) 2016 S3IT, University of Zurich, http://www.s3it.uzh.ch/
 #
 #   This program is free software: you can redistribute it and/or
 #   modify
@@ -20,39 +20,22 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Front-end script for submitting multiple `R` jobs.
+Front-end script for running Matlab function
+#   function over a large parameter range.
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gthechemostat.py --help`` for program usage
 instructions.
 
-Input parameters consists of:
-:param str edges file: Path to an .csv file containing input data in
-the for of: 
-    X1   X2
-1  id1  id2
-2  id1  id3
-3  id1  id4
-
-...
-
-XXX: To be clarified:
-. When input files should be removed ?
-. What happen if an error happen at merging time ?
-. Should be possible to re-run a subset of the initial chunk list
-without re-creating a new session ?
-e.g. adding a new argument accepting chunk ranges (-R 3000:7500)
-This would trigger the re-run of the whole workflow only 
-for lines between 3000 and 7500
 """
 
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
-  2013-07-03:
+  2016-08-17:
   * Initial version
 """
-__author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
+__author__ = 'Sergio Maffioletti <sergio.maffioletti@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 
@@ -70,7 +53,6 @@ import tempfile
 import tarfile
 import shutil
 import pandas
-# import csv
 
 from pkg_resources import Requirement, resource_filename
 
@@ -87,7 +69,44 @@ DEFAULT_FUNCTION = "theChemostat"
 TARFILE="source.tgz"
 TEMP_FOLDER="/var/tmp"
 
-def scanandtar(dir_to_scan, temp_folder=TEMP_FOLDER):
+
+## utility funtions
+
+def _getchunk(file_to_chunk, chunk_size=2, chunk_files_dir='/var/tmp'):
+    """
+    Takes a file_name as input and a defined chunk size
+    ( uses 1000 as default )
+    returns a list of filenames 1 for each chunk created and a corresponding
+    index reference
+    e.g. ('/tmp/chunk2800.csv,2800) for the chunk segment that goes
+    from 2800 to (2800 + chunk_size)
+    """
+    
+    chunks = []
+    
+    # creating 'chunk_files_dir'
+    if not(os.path.isdir(chunk_files_dir)):
+        try:
+            os.mkdir(chunk_files_dir)
+        except OSError, osx:
+            gc3libs.log.error("Failed while creating tmp folder %s. " % chunk_files_dir +
+                              "Error %s." % str(osx) +
+                              "Using default '/tmp'")
+            chunk_files_dir = "/tmp"
+
+    reader = pandas.read_csv(file_to_chunk, header=0, chunksize=chunk_size)
+    
+    index = 0
+    for chunk in reader:
+        index += 1     
+        filename = "%s/chunk_%s.csv" % (chunk_files_dir,index)
+        chunk.to_csv(filename, header=True, index=False)
+        chunks.append((filename,index))
+            
+    return chunks
+
+
+def _scanandtar(dir_to_scan, temp_folder=TEMP_FOLDER):
     try:
         gc3libs.log.debug("Compressing input folder '%s'" % dir_to_scan)
         cwd = os.getcwd()
@@ -97,7 +116,7 @@ def scanandtar(dir_to_scan, temp_folder=TEMP_FOLDER):
             os.mkdir(temp_folder)
         
         with tarfile.open(os.path.join(temp_folder,TARFILE), "w:gz") as tar:
-            # tar.add(dir_to_scan, arcname=os.path.basename(dir_to_scan))
+
             tar.add(dir_to_scan, arcname=".")
             os.chdir(cwd)
 
@@ -112,6 +131,7 @@ def scanandtar(dir_to_scan, temp_folder=TEMP_FOLDER):
 
     
 ## custom application class
+
 class GthechemostatApplication(Application):
     """
     Custom class to wrap the execution of the R scripts passed in src_dir.
@@ -124,10 +144,6 @@ class GthechemostatApplication(Application):
         executables = []
         inputs = dict()
         outputs = dict()
-
-        inputs[input_file] = "./input.csv"
-
-        arguments = "matlab -nodesktop -nosplash -nodisplay -nojvm -r \"addpath(genpath('src'));theChemostat input.csv %s; quit\"" % DEFAULT_REMOTE_OUTPUT_FOLDER
 
         wrapper = resource_filename(Requirement.parse("gc3pie"),
                                     "gc3libs/etc/gthermostat.sh")
@@ -159,16 +175,10 @@ class GthechemostatApplication(Application):
             executables = executables,
             **extra_args)
 
-    def terminated(self):
-        """
-        Check whether output file has been properly created
-        """
-        pass
-
 class GthechemostatScript(SessionBasedScript):
     """
     Takes 1 .csv input file containing the list of parameters to be passed
-    to the `ctx-linkdyn-ordprm-sirs.p4` application.
+    to the `thechemostat` application.
     Each line of the input .csv file correspond to the parameter list to be
     passed to a single `ctx-linkdyn-ordprm-sirs.p4` execution. For each line
     of the input .csv file a GthechemostatApplication needs to be generated (depends on
@@ -244,16 +254,17 @@ class GthechemostatScript(SessionBasedScript):
     def new_tasks(self, extra):
         """
         Read content of 'command_file'
-        For each command line, generate a new GcgpsTask
+        For each command line, generate a new Application
         """
         tasks = []
 
         if self.params.source:
-            tar_file = scanandtar(os.path.abspath(self.params.source),
+            tar_file = _scanandtar(os.path.abspath(self.params.source),
                                   temp_folder=os.path.join(self.session.path,"tmp"))
         
-        for (input_file, index_chunk) in self._getchunk(self.params.csv_input_file, 
-                                                        self.params.chunk_size):
+        for (input_file, index_chunk) in _getchunk(self.params.csv_input_file, 
+                                                   self.params.chunk_size,
+                                                   chunk_files_dir=os.path.join(self.session.path,"tmp")):
             
             jobname = "gthechemostat-%s" % (str(index_chunk))
 
@@ -281,38 +292,3 @@ class GthechemostatScript(SessionBasedScript):
                     **extra_args))
 
         return tasks
-
-    def _getchunk(self, file_to_chunk, chunk_size=2):
-        """
-        Takes a file_name as input and a defined chunk size
-        ( uses 1000 as default )
-        returns a list of filenames 1 for each chunk created and a corresponding
-        index reference
-        e.g. ('/tmp/chunk2800.csv,2800) for the chunk segment that goes
-        from 2800 to (2800 + chunk_size)
-        """
-        
-        chunks = []
-        chunk_files_dir = os.path.join(self.session.path,"tmp")
-
-        # creating 'chunk_files_dir'
-        if not(os.path.isdir(chunk_files_dir)):
-            try:
-                os.mkdir(chunk_files_dir)
-            except OSError, osx:
-                gc3libs.log.error("Failed while creating tmp folder %s. " % chunk_files_dir +
-                                  "Error %s." % str(osx) +
-                                  "Using default '/tmp'")
-                chunk_files_dir = "/tmp"
-
-        # XXX: by convenction, 1st row contains headers
-        reader = pandas.read_csv(file_to_chunk, header=0, chunksize=chunk_size)
-
-        index = 0
-        for chunk in reader:
-            index += 1     
-            filename = "%s/chunk_%s.csv" % (chunk_files_dir,index)
-            chunk.to_csv(filename, header=True, index=False)
-            chunks.append((filename,index))
-            
-        return chunks
