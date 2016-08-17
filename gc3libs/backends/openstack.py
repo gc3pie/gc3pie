@@ -247,7 +247,7 @@ class OpenStackLrms(LRMS):
             self._import_keypair()
         else:
             self._have_keypair(keypair)
-
+        instance_type = instance_type or self.instance_type
         # Setup security groups
         if 'security_group_name' in self:
             self._setup_security_groups()
