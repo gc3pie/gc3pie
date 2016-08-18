@@ -553,29 +553,64 @@ class OpenStackLrms(LRMS):
         else:
             return self.image_id
 
+    def _flavor_matches_requirements(self, flavorname, job):
+        """
+        Returns True or False if the flavor matches the requirement of the job.
+
+        Raises an exception NotFound if the flavor does not exists.
+        """
+        # This raises NotFound if the flavor does not exists.
+        flavor = self._get_flavor(flavorname)
+        return flavor.vcpus >= job.requested_cores and \
+            (flavor.ram * MiB - self.vm_os_overhead) >= job.requested_memory
+
     def get_instance_type_for_job(self, job):
         """
-        If a configuration option <application>_instance_type is present,
-        returns its value, otherwise returns `self.instance_type`
+        Returns the best instance_type (aka flavor) for the job. This
+        method will always returns an instance_type that will fit the
+        job. However, preference will be given to:
+
+        1) <application>_instance_type configuration option
+        2) instance_type configuration option
+        3) the smallest flavor (ordering by cpus, ram and disk) that fits the application needs
+
         """
-        conf_option = job.application_name + '_instance_type'
-        if conf_option in self:
-            flavor = self._get_flavor(self[conf_option])
-            gc3libs.log.debug(
-                "Using flavor %s as per configuration option %s",
-                flavor.name, conf_option)
-            return flavor
-        else:
-            valid_flavors = [flv for flv in self._flavors
-                             if flv.vcpus >= job.requested_cores
-                             and (flv.ram * MiB - self.vm_os_overhead)
-                             >= job.requested_memory]
-            flavor = min(valid_flavors,
-                         key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
-            gc3libs.log.debug(
-                "Using flavor %s which is the smallest flavor that can run"
-                " application %s", flavor.name, job)
-            return flavor
+
+        # These are the flavars with enough resources to run the job
+        valid_flavors = {
+            flv.name:flv for flv in self._flavors
+            if flv.vcpus >= job.requested_cores
+            and (flv.ram * MiB - self.vm_os_overhead) >= job.requested_memory
+        }
+        # This is the fallback flavor we will use
+        flavor = min(valid_flavors.values(),
+                     key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
+
+        # If there is an option <application>_instance_type, we will try to use it
+        for conf_option in [job.application_name + '_instance_type', 'instance_type']:
+            try:
+                flavor_name = self[conf_option]
+                if self._flavor_matches_requirements(flavor_name, job):
+                    flavor = self._get_flavor(flavor_name)
+                    gc3libs.log.info(
+                        "Using flavor `%s` for application `%s` as requested by config"
+                        " option `%s`", flavor.name, job.application_name, conf_option)
+                    return flavor
+                else:
+                    gc3libs.log.warning(
+                        "Unable to use flavor `%s` for application `%s` as requested"
+                        " by config option `%s` because it doesn't fit"
+                        " application's requirements",
+                        flavor_name, job.application_name, conf_option)
+            except NotFound:
+                gc3libs.log.warning(
+                    "Unable to use flavor `%s` for application `%s` as requested"
+                    " by config option `%s` because it's not available on the"
+                    " cloud backend", flavor_name, job.application_name, conf_option)
+        gc3libs.log.info(
+            "Using flavor `%s` as the smallest flavor that fits requirements"
+            " of application `%s`", flavor.name, job.application_name)
+        return flavor
 
     def get_user_data_for_job(self, job):
         """
