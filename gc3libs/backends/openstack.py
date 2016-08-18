@@ -125,7 +125,7 @@ class OpenStackLrms(LRMS):
         if self.subresource_type not in available_subresource_types:
             raise UnrecoverableError("Invalid resource type: %s" % self.type)
 
-        # Mapping of job.os_instance_id => LRMS
+        # Mapping of job.execution.instance_id => LRMS
         self.subresources = {}
 
         auth = self._auth_fn()
@@ -627,7 +627,7 @@ class OpenStackLrms(LRMS):
     def cancel_job(self, app):
         try:
             subresource = self._get_subresource(
-                self._get_vm(app.os_instance_id))
+                self._get_vm(app.execution.os_instance_id))
             return subresource.cancel_job(app)
         except InstanceNotFound:
             # ignore -- if this VM exists no more, we need not cancel any job
@@ -762,18 +762,18 @@ class OpenStackLrms(LRMS):
                     changed_only=True):
         try:
             subresource = self._get_subresource(
-                self._get_vm(app.os_instance_id))
+                self._get_vm(app.execution.os_instance_id))
         except InstanceNotFound:
             gc3libs.log.error(
                 "Changing state of task '%s' to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore.",
-                app.execution.lrms_jobid, app.os_instance_id)
+                app.execution.lrms_jobid, app.execution.os_instance_id)
             app.execution.state = Run.State.TERMINATED
             app.execution.signal = Run.Signals.RemoteError
             app.execution.history.append(
                 "State changed to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore."
-                % (app.os_instance_id,))
+                % (app.execution.os_instance_id,))
             raise UnrecoverableDataStagingError(
                 "VM where job was running is no longer available")
         except UnrecoverableError as err:
@@ -793,21 +793,21 @@ class OpenStackLrms(LRMS):
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
         self._connect()
-        if app.os_instance_id not in self.subresources:
+        if app.execution.os_instance_id not in self.subresources:
             try:
-                self.subresources[app.os_instance_id] = self._get_subresource(
-                    self._get_vm(app.os_instance_id))
+                self.subresources[app.execution.os_instance_id] = self._get_subresource(
+                    self._get_vm(app.execution.os_instance_id))
             except InstanceNotFound:
                 gc3libs.log.error(
                     "Changing state of task '%s' to TERMINATED since OpenStack"
                     " instance '%s' does not exist anymore.",
-                    app.execution.lrms_jobid, app.os_instance_id)
+                    app.execution.lrms_jobid, app.execution.os_instance_id)
                 app.execution.state = Run.State.TERMINATED
                 app.execution.signal = Run.Signals.RemoteError
                 app.execution.history.append(
                     "State changed to TERMINATED since OpenStack"
                     " instance '%s' does not exist anymore."
-                    % (app.os_instance_id,))
+                    % (app.execution.os_instance_id,))
                 raise
             except UnrecoverableError as err:
                 gc3libs.log.error(
@@ -820,7 +820,7 @@ class OpenStackLrms(LRMS):
                     " an OpenStack API error (%s: %s)."
                     % (err.__class__.__name__, err))
                 raise
-        return self.subresources[app.os_instance_id].update_job_state(app)
+        return self.subresources[app.execution.os_instance_id].update_job_state(app)
 
     def submit_job(self, job):
         """
@@ -889,7 +889,7 @@ class OpenStackLrms(LRMS):
                 if vm.image['id'] != image_id:
                     continue
                 subresource.submit_job(job)
-                job.os_instance_id = vm_id
+                job.execution.instance_id = vm_id
                 job.changed = True
                 gc3libs.log.info(
                     "Job successfully submitted to remote resource %s.",
@@ -954,18 +954,18 @@ class OpenStackLrms(LRMS):
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
         try:
             subresource = self._get_subresource(
-                self._get_vm(app.os_instance_id))
+                self._get_vm(app.execution.os_instance_id))
         except InstanceNotFound:
             gc3libs.log.error(
                 "Changing state of task '%s' to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore.",
-                app.execution.lrms_jobid, app.os_instance_id)
+                app.execution.lrms_jobid, app.execution.os_instance_id)
             app.execution.state = Run.State.TERMINATED
             app.execution.signal = Run.Signals.RemoteError
             app.execution.history.append(
                 "State changed to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore."
-                % (app.os_instance_id,))
+                % (app.execution.os_instance_id,))
             raise UnrecoverableDataStagingError(
                 "VM where job was running is no longer available.")
         return subresource.peek(app, remote_filename, local_file, offset, size)
@@ -999,7 +999,7 @@ class OpenStackLrms(LRMS):
         # the same instanc may run multiple applications
         try:
             subresource = self._get_subresource(
-                self._get_vm(app.os_instance_id))
+                self._get_vm(app.execution.os_instance_id))
         except InstanceNotFound:
             # ignore -- if the instance is no more, there is
             # nothing we should free
@@ -1012,7 +1012,7 @@ class OpenStackLrms(LRMS):
         subresource.get_resource_status()
         if len(subresource.job_infos) == 0:
             # turn VM off
-            vm = self._get_vm(app.os_instance_id)
+            vm = self._get_vm(app.execution.os_instance_id)
 
             gc3libs.log.info("VM instance %s at %s is no longer needed."
                              " Terminating.", vm.id, vm.preferred_ip)
