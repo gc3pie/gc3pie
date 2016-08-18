@@ -487,16 +487,11 @@ Print job state.
                        help="For each successful job, print"
                        " submission, start, and duration times."
                        " If FILE is omitted, report is printed to screen.")
-        self.add_param("-n", "--no-update",
-                       action="store_false",
-                       dest="update",
-                       help="Do not update job statuses;"
-                       " only print what's in the local database.")
         self.add_param("-u", "--update",
                        action="store_true",
                        dest="update",
-                       help="Update job statuses before printing results"
-                       " (this is the default.)")
+                       default=False,
+                       help="Update job statuses before printing results")
         self.add_param("-p", "--print",
                        action="store",
                        dest="keys",
@@ -506,16 +501,12 @@ Print job state.
                        " appears in this comma-separated list.")
 
     def main(self):
-        # by default, update job statuses
+        # by default, DO NOT update job statuses
         try:
             self.session = Session(self.params.session, create=False)
         except gc3libs.exceptions.InvalidArgument:
             # session not found?
             raise RuntimeError('Session %s not found' % self.params.session)
-
-        if 'update' not in self.params:
-            self.params.update = True
-        assert self.params.update in [True, False]
 
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
