@@ -1761,6 +1761,9 @@ To get detailed info on a specific command, run:
             '-r', '--resource', metavar="NAME", dest="resource_name",
             default=None, help="Select resource by name.")
         runparser.add_argument(
+            '-f', '--flavor', dest="instance_type",
+            default=None, help="Select instance flavor.")
+        runparser.add_argument(
             '-i', '--image-id', metavar="ID", dest="image_id", default=None,
             help="Select the image id to use, if different from the one "
             "specified in the configuration file.")
@@ -1821,8 +1824,12 @@ To get detailed info on a specific command, run:
                 if not images:
                     images.extend(res._get_available_images())
 
-                image_name = filter(
-                    lambda x: x.id == vm.image['id'], images)[0].name
+                image_names = filter(
+                    lambda x: x.id == vm.image['id'], images)
+                if image_names:
+                    image_name = image_names[0].name
+                else:
+                    image_name = 'UNKNOWN'
             if vm.preferred_ip in ips:
                 ips.remove(vm.preferred_ip)
 
@@ -1992,6 +1999,7 @@ To get detailed info on a specific command, run:
         resource = self.resources[0]
         resource._connect()
         image_id = self.params.image_id or resource.image_id
-        vm = resource._create_instance(image_id)
+        instance_type = self.params.instance_type or resource.instance_type
+        vm = resource._create_instance(image_id, instance_type=instance_type)
         resource._vmpool.add_vm(vm)
         self._print_vms([vm], resource)
