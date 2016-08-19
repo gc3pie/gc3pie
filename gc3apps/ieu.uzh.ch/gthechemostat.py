@@ -34,6 +34,8 @@ __version__ = 'development version (SVN $Revision$)'
 __changelog__ = """
   2016-08-17:
   * Initial version
+  2016-08-19:
+  * add '-f <function name>' option 
 """
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@uzh.ch>'
 __docformat__ = 'reStructuredText'
@@ -138,7 +140,7 @@ class GthechemostatApplication(Application):
     """
     application_name = 'gthechemostat'
     
-    def __init__(self, input_file, **extra_args):
+    def __init__(self, input_file, mfunct, **extra_args):
 
 
         executables = []
@@ -151,7 +153,7 @@ class GthechemostatApplication(Application):
 
         inputs[input_file] = os.path.basename(input_file)
 
-        arguments = "./wrapper.sh %s %s %s" % (DEFAULT_FUNCTION,
+        arguments = "./wrapper.sh %s %s %s" % (mfunct,
                                                os.path.basename(input_file),
                                                DEFAULT_REMOTE_OUTPUT_FOLDER)
 
@@ -228,6 +230,12 @@ class GthechemostatScript(SessionBasedScript):
                        dest="chunk_size", default=1000,
                        help="How to split the edges input data set.")
 
+        self.add_param("-f", "--function", metavar="STRING",
+                       dest="mfunct", default=DEFAULT_FUNCTION,
+                       help="Name of the Matlab function to call."
+                       " Default: %(default)s.")
+
+        
     def parse_args(self):
         """
         Check presence of input folder (should contains R scripts).
@@ -248,6 +256,11 @@ class GthechemostatScript(SessionBasedScript):
                 "Chunk value must be an interger."
             self.params.chunk_size = int(self.params.chunk_size)
 
+
+            assert os.path.isfile(os.path.join(self.params.source,self.params.mfunct,".m")), \
+                "Matlab funtion file %s/%s.m not found" % (self.params.source,
+                                                           self.params.mfunct)
+            
         except AssertionError as ex:
             raise ValueError(ex.message)            
 
@@ -274,7 +287,7 @@ class GthechemostatScript(SessionBasedScript):
             extra_args['chunk_size'] = int(self.params.chunk_size)
 
             extra_args['jobname'] = jobname
-            
+
             extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
@@ -288,7 +301,8 @@ class GthechemostatScript(SessionBasedScript):
                            (index_chunk, (index_chunk + self.params.chunk_size)))
 
             tasks.append(GthechemostatApplication(
-                    input_file,
-                    **extra_args))
+                input_file,
+                self.params.mfunct,
+                **extra_args))
 
         return tasks
