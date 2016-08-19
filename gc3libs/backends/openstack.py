@@ -125,7 +125,7 @@ class OpenStackLrms(LRMS):
         if self.subresource_type not in available_subresource_types:
             raise UnrecoverableError("Invalid resource type: %s" % self.type)
 
-        # Mapping of job.os_instance_id => LRMS
+        # Mapping of job.execution.instance_id => LRMS
         self.subresources = {}
 
         auth = self._auth_fn()
@@ -247,7 +247,7 @@ class OpenStackLrms(LRMS):
             self._import_keypair()
         else:
             self._have_keypair(keypair)
-
+        instance_type = instance_type or self.instance_type
         # Setup security groups
         if 'security_group_name' in self:
             self._setup_security_groups()
@@ -553,29 +553,64 @@ class OpenStackLrms(LRMS):
         else:
             return self.image_id
 
+    def _flavor_matches_requirements(self, flavorname, job):
+        """
+        Returns True or False if the flavor matches the requirement of the job.
+
+        Raises an exception NotFound if the flavor does not exists.
+        """
+        # This raises NotFound if the flavor does not exists.
+        flavor = self._get_flavor(flavorname)
+        return flavor.vcpus >= job.requested_cores and \
+            (flavor.ram * MiB - self.vm_os_overhead) >= job.requested_memory
+
     def get_instance_type_for_job(self, job):
         """
-        If a configuration option <application>_instance_type is present,
-        returns its value, otherwise returns `self.instance_type`
+        Returns the best instance_type (aka flavor) for the job. This
+        method will always returns an instance_type that will fit the
+        job. However, preference will be given to:
+
+        1) <application>_instance_type configuration option
+        2) instance_type configuration option
+        3) the smallest flavor (ordering by cpus, ram and disk) that fits the application needs
+
         """
-        conf_option = job.application_name + '_instance_type'
-        if conf_option in self:
-            flavor = self._get_flavor(self[conf_option])
-            gc3libs.log.debug(
-                "Using flavor %s as per configuration option %s",
-                flavor.name, conf_option)
-            return flavor
-        else:
-            valid_flavors = [flv for flv in self._flavors
-                             if flv.vcpus >= job.requested_cores
-                             and (flv.ram * MiB - self.vm_os_overhead)
-                             >= job.requested_memory]
-            flavor = min(valid_flavors,
-                         key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
-            gc3libs.log.debug(
-                "Using flavor %s which is the smallest flavor that can run"
-                " application %s", flavor.name, job)
-            return flavor
+
+        # These are the flavars with enough resources to run the job
+        valid_flavors = {
+            flv.name:flv for flv in self._flavors
+            if flv.vcpus >= job.requested_cores
+            and (flv.ram * MiB - self.vm_os_overhead) >= job.requested_memory
+        }
+        # This is the fallback flavor we will use
+        flavor = min(valid_flavors.values(),
+                     key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
+
+        # If there is an option <application>_instance_type, we will try to use it
+        for conf_option in [job.application_name + '_instance_type', 'instance_type']:
+            try:
+                flavor_name = self[conf_option]
+                if self._flavor_matches_requirements(flavor_name, job):
+                    flavor = self._get_flavor(flavor_name)
+                    gc3libs.log.info(
+                        "Using flavor `%s` for application `%s` as requested by config"
+                        " option `%s`", flavor.name, job.application_name, conf_option)
+                    return flavor
+                else:
+                    gc3libs.log.warning(
+                        "Unable to use flavor `%s` for application `%s` as requested"
+                        " by config option `%s` because it doesn't fit"
+                        " application's requirements",
+                        flavor_name, job.application_name, conf_option)
+            except NotFound:
+                gc3libs.log.warning(
+                    "Unable to use flavor `%s` for application `%s` as requested"
+                    " by config option `%s` because it's not available on the"
+                    " cloud backend", flavor_name, job.application_name, conf_option)
+        gc3libs.log.info(
+            "Using flavor `%s` as the smallest flavor that fits requirements"
+            " of application `%s`", flavor.name, job.application_name)
+        return flavor
 
     def get_user_data_for_job(self, job):
         """
@@ -592,7 +627,7 @@ class OpenStackLrms(LRMS):
     def cancel_job(self, app):
         try:
             subresource = self._get_subresource(
-                self._get_vm(app.os_instance_id))
+                self._get_vm(app.execution.os_instance_id))
             return subresource.cancel_job(app)
         except InstanceNotFound:
             # ignore -- if this VM exists no more, we need not cancel any job
@@ -727,18 +762,18 @@ class OpenStackLrms(LRMS):
                     changed_only=True):
         try:
             subresource = self._get_subresource(
-                self._get_vm(app.os_instance_id))
+                self._get_vm(app.execution.os_instance_id))
         except InstanceNotFound:
             gc3libs.log.error(
                 "Changing state of task '%s' to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore.",
-                app.execution.lrms_jobid, app.os_instance_id)
+                app.execution.lrms_jobid, app.execution.os_instance_id)
             app.execution.state = Run.State.TERMINATED
             app.execution.signal = Run.Signals.RemoteError
             app.execution.history.append(
                 "State changed to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore."
-                % (app.os_instance_id,))
+                % (app.execution.os_instance_id,))
             raise UnrecoverableDataStagingError(
                 "VM where job was running is no longer available")
         except UnrecoverableError as err:
@@ -758,21 +793,21 @@ class OpenStackLrms(LRMS):
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
         self._connect()
-        if app.os_instance_id not in self.subresources:
+        if app.execution.os_instance_id not in self.subresources:
             try:
-                self.subresources[app.os_instance_id] = self._get_subresource(
-                    self._get_vm(app.os_instance_id))
+                self.subresources[app.execution.os_instance_id] = self._get_subresource(
+                    self._get_vm(app.execution.os_instance_id))
             except InstanceNotFound:
                 gc3libs.log.error(
                     "Changing state of task '%s' to TERMINATED since OpenStack"
                     " instance '%s' does not exist anymore.",
-                    app.execution.lrms_jobid, app.os_instance_id)
+                    app.execution.lrms_jobid, app.execution.os_instance_id)
                 app.execution.state = Run.State.TERMINATED
                 app.execution.signal = Run.Signals.RemoteError
                 app.execution.history.append(
                     "State changed to TERMINATED since OpenStack"
                     " instance '%s' does not exist anymore."
-                    % (app.os_instance_id,))
+                    % (app.execution.os_instance_id,))
                 raise
             except UnrecoverableError as err:
                 gc3libs.log.error(
@@ -785,7 +820,7 @@ class OpenStackLrms(LRMS):
                     " an OpenStack API error (%s: %s)."
                     % (err.__class__.__name__, err))
                 raise
-        return self.subresources[app.os_instance_id].update_job_state(app)
+        return self.subresources[app.execution.os_instance_id].update_job_state(app)
 
     def submit_job(self, job):
         """
@@ -854,7 +889,7 @@ class OpenStackLrms(LRMS):
                 if vm.image['id'] != image_id:
                     continue
                 subresource.submit_job(job)
-                job.os_instance_id = vm_id
+                job.execution.instance_id = vm_id
                 job.changed = True
                 gc3libs.log.info(
                     "Job successfully submitted to remote resource %s.",
@@ -919,18 +954,18 @@ class OpenStackLrms(LRMS):
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
         try:
             subresource = self._get_subresource(
-                self._get_vm(app.os_instance_id))
+                self._get_vm(app.execution.os_instance_id))
         except InstanceNotFound:
             gc3libs.log.error(
                 "Changing state of task '%s' to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore.",
-                app.execution.lrms_jobid, app.os_instance_id)
+                app.execution.lrms_jobid, app.execution.os_instance_id)
             app.execution.state = Run.State.TERMINATED
             app.execution.signal = Run.Signals.RemoteError
             app.execution.history.append(
                 "State changed to TERMINATED since OpenStack"
                 " instance '%s' does not exist anymore."
-                % (app.os_instance_id,))
+                % (app.execution.os_instance_id,))
             raise UnrecoverableDataStagingError(
                 "VM where job was running is no longer available.")
         return subresource.peek(app, remote_filename, local_file, offset, size)
@@ -964,7 +999,7 @@ class OpenStackLrms(LRMS):
         # the same instanc may run multiple applications
         try:
             subresource = self._get_subresource(
-                self._get_vm(app.os_instance_id))
+                self._get_vm(app.execution.os_instance_id))
         except InstanceNotFound:
             # ignore -- if the instance is no more, there is
             # nothing we should free
@@ -977,7 +1012,7 @@ class OpenStackLrms(LRMS):
         subresource.get_resource_status()
         if len(subresource.job_infos) == 0:
             # turn VM off
-            vm = self._get_vm(app.os_instance_id)
+            vm = self._get_vm(app.execution.os_instance_id)
 
             gc3libs.log.info("VM instance %s at %s is no longer needed."
                              " Terminating.", vm.id, vm.preferred_ip)
