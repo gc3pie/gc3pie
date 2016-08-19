@@ -257,7 +257,7 @@ class GthechemostatScript(SessionBasedScript):
             self.params.chunk_size = int(self.params.chunk_size)
 
 
-            assert os.path.isfile(os.path.join(self.params.source,self.params.mfunct,".m")), \
+            assert os.path.isfile(os.path.join(self.params.source,self.params.mfunct + ".m")), \
                 "Matlab funtion file %s/%s.m not found" % (self.params.source,
                                                            self.params.mfunct)
             
