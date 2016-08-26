@@ -232,9 +232,7 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
                     if len(self.params.range.split(":")) == 2:
                         # Use ':' as separator
                         try:
-                            start,end = [ int(mrange) for mrange in \
-                                          self.params.range.split(":") \
-                                          if isinstance(int(mrange),int) ]
+                            start,end = [ int(mrange) for mrange in self.params.range.split(":") ]
                             if end <= start:
                                 raise ValueError("No valid input range. "
                                                  "Format: [int],[int]|[int]:[int]. E.g 1:432|3")
@@ -245,9 +243,7 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
                                              "Format: [int],[int]|[int]:[int]. E.g 1:432|3")
                     elif len(self.params.range.split(",")) > 0:
                         # Use ',' as separator
-                        self.input_range = [ int(mrange) for mrange in \
-                                             self.params.range.split(",") \
-                                             if isinstance(int(self.params.range),int) ]
+                        self.input_range = [ int(mrange) for mrange in self.params.range.split(",") ]
                     else:
                         # Anything else should fail
                         raise ValueError("No valid input range. "
