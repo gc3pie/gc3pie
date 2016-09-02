@@ -194,7 +194,7 @@ class Configuration(gc3libs.utils.Struct):
         self.cfgfiles = []
 
         # load configuration files if any
-        if len(locations) > 0:
+        if locations:
             self.load(*locations)
 
         # actual resource constructor classes
@@ -226,12 +226,12 @@ class Configuration(gc3libs.utils.Struct):
                 if not os.access(filename, os.R_OK):
                     gc3libs.log.debug(
                         "Configuration.load(): File '%s' cannot be read,"
-                        " ignoring." % filename)
+                        " ignoring.", filename)
                     continue  # with next `filename`
             else:
                 gc3libs.log.debug(
                     "Configuration.load(): File '%s' does not exist,"
-                    " ignoring." % filename)
+                    " ignoring.", filename)
                 continue  # with next `filename`
 
             filename = os.path.abspath(filename)
@@ -340,13 +340,13 @@ class Configuration(gc3libs.utils.Struct):
             if sectname.startswith('auth/'):
                 # handle auth section
                 name = sectname.split('/', 1)[1]
+                config_items = dict(parser.items(sectname))
                 gc3libs.log.debug(
                     "Config._parse():"
-                    " Read configuration stanza for auth '%s'." %
+                    " Read configuration stanza for auth '%s'",
                     name)
 
                 # minimal sanity check
-                config_items = dict(parser.items(sectname))
                 for key in self._auth_required_keys:
                     if key not in config_items:
                         raise gc3libs.exceptions.ConfigurationError(
@@ -532,8 +532,8 @@ class Configuration(gc3libs.utils.Struct):
                         "Error parsing configuration item '%s': %s: %s"
                         % (key, err.__class__.__name__, err))
 
-    @defproperty
-    def auth_factory():
+    @property
+    def auth_factory(self):
         """
         The instance of `gc3libs.authentication.Auth`:class: used to
         manage auth access for the resources.
@@ -541,19 +541,17 @@ class Configuration(gc3libs.utils.Struct):
         This is a *read-only* attribute, created upon first access
         with the values set in `self.auths` and `self.auto_enabled`.
         """
+        if self._auth_factory is None:
+            try:
+                self._auth_factory = gc3libs.authentication.Auth(
+                    self.auths, self.auto_enable_auth)
+            except Exception as err:
+                gc3libs.log.critical(
+                    "Failed initializing Auth module: %s: %s",
+                    err.__class__.__name__, str(err))
+                raise
+        return self._auth_factory
 
-        def fget(self):
-            if self._auth_factory is None:
-                try:
-                    self._auth_factory = gc3libs.authentication.Auth(
-                        self.auths, self.auto_enable_auth)
-                except Exception as err:
-                    gc3libs.log.critical(
-                        "Failed initializing Auth module: %s: %s",
-                        err.__class__.__name__, str(err))
-                    raise
-            return self._auth_factory
-        return locals()
 
     def make_auth(self, name):
         """
