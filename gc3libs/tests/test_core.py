@@ -36,7 +36,7 @@ import gc3libs.config
 from gc3libs.core import Core, MatchMaker
 from gc3libs.quantity import GB, hours
 
-from gc3libs.testing.helpers temporary_config
+from gc3libs.testing.helpers import temporary_config_file
 
 
 @raises(gc3libs.exceptions.NoResources)
@@ -126,7 +126,7 @@ def _test_core_disable_resource_on_auth_failure(auth_cls):
 
 def test_create_core_default():
     """Test `create_core` with factory defaults."""
-    with temporary_config() as cfgfile:
+    with temporary_config_file() as cfgfile:
         # std factory params
         core = create_core(cfgfile.name)
         assert_is_instance(core, Core)
@@ -135,7 +135,7 @@ def test_create_core_default():
 
 def test_create_core_non_default():
     """Test `create_core` with non-default arguments."""
-    with temporary_config() as cfgfile:
+    with temporary_config_file() as cfgfile:
         # use a specific MatchMaker instance for equality testing
         mm = MatchMaker()
         core = create_core(cfgfile.name, matchmaker=mm)
@@ -145,7 +145,7 @@ def test_create_core_non_default():
 
 def test_create_core_no_auto_enable_auth():
     """Test `create_core` without the "auto enable" feature."""
-    with temporary_config() as cfgfile:
+    with temporary_config_file() as cfgfile:
         # std factory params
         core = create_core(cfgfile.name, auto_enable_auth=False)
         assert_equal(core.auto_enable_auth, False)

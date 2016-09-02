@@ -40,7 +40,7 @@ import gc3libs.config
 from gc3libs.core import Core, Engine, MatchMaker
 from gc3libs.quantity import GB, hours
 
-from gc3libs.testing.helpers SimpleParallelTaskCollection, SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_engine
+from gc3libs.testing.helpers import SimpleParallelTaskCollection, SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_config_file, temporary_engine
 
 
 def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
@@ -375,7 +375,7 @@ def test_engine_submit_to_multiple_resources(num_resources=3, num_jobs=50):
 
 def test_create_engine_default():
     """Test `create_engine` with factory defaults."""
-    with temporary_config() as cfgfile:
+    with temporary_config_file() as cfgfile:
         # std factory params
         engine = create_engine(cfgfile.name)
         assert_is_instance(engine, Engine)
@@ -383,14 +383,14 @@ def test_create_engine_default():
 
 def test_create_engine_non_default1():
     """Test `create_engine` with one non-default argument."""
-    with temporary_config() as cfgfile:
+    with temporary_config_file() as cfgfile:
         engine = create_engine(cfgfile.name, can_submit=False)
         assert_equal(engine.can_submit, False)
 
 
 def test_create_engine_non_default2():
     """Test `create_engine` with several non-default arguments."""
-    with temporary_config() as cfgfile:
+    with temporary_config_file() as cfgfile:
         engine = create_engine(cfgfile.name,
                                can_submit=False,
                                max_in_flight=1234)
@@ -400,7 +400,7 @@ def test_create_engine_non_default2():
 
 def test_create_engine_with_core_options():
     """Test `create_engine` with a mix of Engine and Core options."""
-    with temporary_config() as cfgfile:
+    with temporary_config_file() as cfgfile:
         # use a specific MatchMaker instance for equality testing
         mm = MatchMaker()
         engine = create_engine(cfgfile.name,

@@ -80,7 +80,7 @@ def temporary_engine(transition_graph=None, **kw):
 
 
 @contextmanager
-def temporary_config(cfgtext=None, keep=False):
+def temporary_config_file(cfgtext=None, keep=False):
     """
     Write a GC3Pie configuration into a temporary file.
 
@@ -108,6 +108,19 @@ override = no
         cfgfile.flush()
         yield cfgfile
         # file is automatically deleted upon exit
+
+
+@contextmanager
+def temporary_config(cfgtext=None):
+    """
+    Return a GC3Pie ``Configuration`` object.
+
+    Optional argument `cfgtext` holds the contents of the configuration file to
+    use. If not given, a default one will be used.
+
+    """
+    with temporary_config_file(cfgtext) as cfgfile:
+        yield Configuration(cfgfile.name)
 
 
 class SuccessfulApp(Application):

@@ -30,7 +30,7 @@ from gc3libs.workflow import ParallelTaskCollection
 
 from nose.tools import raises, assert_equal
 
-from gc3libs.testing.helpers SimpleParallelTaskCollection, SuccessfulApp, UnsuccessfulApp, temporary_core
+from gc3libs.testing.helpers import SimpleParallelTaskCollection, SuccessfulApp, UnsuccessfulApp, temporary_core
 
 
 ## tests

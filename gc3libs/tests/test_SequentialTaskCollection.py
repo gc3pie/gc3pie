@@ -30,7 +30,7 @@ from gc3libs.workflow import SequentialTaskCollection
 
 from nose.tools import raises, assert_equal
 
-from gc3libs.testing.helpers SimpleSequentialTaskCollection, SuccessfulApp, UnsuccessfulApp, temporary_core
+from gc3libs.testing.helpers import SimpleSequentialTaskCollection, SuccessfulApp, UnsuccessfulApp, temporary_core
 
 
 ## tests

@@ -38,7 +38,7 @@ except ImportError:
 from gc3libs import Run
 from gc3libs.workflow import SequentialTaskCollection, StagedTaskCollection, StopOnError
 
-from gc3libs.testing.helpers SuccessfulApp, UnsuccessfulApp, temporary_core
+from gc3libs.testing.helpers import SuccessfulApp, UnsuccessfulApp, temporary_core
 
 
 def test_staged_task_collection_progress():

@@ -29,7 +29,7 @@ from gc3libs import Run, Task
 
 from nose.tools import raises, assert_equal
 
-from gc3libs.testing.helpers SuccessfulApp, UnsuccessfulApp, temporary_core
+from gc3libs.testing.helpers import SuccessfulApp, UnsuccessfulApp, temporary_core
 
 
 ## tests
