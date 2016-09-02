@@ -36,7 +36,7 @@ import gc3libs.config
 from gc3libs.core import Core, MatchMaker
 from gc3libs.quantity import GB, hours
 
-from helpers import temporary_config
+from gc3libs.testing.helpers temporary_config
 
 
 @raises(gc3libs.exceptions.NoResources)

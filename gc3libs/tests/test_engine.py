@@ -40,7 +40,7 @@ import gc3libs.config
 from gc3libs.core import Core, Engine, MatchMaker
 from gc3libs.quantity import GB, hours
 
-from helpers import SimpleParallelTaskCollection, SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_engine
+from gc3libs.testing.helpers SimpleParallelTaskCollection, SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_engine
 
 
 def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
