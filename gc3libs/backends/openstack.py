@@ -161,6 +161,13 @@ class OpenStackLrms(LRMS):
         self._parse_security_group()
         self._conn = None
 
+        # `*_instance_type` config items should be consumed here,
+        # not in any sub-resource
+        for key, value in extra_args.items():
+            if key.endswith('_instance_type'):
+                self[key] = value
+                extra_args.pop(key)
+
         # `self.subresource_args` is used to create subresources
         self.subresource_args = extra_args
         self.subresource_args['type'] = self.subresource_type
@@ -213,9 +220,8 @@ class OpenStackLrms(LRMS):
             self.client.authenticate()
             # Fill the flavors and update the resource.
             self._flavors = self.client.flavors.list()
-            flavor = max(self._flavors,
-                         key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
-            gc3libs.log.info("Biggest flavor available on the cloud: %s",
+            flavor = max(self._flavors, key=self._flavor_ordering_key)
+            gc3libs.log.info("Largest flavor available on the cloud: %s",
                              flavor.name)
             self['max_cores'] = self['max_cores_per_job'] = flavor.vcpus
             self['max_memory_per_core'] = flavor.ram * MiB
@@ -528,14 +534,13 @@ class OpenStackLrms(LRMS):
         self._connect()
         return self.client.flavors.list()
 
-    @cache_for(120)
     def _get_flavor(self, name):
-        try:
-            # pick the first match with that name
-            return (fl for fl in self._flavors if fl.name == name).next()
-        except StopIteration:
-            # no flavor by the given name
-            raise NotFound("Flavor `%s` not found." % name)
+        for flavor in self._flavors:
+            # pick the first match by that name
+            if flavor.name == name:
+                return flavor
+        # no flavor by the given name
+        raise NotFound("Flavor `{name}` not found.".format(name=name))
 
     @cache_for(120)
     def _get_keypair(self, keypair_name):
@@ -553,64 +558,102 @@ class OpenStackLrms(LRMS):
         else:
             return self.image_id
 
-    def _flavor_matches_requirements(self, flavorname, job):
+    def get_instance_type_for_job(self, task):
         """
-        Returns True or False if the flavor matches the requirement of the job.
+        Return the "best" instance_type (aka flavor) for the task.
 
-        Raises an exception NotFound if the flavor does not exists.
+        This method will always returns an instance_type that accomodates the
+        task's requirements. Preference will be given, in order, to:
+
+        1) ``<application>_instance_type configuration`` option
+        2) ``instance_type configuration`` option
+        3) the smallest flavor (ordering by cpus, ram and disk)
+           that fits the application requirements.
         """
-        # This raises NotFound if the flavor does not exists.
-        flavor = self._get_flavor(flavorname)
-        return flavor.vcpus >= job.requested_cores and \
-            (flavor.ram * MiB - self.vm_os_overhead) >= job.requested_memory
+        req_cores = self._get_task_requirement(task, 'requested_cores', 1)
+        req_memory = self._get_task_requirement(task, 'requested_memory', 0*MiB)
 
-    def get_instance_type_for_job(self, job):
-        """
-        Returns the best instance_type (aka flavor) for the job. This
-        method will always returns an instance_type that will fit the
-        job. However, preference will be given to:
-
-        1) <application>_instance_type configuration option
-        2) instance_type configuration option
-        3) the smallest flavor (ordering by cpus, ram and disk) that fits the application needs
-
-        """
-
-        # These are the flavars with enough resources to run the job
-        valid_flavors = {
-            flv.name:flv for flv in self._flavors
-            if flv.vcpus >= job.requested_cores
-            and (flv.ram * MiB - self.vm_os_overhead) >= job.requested_memory
-        }
-        # This is the fallback flavor we will use
-        flavor = min(valid_flavors.values(),
-                     key=lambda flv: (flv.vcpus, flv.ram, flv.disk))
-
-        # If there is an option <application>_instance_type, we will try to use it
-        for conf_option in [job.application_name + '_instance_type', 'instance_type']:
+        # If there is an option <application>_instance_type, try to use it
+        for conf_option in [
+                task.application_name + '_instance_type',
+                'instance_type'
+        ]:
+            gc3libs.log.debug("Trying configuration option `%s` ...", conf_option)
             try:
                 flavor_name = self[conf_option]
-                if self._flavor_matches_requirements(flavor_name, job):
-                    flavor = self._get_flavor(flavor_name)
-                    gc3libs.log.info(
-                        "Using flavor `%s` for application `%s` as requested by config"
-                        " option `%s`", flavor.name, job.application_name, conf_option)
-                    return flavor
-                else:
-                    gc3libs.log.warning(
-                        "Unable to use flavor `%s` for application `%s` as requested"
-                        " by config option `%s` because it doesn't fit"
-                        " application's requirements",
-                        flavor_name, job.application_name, conf_option)
+            except KeyError:
+                # ignore and try next option
+                continue
+            if flavor_name is None:
+                continue
+
+            try:
+                flavor = self._get_flavor(flavor_name)
             except NotFound:
                 gc3libs.log.warning(
-                    "Unable to use flavor `%s` for application `%s` as requested"
-                    " by config option `%s` because it's not available on the"
-                    " cloud backend", flavor_name, job.application_name, conf_option)
+                    "Unable to use flavor `%s` for task `%s` as requested"
+                    " by config option `%s` because it's not available"
+                    " in the cloud backend. Fix configuration file?",
+                    flavor_name, task, conf_option)
+                continue
+
+            if self._flavor_matches_requirements(flavor, req_cores, req_memory):
+                gc3libs.log.info(
+                    "Using flavor `%s` for task `%s`"
+                    " as requested by config option `%s`",
+                    flavor.name, task, conf_option)
+                return flavor
+            else:
+                gc3libs.log.warning(
+                    "Unable to use flavor `%s` for task `%s`"
+                    " as requested by config option `%s`"
+                    " because it doesn't fit application's requirements",
+                    flavor_name, task, conf_option)
+                continue
+
+        # fall back to smallest flavor that fits
+        valid_flavors = [
+            flv for flv in self._flavors
+            if self._flavor_matches_requirements(flv, req_cores, req_memory)
+        ]
+        flavor = min(valid_flavors, key=self._flavor_ordering_key)
         gc3libs.log.info(
-            "Using flavor `%s` as the smallest flavor that fits requirements"
-            " of application `%s`", flavor.name, job.application_name)
+            "Using VM flavor `%s` as the smallest flavor that fits requirements"
+            " of task `%s`", flavor.name, task)
         return flavor
+
+    @staticmethod
+    def _get_task_requirement(task, reqname, default):
+        """
+        Return attribute `reqname` of `task`.
+
+        If the attribute is not set or is ``None``, then return `default`
+        instead.
+        """
+        req = getattr(task, reqname, None)
+        if req is None:
+            req = default
+        return req
+
+    def _flavor_matches_requirements(self, flavor, req_cores, req_memory):
+        """
+        Return whether the flavor matches the given requirements.
+        """
+        return (flavor.vcpus >= req_cores and
+                (flavor.ram * MiB - self.vm_os_overhead) >= req_memory)
+
+    @staticmethod
+    def _flavor_ordering_key(flavor):
+        """
+        Return the value to use when sorting flavors.
+
+        By default, flavors are sorted lexicographically by:
+        - nr. of vCPUS (first),
+        - amount of RAM,
+        - size of disk (last).
+        """
+        return (flavor.vcpus, flavor.ram, flavor.disk)
+
 
     def get_user_data_for_job(self, job):
         """
