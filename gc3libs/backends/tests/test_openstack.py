@@ -33,29 +33,16 @@ from nose.tools import assert_equal
 import gc3libs.config
 import gc3libs.exceptions
 
-
-def _setup_config_file(confstr):
-    (fd, name) = tempfile.mkstemp()
-    f = os.fdopen(fd, 'w+')
-    f.write(confstr)
-    f.close()
-    return name
+from gc3libs.testing.helpers import temporary_config
 
 
-def test_openstack_variables_are_optionals():
-    tmpfile = _setup_config_file("""
+class TestOpenStackLrms(object):
 
+    class const:
+        _CFG0 = """
 [auth/gc3user_ssh]
 type = ssh
 username = gc3-user
-
-[auth/hobbes]
-type=openstack
-
-# Mandatory fields that are set via environment variable
-# os_username=USERNAME
-# os_password=PASSWORD
-# os_project_name=TENANT
 
 [resource/hobbes]
 # Mandatory fields that are set via environment variable
@@ -77,25 +64,39 @@ instance_type=m1.small
 image_id=a9e98055-5aa3-4636-8fc5-f3b2b4ea66bb
 security_group_name=gc3pie_ssh
 security_group_rules=tcp:22:22:0.0.0.0/0, icmp:-1:-1:0.0.0.0/0
-""")
-    cfgvalues = ['username', 'password', 'tenant_name', 'auth_url']
-    for name in cfgvalues:
-        os.environ['OS_' + name.upper()] = name
 
-    try:
-        cfg = gc3libs.config.Configuration(tmpfile)
-        resources = cfg.make_resources()
-        assert 'hobbes' in resources
+[auth/hobbes]
+type=openstack
+"""
 
-        for name in cfgvalues:
-            assert hasattr(resources['hobbes'], 'os_' + name)
-            assert_equal(getattr(resources['hobbes'], 'os_' + name), name)
-    finally:
-        os.remove(tmpfile)
+        _CFG1 = """
+# Mandatory fields that can be set via environment variable
+os_username=USERNAME
+os_password=PASSWORD
+os_project_name=TENANT
+"""
 
+    _CFG_WITH_AUTH = (const._CFG0 + const._CFG1)
 
-class TestOpenStackLrms(object):
-    pass
+    _CFG_NO_AUTH = const._CFG0
+
+    def test_openstack_variables_are_optionals(self):
+        with temporary_config(self._CFG_NO_AUTH, keep=True) as cfgfile:
+            # set up fake environment
+            vars = ['username', 'password', 'tenant_name', 'auth_url']
+            for name in vars:
+                os.environ['OS_' + name.upper()] = name
+
+            # check that resource has been correctly created
+            cfg = gc3libs.config.Configuration(cfgfile.name)
+            resources = cfg.make_resources()
+            assert 'hobbes' in resources
+
+            # check that values have been inherited from the environment
+            for name in vars:
+                assert hasattr(resources['hobbes'], 'os_' + name)
+                assert_equal(getattr(resources['hobbes'], 'os_' + name), name)
+
 
 # main: run tests
 
