@@ -1390,6 +1390,86 @@ class Singleton(object):
         return cls._instance
 
 
+class MinusInfinity(Singleton):
+
+    """An object that is less-than any other object.
+
+        >>> x = MinusInfinity()
+
+        >>> x < 1
+        True
+        >>> 1 > x
+        True
+        >>> x < -1245632479102509834570124871023487235987634518745
+        True
+
+        >>> x < -sys.maxint
+        True
+        >>> x > -sys.maxint
+        False
+        >>> -sys.maxint > x
+        True
+
+    `MinusInfinity` objects are actually smaller than *any* given Python
+    object::
+
+        >>> x < 'azz'
+        True
+        >>> x < object()
+        True
+
+    Note that `MinusInfinity` is a singleton, therefore you always get
+    the same instance when calling the class constructor::
+
+        >>> x = MinusInfinity()
+        >>> y = MinusInfinity()
+        >>> x is y
+        True
+
+    Relational operators try to return the correct value when
+    comparing `MinusInfinity` to itself::
+
+        >>> x < y
+        False
+        >>> x <= y
+        True
+        >>> x == y
+        True
+        >>> x >= y
+        True
+        >>> x > y
+        False
+
+    """
+
+    def __lt__(self, other):
+        if self is other:
+            return False
+        else:
+            return True
+
+    def __le__(self, other):
+        return True
+
+    def __gt__(self, other):
+        return False
+
+    def __ge__(self, other):
+        if self is other:
+            return True
+        else:
+            return False
+
+    def __eq__(self, other):
+        if self is other:
+            return True
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
 class PlusInfinity(Singleton):
 
     """
