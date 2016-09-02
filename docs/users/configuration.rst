@@ -98,8 +98,6 @@ Each ``auth`` section *must* specify a ``type`` setting.
 a resource. There are three supported authentication types:
 
   * ``ssh``; use this for resources that will be accessed by opening an SSH connection to the front-end node of a cluster.
-  * ``voms-proxy``: uses ``voms-proxy-init`` to generate a proxy; use for resources that require a VOMS-enabled Grid proxy.
-  * ``grid-proxy``: uses ``grid-proxy-init`` to generate a proxy; use for resources that require a Grid proxy (but no VOMS extensions).
   * ``ec2``: use this for a EC2-compatible cloud resource.
 
 For the ``ssh``-type auth, the following keys must be provided:
@@ -144,66 +142,7 @@ raised.
 
 Any other key/value pair will be ignored.
 
-For the ``voms-proxy`` type auth, the following keys must be provided:
-
-  * ``type``: must be ``voms-proxy``
-  * ``vo``: the VO to authenticate with (passed directly to
-    ``voms-proxy-init`` as argument to the ``--vo`` command-line
-    switch)
-  * ``cert_renewal_method``: see below.
-  * ``remember_password``: see below.
-
-Any other key/value pair will be ignored.
-
-For the ``grid-proxy`` type auth, the following keys must be provided:
-
-  * ``type``: must be ``grid-proxy``
-  * ``cert_renewal_method``: see below.
-  * ``remember_password``: see below.
-
-Any other key/value pair will be ignored.
-
-For the ``voms-proxy`` and ``grid-proxy`` authentication types, the
-``cert_renewal_method`` setting specifies whether GC3Libs should attempt
-to get a certificate if the current one is expired or otherwise invalid.
-Currently there are two supported ``cert_renewal_method`` types:
-
-  * ``slcs``: user certificate is generated through an invocation of the ``slcs-init``:command: program.
-  * ``manual``: user certificate is generated/renewed though an
-    external process and has to be performed by the user outside of
-    the scope of GC3Pie. In this case, if the user certificate is expired,
-    invalid or non-existent, GC3Pie will fail to authenticate.
-
-For the ``slcs`` certificate renewal method, the  following keys must be provided:
-
-  * ``aai_username``: passed directly to `slcs-init`:command: as argument to the ``--user`` command-line switch.
-  * ``idp``: passed directly to `slcs-init`:command: as argument to the ``--idp`` command-line switch.
-
-For the ``manual`` certificate renewal method, no additional keys are required.
-
-The ``remember_password`` entry (optional) must be set to a boolean
-value (the strings ``1`, ``yes``, ``true`` and ``on`` are interpreted
-as boolean "true"; any other value counts as "false").  If set to a
-true value, the ``remember_password`` entry instructs GC3Pie to keep
-the password used for this authentication in the program's main
-memory; this implies that you will be asked for the password at most
-once per program invocation.  This setting is optional, and defaults
-to "false". Keeping passwords in memory is bad security practice; do
-not set this option to "true" unless you understand the implications.
-
-*Example 1.* The following example ``auth`` section shows how to
-configure GC3Pie for using SWITCHaai_ SLCS_ services to generate a
-certificate and a VOMS_ proxy to access the Swiss National Distributed
-Computing Infrastructure SMSCG_::
-
-    [auth/smscg]
-    type = voms-proxy
-    cert_renewal_method = slcs
-    aai_username = <aai_user_name> # SWITCHaai/Shibboleth user name
-    idp= uzh.ch
-    vo = smscg
-
-*Example 2.* The following configuration sections are used to set up
+*Example 1.* The following configuration sections are used to set up
 two different accounts, that GC3Pie programs can use.  Which account
 should be used on which computational resource is defined in the
 `resource sections`_ (see below). ::
@@ -218,19 +157,16 @@ should be used on which computational resource is defined in the
     # read additional options from this SSH config file
     ssh_config = ~/.ssh/alt-config
 
-*Example 3.* The following configuration section is used to access an
-EC2 resource (access and
-secret keys are of course invalid :))::
+*Example 2.* The following configuration section is used to access an
+EC2 resource (access and secret keys are of course invalid :))::
 
     [auth/hobbes]
     type=ec2
     ec2_access_key=1234567890qwertyuiopasdfghjklzxc
     ec2_secret_key=cxzlkjhgfdsapoiuytrewq0987654321
 
-
-.. _slcs: http://www.switch.ch/grid/slcs/index.html
-.. _voms: http://vdt.cs.wisc.edu/components/voms.html
 .. _boto: https://github.com/boto/boto
+
 
 ``resource`` sections
 ---------------------
