@@ -7,7 +7,7 @@ addons:
     packages:
     - time
 install:
-  - "easy_install -U setuptools"
+  - "pip install --upgrade setuptools"
   - "pip install nose mock"
   - "pip install -e .[openstack,ec2,daemon]"
 script: nosetests -v
