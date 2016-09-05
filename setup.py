@@ -6,18 +6,23 @@ Setup file for installing GC3Pie.
 import sys
 
 
-# ensure we run a "recent enough" version of setuptools (CentOS7 still
-# ships with setuptools 0.9.8!); release 8.0 is the first one to fully
-# implement PEP 440 version specifiers
+# ensure we run a "recent enough" version of `setuptools` (CentOS7 still ships
+# with setuptools 0.9.8!). There has been some instability in the support for
+# PEP-496 environment markers in recent versions of `setuptools`, but
+# Setuptools 20.10.0 seems to have restored full support for them, including
+# `python_implementation`
 from ez_setup import use_setuptools
-use_setuptools(version='8.0')
+use_setuptools(version='20.10.0')
 
 import setuptools
 import setuptools.dist
 # avoid setuptools including `.svn` directories into the PyPI package
 from setuptools.command import sdist
-if hasattr(sdist, 'finders'):
+try:
     del sdist.finders[:]
+except AttributeError:
+    # `.finders` was removed from setuptools long ago
+    pass
 
 
 ## auxiliary functions
