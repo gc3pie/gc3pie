@@ -932,7 +932,7 @@ class OpenStackLrms(LRMS):
                 if vm.image['id'] != image_id:
                     continue
                 subresource.submit_job(job)
-                job.execution.instance_id = vm_id
+                job.execution.os_instance_id = vm_id
                 job.changed = True
                 gc3libs.log.info(
                     "Job successfully submitted to remote resource %s.",
