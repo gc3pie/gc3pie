@@ -92,20 +92,10 @@ class FilesystemStore(Store):
 
     def _load_from_file(self, path):
         """Auxiliary method for `load`."""
-        src = None
-        try:
-            src = open(path, 'rb')
+        with open(path, 'rb') as src:
             unpickler = make_unpickler(self, src)
             obj = unpickler.load()
-            src.close()
             return obj
-        except Exception:
-            if src is not None:
-                try:
-                    src.close()
-                except:
-                    pass  # ignore errors
-            raise
 
     @same_docstring_as(Store.load)
     def load(self, id_):
@@ -117,8 +107,6 @@ class FilesystemStore(Store):
                 "No '%s' file found in directory '%s'"
                 % (id_, self._directory))
 
-        # XXX: this should become `with src = ...:` as soon as we stop
-        # supporting Python 2.4
         try:
             obj = self._load_from_file(filename)
         except Exception as ex:
