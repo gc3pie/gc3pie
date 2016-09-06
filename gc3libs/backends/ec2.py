@@ -148,7 +148,7 @@ class EC2Lrms(LRMS):
 
         self.region = ec2_region
 
-        # Mapping of job.execution.ec2_instance_id => LRMS
+        # Mapping of job.execution._lrms_vm_id => LRMS
         self.subresources = {}
 
         auth = self._auth_fn()
@@ -647,7 +647,7 @@ class EC2Lrms(LRMS):
 
     @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
-        resource = self._get_subresource(self._get_vm(app.execution.ec2_instance_id))
+        resource = self._get_subresource(self._get_vm(app.execution._lrms_vm_id))
         return resource.cancel_job(app)
 
     @same_docstring_as(LRMS.get_resource_status)
@@ -766,22 +766,22 @@ class EC2Lrms(LRMS):
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir, overwrite=False,
                     changed_only=True):
-        subresource = self._get_subresource(self._get_vm(app.execution.ec2_instance_id))
+        subresource = self._get_subresource(self._get_vm(app.execution._lrms_vm_id))
         return subresource.get_results(app, download_dir,
                                        overwrite=overwrite,
                                        changed_only=changed_only)
 
     @same_docstring_as(LRMS.update_job_state)
     def update_job_state(self, app):
-        if app.execution.ec2_instance_id not in self.subresources:
+        if app.execution._lrms_vm_id not in self.subresources:
             try:
-                self.subresources[app.execution.ec2_instance_id] = self._get_subresource(
-                    self._get_vm(app.execution.ec2_instance_id))
+                self.subresources[app.execution._lrms_vm_id] = self._get_subresource(
+                    self._get_vm(app.execution._lrms_vm_id))
             except InstanceNotFound as ex:
                 gc3libs.log.error(
                     "Changing state of task '%s' to TERMINATED since EC2 "
                     "instance '%s' does not exist anymore.",
-                    app.execution.lrms_jobid, app.execution.ec2_instance_id)
+                    app.execution.lrms_jobid, app.execution._lrms_vm_id)
                 app.execution.state = Run.State.TERMINATED
                 raise ex
             except UnrecoverableError as ex:
@@ -791,7 +791,7 @@ class EC2Lrms(LRMS):
                 app.execution.state = Run.State.UNKNOWN
                 raise ex
 
-        return self.subresources[app.execution.ec2_instance_id].update_job_state(app)
+        return self.subresources[app.execution._lrms_vm_id].update_job_state(app)
 
     def submit_job(self, job):
         """
@@ -868,7 +868,7 @@ class EC2Lrms(LRMS):
                         or vm.instance_type != instance_type):
                     continue
                 resource.submit_job(job)
-                job.execution.ec2_instance_id = vm_id
+                job.execution._lrms_vm_id = vm_id
                 job.changed = True
                 gc3libs.log.info(
                     "Job successfully submitted to remote resource %s.",
@@ -930,7 +930,7 @@ class EC2Lrms(LRMS):
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
         resource = self._get_subresource(
-            self._get_vm(app.execution.ec2_instance_id))
+            self._get_vm(app.execution._lrms_vm_id))
         return resource.peek(app, remote_filename, local_file, offset, size)
 
     def validate_data(self, data_file_list=None):
@@ -960,7 +960,7 @@ class EC2Lrms(LRMS):
 
         # freeing the resource from the application is now needed as
         # the same instanc may run multiple applications
-        resource = self._get_subresource(self._get_vm(app.execution.ec2_instance_id))
+        resource = self._get_subresource(self._get_vm(app.execution._lrms_vm_id))
         resource.free(app)
 
         # FIXME: current approach in terminating running instances:
@@ -969,7 +969,7 @@ class EC2Lrms(LRMS):
         resource.get_resource_status()
         if len(resource.job_infos) == 0:
             # turn VM off
-            vm = self._get_vm(app.execution.ec2_instance_id)
+            vm = self._get_vm(app.execution._lrms_vm_id)
             gc3libs.log.info("VM instance %s at %s is no longer needed."
                              " Terminating.", vm.id, vm.public_dns_name)
             del self.subresources[vm.id]

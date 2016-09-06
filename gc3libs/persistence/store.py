@@ -92,7 +92,24 @@ class Store(object):
         Called immediately after a successful `load()`, just before returning
         the retrieved object to the caller.
         """
-        pass
+        # FIXME: remove after 2.5 release cycle
+        if isinstance(self, gc3libs.Application):
+            if hasattr(self, '_lrms_vm_id'):
+                # already updated, skip
+                pass
+            elif hasattr(self, 'os_instance_id'):
+                self.execution._lrms_vm_id = self.os_instance_id
+                del self.os_instance_id
+            elif hasattr(self, 'ec2_instance_id'):
+                self.execution._lrms_vm_id = self.ec2_instance_id
+                del self.ec2_instance_id
+            elif hasattr(self.execution, 'os_instance_id'):
+                self.execution._lrms_vm_id = self.execution.os_instance_id
+                del self.execution.os_instance_id
+            elif hasattr(self.execution, 'ec2_instance_id'):
+                self.execution._lrms_vm_id = self.execution.ec2_instance_id
+                del self.execution.ec2_instance_id
+
 
     def save(self, obj):
         """
