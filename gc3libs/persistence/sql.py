@@ -263,6 +263,7 @@ class SqlStore(Store):
         obj = unpickler.load()
         conn.close()
 
+        super(SqlStore, self)._update_to_latest_schema()
         return obj
 
     @same_docstring_as(Store.remove)

@@ -141,6 +141,8 @@ class FilesystemStore(Store):
                               type(obj.persistent_id),
                               id_,
                               type(id_)))
+
+        super(FilesystemStore, self)._update_to_latest_schema()
         return obj
 
     @same_docstring_as(Store.remove)

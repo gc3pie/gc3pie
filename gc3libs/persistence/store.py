@@ -85,6 +85,15 @@ class Store(object):
             "Abstract method 'Store.load' called"
             " -- should have been implemented in a derived class!")
 
+    def _update_to_latest_schema(self):
+        """
+        Modify an object in-place to reflect changes in the schema.
+
+        Called immediately after a successful `load()`, just before returning
+        the retrieved object to the caller.
+        """
+        pass
+
     def save(self, obj):
         """
         Save an object, and return an ID.
