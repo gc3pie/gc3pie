@@ -80,13 +80,15 @@ Each authentication section must begin with a line of the form:
 
 where the `{name}`:file: portion is any alphanumeric string.
 
-You can have as many `[auth/{name}]`:file: sections as you want; any
-name is allowed provided it's composed only of letters, numbers and
-the underscore character ``_``.
+You can have as many `[auth/{name}]`:file: sections as you want; any name is
+allowed provided it's composed only of letters, numbers and the underscore
+character ``_``. (Examples of valid names are: ``[auth/cloud]``,
+``[auth/ssh1]``, and ``[auth/user_name]``)
 
-This allows you to define different auth methods for different
-resources.  Each `[resource/{name}]`:file: section will reference one
-(and one only) authentication section.
+This allows you to define different auth methods for different resources. Each
+`[resource/{name}]`:file: section can reference one (and one only)
+authentication section, but the same `[auth/{name}]`:file: section can be used
+by more than one `[resource/{name}]`:file: section.
 
 
 Authentication types
@@ -99,6 +101,11 @@ a resource. There are three supported authentication types:
 
   * ``ssh``; use this for resources that will be accessed by opening an SSH connection to the front-end node of a cluster.
   * ``ec2``: use this for a EC2-compatible cloud resource.
+  * ``openstack``: use this for an OpenStack cloud resource.
+
+
+``ssh``-type authentication
++++++++++++++++++++++++++++
 
 For the ``ssh``-type auth, the following keys must be provided:
 
@@ -127,23 +134,8 @@ The following configuration keys are instead optional:
   and connection timeout.  Options ``port``, ``keyfile``, and
   ``timeout`` could be deprecated in future releases.
 
-For the ``ec2``-type auth, the following keys *can* be provided. If
-they are not found, the value of the corresponding environment
-variable will be used instead, if found, otherwise an error will be
-raised.
-
-  * ``ec2_access_key``: Your personal access key to authenticate
-    against the specific cloud endpoint. If not found, the environment
-    variable ``EC2_ACCESS_KEY`` will be used.
-
-  * ``ec2_secret_key``: Your personal secret key associated with the
-    above ``ec2_access_key``. If not found, the environment
-    variable ``EC2_SECRET_KEY`` will be used.
-
-Any other key/value pair will be ignored.
-
-*Example 1.* The following configuration sections are used to set up
-two different accounts, that GC3Pie programs can use.  Which account
+*Example.* The following configuration sections are used to set up
+two different accounts that GC3Pie programs can use.  Which account
 should be used on which computational resource is defined in the
 `resource sections`_ (see below). ::
 
@@ -157,15 +149,31 @@ should be used on which computational resource is defined in the
     # read additional options from this SSH config file
     ssh_config = ~/.ssh/alt-config
 
-*Example 2.* The following configuration section is used to access an
-EC2 resource (access and secret keys are of course invalid :))::
+
+``ec2``-type authentication
++++++++++++++++++++++++++++
+
+For the ``ec2``-type auth, the following keys *can* be provided:
+
+  * ``ec2_access_key``: Your personal access key to authenticate against the
+    specific cloud endpoint. If not found, the value of the environment variable
+    ``EC2_ACCESS_KEY`` will be used; if the environment variable is unset,
+    GC3Pie will raise a ``ConfigurationError``.
+
+  * ``ec2_secret_key``: Your personal secret key associated with the above
+    ``ec2_access_key``. If not found, the value of the environment variable
+    ``EC2_SECRET_KEY`` will be used; if the environment variable is unset,
+    GC3Pie will raise a ``ConfigurationError``.
+
+Any other key/value pair will be silently ignored.
+
+*Example.* The following configuration section is used to access an
+EC2-compatible resource (access and secret keys are of course invalid)::
 
     [auth/hobbes]
     type=ec2
     ec2_access_key=1234567890qwertyuiopasdfghjklzxc
     ec2_secret_key=cxzlkjhgfdsapoiuytrewq0987654321
-
-.. _boto: https://github.com/boto/boto
 
 
 ``resource`` sections
@@ -697,6 +705,8 @@ writing means use the default region on Amazon.
         aptitude update && aptitude -y install imagemagick
 
     will install `imagemagick` only for the `warholize` application.
+
+.. _boto: https://github.com/boto/boto
 
 
 Example ``resource`` sections
