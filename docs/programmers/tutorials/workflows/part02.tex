@@ -95,9 +95,8 @@
 
 \begin{frame}[fragile]
   \frametitle{Let's start coding!}
-  \begin{columns}
-    \begin{column}{0.7\linewidth}
-\begin{python}
+  \begin{center}
+    \begin{python}
 from gc3libs.cmdline \
   import SessionBasedScript
 
@@ -114,15 +113,8 @@ class AScript(SessionBasedScript):
         version='1.0')
   def new_tasks(self, extra):
     return []
-\end{python}
-    \end{column}
-    \begin{column}{0.3\linewidth}
-      \href{https://raw.githubusercontent.com/uzh/gc3pie/training-september-2016/docs/programmers/tutorials/workflows/solutions/ex2a.py}{Download} this code into a file named \texttt{ex2a.py}
-
-      \+
-      Open it in your favorite text editor.
-    \end{column}
-  \end{columns}
+  \end{python}
+\end{center}
 \end{frame}
 
 
@@ -130,7 +122,7 @@ class AScript(SessionBasedScript):
   \begin{exercise*}[2.A]
 
     \+
-    \href{https://raw.githubusercontent.com/uzh/gc3pie/training-september-2016/docs/programmers/tutorials/workflows/solutions/ex2a.py}{Download this code} into a file named \texttt{ex2a.py}
+    You can find the \texttt{ex2a.py} in the 'download' folder on your training instance.
 
     \begin{enumerate}
     \item Run the following command:
@@ -364,13 +356,13 @@ $ matlab -r 'simAsset 58 0.043 0.13 0.02 667 3000 1'
   \begin{python}
 from gc3libs import Application
 
-class GassetApplication(Application):
+class GassetApp(Application):
   """Run Asset cost evolution function."""
   def __init__(self, params, mscript):
       args = ""
       for param in params:
          args += " %s " % param        
-      mfunct = os.path.basename(mscript)
+      mfunct = os.path.basename(mscript).split('.')[0]
       Application.__init__(
          self,
          arguments="matlab -r '"+mfunct+" "+args+"'"
@@ -394,12 +386,13 @@ class GassetApplication(Application):
 \begin{python}
 ~\HL{from gc3libs import Application}~
 
-class GassetApplication(Application):
+class GassetApp(Application):
   """Run Asset cost evolution function."""
   def __init__(self, params, mscript):
       args = ""
       for param in params:
           args += " %s " % param        
+      mfunct = os.path.basename(mscript).split('.')[0]
       Application.__init__(
         self,
         arguments="matlab -r '"+mfunct+" "+args+"'"
@@ -415,13 +408,13 @@ class GassetApplication(Application):
 \begin{python}
 from gc3libs import Application
 
-class GassetApplication(Application):
+class GassetApp(Application):
   """Run Asset cost evolution function."""
   def __init__(self, params, mscript):
       args = ""
       for param in params:
           args += " %s " % param
-      mfunct = os.path.basename(mscript)
+      mfunct = os.path.basename(mscript).split('.')[0]
       Application.__init__(
         self,
         ~\HL{arguments="matlab -r '"+mfunct+" "+args+"'"}~
@@ -437,11 +430,11 @@ The \texttt{inputs} parameter holds a list of files that you want to
 \emph{Remember: this might be a remote computer!}
 
 \begin{python}
-class GassetApplication(Application):
+class GassetApp(Application):
   """Run Asset cost evolution function."""
   def __init__(self, params, mscript):
       ...
-      mfunct = os.path.basename(mscript)
+      mfunct = os.path.basename(mscript).split('.')[0]
       Application.__init__(
         self,
         arguments="matlab -r '"+mfunct+" "+args+"'"
@@ -481,11 +474,11 @@ class GassetApplication(Application):
   invocation.
 
 \begin{python}
-class GassetApplication(Application):
+class GassetApp(Application):
   """Run Asset cost evolution function."""
   def __init__(self, params, mscript):
       ...
-      ~\HL{mfunct = os.path.basename(mscript)}~
+      ~\HL{mfunct = os.path.basename(mscript).split('.')[0]}~
       Application.__init__(
         self,
         arguments="matlab -r '"+~\HL{mfunct}~+" "+args+"'"
@@ -506,11 +499,11 @@ the command execution directory back to your computer.
 
   \+
 \begin{python}
-class GassetApplication(Application):
+class GassetApp(Application):
   """Run Asset cost evolution function."""
   def __init__(self, params, mscript):
       ...
-      mfunct = os.path.basename(mscript)
+      mfunct = os.path.basename(mscript).split('.')[0]
       Application.__init__(
         self,
         arguments="matlab -r '"+mfunct+" "+args+"'"
@@ -553,11 +546,11 @@ The \lstinline|output_dir| parameter specifies where output filess
 will be downloaded.
 
 \begin{python}
-class GassetApplication(Application):
+class GassetApp(Application):
   """Run Asset cost evolution function."""
   def __init__(self, params, mscript):
       ...
-      mfunct = os.path.basename(mscript)
+      mfunct = os.path.basename(mscript).split('.')[0]
       Application.__init__(
         self,
         arguments="matlab -r '"+mfunct+" "+args+"'"
@@ -595,17 +588,17 @@ the other output files.
 
   \+
 \begin{python}
-class GassetApplication(Application):
+class GassetApp(Application):
   """Run Asset cost evolution function."""
   def __init__(self, params, mscript):
       ...
-      mfunct = os.path.basename(mscript)
+      mfunct = os.path.basename(mscript).split('.')[0]
       Application.__init__(
         self,
         arguments="matlab -r '"+mfunct+" "+args+"'"
         inputs=[mscript],
         outputs=['./results/'],
-        output\_dir="gasset.d",
+        output_dir="gasset.d",
         ~\HL{stdout="stdout.txt",}~
         stderr="stderr.txt",
         ...
@@ -620,17 +613,17 @@ There's a corresponding \texttt{stderr} option for the command's
 \emph{standard error} stream.
 
 \begin{python}
-class GassetApplication(Application):
+class GassetApp(Application):
   """Run Asset cost evolution function."""
   def __init__(self, params, mscript):
       ...
-      mfunct = os.path.basename(mscript)
+      mfunct = os.path.basename(mscript).split('.')[0]
       Application.__init__(
         self,
         arguments="matlab -r '"+mfunct+" "+args+"'"
         inputs=[mscript],
         outputs=['./results/'],
-        output\_dir="gasset.d",
+        output_dir="gasset.d",
         stdout="stdout.txt",
         ~\HL{stderr="stderr.txt"}~)
         ...
@@ -666,7 +659,7 @@ class Ascript(SessionBasedScript):
     # of command-line arguments
     input_params = parse(self.params.args[0])[0]
     matalb_script = abspath(self.params.args[1])
-    app = GassetApplication(input_params,matlab_script)
+    app = GassetApp(input_params,matlab_script)
     return [app]
 \end{python}
 \end{frame}
@@ -677,7 +670,7 @@ class Ascript(SessionBasedScript):
   \begin{exercise*}[2.B]
 
     Edit the \texttt{ex2a.py} file: insert the code to define the
-    \href{https://raw.githubusercontent.com/uzh/gc3pie/training-september-2016/docs/programmers/tutorials/workflows/downloads/geasset.py}{\texttt{GassetApplication}}
+    \href{https://raw.githubusercontent.com/uzh/gc3pie/training-september-2016/docs/programmers/tutorials/workflows/downloads/geasset.py}{\texttt{GassetApp}}
     application, and modify the \texttt{new\_tasks()} method to return
     one instance of it (as in the previous slide).
 
@@ -685,9 +678,7 @@ class Ascript(SessionBasedScript):
     Run the script and display the generated plot.
 
     \+ \footnotesize
-    {\em You can download the code for \texttt{GassetApp} and the \texttt{paramers.csv} file from
-    \href{https://raw.githubusercontent.com/uzh/gc3pie/training-september-2016/docs/programmers/tutorials/workflows/}{this
-      URL}.}
+    {\em You can find the code for \texttt{GassetApp} and the \texttt{paramers.csv} file in the 'download' folder on your training instance.}
   \end{exercise*}
 
   \+
@@ -865,7 +856,7 @@ type = openstack
 
   \+
   \begin{exercise*}[2.E]
-    Run the gasset script \texttt{ex2c} on Science Cloud.
+    Run the script from Exercise 2.C on Science Cloud.
     Do you need to change anything in the code?
   \end{exercise*}
 \end{frame}
