@@ -17,7 +17,7 @@
   \\[1ex]
   University of Zurich
 }
-\date{September~11--14, 2016}
+\date{September~12--13, 2016}
 
 \begin{document}
 
@@ -32,12 +32,19 @@
   session, together with their state:
 
 \begin{stdout}
-$ ^\HL{gsession list -r ex2b}^
-+----------------+-----------------+------------+---------------------------------------+
-| JobID          | Job name        | State      | Info                                  |
-+----------------+-----------------+------------+---------------------------------------+
-| GrayscaleApp.6 | GrayscaleApp-N1 | TERMINATED | TERMINATED at Sat Jul 9 22:13:58 2016 |
-+----------------+-----------------+------------+---------------------------------------+
+
+$ ^\HL{gsession list -r gasset}^
++--------------+--------------+------------+----------------------------------------+
+| JobID        | Job name     | State      | Info                                   |
++--------------+--------------+------------+----------------------------------------+
+| GassetApp.71 | GassetApp-N7 | TERMINATED | TERMINATED at Sat Sep 10 22:24:03 2016 |
+| GassetApp.73 | GassetApp-N5 | TERMINATED | TERMINATED at Sat Sep 10 22:24:03 2016 |
+| GassetApp.72 | GassetApp-N6 | TERMINATED | TERMINATED at Sat Sep 10 22:24:50 2016 |
+| GassetApp.75 | GassetApp-N3 | TERMINATED | TERMINATED at Sat Sep 10 22:24:55 2016 |
+| GassetApp.74 | GassetApp-N4 | TERMINATED | TERMINATED at Sat Sep 10 22:26:22 2016 |
+| GassetApp.77 | GassetApp-N1 | TERMINATED | TERMINATED at Sat Sep 10 22:26:07 2016 |
+| GassetApp.76 | GassetApp-N2 | TERMINATED | TERMINATED at Sat Sep 10 22:26:42 2016 |
++--------------+--------------+------------+----------------------------------------+
 \end{stdout}%$
 \end{frame}
 
@@ -49,13 +56,19 @@ $ ^\HL{gsession list -r ex2b}^
   and state changes for all tasks in a session:
 
 \begin{stdout}
-$ ^\HL{gsession log ex2b}^
-Jul 09 22:13:53 GrayscaleApp.6: Submitting to 'localhost'
-Jul 09 22:13:53 GrayscaleApp.6: SUBMITTED
-Jul 09 22:13:53 GrayscaleApp.6: Submitted to 'localhost'
-Jul 09 22:13:58 GrayscaleApp.6: TERMINATING
-Jul 09 22:13:58 GrayscaleApp.6: Final output downloaded to 'grayscale.d'
-Jul 09 22:13:58 GrayscaleApp.6: TERMINATED
+$ ^\HL{gsession log gasset}^
+Sep 10 22:26:07 GassetApp.76: Submitting to 'localhost'
+Sep 10 22:26:07 GassetApp.76: SUBMITTED
+Sep 10 22:26:07 GassetApp.76: Submitted to 'localhost'
+Sep 10 22:26:07 GassetApp.77: Final output downloaded to 'gasset-1'
+Sep 10 22:26:07 GassetApp.77: TERMINATED
+Sep 10 22:26:12 GassetApp.76: RUNNING
+Sep 10 22:26:22 GassetApp.74: TERMINATING
+Sep 10 22:26:22 GassetApp.74: Final output downloaded to 'gasset-4'
+Sep 10 22:26:22 GassetApp.74: TERMINATED
+Sep 10 22:26:42 GassetApp.76: TERMINATING
+Sep 10 22:26:42 GassetApp.76: Final output downloaded to 'gasset-2'
+Sep 10 22:26:42 GassetApp.76: TERMINATED
 \end{stdout}%$
 \end{frame}
 
@@ -67,56 +80,54 @@ Jul 09 22:13:58 GrayscaleApp.6: TERMINATED
   specific task, or all tasks in a session:
 
 \begin{stdout}[basicstyle=\tiny\ttfamily]
-$ ^\HL{ginfo -v -s ex2b}^
-GrayscaleApp.6
-  arguments: convert, lena.jpg, -colorspace, gray, gray-lena.jpg
-  ^\em [\ldots]^
-  execution:
+$ ^\HL{ginfo -v -s gasset}^
+GassetApp.71
     ^\em [\ldots]^
-    history:
-      - Submitting to 'localhost' at Sun Jul 10 00:27:02 2016
-      ^\em [\ldots]^
-    lrms_execdir: /home/gc3pie/docs/programmers/tutorials/workflows/gc3libs.SMGNxr
-    lrms_jobid: 23183
-    resource_name: localhost
-    ^\em [\ldots]^
-  inputs:
-    file:///home/gc3pie/docs/programmers/tutorials/workflows/lena.jpg: lena.jpg
-  ^\em [\ldots]^
-  output_dir: grayscale.d
-  outputs:
-    gray-lena.jpg: file, , gray-lena.jpg, None, None, , None, None
-    stderr.txt: file, , stderr.txt, None, None, , None, None
-    stdout.txt: file, , stdout.txt, None, None, , None, None
-  ^\em [\ldots]^
-  stderr: stderr.txt
-  stdin: None
-  stdout: stdout.txt
-  ^\em [\ldots]^
+    arguments: matlab, -nodesktop, -nodisplay, -nosplash, -r, simAsset  58  0.0471155977822  0.263213407081  0.0109589041096  534  3000  7 ;quit()
+    inputs: 
+        file:///home/ubuntu/gasset/simAsset.m: simAsset.m
+    outputs: 
+        stderr.txt: file, , stderr.txt, None, None, , None, None
+        ./results/: file, , , None, None, , None, None
+        stdout.txt: file, , stdout.txt, None, None, , None, None
+    requested_memory: 1GB
+    jobname: GassetApp-N7
+    execution: 
+        ^\em [\ldots]^
+        _state: TERMINATED
+        returncode: 0, 0
+        history:
+            - Submitting to 'localhost' at Sat Sep 10 22:23:16 2016
+            - SUBMITTED at Sat Sep 10 22:23:17 2016
+            - Submitted to 'localhost' at Sat Sep 10 22:23:17 2016
+            - RUNNING at Sat Sep 10 22:23:22 2016
+            - TERMINATING at Sat Sep 10 22:24:03 2016
+            - Final output downloaded to 'gasset-7' at Sat Sep 10 22:24:03 2016
+            - TERMINATED at Sat Sep 10 22:24:03 2016
 \end{stdout}%$
 \end{frame}
 
 
-\begin{frame}[fragile]
-  \frametitle{Dump contents of a task, II}
+% \begin{frame}[fragile]
+%   \frametitle{Dump contents of a task, II}
 
-  Note that \textbf{without the \texttt{-v}} option, \texttt{ginfo}
-  limits its output to the \texttt{.execution} attribute of a
-  \texttt{Task}/\texttt{Application} object:
+%   Note that \textbf{without the \texttt{-v}} option, \texttt{ginfo}
+%   limits its output to the \texttt{.execution} attribute of a
+%   \texttt{Task}/\texttt{Application} object:
 
-\begin{stdout}[basicstyle=\tiny\ttfamily]
-$ ^\HL{ginfo -s ex2b}^
-GrayscaleApp.6
-  ^\em [\ldots]^
-  history:
-    - Submitting to 'localhost' at Sun Jul 10 00:27:02 2016
-    ^\em [\ldots]^
-  lrms_execdir: /home/gc3pie/docs/programmers/tutorials/workflows/gc3libs.SMGNxr
-  lrms_jobid: 23183
-  resource_name: localhost
-  ^\em [\ldots]^
-\end{stdout}%$
-\end{frame}
+% \begin{stdout}[basicstyle=\tiny\ttfamily]
+% $ ^\HL{ginfo -s ex2b}^
+% GrayscaleApp.6
+%   ^\em [\ldots]^
+%   history:
+%     - Submitting to 'localhost' at Sun Jul 10 00:27:02 2016
+%     ^\em [\ldots]^
+%   lrms_execdir: /home/gc3pie/docs/programmers/tutorials/workflows/gc3libs.SMGNxr
+%   lrms_jobid: 23183
+%   resource_name: localhost
+%   ^\em [\ldots]^
+% \end{stdout}%$
+% \end{frame}
 
 
 \begin{frame}[fragile]
@@ -124,7 +135,7 @@ GrayscaleApp.6
 
   The \texttt{gsession abort} command kills all tasks in a session.
 \begin{stdout}
-$ ^\HL{gsession abort ex2b}^
+$ ^\HL{gsession abort gasset}^
 \end{stdout}%$
 
   \+
