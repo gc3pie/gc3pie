@@ -24,7 +24,7 @@ def parse(input_csv):
 
     return input_parameters
             
-class GassetApplication(Application):
+class GassetApp(Application):
     """Run Asset cost evolution function."""
 
     application_name = 'gasset'
@@ -73,7 +73,7 @@ class AScript(SessionBasedScript):
 
             extra_args = extra.copy()
 
-            tasks.append(GassetApplication(
+            tasks.append(GassetApp(
                 params_list,
                 self.params.matlab_script,
                 **extra_args))            
