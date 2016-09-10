@@ -11,13 +11,13 @@
   GC3Pie basics
 }
 \author[S. Maffioletti, S3IT UZH]{%
-  Sergio Maffioletti \texttt{<sergio.maffioletti@uzh.ch>}
+  Sergio Maffioletti \texttt{<riccardo.murri@uzh.ch>}
   \\[1ex]
   \emph{S3IT: Services and Support for Science IT}
   \\[1ex]
   University of Zurich
 }
-\date{September~12--13, 2016}
+\date{July~11--14, 2016}
 
 \begin{document}
 
@@ -117,7 +117,7 @@ class AScript(SessionBasedScript):
 \end{python}
     \end{column}
     \begin{column}{0.3\linewidth}
-      \href{https://raw.githubusercontent.com/uzh/gc3pie/training-september-2016/docs/programmers/tutorials/workflows/solutions/ex2a.py}{Download} this code into a file named \texttt{ex2a.py}
+      \href{https://raw.githubusercontent.com/uzh/gc3pie/training-july-2016/docs/programmers/tutorials/workflows/solutions/ex2a.py}{Download} this code into a file named \texttt{ex2a.py}
 
       \+
       Open it in your favorite text editor.
@@ -130,7 +130,7 @@ class AScript(SessionBasedScript):
   \begin{exercise*}[2.A]
 
     \+
-    \href{https://raw.githubusercontent.com/uzh/gc3pie/training-september-2016/docs/programmers/tutorials/workflows/solutions/ex2a.py}{Download this code} into a file named \texttt{ex2a.py}
+    \href{https://raw.githubusercontent.com/uzh/gc3pie/training-july-2016/docs/programmers/tutorials/workflows/solutions/ex2a.py}{Download this code} into a file named \texttt{ex2a.py}
 
     \begin{enumerate}
     \item Run the following command:
@@ -342,47 +342,43 @@ class AScript(SessionBasedScript):
   \+
   Advanced users can customize pre- and post-processing, react on
   state transitions, set computational requirements based on input
-  files, influence scheduling. (This is standard OOP: subclass and
+  files, influence scheduling.  (This is standard OOP: subclass and
   override a method.)
 \end{frame}
 
 
 \begin{frame}[fragile]
-\frametitle{A basic example: gasset}
+\frametitle{A basic example: Matlab plot}
 \begin{sh}
-$ matlab -r 'simAsset 58 0.043 0.13 0.02 667 3000 1'
+$ matlab -nodesktop -nosplash -nodisplay -r "x  = 0: .1 : 2*pi; y1 = cos(x); y2 = sin(x); figure; plot(x, y1, 'b', x, y2, 'r-.', 'LineWidth', 2); print('myplot','-dpng'); quit()"
 \end{sh}%$
-\begin{center}
-  {\includegraphics[width=0.9\linewidth]{fig/asset-price.png}}
-\end{center}
+\begin{tabular}{ccc}
+  {\includegraphics[width=0.4\linewidth]{fig/plot01.png}}
+\end{tabular}
+
 \end{frame}
 
 
 \begin{frame}[fragile]
-\frametitle{Here is how you would run that command in GC3Pie.}
+\frametitle{Grayscaling example, I}
 
-  \begin{python}
+  Here is how you would tell GC3Pie \\ to run that command-line.
+
+\begin{python}
 from gc3libs import Application
 
-class GassetApplication(Application):
-  """Run Asset cost evolution function."""
-  def __init__(self, params, mscript):
-      args = ""
-      for param in params:
-         args += " %s " % param        
-      mfunct = os.path.basename(mscript)
-      Application.__init__(
-         self,
-         arguments="matlab -r '"+mfunct+" "+args+"'"
-         inputs=[mscript],
-         outputs=['./results/'],
-         output_dir="gasset.d"
-         stdout="stdout.txt",
-         stderr="stderr.txt",
-         requested_memory=1*GB,
-         requested_walltime=8*hours
-      )
-    \end{python}
+class MyPlotApplication(Application):
+  """Plot Trigonometric Functions"""
+  def __init__(self, img):
+    out = "myplot.png"
+    Application.__init__(
+      self,
+      arguments="matlab -nodesktop -nosplash -nodisplay -r \"x  = 0: .1 : 2*pi; y1 = cos(x); y2 = sin(x); figure; plot(x, y1, 'b', x, y2, 'r-.', 'LineWidth', 2); print('myplot','-dpng'); quit()\"",
+      inputs=[],
+      outputs=[out],
+      output_dir="mplot",
+      stdout="stdout.txt")
+\end{python}
 \end{frame}
 
 
@@ -394,62 +390,116 @@ class GassetApplication(Application):
 \begin{python}
 ~\HL{from gc3libs import Application}~
 
-class GassetApplication(Application):
-  """Run Asset cost evolution function."""
-  def __init__(self, params, mscript):
-      args = ""
-      for param in params:
-          args += " %s " % param        
-      Application.__init__(
-        self,
-        arguments="matlab -r '"+mfunct+" "+args+"'"
-        ...
+class MyPlotApplication~\HL{(Application)}~:
+  """Plot Trigonometric Functions."""
+  def __init__(self, img):
+    inp = basename(img)
+    out = "gray-" + inp
+    Application.__init__(
+      self,
+      arguments=[
+        "matlab -nodesktop -nosplash -nodisplay -r \"x  = 0: .1 : 2*pi; y1 = cos(x); y2 = sin(x); figure; plot(x, y1, 'b', x, y2, 'r-.', 'LineWidth', 2); print('myplot','-dpng'); quit()\"",
+      inputs=[img],
+      outputs=[out],
+      output_dir="grayscale.d",
+      stdout="stdout.txt")
+\end{python}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{The \texttt{arguments} parameter, I}
+
+  The \texttt{arguments=} parameter is the actual command-line to be invoked.
+
+  \+
+\begin{python}
+class MyPlotApplication(Application):
+  """Plot Trigonometric Functions."""
+  def __init__(self, img):
+    inp = basename(img)
+    out = "gray-" + inp
+    Application.__init__(
+      self,
+      ~\HL{arguments=[}~
+        ~\HL{"matlab -nodesktop -nosplash -nodisplay -r \"x  = 0: .1 : 2*pi; y1 = cos(x); y2 = sin(x); figure; plot(x, y1, 'b', x, y2, 'r-.', 'LineWidth', 2); print('myplot','-dpng'); quit()\"",}~
+      inputs=[img],
+      outputs=[out],
+      output_dir="grayscale.d",
+      stdout="stdout.txt")
 \end{python}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{The \texttt{arguments} parameter}
+\frametitle{The \texttt{arguments} parameter, II}
 
-  The \texttt{arguments=} parameter is the actual command-line to be invoked.
+The first item in the \texttt{arguments} list is the name or path to the command to run.
+
   \+
 \begin{python}
-from gc3libs import Application
-
-class GassetApplication(Application):
-  """Run Asset cost evolution function."""
-  def __init__(self, params, mscript):
-      args = ""
-      for param in params:
-          args += " %s " % param
-      mfunct = os.path.basename(mscript)
-      Application.__init__(
-        self,
-        ~\HL{arguments="matlab -r '"+mfunct+" "+args+"'"}~
-        ...
+class MyPlotApplication(Application):
+  """Plot Trigonometric Functions."""
+  def __init__(self, img):
+    inp = basename(img)
+    out = "gray-" + inp
+    Application.__init__(
+      self,
+      arguments=[
+        ~\HL{"convert"}~, inp, "-colorspace", "gray", out],
+      inputs=[img],
+      outputs=[out],
+      output_dir="grayscale.d",
+      stdout="stdout.txt")
 \end{python}
 \end{frame}
+
+\begin{frame}[fragile]
+\frametitle{The \texttt{arguments} parameter, III}
+
+The rest of the list are arguments to the program, as you would type
+them at the shell prompt.
+
+  \+
+\begin{python}
+class MyPlotApplication(Application):
+  """Plot Trigonometric Functions."""
+  def __init__(self, img):
+    inp = basename(img)
+    out = "gray-" + inp
+    Application.__init__(
+      self,
+      arguments=[
+        "convert", ~\HL{inp, "-colorspace", "gray", out}~],
+      inputs=[img],
+      outputs=[out],
+      output_dir="grayscale.d",
+      stdout="stdout.txt")
+\end{python}
+\end{frame}
+
 
 \begin{frame}[fragile]
 \frametitle{The \texttt{inputs} parameter, I}
 
 The \texttt{inputs} parameter holds a list of files that you want to
-\emph{copy} to the location where the command is executed. \\
-\emph{Remember: this might be a remote computer!}
+\emph{copy} to the location where the command is executed. (Remember:
+this might be a remote computer!)
 
+  \+
 \begin{python}
-class GassetApplication(Application):
-  """Run Asset cost evolution function."""
-  def __init__(self, params, mscript):
-      ...
-      mfunct = os.path.basename(mscript)
-      Application.__init__(
-        self,
-        arguments="matlab -r '"+mfunct+" "+args+"'"
-        ~\HL{inputs=[mscript],}~
-        outputs=['./results/'],
-        output_dir="gasset.d",
-        stdout="stdout.txt",
-        ...
+class MyPlotApplication(Application):
+  """Plot Trigonometric Functions."""
+  def __init__(self, img):
+    inp = basename(img)
+    out = "gray-" + inp
+    Application.__init__(
+      self,
+      arguments=[
+        "matlab -nodesktop -nosplash -nodisplay -r \"x  = 0: .1 : 2*pi; y1 = cos(x); y2 = sin(x); figure; plot(x, y1, 'b', x, y2, 'r-.', 'LineWidth', 2); print('myplot','-dpng'); quit()\"",
+      ~\HL{inputs=[img]}~,
+      outputs=[out],
+      output_dir="grayscale.d",
+      stdout="stdout.txt")
 \end{python}
 \end{frame}
 
@@ -463,8 +513,8 @@ class GassetApplication(Application):
   For example:
   \begin{python}
     inputs = [
-      '/data/values.dat',
-      '/data/stats.csv',
+      '/home/rmurri/values.dat',
+      '/home/rmurri/stats.csv',
     ]
   \end{python}
   will make files \emph{values.dat} and \emph{stats.csv} available in
@@ -481,19 +531,19 @@ class GassetApplication(Application):
   invocation.
 
 \begin{python}
-class GassetApplication(Application):
-  """Run Asset cost evolution function."""
-  def __init__(self, params, mscript):
-      ...
-      ~\HL{mfunct = os.path.basename(mscript)}~
-      Application.__init__(
-        self,
-        arguments="matlab -r '"+~\HL{mfunct}~+" "+args+"'"
-        ~\HL{inputs=[mscript],}~
-        outputs=['./results/'],
-        output_dir="gasset.d",
-        stdout="stdout.txt",
-        ...
+class MyPlotApplication(Application):
+  """Plot Trigonometric Functions."""
+  def __init__(self, img):
+    ~\HL{inp = basename(img)}~
+    out = "gray-" + inp
+    Application.__init__(
+      self,
+      arguments=[
+        "convert", ~\HL{inp}~, "-colorspace", "gray", out],
+      inputs=[~\HL{img}~],
+      outputs=[out],
+      output_dir="grayscale.d",
+      stdout="stdout.txt")
 \end{python}
 \end{frame}
 
@@ -506,19 +556,19 @@ the command execution directory back to your computer.
 
   \+
 \begin{python}
-class GassetApplication(Application):
-  """Run Asset cost evolution function."""
-  def __init__(self, params, mscript):
-      ...
-      mfunct = os.path.basename(mscript)
-      Application.__init__(
-        self,
-        arguments="matlab -r '"+mfunct+" "+args+"'"
-        inputs=[mscript],
-        ~\HL{outputs=['./results/'],}~
-        output_dir="gasset.d",
-        stdout="stdout.txt",
-        ...
+class MyPlotApplication(Application):
+  """Plot Trigonometric Functions."""
+  def __init__(self, img):
+    inp = basename(img)
+    out = "gray-" + inp
+    Application.__init__(
+      self,
+      arguments=[
+        "matlab -nodesktop -nosplash -nodisplay -r \"x  = 0: .1 : 2*pi; y1 = cos(x); y2 = sin(x); figure; plot(x, y1, 'b', x, y2, 'r-.', 'LineWidth', 2); print('myplot','-dpng'); quit()\"",
+      inputs=[img],
+      ~\HL{outputs=[out]}~,
+      output_dir="grayscale.d",
+      stdout="stdout.txt")
 \end{python}
 \end{frame}
 
@@ -534,7 +584,7 @@ class GassetApplication(Application):
 
   \+
   (Contrast with input files, which must be specified by
-  \emph{absolute path}, e.g., \texttt{/data/values.dat})
+  \emph{absolute path}, e.g., \texttt{/home/rmurri/values.dat})
 
   \+
   Any file with the given name that is found in the execution
@@ -552,20 +602,21 @@ class GassetApplication(Application):
 The \lstinline|output_dir| parameter specifies where output filess
 will be downloaded.
 
+\+
 \begin{python}
-class GassetApplication(Application):
-  """Run Asset cost evolution function."""
-  def __init__(self, params, mscript):
-      ...
-      mfunct = os.path.basename(mscript)
-      Application.__init__(
-        self,
-        arguments="matlab -r '"+mfunct+" "+args+"'"
-        inputs=[mscript],
-        outputs=['./results/'],
-        ~\HL{output\_dir="gasset.d"}~
-        stdout="stdout.txt",
-        ...
+class MyPlotApplication(Application):
+  """Plot Trigonometric Functions."""
+  def __init__(self, img):
+    inp = basename(img)
+    out = "gray-" + inp
+    Application.__init__(
+      self,
+      arguments=[
+        "matlab -nodesktop -nosplash -nodisplay -r \"x  = 0: .1 : 2*pi; y1 = cos(x); y2 = sin(x); figure; plot(x, y1, 'b', x, y2, 'r-.', 'LineWidth', 2); print('myplot','-dpng'); quit()\"",
+      inputs=[img],
+      outputs=[out],
+      ~\HL{output\_dir="grayscale.d"}~,
+      stdout="stdout.txt")
 \end{python}
 \end{frame}
 
@@ -577,10 +628,10 @@ class GassetApplication(Application):
   it will move the existing one to a backup name.
 
   \+
-  So, if \texttt{gasset.d} already exists, GC3Pie will:
+  So, if \texttt{grayscale.d} already exists, GC3Pie will:
   \begin{enumerate}
-  \item rename it to \lstinline|gasset.d.~1~|
-  \item create a new directory \texttt{gasset.d}
+  \item rename it to \lstinline|grayscale.d.~1~|
+  \item create a new directory \texttt{grayscale.d}
   \item download output files into the new directory
   \end{enumerate}
 \end{frame}
@@ -595,20 +646,19 @@ the other output files.
 
   \+
 \begin{python}
-class GassetApplication(Application):
-  """Run Asset cost evolution function."""
-  def __init__(self, params, mscript):
-      ...
-      mfunct = os.path.basename(mscript)
-      Application.__init__(
-        self,
-        arguments="matlab -r '"+mfunct+" "+args+"'"
-        inputs=[mscript],
-        outputs=['./results/'],
-        output\_dir="gasset.d",
-        ~\HL{stdout="stdout.txt",}~
-        stderr="stderr.txt",
-        ...
+class MyPlotApplication(Application):
+  """Plot Trigonometric Functions."""
+  def __init__(self, img):
+    inp = basename(img)
+    out = "gray-" + inp
+    Application.__init__(
+      self,
+      arguments=[
+        "matlab -nodesktop -nosplash -nodisplay -r \"x  = 0: .1 : 2*pi; y1 = cos(x); y2 = sin(x); figure; plot(x, y1, 'b', x, y2, 'r-.', 'LineWidth', 2); print('myplot','-dpng'); quit()\"",
+      inputs=[img],
+      outputs=[out],
+      output_dir="grayscale.d",
+      ~\HL{stdout="stdout.txt"}~)
 \end{python}
 \end{frame}
 
@@ -620,20 +670,19 @@ There's a corresponding \texttt{stderr} option for the command's
 \emph{standard error} stream.
 
 \begin{python}
-class GassetApplication(Application):
-  """Run Asset cost evolution function."""
-  def __init__(self, params, mscript):
-      ...
-      mfunct = os.path.basename(mscript)
-      Application.__init__(
-        self,
-        arguments="matlab -r '"+mfunct+" "+args+"'"
-        inputs=[mscript],
-        outputs=['./results/'],
-        output\_dir="gasset.d",
-        stdout="stdout.txt",
-        ~\HL{stderr="stderr.txt"}~)
-        ...
+class MyPlotApplication(Application):
+  """Plot Trigonometric Functions."""
+  def __init__(self, img):
+    inp = basename(img)
+    out = "gray-" + inp
+    Application.__init__(
+      self,
+      arguments="matlab -nodesktop -nosplash -nodisplay -r \"x  = 0: .1 : 2*pi; y1 = cos(x); y2 = sin(x); figure; plot(x, y1, 'b', x, y2, 'r-.', 'LineWidth', 2); print('myplot','-dpng'); quit()\"",
+      inputs=[img],
+      outputs=[out],
+      output_dir="grayscale.d",
+      stdout="stdout.txt",
+      ~\HL{stderr="stderr.txt"}~)
 \end{python}
 \end{frame}
 
@@ -659,14 +708,13 @@ class GassetApplication(Application):
 
 \+
 \begin{python}
-class Ascript(SessionBasedScript):
+class AScript(SessionBasedScript):
   # ...
   def new_tasks(self, extra):
     # `self.param.args' is the list
     # of command-line arguments
-    input_params = parse(self.params.args[0])[0]
-    matalb_script = abspath(self.params.args[1])
-    app = GassetApplication(input_params,matlab_script)
+    input_file = self.params.args[0]
+    app = MyPlotApplication(input_file)
     return [app]
 \end{python}
 \end{frame}
@@ -676,27 +724,28 @@ class Ascript(SessionBasedScript):
 
   \begin{exercise*}[2.B]
 
+    \+
     Edit the \texttt{ex2a.py} file: insert the code to define the
-    \href{https://raw.githubusercontent.com/uzh/gc3pie/training-september-2016/docs/programmers/tutorials/workflows/downloads/geasset.py}{\texttt{GassetApplication}}
+    \href{https://raw.githubusercontent.com/uzh/gc3pie/training-july-2016/docs/programmers/tutorials/workflows/downloads/grayscale_app.py}{\texttt{MyPlotApplication}}
     application, and modify the \texttt{new\_tasks()} method to return
     one instance of it (as in the previous slide).
 
     \+
-    Run the script and display the generated plot.
+    Can you convert the \href{https://raw.githubusercontent.com/uzh/gc3pie/training-july-2016/docs/programmers/tutorials/workflows/lena.jpg}{\texttt{lena.jpg}} file to gray-scale using
+    this GC3Pie script?
 
     \+ \footnotesize
-    {\em You can download the code for \texttt{GassetApp} and the \texttt{paramers.csv} file from
-    \href{https://raw.githubusercontent.com/uzh/gc3pie/training-september-2016/docs/programmers/tutorials/workflows/}{this
-      URL}.}
+    {\em (You can download the code for \texttt{MyPlotApplication} and the ``Lena'' image file from
+    \href{https://raw.githubusercontent.com/uzh/gc3pie/training-july-2016/docs/programmers/tutorials/workflows/}{this
+      URL}.)}
   \end{exercise*}
 
   \+
   \begin{exercise*}[2.C]
 
-    Edit the script from Exercise 2.B above and run the \texttt{GassetApp}
-    for each input parametes in the \texttt{paramers.csv} input file: 
-    for each input parametes, an instance of \texttt{GassetApp} 
-    should be run.
+    Edit the script from Exercise 2.B above and add the ability to
+    convert multiple files: for each file name given on the command
+    line, an instance of \texttt{MyPlotApplication} should be run.
   \end{exercise*}
 \end{frame}
 
@@ -814,7 +863,7 @@ network_ids=
 
 # definition of a single execution VM
 instance_type=1cpu-4ram-hpc
-image_id=f42b1c84-c9f6-4621-aa48-0ad84c78ff2d
+image_id=2b227d15-8f6a-42b0-b744-ede52ebe59f7
 
 max_cores_per_job = 8
 max_memory_per_core = 4 GiB
@@ -865,7 +914,7 @@ type = openstack
 
   \+
   \begin{exercise*}[2.E]
-    Run the gasset script \texttt{ex2c} on Science Cloud.
+    Run the grayscale converter \texttt{ex2c} on Science Cloud.
     Do you need to change anything in the code?
   \end{exercise*}
 \end{frame}
