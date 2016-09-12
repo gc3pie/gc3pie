@@ -10,14 +10,14 @@
 \title[Post-processing]{%
   Application control and post-processing
 }
-\author[R. Murri, S3IT UZH]{%
-  Riccardo Murri \texttt{<riccardo.murri@uzh.ch>}
+\author[S. Maffioletti, S3IT UZH]{%
+  Sergio Maffioletti \texttt{<sergio.maffioletti@uzh.ch>}
   \\[1ex]
   \emph{S3IT: Services and Support for Science IT}
   \\[1ex]
   University of Zurich
 }
-\date{July~11--14, 2016}
+\date{September~12--13, 2016}
 
 \begin{document}
 
@@ -34,16 +34,16 @@
 \begin{columns}[c]
   \begin{column}{0.5\textwidth}
 \begin{lstlisting}[basicstyle=\footnotesize\ttfamily,keywordstyle=\normalfont]
-$ ./grayscale.py lena.jpg
+$ python gasset.py parameters.csv simAsset.m
 ~\em [\ldots]~
-         NEW  1/1  (100.0%)
-     RUNNING  0/1   (0.0%)
-     STOPPED  0/1   (0.0%)
-   SUBMITTED  0/1   (0.0%)
-  TERMINATED  0/1   (0.0%)
- TERMINATING  0/1   (0.0%)
-     UNKNOWN  0/1   (0.0%)
-       total  1/1  (100.0%)
+        NEW 19/19  (100.0%)
+    RUNNING  0/19   (0.0%)
+    STOPPED  0/19   (0.0%)
+  SUBMITTED  0/19   (0.0%)
+ TERMINATED  0/19   (0.0%)
+TERMINATING  0/19   (0.0%)
+    UNKNOWN  0/19   (0.0%)
+      total 19/19  (100.0%)
 \end{lstlisting}%$
   \end{column}
   \begin{column}{0.5\textwidth}
@@ -252,8 +252,8 @@ class MyApp(Application):
 \begin{frame}
   \begin{exercise*}[6.A]
 
-    In the \texttt{colorize.py} script from Exercise 4.A, modify the
-    \texttt{ColorizeApp} application to move the output picture file
+    In the \texttt{gasset.py} script from Exercise 2.C, modify the
+    \texttt{GassetApp} application to move the output picture file
     into directory \texttt{/home/ubuntu/pictures}.  You might need to
     store the output file name to have it available when the
     application has terminated running.
@@ -348,28 +348,14 @@ class MyApp(Application):
 \begin{frame}
   \begin{exercise*}[6.B]
 
-    Modify the grayscaling script \texttt{ex2c} (or the code it
-    depends upon) so that, when a \texttt{GrayscaleApp} task has
-    terminated execution, it prints:
+    Modify the \texttt{gasset} script so that, when a \texttt{GassetApp}
+    task has terminated execution, it prints:
     \begin{itemize}
     \item whether the program has been killed by a signal, and the signal number;
     \item whether the program has terminated by exiting, and the exit code.
     \end{itemize}
   \end{exercise*}
 \end{frame}
-
-
-\begin{frame}
-  \begin{exercise*}[6.B+] \emph{(Bonus points)} Abstract the verbose
-    \texttt{terminated} method from exercise 6.B into an application
-    class \texttt{TermStatusApp}.
-
-    \+
-    Use Python class inheritance to add the \texttt{TermStatusApp}
-    functionality into \texttt{GrayscaleApp}.
-  \end{exercise*}
-\end{frame}
-
 
 \begin{frame}[fragile]\small
   \frametitle{Application-specific configuration}
@@ -378,20 +364,20 @@ class MyApp(Application):
   file can be overridden just for them.
 
   \+
-  Suppose you tag the \texttt{GrayscaleApp} class by giving it this name:
+  Suppose you tag the \texttt{GassetApp} class by giving it this name:
 \begin{python}
-  class GrayscaleApp(Application):
-    application_name = 'grayscale'
-    # ~\itshape [\ldots]~
+  class GassetApp(Application):
+    application_name = gasset'
+    ...
 \end{python}
   then you can provide a specific VM image just for
-  ``\texttt{grayscale}'' applications:
+  ``\texttt{gasset}'' applications:
   \begin{stdout}
   # in the GC3Pie config file:
   [resource/sciencecloud]
   # ~\itshape [\ldots]~
   image_id=2b227d15-8f6a-42b0-b744-ede52ebe59f7
-  grayscale_image_id=0cca5346-ca12-4cb4-8007-8875c10cce02
+  gasset_image_id=0cca5346-ca12-4cb4-8007-8875c10cce02
   \end{stdout}
 
   \+ Other configuration items that can be specialized are:
@@ -399,62 +385,6 @@ class MyApp(Application):
   and \lstinline|prolog_file|, \lstinline|epilog_file|
   (batch-systems).
 \end{frame}
-
-
-\begin{frame}[fragile]
-  \begin{exercise*}[6.C] \emph{(Difficult)} \small
-
-    MATLAB has the annoying habit of exiting with code 0 even when some error occurred.
-
-    \+
-    Write a \texttt{MatlabApp} application, which:
-    \begin{itemize}
-    \item is constructed by giving the path to a MATLAB `\texttt{.m}'
-      script file, like this: \texttt{app = MatlabApp("\href{https://github.com/uzh/gc3pie/blob/training-july-2016/docs/programmers/tutorials/workflows/downloads/ra.m}{ra.m}")};
-    \item Runs the following command:
-\begin{semiverbatim}
-matlab -nodesktop -nojvm \emph{file.m}
-\end{semiverbatim}
-      where \emph{file.m} is the file given to the
-      \texttt{MatlabApp()} constructor.
-    \item captures the standard error output (\texttt{stderr}) of the
-      MATLAB script and, if the string ``\texttt{Out of memory.}''
-      occurs in it, sets the application exitcode to 11.
-    \end{itemize}
-
-    Verify that it works by running MATLAB script
-    \href{https://github.com/uzh/gc3pie/blob/training-july-2016/docs/programmers/tutorials/workflows/downloads/ra.m}{\texttt{ra.m}}
-    many times over.  The script initializes a array of random size:
-    for some values, the size exceeds the amount of available memory.
-  \end{exercise*}
-\end{frame}
-
-
-% \begin{frame}[fragile]
-%   \frametitle{Global post-processing}
-%   To add some code which will be executed \emph{just before the script
-%     exits,} add a \lstinline|after_main_loop| method:
-
-%   \begin{python}
-% def after_main_loop(self):
-%   model_names = {}
-%   for app in ~\HL{self.session.tasks.values()}~:
-%     if app.execution.state != Run.State.TERMINATED:
-%       return
-%     if app.model_name in model_names:
-%         model_names[app.model_name] += 1
-%     else:
-%         model_names[app.model_name] = 1
-%   \end{python}
-
-%   \begin{itemize}
-%   \item \lstinline|self.session.tasks| is a map
-%     \lstinline|JobID|~$\Rightarrow$~\lstinline|Application| object
-%   \item \lstinline|self.session.tasks.values()| thus contains a list
-%     of all the \textbf{Application}s created by the \lstinline|new_tasks|
-%   \end{itemize}
-% \end{frame}
-
 
 \begin{frame}
   \frametitle{Global post-processing}

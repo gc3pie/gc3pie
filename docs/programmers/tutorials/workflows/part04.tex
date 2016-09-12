@@ -10,14 +10,14 @@
 \title[Introduction]{%
   Customizing \\ session-based scripts
 }
-\author[R. Murri, S3IT UZH]{%
-  Riccardo Murri \texttt{<riccardo.murri@uzh.ch>}
+\author[S. Maffioletti, S3IT UZH]{%
+  Sergio Maffioletti \texttt{<sergio.maffioletti@uzh.ch>}
   \\[1ex]
   \emph{S3IT: Services and Support for Science IT}
   \\[1ex]
   University of Zurich
 }
-\date{July~11--14, 2016}
+\date{September~12--13, 2016}
 
 \begin{document}
 
@@ -206,7 +206,7 @@ class AScript(SessionBasedScript):
 \end{sh}%$
   generates the equivalent of the following Python code:
   \begin{python}
-  self.params.input = 'example.py'
+  self.params.input = 'file.img'
   self.params.radius = '10'  # it's a string!
   self.params.sigma = '2.1'  # this one too!
   \end{python}
@@ -215,36 +215,10 @@ class AScript(SessionBasedScript):
 
 
 \begin{frame}[fragile]
-  \frametitle{Detour: From grayscale to colors}
-\begin{sh}
-$ convert gray-lena.jpg \
-    ( xc:blue xc:magenta xc:yellow +append ) \
-    -clut color-lena.jpg
-\end{sh}%$
-\begin{tabular}{ccc}
-  {\includegraphics[width=0.4\linewidth]{fig/gray-lena.jpg}}
-  &
-  {\includegraphics[width=0.1\linewidth,totalheight=0.45\textheight]{fig/arrow.pdf}}
-  &
-  {\includegraphics[width=0.4\linewidth]{fig/rgb-lena.jpg}}
-\end{tabular}
-\end{frame}
-
-
-\begin{frame}[fragile]
   \begin{exercise*}[4.A]
-    Write a \texttt{colorize.py} script to apply this colorization process to a set of grayscale images.
-
-    \+
-    The \texttt{colorize.py} script shall be invoked like this:
-\begin{sh}
-$ python colorize.py ~\em c1~ ~\em c2~ ~\em c3~ ~\em img1~ ~[\em img2 \ldots]~
-\end{sh}%$
-    where \texttt{\em c1}, \texttt{\em c2}, \texttt{\em c3} are color
-    names and \texttt{\em img1}, \texttt{\em img2} are image files.
-
-    \+
-    Each image shall be processed in a separate colorization task.
+    Write a \texttt{gasset.py} to read the two input arguments - 'parameters.csv' 
+    and 'Matlab script' - and assign them respectively to ``parameters`` and ``mscript``
+    variables.
   \end{exercise*}
 \end{frame}
 
@@ -281,9 +255,22 @@ class AScript(SessionBasedScript):
   does not match its type, the script exists immediately and the user
   is notified with a clear error message.
 
+\+
+\begin{python}
+  class AScript(SessionBasedScript):
+    ...
+    def setup_args(self):
+      # this argument is a string (default type)
+      self.add_param('input',  type=str,   help="Input file")
+      # the `radius` argument is an integer
+      self.add_param('radius', type=int,   help="Convolution radius")
+      # the `sigma` argument is a floating-point number
+      self.add_param('sigma',  type=float, help="Threshold")
+\end{python}
+
   \+
 \begin{sh}
-$ python downloads/argp.py foo.txt 123 x
+$ python ex2a.py foo.txt 123 x
 usage: argparse [-h] ~\em [\ldots]~
                 input radius sigma
 argp: error: argument sigma: invalid float value: 'x'
@@ -445,25 +432,6 @@ $ python topblast.py [-e ~$T$~] [-m ~$F$~] \
     should run as a separate task.  All of them share the same
     settings for the \texttt{-evalue} and \texttt{-outfmt} options for
     \texttt{blastp}.
-  \end{exercise*}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \begin{exercise*}[4.C] \emph{(Homework)}
-
-    Modify the \texttt{topblast.py} script that you've written in Exercise 4.B
-    to be invoked like this:
-\begin{sh}
-$ python topblast.py [-e ~$T$~] [-m ~$F$~] new.faa dir
-\end{sh}%$
-
-    \+ Input files describing the ``known'' subjects should be found by
-    recursively scanning the given directory path.
-
-    \+ Bonus points if the modified script exists with a correct error
-    message in case \texttt{new.faa} is not an existing file, or
-    \texttt{dir} is not a valid directory path.
   \end{exercise*}
 \end{frame}
 
