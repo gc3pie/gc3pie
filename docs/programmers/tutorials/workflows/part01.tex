@@ -72,16 +72,20 @@
   \+
   Then collect all the outputs and post-process to get a
   statistical overview.
+
+  \+  (At times, you chop a large input file into pieces and process each one separately instead.)
+
 \end{frame}
 
 
 \begin{frame}[fragile]
-  \frametitle{Uses of GC3Pie: parallel processing}
-  (At times, you chop a large input file into pieces and process each one separately instead.)
+  \frametitle{Uses of GC3Pie: Our example}
+ 
+  Function to generate sample paths for assets assuming geometric Brownian motion:
 
   \+
   \begin{scriptsize}
-    ``For example, say we want to simulate the price evolution of a given asset using a Matlab Monte-Carlo simulation using a large parameter space - say 10'000 - for the initial conditions. If we run 1 Monte-Carlo Matlab simulation and loop over all initial parameter configurations it could take along as (2.4hours * 10'000) = 24'000 cpu/hours (so you get your results in 1'000 days... ). However, if we split this job into individual parameters evaluation and ran 100 jobs in "parallel" on a cluster, our run-time is reduced to only 240 hours.''
+    For example, say we want to simulate the price evolution of a given asset using a Matlab Monte-Carlo simulation using a large parameter space - say 10'000 - for the initial conditions. \\ If we run 1 Monte-Carlo Matlab simulation and loop over all initial parameter configurations it could take along as (2.4hours * 10'000) = 24'000 cpu/hours (so you get your results in 1'000 days... ).\\ However, if we split this job into individual parameters evaluation and ran 100 jobs in "parallel" on a cluster, our run-time is reduced to only 240 hours.\\
   \end{scriptsize}
 \end{frame}
 

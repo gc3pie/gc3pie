@@ -17,10 +17,8 @@
 Implementing scientific workflows with GC3Pie
 ---------------------------------------------
 
-This is the course material prepared for the `GC3Pie for programmers training`__,
+This is the course material prepared for the GC3Pie for programmers training,
 held at the University of Zurich on September 12-13, 2016.
-
-.. __: http://www.s3it.uzh.ch/en/scienceit/support/training/gc3pie/programmers.html
 
 The course aims at showing how to implement patterns commonly seen
 in scientific computational workflows using Python and GC3Pie, and
