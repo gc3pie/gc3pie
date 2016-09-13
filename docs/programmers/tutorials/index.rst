@@ -61,7 +61,7 @@ to extend and adapt the examples provided.
   How to check and react on the termination status of a GC3Pie
   Task/Application.
 
-
+`Feedback form <https://docs.google.com/forms/d/e/1FAIpQLSdLO4MhQJJaujQrRPDyQvwz95Nki5H1TsSD5e4roIhRtkIC3A/viewform?usp=send_form>`_
   
 .. _`Warholize Tutorial`:
 
