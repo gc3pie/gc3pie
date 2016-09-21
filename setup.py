@@ -34,16 +34,6 @@ def read_whole_file(path):
     with open(path, 'r') as stream:
         return stream.read()
 
-def read_file_lines(path):
-    """
-    Return list of file lines, stripped of leading and trailing
-    whitespace (including newlines), and of comment lines.
-    """
-    with open(path, 'r') as stream:
-        lines = [line.strip() for line in stream.readlines()]
-        return [line for line in lines
-                if line != '' and not line.startswith('#')]
-
 
 ## test runner setup
 #
@@ -142,18 +132,83 @@ setuptools.setup(
     },
 
     # run-time dependencies
-    install_requires=read_file_lines('requirements.base.txt'),
-    extras_require = {
-        'openstack': read_file_lines('requirements.openstack.txt'),
-        'ec2':       read_file_lines('requirements.ec2.txt'),
-        'daemon':    read_file_lines('requirements.daemon.txt'),
-        'optimizer': read_file_lines('requirements.optimizer.txt'),
+    install_requires=[
+        'coloredlogs',
+        # paramiko and pycrypto are required for SSH operations
+        'paramiko',
+        'pycrypto',
+        # prettytable -- format tabular text output
+        'prettytable',
+        # pyCLI -- object-oriented command-line app programming
+        'pyCLI',
+        # Needed by SqlStore
+        'sqlalchemy',
+        # Needed for parsing human-readable dates (gselect uses it).
+        'parsedatetime',
+        # needed by DependentTaskCollection
+        # (but incompatible with Py 2.6, so we include a patched copy)
+        #toposort==1.0
+    ],
+    extras_require={
+        'openstack:python_version=="2.7"': [
+            # The following Python modules are required by GC3Pie's `openstack`
+            # backend. Since OpenStack ceased support for Python 2.6 around
+            # version 3.0.0 of the client libraries, we have to include separate
+            # dependecy lists for Python 2.7+ and Python 2.6
+            'python-novaclient',
+        ],
+        'openstack:python_version=="2.6"': [
+            # The following Python modules are required by GC3Pie's `openstack`
+            # backend. Since OpenStack ceased support for Python 2.6 around
+            # version 3.0.0 of the client libraries, we have to include separate
+            # dependecy lists for Python 2.7+ and Python 2.6
+            #
+            # - OpenStack's "keystoneclient" requires `importlib`
+            'importlib',
+            # - support for Python 2.6 was removed from `novaclient` in commit
+            #   81f8fa655ccecd409fe6dcda0d3763592c053e57 which is contained in
+            #   releases 3.0.0 and above; however, we also need to pin down
+            #   the version of `oslo.config` and all the dependencies thereof,
+            #   otherwise `pip` will happily download the latest and
+            #   incompatible version,since `python-novaclient` specifies only
+            #   the *minimal* version of dependencies it is compatible with...
+            'stevedore<1.10.0',
+            'debtcollector<1.0.0',
+            'keystoneauth<2.0.0',
+            # yes, there's `keystoneauth` and `keystoneauth1` !!
+            'keystoneauth1<2.0.0',
+            'oslo.config<3.0.0',
+            'oslo.i18n<3.1.0',
+            'oslo.serialization<2.1.0',
+            'oslo.utils<3.1.0',
+            'python-novaclient<3.0.0',
+        ],
+        'ec2': [
+            # The following Python modules are required by GC3Pie's `ec2`
+            # resource backend.
+            'boto',
+        ],
+        'daemon': [
+            # daemon and inotifyx required for SessionBasedDaemon
+            # but `inotifyx` only works on Linux, so this is an
+            # optional feature ...
+            'python-daemon',
+            'inotifyx',
+            'pyyaml',
+        ],
+        'optimizer': [
+            # The following Python modules are required by GC3Pie's
+            # `gc3libs.optimizer` module.
+            'numpy',
+        ],
     },
+
     # Apparently, this list is read from right to left...
     tests_require=[
         'tox', 'mock',
     ],
     cmdclass={'test': Tox},
+
     # additional non-Python files to be bundled in the package
     package_data={
         'gc3libs': [
@@ -199,6 +254,7 @@ setuptools.setup(
             'gc3apps/gamess/ggamess.py',
             ]),
     ],
+
     # `zip_safe` can ease deployment, but is only allowed if the package
     # do *not* do any __file__/__path__ magic nor do they access package data
     # files by file name (use `pkg_resources` instead).

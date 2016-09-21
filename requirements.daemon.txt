@@ -1,6 +1,0 @@
-# daemon and inotifyx required for SessionBasedDaemon
-# but `inotifyx` only works on Linux, so this is an
-# optional feature ...
-python-daemon
-inotifyx
-pyyaml

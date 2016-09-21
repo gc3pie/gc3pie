@@ -1,3 +1,0 @@
-# The following Python modules are required by GC3Pie's
-# `gc3libs.optimizer` module.
-numpy
