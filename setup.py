@@ -145,6 +145,9 @@ setuptools.setup(
         'sqlalchemy',
         # Needed for parsing human-readable dates (gselect uses it).
         'parsedatetime',
+        # Needed by `gc3libs.cmdline`
+        'python-daemon',
+        'pyyaml',
         # needed by DependentTaskCollection
         # (but incompatible with Py 2.6, so we include a patched copy)
         #toposort==1.0
@@ -192,9 +195,7 @@ setuptools.setup(
             # daemon and inotifyx required for SessionBasedDaemon
             # but `inotifyx` only works on Linux, so this is an
             # optional feature ...
-            'python-daemon',
             'inotifyx',
-            'pyyaml',
         ],
         'optimizer': [
             # The following Python modules are required by GC3Pie's
