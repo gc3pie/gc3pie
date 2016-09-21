@@ -750,8 +750,7 @@ def parse_command_line_options():
                            "  - ec2:       support running jobs in VMs on OpenStack clouds"
                            "  - optimizer: install math libraries needed by the optimizer library"
                            " For instance, to install all features use '-a openstack,ec2,optimizer'."
-                           " To install no optional feature, use '-a none'."
-                           " By default, all cloud-related features are installed."
+                           " To install no optional feature, use '-a none' (default)."
                        ))
     cmdline.add_option("-d", "--target",
                        action="store", # optional because action defaults to "store"
