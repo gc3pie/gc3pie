@@ -12,7 +12,7 @@ import sys
 # Setuptools 20.10.0 seems to have restored full support for them, including
 # `python_implementation`
 from ez_setup import use_setuptools
-use_setuptools(version='20.10.0')
+use_setuptools(version='21.0.0')
 
 import setuptools
 import setuptools.dist
