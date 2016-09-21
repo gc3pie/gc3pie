@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__version__ = '2.0.1'
+__version__ = '2.0.2'
 __author__ = '''
 Antonio Messina <antonio.s.messina@gmail.com>
 Riccardo Murri <riccardo.murri@gmail.com>
@@ -887,11 +887,11 @@ def require_sw_prerequisites():
     # package manager name as it basically identifies the distro!
     if have_command('dpkg'):
         # Debian/Ubuntu
-        required = ['git', 'python-dev', 'gcc', 'g++', 'libffi-dev']
+        required = ['git', 'python-dev', 'gcc', 'g++', 'libffi-dev', 'libssl-dev']
         install_cmd = 'sudo apt-get install'
     elif have_command('yum'):
         install_cmd = 'sudo yum install'
-        required = ['git', 'python-devel', 'gcc', 'gcc-c++', 'libffi-devel']
+        required = ['git', 'python-devel', 'gcc', 'gcc-c++', 'libffi-devel', 'openssl-devel']
     elif have_command('zypper'):
         # SuSE
         logging.warning(

@@ -172,22 +172,21 @@ Installation into a virtualenv has two distinct advantages:
 
 0. Install software prerequisites:
 
-   * On Debian/Ubuntu, install packages: ``git``,
-     ``python-dev``, ``python-profiler`` and the C/C++ compiler::
+   * On Debian/Ubuntu, install these system packages::
 
-       apt-get install git python-dev python-profiler gcc g++
+       apt-get install gcc g++ git python-dev libffi-dev libssl-dev
 
-   * On CentOS5, install packages ``git`` and ``python-devel``
-     and the C/C++ compiler::
+   * On CentOS5, install these packages::
 
-       yum install git python-devel gcc gcc-c++
+       yum install git python-devel gcc gcc-c++ libffi-devel openssl-devel
 
    * On other Linux distributions, you will need to install:
 
-     - the ``git`` command (from the Git_ VCS)
-     - Python development headers and libraries
+     - the ``git`` command (from the Git_ VCS);
+     - Python development headers and libraries;
        (for installing extension libraries written in C/C++)
-     - a C/C++ compiler (this is usually installed by default).
+     - a C/C++ compiler (this is usually installed by default);
+     - include files for the FFI and OpenSSL libraries.
 
 
 1. If `virtualenv`_ is not already installed on your system,
