@@ -227,7 +227,7 @@ class Gpredict_PopContCCScript(SessionBasedScript):
         """
         tasks = []
         
-        for iteration in range(1,self.params.repetitions):
+        for iteration in range(1,self.params.repetitions+1):
             
             jobname = "gpredict_PopContCC-%d" % (iteration)
 

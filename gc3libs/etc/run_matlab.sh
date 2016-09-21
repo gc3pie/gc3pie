@@ -3,9 +3,10 @@
 # run_matlab.sh -- wrapper script for executing MATLAB code
 #
 # Authors: Riccardo Murri <riccardo.murri@uzh.ch>,
-#          Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>
+#          Sergio Maffioletti <sergio.maffioletti@uzh.ch>
 #
-# Copyright (c) 2013-2014 GC3, University of Zurich, http://www.gc3.uzh.ch/
+#   Copyright (c) 2016,2017 S3IT, University of Zurich,
+#   http://www.s3it.uzh.ch/
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +27,9 @@ me=$(basename "$0")
 ## defaults
 
 mcr_root=/usr/local/MATLAB
-
+compile=0
+add_path=$PWD
+source_folder="./src"
 
 ## Exit status codes (mostly following <sysexits.h>)
 
@@ -76,6 +79,7 @@ present) and run it, passing ARGS (if any) as command-line arguments.
 Options:
   -s TARFILE    Path to '.tar' file containing the '.m' source files to run
   -m PATH       Path to alternate MATLAB installation directory (default: '$mcr_root')
+  -c            Compile Matlab sources into binary before execution.
   -v            Enable verbose logging
 
 __EOF__
@@ -108,8 +112,8 @@ is_matlab_root () {
 
 ## parse command-line
 
-short_opts='dhm:s:v'
-long_opts='debug,matlab-root:,sources:,help,verbose'
+short_opts='dhm:s:vc'
+long_opts='debug,matlab-root:,sources:,help,verbose,compile'
 
 # test which `getopt` version is available:
 # - GNU `getopt` will generate no output and exit with status 4
@@ -140,6 +144,7 @@ while [ $# -gt 0 ]; do
         --verbose|-v)  verbose='-v' ;;
         --debug|-d)    verbose='-v'; set -x ;;
         --help|-h)     usage; exit 0 ;;
+	--compile|-c)  compile=1; shift ;;
         --)            shift; break ;;
     esac
     shift
@@ -152,7 +157,6 @@ done
 if [ $# -lt 1 ]; then
     die 1 "Missing required argument MAIN. Type '$me --help' to get usage help."
 fi
-
 
 ## main
 echo "=== Starting at `date '+%Y-%m-%d %H:%M:%S'`"
@@ -175,63 +179,79 @@ if ! is_matlab_root "${mcr_root}"; then
     die $EX_UNAVAILABLE "Cannot find MATLAB root directory"
 fi
 
-PATH="${mcr_root}/bin:$PATH"
-require_command mcc
-
-
-## extract sources (if needed)
+# PATH="${mcr_root}/bin:$PATH"
+require_command matlab
 
 if [ -n "$src" ]; then
     echo "=== Extracting sources from file '$src'"
     case "$src" in
-        *.zip)     unzip -d . "$src" ;;
-        *.tar)     tar -x $verbose -f "$src" ;;
-        *.tar.gz)  zcat "$src"  | tar -x $verbose -f '-' ;;
-        *.tar.bz2) bzcat "$src" | tar -x $verbose -f '-' ;;
+        *.zip)     unzip -d "$source_folder" "$src" ;;
+        *.tar)     tar -x $verbose -f "$src" -C "$source_folder";;
+        *.tar.gz)  zcat "$src"  | tar -x $verbose -f '-' -C "$source_folder";;
+        *.tgz)  zcat "$src"  | tar -x $verbose -f '-' -C "$source_folder";;	
+        *.tar.bz2) bzcat "$src" | tar -x $verbose -f '-' -C "$source_folder";;
     esac
 fi
 
 # if the sources were not extracted in the current directory,
 # move them here
-loc=$(dirname $(find . -name "${main}.m")) \
+loc=$(dirname $(find "$source_folder" -name "${main}.m")) \
     || die $EX_SOFTWARE "Cannot find source file '${main}.m'. Look above: were the sources correctly extracted?"
-if [ "$loc" != '.' ]; then
-    mv $verbose "${loc}"/* ./
-fi
+# XXX: not needed. Just add recursively the path to Matlab env
+# if [ "$loc" != '.' ]; then
+#     mv $verbose "${loc}"/* ./
+# fi
 
 
 ## compile sources
+if [ $compile == 1 ]; then
+    echo "=== Compiling source file '${main}.m'"
 
-echo "=== Compiling source file '${main}.m'"
+    # patch sources
+    for m in *.m; do
+	sed -re 's/^( *profile +(on|off).*)/%\1/' -i "${m}"
+    done
 
-# patch sources
-for m in *.m; do
-    sed -re 's/^( *profile +(on|off).*)/%\1/' -i "${m}"
-done
+    # run the compiler
+    mkdir -p $verbose bin
+    if ! mcc $verbose -m -d bin -R '-nojvm,-nodisplay' -o "${main}" "${main}.m"; then
+	die $EX_SOFTWARE "Cannot compile source file '${main}.m'.  Lines above may give more details."
+    fi
 
-# run the compiler
-mkdir -p $verbose bin
-if ! mcc $verbose -m -d bin -R '-nojvm,-nodisplay' -o "${main}" "${main}.m"; then
-    die $EX_SOFTWARE "Cannot compile source file '${main}.m'.  Lines above may give more details."
+    # check that it worked
+    if ! test -x "bin/${main}"; then
+	die $EX_SOFTWARE "Compilation did not produce an executable file named '${main}'. Lines above may give more details."
+    fi
+
+    if ! test -x "bin/run_${main}.sh"; then
+	die $EX_SOFTWARE "Compilation did not produce a script named 'run_${main}.sh'. Lines above may give more details."
+    fi
+
+    ## run script
+    echo "=== Running: ${main} $@"
+    ./bin/"run_${main}.sh" "${mcr_root}" "$@"
+    rc=$?
+    echo "=== Script '${main}' ended with exit code $rc"
+else
+    ## run script
+    echo "=== Running: ${main} $@"
+    args=""
+    for var in "$@"
+    do
+	args=$args"'"$var"',"
+    done
+    args=${args%?}
+    
+    matlab_function_call="addpath(genpath('$source_folder'));$main($args);quit"
+    # command="matlab -nodesktop -nosplash -nodisplay -r \"$matlab_function_call\""
+    # echo "Running: $command..."
+    # $command
+    echo "matlab -nodesktop -nosplash -nodisplay -r \"$matlab_function_call\""
+    matlab -nodesktop -nosplash -nodisplay -r "$matlab_function_call"
+    rc=$?
+    echo "=== Script ended with exit code $rc"
 fi
-
-# check that it worked
-if ! test -x "bin/${main}"; then
-    die $EX_SOFTWARE "Compilation did not produce an executable file named '${main}'. Lines above may give more details."
-fi
-
-if ! test -x "bin/run_${main}.sh"; then
-    die $EX_SOFTWARE "Compilation did not produce a script named 'run_${main}.sh'. Lines above may give more details."
-fi
-
-
-## run script
-echo "=== Running: ${main} $@"
-./bin/"run_${main}.sh" "${mcr_root}" "$@"
-rc=$?
-echo "=== Script '${main}' ended with exit code $rc"
-
-
+    
 ## All done.
 echo "=== Script '${main}' done at `date '+%Y-%m-%d %H:%M:%S'`."
 
