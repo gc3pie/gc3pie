@@ -397,11 +397,12 @@ class SlurmLrms(batch.BatchSystem):
             else:
                 # common resource usage records (see Issue 78)
                 vmem = SlurmLrms._parse_memspec(maxvmsize)
-                acct['max_used_memory'] = max(vmem, acct['max_used_memory'])
+                if vmem is not None:
+                    acct['max_used_memory'] = max(vmem, acct['max_used_memory'])
                 # SLURM-specific resource usage records
                 mem = SlurmLrms._parse_memspec(maxrss)
-                acct['slurm_max_used_ram'] = max(
-                    mem, acct['slurm_max_used_ram'])
+                if mem is not None:
+                    acct['slurm_max_used_ram'] = max(mem, acct['slurm_max_used_ram'])
                 # XXX: see above for timestamps
                 submit = SlurmLrms._parse_timestamp(submit)
                 start = SlurmLrms._parse_timestamp(start)
@@ -441,6 +442,10 @@ class SlurmLrms(batch.BatchSystem):
 
     @staticmethod
     def _parse_memspec(m):
+        # upon NODE_FAIL (and possibly some other occasions), SLURM does not
+        # report usage information -- return ``None`` in this case
+        if not m:
+            return None
         unit = m[-1]
         if unit == 'G':
             return Memory(int(round(float(m[:-1]))), unit=GB)
