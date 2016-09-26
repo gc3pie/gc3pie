@@ -1482,7 +1482,7 @@ class Application(Task):
         if self.requested_memory:
             # SLURM uses `mem_free` for memory limits;
             # 'M' suffix allowed for Megabytes
-            sbatch += ['--mem', self.requested_memory.amount(MB)]
+            sbatch += ['--mem', 1+int(self.requested_memory.amount(MB))]
         if 'jobname' in self and self.jobname:
             sbatch += ['--job-name', ('%s' % self.jobname)]
         return (sbatch, cmdline)
