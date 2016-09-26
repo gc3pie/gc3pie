@@ -96,7 +96,7 @@ def _getchunk(file_to_chunk, chunk_size=2, chunk_files_dir='/var/tmp'):
                               "Using default '/tmp'")
             chunk_files_dir = "/tmp"
 
-    reader = pandas.read_csv(file_to_chunk, header=0, chunksize=chunk_size)
+    reader = pandas.read_csv(file_to_chunk, header=None, chunksize=chunk_size)
     
     index = 0
     for chunk in reader:

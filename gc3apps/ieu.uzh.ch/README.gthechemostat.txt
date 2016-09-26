@@ -7,30 +7,50 @@ Requirements for running ``gthechemostat``
 list of all the parameters that will have to be passed to the Matlab
 script containing the `theChemostat` function.
 
+Expected signature of the main function:
+<function name> <input csv> <result folder>
+
+Example:
+thechemostat('chunk_1.csv','./results')
+
 Additionally, `gthechemostat` requires the location of the Matlab scripts
 to be executed to be specified in the `-R PATH` option.
 
 Running ``gthechemostat``
 ======================
 
+## Step 0: activate GC3Pie environemnt
+    $ source ~/gc3pie/bin/activate
+
 ## Step 1: Activate ScienceCloud API authentication
-    $ source .virtualenvs/s3it/bin/sc-authenticate.sh
+    $ source ~/gc3pie/bin/sc-authenticate.sh
 
 Provide UZH Webpass shortname and password at prompt as requested.
 
+Note: environmental variables set by the sc-authenticate command are
+only valid for the running shell session. If you log-out and log-in
+again, or simply connect through another shell session, you will have
+to re-run the sc-authenticate script again before being able to run
+any GC3Pie command.
+
+### Step 1.1: Verify access to ScienceCloud resource
+    $ gservers
+
+Check for output:
+    (Accessible? ) | True
+
 ## Step 2: Execute gthechemostat in `screen`
 Example:
-    $ screen -L `which gthechemostat` data/in/input.csv -d data/src/ -C 30 -s 20151104 -o data/out -N
+    $ screen -L `which gthechemostat` input.csv -R sources -f thechemostat -C 30 -s 20151104 -o results -N
 
 From the provided example, one could customize:
-* location of input.csv file: instead of `data/in/inp.csv`, provide the
-full path of an alternative input .csv file
-* location of Matlab scripts (where MainFunction.m is located):
-instead of using `data/src`, provide the full path of an alternative
-folder where the MainFunction and its related Matlab scripts are
-located.
-* Location of result folder: instead of `data/out` provide the
-alternative path to the result folder (where all the results will be stored)
+* location of input.csv file (instead of `input.csv`),
+* location of Matlab scripts, where the main function is located (use
+the `-R` option),
+* name of the Matlab function to call (use the `-f` option). Note:
+there must be a cooresponding Matlab file, named after the main
+function, in the Matlab scripts folder specified with the `-R` option.
+* Location of result folder (use the `-o` option)
 
 Other GC3Pie specific options that can be customized:
 * session name: the value passed to the `-s` option (20151104 in the
@@ -63,7 +83,7 @@ Note: remember to detach from the running screen session using the:
     $ less screen.log
 
 Temporally stop a running ``gthechemostat`` session
-================================================
+===================================================
 
 Re-attach to the running `screen` session
     $ screen -r
@@ -75,7 +95,8 @@ This will interrupt the execution of ``gthechemostat`` but will **not**
 terminate the instances running on ScienceCloud.
 
 Resume ``gthechemostat`` execution
-==============================
+===================================
+
 Just re-run the `gthechemostat` command. It will resume from the point it
 was stopped.
 
@@ -83,11 +104,12 @@ Note: Unless you run `gthechemostat` command with the `-N` option. In that
 case it will start a new session and loose all previous executions.
 
 Terminating the instances on ScienceCloud started by ``gthechemostat``
-===================================================================
+======================================================================
 
 $ gsession terminate <session path>
 
+How to control a running session and debug errors ?
+===================================================
 
-
-
-
+Please refer to the handout material of the `GC3Pie tools` training
+available at: 
