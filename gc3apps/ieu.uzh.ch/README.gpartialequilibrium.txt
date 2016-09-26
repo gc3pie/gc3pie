@@ -52,6 +52,7 @@ From the provided example, one could customize:
 the `-R` option).
 * Location of result folder (using the `-o` option).
 * Name of the Matlab main function to execute (using the `-f` option).
+* Chunk size for the input .csv file (use the `-k` option).
 Other GC3Pie specific options that can be customized:
 * session name: the value passed to the `-s` option (20151104 in the
 example)
@@ -102,7 +103,8 @@ was stopped.
 Note: Unless you run `gpartialequilibrium` command with the `-N` option. In that
 case it will start a new session and loose all previous executions.
 
-Terminating the instances on ScienceCloud started by ``gpartialequilibrium``
-============================================================================
+How to control a running session and debug errors ?
+===================================================
 
-$ gsession terminate <session path>
+Please refer to the handout material of the `GC3Pie tools` training
+available at: 
