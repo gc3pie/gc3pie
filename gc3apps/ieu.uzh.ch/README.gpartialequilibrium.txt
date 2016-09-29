@@ -3,20 +3,21 @@
 Requirements for running ``gpartialequilibrium``
 ==============================================
 
-`gpartialequilibrium` requires as input argument an .csv file containing the
-list of all the parameters that will have to be passed to the Matlab
-script containing the main function to be executed.
+`gpartialequilibrium` requires as input argument a list of .csv files
+each of them containing the list of all the parameters that will have
+to be passed to the Matlab script containing the main function to be
+executed.
 
-Expected signature of the main function:
+Expected signature of the Matlab main function:
 <function name> <input csv> <result folder>
 
 Example:
 partialequilibrium('chunk_1.csv','./results')
 
-Additionally, `gpartialequilibrium` requires the location of the Matlab scripts
-to be executed to be specified in the `-R PATH` option.
+Additionally, `gpartialequilibrium` requires the location of the
+Matlab scripts to be executed to be specified in the `-R PATH` option.
 
-For each line of the input .csv file a GpartialequilibriumApplication
+For each line of each input .csv file a GpartialequilibriumApplication
 needs to be generated (depends on chunk value passed as part of the
 input options). Splits input .csv file into smaller chunks, each of
 them of size 'self.params.chunk_size'. Then submits one execution for
@@ -28,6 +29,7 @@ option); at each invocation of the command, the status of all recorded
 jobs is updated, output from finished jobs is collected, and a summary
 table of all known jobs is printed.
 
+Results of each simulation is availabe in the 'result' folder.
 
 Running ``gpartialequilibrium``
 ===============================
@@ -43,11 +45,12 @@ Provide UZH Webpass shortname and password at prompt as requested.
 
 ## Step 2: Execute gpartialequilibrium in `screen`
 Example:
-    $ screen -L `which gpartialequilibrium` data/in/input.csv -k 10 -R
-    matlab_src/ -f partialequilibrium -C 30 -s 20151104 -o results -N
+    $ screen -L `which gpartialequilibrium` input1.csv input2.csv -k
+    10 -R matlab_src/ -f partialequilibrium -C 30 -s 20151104 -o
+    results -w 15GB -N
 
 From the provided example, one could customize:
-* location of input.csv file.
+* location of input .csv files.
 * location of Matlab scripts where the main function is located (using
 the `-R` option).
 * Location of result folder (using the `-o` option).
@@ -108,3 +111,4 @@ How to control a running session and debug errors ?
 
 Please refer to the handout material of the `GC3Pie tools` training
 available at: 
+https://github.com/uzh/gc3pie/blob/master/docs/users/tutorial/slides.pdf
