@@ -36,6 +36,9 @@ __changelog__ = """
   * Initial version
   2016-08-19:
   * add '-f <function name>' option 
+  2016-09-30:
+  * add extra option 'bundle' and option value
+    to the matlab function to be called
 """
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@uzh.ch>'
 __docformat__ = 'reStructuredText'
@@ -70,10 +73,25 @@ DEFAULT_REMOTE_OUTPUT_FOLDER = "./results"
 TARFILE="source.tgz"
 TEMP_FOLDER="/var/tmp"
 DEFAULT_REPETITIONS = 100
+DEFAULT_BUNDLE = 10
 MATLAB_COMMAND="matlab -nodesktop -nodisplay -nosplash -r \'{mfunct} {MatPredictor} " \
-    "{VecResponse} {numberOfSamples} {numberOfTrees} {results} ;quit()'"
+    "{VecResponse} {numberOfSamples} {numberOfTrees} {bundles} {results} ;quit()'"
 
 ## utility funtions
+def _get_iterations(repetitions,bundle):
+    """
+    Yield iterator number and bundle size.
+    Last bundle value may be shorter than 'bundle'
+    """
+    total_iterations = repetitions/bundle
+    last_iteration = repetitions%bundle
+
+    for iteration in range(1,total_iterations+1):
+        yield (iteration,bundle)
+
+    if repetitions%bundle > 0:
+        yield (total_iterations+1,repetitions%bundle)
+
 
 def _scanandtar(dir_to_scan, temp_folder=TEMP_FOLDER):
     try:
@@ -108,7 +126,7 @@ class Gpredict_PopContCCApplication(Application):
     application_name = 'gpredictpopcontcc'
     
     def __init__(self, Mfunct, MatPredictor_file, VecResponse_file,
-                 numberOfSamples, numberOfTrees, iteration, **extra_args):
+                 numberOfSamples, numberOfTrees, bundles, iteration, **extra_args):
 
         executables = []
         inputs = dict()
@@ -127,6 +145,7 @@ class Gpredict_PopContCCApplication(Application):
                                           VecResponse=inputs[VecResponse_file],
                                           numberOfSamples=numberOfSamples,
                                           numberOfTrees=numberOfTrees,
+                                          bundles=bundles,
                                           results=DEFAULT_REMOTE_OUTPUT_FOLDER)
 
         # Set output
@@ -217,9 +236,20 @@ class Gpredict_PopContCCScript(SessionBasedScript):
                        type=positive_int,
                        dest="repetitions",
                        default=DEFAULT_REPETITIONS,
-                       help="Location of the Matlab functions."
-                       " Default: %(default)s.")
+                       help="Number of repetitions. "
+                       " Repeat Matlab execution. "
+                       " Default: repeat '%(default)s' times.")
 
+        self.add_param("-B", "--bundle",
+                       metavar="[INT]",
+                       type=positive_int,
+                       dest="bundle",
+                       default=DEFAULT_BUNDLE,
+                       help="Group execution of repetitions in bundles. "
+                       " Total executions: repetitions / bundle. "
+                       " Default: bundle in group of '%(default)s' repetitions.")
+
+        
     def new_tasks(self, extra):
         """
         Read content of 'command_file'
@@ -227,8 +257,7 @@ class Gpredict_PopContCCScript(SessionBasedScript):
         """
         tasks = []
         
-        for iteration in range(1,self.params.repetitions+1):
-            
+        for iteration,bundle_size in _get_iterations(self.params.repetitions,self.params.bundle):            
             jobname = "gpredict_PopContCC-%d" % (iteration)
 
             extra_args = extra.copy()
@@ -244,6 +273,7 @@ class Gpredict_PopContCCScript(SessionBasedScript):
                 os.path.abspath(self.params.VecResponse),
                 self.params.numberOfSamples,
                 self.params.numberOfTrees,
+                bundle_size,
                 iteration,
                 **extra_args))
 
