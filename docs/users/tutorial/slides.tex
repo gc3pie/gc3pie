@@ -61,6 +61,11 @@
 \begin{frame}
   \begin{center}
     {\Huge and what about you?}
+    \\ \+ \+
+    \small
+    Name $\blacksquare$ Affiliation $\blacksquare$ Interest in GC3Pie?
+    $\blacksquare$~Programming languages?
+    $\blacksquare$~Experience with command-line or terminal commands?
   \end{center}
 \end{frame}
 
@@ -81,6 +86,15 @@
     We'd like the training to be \\ as interactive and informal as possible.
 
     \+ If you have a question, just ask -- don't wait.
+  \end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{About this training, 3}
+  \begin{center}
+    These slides are available for download from:
+    \url{https://github.com/uzh/gc3pie/blob/master/docs/users/tutorial/slides.pdf}
   \end{center}
 \end{frame}
 
@@ -263,9 +277,8 @@
 \begin{frame}
   \frametitle{The output directory}
   \begin{center}
-    If you don't specify an output directory for your job, \\ a
-    session-based script collects output \\ in the current working
-    directory \\ (but this can change from script to script).
+    If you don't specify an output directory for your job, \\ a session-based
+    script \emph{usually} collects output \\ in the current working directory.
 
     \+ If an output directory already exists, \\ it will be
     \textit{renamed} and never overwritten.
@@ -299,12 +312,12 @@
 
   \+ Run jobs in session \texttt{logo},
   polling for updates every 5 seconds:
-\begin{semiverbatim}
-    > ./warholize.py uzh-logo.png -s logo -{}-watch 5
+\begin{semiverbatim}\small
+    > ./warholize.py uzh-logo.png -s logo -{}-watch~5
 \end{semiverbatim}
 
   \+ \uncover<2>{
-    You can stop a GC3Pie script by pressing \emph{Ctrl+C}.
+    You can stop a GC3Pie script by pressing \emph{Ctrl+C}. \\
     Run it again to resume activity from where it stopped.
   }
 \end{frame}
@@ -319,7 +332,7 @@
 \end{semiverbatim}
 
   \begin{exercise}
-    Now try it yourself.
+    Now try this yourself.
   \end{exercise}
 \end{frame}
 
@@ -370,7 +383,7 @@ gc3.gc3libs: WARNING: Ignoring error from loading 'ParallelTaskCollection.107': 
 
   Display summary of tasks in session \texttt{logo}:
 \begin{semiverbatim}
-    > gstat -n -b -s logo
+    > gstat -b -s logo
 \end{semiverbatim}
 \end{frame}
 
@@ -403,10 +416,10 @@ gc3.gc3libs: WARNING: Ignoring error from loading 'ParallelTaskCollection.107': 
 |             updated | ( Accessible? )          | True      |
 |              queued | ( Total queued jobs )    | 0         |
 |         user_queued | ( Own queued jobs )      | 0         |
-|            user_run | ( Own running jobs )     | 6         |
-|   max_cores_per_job | ( Max cores per job )    | 4         |
-| max_memory_per_core | ( Max memory per core )  | 8GiB      |
-|        max_walltime | ( Max walltime per job ) | 8hour     |
+|            user_run | ( Own running jobs )     | 0         |
+|   max_cores_per_job | ( Max cores per job )    | 2         |
+| max_memory_per_core | ( Max memory per core )  | 2GiB      |
+|        max_walltime | ( Max walltime per job ) | 12hour    |
 +---------------------+--------------------------+-----------+
 \end{stdout}
 
@@ -434,7 +447,7 @@ frontend = localhost
 transport = local
 max_cores_per_job = 2
 max_memory_per_core = 2GiB
-max_walltime = 8 hours
+max_walltime = 12 hours
 max_cores = 2
 architecture = x86_64
 auth = none
@@ -545,6 +558,26 @@ type = openstack
     \texttt{sciencecloud} resource.  Verify with the \texttt{gservers}
     command that it works.
   \end{exercise}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Cannot start VMs?}
+
+  You need to tell GC3Pie what credentials to use for authenticating to
+  OpenStack / ScienceCloud.
+
+  You can write them in the configuration file, or use the
+  \texttt{sc-authenticate.sh} script to load them in the environment:
+\begin{semiverbatim}\footnotesize
+> {\bfseries source sc-authenticate.sh}
+Please enter your ScienceCloud project name [training]:
+Please enter your ScienceCloud username [ubuntu]:{\bfseries shortname}
+Please enter your OpenStack Password:
+\end{semiverbatim}
+
+  \textbf{Important:} at the ``username'' prompt, enter your ``UZH shortname''
+  -- do \emph{not} accept the default!
 \end{frame}
 
 
