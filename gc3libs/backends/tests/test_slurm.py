@@ -215,6 +215,18 @@ def sacct_done_node_fail(jobid=123):
         # stderr
         '')
 
+def sacct_done_fail_early(jobid=123):
+    return (
+        # command exitcode
+        0,
+        # stdout
+        '''
+{jobid}|1:0|FAILED|14|00:00:01|00:00:00|2016-10-14T16:14:49|2016-10-14T16:14:49|2016-10-14T16:14:50|||
+{jobid}.batch|1:0|FAILED|14|00:00:01|00:00:00|2016-10-14T16:14:49|2016-10-14T16:14:49|2016-10-14T16:14:50|||
+        '''.strip().format(jobid=jobid),
+        # stderr
+        '')
+
 def sacct_done_timeout(jobid=123):
     return (
         # command exitcode
@@ -733,6 +745,19 @@ username=NONEXISTENT
         assert_equal(job.state,    State.TERMINATING)
         assert_equal(job.exitcode, os.EX_TEMPFAIL)
         assert_equal(job.signal,   int(gc3libs.Run.Signals.RemoteError))
+
+    def test_parse_sacct_output_fail_early(self):
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+        self.transport.expected_answer['squeue'] = squeue_notfound()
+        self.transport.expected_answer['env'] = sacct_done_fail_early()
+        self.core.update_job_state(app)
+        job = app.execution
+
+        assert_equal(job.state,    State.TERMINATING)
+        assert_equal(job.exitcode, 1)
+        assert_equal(job.signal,   0)
 
     def test_parse_sacct_output_job_cancelled(self):
         app = FakeApp()
