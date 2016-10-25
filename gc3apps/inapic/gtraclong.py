@@ -134,7 +134,7 @@ class GtraclongApplication(Application):
             **extra_args)
 
 
-class GtracScript(SessionBasedScript):
+class GtraclongScript(SessionBasedScript):
     """
     
     The ``gtrac`` command keeps a record of jobs (submitted, executed
