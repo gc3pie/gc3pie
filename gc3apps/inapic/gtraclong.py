@@ -70,7 +70,7 @@ DEFAULT_CORES = 1
 DEFAULT_MEMORY = Memory(3000, MB)
 
 DEFAULT_REMOTE_INPUT_FOLDER = "./"
-DEFAULT_REMOTE_DMRIRC_FOLDER = "./dmrirc"
+    DEFAULT_REMOTE_DMRIRC_FILE = "./dmrirc"
 DEFAULT_REMOTE_DWI_FOLDER = "./dwi"
 DEFAULT_REMOTE_FS_FOLDER = "./FS/"
 
@@ -106,7 +106,7 @@ class GtraclongApplication(Application):
         inputs[dwi_folder] = DEFAULT_REMOTE_DWI_FOLDER
         inputs[fs_base_folder] = os.path.join(DEFAULT_REMOTE_FS_FOLDER, os.path.basename(fs_base_folder))
         inputs[fs_long_folder] = os.path.join(DEFAULT_REMOTE_FS_FOLDER, os.path.basename(fs_long_folder))
-        inputs[dmrirc_sub_ses_file] = DEFAULT_REMOTE_DMRIRC_FOLDER
+        inputs[dmrirc_sub_ses_file] = DEFAULT_REMOTE_DMRIRC_FILE
 
         # fixme
         # wrapper = resource_filename(Requirement.parse("gc3pie"),
@@ -174,6 +174,8 @@ class GtraclongScript(SessionBasedScript):
                 self.params.input_data):
             # extract root folder name to be used as jobname
             extra_args = extra.copy()
+            slim_sub_id = list(slim_sub_id)[0]
+            slim_ses_id = list(slim_ses_id)[0]
             jobname = {"{sub_id}_{ses_id}".format(sub_id=slim_sub_id, ses_id=slim_ses_id)}
             extra_args['jobname'] = jobname
             print("XXX")
