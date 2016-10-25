@@ -85,8 +85,8 @@ dmrirc_str = "setenv SUBJECT $PWD \n" + \
              "set baselist = (lhab_{slim_sub_id}.base) \n" + \
              "set dcmroot = $SUBJECT/dwi \n" + \
              "set dcmlist = (sub-lhab{slim_sub_id}_ses-tp{slim_ses_id}_run-1_dwi.nii.gz) \n" + \
-             "set bvecfile = $SUBJECT/sub-lhab{slim_sub_id}_ses-tp{slim_ses_id}_run-1_dwi.bvec \n" + \
-             "set bvalfile = $SUBJECT/sub-lhab{slim_sub_id}_ses-tp{slim_ses_id}_run-1_dwi.bval \n"
+             "set bvecfile = $SUBJECT/dwi/sub-lhab{slim_sub_id}_ses-tp{slim_ses_id}_run-1_dwi.bvec \n" + \
+             "set bvalfile = $SUBJECT/dwi/sub-lhab{slim_sub_id}_ses-tp{slim_ses_id}_run-1_dwi.bval \n"
 
 
 ## custom application class
