@@ -177,7 +177,7 @@ class GtraclongScript(SessionBasedScript):
             print("XXX")
             print(info_dict)
             extra_args = extra.copy()
-            jobname = {"{sub_id}_{ses_id}".format(info_dict["sub_id"], info_dict["ses_id"])}
+            jobname = {"{sub_id}_{ses_id}".format(sub_id=info_dict["sub_id"], ses_id=info_dict["ses_id"])}
             extra_args['jobname'] = jobname
 
             extra_args['output_dir'] = self.params.output
