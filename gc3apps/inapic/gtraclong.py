@@ -174,6 +174,8 @@ class GtraclongScript(SessionBasedScript):
 
         for info_dict in self.get_input_subject_info(self.params.input_data):
             # extract root folder name to be used as jobname
+            print("XXX")
+            print(info_dict)
             extra_args = extra.copy()
             jobname = {"{sub_id}_{ses_id}".format(info_dict["sub_id"], info_dict["ses_id"])}
             extra_args['jobname'] = jobname
