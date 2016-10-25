@@ -94,17 +94,18 @@ class GtraclongApplication(Application):
     """
     application_name = 'gtraclong'
 
-    def __init__(self, info_dict, **extra_args):
+    def __init__(self, slim_sub_id, slim_ses_id, dwi_folder, fs_base_folder, fs_long_folder, dmrirc_sub_ses_file,
+                 **extra_args):
         self.output_dir = extra_args['output_dir']
 
         inputs = dict()
         outputs = dict()
 
         # List of folders to copy to remote
-        inputs[info_dict["dwi_folder"]] = DEFAULT_REMOTE_DWI_FOLDER
-        inputs[info_dict["fs_base_folder"]] = os.path.join(DEFAULT_REMOTE_FS_FOLDER, os.path.basename(info_dict["fs_base_folder"]))
-        inputs[info_dict["fs_long_folder"]] = os.path.join(DEFAULT_REMOTE_FS_FOLDER, os.path.basename(info_dict["fs_long_folder"]))
-        inputs[info_dict["dmrirc_file"]] = DEFAULT_REMOTE_INPUT_FOLDER
+        inputs[dwi_folder] = DEFAULT_REMOTE_DWI_FOLDER
+        inputs[fs_base_folder] = os.path.join(DEFAULT_REMOTE_FS_FOLDER, os.path.basename(fs_base_folder))
+        inputs[fs_long_folder] = os.path.join(DEFAULT_REMOTE_FS_FOLDER, os.path.basename(fs_long_folder))
+        inputs[dmrirc_sub_ses_file] = DEFAULT_REMOTE_INPUT_FOLDER
 
         # fixme
         # wrapper = resource_filename(Requirement.parse("gc3pie"),
@@ -112,12 +113,11 @@ class GtraclongApplication(Application):
         wrapper = "/home/ubuntu/gtrac_long_repo/gc3pie/gc3libs/etc/gtraclong_wrapper.py"
         inputs[wrapper] = os.path.basename(wrapper)
 
-        arguments = "./%s %s" % (inputs[wrapper],
-                                 info_dict["dmrirc_file"])
+        arguments = "./%s %s" % (inputs[wrapper], os.path.join(DEFAULT_REMOTE_INPUT_FOLDER, os.path.basename(dmrirc_sub_ses_file))
 
         if extra_args['requested_memory'] < DEFAULT_MEMORY:
             gc3libs.log.warning("GtracApplication for subject %s running with memory allocation " \
-                                "'%d GB' lower than suggested one: '%d GB'," % (info_dict["sub_id"],
+                                "'%d GB' lower than suggested one: '%d GB'," % (slim_sub_id,
                                                                                 extra_args['requested_memory'].amount(
                                                                                     unit=GB),
                                                                                 DEFAULT_MEMORY.amount(unit=GB)))
@@ -170,13 +170,14 @@ class GtraclongScript(SessionBasedScript):
         """
         tasks = []
 
-        for info_dict in self.get_input_subject_info(self.params.input_data):
+        for slim_sub_id, slim_ses_id, dwi_folder, fs_base_folder, fs_long_folder, dmrirc_sub_ses_file in self.get_input_subject_info(
+                self.params.input_data):
             # extract root folder name to be used as jobname
-            print("XXX")
-            print(info_dict)
             extra_args = extra.copy()
-            jobname = {"{sub_id}_{ses_id}".format(sub_id=info_dict["sub_id"], ses_id=info_dict["ses_id"])}
+            jobname = {"{sub_id}_{ses_id}".format(sub_id=slim_sub_id, ses_id=slim_ses_id)}
             extra_args['jobname'] = jobname
+            print("XXX")
+            print(jobname)
 
             extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 'run_%s' % jobname)
@@ -184,26 +185,27 @@ class GtraclongScript(SessionBasedScript):
             extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 'run_%s' % jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 'run_%s' % jobname)
 
-            tasks.append(GtraclongApplication(info_dict, **extra_args))
+            tasks.append(GtraclongApplication(slim_sub_id, slim_ses_id, dwi_folder, fs_base_folder, fs_long_folder,
+                                              dmrirc_sub_ses_file, **extra_args))
 
         return tasks
 
-    def get_input_subject_folder(self, input_folder):
-        """
-        Check and validate input subfolders
-        """
-        #
-        # for r,d,f in os.walk(input_folder):
-        #     for infile in f:
-        #         if infile.startswith(DMRIC_PATTERN):
-        #             yield (os.path.abspath(r),os.path.basename(r),infile)
-        #
-        pass
+    # fixme
+    # def get_input_subject_folder(self, input_folder):
+    #     """
+    #     Check and validate input subfolders
+    #     """
+    #     #
+    #     # for r,d,f in os.walk(input_folder):
+    #     #     for infile in f:
+    #     #         if infile.startswith(DMRIC_PATTERN):
+    #     #             yield (os.path.abspath(r),os.path.basename(r),infile)
+    #     #
+    #     pass
 
     def get_input_subject_info(self, input_folder):
         """
-        returns info_dict
-        info_dict includes: sub_id, ses_id, dwi_folder, fs_base_folder, fs_long_folder, dmrirc_file
+        returns slim_sub_id,  slim_ses_id, dwi_folder, fs_base_folder, fs_long_folder, dmrirc_sub_ses_file
         """
 
         # fixme
@@ -241,9 +243,4 @@ class GtraclongScript(SessionBasedScript):
                     with open(dmrirc_sub_ses_file, "w") as fi:
                         fi.write(dmrirc_str.format(slim_sub_id=slim_sub_id, slim_ses_id=slim_ses_id))
 
-                    yield {"sub_id": slim_sub_id,
-                           "ses_id": slim_ses_id,
-                           "dwi_folder": dwi_folder,
-                           "fs_base_folder": fs_base_folder,
-                           "fs_long_folder": fs_long_folder,
-                           "dmrirc_file": dmrirc_sub_ses_file}
+                    yield (slim_sub_id, slim_ses_id, dwi_folder, fs_base_folder, fs_long_folder, dmrirc_sub_ses_file)
