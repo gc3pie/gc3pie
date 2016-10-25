@@ -70,6 +70,7 @@ DEFAULT_CORES = 1
 DEFAULT_MEMORY = Memory(3000, MB)
 
 DEFAULT_REMOTE_INPUT_FOLDER = "./"
+DEFAULT_REMOTE_DMRIRC_FOLDER = "./dmrirc"
 DEFAULT_REMOTE_DWI_FOLDER = "./dwi"
 DEFAULT_REMOTE_FS_FOLDER = "./FS/"
 
@@ -105,7 +106,7 @@ class GtraclongApplication(Application):
         inputs[dwi_folder] = DEFAULT_REMOTE_DWI_FOLDER
         inputs[fs_base_folder] = os.path.join(DEFAULT_REMOTE_FS_FOLDER, os.path.basename(fs_base_folder))
         inputs[fs_long_folder] = os.path.join(DEFAULT_REMOTE_FS_FOLDER, os.path.basename(fs_long_folder))
-        inputs[dmrirc_sub_ses_file] = DEFAULT_REMOTE_INPUT_FOLDER
+        inputs[dmrirc_sub_ses_file] = DEFAULT_REMOTE_DMRIRC_FOLDER
 
         # fixme
         # wrapper = resource_filename(Requirement.parse("gc3pie"),
