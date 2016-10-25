@@ -102,8 +102,8 @@ class GtraclongApplication(Application):
 
         # List of folders to copy to remote
         inputs[info_dict["dwi_folder"]] = DEFAULT_REMOTE_DWI_FOLDER
-        inputs[info_dict["fs_base_folder"]] = DEFAULT_REMOTE_FS_FOLDER
-        inputs[info_dict["fs_long_folder"]] = DEFAULT_REMOTE_FS_FOLDER
+        inputs[info_dict["fs_base_folder"]] = os.path.join(DEFAULT_REMOTE_FS_FOLDER, os.path.basename(info_dict["fs_base_folder"]))
+        inputs[info_dict["fs_long_folder"]] = os.path.join(DEFAULT_REMOTE_FS_FOLDER, os.path.basename(info_dict["fs_long_folder"]))
         inputs[info_dict["dmrirc_file"]] = DEFAULT_REMOTE_INPUT_FOLDER
 
         # fixme
