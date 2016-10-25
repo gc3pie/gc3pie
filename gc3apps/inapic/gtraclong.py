@@ -113,13 +113,12 @@ class GtraclongApplication(Application):
         wrapper = "/home/ubuntu/gtrac_long_repo/gc3pie/gc3libs/etc/gtraclong_wrapper.py"
         inputs[wrapper] = os.path.basename(wrapper)
 
-        arguments = "./%s %s" % (inputs[wrapper], os.path.join(DEFAULT_REMOTE_INPUT_FOLDER, os.path.basename(dmrirc_sub_ses_file))
+        arguments = "./%s %s" % (inputs[wrapper], os.path.join(DEFAULT_REMOTE_INPUT_FOLDER, os.path.basename(dmrirc_sub_ses_file)))
 
         if extra_args['requested_memory'] < DEFAULT_MEMORY:
             gc3libs.log.warning("GtracApplication for subject %s running with memory allocation " \
                                 "'%d GB' lower than suggested one: '%d GB'," % (slim_sub_id,
-                                                                                extra_args['requested_memory'].amount(
-                                                                                    unit=GB),
+                                                                                extra_args['requested_memory'].amount(unit=GB),
                                                                                 DEFAULT_MEMORY.amount(unit=GB)))
 
         Application.__init__(
