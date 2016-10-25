@@ -84,9 +84,9 @@ dmrirc_str = "setenv SUBJECT $PWD \n" + \
              "set subjlist = (lhab_{slim_sub_id}.cross.{slim_ses_id}tp) \n" + \
              "set baselist = (lhab_{slim_sub_id}.base) \n" + \
              "set dcmroot = $SUBJECT/dwi \n" + \
-             "set dcmlist = (*_dwi.nii.gz) \n" + \
-             "set becfile = $SUBJECT/*_dwi.bval \n" + \
-             "set bvalfile = $SUBJECT/*_dwi.bval \n"
+             "set dcmlist = (sub-lhab{slim_sub_id}_ses-tp{slim_ses_id}_run-1_dwi.nii.gz) \n" + \
+             "set becfile = $SUBJECT/sub-lhab{slim_sub_id}_ses-tp{slim_ses_id}_run-1_dwi.bvec \n" + \
+             "set bvalfile = $SUBJECT/sub-lhab{slim_sub_id}_ses-tp{slim_ses_id}_run-1_dwi.bval \n"
 
 
 ## custom application class
@@ -174,9 +174,7 @@ class GtraclongScript(SessionBasedScript):
                 self.params.input_data):
             # extract root folder name to be used as jobname
             extra_args = extra.copy()
-            slim_sub_id = list(slim_sub_id)[0]
-            slim_ses_id = list(slim_ses_id)[0]
-            jobname = {"{sub_id}_{ses_id}".format(sub_id=slim_sub_id, ses_id=slim_ses_id)}
+            jobname = "{sub_id}_{ses_id}".format(sub_id=slim_sub_id, ses_id=slim_ses_id)
             extra_args['jobname'] = jobname
             print("XXX")
             print(jobname)
