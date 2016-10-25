@@ -213,6 +213,7 @@ class GtraclongScript(SessionBasedScript):
         FS_folder = os.path.join(input_folder, "FS")
         nifti_folder = os.path.join(input_folder, "nifti")
         dmrirc_folder = os.path.join(input_folder, "dmrirc")
+
         sub_folders = glob(os.path.join(nifti_folder, "sub*"))
 
         for sub_folder in sub_folders:
@@ -222,10 +223,10 @@ class GtraclongScript(SessionBasedScript):
             for ses_folder in ses_folders:
                 slim_ses_id = os.path.basename(ses_folder)[-1:]
                 dwi_folder = os.path.join(ses_folder, "dwi")
-                fs_base_folder = os.path.join(FS_folder, "lhab_{slim_sub_id}.base".format(slim_sub_id=slim_ses_id))
+                fs_base_folder = os.path.join(FS_folder, "lhab_{slim_sub_id}.base".format(slim_sub_id=slim_sub_id))
                 fs_long_folder = os.path.join(FS_folder,
                                               "lhab_{slim_sub_id}.cross.{slim_ses_id}tp.long.lhab_{slim_sub_id}.base".format(
-                                                  slim_sub_id=slim_ses_id, slim_ses_id=slim_ses_id))
+                                                  slim_sub_id=slim_sub_id, slim_ses_id=slim_ses_id))
                 # fixme
                 # sub_info[(slim_sub_id, slim_ses_id)] = {"dwi_folder": dwi_folder, "fs_base_folder": fs_base_folder,
                 #                                         "fs_long_folder": fs_long_folder}
