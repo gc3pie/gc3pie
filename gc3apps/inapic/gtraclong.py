@@ -170,7 +170,7 @@ class GtraclongScript(SessionBasedScript):
         """
         tasks = []
 
-        for slim_sub_id, slim_ses_id, dwi_folder, fs_base_folder, fs_long_folder, dmrirc_sub_ses_file in self.get_input_subject_info(
+        for (slim_sub_id, slim_ses_id, dwi_folder, fs_base_folder, fs_long_folder, dmrirc_sub_ses_file) in self.get_input_subject_info(
                 self.params.input_data):
             # extract root folder name to be used as jobname
             extra_args = extra.copy()
