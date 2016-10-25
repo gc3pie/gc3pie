@@ -28,25 +28,25 @@ instructions.
 
 Assumes data is organized according to BIDS standard (http://bids.neuroimaging.io) e.g., for subject abcd
 BIDS/
-├── FS
-│   ├── lhab_abcd.base
-│   ├── lhab_abcd.cross.1tp
-│   ├── lhab_abcd.cross.1tp.long.lhab_abcd.base
-│   ├── lhab_abcd.cross.2tp
-│   ├── lhab_abcd.cross.2tp.long.lhab_abcd.base
-└── nifti
-    └── sub-lhababcd
-        ├── ses-tp1
-        │   └── dwi
-        │       ├── sub-lhababcd_ses-tp1_run-1_dwi.bval
-        │       ├── sub-lhababcd_ses-tp1_run-1_dwi.bvec
-        │       ├── sub-lhababcd_ses-tp1_run-1_dwi.nii.gz
-        ├── ses-tp2
-        │   └── dwi
-        │       ├── sub-lhababcd_ses-tp2_run-1_dwi.bval
-        │       ├── sub-lhababcd_ses-tp2_run-1_dwi.bvec
-        │       ├── sub-lhababcd_ses-tp2_run-1_dwi.nii.gz
-        └── sub-lhababcd_scans.tsv
+-- FS
+   -- lhab_abcd.base
+   -- lhab_abcd.cross.1tp
+   -- lhab_abcd.cross.1tp.long.lhab_abcd.base
+   -- lhab_abcd.cross.2tp
+   -- lhab_abcd.cross.2tp.long.lhab_abcd.base
+-- nifti
+    -- sub-lhababcd
+        -- ses-tp1
+           -- dwi
+               -- sub-lhababcd_ses-tp1_run-1_dwi.bval
+               -- sub-lhababcd_ses-tp1_run-1_dwi.bvec
+               -- sub-lhababcd_ses-tp1_run-1_dwi.nii.gz
+        -- ses-tp2
+           -- dwi
+               -- sub-lhababcd_ses-tp2_run-1_dwi.bval
+               -- sub-lhababcd_ses-tp2_run-1_dwi.bvec
+               -- sub-lhababcd_ses-tp2_run-1_dwi.nii.gz
+        -- sub-lhababcd_scans.tsv
 
 
 """
