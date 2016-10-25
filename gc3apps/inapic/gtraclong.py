@@ -54,9 +54,7 @@ import tempfile
 import re
 from glob import glob
 from collections import OrderedDict
-
 import shutil
-# import csv
 
 from pkg_resources import Requirement, resource_filename
 
@@ -237,8 +235,9 @@ class GtraclongScript(SessionBasedScript):
                     dmrirc_sub_ses_folder = os.path.join(dmrirc_folder, slim_sub_id, slim_ses_id)
                     dmrirc_sub_ses_file = os.path.join(dmrirc_sub_ses_folder, "dmrirc")
                     if os.path.exists(dmrirc_sub_ses_folder):
-                        os.removedirs(dmrirc_sub_ses_folder)
+                        shutil.rmtree(dmrirc_sub_ses_folder)
                     os.makedirs(dmrirc_sub_ses_folder)
+
                     with open(dmrirc_sub_ses_file, "w") as fi:
                         fi.write(dmrirc_str.format(slim_sub_id=slim_sub_id, slim_ses_id=slim_ses_id))
 
