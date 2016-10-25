@@ -224,10 +224,10 @@ class GtraclongScript(SessionBasedScript):
                 dwi_folder = os.path.join(ses_folder, "dwi")
                 fs_folder_list.append(os.path.join(FS_folder, "lhab_{slim_sub_id}.cross.{slim_ses_id}tp".format(
                     slim_sub_id=slim_sub_id, slim_ses_id=slim_ses_id)))
-                fs_folder_list.append(FS_folder, "lhab_{slim_sub_id}.base".format(slim_sub_id=slim_sub_id))
-                fs_folder_list.append(FS_folder,
+                fs_folder_list.append(os.path.join(FS_folder, "lhab_{slim_sub_id}.base".format(slim_sub_id=slim_sub_id)))
+                fs_folder_list.append(os.path.join(FS_folder,
                                       "lhab_{slim_sub_id}.cross.{slim_ses_id}tp.long.lhab_{slim_sub_id}.base".format(
-                                          slim_sub_id=slim_sub_id, slim_ses_id=slim_ses_id))
+                                          slim_sub_id=slim_sub_id, slim_ses_id=slim_ses_id)))
                 data_missing = False
                 data_missing_files = ""
                 if not os.path.exists(dwi_folder):
