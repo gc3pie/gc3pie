@@ -213,11 +213,11 @@ class GtraclongScript(SessionBasedScript):
         nifti_folder = os.path.join(input_folder, "nifti")
         dmrirc_folder = os.path.join(input_folder, "dmrirc")
 
-        sub_folders = glob(os.path.join(nifti_folder, "sub*"))
+        sub_folders = sorted(glob(os.path.join(nifti_folder, "sub*")))
 
         for sub_folder in sub_folders:
             slim_sub_id = os.path.basename(sub_folder)[-4:]
-            ses_folders = glob(os.path.join(sub_folder, "ses*"))
+            ses_folders = sorted(glob(os.path.join(sub_folder, "ses*")))
 
             for ses_folder in ses_folders:
                 slim_ses_id = os.path.basename(ses_folder)[-1:]
