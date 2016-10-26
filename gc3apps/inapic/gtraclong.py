@@ -242,8 +242,7 @@ class GtraclongScript(SessionBasedScript):
                     os.makedirs(dmrirc_sub_ses_folder)
 
                     with open(dmrirc_sub_ses_file, "w") as fi:
-                        fi.write(dmrirc_str.format(fs_cross_str=fs_cross_str, fs_base_str=fs_base_str,
-                                                   fs_long_str=fs_long_str, dwi_file_string=dwi_file_str))
+                        fi.write(dmrirc_str.format(bids_sub=bids_sub, bids_ses=bids_ses))
 
                     yield (bids_sub, bids_ses, dwi_folder, fs_folder_list, dmrirc_sub_ses_file)
                 else:
