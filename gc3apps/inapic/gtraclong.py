@@ -125,7 +125,7 @@ class GtraclongApplication(Application):
             inputs[wrapper], os.path.join(DEFAULT_REMOTE_INPUT_FOLDER, os.path.basename(dmrirc_sub_ses_file)))
 
         if extra_args['requested_memory'] < DEFAULT_MEMORY:
-            gc3libs.log.warning("GtracApplication for subject %s running with memory allocation " \
+            gc3libs.log.warning("GtraclongApplication for subject %s running with memory allocation " \
                                 "'%d GB' lower than suggested one: '%d GB'," % (bids_sub,
                                                                                 extra_args['requested_memory'].amount(
                                                                                     unit=GB),
@@ -202,7 +202,7 @@ class GtraclongScript(SessionBasedScript):
         """
         returns bids_sub,  bids_sub, dwi_folder, fs_folder_list, dmrirc_sub_ses_file
         """
-        fs_folder_list = []
+
 
         FS_folder = os.path.join(input_folder, "freesurfer")
         nifti_folder = os.path.join(input_folder, "sourcedata")
@@ -215,6 +215,7 @@ class GtraclongScript(SessionBasedScript):
             ses_folders = sorted(glob(os.path.join(sub_folder, "ses*")))
 
             for ses_folder in ses_folders:
+                fs_folder_list = []
                 bids_ses = "ses-tp" + os.path.basename(ses_folder)[-1:]
                 dwi_folder = os.path.join(ses_folder, "dwi")
 
