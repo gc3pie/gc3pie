@@ -72,21 +72,28 @@ DEFAULT_MEMORY = Memory(7000, MB)
 DEFAULT_REMOTE_INPUT_FOLDER = "./"
 DEFAULT_REMOTE_DMRIRC_FILE = "./dmrirc"
 DEFAULT_REMOTE_DWI_FOLDER = "./dwi"
-DEFAULT_REMOTE_FS_FOLDER = "./FS/"
+DEFAULT_REMOTE_FS_FOLDER = "./freesurfer/"
 
 DEFAULT_REMOTE_OUTPUT_FOLDER = "./output"
 DMRIC_PATTERN = "dmrirc"
 DEFAULT_TRAC_COMMAND = "trac-all -prep -c {dmrirc} -debug"
 
+fs_cross_str = "{bids_sub}_{bids_ses}"
+fs_base_str = "{bids_sub}.base"
+fs_long_str = "{bids_sub}_{bids_ses}.long." + fs_base_str
+dwi_file_str = "{bids_sub}_{bids_ses}_run-1_dwi.nii.gz"
+bvec_str = "$SUBJECT/dwi/{bids_sub}_{bids_ses}_run-1_dwi.bvec"
+bval_str = "$SUBJECT/dwi/{bids_sub}_{bids_ses}_run-1_dwi.bval"
+
 dmrirc_str = "setenv SUBJECT $PWD \n" + \
-             "setenv SUBJECTS_DIR $SUBJECT/FS \n" + \
+             "setenv SUBJECTS_DIR $SUBJECT/freesurfer \n" + \
              "set dtroot = $SUBJECT/output \n" + \
-             "set subjlist = (lhab_{slim_sub_id}.cross.{slim_ses_id}tp) \n" + \
-             "set baselist = (lhab_{slim_sub_id}.base) \n" + \
+             "set subjlist = (" + fs_cross_str + ") \n" + \
+             "set baselist = (" + fs_base_str + ") \n" + \
              "set dcmroot = $SUBJECT/dwi \n" + \
-             "set dcmlist = (sub-lhab{slim_sub_id}_ses-tp{slim_ses_id}_run-1_dwi.nii.gz) \n" + \
-             "set bvecfile = $SUBJECT/dwi/sub-lhab{slim_sub_id}_ses-tp{slim_ses_id}_run-1_dwi.bvec \n" + \
-             "set bvalfile = $SUBJECT/dwi/sub-lhab{slim_sub_id}_ses-tp{slim_ses_id}_run-1_dwi.bval \n"
+             "set dcmlist = (" + dwi_file_str + ") \n" + \
+             "set bvecfile = " + bvec_str + " \n" + \
+             "set bvalfile = " + bval_str + " \n"
 
 
 ## custom application class
@@ -95,7 +102,7 @@ class GtraclongApplication(Application):
     """
     application_name = 'gtraclong'
 
-    def __init__(self, slim_sub_id, slim_ses_id, dwi_folder, fs_folder_list, dmrirc_sub_ses_file,
+    def __init__(self, bids_sub, bids_ses, dwi_folder, fs_folder_list, dmrirc_sub_ses_file,
                  **extra_args):
         self.output_dir = extra_args['output_dir']
 
@@ -119,7 +126,7 @@ class GtraclongApplication(Application):
 
         if extra_args['requested_memory'] < DEFAULT_MEMORY:
             gc3libs.log.warning("GtracApplication for subject %s running with memory allocation " \
-                                "'%d GB' lower than suggested one: '%d GB'," % (slim_sub_id,
+                                "'%d GB' lower than suggested one: '%d GB'," % (bids_sub,
                                                                                 extra_args['requested_memory'].amount(
                                                                                     unit=GB),
                                                                                 DEFAULT_MEMORY.amount(unit=GB)))
@@ -172,11 +179,11 @@ class GtraclongScript(SessionBasedScript):
         """
         tasks = []
 
-        for (slim_sub_id, slim_ses_id, dwi_folder, fs_folder_list, dmrirc_sub_ses_file) in self.get_input_subject_info(
+        for (bids_sub, bids_ses, dwi_folder, fs_folder_list, dmrirc_sub_ses_file) in self.get_input_subject_info(
                 self.params.input_data):
             # extract root folder name to be used as jobname
             extra_args = extra.copy()
-            jobname = "{sub_id}_{ses_id}".format(sub_id=slim_sub_id, ses_id=slim_ses_id)
+            jobname = "{sub_id}_{ses_id}".format(sub_id=bids_sub, ses_id=bids_ses)
             extra_args['jobname'] = jobname
 
             extra_args['output_dir'] = self.params.output
@@ -185,49 +192,37 @@ class GtraclongScript(SessionBasedScript):
             extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 'run_%s' % jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 'run_%s' % jobname)
 
-            tasks.append(GtraclongApplication(slim_sub_id, slim_ses_id, dwi_folder, fs_folder_list, dmrirc_sub_ses_file,
+            tasks.append(GtraclongApplication(bids_sub, bids_ses, dwi_folder, fs_folder_list, dmrirc_sub_ses_file,
                                               **extra_args))
 
         return tasks
 
-    # fixme
-    # def get_input_subject_folder(self, input_folder):
-    #     """
-    #     Check and validate input subfolders
-    #     """
-    #     #
-    #     # for r,d,f in os.walk(input_folder):
-    #     #     for infile in f:
-    #     #         if infile.startswith(DMRIC_PATTERN):
-    #     #             yield (os.path.abspath(r),os.path.basename(r),infile)
-    #     #
-    #     pass
 
     def get_input_subject_info(self, input_folder):
         """
-        returns slim_sub_id,  slim_ses_id, dwi_folder, fs_folder_list, dmrirc_sub_ses_file
+        returns bids_sub,  bids_sub, dwi_folder, fs_folder_list, dmrirc_sub_ses_file
         """
         fs_folder_list = []
 
-        FS_folder = os.path.join(input_folder, "FS")
-        nifti_folder = os.path.join(input_folder, "nifti")
+        FS_folder = os.path.join(input_folder, "freesurfer")
+        nifti_folder = os.path.join(input_folder, "sourcedata")
         dmrirc_folder = os.path.join(input_folder, "dmrirc")
 
         sub_folders = sorted(glob(os.path.join(nifti_folder, "sub*")))
 
         for sub_folder in sub_folders:
-            slim_sub_id = os.path.basename(sub_folder)[-4:]
+            bids_sub = os.path.basename(sub_folder)[-4:]
             ses_folders = sorted(glob(os.path.join(sub_folder, "ses*")))
 
             for ses_folder in ses_folders:
-                slim_ses_id = os.path.basename(ses_folder)[-1:]
+                bids_ses = os.path.basename(ses_folder)[-1:]
                 dwi_folder = os.path.join(ses_folder, "dwi")
-                fs_folder_list.append(os.path.join(FS_folder, "lhab_{slim_sub_id}.cross.{slim_ses_id}tp".format(
-                    slim_sub_id=slim_sub_id, slim_ses_id=slim_ses_id)))
-                fs_folder_list.append(os.path.join(FS_folder, "lhab_{slim_sub_id}.base".format(slim_sub_id=slim_sub_id)))
-                fs_folder_list.append(os.path.join(FS_folder,
-                                      "lhab_{slim_sub_id}.cross.{slim_ses_id}tp.long.lhab_{slim_sub_id}.base".format(
-                                          slim_sub_id=slim_sub_id, slim_ses_id=slim_ses_id)))
+
+                fs_folder_list.append(
+                    os.path.join(FS_folder, fs_cross_str.format(bids_sub=bids_sub, bids_ses=bids_ses)))
+                fs_folder_list.append(os.path.join(FS_folder, fs_base_str.format(bids_sub=bids_sub)))
+                fs_folder_list.append(os.path.join(FS_folder, fs_long_str.format(bids_sub=bids_sub, bids_ses=bids_ses)))
+
                 data_missing = False
                 data_missing_files = ""
                 if not os.path.exists(dwi_folder):
@@ -240,15 +235,16 @@ class GtraclongScript(SessionBasedScript):
 
                 if not data_missing:
                     # create dmrirc file
-                    dmrirc_sub_ses_folder = os.path.join(dmrirc_folder, slim_sub_id, slim_ses_id)
+                    dmrirc_sub_ses_folder = os.path.join(dmrirc_folder, bids_sub, bids_ses)
                     dmrirc_sub_ses_file = os.path.join(dmrirc_sub_ses_folder, "dmrirc")
                     if os.path.exists(dmrirc_sub_ses_folder):
                         shutil.rmtree(dmrirc_sub_ses_folder)
                     os.makedirs(dmrirc_sub_ses_folder)
 
                     with open(dmrirc_sub_ses_file, "w") as fi:
-                        fi.write(dmrirc_str.format(slim_sub_id=slim_sub_id, slim_ses_id=slim_ses_id))
+                        fi.write(dmrirc_str.format(fs_cross_str=fs_cross_str, fs_base_str=fs_base_str,
+                                                   fs_long_str=fs_long_str, dwi_file_string=dwi_file_str))
 
-                    yield (slim_sub_id, slim_ses_id, dwi_folder, fs_folder_list, dmrirc_sub_ses_file)
+                    yield (bids_sub, bids_ses, dwi_folder, fs_folder_list, dmrirc_sub_ses_file)
                 else:
                     gc3libs.log.warning("Data is missing: %s" % data_missing_files)
