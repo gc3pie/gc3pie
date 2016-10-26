@@ -211,11 +211,11 @@ class GtraclongScript(SessionBasedScript):
         sub_folders = sorted(glob(os.path.join(nifti_folder, "sub*")))
 
         for sub_folder in sub_folders:
-            bids_sub = "sub-tp" + os.path.basename(sub_folder)[-4:]
+            bids_sub = "sub-" + os.path.basename(sub_folder)[-4:]
             ses_folders = sorted(glob(os.path.join(sub_folder, "ses*")))
 
             for ses_folder in ses_folders:
-                bids_ses = "ses-" + os.path.basename(ses_folder)[-1:]
+                bids_ses = "ses-tp" + os.path.basename(ses_folder)[-1:]
                 dwi_folder = os.path.join(ses_folder, "dwi")
 
                 fs_folder_list.append(
