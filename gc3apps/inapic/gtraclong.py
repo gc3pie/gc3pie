@@ -67,7 +67,7 @@ from gc3libs.quantity import Memory, kB, MB, MiB, GB, Duration, hours, minutes, 
 from gc3libs.workflow import RetryableTask
 
 DEFAULT_CORES = 1
-DEFAULT_MEMORY = Memory(3000, MB)
+DEFAULT_MEMORY = Memory(7000, MB)
 
 DEFAULT_REMOTE_INPUT_FOLDER = "./"
 DEFAULT_REMOTE_DMRIRC_FILE = "./dmrirc"
