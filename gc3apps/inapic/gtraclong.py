@@ -78,22 +78,7 @@ DEFAULT_REMOTE_OUTPUT_FOLDER = "./output"
 DMRIC_PATTERN = "dmrirc"
 DEFAULT_TRAC_COMMAND = "trac-all -prep -c {dmrirc} -debug"
 
-fs_cross_str = "{bids_sub}_{bids_ses}"
-fs_base_str = "{bids_sub}.base"
-fs_long_str = "{bids_sub}_{bids_ses}.long." + fs_base_str
-dwi_file_str = "{bids_sub}_{bids_ses}_run-1_dwi.nii.gz"
-bvec_str = "$SUBJECT/dwi/{bids_sub}_{bids_ses}_run-1_dwi.bvec"
-bval_str = "$SUBJECT/dwi/{bids_sub}_{bids_ses}_run-1_dwi.bval"
 
-dmrirc_str = "setenv SUBJECT $PWD \n" + \
-             "setenv SUBJECTS_DIR $SUBJECT/freesurfer \n" + \
-             "set dtroot = $SUBJECT/output \n" + \
-             "set subjlist = (" + fs_cross_str + ") \n" + \
-             "set baselist = (" + fs_base_str + ") \n" + \
-             "set dcmroot = $SUBJECT/dwi \n" + \
-             "set dcmlist = (" + dwi_file_str + ") \n" + \
-             "set bvecfile = " + bvec_str + " \n" + \
-             "set bvalfile = " + bval_str + " \n"
 
 
 ## custom application class
@@ -202,6 +187,16 @@ class GtraclongScript(SessionBasedScript):
         """
         returns bids_sub,  bids_sub, dwi_folder, fs_folder_list, dmrirc_sub_ses_file
         """
+        fs_folder_list = []
+        bids_ses_list = []
+
+        fs_cross_str = "{bids_sub}_{bids_ses}"
+        fs_base_str = "{bids_sub}.base"
+        fs_long_str = "{bids_sub}_{bids_ses}.long." + fs_base_str
+        dwi_file_str = "{bids_ses}/{bids_sub}_{bids_ses}_run-1_dwi.nii.gz"
+        bvec_str = "$SUBJECT/dwi/{bids_ses}/dwi/{bids_sub}_{bids_ses}_run-1_dwi.bvec"
+        bval_str = "$SUBJECT/dwi/{bids_ses}/dwi/{bids_sub}_{bids_ses}_run-1_dwi.bval"
+
 
 
         FS_folder = os.path.join(input_folder, "freesurfer")
@@ -215,36 +210,59 @@ class GtraclongScript(SessionBasedScript):
             ses_folders = sorted(glob(os.path.join(sub_folder, "ses*")))
 
             for ses_folder in ses_folders:
-                fs_folder_list = []
                 bids_ses = "ses-tp" + os.path.basename(ses_folder)[-1:]
-                dwi_folder = os.path.join(ses_folder, "dwi")
+                bids_ses_list.append(bids_ses)
+                dwi_folder = os.path.join(sub_folder, bids_ses, "dwi")
 
                 fs_folder_list.append(
                     os.path.join(FS_folder, fs_cross_str.format(bids_sub=bids_sub, bids_ses=bids_ses)))
                 fs_folder_list.append(os.path.join(FS_folder, fs_base_str.format(bids_sub=bids_sub)))
                 fs_folder_list.append(os.path.join(FS_folder, fs_long_str.format(bids_sub=bids_sub, bids_ses=bids_ses)))
 
-                data_missing = False
-                data_missing_files = ""
-                if not os.path.exists(dwi_folder):
-                    data_missing = True
-                    data_missing_files += dwi_folder
-                for fs in fs_folder_list:
-                    if not os.path.exists(fs):
-                        data_missing = True
-                        data_missing_files += fs
+            data_missing = False
+            # data_missing = False
+            # data_missing_files = ""
+            # if not os.path.exists(dwi_folder):
+            #     data_missing = True
+            #     data_missing_files += dwi_folder
+            # for fs in fs_folder_list:
+            #     if not os.path.exists(fs):
+            #         data_missing = True
+            #         data_missing_files += fs
 
-                if not data_missing:
-                    # create dmrirc file
-                    dmrirc_sub_ses_folder = os.path.join(dmrirc_folder, bids_sub, bids_ses)
-                    dmrirc_sub_ses_file = os.path.join(dmrirc_sub_ses_folder, "dmrirc")
-                    if os.path.exists(dmrirc_sub_ses_folder):
-                        shutil.rmtree(dmrirc_sub_ses_folder)
-                    os.makedirs(dmrirc_sub_ses_folder)
+            if not data_missing:
+                # create dmrirc file
+                dmrirc_sub_folder = os.path.join(dmrirc_folder, bids_sub)
+                dmrirc_sub_file = os.path.join(dmrirc_sub_folder, "dmrirc")
+                if os.path.exists(dmrirc_sub_folder):
+                    shutil.rmtree(dmrirc_sub_folder)
+                os.makedirs(dmrirc_sub_folder)
 
-                    with open(dmrirc_sub_ses_file, "w") as fi:
-                        fi.write(dmrirc_str.format(bids_sub=bids_sub, bids_ses=bids_ses))
+                fs_cross_list, fs_base_list, dwi_file_list, bvec_list = [],[],[],[]
+                for bids_ses in bids_ses_list:
+                    fs_cross_list.append(fs_cross_str.format(bids_sub=bids_sub, bids_ses=bids_ses))
+                    fs_base_list.append(fs_base_str.format(bids_sub=bids_sub))
+                    dwi_file_list.append(dwi_file_str.format(bids_sub=bids_sub, bids_ses=bids_ses))
+                    bvec_list.append(bvec_str.format(bids_sub=bids_sub, bids_ses=bids_ses))
+                fs_cross_list = " ".join(fs_cross_list)
+                fs_base_list = " ".join(fs_base_list)
+                dwi_file_list = " ".join(dwi_file_list)
+                bvec_list = " ".join(bvec_list)
+                bval_str_exec = bval_str.format(bids_sub=bids_sub, bids_ses=bids_ses)
 
-                    yield (bids_sub, bids_ses, dwi_folder, fs_folder_list, dmrirc_sub_ses_file)
-                else:
-                    gc3libs.log.warning("Data is missing: %s" % data_missing_files)
+                dmrirc_str = "setenv SUBJECT $PWD \n" + \
+                             "setenv SUBJECTS_DIR $SUBJECT/freesurfer \n" + \
+                             "set dtroot = $SUBJECT/output \n" + \
+                             "set subjlist = (" + fs_cross_list + ") \n" + \
+                             "set baselist = (" + fs_base_list + ") \n" + \
+                             "set dcmroot = $SUBJECT/dwi \n" + \
+                             "set dcmlist = (" + dwi_file_list + ") \n" + \
+                             "set bveclist = (" + bvec_list + " )\n" + \
+                             "set bvalfile = " + bval_str_exec + " \n"
+
+                with open(dmrirc_sub_file, "w") as fi:
+                    fi.write(dmrirc_str.format(bids_sub=bids_sub, bids_ses=bids_ses))
+
+                yield (bids_sub, bids_ses, dwi_folder, fs_folder_list, dmrirc_sub_file)
+            else:
+                gc3libs.log.warning("Data is missing: %s" % "data_missing_files")
