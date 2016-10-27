@@ -79,8 +79,6 @@ DMRIC_PATTERN = "dmrirc"
 DEFAULT_TRAC_COMMAND = "trac-all -prep -c {dmrirc} -debug"
 
 
-
-
 ## custom application class
 class GtraclongApplication(Application):
     """
@@ -101,9 +99,9 @@ class GtraclongApplication(Application):
         inputs[dmrirc_sub_ses_file] = DEFAULT_REMOTE_DMRIRC_FILE
 
         # fixme
-        # wrapper = resource_filename(Requirement.parse("gc3pie"),
-        #                             "gc3libs/etc/gtraclong_wrapper.py")
-        wrapper = "/home/ubuntu/gtrac_long_repo/gc3pie/gc3libs/etc/gtraclong_wrapper.py"
+        wrapper = resource_filename(Requirement.parse("gc3pie"),
+                                    "gc3libs/etc/gtraclong_wrapper.py")
+        # wrapper = "/home/ubuntu/gtrac_long_repo/gc3pie/gc3libs/etc/gtraclong_wrapper.py"
         inputs[wrapper] = os.path.basename(wrapper)
 
         arguments = "./%s %s" % (
@@ -182,7 +180,6 @@ class GtraclongScript(SessionBasedScript):
 
         return tasks
 
-
     def get_input_subject_info(self, input_folder):
         """
         returns bids_sub,  bids_sub, dwi_folder, fs_folder_list, dmrirc_sub_ses_file
@@ -196,8 +193,6 @@ class GtraclongScript(SessionBasedScript):
         dwi_file_str = "{bids_ses}/{bids_sub}_{bids_ses}_run-1_dwi.nii.gz"
         bvec_str = "$SUBJECT/dwi/{bids_ses}/dwi/{bids_sub}_{bids_ses}_run-1_dwi.bvec"
         bval_str = "$SUBJECT/dwi/{bids_ses}/dwi/{bids_sub}_{bids_ses}_run-1_dwi.bval"
-
-
 
         FS_folder = os.path.join(input_folder, "freesurfer")
         nifti_folder = os.path.join(input_folder, "sourcedata")
@@ -238,7 +233,7 @@ class GtraclongScript(SessionBasedScript):
                     shutil.rmtree(dmrirc_sub_folder)
                 os.makedirs(dmrirc_sub_folder)
 
-                fs_cross_list, fs_base_list, dwi_file_list, bvec_list = [],[],[],[]
+                fs_cross_list, fs_base_list, dwi_file_list, bvec_list = [], [], [], []
                 for bids_ses in bids_ses_list:
                     fs_cross_list.append(fs_cross_str.format(bids_sub=bids_sub, bids_ses=bids_ses))
                     fs_base_list.append(fs_base_str.format(bids_sub=bids_sub))
