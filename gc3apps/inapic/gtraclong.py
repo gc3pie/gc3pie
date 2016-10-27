@@ -116,9 +116,9 @@ class GtraclongApplication(Application):
         inputs[dmrirc_sub_ses_file] = DEFAULT_REMOTE_DMRIRC_FILE
 
         # fixme
-        wrapper = resource_filename(Requirement.parse("gc3pie"),
-                                    "gc3libs/etc/gtraclong_wrapper.py")
-        # wrapper = "/home/ubuntu/gtrac_long_repo/gc3pie/gc3libs/etc/gtraclong_wrapper.py"
+        #wrapper = resource_filename(Requirement.parse("gc3pie"),
+        #                            "gc3libs/etc/gtraclong_wrapper.py")
+        wrapper = "/home/ubuntu/gtrac_long_repo/gc3pie/gc3libs/etc/gtraclong_wrapper.py"
         inputs[wrapper] = os.path.basename(wrapper)
 
         arguments = "./%s %s" % (
