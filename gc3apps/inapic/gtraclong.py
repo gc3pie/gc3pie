@@ -201,6 +201,8 @@ class GtraclongScript(SessionBasedScript):
         sub_folders = sorted(glob(os.path.join(nifti_folder, "sub*")))
 
         for sub_folder in sub_folders:
+            fs_folder_list = []
+
             bids_sub = "sub-lhab" + os.path.basename(sub_folder)[-4:]
             ses_folders = sorted(glob(os.path.join(sub_folder, "ses*")))
             dwi_folder = os.path.join(sub_folder)
