@@ -190,7 +190,7 @@ class GtraclongScript(SessionBasedScript):
         fs_cross_str = "{bids_sub}_{bids_ses}"
         fs_base_str = "{bids_sub}.base"
         fs_long_str = "{bids_sub}_{bids_ses}.long." + fs_base_str
-        dwi_file_str = "{bids_ses}/{bids_sub}_{bids_ses}_run-1_dwi.nii.gz"
+        dwi_file_str = "{bids_ses}/dwi/{bids_sub}_{bids_ses}_run-1_dwi.nii.gz"
         bvec_str = "$SUBJECT/dwi/{bids_ses}/dwi/{bids_sub}_{bids_ses}_run-1_dwi.bvec"
         bval_str = "$SUBJECT/dwi/{bids_ses}/dwi/{bids_sub}_{bids_ses}_run-1_dwi.bval"
 
