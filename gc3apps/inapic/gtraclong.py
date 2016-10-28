@@ -51,6 +51,7 @@ __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2016-10-28:
+  * Now uses longitudinal stream (based on gtrac.py)
   * Input data is expected in BIDS standard
 
   2016-07-05:
