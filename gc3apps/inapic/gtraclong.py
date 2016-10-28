@@ -23,28 +23,6 @@
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gtraclong.py --help`` for program usage instructions.
-
-Assumes data is organized according to BIDS standard (http://bids.neuroimaging.io) e.g., for subject abcd
-BIDS/
-    freesurfer
-        lhab_abcd.base
-        lhab_abcd.cross.1tp
-        lhab_abcd.cross.1tp.long.lhab_abcd.base
-        lhab_abcd.cross.2tp
-        lhab_abcd.cross.2tp.long.lhab_abcd.base
-    sourcedata
-        sub-lhababcd
-            ses-tp1
-                dwi
-                    sub-lhababcd_ses-tp1_run-1_dwi.bval
-                    sub-lhababcd_ses-tp1_run-1_dwi.bvec
-                    sub-lhababcd_ses-tp1_run-1_dwi.nii.gz
-            ses-tp2
-                dwi
-                    sub-lhababcd_ses-tp2_run-1_dwi.bval
-                    sub-lhababcd_ses-tp2_run-1_dwi.bvec
-                    sub-lhababcd_ses-tp2_run-1_dwi.nii.gz
-
 """
 
 __version__ = 'development version (SVN $Revision$)'
@@ -165,6 +143,27 @@ class GtraclongScript(SessionBasedScript):
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gtraclong`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
+
+    Assumes data is organized according to BIDS standard (http://bids.neuroimaging.io) e.g., for subject abcd
+    BIDS/
+        freesurfer
+            lhab_abcd.base
+            lhab_abcd.cross.1tp
+            lhab_abcd.cross.1tp.long.lhab_abcd.base
+            lhab_abcd.cross.2tp
+            lhab_abcd.cross.2tp.long.lhab_abcd.base
+        sourcedata
+            sub-lhababcd
+                ses-tp1
+                    dwi
+                        sub-lhababcd_ses-tp1_run-1_dwi.bval
+                        sub-lhababcd_ses-tp1_run-1_dwi.bvec
+                        sub-lhababcd_ses-tp1_run-1_dwi.nii.gz
+                ses-tp2
+                    dwi
+                        sub-lhababcd_ses-tp2_run-1_dwi.bval
+                        sub-lhababcd_ses-tp2_run-1_dwi.bvec
+                        sub-lhababcd_ses-tp2_run-1_dwi.nii.gz
     """
     def __init__(self):
         SessionBasedScript.__init__(
