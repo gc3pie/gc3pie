@@ -35,7 +35,7 @@ BIDS/
     sourcedata
         sub-lhababcd
             ses-tp1
-                dwi
+                dwi
                     sub-lhababcd_ses-tp1_run-1_dwi.bval
                     sub-lhababcd_ses-tp1_run-1_dwi.bvec
                     sub-lhababcd_ses-tp1_run-1_dwi.nii.gz
@@ -44,7 +44,7 @@ BIDS/
                     sub-lhababcd_ses-tp2_run-1_dwi.bval
                     sub-lhababcd_ses-tp2_run-1_dwi.bvec
                     sub-lhababcd_ses-tp2_run-1_dwi.nii.gz
-            sub-lhababcd_scans.tsv
+
 """
 
 __version__ = 'development version (SVN $Revision$)'
