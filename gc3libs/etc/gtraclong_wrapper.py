@@ -27,7 +27,7 @@ TRAC_PIPELINE = [ TRAC_CMD_STEP1,
                   TRAC_CMD_STEP3 ]
 
 def Usage():
-    print ("Usage: gtrac_wrapper.py <dmrirc file>")
+    print ("Usage: gtraclong_wrapper.py <dmrirc file>")
 
 def RunTrac(dmrirc_input):
     """
