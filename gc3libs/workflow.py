@@ -401,7 +401,7 @@ class SequentialTaskCollection(TaskCollection):
             task.redo(*args, **kwargs)
         # All other tasks should be put in NEW again
         for i in range(from_stage+1, len(self.tasks)):
-            self.tasks[i].execution.state = Run.State.NEW
+            self.tasks[i].redo(*args, **kwargs)
 
     def submit(self, resubmit=False, targets=None, **extra_args):
         """
