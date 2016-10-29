@@ -144,7 +144,11 @@ class GtraclongScript(SessionBasedScript):
     'SUBMITTED' or 'RUNNING' state; ``gtraclong`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
-    Assumes data is organized according to BIDS standard (http://bids.neuroimaging.io) e.g., for subject abcd
+    Assumes data is organized according to BIDS standard (http://bids.neuroimaging.io)
+    (not restricted to lhab data, just needs to follow "sub-<sub_id>_ses-<ses_id>..." pattern)
+
+
+    e.g., for subject lhababcd
     BIDS/
         freesurfer
             lhab_abcd.base
