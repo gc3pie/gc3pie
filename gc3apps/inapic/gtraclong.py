@@ -149,13 +149,18 @@ class GtraclongScript(SessionBasedScript):
 
 
     e.g., for subject lhababcd
-    BIDS/
+    BIDS
         freesurfer
-            lhab_abcd.base
-            lhab_abcd.cross.1tp
-            lhab_abcd.cross.1tp.long.lhab_abcd.base
-            lhab_abcd.cross.2tp
-            lhab_abcd.cross.2tp.long.lhab_abcd.base
+            sub-lhababcd.base
+            sub-lhababcd_ses-tp1
+            sub-lhababcd_ses-tp1.long.sub-lhababcd.base
+            sub-lhababcd_ses-tp2
+            sub-lhababcd_ses-tp2.long.sub-lhababcd.base
+            sub-lhababcd_ses-tp3
+            sub-lhababcd_ses-tp3.long.sub-lhababcd.base
+            ...
+            sub_lhab1234.base
+            ...
         sourcedata
             sub-lhababcd
                 ses-tp1
@@ -168,6 +173,11 @@ class GtraclongScript(SessionBasedScript):
                         sub-lhababcd_ses-tp2_run-1_dwi.bval
                         sub-lhababcd_ses-tp2_run-1_dwi.bvec
                         sub-lhababcd_ses-tp2_run-1_dwi.nii.gz
+            ...
+            sub_lhab1234
+                ses-tp1
+                ...
+            ...
     """
     def __init__(self):
         SessionBasedScript.__init__(
