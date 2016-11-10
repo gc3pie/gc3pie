@@ -97,11 +97,6 @@ class Default(object):
     SSH_PORT = 22
     SSH_CONNECT_TIMEOUT = 30
 
-    # Proxy
-    # : Proxy validity threshold in seconds. If proxy is expiring
-    # before the thresold, it will be marked as to be renewed.
-    PROXY_VALIDITY_THRESHOLD = 600
-
     PEEK_FILE_SIZE = 120  # expressed in bytes
 
     # Openstack default VM Operating System overhead
