@@ -394,17 +394,15 @@ class SequentialTaskCollection(TaskCollection):
         """
         Rewind the sequence to a given stage and reset its state to ``NEW``.
         """
-        super(SequentialTaskCollection, self).redo(*args, **kwargs)
-        self._current_task = from_stage
-        task = self.stage()
-        if task is not None:
-            task.redo(*args, **kwargs)
-        # All other tasks should be put in NEW again
-        for i in range(from_stage+1, len(self.tasks)):
-            try:
+        if len(self.tasks) > 0:
+            super(SequentialTaskCollection, self).redo(*args, **kwargs)
+            self._current_task = from_stage
+            task = self.stage()
+            if task is not None:
+                task.redo(*args, **kwargs)
+            # All other tasks should be put in NEW again
+            for i in range(from_stage+1, len(self.tasks)):
                 self.tasks[i].redo(*args, **kwargs)
-            except IndexError:
-                self.tasks[i].execution.state = Run.State.NEW
 
     def submit(self, resubmit=False, targets=None, **extra_args):
         """
