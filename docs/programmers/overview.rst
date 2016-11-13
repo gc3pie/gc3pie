@@ -314,15 +314,6 @@ supported.
 .. _xRSL: http://www.nordugrid.org/documents/xrsl.pdf
 
 
-UML Diagram
------------
-
-An `UML diagram of GC3Pie classes`__ is available (also in `PNG format`__)
-
-.. __: https://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/_images/gc3libs.UML.png
-.. __: https://gc3pie.googlecode.com/svn/trunk/gc3pie/docs/html/_images/gc3libs.UML.svg
-
-
 .. (for Emacs only)
 ..
   Local variables:
