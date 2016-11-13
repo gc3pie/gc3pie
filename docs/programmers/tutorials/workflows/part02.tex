@@ -86,7 +86,7 @@
 
   \+ \alert{\texttt{Resource}s are the computing infrastructures \\ where GC3Pie executes applications.}
 
-  \+ Resources include: your laptop, the ``Hydra'' cluster, the Science Cloud, Amazon AWS.
+  \+ Resources include: your laptop, the ``Hydra'' cluster, the Science Cloud, Amazon EC2.
 \end{frame}
 
 
@@ -113,7 +113,8 @@ class AScript(SessionBasedScript):
     super(AScript, self).__init__(
         version='1.0')
   def new_tasks(self, extra):
-    return []
+    apps_to_run = [ ]
+    return apps_to_run
 \end{python}
     \end{column}
     \begin{column}{0.3\linewidth}
@@ -169,7 +170,8 @@ class AScript(SessionBasedScript):
     super(AScript, self).__init__(
         version='1.0')
   def new_tasks(self, extra):
-    return []
+    apps_to_run = [ ]
+    return apps_to_run
 \end{python}
     \end{column}
     \begin{column}{0.4\linewidth}
@@ -203,7 +205,8 @@ class AScript(SessionBasedScript):
     super(AScript, self).__init__(
         version='1.0')
   def new_tasks(self, extra):
-    return []
+    apps_to_run = [ ]
+    return apps_to_run
 \end{python}
     \end{column}
     \begin{column}{0.4\linewidth}
@@ -235,7 +238,8 @@ class AScript(SessionBasedScript):
     super(AScript, self).__init__(
         version='1.0')
   def new_tasks(self, extra):
-    return []
+    apps_to_run = [ ]
+    return apps_to_run
 \end{python}
     \end{column}
     \begin{column}{0.4\linewidth}
@@ -266,7 +270,8 @@ class AScript(SessionBasedScript):
     super(AScript, self).__init__(
       ~\HL{version='1.0'}~)
   def new_tasks(self, extra):
-    return []
+    apps_to_run = [ ]
+    return apps_to_run
 \end{python}
     \end{column}
     \begin{column}{0.4\linewidth}
@@ -297,7 +302,8 @@ class AScript(SessionBasedScript):
     super(AScript, self).__init__(
         version='1.0')
   def new_tasks(self, extra):
-    ~\HL{return []}~
+    ~\HL{apps\_to\_run = [ ]}~
+    ~\HL{return apps\_to\_run}~
 \end{python}
     \end{column}
     \begin{column}{0.4\linewidth}
@@ -350,14 +356,14 @@ class AScript(SessionBasedScript):
 \begin{frame}[fragile]
 \frametitle{A basic example: grayscaling}
 \begin{sh}
-$ convert lena.jpg -colorspace gray lena-gray.jpg
+$ convert pm.jpg -colorspace gray gray-pm.jpg
 \end{sh}%$
 \begin{tabular}{ccc}
-  {\includegraphics[width=0.4\linewidth]{fig/lena.jpg}}
+  {\includegraphics[width=0.4\linewidth]{fig/butterfly.jpg}}
   &
-  {\includegraphics[width=0.1\linewidth,totalheight=0.45\textheight]{fig/arrow.pdf}}
+  {\includegraphics[width=0.1\linewidth,totalheight=0.25\textheight]{fig/arrow.pdf}}
   &
-  {\includegraphics[width=0.4\linewidth]{fig/gray-lena.jpg}}
+  {\includegraphics[width=0.4\linewidth]{fig/gray-butterfly.jpg}}
 \end{tabular}
 
 \end{frame}
@@ -738,11 +744,11 @@ class AScript(SessionBasedScript):
     one instance of it (as in the previous slide).
 
     \+
-    Can you convert the \href{https://raw.githubusercontent.com/uzh/gc3pie/training-july-2016/docs/programmers/tutorials/workflows/lena.jpg}{\texttt{lena.jpg}} file to gray-scale using
+    Can you convert the \href{https://raw.githubusercontent.com/uzh/gc3pie/training-july-2016/docs/programmers/tutorials/workflows/butterfly.jpg}{\texttt{butterfly.jpg}} file to gray-scale using
     this GC3Pie script?
 
     \+ \footnotesize
-    {\em (You can download the code for \texttt{GrayscaleApp} and the ``Lena'' image file from
+    {\em (You can download the code for \texttt{GrayscaleApp} and the ``butterfly'' image file from
     \href{https://raw.githubusercontent.com/uzh/gc3pie/training-july-2016/docs/programmers/tutorials/workflows/}{this
       URL}.)}
   \end{exercise*}
