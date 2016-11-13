@@ -50,7 +50,7 @@ clean:
 		$(BUILDDIR)/changes \
 		$(BUILDDIR)/linkcheck \
 		$(BUILDDIR)/doctest \
-	        $(BUILDDIR)/packages_gc3pie.dot \
+		$(BUILDDIR)/packages_gc3pie.dot \
 		$(BUILDDIR)/classes_gc3pie.dot \
 		$(BUILDDIR)/gc3libs.UML.png \
 		$(BUILDDIR)/gc3libs.UML.svg \
