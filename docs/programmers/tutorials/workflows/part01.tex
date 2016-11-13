@@ -38,6 +38,8 @@
 \end{frame}
 
 
+\part{Uses of GC3Pie}
+
 \begin{frame}[fragile]
   \frametitle{Uses of GC3Pie: parameter sweep}
 
@@ -107,6 +109,8 @@
 \end{frame}
 
 
+\part{How GC3Pie works}
+
 \begin{frame}
   \frametitle{A typical high-throughput script structure}
 
@@ -119,6 +123,22 @@
   \item Postprocess and display
   \end{enumerate}
 \end{frame}
+
+
+\newcommand<>\fullgraphicsframe[1]{%
+  {
+    \usebackgroundtemplate{\includegraphics[width=\paperwidth]{#1}}
+    \begin{frame}[plain]
+      % empty frame -- the graphics comes from above
+    \end{frame}
+  }
+}
+
+\fullgraphicsframe{fig/gc3pie-running-1.pdf}
+
+\fullgraphicsframe{fig/gc3pie-running-3.pdf}
+
+\fullgraphicsframe{fig/gc3pie-running-2.pdf}
 
 
 \begin{frame}
