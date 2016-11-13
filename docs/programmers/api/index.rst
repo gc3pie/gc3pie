@@ -22,7 +22,6 @@
    gc3libs/application/turbomole
    gc3libs/authentication
    gc3libs/authentication/ec2
-   gc3libs/authentication/grid
    gc3libs/authentication/ssh
    gc3libs/backends
    gc3libs/backends/batch
