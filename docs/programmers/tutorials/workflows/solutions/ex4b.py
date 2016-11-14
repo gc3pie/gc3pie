@@ -62,7 +62,7 @@ class TopBlastScript(SessionBasedScript):
         return apps_to_run
 
 
-from gc3libs.quantity import GB
+from gc3libs.quantity import GB, minutes
 
 class BlastApp(Application):
     """Run BLAST on two files."""
@@ -71,10 +71,8 @@ class BlastApp(Application):
         inp2 = basename(input2)
         Application.__init__(
             self,
-            # NOTE: does not work as written! BLAST+ is required
-            # to compare two FASTA files
-            arguments=["blastpgp", "-i", inp1, "-d", inp2,
-                       "-e", e_value, "-m", output_fmt, "-o", "output.txt"],
+            arguments=["blastp", "-query", inp1, "-subject", inp2,
+                       "-evalue", e_value, "-outfmt", output_fmt, "-out", "output.txt"],
             inputs=[input1, input2],
             outputs=["output.txt"],
             output_dir=("blast-" + inp1 + "-" + inp2 + ".d"),
