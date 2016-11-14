@@ -748,7 +748,7 @@ ReturnCode=%x"""
             "ps ax | grep -E '^ *%d '" % pid)
         if exit_code == 0:
             log.debug("Process with PID %s found."
-                      " Checking its running status", pid)
+                      " Checking its running status ...", pid)
             # Process exists. Check the status
             status = stdout.split()[2]
             if status[0] == 'T':
@@ -758,50 +758,70 @@ ReturnCode=%x"""
                 # Job is running. Check manpage of ps both on linux
                 # and BSD to know the meaning of these statuses.
                 app.execution.state = Run.State.RUNNING
-            # Check if we need to cancel the job
-            exit_code2, stdout2, stderr2 = self.transport.execute_command(
-                "ps -p %d -o etimes=" % pid)
-            elapsed = Duration(stdout2.strip() + 'seconds')
-            if elapsed > self.max_walltime or elapsed > app.requested_walltime:
-                log.warning("Job %s ran for %s, exceeding requested_walltime %s or max_walltime %s of resource: cancelling.",
-                            app, elapsed.to_timedelta(), app.requested_walltime, self.max_walltime)
-                self.cancel_job(app)
-                app.execution.state = Run.State.TERMINATING
-                # We also need to set the signal
-                app.execution.returncode = (15, 1)
-                return app.execution.state
+                # if `requested_walltime` is set, enforce it as a
+                # running time limit
+                if app.requested_walltime is not None:
+                    exit_code2, stdout2, stderr2 = self.transport.execute_command(
+                        "ps -p %d -o etimes=" % pid)
+                    if exit_code2 != 0:
+                        # job terminated already, do cleanup and return
+                        self._cleanup_terminating_task(app, pid)
+                        return app.execution.state
+                    cancel = False
+                    elapsed = Duration(stdout2.strip() + 'seconds')
+                    if elapsed > self.max_walltime:
+                        log.warning("Task %s ran for %s, exceeding max_walltime %s of resource %s: cancelling it.",
+                                    app, elapsed.to_timedelta(), self.max_walltime, self.name)
+                        cancel = True
+                    if elapsed > app.requested_walltime:
+                        log.warning("Task %s ran for %s, exceeding own `requested_walltime` %s: cancelling it.",
+                                    app, elapsed.to_timedelta(), app.requested_walltime)
+                        cancel = True
+                    if cancel:
+                        self.cancel_job(app)
+                        # set signal to SIGTERM in termination status
+                        self._cleanup_terminating_task(app, pid, termstatus=(15, -1))
+                        return app.execution.state
         else:
             log.debug(
-                "Process with PID %d not found."
-                " Checking wrapper file ...", pid)
-            app.execution.state = Run.State.TERMINATING
-            if pid in self.job_infos:
-                self.job_infos[pid]['terminated'] = True
-                assert (app.requested_memory
-                        == self.job_infos[pid]['requested_memory'])
-                if app.requested_memory:
-                    self.available_memory += app.requested_memory
-            wrapper_filename = posixpath.join(
-                app.execution.lrms_execdir,
-                ShellcmdLrms.WRAPPER_DIR,
-                ShellcmdLrms.WRAPPER_OUTPUT_FILENAME)
-            try:
-                wrapper_file = self.transport.open(wrapper_filename, 'r')
-            except Exception as err:
-                self._delete_job_resource_file(pid)
-                raise gc3libs.exceptions.InvalidValue(
-                    "Could not open wrapper file '%s' for task '%s': %s"
-                    % (wrapper_filename, app, err), do_log=True)
-            try:
-                outcome = self._parse_wrapper_output(wrapper_file)
-                app.execution.update(outcome)
-                app.execution.returncode = outcome.returncode
-                self._delete_job_resource_file(pid)
-            finally:
-                wrapper_file.close()
+                "Process with PID %d not found,"
+                " assuming task %s has finished running.",
+                pid, app)
+            self._cleanup_terminating_task(app, pid)
 
         self._get_persisted_resource_state()
         return app.execution.state
+
+    def _cleanup_terminating_task(self, app, pid, termstatus=None):
+        app.execution.state = Run.State.TERMINATING
+        if termstatus is not None:
+            app.execution.returncode = termstatus
+        if pid in self.job_infos:
+            self.job_infos[pid]['terminated'] = True
+            if app.requested_memory is not None:
+                assert (app.requested_memory
+                        == self.job_infos[pid]['requested_memory'])
+                self.available_memory += app.requested_memory
+        wrapper_filename = posixpath.join(
+            app.execution.lrms_execdir,
+            ShellcmdLrms.WRAPPER_DIR,
+            ShellcmdLrms.WRAPPER_OUTPUT_FILENAME)
+        try:
+            log.debug(
+                "Reading resource utilization from wrapper file `%s` for task %s ...",
+                wrapper_filename, app)
+            with self.transport.open(wrapper_filename, 'r') as wrapper_file:
+                outcome = self._parse_wrapper_output(wrapper_file)
+                app.execution.update(outcome)
+                if termstatus is None:
+                    app.execution.returncode = outcome.returncode
+        except Exception as err:
+            msg = ("Could not open wrapper file `{0}` for task `{1}`: {2}"
+                   .format(wrapper_filename, app, err))
+            log.warning("%s -- Termination status and resource utilization fields will not be set.", msg)
+            raise gc3libs.exceptions.InvalidValue(msg)
+        finally:
+            self._delete_job_resource_file(pid)
 
     def submit_job(self, app):
         """
