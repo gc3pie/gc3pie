@@ -25,20 +25,114 @@
 \maketitle
 
 
+\part{Recap of session-based scripts}
+
+
+\begin{frame}
+  \frametitle{Session-based scripts}
+
+  All the scripts we've seen so far are \emph{session-based scripts}.
+
+  \+ A \emph{session} is just a named collection of jobs.
+
+  \+ A \emph{session-based script} creates a session and runs all the
+  tasks in it until completion.
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Create a session}
+
+  A session-based script \alert{creates a session}
+  \\
+  and runs all the tasks in it until completion.
+
+  \+ Create session \texttt{S}:
+\begin{semiverbatim}
+    \$ ./warholize.py bfly.jpg -{}-session S
+\end{semiverbatim}
+\end{frame}
+
+
 \begin{frame}[fragile]
-  \frametitle{List tasks in a session}
+  \frametitle{Run a session until done}
 
-  The \texttt{gsession list} command prints the list of tasks in a
-  session, together with their state:
+  A session-based script creates a session
+  \\
+  and \alert{runs all the jobs in it until completion.}
 
-\begin{stdout}
-$ ^\HL{gsession list -r ex2b}^
-+----------------+-----------------+------------+---------------------------------------+
-| JobID          | Job name        | State      | Info                                  |
-+----------------+-----------------+------------+---------------------------------------+
-| GrayscaleApp.6 | GrayscaleApp-N1 | TERMINATED | TERMINATED at Sat Jul 9 22:13:58 2016 |
-+----------------+-----------------+------------+---------------------------------------+
-\end{stdout}%$
+  \+ Run jobs in session \texttt{logo},
+  polling for updates every 5 seconds:
+\begin{semiverbatim}\small
+    \$ ./warholize.py bfly.jpg -{}-session S -{}-watch~5
+\end{semiverbatim}
+
+  \+ \uncover<2>{
+    You can stop a GC3Pie script by pressing \emph{Ctrl+C}. \\
+    Run it again to resume activity from where it stopped.
+  }
+\end{frame}
+
+
+\part{Inspecting sessions}
+
+\begin{frame}
+  \frametitle{Alternate display of session contents, I}
+
+  Display top-level tasks in session \texttt{S}:
+\begin{semiverbatim}
+    \$ gsession list S
+\end{semiverbatim}%$
+
+  \begin{exercise*}[3.A]
+    Now try this yourself.
+  \end{exercise*}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{WTF??}
+  \begin{stdout}
+> gsession list S
+gc3.gc3libs: WARNING: Failed loading file '/home/ubuntu/S/jobs/WarholizeWorkflow.108': ImportError: No module named warholize
+  ^\ldots^
+LoadError: Failed retrieving object from file '/home/ubuntu/S/jobs/WarholizeWorkflow.108': ImportError: No module named warholize
+gc3.gc3libs: WARNING: Ignoring error from loading 'ParallelTaskCollection.107': Failed retrieving object from file '/home/ubuntu/S/jobs/ParallelTaskCollection.107': LoadError: Failed retrieving object from file '/home/ubuntu/S/jobs/WarholizeWorkflow.108': ImportError: No module named warholize
++-------+----------+-------+------+
+| JobID | Job name | State | Info |
++-------+----------+-------+------+
++-------+----------+-------+------+
+  \end{stdout}
+
+  \pause
+  \+ In order to work, all GC3Pie utilities need to access the Python
+  script that generated the tasks and session.
+
+  \+ To fix: set the \lstinline|PYTHONPATH| variable to the directory
+    containing your script:
+    \begin{lstlisting}[language=sh]
+$ export PYTHONPATH=$PWD
+    \end{lstlisting}%$
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Alternate display of session contents, II}
+
+  Display \emph{all} tasks in session \texttt{S}:
+\begin{semiverbatim}
+    \$ gsession list -{}-recursive S
+\end{semiverbatim}%$
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Alternate display of session contents, III}
+
+  Display summary of tasks in session \texttt{S}:
+\begin{semiverbatim}
+    \$ gstat -b -s S
+\end{semiverbatim}
 \end{frame}
 
 
@@ -119,12 +213,14 @@ GrayscaleApp.6
 \end{frame}
 
 
+\part{Session management}
+
 \begin{frame}[fragile]
   \frametitle{Abort all tasks in a session}
 
   The \texttt{gsession abort} command kills all tasks in a session.
 \begin{stdout}
-$ ^\HL{gsession abort ex2b}^
+$ ~\HL{gsession abort ex2b}~
 \end{stdout}%$
 
   \+
@@ -161,6 +257,56 @@ $ ^\HL{gsession abort ex2b}^
   about it.)
 \end{frame}
 
+
+\begin{frame}
+  \frametitle{Aborting a single task}
+
+  To stop and abort a single task, use the \texttt{gkill} command:
+\begin{semiverbatim}
+    \$ gkill -s logo MyApplication.123
+\end{semiverbatim}
+
+\end{frame}
+
+
+\part{Combining commands}
+
+\begin{frame}[fragile]
+  \frametitle{Selecting tasks from a session, I}
+
+  The \texttt{gselect} command is the go-to tool for selective listing
+  of tasks in a session.  For example, to list finished tasks:
+\begin{semiverbatim}
+    \$ gselect -s logo -{}-state TERMINATED
+\end{semiverbatim}
+
+  \+ The output of \texttt{gselect} is a list of task IDs, to be fed
+  into another GC3Pie command.  For example, to kill all queued tasks:
+  \begin{stdout}
+    > gselect -s logo --state SUBMITTED | xargs gkill -s logo
+  \end{stdout}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Selecting tasks from a session, II}
+
+  The \texttt{gselect} command has many different \\ options to select tasks:
+  \begin{stdout}
+> gselect --help
+usage: gselect [-h] [-V] [-v] [--config-files CONFIG_FILES] -s SESSION
+               [--error-message REGEXP] [--input-file FILENAME]
+               [--jobname REGEXP] [--jobid REGEXP] [-l STATES]
+               [--output-file FILENAME] [--output-message REGEXP]
+               [--successful] [--submitted-after DATE]
+               [--submitted-before DATE] [--unsuccessful]
+  \end{stdout}
+
+  \+
+  \begin{exercise*}[3.B]
+    Use \texttt{gselect} to print the IDs of the ``TricolorizeImage''
+    tasks in the last ``Warholize'' session.
+  \end{exercise*}
+\end{frame}
 
 \end{document}
 
