@@ -1,0 +1,170 @@
+\documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
+\usepackage{gc3}
+
+\title[Debugging commands]{%
+  Useful \\ debugging commands
+}
+\author[R. Murri, S3IT UZH]{%
+  Riccardo Murri \texttt{<riccardo.murri@uzh.ch>}
+  \\[1ex]
+  \emph{S3IT: Services and Support for Science IT}
+  \\[1ex]
+  University of Zurich
+}
+\date{July~11--14, 2016}
+
+\begin{document}
+
+% title frame
+\maketitle
+
+
+\begin{frame}[fragile]
+  \frametitle{List tasks in a session}
+
+  The \texttt{gsession list} command prints the list of tasks in a
+  session, together with their state:
+
+\begin{stdout}
+$ ^\HL{gsession list -r ex2b}^
++----------------+-----------------+------------+---------------------------------------+
+| JobID          | Job name        | State      | Info                                  |
++----------------+-----------------+------------+---------------------------------------+
+| GrayscaleApp.6 | GrayscaleApp-N1 | TERMINATED | TERMINATED at Sat Jul 9 22:13:58 2016 |
++----------------+-----------------+------------+---------------------------------------+
+\end{stdout}%$
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Show log of actions in session}
+
+  The \texttt{gession log} command prints out the sequence of actions
+  and state changes for all tasks in a session:
+
+\begin{stdout}
+$ ^\HL{gsession log ex2b}^
+Jul 09 22:13:53 GrayscaleApp.6: Submitting to 'localhost'
+Jul 09 22:13:53 GrayscaleApp.6: SUBMITTED
+Jul 09 22:13:53 GrayscaleApp.6: Submitted to 'localhost'
+Jul 09 22:13:58 GrayscaleApp.6: TERMINATING
+Jul 09 22:13:58 GrayscaleApp.6: Final output downloaded to 'grayscale.d'
+Jul 09 22:13:58 GrayscaleApp.6: TERMINATED
+\end{stdout}%$
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Dump contents of a task}
+
+  The \texttt{ginfo} command allows you to dump the contents of a
+  specific task, or all tasks in a session:
+
+\begin{stdout}[basicstyle=\tiny\ttfamily]
+$ ^\HL{ginfo -v -s ex2b}^
+GrayscaleApp.6
+  arguments: convert, bfly.jpg, -colorspace, gray, gray-bfly.jpg
+  ^\em [\ldots]^
+  execution:
+    ^\em [\ldots]^
+    history:
+      - Submitting to 'localhost' at Sun Jul 10 00:27:02 2016
+      ^\em [\ldots]^
+    lrms_execdir: /home/gc3pie/docs/programmers/tutorials/workflows/gc3libs.SMGNxr
+    lrms_jobid: 23183
+    resource_name: localhost
+    ^\em [\ldots]^
+  inputs:
+    file:///home/gc3pie/docs/programmers/tutorials/workflows/bfly.jpg: bfly.jpg
+  ^\em [\ldots]^
+  output_dir: grayscale.d
+  outputs:
+    gray-lbfly.jpg: file, , gray-bfly.jpg, None, None, , None, None
+    stderr.txt: file, , stderr.txt, None, None, , None, None
+    stdout.txt: file, , stdout.txt, None, None, , None, None
+  ^\em [\ldots]^
+  stderr: stderr.txt
+  stdin: None
+  stdout: stdout.txt
+  ^\em [\ldots]^
+\end{stdout}%$
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Dump contents of a task, II}
+
+  Note that \textbf{without the \texttt{-v}} option, \texttt{ginfo}
+  limits its output to the \texttt{.execution} attribute of a
+  \texttt{Task}/\texttt{Application} object:
+
+\begin{stdout}[basicstyle=\tiny\ttfamily]
+$ ^\HL{ginfo -s ex2b}^
+GrayscaleApp.6
+  ^\em [\ldots]^
+  history:
+    - Submitting to 'localhost' at Sun Jul 10 00:27:02 2016
+    ^\em [\ldots]^
+  lrms_execdir: /home/gc3pie/docs/programmers/tutorials/workflows/gc3libs.SMGNxr
+  lrms_jobid: 23183
+  resource_name: localhost
+  ^\em [\ldots]^
+\end{stdout}%$
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Abort all tasks in a session}
+
+  The \texttt{gsession abort} command kills all tasks in a session.
+\begin{stdout}
+$ ^\HL{gsession abort ex2b}^
+\end{stdout}%$
+
+  \+
+  It produces normally no output; use the \texttt{-v} option to see a
+  log of actions taken.
+
+  \+ \small \textbf{Note:} it is important that sessions are
+  terminated!  Otherwise, GC3Pie will consider part of the resources
+  as still allocated to a task.  This is especially evident when
+  running on a single computer: after launching a few tasks, GC3Pie
+  will stop and refuse to run anything.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Manual cleanup of the {\ttfamily localhost} resource}
+
+  In case of incomplete cleanup, you will still run into this error:
+\begin{stdout}
+  ERROR: Resource localhost already running maximum allowed number of jobs
+\end{stdout}
+
+  \+
+  As a last resort, you can inspect directory \lstinline|$HOME/.gc3/shellcmd.d|:
+\begin{stdout}
+  $ ls $HOME/.gc3/shellcmd.d
+  15843
+\end{stdout}
+  Each of these files is an allocated execution slot in the \texttt{localhost} resource.
+  Delete the files to free up the slot.
+
+  \+ (The file name is the PID of the process, in case you want to
+  check if a command is still running before you make GC3Pie forget
+  about it.)
+\end{frame}
+
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

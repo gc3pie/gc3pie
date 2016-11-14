@@ -1,0 +1,187 @@
+\documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
+\usepackage{gc3}
+
+\title[Introduction]{%
+  Introduction to \\ the GC3Pie training
+}
+\author[R. Murri, S3IT UZH]{%
+  Riccardo Murri \texttt{<riccardo.murri@uzh.ch>}
+  \\[1ex]
+  \emph{S3IT: Services and Support for Science IT}
+  \\[1ex]
+  University of Zurich
+}
+\date{July~11--14, 2016}
+
+\begin{document}
+
+% title frame
+\maketitle
+
+\begin{frame}
+  \begin{center}
+    {\Huge Welcome!}
+  \end{center}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{What is GC3Pie?}
+  GC3Pie is \ldots
+  \begin{enumerate}
+  \item \alert<2>{An \emph{opinionated} Python framework for defining and running computational workflows;}
+  \item A \emph{rapid development toolkit} for running user applications on clusters and IaaS cloud resources;
+  \item The worst name ever given to a middleware piece\ldots
+  \end{enumerate}
+
+  \+
+  \uncover<2>{%
+    As \emph{developers}, \alert<2>{you're mostly interested in this part.}
+  }%
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Who am I?}
+  \begin{center}
+    Systems administrator and programmer.
+    \\ \+
+    At UZH since 2010, first at GC3 then at S3IT.
+    \\ \+
+    Developer of GC3Pie since 2010.
+  \end{center}
+\end{frame}
+
+
+\begin{frame}
+  \begin{center}
+    {\Huge and what about you?}
+  \end{center}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Prerequisites}
+  This course assumes some experience with the Python programming
+  language, and especially with its  object-oriented constructs.
+
+  \+
+  We also assume that you already have had some exposure to GC3Pie,
+  by running scripts or attending other courses.
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{This is an \emph{interactive} course!}
+  \begin{center}
+    We'd like the training to be \\ as interactive and informal as
+    possible.
+
+    \+ \textbf{If you have a question, just ask -- don't wait.}
+
+    \+
+    After the course is over, \\ you're very welcome to keep asking questions:
+    \\[1ex]
+    on the mailing-list: \\
+    \href{mailto:gc3pie@googlegroups.com}{gc3pie@googlegroups.com}
+    \\[1ex]
+    or through the forum web interface: \\ {\small
+      \url{https://groups.google.com/forum/\#!forum/gc3pie}}
+  \end{center}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Where to find the course material}
+
+  These slides and all the example files can be downloaded from the
+  course web page at:
+  {\small\url{http://tinyurl.com/gc3pie-july-2016}}
+
+  \+
+  A step-by-step guide to setting up your workstation for the course is at:
+  {\small\url{http://tinyurl.com/sciencloud-course-setup}}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Typographical conventions, I}
+
+  The orange color is used for
+  \href{http://tinyurl.com/gc3pie-july-2016}{clickable
+    links}; this should make it easy to download sample files, etc.
+
+  \+
+  Other \hl{colors} and \HL{backgrounds} are used for highlighting
+  text in slides.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Typographical conventions, II}
+
+    \begin{columns}[t]
+    \begin{column}{0.5\textwidth}
+\begin{lstlisting}
+# This is how Python
+# code looks like
+
+def hello(name):
+  print ("Hello, " + name)
+\end{lstlisting}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \raggedleft Commentary text appears on the right.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Typographical conventions, III}
+
+    \begin{columns}[t]
+    \begin{column}{0.5\textwidth}
+      \begin{sh}
+$ echo hello
+hello
+      \end{sh}%$
+\begin{python}
+>>> print 'hello'
+hello
+\end{python}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \raggedleft
+      Commands to type in the terminal shell are signalled by the `\texttt{\$}' prompt
+
+      \+
+      Commands to type in the Python shell are signalled by the `\texttt{>{}>{}>}' prompt
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{GC3Pie documentation}
+
+  The full GC3Pie documentation can be found at
+  \url{http://gc3pie.readthedocs.io/}
+
+  \+
+  This tutorial assumes you're running GC3Pie version~2.5
+  (i.e., currently the \emph{master} branch on GitHub).
+\end{frame}
+
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

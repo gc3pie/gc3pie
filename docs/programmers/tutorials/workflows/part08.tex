@@ -1,0 +1,378 @@
+\documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
+\usepackage{gc3}
+
+\title[Sequencing tasks]{%
+  Running tasks in sequence: \\
+  \texttt{SequentialTaskCollection} and \texttt{StagedTaskCollection}
+}
+\author[R. Murri, S3IT UZH]{%
+  Riccardo Murri \texttt{<riccardo.murri@uzh.ch>}
+  \\[1ex]
+  \emph{S3IT: Services and Support for Science IT}
+  \\[1ex]
+  University of Zurich
+}
+\date{July~11--14, 2016}
+
+
+\begin{document}
+
+% title frame
+\maketitle
+
+
+\begin{frame}[fragile]
+  \frametitle{Basic use of SequentialTaskCollection}
+
+\begin{python}
+from gc3libs.workflow \
+  import SequentialTaskCollection
+
+class MySequence~\HL{(SequentialTaskCollection)}~:
+  # ...
+  def __init__(self, ...):
+    app1 = FirstApp(...)
+    app2 = SecondApp(...)
+    SequentialTaskCollection.__init__(
+      self, [app1, app2])
+\end{python}
+
+  \+
+  A \texttt{SequentialTaskCollection} runs a list of tasks one at a time, in the order given.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Basic use of SequentialTaskCollection}
+
+\begin{python}
+from gc3libs.workflow \
+  import SequentialTaskCollection
+
+class MySequence(SequentialTaskCollection):
+  # ...
+  def __init__(self, ...):
+    app1 = FirstApp(...)
+    app2 = SecondApp(...)
+    SequentialTaskCollection.__init__(
+      self, ~\HL{[app1, app2]}~)
+\end{python}
+
+  \+
+  Initialize a \texttt{SequentialTaskCollection} \\
+  with a list of tasks to run.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Running tasks in sequence}
+
+\begin{python}
+class MyScript(SessionBasedScript):
+  # ...
+  def new_tasks(self, extra):
+    tasks_to_run = [
+      MySequence(...)
+    ]
+    return tasks_to_run
+\end{python}
+
+  \+ You can then run the entire sequence by returning it from
+  \lstinline|new_tasks()|.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Detour: BLAST, again}
+
+  Another use of the BLAST tool is to search for given ``query''
+  proteins in a data base.  Large curated DBs are available, but one
+  may want to build a custom DB.
+
+  \+
+  Building a DB from a set of FASTA-format files \texttt{p1.faa}
+  \texttt{p2.faa} and \texttt{p3.faa}, and querying it is a 3-step
+  process:
+\begin{sh}
+  cat p1.faa p2.faa p3.faa > db.faa
+  formatdb -i db.faa
+  blastpgp -i q.faa -d db.faa -e ...
+\end{sh}
+
+  \+ The \texttt{formatdb} step produces output files
+  \texttt{db.faa.phr}, \texttt{db.faa.pin}, and \texttt{db.faa.psq}; all
+  these files are \emph{inputs} to the \texttt{blastpgp} program.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{exercise*}[8.A]
+    Write a \texttt{blastdb.py} script to build a BLAST DB and query it.
+
+    \+
+    The \texttt{blastdb.py} script shall be invoked like this:
+\begin{sh}
+$ python topblast.py query.faa p1.faa [p2.faa ...]
+\end{sh}%$
+    where arguments \texttt{new.faa}, \texttt{p1.faa}, etc. are FASTA-format files.
+
+    \+
+    The script should build a BLAST DB out of the files {p$N$.faa}.
+    Then, it should query this database for occurrences of the
+    proteins in \texttt{query.faa} using \texttt{blastpgp}.
+  \end{exercise*}
+\end{frame}
+
+\begin{frame}
+  \begin{exercise*}[8.B]
+    Find out by running the \texttt{blastdb.py} script of Ex.~8.A:
+
+    \+
+    \begin{enumerate}
+    \item What happens if an intermediate step fails and does not
+      produce complete output?
+
+      \+
+    \item After the whole sequence turns to TERMINATED state, what is
+      the value of its signal and exitcode?
+
+      \+
+    \item How could you implement a ``cleanup'' feature that removes
+      intermediate results (e.g., the ``\texttt{.phr}'' files) and
+      only keeps the output from \texttt{blastpgp} \textbf{if the
+        whole sequence was successfully executed?}
+    \end{enumerate}
+  \end{exercise*}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Running jobs in sequence}
+
+  \texttt{StagedTaskCollection} provides a simple interface for
+  constructing sequences of tasks, but only when the number and
+  content of steps is \emph{known and fixed} at programming time.
+
+  \+
+  (By contrast, the most general \texttt{SequentialTaskCollection}
+  can alter the sequence on the fly, insert new stages while running
+  and loop back. But the code is also harder to write.)
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{columns}[t]
+    \begin{column}{0.6\textwidth}
+      \begin{lstlisting}
+class Pipeline~\HL{(StagedTaskCollection)}~:
+  def __init__(self, image):
+    self.source = image
+
+  def stage0(self):
+    # run 1st step
+    return Application(...)
+
+  def stage1(self):
+    if self.tasks[0].execution.exitcode != 0:
+      self.execution.exitcode = 1
+      return Run.State.TERMINATED
+    else:
+      # run 2nd step
+      return Application(...)
+
+  # ...
+  def stage~$N$~(self):
+    # ...
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \raggedleft
+
+      \+\+
+      Example of~a \texttt{StagedTaskCollection}
+      subclass.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{columns}[c]
+    \begin{column}{0.6\textwidth}
+      \begin{lstlisting}
+class Pipeline(StagedTaskCollection):
+  def __init__(self, image):
+    self.source = image
+
+  def ~\HL{stage0(self)}~:
+    # ...
+
+  def ~\HL{stage1(self)}~:
+    # ...
+
+  # ...
+  def ~\HL{stage$\mathbf N$(self)}~:
+    # ...
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \raggedleft
+
+      Stages are numbered starting from $0$.
+
+      \+
+      You can have as many stages as you want.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{columns}[c]
+    \begin{column}{0.6\textwidth}
+      \begin{lstlisting}
+class Pipeline(StagedTaskCollection):
+  # ...
+
+  def stage0(self):
+    # run 1st step
+    ~\HL{return Application}~(
+      ['convert', self.source,
+       '-colorspace', 'gray',
+       'grayscale_' + self.source],
+      inputs = [self.source],
+      ...)
+
+  # ...
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \raggedleft
+
+      Each \texttt{stage$N$} method can return a \texttt{Task}
+      instance, that will run as step $N$ in the sequence.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{columns}[c]
+    \begin{column}{0.6\textwidth}
+      \begin{lstlisting}
+class Pipeline(StagedTaskCollection):
+  # ...
+
+  def stage1(self):
+    ~\HL{if self.tasks[0].execution.exitcode != 0:}~
+      self.execution.exitcode = 1
+      return Run.State.TERMINATED
+    else:
+      # run 2nd step
+      return Application(...)
+
+  # ...
+  def stage~$N$~(self):
+    # ...
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \raggedleft
+
+      \+\+\+\+\+
+      In later stages you can check the exit code of
+      earlier ones, and decide whether to continue the sequence or
+      abort.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{columns}[c]
+    \begin{column}{0.6\textwidth}
+      \begin{lstlisting}
+class Pipeline(StagedTaskCollection):
+  # ...
+
+  def stage1(self):
+    if self.tasks[0].execution.exitcode != 0:
+      self.execution.exitcode = 1
+      ~\HL{return Run.State.TERMINATED}~
+    else:
+      # run 2nd step
+      return Application(...)
+
+  # ...
+  def stage~$N$~(self):
+    # ...
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \raggedleft
+
+      \+\+\+\+\+
+      To abort the sequence, return \texttt{Run.State.TERMINATED},
+      instead of a \texttt{Task} instance.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{columns}[c]
+    \begin{column}{0.6\textwidth}
+      \begin{lstlisting}
+class Pipeline(StagedTaskCollection):
+  # ...
+
+  def stage1(self):
+    if self.tasks[0].execution.exitcode != 0:
+      ~\HL{self.execution.exitcode = 1}~
+      return Run.State.TERMINATED
+    else:
+      # run 2nd step
+      return Application(...)
+
+  # ...
+  def stage~$N$~(self):
+    # ...
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \raggedleft
+
+      \+\+\+\+\+
+      Don't forget to set the \texttt{StagedTaskCollection}'s own exit
+      code if you do this.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}
+  \begin{exercise*}[8.C]
+    Rewrite the \texttt{blastdb.py} script from Ex.~8.A to use a
+    \texttt{StagedTaskCollection} and be sure to check that a step is
+    successful before proceeding to the next one.
+
+    \+
+    Upon successful completion of the pipeline, move the
+    \texttt{blastpgp} output into directory
+    \texttt{/home/ubuntu/results} and then delete all intermediate
+    files and directories.
+  \end{exercise*}
+\end{frame}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

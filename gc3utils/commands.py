@@ -209,7 +209,7 @@ GC3Libs internals.
                        help="Print attributes in CSV format,"
                        " e.g., for generating files that can be"
                        " read by a spreadsheet program."
-                       " MUST be used together with '-print'.")
+                       " MUST be used together with '--print'.")
         self.add_param("--no-header",
                        action="store_false", dest="header", default=True,
                        help="Do *not* print table or CSV file header.")

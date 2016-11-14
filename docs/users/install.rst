@@ -47,10 +47,8 @@ normally have ``wget``; MacOSX normally uses ``curl``).
 
 In case you have trouble running the installation script, please send
 an email to `gc3pie@googlegroups.com
-<mailto:gc3pie@googlegroups.com>`_. (In order to post a message, you
-first need to subscribe. To post a message without being subscribed,
-please use the web interface at
-`<http://dir.gmane.org/gmane.comp.python.gc3pie>`_.)  Include the full
+<mailto:gc3pie@googlegroups.com>`_ or post a message on the web forum
+`<https://groups.google.com/forum/#!forum/gc3pie>`_.  Include the full
 output of the script in your email, in order to help us to identify
 the problem.
 
@@ -82,7 +80,7 @@ and you should see the following output appear on your screen::
 If you get some errors, do not despair!  The `GC3Pie users
 mailing-list <gc3pie@googlegroups.com>`_ is there to help you :-)
 (You can also post to the same forum using a web interface at
-`<http://dir.gmane.org/gmane.comp.python.gc3pie>`_.)
+`<https://groups.google.com/forum/#!forum/gc3pie>`_.)
 
 With the default configuration file, GC3Pie is set up to only run
 jobs on the computer where it is installed.  To run jobs on remote
@@ -297,7 +295,7 @@ Installation into a virtualenv has two distinct advantages:
    If you get some errors, do not despair!  The `GC3Pie users
    mailing-list <gc3pie@googlegroups.com>` is there to help you :-)
    (You can also post to the same forum using the web interface at
-   `<http://dir.gmane.org/gmane.comp.python.gc3pie>`_.)
+   `<https://groups.google.com/forum/#!forum/gc3pie>`_.)
 
 7. With the default configuration file, GC3Pie is set up to only run
    jobs on the computer where it is installed.  To run jobs on remote
@@ -367,7 +365,7 @@ Installation on MacOSX machines is possible, however there are still a
 few issues.  If you need MacOSX support, please let us know on the
 `GC3Pie users mailing-list <mailto:gc3pie@googlegroups.com>` or by
 posting a message using the web interface at
-`<http://dir.gmane.org/gmane.comp.python.gc3pie>`_.
+`<https://groups.google.com/forum/#!forum/gc3pie>`_.
 
 1) Standard usage of the installation script (i.e., with no options)
    works, but you have to use `curl` since `wget` is not installed by
