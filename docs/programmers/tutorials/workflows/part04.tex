@@ -126,11 +126,11 @@ $ python ex4a.py --foo=1 bar baz
   \+
   Other possible values for the \texttt{nargs} parameter are:
   \begin{itemize}
-  \item \texttt{nargs='+'} --- there are \emph{1 or more} arguments,
+  \item \lstinline|nargs='+'| --- there are \emph{1 or more} arguments,
     i.e., at least one argument is required.
-  \item \texttt{nargs=$N$} --- there are exactly $N > 1$ arguments of this kind.
-  \item \texttt{nargs=$1$} (default) --- one single argument of this
-    kind; \textbf{in this case \lstinline|self.params.args| is a
+  \item \lstinline|nargs=|$N$ --- there are exactly $N \geq 1$ arguments of this kind.
+  \item \lstinline|nargs=None| (default) --- one single argument of this
+    kind; \textbf{only in this case \lstinline|self.params.args| is a
     \emph{string}, not a list.}
   \end{itemize}
 \end{frame}
@@ -441,10 +441,10 @@ $ python topblast.py [-e ~$T$~] [-m ~$F$~] \
     \end{itemize}
 
     \+ The script should generate and run comparisons between
-    \texttt{new.faa} and each of the {k$N$.faa}.  Each 1-1 comparison
-    should run as a separate task.  All of them share the same
-    settings for the \texttt{-evalue} and \texttt{-outfmt} options for
-    \texttt{blastp}.
+    \texttt{new.faa} and each of the \texttt{k1.faa}, \texttt{k2.faa},
+    ..., etc.  Each 1-1 comparison should run as a separate task.  All
+    of them share the same settings for the \texttt{-evalue} and
+    \texttt{-outfmt} options for \texttt{blastp}.
   \end{exercise*}
 \end{frame}
 

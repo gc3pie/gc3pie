@@ -1,5 +1,30 @@
 #! /usr/bin/env python
 
+"""
+Exercise 4.B: Write a topblast.py script to perform 1-1
+BLAST comparisons.
+
+The topblast.py script shall be invoked like this::
+
+    $ python topblast.py [-e T ] [-m F ] \
+        new.faa k1.faa [k2.faa ...]
+
+where:
+
+* Option -e (alias: --e-value) takes a floating point threshold
+  argument T ;
+
+* Option -m (alias: -output-format) takes a single-digit integer
+  argument F ;
+
+* Arguments new.faa, k1.faa, etc. are files.
+
+The script should generate and run comparisons between
+new.faa and each of the kN .faa. Each 1-1 comparison
+should run as a separate task. All of them share the same
+settings for the -e and -m options for blastpgp.
+"""
+
 import os
 from os.path import abspath, basename
 import sys
@@ -53,6 +78,6 @@ class BlastApp(Application):
             inputs=[input1, input2],
             outputs=["output.txt"],
             output_dir=("blast-" + inp1 + "-" + inp2 + ".d"),
-            stdout="stdout.txt",
+            stdout=None,  # BLAST's option `-o` already does this
             stderr="stderr.txt",
             requested_memory=1*GB)

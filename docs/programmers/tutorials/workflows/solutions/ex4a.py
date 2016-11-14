@@ -1,5 +1,19 @@
 #! /usr/bin/env python
 
+"""
+Exercise 4.A: Write a colorize.py script to apply
+this colorization process to a set of grayscale images.
+
+The colorize.py script shall be invoked like this::
+
+  $ python colorize.py c1 c2 c3 img1 [img2 ...]
+
+where c1, c2, c3 are color names and img1, img2 are
+image files.
+
+Each image shall be processed in a separate colorization task.
+"""
+
 import os
 from os.path import abspath, basename
 import sys
@@ -15,7 +29,7 @@ if __name__ == '__main__':
 
 class ColorizeScript(SessionBasedScript):
     """
-    Coloriye multiple images.
+    Colorize multiple images.
     """
     def __init__(self):
         super(ColorizeScript, self).__init__(version='1.0')
