@@ -137,20 +137,24 @@ class MyScript(SessionBasedScript):
   \frametitle{Detour: image montage}
 
 \begin{sh}
-$ montage cyan.jpg magenta.jpg yellow.jpg black.jpg \
+$ montage \
+    cyan.jpg magenta.jpg yellow.jpg black.jpg \
     -tile 2x2 -geometry +0+0 cmyk.jpg
 \end{sh}%$
 
   \+
   \begin{tabular}[c]{ccc}
-    \includegraphics[width=0.1\textwidth]{fig/cyan.jpg}    \textbf{,}
-    \includegraphics[width=0.1\textwidth]{fig/magenta.jpg} \textbf{,}
-    \includegraphics[width=0.1\textwidth]{fig/yellow.jpg}  \textbf{,}
-    \includegraphics[width=0.1\textwidth]{fig/black.jpg}
+    \begin{minipage}[c]{0.45\linewidth}
+      \includegraphics[width=0.2\textwidth]{fig/cyan.jpg}    \textbf{,}
+      \includegraphics[width=0.2\textwidth]{fig/magenta.jpg} \textbf{,}
+      \includegraphics[width=0.2\textwidth]{fig/yellow.jpg}  \textbf{,}
+      \includegraphics[width=0.2\textwidth]{fig/black.jpg}
+      \vspace{0.2\textheight}
+    \end{minipage}
     &
-    {\includegraphics[width=0.1\linewidth,totalheight=0.45\textheight]{fig/arrow.pdf}}
+    {\includegraphics[width=0.1\linewidth,totalheight=0.25\textheight]{fig/arrow.pdf}}
     &
-    \includegraphics[width=0.4\textwidth]{fig/cmyk.jpg}
+    \includegraphics[width=0.2\textwidth]{fig/cmyk.jpg}
   \end{tabular}
 \end{frame}
 

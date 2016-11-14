@@ -269,7 +269,7 @@ class MyApp(Application):
 \section{Termination status}
 \part{Termination status}
 
-\begin{frame}
+\begin{frame}[fragile]
   \frametitle{A successful run or not?}
 
   There's a \emph{single TERMINATED state}, whatever the task outcome.
@@ -277,7 +277,7 @@ class MyApp(Application):
   cause of ``task death''.
 
   \+
-  Attribute `.execution.returncode` provides a numeric termination
+  Attribute \lstinline|.execution.returncode| provides a numeric termination
   status (with the same format and meaning as the POSIX termination
   status).
 
