@@ -129,9 +129,9 @@ $ python ex4a.py --foo=1 bar baz
   \item \lstinline|nargs='+'| --- there are \emph{1 or more} arguments,
     i.e., at least one argument is required.
   \item \lstinline|nargs=|$N$ --- there are exactly $N \geq 1$ arguments of this kind.
-  \item \lstinline|nargs=None| (default) --- one single argument of this
-    kind; \textbf{only in this case \lstinline|self.params.args| is a
-    \emph{string}, not a list.}
+  \item \lstinline|nargs=None| (default) --- one single mandatory
+    argument of this kind; \textbf{only in this case
+      \lstinline|self.params.args| is a \emph{string}, not a list.}
   \end{itemize}
 \end{frame}
 
