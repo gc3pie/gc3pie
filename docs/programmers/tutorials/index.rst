@@ -27,56 +27,56 @@ in scientific computational workflows using Python and GC3Pie, and
 provide users with enough knowledge of the tools available in GC3Pie
 to extend and adapt the examples provided.
 
-`Introduction to the training <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part00.pdf>`_
+`Introduction to the training <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part00.pdf>`_
 
   A presentation of the training material and outline of the course.
   Probably not much useful unless you're actually sitting in class.
 
-`Overview of GC3Pie use cases <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part01.pdf>`_
+`Overview of GC3Pie use cases <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part01.pdf>`_
 
   A quick overview of the kind of computational use cases that GC3Pie
   can easily solve.
 
-`GC3Pie basics <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part02.pdf>`_
+`GC3Pie basics <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part02.pdf>`_
 
   The basics needed to write simple GC3Pie scripts: the minimal
   session-based script scaffolding, and the properties and features of
   the `Application`:class: object.
 
-`Useful debugging commands <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part03.pdf>`_
+`Useful debugging commands <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part03.pdf>`_
 
   Recall a few GC3Pie utilities that are especially useful when
   debugging code.
 
-`Customizing command-line processing <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part04.pdf>`_
+`Customizing command-line processing <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part04.pdf>`_
 
   How to set up command-line argument and option processing in
   GC3Pie's `SessionBasedScript`:class:
 
-`Application requirements <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part05.pdf>`_
+`Application requirements <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part05.pdf>`_
 
   How to specify running requirements for `Application`:class: tasks,
   e.g., how much memory is needed to run.
 
-`Application control and post-processing <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part06.pdf>`_
+`Application control and post-processing <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part06.pdf>`_
 
   How to check and react on the termination status of a GC3Pie
   Task/Application.
 
-`Introduction to workflows <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part07.pdf>`_
+`Introduction to workflows <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part07.pdf>`_
 
   A worked-out example of a many-step workflow.
 
-`Running tasks in a sequence <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part08.pdf>`_
+`Running tasks in a sequence <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part08.pdf>`_
 
   How to run tasks in sequence: basic usage of
   `SequentialTaskCollection`:class: and `StagedTaskCollection`:class:
 
-`Running tasks in parallel <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part09.pdf>`_
+`Running tasks in parallel <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part09.pdf>`_
 
   How to run independent tasks in parallel: the `ParallelTaskCollection`:class:
 
-`More workflow constructs <https://github.com/uzh/gc3pie/tree/training-july-2016/docs/programmers/tutorials/workflows/part10.pdf>`_
+`More workflow constructs <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part10.pdf>`_
 
   Other workflow construction tools: the
   `DependentTaskCollection`:class: for automated arrangement of tasks
