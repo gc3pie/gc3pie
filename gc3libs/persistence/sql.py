@@ -147,13 +147,6 @@ class SqlStore(Store):
         url. It will use the correct backend (MySQL, psql, sqlite3)
         based on the url.scheme value
         """
-def __init__(self, url, table_name="store", idfactory=None,
-                 extra_fields={}, create=True, **extra_args):
-        """
-        Open a connection to the storage database identified by
-        url. It will use the correct backend (MySQL, psql, sqlite3)
-        based on the url.scheme value
-        """
         super(SqlStore, self).__init__(url)
         self.__engine = None
         self._t_store = None
