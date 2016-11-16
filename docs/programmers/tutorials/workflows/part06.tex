@@ -469,6 +469,64 @@ Further options for customizing a session-based script:
 \end{frame}
 
 
+\begin{frame}
+  \frametitle{Detour: Asian ``put'' option pricing, I}
+  \small
+  The script \texttt{simAsset.R} simulates pricing
+  \href{https://en.wikipedia.org/wiki/Asian_option}{Asian ``put''
+    options} over a certain amount of time.  Different pricing paths
+  are generated, all starting from the same initial price.
+  \begin{center}
+    \includegraphics[width=0.75\linewidth]{fig/simAsset.pdf}
+  \end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Detour: Asian ``put'' option pricing, II}
+  \small
+  You can run the \texttt{simAsset.R} script with these positional parameters:
+  \begin{description}
+  \item[$S_0$] stock price today (e.g., 50)
+  \item[$\mu$] expected return (e.g., 0.04)
+  \item[$\sigma$] volatility (e.g., 0.1)
+  \item[$\delta$] size of time steps (e.g., 0.273)
+  \item[$e$] days to expiry (e.g., 1000)
+  \item[$N$] number of simulation paths to generate
+  \end{description}
+
+  For example:
+\begin{semiverbatim}
+  \$ Rscript simAsset.R 50 0.04 0.1 0.27 10 4
+\end{semiverbatim}
+  
+  \+ Each run of \texttt{simAsset.R} produces two output files:
+  \begin{description}
+  \item[results.csv] table of generated data: each column is a simulation path, each row is a time step;
+  \item[results.pdf] plot of the above.
+  \end{description}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{exercise*}[6.D] \emph{(Difficult)}
+
+    \+
+    Write a \texttt{sim\_asset.py} program that:
+    \begin{itemize}
+    \item takes the same command-line positional arguments as \texttt{simAsset.R}, \emph{plus} an additional integer trailing parameter $P$;
+    \item runs \texttt{simAsset.R} (in parallel) $P$ times with the given arguments (so, effectively simulates $N \cdot P$ price paths);
+    \item reads all the generated \texttt{results.csv} files, and
+    \item computes and prints the average value of the option at the end of the simulated time, across all $N \cdot P$ price paths.
+    \end{itemize}
+
+    \+ {\footnotesize (For easier reading CSV files, you can use the standard
+      \href{https://docs.python.org/2/library/csv.html}{\texttt{csv}}
+      Python module,
+      see:~\url{https://docs.python.org/2/library/csv.html})}
+  \end{exercise*}
+\end{frame}
+
+
 \end{document}
 
 %%% Local Variables:
