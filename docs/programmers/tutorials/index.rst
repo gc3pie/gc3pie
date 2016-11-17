@@ -76,11 +76,15 @@ to extend and adapt the examples provided.
 
   How to run independent tasks in parallel: the `ParallelTaskCollection`:class:
 
-`More workflow constructs <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part10.pdf>`_
+`Automated construction of task dependency graphs <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part10.pdf>`_
 
-  Other workflow construction tools: the
-  `DependentTaskCollection`:class: for automated arrangement of tasks
-  given dependencies, and the unbounded `SequentialTaskCollection`.
+  How to use the `DependentTaskCollection`:class: for automated
+  arrangement of tasks given their dependencies.
+
+`Dynamic and Unbounded Sequences of Tasks <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part11.pdf>`_
+
+  How to construct `SequentialTaskCollection`:class: classes that
+  change the sequence of tasks while being run.
 
 
 A bottom-up introduction to programming with GC3Pie
