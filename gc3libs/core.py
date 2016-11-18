@@ -1387,7 +1387,7 @@ class Engine(object):
                             'update',
                     ):
                         # propagate exception to caller
-                        raise InternalError(
+                        raise gc3libs.exceptions.InternalError(
                             "Invalid state '{state!r}' returned by task {task}"
                             .format(state=state, task=task))
             except gc3libs.exceptions.ConfigurationError:
