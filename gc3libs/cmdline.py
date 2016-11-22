@@ -1031,9 +1031,12 @@ class _SessionBasedCommand(_Script):
         except AttributeError:
             # no subtasks
             pass
-        if 'task' in task:
+        try:
             # RetryableTask
             self._fix_output_dir(task.task, name)
+        except AttributeError:
+            # not a RetryableTask
+            pass
 
     def setup_common_options(self, parser):
         # 1. job requirements
