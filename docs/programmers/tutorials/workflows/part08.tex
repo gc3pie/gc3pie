@@ -181,8 +181,9 @@ class Pipeline~\HL{(StagedTaskCollection)}~:
 
   def stage1(self):
     if self.tasks[0].execution.exitcode != 0:
-      self.execution.exitcode = 1
-      return Run.State.TERMINATED
+      # set collection signal and exit code,
+      # and state to TERMINATED
+      return (0, 1)
     else:
       # run 2nd step
       return Application(...)
@@ -273,8 +274,9 @@ class Pipeline(StagedTaskCollection):
 
   def stage1(self):
     ~\HL{if self.tasks[0].execution.exitcode != 0:}~
-      self.execution.exitcode = 1
-      return Run.State.TERMINATED
+      # set collection signal and exit code,
+      # and state to TERMINATED
+      return (0, 1)
     else:
       # run 2nd step
       return Application(...)
@@ -305,8 +307,9 @@ class Pipeline(StagedTaskCollection):
 
   def stage1(self):
     if self.tasks[0].execution.exitcode != 0:
-      self.execution.exitcode = 1
-      ~\HL{return Run.State.TERMINATED}~
+      # set collection signal and exit code,
+      # and state to TERMINATED
+      ~\HL{return (0, 1)}~
     else:
       # run 2nd step
       return Application(...)
@@ -319,40 +322,10 @@ class Pipeline(StagedTaskCollection):
     \begin{column}{0.4\textwidth}
       \raggedleft
 
-      \+\+\+\+\+
-      To abort the sequence, return \texttt{Run.State.TERMINATED},
-      instead of a \texttt{Task} instance.
-    \end{column}
-  \end{columns}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \begin{columns}[c]
-    \begin{column}{0.6\textwidth}
-      \begin{lstlisting}
-class Pipeline(StagedTaskCollection):
-  # ...
-
-  def stage1(self):
-    if self.tasks[0].execution.exitcode != 0:
-      ~\HL{self.execution.exitcode = 1}~
-      return Run.State.TERMINATED
-    else:
-      # run 2nd step
-      return Application(...)
-
-  # ...
-  def stage~$N$~(self):
-    # ...
-      \end{lstlisting}
-    \end{column}
-    \begin{column}{0.4\textwidth}
-      \raggedleft
-
-      \+\+\+\+\+
-      Don't forget to set the \texttt{StagedTaskCollection}'s own exit
-      code if you do this.
+      \+\+\+\+\+ 
+      To abort the sequence, return an integer (termination
+      status) or a pair \emph{(signal, exit code)}, instead of a
+      \texttt{Task} instance.
     \end{column}
   \end{columns}
 \end{frame}
