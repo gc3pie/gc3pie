@@ -1023,7 +1023,8 @@ class _SessionBasedCommand(_Script):
 
     def _fix_output_dir(self, task, name):
         """Substitute the NAME string in output paths."""
-        task.output_dir = task.output_dir.replace('NAME', name)
+        if task.would_output:
+            task.output_dir = task.output_dir.replace('NAME', name)
         try:
             for subtask in task.tasks:
                 self._fix_output_dir(subtask, name)
