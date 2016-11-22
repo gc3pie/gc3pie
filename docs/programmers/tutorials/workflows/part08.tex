@@ -172,6 +172,7 @@ $ python topblast.py query.faa p1.faa [p2.faa ...]
       \begin{lstlisting}
 class Pipeline~\HL{(StagedTaskCollection)}~:
   def __init__(self, image):
+    StagedTaskCollection.__init__(self)
     self.source = image
 
   def stage0(self):
@@ -208,6 +209,7 @@ class Pipeline~\HL{(StagedTaskCollection)}~:
       \begin{lstlisting}
 class Pipeline(StagedTaskCollection):
   def __init__(self, image):
+    StagedTaskCollection.__init__(self)
     self.source = image
 
   def ~\HL{stage0(self)}~:
