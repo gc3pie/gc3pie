@@ -141,60 +141,87 @@ class SqlStore(Store):
     def __init__(self, url, table_name="store", idfactory=None,
                  extra_fields=None, create=True, **extra_args):
         """
-        Open a connection to the storage database identified by `url`. 
+        Open a connection to the storage database identified by `url`.
 
         DB backend (MySQL, psql, sqlite3) is chosen based on the
         `url.scheme` value.
         """
         super(SqlStore, self).__init__(url)
-        self.__engine = None
-        self._t_store = None
-        self._extra_fields = (extra_fields if extra_fields is not None else {})
-        self._create = create
-        self.table_name = table_name
 
-        self.idfactory = idfactory
+        # init static public args
         if not idfactory:
             self.idfactory = IdFactory(id_class=IntId)
+        else:
+            self.idfactory = idfactory
+        self.table_name = table_name
+
+        # save ctor args for lazy-initialization
+        self._init_extra_fields = (extra_fields if extra_fields is not None else {})
+        self._init_create = create
+
+        # create slots for lazy-init'ed attrs
+        self._real_engine = None
+        self._real_extra_fields = None
+        self._real_tables = None
+
+    def _delayed_init(self):
+        """
+        Perform initialization tasks that can interfere with
+        forking/multiprocess setup.
+
+        See `GC3Pie issue #550
+        <https://github.com/uzh/gc3pie/issues/550>`_ for more details
+        and motivation.
+        """
+        self._real_engine = sqla.create_engine(str(self.url))
+
+        # create schema
+        meta = sqla.MetaData(bind=self._real_engine)
+        table = sqla.Table(
+            self.table_name,
+            meta,
+            sqla.Column('id',
+                        sqla.Integer(),
+                        primary_key=True, nullable=False),
+            sqla.Column('data',
+                        sqla.LargeBinary()),
+            sqla.Column('state',
+                        sqla.String(length=128)))
+
+        # create internal rep of table
+        self._real_extra_fields = {}
+        for col, func in self._init_extra_fields.iteritems():
+            assert isinstance(col, sqla.Column)
+            table.append_column(col.copy())
+            self._real_extra_fields[col.name] = func
+
+        # check if the db exists and already has a 'store' table
+        current_meta = sqla.MetaData(bind=self._real_engine)
+        current_meta.reflect()
+        if self._init_create and self.table_name not in current_meta.tables:
+            meta.create_all()
+
+        self._real_tables = meta.tables[self.table_name]
+
 
     @property
     def _engine(self):
-        if self.__engine is None:
-            self.__engine = sqla.create_engine(str(self.url))
-        return self.__engine
+        if self._real_engine is None:
+            self._delayed_init()
+        return self._real_engine
 
     @property
     def t_store(self):
-        if self._t_store is None:
-            self.__meta = sqla.MetaData(bind=self._engine)
-            # create schema
-            table = sqla.Table(
-                self.table_name,
-                self.__meta,
-                sqla.Column('id',
-                            sqla.Integer(),
-                            primary_key=True, nullable=False),
-                sqla.Column('data',
-                            sqla.LargeBinary()),
-                sqla.Column('state',
-                            sqla.String(length=128)))
+        if self._real_tables is None:
+            self._delayed_init()
+        return self._real_tables
 
-            # create internal rep of table
-            self.extra_fields = dict()
-            for col, func in self._extra_fields.iteritems():
-                assert isinstance(col, sqla.Column)
-                table.append_column(col.copy())
-                self.extra_fields[col.name] = func
+    @property
+    def extra_fields(self):
+        if self._real_extra_fields is None:
+            self._delayed_init()
+        return self._real_extra_fields
 
-            current_metadata = sqla.MetaData(bind=self._engine)
-            current_metadata.reflect()
-
-            # check if the db exists and already has a 'store' table
-            if self._create and self.table_name not in current_metadata.tables:
-                self.__meta.create_all()
-
-            self._t_store = self.__meta.tables[self.table_name]
-        return self._t_store
 
     @same_docstring_as(Store.list)
     def list(self):
