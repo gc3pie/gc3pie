@@ -400,8 +400,8 @@ class SqlStoreChecks(GenericStoreChecks):
         id_ = self.store.save(app)
 
         q = sql.select([
-            self.store.t_store.c.state
-        ]).where(self.store.t_store.c.id == id_)
+            self.store._tables.c.state
+        ]).where(self.store._tables.c.id == id_)
         result = self.conn.execute(q)
         row = result.fetchone()
 
@@ -420,8 +420,8 @@ class SqlStoreChecks(GenericStoreChecks):
         id_ = self.store.save(app)
 
         q = sql.select([
-            self.store.t_store.c.state
-        ]).where(self.store.t_store.c.id == id_)
+            self.store._tables.c.state
+        ]).where(self.store._tables.c.id == id_)
         result = self.conn.execute(q)
         row = result.fetchone()
         assert row[0] == app.execution.state
@@ -467,7 +467,7 @@ class SqlStoreChecks(GenericStoreChecks):
             })
 
         # if this query does not error out, the column is defined
-        q = sql.select([sqlfunc.count(self.store.t_store.c.extra)]).distinct()
+        q = sql.select([sqlfunc.count(self.store._tables.c.extra)]).distinct()
         results = self.conn.execute(q)
         rows = results.fetchall()
         assert len(rows) == 1
@@ -478,8 +478,8 @@ class SqlStoreChecks(GenericStoreChecks):
         id_ = self.store.save(obj)
 
         # check that the value has been saved
-        q = sql.select([self.store.t_store.c.extra]).where(
-            self.store.t_store.c.id == id_)
+        q = sql.select([self.store._tables.c.extra]).where(
+            self.store._tables.c.id == id_)
 
         # Oops, apparently the store.save call will close our
         # connection too.
@@ -532,7 +532,7 @@ class ExtraSqlChecks(object):
                     lambda arg: arg.foo.value)})
 
         # if this query does not error out, the column is defined
-        q = sql.select([sqlfunc.count(self.store.t_store.c.extra)]).distinct()
+        q = sql.select([sqlfunc.count(self.store._tables.c.extra)]).distinct()
         results = self.conn.execute(q)
         rows = results.fetchall()
         assert len(rows) == 1
@@ -543,8 +543,8 @@ class ExtraSqlChecks(object):
         id_ = self.store.save(obj)
 
         # check that the value has been saved
-        q = sql.select([self.store.t_store.c.extra]).where(
-            self.store.t_store.c.id == id_)
+        q = sql.select([self.store._tables.c.extra]).where(
+            self.store._tables.c.id == id_)
         # self.c.execute("select extra from %s where id=%d"
         #                % (self.store.table_name, id_))
         results = self.conn.execute(q)
@@ -595,7 +595,7 @@ class TestSqliteStoreWithAlternateTable(TestSqliteStore):
         obj = SimplePersistableObject('an object')
         self.store.save(obj)
 
-        results = self.conn.execute(sql.select([self.store.t_store.c.id]))
+        results = self.conn.execute(sql.select([self.store._tables.c.id]))
         rows = results.fetchall()
         assert len(rows) > 0
 

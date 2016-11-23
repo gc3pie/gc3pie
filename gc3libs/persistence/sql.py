@@ -212,7 +212,7 @@ class SqlStore(Store):
         return self._real_engine
 
     @property
-    def t_store(self):
+    def _tables(self):
         if self._real_tables is None:
             self._delayed_init()
         return self._real_tables
@@ -226,7 +226,7 @@ class SqlStore(Store):
 
     @same_docstring_as(Store.list)
     def list(self):
-        q = sql.select([self.t_store.c.id])
+        q = sql.select([self._tables.c.id])
         conn = self._engine.connect()
         rows = conn.execute(q)
         ids = [i[0] for i in rows.fetchall()]
@@ -271,16 +271,16 @@ class SqlStore(Store):
                     column, obj, ex.__class__.__name__, str(ex))
 
         with closing(self._engine.connect()) as conn:
-            q = sql.select([self.t_store.c.id]).where(self.t_store.c.id == id_)
+            q = sql.select([self._tables.c.id]).where(self._tables.c.id == id_)
             r = conn.execute(q)
             if not r.fetchone():
                 # It's an insert
-                q = self.t_store.insert().values(**fields)
+                q = self._tables.insert().values(**fields)
                 conn.execute(q)
             else:
                 # it's an update
-                q = self.t_store.update().where(
-                    self.t_store.c.id == id_).values(**fields)
+                q = self._tables.update().where(
+                    self._tables.c.id == id_).values(**fields)
                 conn.execute(q)
             obj.persistent_id = id_
             if hasattr(obj, 'changed'):
@@ -292,7 +292,7 @@ class SqlStore(Store):
     @same_docstring_as(Store.load)
     def load(self, id_):
         with closing(self._engine.connect()) as conn:
-            q = sql.select([self.t_store.c.data]).where(self.t_store.c.id == id_)
+            q = sql.select([self._tables.c.data]).where(self._tables.c.id == id_)
             rawdata = conn.execute(q).fetchone()
             if not rawdata:
                 raise gc3libs.exceptions.LoadError(
@@ -304,7 +304,7 @@ class SqlStore(Store):
     @same_docstring_as(Store.remove)
     def remove(self, id_):
         with closing(self._engine.connect()) as conn:
-            conn.execute(self.t_store.delete().where(self.t_store.c.id == id_))
+            conn.execute(self._tables.delete().where(self._tables.c.id == id_))
 
 
 # register all URLs that SQLAlchemy can handle
