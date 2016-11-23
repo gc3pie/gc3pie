@@ -24,7 +24,8 @@ __docformat__ = 'reStructuredText'
 
 
 # stdlib imports
-import cStringIO as StringIO
+from contextlib import closing
+from cStringIO import StringIO
 import os
 
 import sqlalchemy as sqla
@@ -244,12 +245,12 @@ class SqlStore(Store):
         return self._save_or_replace(obj.persistent_id, obj)
 
     def _save_or_replace(self, id_, obj):
+        # build row to insert/update
         fields = {'id': id_}
 
-        dstdata = StringIO.StringIO()
-        pickler = make_pickler(self, dstdata, obj)
-        pickler.dump(obj)
-        fields['data'] = dstdata.getvalue()
+        with closing(StringIO()) as dstdata:
+            make_pickler(self, dstdata, obj).dump(obj)
+            fields['data'] = dstdata.getvalue()
 
         try:
             fields['state'] = obj.execution.state
@@ -269,47 +270,41 @@ class SqlStore(Store):
                     "Error saving DB column '%s' of object '%s': %s: %s",
                     column, obj, ex.__class__.__name__, str(ex))
 
-        q = sql.select([self.t_store.c.id]).where(self.t_store.c.id == id_)
-        conn = self._engine.connect()
-        r = conn.execute(q)
-        if not r.fetchone():
-            # It's an insert
-            q = self.t_store.insert().values(**fields)
-            conn.execute(q)
-        else:
-            # it's an update
-            q = self.t_store.update().where(
-                self.t_store.c.id == id_).values(**fields)
-            conn.execute(q)
-        obj.persistent_id = id_
-        if hasattr(obj, 'changed'):
-            obj.changed = False
-        conn.close()
+        with closing(self._engine.connect()) as conn:
+            q = sql.select([self.t_store.c.id]).where(self.t_store.c.id == id_)
+            r = conn.execute(q)
+            if not r.fetchone():
+                # It's an insert
+                q = self.t_store.insert().values(**fields)
+                conn.execute(q)
+            else:
+                # it's an update
+                q = self.t_store.update().where(
+                    self.t_store.c.id == id_).values(**fields)
+                conn.execute(q)
+            obj.persistent_id = id_
+            if hasattr(obj, 'changed'):
+                obj.changed = False
 
         # return id
         return obj.persistent_id
 
     @same_docstring_as(Store.load)
     def load(self, id_):
-        q = sql.select([self.t_store.c.data]).where(self.t_store.c.id == id_)
-        conn = self._engine.connect()
-        r = conn.execute(q)
-        rawdata = r.fetchone()
-        if not rawdata:
-            raise gc3libs.exceptions.LoadError(
-                "Unable to find any object with ID '%s'" % id_)
-        unpickler = make_unpickler(self, StringIO.StringIO(rawdata[0]))
-        obj = unpickler.load()
-        conn.close()
-
+        with closing(self._engine.connect()) as conn:
+            q = sql.select([self.t_store.c.data]).where(self.t_store.c.id == id_)
+            rawdata = conn.execute(q).fetchone()
+            if not rawdata:
+                raise gc3libs.exceptions.LoadError(
+                    "Unable to find any object with ID '%s'" % id_)
+            obj = make_unpickler(self, StringIO(rawdata[0])).load()
         super(SqlStore, self)._update_to_latest_schema()
         return obj
 
     @same_docstring_as(Store.remove)
     def remove(self, id_):
-        conn = self._engine.connect()
-        conn.execute(self.t_store.delete().where(self.t_store.c.id == id_))
-        conn.close()
+        with closing(self._engine.connect()) as conn:
+            conn.execute(self.t_store.delete().where(self.t_store.c.id == id_))
 
 
 # register all URLs that SQLAlchemy can handle
