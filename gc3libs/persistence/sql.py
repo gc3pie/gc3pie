@@ -151,6 +151,7 @@ class SqlStore(Store):
         self.__engine = None
         self._t_store = None
         self._extra_fields = extra_fields
+        self.extra_fields = dict()
         self._create = create
         self.table_name = table_name
 
