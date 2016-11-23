@@ -139,7 +139,7 @@ class SqlStore(Store):
     """
 
     def __init__(self, url, table_name="store", idfactory=None,
-                 extra_fields={}, create=True, **extra_args):
+                 extra_fields=None, create=True, **extra_args):
         """
         Open a connection to the storage database identified by `url`. 
 
@@ -149,7 +149,7 @@ class SqlStore(Store):
         super(SqlStore, self).__init__(url)
         self.__engine = None
         self._t_store = None
-        self._extra_fields = extra_fields
+        self._extra_fields = (extra_fields if extra_fields is not None else {})
         self._create = create
         self.table_name = table_name
 
