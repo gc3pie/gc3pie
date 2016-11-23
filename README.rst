@@ -1,8 +1,8 @@
 ========================================================================
-    GC3Pie
+    GC3Pie |gitter|
 ========================================================================
 
-.. image:: https://badges.gitter.im/gc3pie/Lobby.svg
+.. |gitter| image:: https://badges.gitter.im/gc3pie/Lobby.svg
    :alt: Join the chat at https://gitter.im/gc3pie/Lobby
    :target: https://gitter.im/gc3pie/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
