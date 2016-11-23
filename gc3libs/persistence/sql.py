@@ -95,19 +95,9 @@ class SqlStore(Store):
     default it's ``store``.
 
     The constructor will create the `table_name` table if it does not
-    exist, but if there already is such a table it will assume the
-    it's schema is compatible with our needs. A minimal table schema
-    is as follow:
-
-    The meaning of the fields is:
-
-    `id`: this is the id returned by the `save()` method and
-    univoquely identify a stored object.
-
-    `data`: the serialization of the object.
-
-    `state`: if the object is a `Task` istance this wil lbe the
-    current execution state of the job
+    exist, but if there already is such a table it will assume that
+    its schema is compatible with our needs. A minimal table schema
+    is as follows::
 
         +-----------+--------------+------+-----+---------+
         | Field     | Type         | Null | Key | Default |
@@ -117,34 +107,44 @@ class SqlStore(Store):
         | state     | varchar(128) | YES  |     | NULL    |
         +-----------+--------------+------+-----+---------+
 
+    The meaning of the fields is:
 
-    The `extra_fields` argument is used to extend the database. It
-    must contain a mapping `<column>` : `<function>` where:
+    - `id`: this is the id returned by the `save()` method and
+      uniquely identifies a stored object.
 
-    `<column>` is a `sqlalchemy.Column` object.
+    - `data`: serialized Python object.
 
-    `<function>` is a function which takes the object to be saved as
-    argument and returns the value to be stored into the database. Any
-    exception raised by this function will be *ignored*.  Classes
-    `GetAttribute`:class: and `GetItem`:class: in module `get`:mod:
-    provide convenient helpers to save object attributes into table
-    columns.
+    - `state`: if the object is a `Task`:class: instance, this will be
+      its current execution state.
+
+    The `extra_fields` constructor argument is used to extend the
+    database. It must contain a mapping `*column*: *function*`
+    where:
+
+    - *column* is a `sqlalchemy.Column` object.
+
+    - *function* is a function which takes the object to be saved as
+      argument and returns the value to be stored into the
+      database. Any exception raised by this function will be
+      *ignored*.  Classes `GetAttribute`:class: and `GetItem`:class:
+      in module `get`:mod: provide convenient helpers to save object
+      attributes into table columns.
 
     For each extra column the `save()` method will call the
-    corresponding `<function>` in order to get the correct value to
-    store into the db.
+    corresponding *function* in order to get the correct value to
+    store into the DB.
 
     Any extra keyword arguments are ignored for compatibility with
-    `FilesystemStore`.
-
+    `FilesystemStore`:class:.
     """
 
     def __init__(self, url, table_name="store", idfactory=None,
                  extra_fields={}, create=True, **extra_args):
         """
-        Open a connection to the storage database identified by
-        url. It will use the correct backend (MySQL, psql, sqlite3)
-        based on the url.scheme value
+        Open a connection to the storage database identified by `url`. 
+
+        DB backend (MySQL, psql, sqlite3) is chosen based on the
+        `url.scheme` value.
         """
         super(SqlStore, self).__init__(url)
         self.__engine = None
