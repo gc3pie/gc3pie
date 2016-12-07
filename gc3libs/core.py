@@ -1671,7 +1671,12 @@ class Engine(object):
                             " has been destroyed already.)",
                             task, err.__class__.__name__, err)
                     if self.forget_terminated:
-                        self.remove(task)
+                        try:
+                            self.remove(task)
+                        except Exception as err:
+                            gc3libs.log.error(
+                                "Could not remove task '%s'",
+                                task, err.__class__name__, err)
                     else:
                         self._terminated.append(task)
 
