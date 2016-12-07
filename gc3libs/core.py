@@ -1676,7 +1676,7 @@ class Engine(object):
                         except Exception as err:
                             gc3libs.log.error(
                                 "Could not remove task '%s'",
-                                task, err.__class__name__, err)
+                                task, err.__class__.__name__, err)
                     else:
                         self._terminated.append(task)
 
