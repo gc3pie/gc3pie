@@ -1850,7 +1850,12 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                             " has been destroyed already.)",
                             task, err.__class__.__name__, err)
                     if self.forget_terminated:
-                        self.remove(task)
+                        try:
+                            self.remove(task)
+                        except Exception as err:
+                            gc3libs.log.error(
+                                "Could not remove task '%s': %s: %s",
+                                task, err.__class__.__name__, err)
                     else:
                         self._terminated.append(task)
 
