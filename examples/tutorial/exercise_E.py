@@ -48,11 +48,7 @@ class SimpleScript(gc3libs.cmdline.SessionBasedScript):
     version = '0.1'
     
     def new_tasks(self, extra):
-        yield (
-            'TwoStageWorkflow',
-            TwoStageWorkflow,
-            [],
-            extra)
+        yield TwoStageWorkflow()
 
 
 if __name__ == "__main__":

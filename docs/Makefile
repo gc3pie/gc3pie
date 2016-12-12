@@ -50,37 +50,18 @@ clean:
 		$(BUILDDIR)/changes \
 		$(BUILDDIR)/linkcheck \
 		$(BUILDDIR)/doctest \
-	        $(BUILDDIR)/packages_gc3pie.dot \
-		$(BUILDDIR)/classes_gc3pie.dot \
-		$(BUILDDIR)/gc3libs.UML.png \
-		$(BUILDDIR)/gc3libs.UML.svg \
 		.check-sphinxbuild-ok \
 		;
 
-html: .check-sphinxbuild-ok $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/gc3libs.UML.svg
+html: .check-sphinxbuild-ok 
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
-	mv $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/html/_images/
-	mv $(BUILDDIR)/gc3libs.UML.svg $(BUILDDIR)/html/_images/
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
-dirhtml:  .check-sphinxbuild-ok $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/gc3libs.UML.svg
+dirhtml:  .check-sphinxbuild-ok 
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
-	mv $(BUILDDIR)/gc3libs.UML.png $(BUILDDIR)/html/_images/
-	mv $(BUILDDIR)/gc3libs.UML.svg $(BUILDDIR)/html/_images/
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/dirhtml."
-
-classes_gc3pie.dot:
-	$(PYREVERSE) -p gc3pie ../gc3libs ../gc3utils
-
-$(BUILDDIR)/gc3libs.UML.png: classes_gc3pie.dot
-	@echo "Generating UML diagram... (PNG format)"
-	$(DOT) -Tpng classes_gc3pie.dot > $(BUILDDIR)/gc3libs.UML.png
-
-$(BUILDDIR)/gc3libs.UML.svg: classes_gc3pie.dot
-	@echo "Generating UML diagram... (SVG format)"
-	$(DOT) -Tsvg classes_gc3pie.dot > $(BUILDDIR)/gc3libs.UML.svg
 
 pickle: .check-sphinxbuild-ok 
 	$(SPHINXBUILD) -b pickle $(ALLSPHINXOPTS) $(BUILDDIR)/pickle

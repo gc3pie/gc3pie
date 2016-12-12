@@ -1,0 +1,152 @@
+\documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
+\usepackage{gc3}
+
+\title[Automating dependencies]{%
+  Automated Construction of Task Dependency Graphs
+}
+\author[R. Murri, S3IT UZH]{%
+  Riccardo Murri \texttt{<riccardo.murri@uzh.ch>}
+  \\[1ex]
+  \emph{S3IT: Services and Support for Science IT}
+  \\[1ex]
+  University of Zurich
+}
+\date{November~14--17, 2016}
+
+\begin{document}
+
+% title frame
+\maketitle
+
+
+\begin{frame}[fragile]
+  \frametitle{Automatic arrangement of tasks}
+
+  Want to avoid arranging tasks in parallel- and sequential- task collections?
+  Use a \texttt{DepedentTaskCollection}!
+
+  \+
+\begin{python}
+from gc3libs.workflow \
+  import DependentTaskCollection
+
+class MyWorkflow~\HL{(DependentTaskCollection)}~:
+  # ...
+  def __init__(self, ...):
+    DependentTaskCollection.__init__(self)
+    app1 = AnApp(...)
+    app2 = AnotherApp(...)
+    app3 = AThirdApp(...)
+    self.add(app1)
+    self.add(app2)
+    self.add(app3, after=[app1, app2])
+\end{python}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Usage of DependentTaskCollection}
+
+\begin{python}
+from gc3libs.workflow \
+  import DependentTaskCollection
+
+class MyWorkflow(DependentTaskCollection):
+  # ...
+  def __init__(self, ...):
+    ~\HL{DependentTaskCollection.\_\_init\_\_(self)}~
+    app1 = AnApp(...)
+    app2 = AnotherApp(...)
+    app3 = AThirdApp(...)
+    self.add(app1)
+    self.add(app2)
+    self.add(app3, after=[app1, app2])
+\end{python}
+
+  \+
+  Initialize the base class.
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Usage of DependentTaskCollection}
+
+\begin{python}
+from gc3libs.workflow \
+  import DependentTaskCollection
+
+class MyWorkflow(DependentTaskCollection):
+  # ...
+  def __init__(self, ...):
+    DependentTaskCollection.__init__(self)
+    ~\HL{app1 = AnApp(...)}~
+    ~\HL{app2 = AnotherApp(...)}~
+    ~\HL{app3 = AThirdApp(...)}~
+    self.add(app1)
+    self.add(app2)
+    self.add(app3, after=[app1, app2])
+\end{python}
+
+  \+
+  \ldots then initialize tasks that you want to run \ldots
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Usage of DependentTaskCollection}
+
+\begin{python}
+from gc3libs.workflow \
+  import DependentTaskCollection
+
+class MyWorkflow(DependentTaskCollection):
+  # ...
+  def __init__(self, ...):
+    DependentTaskCollection.__init__(self)
+    app1 = AnApp(...)
+    app2 = AnotherApp(...)
+    app3 = AThirdApp(...)
+    ~\HL{self.add(app1)}~
+    ~\HL{self.add(app2)}~
+    ~\HL{self.add(app3, after=[app1, app2])}~
+\end{python}
+
+  \+
+  \ldots then add tasks to the collection, one by one\ldots
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Usage of DependentTaskCollection}
+
+\begin{python}
+from gc3libs.workflow \
+  import DependentTaskCollection
+
+class MyWorkflow(DependentTaskCollection):
+  # ...
+  def __init__(self, ...):
+    DependentTaskCollection.__init__(self)
+    app1 = AnApp(...)
+    app2 = AnotherApp(...)
+    app3 = AThirdApp(...)
+    self.add(app1)
+    self.add(app2)
+    self.add(app3, ~\HL{after=[app1, app2]}~)
+\end{python}
+
+  \+
+  \ldots specifying dependencies among them.
+\end{frame}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

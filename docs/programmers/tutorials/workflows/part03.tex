@@ -1,0 +1,316 @@
+\documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
+\usepackage{gc3}
+
+\title[Debugging commands]{%
+  Useful \\ debugging commands
+}
+\author[R. Murri, S3IT UZH]{%
+  Riccardo Murri \texttt{<riccardo.murri@uzh.ch>}
+  \\[1ex]
+  \emph{S3IT: Services and Support for Science IT}
+  \\[1ex]
+  University of Zurich
+}
+\date{November~14--17, 2016}
+
+\begin{document}
+
+% title frame
+\maketitle
+
+
+\part{Recap of session-based scripts}
+
+
+\begin{frame}
+  \frametitle{Session-based scripts}
+
+  All the scripts we've seen so far are \emph{session-based scripts}.
+
+  \+ A \emph{session} is just a named collection of jobs.
+
+  \+ A \emph{session-based script} creates a session and runs all the
+  tasks in it until completion.
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Create a session}
+
+  A session-based script \alert{creates a session}
+  \\
+  and runs all the tasks in it until completion.
+
+  \+ Create session \texttt{S}:
+\begin{semiverbatim}
+    \$ ./warholize.py bfly.jpg -{}-session S
+\end{semiverbatim}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Run a session until done}
+
+  A session-based script creates a session
+  \\
+  and \alert{runs all the jobs in it until completion.}
+
+  \+ Run jobs in session \texttt{logo},
+  polling for updates every 5 seconds:
+\begin{semiverbatim}\small
+    \$ ./warholize.py bfly.jpg -{}-session S -{}-watch~5
+\end{semiverbatim}
+
+  \+ \uncover<2>{
+    You can stop a GC3Pie script by pressing \emph{Ctrl+C}. \\
+    Run it again to resume activity from where it stopped.
+  }
+\end{frame}
+
+
+\part{Inspecting sessions}
+
+\begin{frame}
+  \frametitle{Alternate display of session contents, I}
+
+  Display top-level tasks in session \texttt{S}:
+\begin{semiverbatim}
+    \$ gsession list S
+\end{semiverbatim}%$
+
+  \begin{exercise*}[3.A]
+    Now try this yourself.
+  \end{exercise*}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{WTF??}
+  \begin{stdout}
+> gsession list S
+gc3.gc3libs: WARNING: Failed loading file '/home/ubuntu/S/jobs/WarholizeWorkflow.108': ImportError: No module named warholize
+  ^\ldots^
+LoadError: Failed retrieving object from file '/home/ubuntu/S/jobs/WarholizeWorkflow.108': ImportError: No module named warholize
+gc3.gc3libs: WARNING: Ignoring error from loading 'ParallelTaskCollection.107': Failed retrieving object from file '/home/ubuntu/S/jobs/ParallelTaskCollection.107': LoadError: Failed retrieving object from file '/home/ubuntu/S/jobs/WarholizeWorkflow.108': ImportError: No module named warholize
++-------+----------+-------+------+
+| JobID | Job name | State | Info |
++-------+----------+-------+------+
++-------+----------+-------+------+
+  \end{stdout}
+
+  \pause
+  \+ In order to work, all GC3Pie utilities need to access the Python
+  script that generated the tasks and session.
+
+  \+ To fix: set the \lstinline|PYTHONPATH| variable to the directory
+    containing your script:
+    \begin{lstlisting}[language=sh]
+$ export PYTHONPATH=$PWD
+    \end{lstlisting}%$
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Alternate display of session contents, II}
+
+  Display \emph{all} tasks in session \texttt{S}:
+\begin{semiverbatim}
+    \$ gsession list -{}-recursive S
+\end{semiverbatim}%$
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Alternate display of session contents, III}
+
+  Display summary of tasks in session \texttt{S}:
+\begin{semiverbatim}
+    \$ gstat -b -s S
+\end{semiverbatim}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Show log of actions in session}
+
+  The \texttt{gession log} command prints out the sequence of actions
+  and state changes for all tasks in a session:
+
+\begin{stdout}
+$ ^\HL{gsession log ex2b}^
+Jul 09 22:13:53 GrayscaleApp.6: Submitting to 'localhost'
+Jul 09 22:13:53 GrayscaleApp.6: SUBMITTED
+Jul 09 22:13:53 GrayscaleApp.6: Submitted to 'localhost'
+Jul 09 22:13:58 GrayscaleApp.6: TERMINATING
+Jul 09 22:13:58 GrayscaleApp.6: Final output downloaded to 'grayscale.d'
+Jul 09 22:13:58 GrayscaleApp.6: TERMINATED
+\end{stdout}%$
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Dump contents of a task}
+
+  The \texttt{ginfo} command allows you to dump the contents of a
+  specific task, or all tasks in a session:
+
+\begin{stdout}[basicstyle=\tiny\ttfamily]
+$ ^\HL{ginfo -v -s ex2b}^
+GrayscaleApp.6
+  arguments: convert, bfly.jpg, -colorspace, gray, gray-bfly.jpg
+  ^\em [\ldots]^
+  execution:
+    ^\em [\ldots]^
+    history:
+      - Submitting to 'localhost' at Sun Jul 10 00:27:02 2016
+      ^\em [\ldots]^
+    lrms_execdir: /home/gc3pie/docs/programmers/tutorials/workflows/gc3libs.SMGNxr
+    lrms_jobid: 23183
+    resource_name: localhost
+    ^\em [\ldots]^
+  inputs:
+    file:///home/gc3pie/docs/programmers/tutorials/workflows/bfly.jpg: bfly.jpg
+  ^\em [\ldots]^
+  output_dir: grayscale.d
+  outputs:
+    gray-lbfly.jpg: file, , gray-bfly.jpg, None, None, , None, None
+    stderr.txt: file, , stderr.txt, None, None, , None, None
+    stdout.txt: file, , stdout.txt, None, None, , None, None
+  ^\em [\ldots]^
+  stderr: stderr.txt
+  stdin: None
+  stdout: stdout.txt
+  ^\em [\ldots]^
+\end{stdout}%$
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Dump contents of a task, II}
+
+  Note that \textbf{without the \texttt{-v}} option, \texttt{ginfo}
+  limits its output to the \texttt{.execution} attribute of a
+  \texttt{Task}/\texttt{Application} object:
+
+\begin{stdout}[basicstyle=\tiny\ttfamily]
+$ ^\HL{ginfo -s ex2b}^
+GrayscaleApp.6
+  ^\em [\ldots]^
+  history:
+    - Submitting to 'localhost' at Sun Jul 10 00:27:02 2016
+    ^\em [\ldots]^
+  lrms_execdir: /home/gc3pie/docs/programmers/tutorials/workflows/gc3libs.SMGNxr
+  lrms_jobid: 23183
+  resource_name: localhost
+  ^\em [\ldots]^
+\end{stdout}%$
+\end{frame}
+
+
+\part{Session management}
+
+\begin{frame}[fragile]
+  \frametitle{Abort all tasks in a session}
+
+  The \texttt{gsession abort} command kills all tasks in a session.
+\begin{stdout}
+$ ~\HL{gsession abort ex2b}~
+\end{stdout}%$
+
+  \+
+  It produces normally no output; use the \texttt{-v} option to see a
+  log of actions taken.
+
+  \+ \small \textbf{Note:} it is important that sessions are
+  terminated!  Otherwise, GC3Pie will consider part of the resources
+  as still allocated to a task.  This is especially evident when
+  running on a single computer: after launching a few tasks, GC3Pie
+  will stop and refuse to run anything.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Manual cleanup of the {\ttfamily localhost} resource}
+
+  In case of incomplete cleanup, you will still run into this error:
+\begin{stdout}
+  ERROR: Resource localhost already running maximum allowed number of jobs
+\end{stdout}
+
+  \+
+  As a last resort, you can inspect directory \lstinline|$HOME/.gc3/shellcmd.d|:
+\begin{stdout}
+  $ ls $HOME/.gc3/shellcmd.d
+  15843
+\end{stdout}
+  Each of these files is an allocated execution slot in the \texttt{localhost} resource.
+  Delete the files to free up the slot.
+
+  \+ (The file name is the PID of the process, in case you want to
+  check if a command is still running before you make GC3Pie forget
+  about it.)
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Aborting a single task}
+
+  To stop and abort a single task, use the \texttt{gkill} command:
+\begin{semiverbatim}
+    \$ gkill -s logo MyApplication.123
+\end{semiverbatim}
+
+\end{frame}
+
+
+\part{Combining commands}
+
+\begin{frame}[fragile]
+  \frametitle{Selecting tasks from a session, I}
+
+  The \texttt{gselect} command is the go-to tool for selective listing
+  of tasks in a session.  For example, to list finished tasks:
+\begin{semiverbatim}
+    \$ gselect -s logo -{}-state TERMINATED
+\end{semiverbatim}
+
+  \+ The output of \texttt{gselect} is a list of task IDs, to be fed
+  into another GC3Pie command.  For example, to kill all queued tasks:
+  \begin{stdout}
+    > gselect -s logo --state SUBMITTED | xargs gkill -s logo
+  \end{stdout}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Selecting tasks from a session, II}
+
+  The \texttt{gselect} command has many different \\ options to select tasks:
+  \begin{stdout}
+> gselect --help
+usage: gselect [-h] [-V] [-v] [--config-files CONFIG_FILES] -s SESSION
+               [--error-message REGEXP] [--input-file FILENAME]
+               [--jobname REGEXP] [--jobid REGEXP] [-l STATES]
+               [--output-file FILENAME] [--output-message REGEXP]
+               [--successful] [--submitted-after DATE]
+               [--submitted-before DATE] [--unsuccessful]
+  \end{stdout}
+
+  \+
+  \begin{exercise*}[3.B]
+    Use \texttt{gselect} to print the IDs of the ``TricolorizeImage''
+    tasks in the last ``Warholize'' session.
+  \end{exercise*}
+\end{frame}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

@@ -71,7 +71,7 @@
 
 
 \begin{frame}
-  \frametitle{About this training, 1}
+  \frametitle{Outlook}
   \begin{enumerate}
   \item Concepts and glossary
   \item Usage of a session-based script
@@ -81,40 +81,113 @@
 
 
 \begin{frame}
-  \frametitle{About this training, 2}
+  \frametitle{This is an \emph{interactive} course!}
   \begin{center}
     We'd like the training to be \\ as interactive and informal as possible.
 
-    \+ If you have a question, just ask -- don't wait.
-  \end{center}
+    \+ \textbf{If you have a question, just ask -- don't wait.}
+
+    \+
+    After the course is over, \\ you're very welcome to keep asking questions:
+    \\[1ex]
+    $\blacktriangleright$ in the GC3Pie chat room:
+    {\small \url{http://gitter.im/gc3pie/chat}}
+    \\[1ex]
+    $\blacktriangleright$ on the mailing-list:
+    \href{mailto:gc3pie@googlegroups.com}{gc3pie@googlegroups.com}
+    \\[1ex]
+    $\blacktriangleright$ or through the forum web interface: \\ {\small
+      \url{https://groups.google.com/d/forum/gc3pie}}
+\end{center}
 \end{frame}
 
 
 \begin{frame}[fragile]
-  \frametitle{About this training, 3}
+  \frametitle{Where to find the course materal}
   \begin{center}
     These slides are available for download from:
-    \url{https://github.com/uzh/gc3pie/blob/master/docs/users/tutorial/slides.pdf}
+    \url{http://tinyurl.com/gc3pie-december-2016}
+
+    \+
+    The full GC3Pie documentation can be found at
+    \url{http://gc3pie.readthedocs.io/}
+
+    \+
+    This tutorial assumes you're running GC3Pie version~2.5
+    (i.e., currently the \emph{master} branch on GitHub).
   \end{center}
 \end{frame}
 
 
-% chapter division
-\section{Concepts and glossary}
-\part{Concepts and glossary}
 
-\begin{frame}
-  \frametitle{What is GC3Pie?}
-  GC3Pie is \ldots
-  \begin{enumerate}
-  \item \alert<2>{An \emph{opinionated} Python framework for defining and running computational workflows;}
-  \item \alert<1>{A \emph{rapid development toolkit} for running user applications on clusters and IaaS cloud resources;}
-  \item The worst name ever given to a middleware piece\ldots
-  \end{enumerate}
+\part{Uses of GC3Pie}
+
+\begin{frame}[fragile]
+  \frametitle{Uses of GC3Pie: parameter sweep}
+
+  You have a simulation code that is dependent on a number of parameters.
 
   \+
-  \only<1>{As \emph{users}, \alert<1>{you're mostly interested in this part.}}
-  \only<2>{\small However, you need to understand the basic concepts ;-)}
+  Run the code for all possible combinations of parameters.
+
+  \+
+  Then collect all the outputs and post-process to get a
+  statistical overview.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Uses of GC3Pie: model calibration}
+
+  You have a simulation code that is dependent on a number of parameters.
+
+  \+
+  Run the code for all possible combinations of parameters, and
+  find the ones that ``best'' approximate a given experimental result.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Uses of GC3Pie: parallel processing}
+
+  Run the same program over and over again,
+  feeding it different input files each time.
+
+  \+
+  Then collect all the outputs and post-process to get a
+  statistical overview.
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Uses of GC3Pie: parallel processing}
+  (At times, you chop a large input file into pieces and process each one separately instead.)
+
+  \+
+  \begin{quote}
+    ``For example, say we have a de novo assembly of 100,000
+    contigs. If we run 1 BLAST job against NR it could take as long as
+    50,000 minutes/35 days!! (30sec/query sequence), however if we
+    split this job into subsets of 5,000 sequences and ran 20 jobs in
+    "parallel" on a cluster, our total run-time is reduced to only 41
+    hours.''
+  \end{quote}
+  \begin{references}
+    \url{http://sfg.stanford.edu/BLAST.html}
+  \end{references}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Uses of GC3Pie: workflows}
+
+  \begin{center}
+    Orchestrate execution of several applications:
+    some steps may run in parallel, some might need to be sequenced.
+
+    \+
+    \includegraphics[width=0.70\textwidth]{fig/warholize-wkf.pdf}
+  \end{center}
 \end{frame}
 
 
@@ -136,16 +209,33 @@
 
 
 \begin{frame}
-  \frametitle{How does ``Warholize'' work?}
+  \frametitle{A typical high-throughput script structure}
 
-  \begin{center}
-    It is a GC3Pie \emph{workflow}: each box is a distinct application
-    instance that is run.
-
-    \+
-    \includegraphics[width=0.70\textwidth]{fig/warholize-wkf}
-  \end{center}
+  \begin{enumerate}
+  \item Initialize computational resources
+  \item Prepare programs and inputs for submission
+  \item Submit tasks
+  \item Monitor task status (loop)
+  \item Retrieve results
+  \item Postprocess and display
+  \end{enumerate}
 \end{frame}
+
+
+\newcommand<>\fullgraphicsframe[1]{%
+  {
+    \usebackgroundtemplate{\includegraphics[width=\paperwidth]{#1}}
+    \begin{frame}[plain]
+      % empty frame -- the graphics comes from above
+    \end{frame}
+  }
+}
+
+\fullgraphicsframe{fig/gc3pie-running-1.pdf}
+
+\fullgraphicsframe{fig/gc3pie-running-3.pdf}
+
+\fullgraphicsframe{fig/gc3pie-running-2.pdf}
 
 
 \begin{frame}
@@ -162,6 +252,25 @@
   \item De-allocation of resources
   \end{enumerate}
 
+\end{frame}
+
+
+% chapter division
+\section{Concepts and glossary}
+\part{Concepts and glossary}
+
+\begin{frame}
+  \frametitle{What is GC3Pie?}
+  GC3Pie is \ldots
+  \begin{enumerate}
+  \item \alert<2>{An \emph{opinionated} Python framework for defining and running computational workflows;}
+  \item \alert<1>{A \emph{rapid development toolkit} for running user applications on clusters and IaaS cloud resources;}
+  \item The worst name ever given to a middleware piece\ldots
+  \end{enumerate}
+
+  \+
+  \only<1>{As \emph{users}, \alert<1>{you're mostly interested in this part.}}
+  \only<2>{\small However, you need to understand the basic concepts ;-)}
 \end{frame}
 
 
@@ -550,19 +659,8 @@ type = openstack
 \end{frame}
 
 
-\begin{frame}
-  \frametitle{Hands-on time!}
-  \begin{exercise}
-    Change the configuration file
-    \texttt{{\textasciitilde}/.gc3/gc3pie.conf} to enable the
-    \texttt{sciencecloud} resource.  Verify with the \texttt{gservers}
-    command that it works.
-  \end{exercise}
-\end{frame}
-
-
 \begin{frame}[fragile]
-  \frametitle{Cannot start VMs?}
+  \frametitle{Cannot access the cloud?}
 
   You need to tell GC3Pie what credentials to use for authenticating to
   OpenStack / ScienceCloud.
@@ -578,6 +676,17 @@ Please enter your OpenStack Password:
 
   \textbf{Important:} at the ``username'' prompt, enter your ``UZH shortname''
   -- do \emph{not} accept the default!
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Hands-on time!}
+  \begin{exercise}
+    Change the configuration file
+    \texttt{{\textasciitilde}/.gc3/gc3pie.conf} to enable the
+    \texttt{sciencecloud} resource.  Verify with the \texttt{gservers}
+    command that it works.
+  \end{exercise}
 \end{frame}
 
 
@@ -818,7 +927,11 @@ usage: gselect [-h] [-V] [-v] [--config-files CONFIG_FILES] -s SESSION
     \+\+
     Mailing-list: \url{gc3pie@googlegroups.com} \\
     or read online at \\
-    \url{http://dir.gmane.org/gmane.comp.python.gc3pie}
+    \url{https://groups.google.com/d/forum/gc3pie}
+
+    \+\+
+    GC3Pie chat room:
+    \url{http://gitter.im/gc3pie/chat}
   \end{center}
 \end{frame}
 

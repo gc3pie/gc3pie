@@ -1,6 +1,10 @@
 ========================================================================
-    GC3Pie
+    GC3Pie |gitter|
 ========================================================================
+
+.. |gitter| image:: https://badges.gitter.im/gc3pie/chat.svg
+   :alt: Join the chat at https://gitter.im/gc3pie/chat
+   :target: https://gitter.im/gc3pie/chat?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
 .. This file follows reStructuredText markup syntax; see
    http://docutils.sf.net/rst.html for more information

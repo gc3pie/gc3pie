@@ -1023,16 +1023,20 @@ class _SessionBasedCommand(_Script):
 
     def _fix_output_dir(self, task, name):
         """Substitute the NAME string in output paths."""
-        task.output_dir = task.output_dir.replace('NAME', name)
+        if task.would_output:
+            task.output_dir = task.output_dir.replace('NAME', name)
         try:
             for subtask in task.tasks:
                 self._fix_output_dir(subtask, name)
         except AttributeError:
             # no subtasks
             pass
-        if 'task' in task:
+        try:
             # RetryableTask
             self._fix_output_dir(task.task, name)
+        except AttributeError:
+            # not a RetryableTask
+            pass
 
     def setup_common_options(self, parser):
         # 1. job requirements
@@ -2128,20 +2132,7 @@ class SessionBasedScript(_SessionBasedCommand):
     def new_tasks(self, extra):
         """
         Iterate over jobs that should be added to the current session.
-        Each item yielded must have the form `(jobname, cls, args,
-        kwargs)`, where:
-
-        * `jobname` is a string uniquely identifying the job in the
-          session; if a job with the same name already exists, this
-          item will be ignored.
-
-        * `cls` is a callable that returns an instance of
-          `gc3libs.Application` when called as `cls(*args, **kwargs)`.
-
-        * `args` is a tuple of arguments for calling `cls`.
-
-        * `kwargs` is a dictionary used to provide keyword arguments
-          when calling `cls`.
+        Each item yielded must be a valid `Task`:class: instance.
 
         This method is called by the default `process_args`:meth:, passing
         `self.extra` as the `extra` parameter.

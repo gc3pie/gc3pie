@@ -394,14 +394,15 @@ class SequentialTaskCollection(TaskCollection):
         """
         Rewind the sequence to a given stage and reset its state to ``NEW``.
         """
-        super(SequentialTaskCollection, self).redo(*args, **kwargs)
-        self._current_task = from_stage
-        task = self.stage()
-        if task is not None:
-            task.redo(*args, **kwargs)
-        # All other tasks should be put in NEW again
-        for i in range(from_stage+1, len(self.tasks)):
-            self.tasks[i].redo(*args, **kwargs)
+        if len(self.tasks) > 0:
+            super(SequentialTaskCollection, self).redo(*args, **kwargs)
+            self._current_task = from_stage
+            task = self.stage()
+            if task is not None:
+                task.redo(*args, **kwargs)
+            # All other tasks should be put in NEW again
+            for i in range(from_stage+1, len(self.tasks)):
+                self.tasks[i].redo(*args, **kwargs)
 
     def submit(self, resubmit=False, targets=None, **extra_args):
         """
@@ -676,7 +677,7 @@ class StagedTaskCollection(SequentialTaskCollection):
     The sequence stops at the first N such that `stageN` is not defined.
 
     The exit status of the whole sequence is the exit status of the
-    last `Task` instance run.  However, if any of the `stageX` methods
+    last `Task` instance run.  However, if any of the `stageN` methods
     returns an integer value instead of a `Task` instance, then the
     sequence stops and that number is used as the sequence exit
     code.
@@ -691,8 +692,8 @@ class StagedTaskCollection(SequentialTaskCollection):
                 SequentialTaskCollection.__init__(
                     self, [first_stage], **extra_args)
             elif isinstance(first_stage, (int, long, tuple)):
-                # init parent class with no tasks, an dimmediately set the
-                # exitcode
+                # init parent class with no tasks,
+                # and immediately set the exitcode
                 SequentialTaskCollection.__init__(self, [], **extra_args)
                 self.execution.returncode = first_stage
                 self.execution.state = Run.State.TERMINATED
@@ -700,7 +701,7 @@ class StagedTaskCollection(SequentialTaskCollection):
                 raise AssertionError(
                     "Invalid return value from method `stage0()` of"
                     " `StagedTaskCollection` object %r:"
-                    " must return `Task` instance or number" % self)
+                    " must return `Task` instance or integer exit code" % self)
         except AttributeError as ex:
             raise AssertionError(
                 "Invalid `StagedTaskCollection` instance %r: %s"

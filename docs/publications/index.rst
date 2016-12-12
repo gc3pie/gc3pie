@@ -12,8 +12,7 @@ on GC3Pie. Most recent contributions are listed first.
 
 If you would like to add your contributions here, please send a
 message to the `GC3Pie mailing-list <mailto:gc3pie@googlegroups.com>`_
-(or use the `GMANE.org web interface
-<http://dir.gmane.org/gmane.comp.python.gc3pie>`_).
+(or use the `web interface <https://groups.google.com/forum/#!forum/gc3pie>`_).
 
 
 GC3Pie overviews

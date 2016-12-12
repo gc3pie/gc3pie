@@ -136,7 +136,7 @@ class VMPool(object):
     def __str__(self):
         return "VMPool('%s') : %s" % (self.name, self._vm_ids)
 
-    def add_vm(self, vm):
+    def add_vm(self, vm, cache=True):
         """
         Add a VM object to the list of VMs.
         """
@@ -145,7 +145,8 @@ class VMPool(object):
         gc3libs.utils.write_contents(
             os.path.join(self.path, vm.id), vm.preferred_ip)
         self._vm_ids.add(vm.id)
-        self._vm_cache[vm.id] = vm
+        if cache:
+            self._vm_cache[vm.id] = vm
         self.changed = True
 
     def remove_vm(self, vm_id):

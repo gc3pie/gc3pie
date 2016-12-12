@@ -20,7 +20,7 @@ well.)
 
 .. __: https://www.s3it.uzh.ch/en/scienceit/support/training/gc3pie/users.html
 
-`Introduction to GC3Pie <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/part01.pdf>`_
+`Introduction to GC3Pie <https://github.com/uzh/gc3pie/tree/master/docs/programmers/tutorials/workflows/part01.pdf>`_
 
     Introduction to the software: what is GC3Pie, what is it for, and
     an overview of its features for writing high-throughput computing

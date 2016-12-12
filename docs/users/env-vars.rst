@@ -15,9 +15,10 @@ The following environmental variables affect GC3Pie operations.
 
 `GC3PIE_CONF`
 
-  Path to an additional configuration file, that is read upon
-  initialization of GC3Pie.  If undefined or empty, no additional
-  configuration file is loaded.
+  Path to an alternate configuration file, that is read upon
+  initialization of GC3Pie.  If defined, this file is read *instead*
+  of the default ``$HOME/.gc3/gc3pie.conf``; if undefined or empty,
+  the usual configuration file is loaded.
 
 `GC3PIE_ID_FILE`
 

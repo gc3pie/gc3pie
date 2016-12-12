@@ -15,23 +15,27 @@ Configuration File
 Location
 --------
 
-All commands in `GC3Apps`:ref: and `GC3Utils`:ref: read two
+All commands in `GC3Apps`:ref: and `GC3Utils`:ref: read a few
 configuration files at startup:
 
-  * system-wide one located at :file:``/etc/gc3/gc3pie.conf``, and
-  * a user-private one at :file:``~/.gc3/gc3pie.conf``.
+  * system-wide one located at :file:`/etc/gc3/gc3pie.conf`,
+  * a virtual-environment-wide configuration located at
+    :file:`$VIRTUAL_ENV/etc/gc3/gc3pie.conf`, and
+  * a user-private one at :file:`$HOME/.gc3/gc3pie.conf`, or,
+    alternately, the file in the location pointed to by the
+    environmental variable ``GC3PIE_CONF``.
 
-Both files are optional, but at least one of them must exist.
+All these files are optional, but at least one of them must exist.
 
-Both files use the same format. The system-wide one is read first, so
+All files use the same format. The system-wide one is read first, so
 that users can override the system-level configuration in their private file.
-Configuration data from corresponding sections in the two
-configuration files is merged; the value in the user-private file
-overrides the one from the system-wide configuration.
+Configuration data from corresponding sections in the
+configuration files is merged; the value in files read later
+overrides the one from the earler-read configuration.
 
 If you try to start any GC3Utils command without having a
 configuration file, a sample one will be copied to the user-private
-location :file:``~/.gc3/gc3pie.conf`` and an error message will be
+location :file:`~/.gc3/gc3pie.conf` and an error message will be
 displayed, directing you to edit the sample file before retrying.
 
 
@@ -39,14 +43,39 @@ Configuration file format
 -------------------------
 
 The GC3Pie configuration file follows the format understood by
-`Python ConfigParser <http://docs.python.org/library/configparser.html>`_,
-which is very close to the syntax used in MS-Windows ``.INI`` files.
-See http://docs.python.org/library/configparser.html for reference.
+`Python ConfigParser <http://docs.python.org/library/configparser.html>`_;
+see http://docs.python.org/library/configparser.html for reference.
 
-The GC3Libs configuration file consists of several configuration
-blocks.  Each configuration block (section) starts with a keyword in
-square brackets and contains the configuration options for a specific
-part.
+Here is an example of what the configuration file looks like::
+
+  [auth/none]
+  type=none
+
+  [resource/localhost]
+  # change the following to `enabled=no` to quickly disable
+  enabled=yes
+  type=shellcmd
+  transport=local
+  auth=none
+  max_cores=2
+  max_cores_per_job=2
+  # ...
+
+You can see that:
+  
+* The GC3Pie configuration file consists of several configuration
+  sections.  Each configuration section starts with a keyword in
+  square brackets and continues until the start or the next section or
+  the end of the file (whichever happens first).
+
+* A section's body consists of a series of ``word=value`` assignments
+  (we call these *configuration items*), each on a line by its own.
+  The word before the ``=`` sign is called the *configuration key*,
+  and the value given to it is the *configuration value*.
+
+* Lines starting with the ``#`` character are comments: the line is
+  meant for human readers and is completely ignored by GC3Pie.
+
 
 The following sections are used by the GC3Apps/GC3Utils programs:
 
@@ -99,9 +128,33 @@ Each ``auth`` section *must* specify a ``type`` setting.
 ``type`` defines the authentication type that will be used to access
 a resource. There are three supported authentication types:
 
-  * ``ssh``; use this for resources that will be accessed by opening an SSH connection to the front-end node of a cluster.
-  * ``ec2``: use this for a EC2-compatible cloud resource.
-  * ``openstack``: use this for an OpenStack cloud resource.
+================ =============================================================
+``type=...``     Use this for ...
+================ =============================================================
+``ec2``          EC2-compatible cloud resources
+---------------- -------------------------------------------------------------
+``none``         Resources that need no authentication
+---------------- -------------------------------------------------------------
+``ssh``          Resources that will be accessed by opening an SSH connection
+                 to the front-end node of a cluster
+================ =============================================================
+
+
+``none``-type authentication
+++++++++++++++++++++++++++++
+
+This is for resources that actually need no authentication (``transport=local``)
+but still need to reference an ``[auth/*]`` section for syntactical reasons.
+
+GC3Pie automatically inserts in every configuration file a section
+``[auth/none]``, which you can reference in resource sections with the line
+``auth=none``.
+
+Because of the automatically-generated ``[auth/none]``, there is hardly ever a
+reason to explicitly write such a section (doing so is not an error, though)::
+
+  [auth/none]
+  type=none
 
 
 ``ssh``-type authentication
@@ -188,103 +241,184 @@ allows you to define many different resources.  Each `[resource/{name}]`:file:
 section must reference one (and one only) `[auth/{name}]`:file:
 section (by its ``auth`` key).
 
-Resources currently come in several flavours, distinguished by the
-value of the ``type`` key:
+Resources currently come in several flavours, distinguished by the value of the
+``type`` key. Valid values for the ``type=...`` configuration line are listed in
+the table below.
 
-  * If ``type`` is ``sge``, then the resource is a `Grid Engine`_ batch system, to be accessed by an SSH connection to its front-end node.
-  * If ``type`` is ``pbs``, then the resource is a `Torque/PBS`_ batch system, to be accessed by an SSH connection to its front-end node.
-  * If ``type`` is ``lsf``, then the resource is a `LSF`_ batch system, to be accessed by an SSH connection to its front-end node.
-  * If ``type`` is ``slurm``, then the resource is a `SLURM`_ batch system, to be accessed by an SSH connection to its front-end node.
-  * If ``type`` is ``shellcmd``, then the resource is the computer
-    where the GC3Pie script is running and applications are executed
-    by just spawning a local UNIX process.
-  * If ``type`` is ``ec2+shellcmd``, then the resource is a cloud with
-    EC2-compatible APIs, and applications are run on Virtual Machines
-    spawned on the cloud.
+================ =============================================================
+``type=...``     The resource is ...
+================ =============================================================
+``ec2+shellcmd`` a cloud with EC2-compatible APIs:
+                 applications are run on Virtual Machines started on the cloud
+---------------- -------------------------------------------------------------
+``lsf``          an `LSF`_ batch-queuing system
+---------------- -------------------------------------------------------------
+``pbs``          a `TORQUE`_ or `PBSPro`_ batch-queuing system
+---------------- -------------------------------------------------------------
+``sge``          a `Grid Engine`_ batch-queuing system
+---------------- -------------------------------------------------------------
+``shellcmd``     a single Linux or MacOSX computer:
+                 applications are executed by spawning a local UNIX process
+---------------- -------------------------------------------------------------
+``slurm``        a `SLURM`_ batch-queuing system
+================ =============================================================
 
-All `[resource/{name}]`:file: sections (except those of ``shellcmd``
-type) *must* reference a valid ``auth/***`` section. Resources of
-``sge``, ``pbs``, ``lsf`` and ``slurm`` type can only reference
-:command:``ssh`` type sections.
 
-Some configuration keys are commmon to all resource types:
+Link to ``[auth/...]`` sections
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  *  ``type``: Resource type, see above.
-  *  ``auth``: the name of a valid `[auth/{name}]`:file: section; only
-     the authentication section name (after the ``/``) must be
-     specified.
-  *  ``max_cores_per_job``: Maximum number of CPU cores that a job can request; a resource will be dropped during the brokering process if a job requests more cores than this.
-  *  ``max_memory_per_core``: Max amount of memory (expressed in GBs) that a job can request.
-  *  ``max_walltime``: Maximum job running time (in hours).
-  *  ``max_cores``: Total number of cores provided by the resource.
-  *  ``architecture``: Processor architecture.  Should be one of the strings ``x86_64`` (for 64-bit Intel/AMD/VIA processors), ``i686`` (for 32-bit Intel/AMD/VIA x86 processors), or ``x86_64,i686`` if both architectures are available on the resource.
-  *  ``time_cmd``: Used only when ``type`` is ``shellcmd``. The `time` program is used as wrapper for the application in order to collect informations about the execution when running without a real `LRMS`.
+All `[resource/{name}]`:file: sections *must* reference a valid
+`[auth/{aname}]`:file: section via the `auth={aname}`:file: line. If the
+``auth=...`` line is omitted, GC3Pie's default is ``auth=none``.
 
-  * ``prologue``: Used only when ``type`` is ``pbs``, ``lsf``,
-     ``slurm`` or ``sge``. The content of the `prologue` script will be
-     *inserted* into the submission script and it's executed before
-     the real application.  It is intended to execute some shell
-     commands needed to setup the execution environment before running
-     the application (e.g. running a `module load ...` command). The
-     script **must** be a valid, plain `/bin/sh` script.
+Type of the resource and the referenced ``[auth/...]`` section must match:
 
-  * ``<application_name>_prologue``: Same as ``prologue``, but it is
-    used only when ``<application_name>`` matches the name of the
-    application. Valid application names are: `zods`, `gamess`,
-    `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`. If
-    both ``prologue`` and ``<application_name>_prologue`` options are
-    defined, the content of both files is included in the submission
-    script (first ``prologue``, then ``<application_name>_prologue``).
+* Resources of type ``ec2+shellcmd`` can only reference ``[auth/...]`` sections
+  of type ``ec2``.
+* Batch-queuing resources (type is one of ``sge``, ``pbs``, ``lsf``, or
+  ``slurm``) and resources of type ``shellcmd`` can reference ``[auth/...]``
+  sections of type ``ssh`` (when ``transport=ssh``) or ``[auth/none]`` (when
+  ``transport=local``).
 
-  * ``prologue_content``: Used only when ``type`` is ``pbs``, ``lsf``,
-     ``slurm`` or ``sge``. A (possibly multi-line) string that will be
-     *inserted* into the submission script and executed before the
-     real application. Its value will be inserted after *any* other
-     ``prologue``, ``<application_name>_prologue`` option, if present.
 
-  * ``<application_name>_prologue_content``: Same as
-    ``prologue_content``, but it is used only when
-    ``<application_name>`` matches the name of the application. Valid
-    application names are: `zods`, `gamess`, `turbomole`, `codeml`,
-    `rosetta`, `rosetta_docking`, `geotop`. Its value will be inserted
-    after *any* other ``prologue``, ``<application_name>_prologue``,
-    ``prologue_content`` option, if present.
+Configuration keys common to *all* resource types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  * ``epilogue``: Used only when ``type`` is ``pbs``, ``lsf``,
-     ``slurm`` or ``sge``. The content of the `epilogue` script will
-     be *inserted* into the submission script and it's executed after
-     the real application. The script **must** be a valid, plain
-     `/bin/sh` script.
+The following configuration keys are commmon to all resources, regardless of type.
 
-  * ``<application_name>_epilogue``: Same as ``epilogue``, but it is
-    used only when ``<application_name>`` matches the name of the
-    application. Valid application names are: `zods`, `gamess`,
-    `turbomole`, `codeml`, `rosetta`, `rosetta_docking`, `geotop`.  If
-    both ``epilogue`` and ``<application_name>_epilogue`` options are
-    defined, the content of both files is included in the submission
-    script (first ``epilogue``, then ``<application_name>_epilogue``).
+======================= =======================================================
+Configuration key       Meaning
+======================= =======================================================
+``type``                Resource type, see above.
+----------------------- -------------------------------------------------------
+``auth``                Name of a valid `[auth/{name}]`:file: section;
+                        only the authentication section name (after the ``/``)
+                        must be specified.
+----------------------- -------------------------------------------------------
+``max_cores_per_job``   Maximum number of CPU cores that a job can request;
+                        a resource will be dropped during the brokering process
+                        if a task requests more cores than this.
+----------------------- -------------------------------------------------------
+``max_memory_per_core`` Maximum amount of memory that a task can request;
+                        a resource will be dropped during the brokering process
+                        if a task requests more memory than this.
+----------------------- -------------------------------------------------------
+``max_walltime``        Maximum job running time.
+----------------------- -------------------------------------------------------
+``max_cores``           Total number of cores provided by the resource.
+----------------------- -------------------------------------------------------
+``architecture``        Processor architecture.  Should be one of the strings
+                        ``x86_64`` (for 64-bit Intel/AMD/VIA processors),
+                        ``i686`` (for 32-bit Intel/AMD/VIA x86 processors),
+                        or ``x86_64,i686`` if both architectures are available
+                        on the resource.
+----------------------- -------------------------------------------------------
+``time_cmd``            Path to the GNU `time`:command: program.
+                        Default is ``/usr/bin/time``
+======================= =======================================================
 
-  * ``epilogue_content``: Used only when ``type`` is ``pbs``, ``lsf``,
-     ``slurm`` or ``sge``. A (possibly multi-line) string that will be
-     *inserted* into the submission script and executed after the real
-     application. Its value will be inserted after *any* other
-     ``epilogue``, ``<application_name>_epilogue`` option, if present.
 
-  * ``<application_name>_epilogue_content``: Same as
-    ``epilogue_content``, but it is used only when
-    ``<application_name>`` matches the name of the application. Valid
-    application names are: `zods`, `gamess`, `turbomole`, `codeml`,
-    `rosetta`, `rosetta_docking`, `geotop`. Its value will be inserted
-    after *any* other ``epilogue``, ``<application_name>_epilogue``,
-    ``epilogue_content`` option, if present.
+Configuration keys common to batch-queuing resource types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``sge`` resources
-~~~~~~~~~~~~~~~~~
+The following configuration keys can be used in any resource of type ``pbs``,
+``lsf``, ``sge``, or ``slurm``.
+
+  * ``prologue``: Path to a script file, whose contents are *inserted* into the
+    submission script of each application that runs on the resource. Commands
+    from the *prologue* script are executed before the real application; the
+    *prologue* is intended to execute some shell commands needed to setup the
+    execution environment before running the application (e.g. running a
+    ``module load ...`` command).
+
+    .. note::
+
+       The prologue script **must** be a valid plain `/bin/sh`:command: script;
+       `she-bang`_ indications will *not* be honored.
+
+       .. _`she-bang`: https://en.wikipedia.org/wiki/Shebang_(Unix)
+
+  * `{application}_prologue`:file:: Same as ``prologue``, but it is
+    used only when `{application}`:file: matches the name of the
+    application (as specified by the ``application_name`` attribute on the
+    GC3Pie `Application`:class: instance).
+
+  * ``prologue_content``: A (possibly multi-line) string that will be
+    *inserted* into the submission script and executed before the
+    real application.  Like the ``prologue`` script, commands must be given
+    using `/bin/sh`:command: syntax.
+
+  * `{application}_prologue_content`:file:: Same as ``prologue_content``, but
+    it is used only when `{application}`:file: matches the name of the
+    application (as specified by the ``application_name`` attribute on the
+    GC3Pie `Application`:class: instance).
+
+.. warning::
+
+   Errors in a prologue script will prevent any application from running
+   on the resource!  Keep prologue commands to a minimum and always check
+   their correctness.
+
+If several *prologue*-related options are specified, then commands are inserted
+into the submission script in the following order:
+
+- first content of the ``prologue`` script,
+- then content of the `{application}_prologue`:file: script,
+- then commands from the ``prologue_content`` configuration item,
+- finally commands from the `{application}_prologue_content`:file: configuration item.
+
+A similar set of options allow defining commands to be executed *after* an
+application has finished running:
+
+  * ``epilogue``: The content of the `epilogue` script will be *inserted* into
+    the submission script and is executed after the real application has
+    been submitted
+
+    .. note::
+
+       The epilogue script **must** be a valid plain `/bin/sh`:command: script;
+       `she-bang`_ indications will *not* be honored.
+
+       .. _`she-bang`: https://en.wikipedia.org/wiki/Shebang_(Unix)
+
+  * `{application}_epilogue`:file: : Same as ``epilogue``, but used only
+    when ``{application}`:file: matches the name of the application (as
+    specified by the ``application_name`` attribute on the GC3Pie
+    `Application`:class: instance).
+
+  * ``epilogue_content``: A (possibly multi-line) string that will be *inserted*
+    into the submission script and executed after the real application has
+    completed. Like the ``epilogue`` script, commands must be given using
+    `/bin/sh`:command: syntax.
+
+  * `{application}_epilogue_content`:file: : Same as ``epilogue_content``, but
+    used only when `{application}`:file: matches the name of the application (as
+    specified by the ``application_name`` attribute on the GC3Pie
+    `Application`:class: instance).
+
+.. warning::
+
+   Errors in an epilogue script prevent GC3Pie from reaping the application's
+   exit status. In particular, errors in the epilogue commands can make GC3Pie
+   consider the whole application as failed, and use the epilogue's error exit
+   as the overall exit code.
+
+If several *epilogue*-related options are specified, then commands are inserted
+into the submission script in the following order:
+
+- first contents of the ``epilogue`` script,
+- then contents of the `{application}_epilogue`:file: script,
+- then commands from the ``epilogue_content`` configuration item,
+- finally commands from the `{application}_epilogue_content`:file: configuration item.
+
+
+``sge`` resources (all batch systems of the `Grid Engine`_ family)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following configuration keys are required in a ``sge``-type resource section:
 
   * ``frontend``: should contain the `FQDN (Fully-qualified domain name)`:abbr: of the SGE front-end node. An SSH connection will be attempted to this node, in order to submit jobs and retrieve status info.
-  * ``transport``: Possible values are: ``ssh`` or ``local``.   If ``ssh``, we try to connect to the host specified in ``frontend`` via SSH in order to execute SGE commands.  If ``local``, the SGE commands are run directly on the machine where GC3Pie is installed.
+  * ``transport``: Possible values are: ``ssh`` or ``local``.   If ``ssh``, GC3Pie tries to connect to the host specified in ``frontend`` via SSH in order to execute SGE commands.  If ``local``, the SGE commands are run directly on the machine where GC3Pie is installed.
 
 To submit parallel jobs to SGE, a "parallel environment" name must be
 specified.  You can specify the PE to be used with a specific
@@ -293,7 +427,7 @@ application using a configuration parameter *application name* +
 parameter dictates the parallel environment to use if no
 application-specific one is defined.  *If neither the
 application-specific, nor the ``default_pe`` parallel environments are
-defined, then it will not be possible to submit parallel jobs.*
+defined, then submission of parallel jobs will fail.*
 
 When a job has finished, the SGE batch system does not (by default)
 immediately write its information into the accounting database.  This
@@ -344,19 +478,19 @@ section:
   ``timeout`` could be deprecated in future releases.
 
 
-``pbs`` resources
-~~~~~~~~~~~~~~~~~
+``pbs`` resources (TORQUE_ and PBSPro_ batch-queueing systems)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following configuration keys are required in a ``pbs``-type resource section:
 
   * ``transport``: Possible values are: ``ssh`` or ``local``.  If
-    ``ssh``, we try to connect to the host specified in ``frontend``
+    ``ssh``, GC3Pie tries to connect to the host specified in ``frontend``
     via SSH in order to execute Troque/PBS commands.  If ``local``,
-    the Torque/PBS commands are run directly on the machine where
+    the TORQUE/PBSPro commands are run directly on the machine where
     GC3Pie is installed.
 
   * ``frontend``: should contain the `FQDN (Fully-qualified domain
-    name)`:abbr: of the Torque/PBS front-end node. This configuration
+    name)`:abbr: of the TORQUE/PBSPro front-end node. This configuration
     item is only relevant if ``transport`` is ``local``. An SSH
     connection will be attempted to this node, in order to submit jobs
     and retrieve status info.
@@ -368,7 +502,8 @@ these commands and/or add some extra options. The following options
 are used by the PBS backend:
 
   * ``queue``: the name of the queue to which jobs are submitted. If
-    empty (the default), no job will be specified during submission.
+    empty (the default), no queue will be specified during submission,
+    using the resource manager's default.
 
   * ``qsub``: submit a job.
 
@@ -401,13 +536,13 @@ section:
   ``timeout`` could be deprecated in future releases.
 
 
-``lsf`` resources
-~~~~~~~~~~~~~~~~~~~
+``lsf`` resources (IBM LSF)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following configuration keys are required in a ``lsf``-type resource section:
 
   * ``transport``: Possible values are: ``ssh`` or ``local``.  If
-    ``ssh``, we try to connect to the host specified in ``frontend``
+    ``ssh``, GC3Pie tries to connect to the host specified in ``frontend``
     via SSH in order to execute LSF commands.  If ``local``, the LSF
     commands are run directly on the machine where GC3Pie is
     installed.
@@ -471,7 +606,7 @@ section:
 The following configuration keys are required in a ``slurm``-type resource section:
 
   * ``transport``: Possible values are: ``ssh`` or ``local``.  If
-    ``ssh``, we try to connect to the host specified in ``frontend``
+    ``ssh``, GC3Pie tries to connect to the host specified in ``frontend``
     via SSH in order to execute SLURM commands.  If ``local``, the
     SLURM commands are run directly on the machine where GC3Pie is
     installed.
@@ -575,138 +710,142 @@ section:
 ``ec2+shellcmd`` resource
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _boto: https://github.com/boto/boto
+
 The following configuration options are available for a resource of
 type ``ec2+shellcmd``. If these options are omitted, then the default
 of the `boto`_ python library will be used, which at the time of
 writing means use the default region on Amazon.
 
-  * ``ec2_url``: The URL of the EC2 frontend. On a typical OpenStack
-     installation this will look like:
-     ``https://cloud.gc3.uzh.ch:8773/services/Cloud``, while for
-     amazon it's something like
-     ``https://ec2.us-east-1.amazonaws.com`` (this is valid for the
-     zone ``us-east-1`` of course).
-     If no value is specified, the environment variable ``EC2_URL``
-     will be used, and if not found an error is raised.
+* ``ec2_url``: The URL of the EC2 frontend. On Amazon's AWS this is
+  something like ``https://ec2.us-east-1.amazonaws.com`` (this is
+  valid for the zone ``us-east-1`` of course).  If no value is
+  specified, the environment variable ``EC2_URL`` will be used, and if
+  not found an error is raised.
 
-  * ``ec2_region``: the region you want to access to. Most OpenStack
-    installations only have one region called ``nova``.
+* ``ec2_region``: the region you want to access to.
 
-  * ``keypair_name``: the name of the keypair to use when creating a
-    new instance on the cloud. If it's not found, a new keypair with
-    this name and the key stored in ``public_key`` will be
-    used. Please note that if the keypair exists already on the cloud
-    but the associated public key is different from the one stored in
-    ``public_key``, then an error is raised and the resource will not
-    be used.
+* ``keypair_name``: the name of the keypair to use when creating a new
+  instance on the cloud. If it's not found, a new keypair with this
+  name and the key stored in ``public_key`` will be used. Please note
+  that if the keypair exists already on the cloud but the associated
+  public key is different from the one stored in ``public_key``, then
+  an error is raised and the resource will not be used.
 
-  * ``public_key``: public key to use when creating the
-    keypair. Please note that GC3Pie will assume that the
-    corresponding private key is stored on a file with the same path
-    but without the ``.pub`` extension. This private key is necessary
-    in order to access the virtual machines created on the cloud.
-    **Amazon users**: Please note that Amazon does not accept **DSA**
-    keys; use RSA keys only for Amazon resources.
+* ``public_key``: public key to use when creating the keypair.
+  
+  .. note::
 
-  * ``vm_auth``: the name of a valid ``auth`` stanza used to connect
-    to the virtual machine.
+    GC3Pie assumes that the corresponding private key is stored on a
+    file with the same path but without the ``.pub`` extension. This
+    private key is necessary in order to access the virtual machines
+    created on the cloud.
 
-  * ``instance_type``: the instance type (aka *flavor*, aka *size*)
-    you want to use for your virtual machines by default.
+  .. note::
+   
+    **For Amazon AWS users**: Please note that AWS EC2 does not accept
+    *DSA* keys; use RSA keys only for AWS resources.
 
-  * ``<application>_instance_type``: you can override the default
-    instance type for a specific application by defining an entry in
-    the configuration file for that application. For example::
+* ``vm_auth``: the name of a valid ``auth`` stanza used to connect to
+  the virtual machine.
+
+* ``instance_type``: the instance type (aka *flavor*, aka *size*) you
+  want to use for your virtual machines by default.
+
+* ``<application>_instance_type``: you can override the default
+  instance type for a specific application by defining an entry in the
+  configuration file for that application. For example::
 
         instance_type=m1.tiny
         gc_gps_instance_type=m1.large
 
-    will use instance type ``m1.large`` for the ``gc_gps`` GC3Pie
-    application, and ``m1.tiny`` for all the other applications.
+  will use instance type ``m1.large`` for the ``gc_gps`` GC3Pie
+  application, and ``m1.tiny`` for all the other applications.
 
-  * ``image_id``: the **ami-id** of the image you want to
-    use. OpenStack users: please note that the ID you will find on the
-    web interface **is not** the *ami-id*. To get the *ami-id* of an
-    image you have to use the command ``euca-describe-images`` from
-    the ``euca2ools`` package.
+* ``image_id``: the **ami-id** of the image you want to use.
 
-    For `Hobbes`_ users: all virtual machines distributed by the GC3
-    team are in this `list of appliances`_ with the corresponding
-    ami-id.
+* ``<application>_image_id``: override the generic ``image_id`` for a
+  specific application.
 
-  * ``<application>_image_id``: you can override the default image id
-    for a specific application by defining an entry in the
-    configuration file for that specific application. For example::
+  For example::
 
       image_id=ami-00000048
       gc_gps_image_id=ami-0000002a
 
-    will use the image ``ami-0000002a`` for ``gc_gps`` and image
-    ``ami-00000048`` for all other applications.
+  will make GC3Pie use the image ``ami-0000002a`` when running
+  ``gc_gps``, and image ``ami-00000048`` for all other applications.
 
-  * ``security_group_name``: the name of the security group to use. If
-    not found, it will be created using the rules found in
-    ``security_group_rules``. If the security group is found but some
-    of the rules in ``security_group_rules`` are not present, they
-    will be added to the security groups. Please note that if the
-    security group defines some rule which is not listed in
-    ``security_group_rules`` it will **not** be removed from the
-    security group.
+* ``security_group_name``: name of the `security group
+  <http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html>`_
+  to associate with VMs started by GC3Pie.
 
-  * ``security_group_rules``: comma separated list of security rules
-    the ``security_group`` must have. Each rule is in the form::
+  If the named security group cannot be found, it will be created
+  using the rules found in ``security_group_rules``. If the security
+  group is found but some of the rules in ``security_group_rules`` are
+  not present, they will be added to the security groups. Additional
+  rules, which are listed in the EC2 console but not included in
+  ``security_group_rules``, will *not* be removed from the security
+  group.
+
+* ``security_group_rules``: comma separated list of security rules
+  the ``security_group`` must have.
+
+  Each rule has the form::
 
       PROTOCOL:PORT_RANGE_START:PORT_RANGE_END:IP_NETWORK
 
-    where:
+  where:
 
-    -  ``PROTOCOL`` can be one of ``tcp``, ``udp``, ``icmp``
-    - ``PORT_RANGE_START`` and ``PORT_RANGE_END`` are integers and
-      define the range of ports to allow. If ``PROTOCOL`` is ``icmp``
-      please use ``-1`` for both values since in ``icmp`` there is no
-      concept of *port*.
-    - ``IP_NETWORK`` is a range of IP to allow in the form
-      ``A.B.C.D/N``.
+  -  ``PROTOCOL`` is one of ``tcp``, ``udp``, ``icmp``;
+  - ``PORT_RANGE_START`` and ``PORT_RANGE_END`` are integers and
+    define the range of ports to allow. If ``PROTOCOL`` is ``icmp``
+    please use ``-1`` for both values since in ``icmp`` there is no
+    concept of *port*.
+  - ``IP_NETWORK`` is a range of IP to allow in the form
+    ``A.B.C.D/N``.
 
-    For instance, to allow access to the virtual machine from *any*
-    machine in the internet you can use::
+  For instance, to allow SSH access to the virtual machine from *any*
+  machine in the internet you can use::
 
-      tcp:22:22:0.0.0.0/0
+      security_group_rules = tcp:22:22:0.0.0.0/0
 
-    Please note that in order to be able to access the created virtual
-    machines GC3Pie **needs** to be able to connect via ssh, so the
-    above rule is probably necessary in any gc3pie configuration. (of
-    course, you can allow only your IP address or the IPs of your
-    institution)
+  .. note::
 
-  * ``vm_pool_max_size``: the maximum number of Virtual Machine GC3Pie
-    will start on this cloud. If `0`, there is no predefined limit to
-    the number of virtual machines GC3Pie will spawn.
+     In order to be able to access the virtual machines it created,
+     GC3Pie **needs** to be able to connect via SSH, so a rule like
+     the above is probably necessary in any GC3Pie configuration. For
+     better security, it is wise to only allow the IP address or the
+     range of IP addresses in use at your institution.
 
-  * ``user_data``: the *content* of a script that will run after the
-    startup of the machine. For instance, to automatically upgrade a
-    ubuntu machine after startup you can use::
+* ``vm_pool_max_size``: the maximum number of Virtual Machine GC3Pie
+  will start on this cloud. If `0` then there is no predefined limit
+  to the number of virtual machines that GC3Pie can spawn.
+
+* ``user_data``: the *content* of a script that will run after the
+  startup of the machine. For instance, to automatically upgrade a
+  ubuntu machine after startup you can use::
 
       user_data=#!/bin/bash
         aptitude -y update
         aptitude -y safe-upgrade
 
-    Please note that if you need to span over multiple lines you have
-    to indent the lines after ``user_data``, as any indented line in a
-    configuration file is interpreted as a continuation of the
-    previous line.
+  .. note::
 
-  * ``<application>_user_data``: you can override the default userdata
-    for a specific application by defining an entry in the
-    configuration file for that specific application. For example::
+     When entering multi-line scripts, lines after the first one
+     (where ``user_data=`` is) *must* be indented, i.e., begin with
+     one or more spaces.
+
+* ``<application>_user_data``: override the generic ``user_data`` for
+  a specific application.
+
+  For example::
 
       # user_data=
       warholize_user_data = #!/bin/bash
-        aptitude update && aptitude -y install imagemagick
+        aptitude -y update && aptitude -y install imagemagick
 
-    will install `imagemagick` only for the `warholize` application.
-
-.. _boto: https://github.com/boto/boto
+  will install the ``imagemagick`` package only for VMs meant to run
+  the ``warholize`` application.
 
 
 Example ``resource`` sections
@@ -788,4 +927,3 @@ file.
 
 
 .. _`Hobbes`: http://www.gc3.uzh.ch/infrastructure/hobbes
-.. _`list of appliances`: http://www.gc3.uzh.ch/infrastructure/hobbes/appliances
