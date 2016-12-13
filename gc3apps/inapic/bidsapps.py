@@ -111,7 +111,7 @@ class BidsAppsApplication(Application):
         arguments="docker images"
 
         # fixme
-        arguments = "echo %s > output/text.txt"%arguments
+        arguments = "%s > output/text.txt"%arguments
         print(arguments)
         # ""./%s %s %s %s" % (inputs[gnift_wrapper_sh],
         #                             subject,
