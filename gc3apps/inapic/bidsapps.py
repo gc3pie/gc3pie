@@ -170,6 +170,7 @@ class BidsAppsScript(SessionBasedScript):
 
         extra_args = extra.copy()
         extra_args['jobname'] = "test"
+        extra_args['output_dir'] = self.params.output
 
         tasks.append(BidsAppsApplication(
             "test",self.params.bids_input_folder,
