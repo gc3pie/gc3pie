@@ -171,9 +171,11 @@ class BidsAppsScript(SessionBasedScript):
         extra_args = extra.copy()
         extra_args['jobname'] = "test"
         extra_args['output_dir'] = self.params.output
-
-        for subject_id in self.get_input_subjects(
-                self.params.bids_input_folder):
+        subject_list = self.get_input_subjects(
+                self.params.bids_input_folder)
+        print("XXXXXXXXXX")
+        print(subject_list)
+        for subject_id in subject_list:
             tasks.append(BidsAppsApplication(
                 subject_id,
                 self.params.bids_input_folder,
