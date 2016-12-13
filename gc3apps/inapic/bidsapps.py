@@ -107,7 +107,7 @@ class BidsAppsApplication(Application):
             docker_image=docker_image)
 
         # runscript = runscript, runscript_args = runscript_args)
-        wf_cmd = "echo $PATH"
+        wf_cmd = "echo $DOCKER_IMAGE"
 
         cmd = "{docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
                                              wf_cmd=wf_cmd)
