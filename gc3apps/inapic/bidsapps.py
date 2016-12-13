@@ -83,7 +83,7 @@ class BidsAppsApplication(Application):
     """
     application_name = 'bidsapps'
 
-    def __init__(self, subject, bids_input_folder,
+    def __init__(self, subject_id, bids_input_folder,
                  bids_output_folder,
                  docker_image,
                  **extra_args):
@@ -107,7 +107,7 @@ class BidsAppsApplication(Application):
             docker_image=docker_image)
 
         # runscript = runscript, runscript_args = runscript_args)
-        wf_cmd = "echo $DOCKER_IMAGE"
+        wf_cmd = "bash e.sh {subject_id}".format(subject_id=subject_id)
 
         cmd = "{docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
                                              wf_cmd=wf_cmd)
@@ -172,11 +172,14 @@ class BidsAppsScript(SessionBasedScript):
         extra_args['jobname'] = "test"
         extra_args['output_dir'] = self.params.output
 
-        tasks.append(BidsAppsApplication(
-            "test", self.params.bids_input_folder,
-            self.params.bids_output_folder,
-            self.params.docker_image,
-            **extra_args))
+        for subject_id in self.get_input_subjects(
+                self.params.bids_input_folder):
+            tasks.append(BidsAppsApplication(
+                subject_id,
+                self.params.bids_input_folder,
+                self.params.bids_output_folder,
+                self.params.docker_image,
+                **extra_args))
         # fixme
         # for subject_id in self.get_input_subjects(
         #         self.params.bids_input_folder):
