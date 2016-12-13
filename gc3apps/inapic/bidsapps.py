@@ -106,8 +106,9 @@ class BidsAppsApplication(Application):
         #                 docker_container=docker_container,
         #                 runscript=runscript, runscript_args=runscript_args)
 
-        arguments = "docker run --rm -ti  {bids_input_folder}".format(
-            bids_input_folder=bids_input_folder)
+        #arguments = "docker run --rm -ti  {bids_input_folder}".format(
+        #    bids_input_folder=bids_input_folder)
+        arguments="docker images"
 
         # fixme
         arguments = "echo %s > output/text.txt"%arguments
