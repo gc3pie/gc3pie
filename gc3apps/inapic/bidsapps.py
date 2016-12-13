@@ -158,9 +158,8 @@ class BidsAppsScript(SessionBasedScript):
                        dest="bids_input_folder", default=None,
                        help="Root localtion of input data. "
                             "Note: expects folder in BIDS format.")
-       # self.add_param("-x", "--executable", metavar="PATH", #type=executable_file,
-       #                 dest="executable", default=None,
-       #                 help="Path to the GEOtop executable file.")
+
+
     def new_tasks(self, extra):
         """
         For each input folder, create an instance of GniftApplication
@@ -169,14 +168,21 @@ class BidsAppsScript(SessionBasedScript):
 
         print(self.params.bids_input_folder)
 
-        for subject_id in self.get_input_subjects(
-                self.params.bids_input_folder):
-            extra_args = extra.copy()
-            extra_args['jobname'] = subject_id
+        extra_args = extra.copy()
+        extra_args['jobname'] = "test"
 
-            tasks.append(BidsAppsApplication(
-                subject_id,
-                **extra_args))
+        tasks.append(BidsAppsApplication(
+            "test",self.params.bids_input_folder,
+            **extra_args))
+        # fixme
+        # for subject_id in self.get_input_subjects(
+        #         self.params.bids_input_folder):
+        #     extra_args = extra.copy()
+        #     extra_args['jobname'] = subject_id
+        #
+        #     tasks.append(BidsAppsApplication(
+        #         subject_id,
+        #         **extra_args))
 
         return tasks
 
