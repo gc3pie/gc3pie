@@ -46,6 +46,7 @@ __docformat__ = 'reStructuredText'
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
     import bidsapps
+
     bidsapps.BidsAppsScript().run()
 
 import os
@@ -83,8 +84,8 @@ class BidsAppsApplication(Application):
     application_name = 'bidsapps'
 
     def __init__(self, subject, bids_input_folder,
-                 #output_folder,
-                 #docker_container, runscript, runscript_args,
+                 bids_output_folder,
+                 docker_image,
                  **extra_args):
         self.output_dir = []  # extra_args['output_dir']
 
@@ -92,40 +93,33 @@ class BidsAppsApplication(Application):
         outputs = dict()
         self.output_dir = extra_args['output_dir']
 
-        #fixme
-        # docker_input_folder_str = "{bids_input_folder}:/bids_dataset:ro" \
-        #     .format(bids_input_folder=bids_input_folder)
-        #
-        # docker_output_folder_str = "{output_folder}:/outputs" \
-        #     .format(output_folder=output_folder)
-        #
-        # arguments = "docker run --rm -ti " + \
-        #             "-v {} ".format(docker_input_folder_str) + \
-        #             "-v {} ".format(docker_output_folder_str) + \
-        #             "{docker_container} {runscript} {runscript_args}".format(
-        #                 docker_container=docker_container,
-        #                 runscript=runscript, runscript_args=runscript_args)
-
-        #arguments = "docker run --rm -ti  {bids_input_folder}".format(
-        #    bids_input_folder=bids_input_folder)
-        arguments="docker images"
-
         # fixme
-        arguments = "%s > output/text.txt"%arguments
-        print(arguments)
-        # ""./%s %s %s %s" % (inputs[gnift_wrapper_sh],
-        #                             subject,
-        #                             DEFAULT_REMOTE_INPUT_FOLDER,
-        #                             DEFAULT_REMOTE_OUTPUT_FOLDER)
 
-        Application.__init__(
-            self,
-            arguments=arguments,
-            inputs=[],
-            outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
-            stdout='bidsapps.log',
-            join=True,
-            **extra_args)
+        docker_cmd_input_mapping = "{bids_input_folder}:/data/in:ro" \
+            .format(bids_input_folder=bids_input_folder)
+
+        docker_cmd_output_mapping = "{bids_output_folder}:/data/out" \
+            .format(bids_output_folder=bids_output_folder)
+        docker_mappings = "-v %s -v %s " % (docker_cmd_input_mapping,
+                                            docker_cmd_output_mapping)
+        docker_cmd = "docker run {docker_mappings} {docker_image}".format(
+            docker_mappings=docker_mappings,
+            docker_image=docker_image)
+
+        # runscript = runscript, runscript_args = runscript_args)
+        wf_cmd = "echo $PATH"
+
+        cmd = "{docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
+                                             wf_cmd=wf_cmd)
+
+        Application.__init__(self,
+                             arguments=cmd,
+                             inputs=[],
+                             outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
+                             stdout='bidsapps.log',
+                             join=True,
+                             **extra_args)
+
 
 
 #
@@ -155,11 +149,16 @@ class BidsAppsScript(SessionBasedScript):
         )
 
     def setup_args(self):
-        self.add_param("-i", "--bids_input_folder", type=str,
+        self.add_param("-bi", "--bids_input_folder", type=str,
                        dest="bids_input_folder", default=None,
-                       help="Root localtion of input data. "
+                       help="Root location of input data. "
                             "Note: expects folder in BIDS format.")
-
+        self.add_param("-bo", "--bids_output_folder", type=str,
+                       dest="bids_output_folder", default=None,
+                       help="xxx")
+        self.add_param("-di", "--docker_image", type=str,
+                       dest="docker_image", default=None,
+                       help="xxx")
 
     def new_tasks(self, extra):
         """
@@ -174,7 +173,9 @@ class BidsAppsScript(SessionBasedScript):
         extra_args['output_dir'] = self.params.output
 
         tasks.append(BidsAppsApplication(
-            "test",self.params.bids_input_folder,
+            "test", self.params.bids_input_folder,
+            self.params.bids_output_folder,
+            self.params.docker_image,
             **extra_args))
         # fixme
         # for subject_id in self.get_input_subjects(
