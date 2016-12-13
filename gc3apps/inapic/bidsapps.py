@@ -167,6 +167,8 @@ class BidsAppsScript(SessionBasedScript):
         """
         tasks = []
 
+        print(self.params.bids_input_folder)
+
         for subject_id in self.get_input_subjects(
                 self.params.bids_input_folder):
             extra_args = extra.copy()
