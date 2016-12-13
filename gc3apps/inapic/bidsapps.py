@@ -83,7 +83,9 @@ class BidsAppsApplication(Application):
     """
     application_name = 'bidsapps'
 
-    def __init__(self, subject_id, bids_input_folder,
+    def __init__(self,
+                 level,
+                 subject_id, bids_input_folder,
                  bids_output_folder,
                  docker_image,
                  **extra_args):
@@ -106,22 +108,27 @@ class BidsAppsApplication(Application):
             docker_mappings=docker_mappings,
             docker_image=docker_image)
 
-        # runscript = runscript, runscript_args = runscript_args)
-        wf_cmd = "bash e.sh {subject_id}".format(subject_id=subject_id)
+        if level == "participant":
+            # runscript = runscript, runscript_args = runscript_args)
+            wf_cmd = "bash e.sh {level} --participant_label " \
+                     "{subject_id}".format(level=level,
+                                           subject_id=subject_id)
 
-        cmd = "{docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
-                                             wf_cmd=wf_cmd)
+            cmd = "{docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
+                                                 wf_cmd=wf_cmd)
 
-        Application.__init__(self,
-                             arguments=cmd,
-                             inputs=[],
-                             outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
-                             stdout='bidsapps.log',
-                             join=True,
-                             **extra_args)
+            Application.__init__(self,
+                                 arguments=cmd,
+                                 inputs=[],
+                                 outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
+                                 stdout='bidsapps.log',
+                                 join=True,
+                                 **extra_args)
 
 
-#
+            #
+
+
 class BidsAppsScript(SessionBasedScript):
     """
     
@@ -148,48 +155,48 @@ class BidsAppsScript(SessionBasedScript):
         )
 
     def setup_args(self):
-        self.add_param("-bi", "--bids_input_folder", type=str,
-                       dest="bids_input_folder", default=None,
-                       help="Root location of input data. "
-                            "Note: expects folder in BIDS format.")
-        self.add_param("-bo", "--bids_output_folder", type=str,
-                       dest="bids_output_folder", default=None,
-                       help="xxx")
         self.add_param("-di", "--docker_image", type=str,
                        dest="docker_image", default=None,
                        help="xxx")
+
+        self.add_param("-bi", "--bids_dir", type=str,
+                       dest="bids_input_folder", default=None,
+                       help="Root location of input data. "
+                            "Note: expects folder in BIDS format.")
+        self.add_param("-bo", "--output_dir", type=str,
+                       dest="bids_output_folder", default=None,
+                       help="xxx")
+        self.add_param("-l", "--level", type=str, dest="level", default=None,
+                       help="participant: 1st level"
+                            "group: second level")
+
+        self.add_param("--n_cpus", type=str, dest="n_cpus", default=None,
+                       help="n_cpus")
+        self.add_param("--mem_mb", type=str, dest="mem_mb", default=None,
+                       help="mem_mb")
 
     def new_tasks(self, extra):
         """
         For each input folder, create an instance of GniftApplication
         """
         tasks = []
+        subject_list = self.get_input_subjects(self.params.bids_input_folder)
 
-        subject_list = self.get_input_subjects(
-            self.params.bids_input_folder)
+        if self.params.level == "participant":
+            for subject_id in subject_list:
+                extra_args = extra.copy()
+                extra_args['jobname'] = "job." + subject_id
+                extra_args['output_dir'] = self.params.output
+                extra_args['output_dir'] = extra_args['output_dir'].replace(
+                    'NAME', 'run_%s' % extra_args['jobname'])
 
-        for subject_id in subject_list:
-            extra_args = extra.copy()
-            extra_args['jobname'] = "job."+subject_id
-            extra_args['output_dir'] = self.params.output
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
-                                                                        'run_%s' % extra_args['jobname'])
-
-            tasks.append(BidsAppsApplication(
-                subject_id,
-                self.params.bids_input_folder,
-                self.params.bids_output_folder,
-                self.params.docker_image,
-                **extra_args))
-        # fixme
-        # for subject_id in self.get_input_subjects(
-        #         self.params.bids_input_folder):
-        #     extra_args = extra.copy()
-        #     extra_args['jobname'] = subject_id
-        #
-        #     tasks.append(BidsAppsApplication(
-        #         subject_id,
-        #         **extra_args))
+                tasks.append(BidsAppsApplication(
+                    self.params.level,
+                    subject_id,
+                    self.params.bids_input_folder,
+                    self.params.bids_output_folder,
+                    self.params.docker_image,
+                    **extra_args))
 
         return tasks
 
