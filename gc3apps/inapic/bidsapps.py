@@ -183,15 +183,15 @@ class BidsAppsScript(SessionBasedScript):
         self.add_param("-ra", "--runscript_args", type=str,
                        dest="runscript_args",
                        default=None,
-                       help='add application-specific arguments passed to the '
+                       help='BIDSAPPS: add application-specific arguments '
+                            'passed to the '
                             'runscripts in qotation marks: '
                             'e.g. \" --license_key xx\" ')
 
-
         self.add_param("--n_cpus", type=int, dest="n_cpus",
-                       help="n_cpus")
+                       help="BIDSAPPS: n_cpus")
         self.add_param("--mem_mb", type=int, dest="mem_mb", default=None,
-                       help="mem_mb")
+                       help="BIDSAPPS: mem_mb")
 
     def new_tasks(self, extra):
         """
