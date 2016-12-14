@@ -200,7 +200,7 @@ class BidsAppsScript(SessionBasedScript):
         tasks = []
         subject_list = self.get_input_subjects(self.params.bids_input_folder)
 
-        if self.params.level == "participant":
+        if self.params.analysis_level == "participant":
             for subject_id in subject_list:
                 extra_args = extra.copy()
                 extra_args['jobname'] = "job." + subject_id
