@@ -33,6 +33,10 @@ Input parameters consists of:
 Options:
 """
 
+# fixme
+# how to write to stdout within application, e.g. print cmd
+
+
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
@@ -88,6 +92,7 @@ class BidsAppsApplication(Application):
                  subject_id, bids_input_folder,
                  bids_output_folder,
                  docker_image,
+                 runscript_args,
                  **extra_args):
         self.output_dir = []  # extra_args['output_dir']
 
@@ -111,9 +116,10 @@ class BidsAppsApplication(Application):
         if level == "participant":
             # runscript = runscript, runscript_args = runscript_args)
             wf_cmd = "/data/in  /data/out {level} " \
-                     "--participant_label {subject_id} --license_key xx" \
+                     "--participant_label {subject_id} {runscript_args}" \
                      "".format(level=level,
-                                                               subject_id=subject_id)
+                               subject_id=subject_id,
+                               runscript_args=runscript_args)
 
             cmd = "{docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
                                                  wf_cmd=wf_cmd)
@@ -173,6 +179,16 @@ class BidsAppsScript(SessionBasedScript):
                        help="participant: 1st level"
                             "group: second level")
 
+        self.add_param("-ra", "--runscript_args", type=str,
+                       dest="runscript_args",
+                       default=None,
+                       help='add application-specific arguments passed to the '
+                            'runscripts in qotation marks: '
+                            'e.g. \" --license_key xx\" ')
+
+        self.add_param("testxx", type=str, dest="testxx", default=None,
+                       help="testxx")
+
         self.add_param("--n_cpus", type=str, dest="n_cpus", default=None,
                        help="n_cpus")
         self.add_param("--mem_mb", type=str, dest="mem_mb", default=None,
@@ -199,6 +215,7 @@ class BidsAppsScript(SessionBasedScript):
                     self.params.bids_input_folder,
                     self.params.bids_output_folder,
                     self.params.docker_image,
+                    self.params.runscript_args,
                     **extra_args))
 
         return tasks
