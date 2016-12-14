@@ -111,7 +111,8 @@ class BidsAppsApplication(Application):
         if level == "participant":
             # runscript = runscript, runscript_args = runscript_args)
             wf_cmd = "/data/in  /data/out {level} " \
-                     "--participant_label {subject_id}".format(level=level,
+                     "--participant_label {subject_id} --license_key xx" \
+                     "".format(level=level,
                                                                subject_id=subject_id)
 
             cmd = "{docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
