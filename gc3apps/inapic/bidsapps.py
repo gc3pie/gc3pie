@@ -34,8 +34,8 @@ Options:
 """
 
 # fixme
-# how to write to stdout within application, e.g. print cmd
-
+# how to write to stdout within application, e.g. print cmd. log?
+# specify mem reqs?
 
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
@@ -122,13 +122,18 @@ class BidsAppsApplication(Application):
                      "".format(analysis_level=analysis_level,
                                subject_id=subject_id,
                                runscript_args=runscript_args)
+            if n_cpus:
+                wf_cmd += " --n_cpus %s" % n_cpus
+            if mem_mb:
+                wf_cmd += " --mem_mb %s" % mem_mb
 
             cmd = "{docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
                                                  wf_cmd=wf_cmd)
 
-            gc3libs.log.log(20, "xxx xxx CMD:\n%s" % cmd)
+            # gc3libs.log.log(20, "xxx xxx RUNNING:\n%s" % cmd)
+            echo_cmd = "echo %s;"%cmd
             Application.__init__(self,
-                                 arguments=cmd,
+                                 arguments=echo_cmd + cmd,
                                  inputs=[],
                                  outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
                                  stdout='bidsapps.log',
