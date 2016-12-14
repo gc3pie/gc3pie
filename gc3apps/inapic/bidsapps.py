@@ -70,8 +70,7 @@ import gc3libs.exceptions
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript, executable_file
 import gc3libs.utils
-from gc3libs.quantity import Memory, kB, MB, MiB, GB, Duration, hours, minutes, \
-    seconds
+from gc3libs.quantity import Memory, kB, MB, MiB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
 DEFAULT_CORES = 1
@@ -104,34 +103,29 @@ class BidsAppsApplication(Application):
 
         # fixme
 
-        docker_cmd_input_mapping = "{bids_input_folder}:/data/in:ro" \
-            .format(bids_input_folder=bids_input_folder)
+        docker_cmd_input_mapping = "{bids_input_folder}:/data/in:ro".format(bids_input_folder=bids_input_folder)
 
-        docker_cmd_output_mapping = "{bids_output_folder}:/data/out" \
-            .format(bids_output_folder=bids_output_folder)
-        docker_mappings = "-v %s -v %s " % (docker_cmd_input_mapping,
-                                            docker_cmd_output_mapping)
-        docker_cmd = "docker run {docker_mappings} {docker_image}".format(
-            docker_mappings=docker_mappings,
-            docker_image=docker_image)
+        docker_cmd_output_mapping = "{bids_output_folder}:/data/out".format(bids_output_folder=bids_output_folder)
+
+        docker_mappings = "-v %s -v %s " % (docker_cmd_input_mapping, docker_cmd_output_mapping)
+        docker_cmd = "docker run {docker_mappings} {docker_image}".format(docker_mappings=docker_mappings,
+                                                                          docker_image=docker_image)
 
         if analysis_level == "participant":
             # runscript = runscript, runscript_args = runscript_args)
             wf_cmd = "/data/in  /data/out {analysis_level} " \
-                     "--participant_label {subject_id} {runscript_args} " \
-                     "".format(analysis_level=analysis_level,
-                               subject_id=subject_id,
-                               runscript_args=runscript_args)
+                     "--participant_label {subject_id} {runscript_args} ".format(analysis_level=analysis_level,
+                                                                                 subject_id=subject_id,
+                                                                                 runscript_args=runscript_args)
             if n_cpus:
                 wf_cmd += " --n_cpus %s" % n_cpus
             if mem_mb:
                 wf_cmd += " --mem_mb %s" % mem_mb
 
-            cmd = " {docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
-                                                 wf_cmd=wf_cmd)
+            cmd = " {docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd, wf_cmd=wf_cmd)
 
             # gc3libs.log.log(20, "xxx xxx RUNNING:\n%s" % cmd)
-            echo_cmd = "echo xxx RUN;echo %s; echo;"%cmd
+            echo_cmd = "echo xxx RUN;echo %s; echo;" % cmd
             Application.__init__(self,
                                  arguments=echo_cmd + cmd,
                                  inputs=[],
@@ -170,33 +164,24 @@ class BidsAppsScript(SessionBasedScript):
         )
 
     def setup_args(self):
-        self.add_param("docker_image", type=str,
-                       help="xxx")
+        self.add_param("docker_image", type=str, help="xxx")
 
-        self.add_param("bids_input_folder", type=str,
-                       help="Root location of input data. "
-                            "Note: expects folder in BIDS format.")
+        self.add_param("bids_input_folder", type=str, help="Root location of input data. Note: expects folder in "
+                                                           "BIDS format.")
 
-        self.add_param("bids_output_folder", type=str,
-                       help="xxx")
+        self.add_param("bids_output_folder", type=str, help="xxx")
 
-        self.add_param("analysis_level", type=str,
-                       choices=['participant', 'group'],
+        self.add_param("analysis_level", type=str, choices=['participant', 'group'],
                        help="analysis_level: participant: 1st level\n"
                             "group: second level")
 
-        self.add_param("-ra", "--runscript_args", type=str,
-                       dest="runscript_args",
-                       default=None,
+        self.add_param("-ra", "--runscript_args", type=str, dest="runscript_args", default=None,
                        help='BIDSAPPS: add application-specific arguments '
-                            'passed to the '
-                            'runscripts in qotation marks: '
+                            'passed to the runscripts in qotation marks: '
                             'e.g. \" --license_key xx\" ')
 
-        self.add_param("--n_cpus", type=int, dest="n_cpus",
-                       help="BIDSAPPS: n_cpus")
-        self.add_param("--mem_mb", type=int, dest="mem_mb", default=None,
-                       help="BIDSAPPS: mem_mb")
+        self.add_param("--n_cpus", type=int, dest="n_cpus", help="BIDSAPPS: n_cpus")
+        self.add_param("--mem_mb", type=int, dest="mem_mb", default=None, help="BIDSAPPS: mem_mb")
 
     def new_tasks(self, extra):
         """
@@ -210,8 +195,7 @@ class BidsAppsScript(SessionBasedScript):
                 extra_args = extra.copy()
                 extra_args['jobname'] = "job." + subject_id
                 extra_args['output_dir'] = self.params.output
-                extra_args['output_dir'] = extra_args['output_dir'].replace(
-                    'NAME', 'run_%s' % extra_args['jobname'])
+                extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 'run_%s' % extra_args['jobname'])
 
                 tasks.append(BidsAppsApplication(
                     self.params.analysis_level,
@@ -222,7 +206,6 @@ class BidsAppsScript(SessionBasedScript):
                     self.params.runscript_args,
                     self.params.n_cpus,
                     self.params.mem_mb,
-
                     **extra_args))
 
         return tasks
