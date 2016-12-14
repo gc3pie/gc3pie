@@ -74,7 +74,7 @@ DEFAULT_CORES = 1
 DEFAULT_MEMORY = Memory(3000, MB)
 
 DEFAULT_REMOTE_INPUT_FOLDER = "./input/"
-DEFAULT_REMOTE_OUTPUT_FOLDER = "./output"
+DEFAULT_REMOTE_OUTPUT_FOLDER = "~/data/output"
 
 
 ## custom application class
@@ -110,9 +110,10 @@ class BidsAppsApplication(Application):
 
         if level == "participant":
             # runscript = runscript, runscript_args = runscript_args)
-            wf_cmd = "bash e.sh {level} --participant_label " \
-                     "{subject_id}".format(level=level,
-                                           subject_id=subject_id)
+            wf_cmd = "bash e.sh " \
+                     "/data/in  /data/out {level} " \
+                     "--participant_label {subject_id}".format(level=level,
+                                                               subject_id=subject_id)
 
             cmd = "{docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
                                                  wf_cmd=wf_cmd)
@@ -166,9 +167,12 @@ class BidsAppsScript(SessionBasedScript):
         self.add_param("-bo", "--output_dir", type=str,
                        dest="bids_output_folder", default=None,
                        help="xxx")
-        self.add_param("-l", "--level", type=str, dest="level", default=None,
+        self.add_param("-l", "--analysis_level", type=str, dest="level",
+                       default=None,
+                       choices=['participant', 'group'],
                        help="participant: 1st level"
                             "group: second level")
+
 
         self.add_param("--n_cpus", type=str, dest="n_cpus", default=None,
                        help="n_cpus")
