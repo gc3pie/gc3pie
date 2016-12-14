@@ -186,7 +186,7 @@ class BidsAppsScript(SessionBasedScript):
                             'runscripts in qotation marks: '
                             'e.g. \" --license_key xx\" ')
 
-        self.add_param("testxx", type=str, dest="testxx", default=None,
+        self.add_param("testxx", type=str, default=None,
                        help="testxx")
 
         self.add_param("--n_cpus", type=str, dest="n_cpus", default=None,
