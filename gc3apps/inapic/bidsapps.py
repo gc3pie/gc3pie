@@ -162,19 +162,19 @@ class BidsAppsScript(SessionBasedScript):
         )
 
     def setup_args(self):
-        self.add_param("-di", "--docker_image", type=str,
+        self.add_param("-di", "--docker_image", type=str, required=True,
                        dest="docker_image", default=None,
                        help="xxx")
 
-        self.add_param("-bi", "--bids_dir", type=str,
+        self.add_param("-bi", "--bids_dir", type=str, required=True,
                        dest="bids_input_folder", default=None,
                        help="Root location of input data. "
                             "Note: expects folder in BIDS format.")
-        self.add_param("-bo", "--output_dir", type=str,
+        self.add_param("-bo", "--output_dir", type=str, required=True,
                        dest="bids_output_folder", default=None,
                        help="xxx")
-        self.add_param("-l", "--analysis_level", type=str, dest="level",
-                       default=None,
+        self.add_param("-l", "--analysis_level", type=str, required=True,
+                       dest="level", default=None,
                        choices=['participant', 'group'],
                        help="participant: 1st level"
                             "group: second level")
@@ -185,10 +185,6 @@ class BidsAppsScript(SessionBasedScript):
                        help='add application-specific arguments passed to the '
                             'runscripts in qotation marks: '
                             'e.g. \" --license_key xx\" ')
-        # fixme make mandatory args positional:
-        #
-        # self.add_param("testxx", type=str, default=None,
-        #                help="testxx")
 
         self.add_param("--n_cpus", type=str, dest="n_cpus", default=None,
                        help="n_cpus")
