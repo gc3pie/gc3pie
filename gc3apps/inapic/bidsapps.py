@@ -110,8 +110,7 @@ class BidsAppsApplication(Application):
 
         if level == "participant":
             # runscript = runscript, runscript_args = runscript_args)
-            wf_cmd = "bash e.sh " \
-                     "/data/in  /data/out {level} " \
+            wf_cmd = "/data/in  /data/out {level} " \
                      "--participant_label {subject_id}".format(level=level,
                                                                subject_id=subject_id)
 
@@ -172,7 +171,6 @@ class BidsAppsScript(SessionBasedScript):
                        choices=['participant', 'group'],
                        help="participant: 1st level"
                             "group: second level")
-
 
         self.add_param("--n_cpus", type=str, dest="n_cpus", default=None,
                        help="n_cpus")
