@@ -126,7 +126,7 @@ class BidsAppsApplication(Application):
             cmd = "{docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
                                                  wf_cmd=wf_cmd)
 
-            gc3libs.log.log("xxx xxx CMD:\n%s" % cmd)
+            gc3libs.log.log(20, "xxx xxx CMD:\n%s" % cmd)
             Application.__init__(self,
                                  arguments=cmd,
                                  inputs=[],
