@@ -127,7 +127,7 @@ class BidsAppsApplication(Application):
             # gc3libs.log.log(20, "xxx xxx RUNNING:\n%s" % cmd)
             echo_cmd = "echo xxx RUN;echo %s; echo;" % cmd
             Application.__init__(self,
-                                 arguments=cmd,
+                                 arguments=echo_cmd+cmd + ";",
                                  inputs=[],
                                  outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
                                  stdout='bidsapps.log',
@@ -178,7 +178,7 @@ class BidsAppsScript(SessionBasedScript):
         self.add_param("-ra", "--runscript_args", type=str, dest="runscript_args", default=None,
                        help='BIDSAPPS: add application-specific arguments '
                             'passed to the runscripts in qotation marks: '
-                            'e.g. \" --license_key xx\" ')
+                            'e.g. \"--license_key xx\" ')
 
         self.add_param("--n_cpus", type=int, dest="n_cpus", help="BIDSAPPS: n_cpus")
         self.add_param("--mem_mb", type=int, dest="mem_mb", default=None, help="BIDSAPPS: mem_mb")
