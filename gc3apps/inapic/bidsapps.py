@@ -73,7 +73,7 @@ import gc3libs.utils
 from gc3libs.quantity import Memory, kB, MB, MiB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
-DEFAULT_CORES = 1
+DEFAULT_CORES = 2
 DEFAULT_MEMORY = Memory(3000, MB)
 
 DEFAULT_REMOTE_INPUT_FOLDER = "./input/"
@@ -180,7 +180,9 @@ class BidsAppsScript(SessionBasedScript):
                             'passed to the runscripts in qotation marks: '
                             'e.g. \"--license_key xx\" ')
 
-        self.add_param("--n_cpus", type=int, dest="n_cpus", help="BIDSAPPS: n_cpus")
+        # get n_cpus from n_cores
+        #self.add_param("--n_cpus", type=int, dest="n_cpus", help="BIDSAPPS: n_cpus")
+
         self.add_param("--mem_mb", type=int, dest="mem_mb", default=None, help="BIDSAPPS: mem_mb")
 
     def new_tasks(self, extra):
@@ -204,7 +206,7 @@ class BidsAppsScript(SessionBasedScript):
                     self.params.bids_output_folder,
                     self.params.docker_image,
                     self.params.runscript_args,
-                    self.params.n_cpus,
+                    self.params.ncores,
                     self.params.mem_mb,
                     **extra_args))
 
