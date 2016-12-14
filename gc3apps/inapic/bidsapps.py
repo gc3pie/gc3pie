@@ -172,12 +172,12 @@ class BidsAppsScript(SessionBasedScript):
                        help="Root location of input data. "
                             "Note: expects folder in BIDS format.")
 
-        self.add_param("-bids_output_folder",
+        self.add_param("bids_output_folder", type=str,
                        help="xxx")
 
         self.add_param("analysis_level", type=str,
                        choices=['participant', 'group'],
-                       help="participant: 1st level"
+                       help="analysis_level: participant: 1st level\n"
                             "group: second level")
 
         self.add_param("-ra", "--runscript_args", type=str,
