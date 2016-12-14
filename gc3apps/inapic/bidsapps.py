@@ -118,7 +118,7 @@ class BidsAppsApplication(Application):
         if analysis_level == "participant":
             # runscript = runscript, runscript_args = runscript_args)
             wf_cmd = "/data/in  /data/out {analysis_level} " \
-                     "--participant_label {subject_id} {runscript_args}" \
+                     "--participant_label {subject_id} {runscript_args} " \
                      "".format(analysis_level=analysis_level,
                                subject_id=subject_id,
                                runscript_args=runscript_args)
@@ -127,11 +127,11 @@ class BidsAppsApplication(Application):
             if mem_mb:
                 wf_cmd += " --mem_mb %s" % mem_mb
 
-            cmd = "{docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
+            cmd = " {docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd,
                                                  wf_cmd=wf_cmd)
 
             # gc3libs.log.log(20, "xxx xxx RUNNING:\n%s" % cmd)
-            echo_cmd = "echo %s;"%cmd
+            echo_cmd = "echo xxx RUN;echo %s; echo;"%cmd
             Application.__init__(self,
                                  arguments=echo_cmd + cmd,
                                  inputs=[],
