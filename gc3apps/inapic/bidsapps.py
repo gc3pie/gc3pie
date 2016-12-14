@@ -185,9 +185,10 @@ class BidsAppsScript(SessionBasedScript):
                        help='add application-specific arguments passed to the '
                             'runscripts in qotation marks: '
                             'e.g. \" --license_key xx\" ')
-
-        self.add_param("testxx", type=str, default=None,
-                       help="testxx")
+        # fixme make mandatory args positional:
+        #
+        # self.add_param("testxx", type=str, default=None,
+        #                help="testxx")
 
         self.add_param("--n_cpus", type=str, dest="n_cpus", default=None,
                        help="n_cpus")
