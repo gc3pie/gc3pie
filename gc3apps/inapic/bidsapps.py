@@ -127,7 +127,7 @@ class BidsAppsApplication(Application):
             # gc3libs.log.log(20, "xxx xxx RUNNING:\n%s" % cmd)
             echo_cmd = "echo xxx RUN;echo %s; echo;" % cmd
             Application.__init__(self,
-                                 arguments=echo_cmd + cmd,
+                                 arguments=cmd,
                                  inputs=[],
                                  outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
                                  stdout='bidsapps.log',
