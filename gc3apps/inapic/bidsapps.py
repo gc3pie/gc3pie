@@ -35,7 +35,7 @@ Options:
 
 # fixme
 # how to write to stdout within application, e.g. print cmd. log?
-# specify mem reqs?
+# specify mem reqs? -> map script arg to docker cmd
 
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
@@ -104,6 +104,7 @@ class BidsAppsApplication(Application):
         # fixme
         #wrapper = resource_filename(Requirement.parse("gc3pie"), "gc3libs/etc/echo_and_run_cmd.py")
         wrapper = "/home/ubuntu/gtrac_long_repo/gc3pie/gc3libs/etc/echo_and_run_cmd.py"
+        wrapper_filename = "echo_and_run_cmd.py"
 
         inputs[wrapper] = os.path.basename(wrapper)
 
@@ -130,7 +131,7 @@ class BidsAppsApplication(Application):
 
 
             Application.__init__(self,
-                                 arguments="./%s %s" % (wrapper, cmd),
+                                 arguments="./%s %s" % (wrapper_filename, cmd),
                                  inputs=inputs,
                                  outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
                                  stdout='bidsapps.log',
