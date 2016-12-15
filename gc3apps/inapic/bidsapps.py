@@ -104,8 +104,6 @@ class BidsAppsApplication(Application):
         # fixme
         #wrapper = resource_filename(Requirement.parse("gc3pie"), "gc3libs/etc/echo_and_run_cmd.py")
         wrapper = "/home/ubuntu/gtrac_long_repo/gc3pie/gc3libs/etc/echo_and_run_cmd.py"
-        wrapper_filename = "echo_and_run_cmd.py"
-
         inputs[wrapper] = os.path.basename(wrapper)
 
         docker_cmd_input_mapping = "{bids_input_folder}:/data/in:ro".format(bids_input_folder=bids_input_folder)
@@ -131,7 +129,7 @@ class BidsAppsApplication(Application):
 
 
             Application.__init__(self,
-                                 arguments="./%s %s" % (wrapper_filename, cmd),
+                                 arguments="python ./%s %s" % (inputs[wrapper], cmd),
                                  inputs=inputs,
                                  outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
                                  stdout='bidsapps.log',
