@@ -76,7 +76,7 @@ from gc3libs.workflow import RetryableTask
 DEFAULT_CORES = 2
 DEFAULT_MEMORY = Memory(3000, MB)
 
-DEFAULT_REMOTE_INPUT_FOLDER = "./input/"
+DEFAULT_REMOTE_INPUT_FOLDER = "./"
 DEFAULT_REMOTE_OUTPUT_FOLDER = "~/data/output"
 
 
