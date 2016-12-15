@@ -102,6 +102,8 @@ class BidsAppsApplication(Application):
         self.output_dir = extra_args['output_dir']
 
         # fixme
+        wrapper = resource_filename(Requirement.parse("gc3pie"), "gc3libs/etc/echo_and_run_cmd.py")
+        inputs[wrapper] = os.path.basename(wrapper)
 
         docker_cmd_input_mapping = "{bids_input_folder}:/data/in:ro".format(bids_input_folder=bids_input_folder)
 
@@ -124,11 +126,10 @@ class BidsAppsApplication(Application):
 
             cmd = " {docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd, wf_cmd=wf_cmd)
 
-            # gc3libs.log.log(20, "xxx xxx RUNNING:\n%s" % cmd)
-            echo_cmd = "echo xxx RUN;echo %s; echo;" % cmd
+
             Application.__init__(self,
-                                 arguments=cmd,
-                                 inputs=[],
+                                 arguments="./%s %s" % (wrapper, cmd),
+                                 inputs=inputs,
                                  outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
                                  stdout='bidsapps.log',
                                  join=True,
@@ -181,7 +182,7 @@ class BidsAppsScript(SessionBasedScript):
                             'e.g. \"--license_key xx\" ')
 
         # get n_cpus from n_cores
-        #self.add_param("--n_cpus", type=int, dest="n_cpus", help="BIDSAPPS: n_cpus")
+        # self.add_param("--n_cpus", type=int, dest="n_cpus", help="BIDSAPPS: n_cpus")
 
         self.add_param("--mem_mb", type=int, dest="mem_mb", default=None, help="BIDSAPPS: mem_mb")
 
