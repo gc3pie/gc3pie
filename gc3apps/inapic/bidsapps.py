@@ -170,9 +170,6 @@ class BidsAppsScript(SessionBasedScript):
         )
 
     def setup_args(self):
-        # add a `--logfile` synonym for `--output`
-        self.actions['output'].option_strings.append('--logfile_folder')
-
 
         self.add_param("docker_image", type=str, help="xxx")
 
@@ -195,6 +192,13 @@ class BidsAppsScript(SessionBasedScript):
 
         self.add_param("--mem_mb", type=int, dest="mem_mb", default=None, help="BIDSAPPS: mem_mb")
 
+        # add a `--logfile` synonym for `--output`
+        #self.actions['output'].option_strings.append('--logfile_folder')
+
+        self.add_param("-lll", "--logs", type=str, dest="output", default=None,
+                       help='BIDSAPPS: add application-specific arguments '
+                            'passed to the runscripts in qotation marks: '
+                            'e.g. \"--license_key xx\" ')
     def new_tasks(self, extra):
         """
         For each input folder, create an instance of GniftApplication
