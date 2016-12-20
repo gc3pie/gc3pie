@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-#   gnift.py -- Front-end script for running the docking program rDock
+#   bidsapps.py -- Front-end script for running the docking program rDock
 #   over a list of ligand files.
 #
 #   Copyright (C) 2014, 2015 S3IT, University of Zurich
@@ -23,7 +23,7 @@
 
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
-See the output of ``gnift.py --help`` for program usage
+See the output of ``bidsapps.py --help`` for program usage
 instructions.
 
 Input parameters consists of:
@@ -34,10 +34,6 @@ Options:
 """
 
 # fixme
-# how to write to stdout within application, e.g. print cmd. log?
-# why is cmd not printed in .log immediately
-# specify mem reqs? -> map script arg to docker cmd
-# -o -> -log_outptut
 # specify exec instance id & flavour via command, not conf file? no write to conf file
 
 __version__ = 'development version (SVN $Revision$)'
@@ -53,6 +49,7 @@ __docformat__ = 'reStructuredText'
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
     import bidsapps
+
     bidsapps.BidsAppsScript().run()
 
 import os
@@ -62,7 +59,6 @@ import tempfile
 import re
 
 import shutil
-# import csv
 from bids.grabbids import BIDSLayout
 
 from pkg_resources import Requirement, resource_filename
@@ -70,16 +66,16 @@ from pkg_resources import Requirement, resource_filename
 import gc3libs
 import gc3libs.exceptions
 from gc3libs import Application, Run, Task
-from gc3libs.cmdline import SessionBasedScript, executable_file
+from gc3libs.cmdline import SessionBasedScript, executable_file, positive_int
 import gc3libs.utils
 from gc3libs.quantity import Memory, kB, MB, MiB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
 DEFAULT_CORES = 2
-DEFAULT_MEMORY = Memory(3000, MB)
+DEFAULT_MEMORY = Memory(4000, MB)
 
 DEFAULT_REMOTE_INPUT_FOLDER = "./"
-DEFAULT_REMOTE_OUTPUT_FOLDER = "~/data/output"
+DEFAULT_REMOTE_OUTPUT_FOLDER = "./output"
 
 
 ## custom application class
@@ -106,7 +102,7 @@ class BidsAppsApplication(Application):
         self.output_dir = extra_args['output_dir']
 
         # fixme
-        #wrapper = resource_filename(Requirement.parse("gc3pie"), "gc3libs/etc/echo_and_run_cmd.py")
+        # wrapper = resource_filename(Requirement.parse("gc3pie"), "gc3libs/etc/echo_and_run_cmd.py")
         wrapper = "/home/ubuntu/gtrac_long_repo/gc3pie/gc3libs/etc/echo_and_run_cmd.py"
         inputs[wrapper] = os.path.basename(wrapper)
 
@@ -131,7 +127,6 @@ class BidsAppsApplication(Application):
 
             cmd = " {docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd, wf_cmd=wf_cmd)
 
-
             Application.__init__(self,
                                  arguments="python ./%s %s" % (inputs[wrapper], cmd),
                                  inputs=inputs,
@@ -147,7 +142,7 @@ class BidsAppsApplication(Application):
 class BidsAppsScript(SessionBasedScript):
     """
     
-    The ``gnift`` command keeps a record of jobs (submitted, executed
+    The ``bidsapps`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
@@ -170,7 +165,6 @@ class BidsAppsScript(SessionBasedScript):
         )
 
     def setup_args(self):
-
         self.add_param("docker_image", type=str, help="xxx")
 
         self.add_param("bids_input_folder", type=str, help="Root location of input data. Note: expects folder in "
@@ -182,23 +176,31 @@ class BidsAppsScript(SessionBasedScript):
                        help="analysis_level: participant: 1st level\n"
                             "group: second level")
 
+    def setup_options(self):
         self.add_param("-ra", "--runscript_args", type=str, dest="runscript_args", default=None,
                        help='BIDSAPPS: add application-specific arguments '
                             'passed to the runscripts in qotation marks: '
                             'e.g. \"--license_key xx\" ')
 
-        # get n_cpus from n_cores
-        # self.add_param("--n_cpus", type=int, dest="n_cpus", help="BIDSAPPS: n_cpus")
-
-        self.add_param("--mem_mb", type=int, dest="mem_mb", default=None, help="BIDSAPPS: mem_mb")
-
-        # add a `--logfile` synonym for `--output`
-        #self.actions['output'].option_strings.append('--logfile_folder')
-
+        # Overwrite script input options to get more specific help
         self.add_param("-o", "--output", type=str, dest="output", default=None,
-                       help='BIDSAPPS: add application-specific arguments '
-                            'passed to the runscripts in qotation marks: '
-                            'e.g. \"--license_key xx\" ')
+                       help="BIDSAPPS: local folder where logfiles are copied to")
+
+        self.add_param("-c", "--cpu-cores", dest="ncores",
+                       type=positive_int, default=1,  # 1 core
+                       metavar="NUM",
+                       help="Set the number of CPU cores required for each job"
+                            " (default: %(default)s). NUM must be a whole number."
+                            "\nParameter piped into bidsapp n_cpus")
+
+        self.add_param("-m", "--memory-per-core", dest="memory_per_core",
+                       type=Memory, default=2 * GB,  # 2 GB
+                       metavar="GIGABYTES",
+                       help="Set the amount of memory required per execution core;"
+                            " default: %(default)s. Specify this as an integral number"
+                            " followed by a unit, e.g., '512MB' or '4GB'."
+                            "\nParameter piped into bidsapp mem_mb")
+
     def new_tasks(self, extra):
         """
         For each input folder, create an instance of GniftApplication
@@ -209,9 +211,9 @@ class BidsAppsScript(SessionBasedScript):
         if self.params.analysis_level == "participant":
             for subject_id in subject_list:
                 extra_args = extra.copy()
-                extra_args['jobname'] = "job." + subject_id
+                extra_args['jobname'] = subject_id
                 extra_args['output_dir'] = self.params.output
-                extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 'run_%s' % extra_args['jobname'])
+                extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', '%s' % extra_args['jobname'])
 
                 tasks.append(BidsAppsApplication(
                     self.params.analysis_level,
@@ -221,7 +223,7 @@ class BidsAppsScript(SessionBasedScript):
                     self.params.docker_image,
                     self.params.runscript_args,
                     self.params.ncores,
-                    self.params.mem_mb,
+                    self.params.memory_per_core,
                     **extra_args))
 
         return tasks
