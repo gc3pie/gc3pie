@@ -195,7 +195,7 @@ class BidsAppsScript(SessionBasedScript):
         # add a `--logfile` synonym for `--output`
         #self.actions['output'].option_strings.append('--logfile_folder')
 
-        self.add_param("-lll", "--logs", type=str, dest="output", default=None,
+        self.add_param("-o", "--output", type=str, dest="output", default=None,
                        help='BIDSAPPS: add application-specific arguments '
                             'passed to the runscripts in qotation marks: '
                             'e.g. \"--license_key xx\" ')
