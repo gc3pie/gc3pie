@@ -90,9 +90,8 @@ class BidsAppsApplication(Application):
                  bids_output_folder,
                  docker_image,
                  runscript_args,
-                 n_cpus,
-                 mem_mb,
                  **extra_args):
+
         # self.application_name = "freesurfer"
         # conf file freesurfer_image
         self.output_dir = []  # extra_args['output_dir']
@@ -120,10 +119,6 @@ class BidsAppsApplication(Application):
                      "--participant_label {subject_id} {runscript_args} ".format(analysis_level=analysis_level,
                                                                                  subject_id=subject_id,
                                                                                  runscript_args=runscript_args)
-            if n_cpus:
-                wf_cmd += " --n_cpus %s" % n_cpus
-            if mem_mb:
-                wf_cmd += " --mem_mb %s" % mem_mb
 
             cmd = " {docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd, wf_cmd=wf_cmd)
 
@@ -190,8 +185,8 @@ class BidsAppsScript(SessionBasedScript):
                        type=positive_int, default=1,  # 1 core
                        metavar="NUM",
                        help="Set the number of CPU cores required for each job"
-                            " (default: %(default)s). NUM must be a whole number."
-                            "\nParameter piped into bidsapp n_cpus")
+                            " (default: %(default)s). NUM must be a whole number.\n"
+                            " NOTE: Parameter is NOT piped into bidsapp n_cpus. Specifiy --n_cpus as -ra")
 
         self.add_param("-m", "--memory-per-core", dest="memory_per_core",
                        type=Memory, default=2 * GB,  # 2 GB
@@ -199,7 +194,7 @@ class BidsAppsScript(SessionBasedScript):
                        help="Set the amount of memory required per execution core;"
                             " default: %(default)s. Specify this as an integral number"
                             " followed by a unit, e.g., '512MB' or '4GB'."
-                            "\nParameter piped into bidsapp mem_mb")
+                            " NOTE: Parameter is NOT piped into bidsapp mem_mb. Specifiy --mem_mb as -ra")
 
     def new_tasks(self, extra):
         """
@@ -215,6 +210,7 @@ class BidsAppsScript(SessionBasedScript):
                 extra_args['output_dir'] = self.params.output
                 extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', '%s' % extra_args['jobname'])
 
+                mem_mb = self.params.memory_per_core.amount(unit=MB)
                 tasks.append(BidsAppsApplication(
                     self.params.analysis_level,
                     subject_id,
@@ -222,8 +218,6 @@ class BidsAppsScript(SessionBasedScript):
                     self.params.bids_output_folder,
                     self.params.docker_image,
                     self.params.runscript_args,
-                    self.params.ncores,
-                    self.params.memory_per_core,
                     **extra_args))
 
         return tasks
