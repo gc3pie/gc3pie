@@ -1424,7 +1424,7 @@ class Application(Task):
             # require that all cores are on the same node
             qsub += ['-l', 'nodes=1:ppn=%d' % self.requested_cores]
         if 'jobname' in self and self.jobname:
-            qsub += ['-N', '"%s"' % self.jobname[:15]]
+            qsub += ['-N', '%s' % self.jobname[:15]]
         return (qsub, self.cmdline(resource))
 
     def sbatch(self, resource, **extra_args):
