@@ -35,7 +35,10 @@ Options:
 
 # fixme
 # how to write to stdout within application, e.g. print cmd. log?
+# why is cmd not printed in .log immediately
 # specify mem reqs? -> map script arg to docker cmd
+# -o -> -log_outptut
+# specify exec instance id & flavour via command, not conf file? no write to conf file
 
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
@@ -50,7 +53,6 @@ __docformat__ = 'reStructuredText'
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
     import bidsapps
-
     bidsapps.BidsAppsScript().run()
 
 import os
@@ -95,6 +97,8 @@ class BidsAppsApplication(Application):
                  n_cpus,
                  mem_mb,
                  **extra_args):
+        # self.application_name = "freesurfer"
+        # conf file freesurfer_image
         self.output_dir = []  # extra_args['output_dir']
 
         inputs = dict()
