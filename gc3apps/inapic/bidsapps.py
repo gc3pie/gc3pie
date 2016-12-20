@@ -170,6 +170,10 @@ class BidsAppsScript(SessionBasedScript):
         )
 
     def setup_args(self):
+        # add a `--logfile` synonym for `--output`
+        self.actions['output'].option_strings.append('--logfile_folder')
+
+
         self.add_param("docker_image", type=str, help="xxx")
 
         self.add_param("bids_input_folder", type=str, help="Root location of input data. Note: expects folder in "
