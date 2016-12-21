@@ -54,4 +54,5 @@ if __name__ == '__main__':
     if (len(sys.argv) < 2):
         sys.exit(Usage())
     cmd = ' '.join(sys.argv[1:])
+    echo_and_run_cmd("tree /data.nfs")
     sys.exit(echo_and_run_cmd(cmd))
