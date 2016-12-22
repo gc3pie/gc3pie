@@ -54,5 +54,7 @@ if __name__ == '__main__':
     if (len(sys.argv) < 2):
         sys.exit(Usage())
     cmd = ' '.join(sys.argv[1:])
+    #fixme
     os.system("tree /data.nfs")
+    os.system("ls -la /data.nfs/*/*/*/*")
     sys.exit(echo_and_run_cmd(cmd))
