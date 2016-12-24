@@ -211,7 +211,7 @@ class BidsAppsScript(SessionBasedScript):
         if not os.path.exists(self.params.bids_output_folder):
             os.makedirs(self.params.bids_output_folder)
             # add write perm for others
-            os.chmod(self.params.bids_output_folder, os.stat(self.params.bids_output_folder).st_mode | stat.stat.S_IWOTH)
+            os.chmod(self.params.bids_output_folder, os.stat(self.params.bids_output_folder).st_mode | stat.S_IWOTH)
 
         # check if output folder has others write permission
         if not os.stat(self.params.bids_output_folder).st_mode & stat.S_IWOTH:
