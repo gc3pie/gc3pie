@@ -215,7 +215,7 @@ class BidsAppsScript(SessionBasedScript):
 
         # check if output folder has others write permission
         if not os.stat(self.params.bids_output_folder).st_mode & stat.S_IWOTH:
-            raise PermissionError("BIDS output folder %s \nothers need write permission. "
+            raise OSError("BIDS output folder %s \nothers need write permission. "
                                   "Stopping."%self.params.bids_output_folder)
 
         if self.params.analysis_level == "participant":
