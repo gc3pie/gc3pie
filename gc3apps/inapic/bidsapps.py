@@ -57,6 +57,7 @@ import sys
 import time
 import tempfile
 import re
+import stat
 
 import shutil
 from bids.grabbids import BIDSLayout
@@ -202,6 +203,20 @@ class BidsAppsScript(SessionBasedScript):
         """
         tasks = []
         subject_list = self.get_input_subjects(self.params.bids_input_folder)
+
+        # create output folder and check permission (others need write permission)
+        # Riccardo: on the NFS filesystem, `root` is remapped transparently to user
+        # `nobody` (this is called "root squashing"), which cannot write on the
+        # `/data/nfs` directory owned by user `ubuntu`.
+        if not os.path.exists(self.params.bids_output_folder):
+            os.makedirs(self.params.bids_output_folder)
+            # add write perm for others
+            os.chmod(self.params.bids_output_folder, os.stat(self.params.bids_output_folder).st_mode | stat.stat.S_IWOTH)
+
+        # check if output folder has others write permission
+        if not os.stat(self.params.bids_output_folder).st_mode & stat.S_IWOTH:
+            raise PermissionError("BIDS output folder %s \nothers need write permission. "
+                                  "Stopping."%self.params.bids_output_folder)
 
         if self.params.analysis_level == "participant":
             for subject_id in subject_list:
