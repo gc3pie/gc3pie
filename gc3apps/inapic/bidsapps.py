@@ -240,6 +240,8 @@ class BidsAppsScript(SessionBasedScript):
         if not subject_list:
             subject_list = self.get_input_subjects(self.params.bids_input_folder)
 
+        # force unique
+        subject_list = list(set(subject_list))
 
         subject_exclusion_list = []
         if self.params.participant_exclusion_label:
