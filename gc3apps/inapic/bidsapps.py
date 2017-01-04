@@ -185,7 +185,7 @@ class BidsAppsScript(SessionBasedScript):
                             'Specs according to --participant_label. If --participant_label and --participant_file '
                             'are specified, both are used. Note: If -pl or -pf is not specified, analyze all subjects')
         self.add_param("-pel", "--participant_exclusion_label",
-                       help='The label of the participant that should not be analyzed. Multiple '
+                       help='The label of the participant that should NOT be analyzed. Multiple '
                             'participants can be specified with a space separated list.',
                        nargs="+")
         self.add_param("-pef", "--participant_exclusion_file",
@@ -245,11 +245,12 @@ class BidsAppsScript(SessionBasedScript):
 
         subject_exclusion_list = []
         if self.params.participant_exclusion_label:
-            subject_exclusion_list +=self.params.participant_exclusion_label
+            subject_exclusion_list += self.params.participant_exclusion_label
 
         if self.params.participant_exclusion_file:
             subject_exclusion_list += read_subject_list(self.params.participant_exclusion_file)
 
+        print("abc123", subject_exclusion_list)
         for exsub in subject_exclusion_list:
             if exsub in subject_list:
                 subject_list.remove(exsub)
