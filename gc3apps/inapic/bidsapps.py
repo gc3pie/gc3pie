@@ -232,7 +232,8 @@ class BidsAppsScript(SessionBasedScript):
                 return fi.read().strip().split("\n")
 
         if self.params.participant_label:
-            subject_list += self.params.participant_label.strip()
+            clean_list = [s.strip() for s in self.params.participant_label]
+            subject_list += clean_list
 
         if self.params.participant_file:
             subject_list += read_subject_list(self.params.participant_file)
@@ -245,7 +246,8 @@ class BidsAppsScript(SessionBasedScript):
 
         subject_exclusion_list = []
         if self.params.participant_exclusion_label:
-            subject_exclusion_list += self.params.participant_exclusion_label.strip()
+            clean_list = [s.strip() for s in self.params.participant_exclusion_label]
+            subject_exclusion_list += clean_list
 
         if self.params.participant_exclusion_file:
             subject_exclusion_list += read_subject_list(self.params.participant_exclusion_file)
