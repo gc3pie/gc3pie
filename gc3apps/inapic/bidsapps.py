@@ -172,13 +172,22 @@ class BidsAppsScript(SessionBasedScript):
                             "group: second level")
 
     def setup_options(self):
-        self.add_param('--participant_label',
+        self.add_param("-p", "--participant_label",
                        help='The label of the participant that should be analyzed. The label '
                             'corresponds to sub-<participant_label> from the BIDS spec '
                             '(so it does not include "sub-"). If this parameter is not '
                             'provided all subjects should be analyzed. Multiple '
                             'participants can be specified with a space separated list.',
                        nargs="+")
+        self.add_param("-pf", "--participant_file",
+                       help='A text file with the labels of the participant that should be analyzed. No header; one '
+                            'subject per line.'
+                            'Specs according to --participant_label. If --participant_label and --participant_file '
+                            'are specified, both are used. Note: If -p or -pf is not specified, analyze all subjects')
+        self.add_param("-pef", "--participant_exclusion_file",
+                       help='A tsv file with the labels of the participant that should not be analyzed, '
+                            'despite being listed in --participant_file.')
+
         self.add_param("-ra", "--runscript_args", type=str, dest="runscript_args", default=None,
                        help='BIDSAPPS: add application-specific arguments '
                             'passed to the runscripts in qotation marks: '
@@ -205,14 +214,35 @@ class BidsAppsScript(SessionBasedScript):
 
     def new_tasks(self, extra):
         """
-        For each input folder, create an instance of GniftApplication
+        For each subject, create an instance of GniftApplication
         """
         tasks = []
+        subject_list = []
+
+        # build subject list form either input arguments (participant_label, participant_file) or
+        # input data in bids_input_folder,
+        # then remove subjects form list according to participant_exclusion_file (if any)
+        def read_subject_list(list_file):
+            "reads text file with subject id per line and returns as list"
+            with open(list_file) as fi:
+                return fi.read().strip().split("\n")
+
         if self.params.participant_label:
-            subject_list = self.params.participant_label
-        else:
+            subject_list += self.params.participant_label
+
+        if self.params.participant_file:
+            subject_list += read_subject_list(self.params.participant_file)
+
+        if not subject_list:
             subject_list = self.get_input_subjects(self.params.bids_input_folder)
 
+        if self.params.participant_exclusion_file:
+            subject_exclusion_list = read_subject_list(self.params.participant_exclusion_file)
+            for exsub in subject_exclusion_list:
+                if exsub in subject_list:
+                    subject_list.remove(exsub)
+                else:
+                    gc3libs.log.warning("Subject on exclusion list, but not in inclusion list: %s" % exsub)
 
         # create output folder and check permission (others need write permission)
         # Riccardo: on the NFS filesystem, `root` is remapped transparently to user
