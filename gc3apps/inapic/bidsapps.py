@@ -229,7 +229,8 @@ class BidsAppsScript(SessionBasedScript):
         def read_subject_list(list_file):
             "reads text file with subject id per line and returns as list"
             with open(list_file) as fi:
-                return fi.read().strip().split("\n")
+                l = fi.read().strip().split("\n")
+            return [s.strip() for s in l]
 
         if self.params.participant_label:
             clean_list = [s.strip() for s in self.params.participant_label]
