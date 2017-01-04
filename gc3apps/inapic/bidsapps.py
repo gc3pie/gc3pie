@@ -92,7 +92,6 @@ class BidsAppsApplication(Application):
                  docker_image,
                  runscript_args,
                  **extra_args):
-
         # self.application_name = "freesurfer"
         # conf file freesurfer_image
         self.output_dir = []  # extra_args['output_dir']
@@ -173,6 +172,13 @@ class BidsAppsScript(SessionBasedScript):
                             "group: second level")
 
     def setup_options(self):
+        self.add_param('--participant_label',
+                       help='The label of the participant that should be analyzed. The label '
+                            'corresponds to sub-<participant_label> from the BIDS spec '
+                            '(so it does not include "sub-"). If this parameter is not '
+                            'provided all subjects should be analyzed. Multiple '
+                            'participants can be specified with a space separated list.',
+                       nargs="+")
         self.add_param("-ra", "--runscript_args", type=str, dest="runscript_args", default=None,
                        help='BIDSAPPS: add application-specific arguments '
                             'passed to the runscripts in qotation marks: '
@@ -202,7 +208,11 @@ class BidsAppsScript(SessionBasedScript):
         For each input folder, create an instance of GniftApplication
         """
         tasks = []
-        subject_list = self.get_input_subjects(self.params.bids_input_folder)
+        if self.params.participant_label:
+            subject_list = self.params.participant_label
+        else:
+            subject_list = self.get_input_subjects(self.params.bids_input_folder)
+
 
         # create output folder and check permission (others need write permission)
         # Riccardo: on the NFS filesystem, `root` is remapped transparently to user
@@ -216,7 +226,7 @@ class BidsAppsScript(SessionBasedScript):
         # check if output folder has others write permission
         if not os.stat(self.params.bids_output_folder).st_mode & stat.S_IWOTH:
             raise OSError("BIDS output folder %s \nothers need write permission. "
-                                  "Stopping."%self.params.bids_output_folder)
+                          "Stopping." % self.params.bids_output_folder)
 
         if self.params.analysis_level == "participant":
             for subject_id in subject_list:
