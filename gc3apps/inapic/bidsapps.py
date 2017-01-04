@@ -250,7 +250,8 @@ class BidsAppsScript(SessionBasedScript):
         if self.params.participant_exclusion_file:
             subject_exclusion_list += read_subject_list(self.params.participant_exclusion_file)
 
-        print("abc123", subject_exclusion_list)
+        gc3libs.log.warning("inc: %s"%subject_list)
+        gc3libs.log.warning("excl: %s"%subject_exclusion_list)
         for exsub in subject_exclusion_list:
             if exsub in subject_list:
                 subject_list.remove(exsub)
