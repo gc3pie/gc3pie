@@ -232,7 +232,7 @@ class BidsAppsScript(SessionBasedScript):
                 return fi.read().strip().split("\n")
 
         if self.params.participant_label:
-            subject_list += self.params.participant_label
+            subject_list += self.params.participant_label.strip()
 
         if self.params.participant_file:
             subject_list += read_subject_list(self.params.participant_file)
@@ -245,7 +245,7 @@ class BidsAppsScript(SessionBasedScript):
 
         subject_exclusion_list = []
         if self.params.participant_exclusion_label:
-            subject_exclusion_list += self.params.participant_exclusion_label
+            subject_exclusion_list += self.params.participant_exclusion_label.strip()
 
         if self.params.participant_exclusion_file:
             subject_exclusion_list += read_subject_list(self.params.participant_exclusion_file)
@@ -257,6 +257,7 @@ class BidsAppsScript(SessionBasedScript):
                 subject_list.remove(exsub)
             else:
                 gc3libs.log.warning("Subject on exclusion list, but not in inclusion list: %s" % exsub)
+        gc3libs.log.warning("inc: %s" % subject_list)
 
         # create output folder and check permission (others need write permission)
         # Riccardo: on the NFS filesystem, `root` is remapped transparently to user
