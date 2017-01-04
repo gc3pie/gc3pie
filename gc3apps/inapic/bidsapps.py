@@ -253,14 +253,11 @@ class BidsAppsScript(SessionBasedScript):
         if self.params.participant_exclusion_file:
             subject_exclusion_list += read_subject_list(self.params.participant_exclusion_file)
 
-        gc3libs.log.warning("inc: %s"%subject_list)
-        gc3libs.log.warning("excl: %s"%subject_exclusion_list)
         for exsub in subject_exclusion_list:
             if exsub in subject_list:
                 subject_list.remove(exsub)
             else:
                 gc3libs.log.warning("Subject on exclusion list, but not in inclusion list: %s" % exsub)
-        gc3libs.log.warning("inc: %s" % subject_list)
 
         # create output folder and check permission (others need write permission)
         # Riccardo: on the NFS filesystem, `root` is remapped transparently to user
