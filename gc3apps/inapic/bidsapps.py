@@ -107,7 +107,9 @@ class BidsAppsApplication(Application):
         wrapper = "/home/ubuntu/gtrac_long_repo/gc3pie/gc3libs/etc/echo_and_run_cmd.py"
         inputs[wrapper] = os.path.basename(wrapper)
 
-        docker_cmd_input_mapping = "{bids_input_folder}:/data/in:ro".format(bids_input_folder=bids_input_folder)
+        # fixme add ro again, after dcm2niix release
+        # docker_cmd_input_mapping = "{bids_input_folder}:/data/in:ro".format(bids_input_folder=bids_input_folder)
+        docker_cmd_input_mapping = "{bids_input_folder}:/data/in".format(bids_input_folder=bids_input_folder)
 
         docker_cmd_output_mapping = "{bids_output_folder}:/data/out".format(bids_output_folder=bids_output_folder)
 
@@ -163,7 +165,9 @@ class BidsAppsScript(SessionBasedScript):
         )
 
     def setup_args(self):
-        self.add_param("docker_image", type=str, help="xxx")
+        self.add_param("docker_image", type=str, help="Name of docker image to run. \n\n"
+                                                      "If image has no entry point give container name and entry "
+                                                      "point under '' e.g. 'container:v1 python script.py'")
 
         self.add_param("bids_input_folder", type=str, help="Root location of input data. Note: expects folder in "
                                                            "BIDS format.")
