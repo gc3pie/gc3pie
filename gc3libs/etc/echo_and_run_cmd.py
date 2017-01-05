@@ -28,7 +28,6 @@ def runme(command):
 
 
 def echo_and_run_cmd(cmd):
-    print_stars()
     (ret, stdout, stderr) = runme(cmd)
 
     # format byte return
