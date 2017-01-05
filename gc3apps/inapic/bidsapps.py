@@ -114,7 +114,7 @@ class BidsAppsApplication(Application):
         docker_cmd_output_mapping = "{bids_output_folder}:/data/out".format(bids_output_folder=bids_output_folder)
 
         docker_mappings = "-v %s -v %s " % (docker_cmd_input_mapping, docker_cmd_output_mapping)
-        docker_cmd = "docker run -ti --rm {docker_mappings} {docker_image}".format(docker_mappings=docker_mappings,
+        docker_cmd = "docker run {docker_mappings} {docker_image}".format(docker_mappings=docker_mappings,
                                                                           docker_image=docker_image)
 
         if analysis_level == "participant":
