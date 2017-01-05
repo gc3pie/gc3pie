@@ -118,10 +118,10 @@ class BidsAppsApplication(Application):
         if analysis_level == "participant":
             # runscript = runscript, runscript_args = runscript_args)
             wf_cmd = "/data/in  /data/out {analysis_level} " \
-                     "--participant_label {subject_id} {runscript_args} ".format(analysis_level=analysis_level,
+                     "--participant_label {subject_id} ".format(analysis_level=analysis_level,
                                                                                  subject_id=subject_id)
             if runscript_args:
-                wf_cmd += " {runscript_args}".format(runscript_args=runscript_args)
+                wf_cmd += "{runscript_args} ".format(runscript_args=runscript_args)
 
             cmd = " {docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd, wf_cmd=wf_cmd)
 
