@@ -29,7 +29,6 @@ def runme(command):
 
 def echo_and_run_cmd(cmd):
     print_stars()
-    print("[RUNNING]:\n'%s' " % cmd)
     (ret, stdout, stderr) = runme(cmd)
 
     # format byte return
@@ -43,6 +42,7 @@ def echo_and_run_cmd(cmd):
         pass
 
     if ret != 0:
+        print("[failed]")
         print_stars()
         print("[failed]:\n%s" % cmd)
         print("Execution failed with exit code: %d" % ret)
@@ -51,9 +51,11 @@ def echo_and_run_cmd(cmd):
         print_stars()
         print("Error message:\n%s" % stderr)
     else:
+        print("[ok]")
         print_stars()
         print("[ok]:\n%s \n" % cmd)
         print(stdout)
+    print("[COMMAND]:\n'%s' " % cmd)
     return ret
 
 
