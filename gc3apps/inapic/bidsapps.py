@@ -35,6 +35,8 @@ Options:
 
 # fixme
 # specify exec instance id & flavour via command, not conf file? no write to conf file
+# TODO riccardo how to log
+# TODO group calls
 
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
@@ -117,8 +119,9 @@ class BidsAppsApplication(Application):
             # runscript = runscript, runscript_args = runscript_args)
             wf_cmd = "/data/in  /data/out {analysis_level} " \
                      "--participant_label {subject_id} {runscript_args} ".format(analysis_level=analysis_level,
-                                                                                 subject_id=subject_id,
-                                                                                 runscript_args=runscript_args)
+                                                                                 subject_id=subject_id)
+            if runscript_args:
+                wf_cmd += " {runscript_args}".format(runscript_args=runscript_args)
 
             cmd = " {docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd, wf_cmd=wf_cmd)
 
