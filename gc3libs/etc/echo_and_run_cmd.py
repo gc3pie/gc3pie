@@ -7,6 +7,8 @@ def Usage():
     print("Usage: echo_and_run_cmd.py <cmd>")
     print("Echoes and runs command")
 
+def print_stars():
+    print("********************************")
 
 def runme(command):
     """
@@ -26,6 +28,7 @@ def runme(command):
 
 
 def echo_and_run_cmd(cmd):
+    print_stars()
     print("[RUNNING]:\n'%s' " % cmd)
     (ret, stdout, stderr) = runme(cmd)
 
@@ -40,12 +43,16 @@ def echo_and_run_cmd(cmd):
         pass
 
     if ret != 0:
-        print("[failed]: %s" % cmd)
+        print_stars()
+        print("[failed]:\n%s" % cmd)
         print("Execution failed with exit code: %d" % ret)
-        print("Output message: %s" % stdout)
-        print("Error message: %s" % stderr)
+        print_stars()
+        print("Output message:\n%s" % stdout)
+        print_stars()
+        print("Error message:\n%s" % stderr)
     else:
-        print("[ok]: %s \n" % cmd)
+        print_stars()
+        print("[ok]:\n%s \n" % cmd)
         print(stdout)
     return ret
 
