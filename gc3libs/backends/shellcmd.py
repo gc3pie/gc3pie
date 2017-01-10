@@ -846,10 +846,14 @@ ReturnCode=%x"""
 
         if self.free_slots == 0 or free_slots == 0:
             # XXX: We shouldn't check for self.free_slots !
-            raise gc3libs.exceptions.LRMSSubmitError(
-                "Resource %s already running maximum allowed number of jobs"
-                " (%s). Increase 'max_cores' to raise." %
-                (self.name, self.max_cores))
+            if not self.override:
+                raise gc3libs.exceptions.LRMSSubmitError(
+                    "Resource %s already running maximum allowed number of jobs"
+                    " (%s). Increase 'max_cores' to raise." %
+                    (self.name, self.max_cores))
+            else:
+                raise gc3libs.exceptions.LRMSSubmitError(
+                    "Resource %s already running maximum allowed number of jobs" % (self.name))
 
         if app.requested_memory and \
                 (available_memory < app.requested_memory or
