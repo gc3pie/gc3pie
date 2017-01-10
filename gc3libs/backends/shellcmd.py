@@ -1337,10 +1337,15 @@ class ShellcmdLrms(LRMS):
             self.get_resource_status()
 
         if self.free_slots == 0:  # or free_slots == 0:
-            raise gc3libs.exceptions.LRMSSubmitError(
-                "Resource %s already running maximum allowed number of jobs"
-                " (%s). Increase 'max_cores' to raise." %
-                (self.name, self.max_cores))
+            if self.override:
+                raise gc3libs.exceptions.LRMSSubmitError(
+                    "Resource {0} already running maximum allowed number of jobs"
+                    .format(self.name))
+            else:
+                raise gc3libs.exceptions.LRMSSubmitError(
+                    "Resource %s already running maximum allowed number of jobs"
+                    " (%s). Increase 'max_cores' to raise." %
+                    (self.name, self.max_cores))
 
         if (app.requested_memory and self.available_memory < app.requested_memory):
             raise gc3libs.exceptions.LRMSSubmitError(
