@@ -27,7 +27,6 @@ See the output of ``gtrac.py --help`` for program usage
 instructions.
 """
 
-__version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2016-07-05:

@@ -25,7 +25,6 @@ Se issue #525 for background and possibly more info.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = '$Revision$'
 
 
 from random import randint

@@ -21,7 +21,6 @@
 # TAKES 1 HOUR FOR EXTRACTING ~1670 OUTPUT FILES
 
 __docformat__ = 'reStructuredText'
-__version__ = '$Revision$'
 __changelog__ = """
   2011-08-17:
     * reading file as one string once before inspection

@@ -19,7 +19,6 @@ Top-level classes for task execution and control.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 2110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = 'development version (SVN $Revision$)'
 __date__ = '$Date$'
 
 

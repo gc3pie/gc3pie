@@ -61,7 +61,6 @@ add a mapping `directory` => `(Test1, Test2, Test3)`
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = '$Revision$'
 
 import os
 import re
