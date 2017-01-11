@@ -20,7 +20,6 @@ Run the BEAST or BEAST-2 programs from a prepared tree of input files.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = '$Revision$'
 
 
 import os

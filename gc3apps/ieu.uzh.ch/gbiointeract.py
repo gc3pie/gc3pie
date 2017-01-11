@@ -25,7 +25,6 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 See the output of ``gbiointeract --help`` for program usage instructions.
 """
 
-__version__ = 'development version (SVN $Revision$)'
 __author__ = 'Antonio Messina <antonio.s.messina@gmail.com>'
 __docformat__ = 'reStructuredText'
 

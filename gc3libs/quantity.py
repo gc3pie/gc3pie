@@ -25,7 +25,6 @@ see: `<https://github.com/uzh/gc3pie/issues/47>`
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = '$Revision$'
 
 
 # stdlib imports
