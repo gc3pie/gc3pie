@@ -23,7 +23,6 @@ Include a list of desired tools in param `after_update_opt_state` of
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
-__version__ = '$Revision$'
 __author__ = 'Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
 __docformat__ = 'reStructuredText'
 

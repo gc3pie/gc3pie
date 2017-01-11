@@ -25,7 +25,6 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 See the output of ``gcombi.py --help`` for program usage instructions.
 """
 
-__version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2016-04-20:

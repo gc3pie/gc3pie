@@ -21,7 +21,6 @@ SQL-based storage of GC3pie objects.
 #
 
 __docformat__ = 'reStructuredText'
-__version__ = '$Revision$'
 
 
 # stdlib imports
