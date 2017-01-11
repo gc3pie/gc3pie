@@ -59,6 +59,8 @@ the correct 'python' binary.  For example:
 
 ## now we know we're running Py 2.6+, do the rest of the setup
 
+import locale
+
 import logging
 
 # see: http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
@@ -82,6 +84,8 @@ import shutil
 from subprocess import call, check_call, check_output, CalledProcessError
 
 from urllib2 import urlopen
+
+locale.setlocale(locale.LC_ALL, 'C')
 
 ## defaults and constants
 
@@ -350,7 +354,7 @@ Please run 'deactivate', then run this script again.
             check_call(
                 [python, 'virtualenv.py']
                 + with_site_packages
-                + ['-p', python, destdir])
+                + ['-p', python, destdir, '--distribute'])
             logging.info("Created Python virtual environment in '%s'", destdir)
         except CalledProcessError as err:
             rc = err.returncode
