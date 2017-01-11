@@ -338,6 +338,32 @@ override = False
         os.remove(tmpfile)
 
 
+def test_override_rename_to_discover():
+    """Test that `override` is renamed to `discover` during parse"""
+    tmpfile = _setup_config_file("""
+[auth/ssh]
+type = ssh
+username = gc3pie
+
+[resource/test]
+type = shellcmd
+auth = ssh
+max_cores_per_job = 2
+max_memory_per_core = 2
+max_walltime = 8
+max_cores = 77
+architecture = x86_64
+override = False
+    """)
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+        resources = cfg.make_resources(ignore_errors=False)
+        assert 'override' not in resources['test']
+        assert 'discover' in resources['test']
+        assert_equal(resources['test']['discover'], False)
+    finally:
+        os.remove(tmpfile)
+
 class TestReadMultiple(object):
 
     def setUp(self):
