@@ -20,7 +20,6 @@ Deal with GC3Pie configuration files.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = '$Revision$'
 
 
 # stdlib imports
@@ -387,7 +386,7 @@ class Configuration(gc3libs.utils.Struct):
                         " file '%s': %s"
                         % (name, filename, str(err)))
 
-                # minimal sanity check
+                # minimal sanity checks
                 for key in self._resource_required_keys:
                     if key not in config_items:
                         raise gc3libs.exceptions.ConfigurationError(
@@ -400,6 +399,16 @@ class Configuration(gc3libs.utils.Struct):
                                 sectname=sectname,
                                 filename=filename
                             ))
+
+                for key in self.resource_key_value_matcher.keys():
+                    if key in config_items and re.compile(self.resource_key_value_matcher[key][0]).match(config_items[key]):
+                            raise gc3libs.exceptions.ConfigurationError(
+                                "Found problem with value for '{k}' in section '{s}', '{p}'".format(
+                                    k=key,
+                                    s=sectname,
+                                    p=self.resource_key_value_matcher[key][1]
+                                )
+                            )
 
                 resources[name].update(config_items)
                 resources[name]['name'] = name
@@ -438,11 +447,18 @@ class Configuration(gc3libs.utils.Struct):
         'type',
     )
 
+    # config keys that are supposed to have a pattern
+    resource_key_value_matcher = {
+        'keypair_name': (r'/^$|\s+/', 'cannot be empty'),
+        'public_key': (r'\w*.pub\b', 'public keys need to end in .pub')
+    }
+
     _renamed_keys = {
         # old key name           new key name
         # ===================    ===================
         'ncores'               : 'max_cores',
         'sge_accounting_delay' : 'accounting_delay',
+        'override'             : 'discover'
     }
 
     @staticmethod
@@ -687,6 +703,15 @@ class Configuration(gc3libs.utils.Struct):
                     "Missing required parameter '{key}'"
                     " in definition of resource '{name}'."
                     .format(key=key, name=resdict['name']))
+        for key in self.resource_key_value_matcher.keys():
+            if key in resdict and re.compile(self.resource_key_value_matcher[key][0]).match(resdict[key]):
+                raise gc3libs.exceptions.ConfigurationError(
+                        "Found problem with value for '{k}' in section '{s}', '{p}'".format(
+                            k=key,
+                            s=resdict,
+                            p=self.resource_key_value_matcher[key][1]
+                        )
+                )
 
         if resdict['type'] in self._removed_resource_types:
             resdict['enabled'] = False
