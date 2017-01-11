@@ -387,7 +387,7 @@ class Configuration(gc3libs.utils.Struct):
                         " file '%s': %s"
                         % (name, filename, str(err)))
 
-                # minimal sanity check
+                # minimal sanity checks
                 for key in self._resource_required_keys:
                     if key not in config_items:
                         raise gc3libs.exceptions.ConfigurationError(
@@ -400,6 +400,12 @@ class Configuration(gc3libs.utils.Struct):
                                 sectname=sectname,
                                 filename=filename
                             ))
+
+                for key in self._resource_keys_value_required:
+                    if key in config_items and not config_items[key]:
+                            raise gc3libs.exceptions.ConfigurationError(
+                                "Found empty {k} in section '{s}'".format(k=key, s=sectname)
+                            )
 
                 resources[name].update(config_items)
                 resources[name]['name'] = name
@@ -436,6 +442,11 @@ class Configuration(gc3libs.utils.Struct):
         'max_memory_per_core',
         'max_walltime',
         'type',
+    )
+
+    # config keys that are not allowed to have empty values
+    _resource_keys_value_required = (
+        'keypair_name',
     )
 
     _renamed_keys = {
@@ -687,6 +698,11 @@ class Configuration(gc3libs.utils.Struct):
                     "Missing required parameter '{key}'"
                     " in definition of resource '{name}'."
                     .format(key=key, name=resdict['name']))
+        for key in self._resource_keys_value_required:
+            if key in resdict and not resdict[key]:
+                raise gc3libs.exceptions.ConfigurationError(
+                    "Found empty {k} in section '{s}'".format(k=key, s=resdict)
+                )
 
         if resdict['type'] in self._removed_resource_types:
             resdict['enabled'] = False
