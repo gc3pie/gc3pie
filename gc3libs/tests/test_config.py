@@ -816,6 +816,28 @@ architecture = x86_64
         os.remove(tmpfile)
 
 
+@raises(gc3libs.exceptions.NoValidConfigurationFile)
+def test_invalid_public_key_name():
+    """Test parsing a configuration file with an unknown resource type."""
+    tmpfile = _setup_config_file("""
+[resource/test]
+type = shellcmd
+auth = ssh
+transport = local
+max_cores_per_job = 1
+max_memory_per_core = 1
+max_walltime = 8
+max_cores = 2
+architecture = x86_64
+public_key = notapub.notpub
+    """)
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+        resources = cfg.make_resources(ignore_errors=False)
+    finally:
+        os.remove(tmpfile)
+
+
 def test_removed_arc0_resource_type():
     """Test parsing a configuration file with the removed `arc0` resource type."""
     _test_removed_resource_type('arc0')

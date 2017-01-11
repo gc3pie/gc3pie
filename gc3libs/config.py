@@ -400,10 +400,14 @@ class Configuration(gc3libs.utils.Struct):
                                 filename=filename
                             ))
 
-                for key in self._resource_keys_value_required:
-                    if key in config_items and not config_items[key]:
+                for key in self.resource_key_value_matcher.keys():
+                    if key in config_items and re.compile(self.resource_key_value_matcher[key][0]).match(config_items[key]):
                             raise gc3libs.exceptions.ConfigurationError(
-                                "Found empty {k} in section '{s}'".format(k=key, s=sectname)
+                                "Found problem with value for '{k}' in section '{s}', '{p}'".format(
+                                    k=key,
+                                    s=sectname,
+                                    p=self.resource_key_value_matcher[key][1]
+                                )
                             )
 
                 resources[name].update(config_items)
@@ -443,10 +447,11 @@ class Configuration(gc3libs.utils.Struct):
         'type',
     )
 
-    # config keys that are not allowed to have empty values
-    _resource_keys_value_required = (
-        'keypair_name',
-    )
+    # config keys that are supposed to have a pattern
+    resource_key_value_matcher = {
+        'keypair_name': (r'/^$|\s+/', 'cannot be empty'),
+        'public_key': (r'\w*.pub\b', 'public keys need to end in .pub')
+    }
 
     _renamed_keys = {
         # old key name           new key name
@@ -698,10 +703,14 @@ class Configuration(gc3libs.utils.Struct):
                     "Missing required parameter '{key}'"
                     " in definition of resource '{name}'."
                     .format(key=key, name=resdict['name']))
-        for key in self._resource_keys_value_required:
-            if key in resdict and not resdict[key]:
+        for key in self.resource_key_value_matcher.keys():
+            if key in resdict and re.compile(self.resource_key_value_matcher[key][0]).match(resdict[key]):
                 raise gc3libs.exceptions.ConfigurationError(
-                    "Found empty {k} in section '{s}'".format(k=key, s=resdict)
+                        "Found problem with value for '{k}' in section '{s}', '{p}'".format(
+                            k=key,
+                            s=resdict,
+                            p=self.resource_key_value_matcher[key][1]
+                        )
                 )
 
         if resdict['type'] in self._removed_resource_types:
