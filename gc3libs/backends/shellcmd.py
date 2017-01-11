@@ -188,14 +188,14 @@ class ShellcmdLrms(LRMS):
       is when connecting to VM on a cloud, since the IP is usually
       reused and therefore the ssh key is recreated).
 
-    :param bool override:
+    :param bool discover:
 
       `ShellcmdLrms` by default will try to gather information on the
       machine the resource is running on, including the number of
       cores and the available memory. These values may be different
-      from the values stored in the configuration file. If `override`
+      from the values stored in the configuration file. If `discover`
       is True, then the values automatically discovered will be used
-      instead of the ones in the configuration file. If `override` is
+      instead of the ones in the configuration file. If `discover` is
       False, instead, the values in the configuration file will be
       used.
 
@@ -276,7 +276,7 @@ ReturnCode=%x"""
                  # these are specific to `ShellcmdLrms`
                  frontend='localhost', transport='local',
                  time_cmd=None,
-                 override='False',
+                 discover='False',
                  spooldir=None,
                  resourcedir=None,
                  # SSH-related options; ignored if `transport` is 'local'
@@ -335,7 +335,7 @@ ReturnCode=%x"""
         self.job_infos = {}
         self.total_memory = max_memory_per_core
         self.available_memory = self.total_memory
-        self.override = gc3libs.utils.string_to_boolean(override)
+        self.discover = gc3libs.utils.string_to_boolean(discover)
 
     @defproperty
     def resource_dir():
@@ -477,7 +477,7 @@ ReturnCode=%x"""
 
     def _gather_machine_specs(self):
         """
-        Gather information about this machine and, if `self.override`
+        Gather information about this machine and, if `self.discover`
         is true, also update the value of `max_cores` and
         `max_memory_per_jobs` attributes.
 
@@ -522,7 +522,7 @@ ReturnCode=%x"""
                 " Please, install GNU time and set the `time_cmd`"
                 " configuration option in gc3pie.conf.")
 
-        if not self.override:
+        if not self.discover:
             # Ignore other values.
             return
 
@@ -845,7 +845,7 @@ ReturnCode=%x"""
 
         if self.free_slots == 0 or free_slots == 0:
             # XXX: We shouldn't check for self.free_slots !
-            if not self.override:
+            if not self.discover:
                 raise gc3libs.exceptions.LRMSSubmitError(
                     "Resource %s already running maximum allowed number of jobs"
                     " (%s). Increase 'max_cores' to raise." %

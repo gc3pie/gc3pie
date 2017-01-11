@@ -453,6 +453,7 @@ class Configuration(gc3libs.utils.Struct):
         # ===================    ===================
         'ncores'               : 'max_cores',
         'sge_accounting_delay' : 'accounting_delay',
+        'override'             : 'discover'
     }
 
     @staticmethod
