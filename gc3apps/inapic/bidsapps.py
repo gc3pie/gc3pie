@@ -121,18 +121,16 @@ class BidsAppsApplication(Application):
         docker_cmd = "docker run {docker_mappings} {docker_image}".format(docker_mappings=docker_mappings,
                                                                           docker_image=docker_image)
 
-        if analysis_level.startswith("participant"):
-            # runscript = runscript, runscript_args = runscript_args)
-            wf_cmd = "/data/in  /data/out {analysis_level} " \
-                     "--participant_label {subject_id} ".format(analysis_level=analysis_level,
-                                                                subject_id=subject_id)
-            if runscript_args:
-                wf_cmd += "{runscript_args} ".format(runscript_args=runscript_args)
 
-            cmd = " {docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd, wf_cmd=wf_cmd)
+        # runscript = runscript, runscript_args = runscript_args)
+        wf_cmd = "/data/in  /data/out {analysis_level} ".format(analysis_level=analysis_level)
+        if subject_id:
+            wf_cmd += "--participant_label {subject_id} ".format(subject_id)
+        if runscript_args:
+            wf_cmd += "{runscript_args} ".format(runscript_args=runscript_args)
 
-        elif analysis_level.startswith("group"):
-            pass
+        cmd = " {docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd, wf_cmd=wf_cmd)
+
 
         Application.__init__(self,
                              arguments="python ./%s %s" % (inputs[wrapper], cmd),
