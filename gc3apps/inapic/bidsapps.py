@@ -125,7 +125,7 @@ class BidsAppsApplication(Application):
         # runscript = runscript, runscript_args = runscript_args)
         wf_cmd = "/data/in  /data/out {analysis_level} ".format(analysis_level=analysis_level)
         if subject_id:
-            wf_cmd += "--participant_label {subject_id} ".format(subject_id)
+            wf_cmd += "--participant_label {subject_id} ".format(subject_id=subject_id)
         if runscript_args:
             wf_cmd += "{runscript_args} ".format(runscript_args=runscript_args)
 
