@@ -20,7 +20,6 @@ Test interaction with the SLURM batch-queueing system.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__version__ = '$Revision$'
 
 import datetime
 import os

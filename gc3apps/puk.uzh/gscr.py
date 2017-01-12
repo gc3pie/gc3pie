@@ -35,7 +35,6 @@ Input parameters consists of:
 Options:
 """
 
-__version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2014-11-13:

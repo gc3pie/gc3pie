@@ -46,7 +46,6 @@ This would trigger the re-run of the whole workflow only
 for lines between 3000 and 7500
 """
 
-__version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2013-07-03:

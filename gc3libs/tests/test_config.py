@@ -36,6 +36,8 @@ except ImportError:
     def assert_is_instance(obj, cls):
         assert (isinstance(obj, cls))
 
+
+
 # GC3Pie imports
 from gc3libs import Run, Application
 import gc3libs.config
@@ -205,7 +207,7 @@ max_walltime = 8 hours
 max_cores = 10
 #architecture = x86_64
             """
-        ),
+        )
     ]
     for n, (title, conf) in enumerate(invalid_confs):
         n += 1  # start with `#1` instead of `#0`
@@ -310,6 +312,21 @@ architecture = x86_64
         os.remove(tmpfile)
 
 
+@raises(gc3libs.exceptions.NoValidConfigurationFile)
+def test_auth_empty_keypair_name():
+    """Test that if keypair_name is specified and empty, we fail."""
+    tmpfile = _setup_config_file("""
+[resource/kptest]
+type = shellcmd
+auth = ssh
+keypair_name =
+    """)
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+    finally:
+        os.remove(tmpfile)
+
+
 def test_key_renames():
     """Test that `ncores` is renamed to `max_cores` during parse"""
     tmpfile = _setup_config_file("""
@@ -337,6 +354,32 @@ override = False
     finally:
         os.remove(tmpfile)
 
+
+def test_override_rename_to_discover():
+    """Test that `override` is renamed to `discover` during parse"""
+    tmpfile = _setup_config_file("""
+[auth/ssh]
+type = ssh
+username = gc3pie
+
+[resource/test]
+type = shellcmd
+auth = ssh
+max_cores_per_job = 2
+max_memory_per_core = 2
+max_walltime = 8
+max_cores = 77
+architecture = x86_64
+override = False
+    """)
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+        resources = cfg.make_resources(ignore_errors=False)
+        assert 'override' not in resources['test']
+        assert 'discover' in resources['test']
+        assert_equal(resources['test']['discover'], False)
+    finally:
+        os.remove(tmpfile)
 
 class TestReadMultiple(object):
 
@@ -765,6 +808,28 @@ max_memory_per_core = 1
 max_walltime = 8
 max_cores = 2
 architecture = x86_64
+    """)
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+        resources = cfg.make_resources(ignore_errors=False)
+    finally:
+        os.remove(tmpfile)
+
+
+@raises(gc3libs.exceptions.NoValidConfigurationFile)
+def test_invalid_public_key_name():
+    """Test parsing a configuration file with an unknown resource type."""
+    tmpfile = _setup_config_file("""
+[resource/test]
+type = shellcmd
+auth = ssh
+transport = local
+max_cores_per_job = 1
+max_memory_per_core = 1
+max_walltime = 8
+max_cores = 2
+architecture = x86_64
+public_key = notapub.notpub
     """)
     try:
         cfg = gc3libs.config.Configuration(tmpfile)

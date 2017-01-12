@@ -21,7 +21,6 @@ Accessors for object attributes and container items.
 #
 
 __docformat__ = 'reStructuredText'
-__version__ = '$Revision$'
 
 
 from gc3libs.utils import getattr_nested

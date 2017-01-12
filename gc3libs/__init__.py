@@ -33,7 +33,9 @@ relevant aspects of the application being represented.
 """
 __docformat__ = 'reStructuredText'
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.4.2'
+
+__url__ = 'https://github.com/uzh/gc3pie'
 
 
 import inspect
@@ -976,7 +978,7 @@ class Application(Task):
         self.join = extra_args.pop('join', False)
         self.stdin = extra_args.pop('stdin', None)
         if self.stdin and (self.stdin not in self.inputs):
-            self.inputs[self.stdin] = os.path.basename(self.stdin)
+            self.inputs[self.stdin] = os.path.abspath(self.stdin)
         self.stdout = extra_args.pop('stdout', None)
         if self.stdout is not None and os.path.isabs(self.stdout):
             raise gc3libs.exceptions.InvalidArgument(

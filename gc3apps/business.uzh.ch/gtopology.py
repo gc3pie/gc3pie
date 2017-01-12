@@ -36,7 +36,6 @@ XXX: To be clarified:
 * dependency in igraph python library
 """
 
-__version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
   2016-05-10:

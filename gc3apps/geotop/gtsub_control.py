@@ -30,7 +30,6 @@ See the output of ``gtsub_control --help`` for program usage instructions.
 
 """
 __docformat__ = 'reStructuredText'
-__version__ = '$Revision$'
 
 
 import os

@@ -3,7 +3,6 @@
 """
 """
 #
-__version__ = '$Revision$'
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
