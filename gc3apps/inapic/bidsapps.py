@@ -37,6 +37,9 @@ Options:
 # specify exec instance id & flavour via command, not conf file? no write to conf file
 # TODO riccardo how to log
 # TODO group calls
+# TODO clean way to add volumes to docker
+# TODO allow participant_label on group level
+
 
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
@@ -89,7 +92,8 @@ class BidsAppsApplication(Application):
 
     def __init__(self,
                  analysis_level,
-                 subject_id, bids_input_folder,
+                 subject_id,
+                 bids_input_folder,
                  bids_output_folder,
                  docker_image,
                  runscript_args,
@@ -117,26 +121,29 @@ class BidsAppsApplication(Application):
         docker_cmd = "docker run {docker_mappings} {docker_image}".format(docker_mappings=docker_mappings,
                                                                           docker_image=docker_image)
 
-        if analysis_level == "participant":
+        if analysis_level.startswith("participant"):
             # runscript = runscript, runscript_args = runscript_args)
             wf_cmd = "/data/in  /data/out {analysis_level} " \
                      "--participant_label {subject_id} ".format(analysis_level=analysis_level,
-                                                                                 subject_id=subject_id)
+                                                                subject_id=subject_id)
             if runscript_args:
                 wf_cmd += "{runscript_args} ".format(runscript_args=runscript_args)
 
             cmd = " {docker_cmd} {wf_cmd}".format(docker_cmd=docker_cmd, wf_cmd=wf_cmd)
 
-            Application.__init__(self,
-                                 arguments="python ./%s %s" % (inputs[wrapper], cmd),
-                                 inputs=inputs,
-                                 outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
-                                 stdout='bidsapps.log',
-                                 join=True,
-                                 **extra_args)
+        elif analysis_level.startswith("group"):
+            pass
+
+        Application.__init__(self,
+                             arguments="python ./%s %s" % (inputs[wrapper], cmd),
+                             inputs=inputs,
+                             outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
+                             stdout='bidsapps.log',
+                             join=True,
+                             **extra_args)
 
 
-            #
+        #
 
 
 class BidsAppsScript(SessionBasedScript):
@@ -174,9 +181,9 @@ class BidsAppsScript(SessionBasedScript):
 
         self.add_param("bids_output_folder", type=str, help="xxx")
 
-        self.add_param("analysis_level", type=str, choices=['participant', 'group'],
+        self.add_param("analysis_level", type=str,
                        help="analysis_level: participant: 1st level\n"
-                            "group: second level")
+                            "group: second level. Bids-Apps specs allow for multiple substeps (e.g., group1, group2")
 
     def setup_options(self):
         self.add_param("-pl", "--participant_label",
@@ -280,14 +287,14 @@ class BidsAppsScript(SessionBasedScript):
             raise OSError("BIDS output folder %s \nothers need write permission. "
                           "Stopping." % self.params.bids_output_folder)
 
-        if self.params.analysis_level == "participant":
+        if self.params.analysis_level.startswith("participant"):
             for subject_id in subject_list:
                 extra_args = extra.copy()
                 extra_args['jobname'] = subject_id
                 extra_args['output_dir'] = self.params.output
                 extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', '%s' % extra_args['jobname'])
 
-                mem_mb = self.params.memory_per_core.amount(unit=MB)
+                # mem_mb = self.params.memory_per_core.amount(unit=MB)
                 tasks.append(BidsAppsApplication(
                     self.params.analysis_level,
                     subject_id,
@@ -296,6 +303,20 @@ class BidsAppsScript(SessionBasedScript):
                     self.params.docker_image,
                     self.params.runscript_args,
                     **extra_args))
+
+        elif self.params.analysis_level.startswith("group"):
+            extra_args = extra.copy()
+            extra_args['jobname'] = self.params.analysis_level
+            extra_args['output_dir'] = self.params.output
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', '%s' % extra_args['jobname'])
+            tasks.append(BidsAppsApplication(
+                self.params.analysis_level,
+                None,  # subject_id
+                self.params.bids_input_folder,
+                self.params.bids_output_folder,
+                self.params.docker_image,
+                self.params.runscript_args,
+                **extra_args))
 
         return tasks
 
