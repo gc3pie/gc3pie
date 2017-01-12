@@ -72,8 +72,6 @@ from distutils.util import strtobool
 # for use in `download_from_pypi`
 from distutils.version import LooseVersion
 
-from fnmatch import fnmatch
-
 import os
 from os import path
 
@@ -81,7 +79,7 @@ import re
 
 import shutil
 
-from subprocess import call, check_call, check_output, CalledProcessError
+from subprocess import check_call, check_output, CalledProcessError
 
 from urllib2 import urlopen
 
@@ -94,6 +92,7 @@ PROG = "GC3Pie install"
 VIRTUALENV_LATEST_URL = "https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
 VIRTUALENV_191_URL = "https://raw.github.com/pypa/virtualenv/1.9.1/virtualenv.py"
 
+
 class default:
     BASE_PIP_URL = "https://pypi.python.org/simple"
     GC3PIE_REPO_URL = "https://github.com/uzh/gc3pie.git"
@@ -101,6 +100,7 @@ class default:
     UNRELEASED = False
     WITH_APPS = True
     ANACONDA = False
+
 
 ANACONDA_ADDITIONAL_CHANNELS = [
     'synthicity',
@@ -147,29 +147,26 @@ def main():
         logging.info("Installing GC3Pie released code from PyPI ...")
         install_gc3pie_from_pypi(options.target, options.features)
 
-    print("""
-            ===============================
-            Installation of GC3Pie is done!
-            ===============================
+    act_cmd = '. {t}/bin/activate'.format(t=options.target)
+    if default.ANACONDA:
+        act_cmd = '. source activate {t}'.format(t=os.path.basename(os.path.normpath(options.target)))
 
-            In order to work with GC3Pie you have to enable the virtual
-            environment with the command:
-    """)
-    if not default.ANACONDA:
-        print("""
-            . {target}/bin/activate
-        """.format(target=options.target))
-    else:
-        print("""
-            source activate {target}
-        """.format(target=os.path.basename(os.path.normpath(options.target))))
     print("""
-        You need to run the above command on every new shell you open before
-        using GC3Pie commands, but just once per session.
+===============================
+Installation of GC3Pie is done!
+===============================
 
-        If the shell's prompt starts with '(gc3pie)' it means that the virtual
-        environment has been enabled.
-    """)
+In order to work with GC3Pie you have to enable the virtual
+environment with the command:
+
+    {act_cmd}
+
+You need to run the above command on every new shell you open before
+using GC3Pie commands, but just once per session.
+
+If the shell's prompt starts with '(gc3pie)' it means that the virtual
+environment has been enabled.
+    """.format(act_cmd=act_cmd))
 
     sys.exit(os.EX_OK)
 
@@ -232,7 +229,7 @@ def ask(question, default="yes"):
 
 def bool_to_yn(val):
     """Return ``yes`` or ``no`` depending on the truth value of `val`."""
-    return ('yes' if val else 'no')
+    return 'yes' if val else 'no'
 
 
 def check_ok_to_continue_or_abort(msg):
@@ -265,51 +262,51 @@ def check_target_directory(target, overwrite=None):
     - ``True``: wipe target away if exists, without warning.
     """
     if default.ANACONDA:
-        if os.path.basename(os.path.normpath(target)) in check_output(['conda', 'env', 'list']):
-            wipe = ask("Do you want to wipe the existing conda environment {e}?".format(e=os.path.basename(os.path.normpath(target))))
+        virt_dir = os.path.basename(os.path.normpath(target))
+        if virt_dir in check_output(['conda', 'env', 'list']):
+            wipe = ask("Do you want to wipe the existing conda environment {e}?".format(e=virt_dir))
             if wipe:
-                check_call(['conda', 'remove', '-n', os.path.basename(os.path.normpath(target)), '--all', '-y'])
+                check_call(['conda', 'remove', '-n', virt_dir, '--all', '-y'])
             else:
-                die(os.EX_CANTCREAT,
-                    "Unable to create virtual environment: target directory already exists",
+                die(os.EX_CANTCREAT, "Unable to create virtual environment: target directory already exists",
                     """
-                        The script was unable to create an Anacoda virtual environment because it already exists.
+The script was unable to create an Anacoda virtual environment because it already exists.
 
-                        In order to proceed, you must take the following action:
+In order to proceed, you must take the following action:
 
-                        * run this script again adding '--overwrite' option, which will
-                        overwrite the {target} directory, or
+* run this script again adding '--overwrite' option, which will
+overwrite the {target} directory, or
                     """.format(**locals()))
-
-    if path.exists(target):
+    elif path.exists(target):
         print("""
-            Destination directory '{target}' already exists.
-            I can wipe it out in order to make a new installation,
-            but this means any files in that directory, and the ones
-            underneath it will be deleted.
-            """.format(**locals()))
+Destination directory '{target}' already exists.
+I can wipe it out in order to make a new installation,
+but this means any files in that directory, and the ones
+underneath it will be deleted.
+        """.format(**locals()))
         wipe = ask(
             "Do you want to wipe the installation directory '{target}' ?".format(**locals()))
         if wipe:
             logging.info("Deleting directory '%s' as requested ...", target)
             shutil.rmtree(target)
         else:
-            die(os.EX_CANTCREAT,
-                "Unable to create virtual environment: target directory already exists",
+            die(os.EX_CANTCREAT, "Unable to create virtual environment: target directory already exists",
                 """
-                    The script was unable to create a virtual environment in "{target}"
-                    because the directory already exists.
+The script was unable to create a virtual environment in "{target}"
+because the directory already exists.
 
-                    In order to proceed, you must take one of the following action:
+In order to proceed, you must take one of the following action:
 
-                    * delete the directory, or
+* delete the directory, or
 
-                    * run this script again adding '--overwrite' option, which will
-                    overwrite the {target} directory, or
+* run this script again adding '--overwrite' option, which will
+overwrite the {target} directory, or
 
-                    * specify a different path by running this script again adding the
-                    option "--target" followed by a non-existent directory.
+* specify a different path by running this script again adding the
+option "--target" followed by a non-existent directory.
                 """.format(**locals()))
+    else:
+        print("no previous installations found")
 
 
 def create_virtualenv(destdir, python=sys.executable):
@@ -594,10 +591,10 @@ def install_gc3pie_from_github(venv_dir, features,
                                repo=default.GC3PIE_REPO_URL):
     if default.ANACONDA:
         die(os.EX_SOFTWARE, "Anaconda install from source not supported",
-               """
-                Currently installing GC3PIE from github source on Anaconda python is not supported.
+            """
+Currently installing GC3Pie from github source on Anaconda python is not supported.
 
-               """.format(**locals()))
+            """.format(**locals()))
 
     require_cc()
     require_git()
@@ -920,7 +917,7 @@ def which_missing_packages(pkgs):
 
 
 def yes_or_no(value):
-    return ('yes' if value else 'no')
+    return 'yes' if value else 'no'
 
 
 if __name__ == '__main__':
