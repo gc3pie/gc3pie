@@ -43,7 +43,7 @@ import multiprocessing as mp
 from parsedatetime.parsedatetime import Calendar
 
 # local modules
-from gc3libs import Run
+from gc3libs import __version__, Run
 from gc3libs.quantity import Duration, Memory
 from gc3libs.session import Session
 import gc3libs.cmdline
