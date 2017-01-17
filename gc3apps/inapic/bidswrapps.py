@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-#   bidsapps.py -- Front-end script for running the docking program rDock
+#   bidswrapps.py -- Front-end script for running the docking program rDock
 #   over a list of ligand files.
 #
 #   Copyright (C) 2014, 2015 S3IT, University of Zurich
@@ -23,7 +23,7 @@
 
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
-See the output of ``bidsapps.py --help`` for program usage
+See the output of ``bidswrapps.py --help`` for program usage
 instructions.
 
 Input parameters consists of:
@@ -34,9 +34,9 @@ Options:
 """
 
 # fixme
+# TODO move to own repo (echo_and_run_cmd into same folder; -> script_dir)
 # specify exec instance id & flavour via command, not conf file? no write to conf file
 # TODO riccardo how to log
-# TODO group calls
 # TODO clean way to add volumes to docker
 # TODO allow participant_label on group level
 
@@ -50,12 +50,11 @@ __changelog__ = """
 __author__ = 'Franz Liem <franziskus.liem@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
-# run script, but allow GC3Pie persistence module to access classes defined here;
-# for details, see: https://github.com/uzh/gc3pie/issues/95
-if __name__ == "__main__":
-    import bidsapps
 
-    bidsapps.BidsAppsScript().run()
+if __name__ == "__main__":
+    import bidswrapps
+
+    bidswrapps.BidsWrappsScript().run()
 
 import os
 import sys
@@ -85,10 +84,10 @@ DEFAULT_REMOTE_OUTPUT_FOLDER = "./output"
 
 
 ## custom application class
-class BidsAppsApplication(Application):
+class BidsWrappsApplication(Application):
     """
     """
-    application_name = 'bidsapps'
+    application_name = 'bidswrapps'
 
     def __init__(self,
                  analysis_level,
@@ -108,6 +107,7 @@ class BidsAppsApplication(Application):
 
         # fixme
         # wrapper = resource_filename(Requirement.parse("gc3pie"), "gc3libs/etc/echo_and_run_cmd.py")
+        # script_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
         wrapper = "/home/ubuntu/gtrac_long_repo/gc3pie/gc3libs/etc/echo_and_run_cmd.py"
         inputs[wrapper] = os.path.basename(wrapper)
 
@@ -136,7 +136,7 @@ class BidsAppsApplication(Application):
                              arguments="python ./%s %s" % (inputs[wrapper], cmd),
                              inputs=inputs,
                              outputs=[DEFAULT_REMOTE_OUTPUT_FOLDER],
-                             stdout='bidsapps.log',
+                             stdout='bidswrapps.log',
                              join=True,
                              **extra_args)
 
@@ -144,10 +144,10 @@ class BidsAppsApplication(Application):
         #
 
 
-class BidsAppsScript(SessionBasedScript):
+class BidsWrappsScript(SessionBasedScript):
     """
     
-    The ``bidsapps`` command keeps a record of jobs (submitted, executed
+    The ``bidswrapps`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
@@ -157,7 +157,7 @@ class BidsAppsScript(SessionBasedScript):
     'SUBMITTED' or 'RUNNING' state; ``gnift`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
-    This class is called when bidsapps command is executed.
+    This class is called when bidswrapps command is executed.
     Loops through subjects in bids input folder and starts instance
     """
 
@@ -165,8 +165,8 @@ class BidsAppsScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version=__version__,  # module version == script version
-            application=BidsAppsApplication,
-            stats_only_for=BidsAppsApplication,
+            application=BidsWrappsApplication,
+            stats_only_for=BidsWrappsApplication,
         )
 
     def setup_args(self):
@@ -205,20 +205,20 @@ class BidsAppsScript(SessionBasedScript):
                             'despite being listed in --participant_file.')
 
         self.add_param("-ra", "--runscript_args", type=str, dest="runscript_args", default=None,
-                       help='BIDSAPPS: add application-specific arguments '
+                       help='BIDS Apps: add application-specific arguments '
                             'passed to the runscripts in qotation marks: '
                             'e.g. \"--license_key xx\" ')
 
         # Overwrite script input options to get more specific help
         self.add_param("-o", "--output", type=str, dest="output", default=None,
-                       help="BIDSAPPS: local folder where logfiles are copied to")
+                       help="BIDS Apps: local folder where logfiles are copied to")
 
         self.add_param("-c", "--cpu-cores", dest="ncores",
                        type=positive_int, default=1,  # 1 core
                        metavar="NUM",
                        help="Set the number of CPU cores required for each job"
                             " (default: %(default)s). NUM must be a whole number.\n"
-                            " NOTE: Parameter is NOT piped into bidsapp n_cpus. Specifiy --n_cpus as -ra")
+                            " NOTE: Parameter is NOT piped into BIDS Apps' n_cpus. Specifiy --n_cpus as -ra")
 
         self.add_param("-m", "--memory-per-core", dest="memory_per_core",
                        type=Memory, default=2 * GB,  # 2 GB
@@ -226,7 +226,7 @@ class BidsAppsScript(SessionBasedScript):
                        help="Set the amount of memory required per execution core;"
                             " default: %(default)s. Specify this as an integral number"
                             " followed by a unit, e.g., '512MB' or '4GB'."
-                            " NOTE: Parameter is NOT piped into bidsapp mem_mb. Specifiy --mem_mb as -ra")
+                            " NOTE: Parameter is NOT piped into BIDS Apps' mem_mb. Specifiy --mem_mb as -ra")
 
     def new_tasks(self, extra):
         """
@@ -293,7 +293,7 @@ class BidsAppsScript(SessionBasedScript):
                 extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', '%s' % extra_args['jobname'])
 
                 # mem_mb = self.params.memory_per_core.amount(unit=MB)
-                tasks.append(BidsAppsApplication(
+                tasks.append(BidsWrappsApplication(
                     self.params.analysis_level,
                     subject_id,
                     self.params.bids_input_folder,
@@ -307,7 +307,7 @@ class BidsAppsScript(SessionBasedScript):
             extra_args['jobname'] = self.params.analysis_level
             extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', '%s' % extra_args['jobname'])
-            tasks.append(BidsAppsApplication(
+            tasks.append(BidsWrappsApplication(
                 self.params.analysis_level,
                 None,  # subject_id
                 self.params.bids_input_folder,
