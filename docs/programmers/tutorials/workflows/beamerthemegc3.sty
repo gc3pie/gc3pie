@@ -184,10 +184,15 @@
 \setbeamercovered{transparent}
 \setbeamertemplate{sections in toc}[sections numbered]
 
-% Itemize items
-\defbeamertemplate*{itemize item}{uzh}{\hbox{--}}
-\defbeamertemplate*{itemize subitem}{uzh}{\hbox{--}}
-\defbeamertemplate*{itemize subsubitem}{uzh}{\hbox{--}}
+% Itemize/Enumerate items
+\defbeamertemplate*{itemize item}{uzh}{\scriptsize\raise1.25pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+\defbeamertemplate*{itemize subitem}{uzh}{\tiny\raise1.5pt\hbox{\donotcoloroutermaths$\blacksquare$}}
+\defbeamertemplate*{itemize subsubitem}{uzh}{\tiny\raise1.5pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+\defbeamertemplate*{enumerate item}{uzh}{{\itshape\color{gray}\insertenumlabel.}}
+\defbeamertemplate*{enumerate subitem}{uzh}{{\itshape\color{gray}\insertenumlabel.\insertsubenumlabel}}
+\defbeamertemplate*{enumerate subsubitem}{uzh}{{\itshape\color{gray}\insertenumlabel.\insertsubenumlabel.\insertsubsubenumlabel}}
+\defbeamertemplate*{enumerate mini template}{uzh}{{\color{gray}\insertenumlabel}}
+
 
 % Bibliography
 \setbeamertemplate{bibliography item}[triangle]
