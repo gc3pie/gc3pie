@@ -104,7 +104,18 @@
     some steps may run in parallel, some might need to be sequenced.
 
     \+
-    \includegraphics[width=0.70\textwidth]{fig/warholize-wkf-with-results.pdf}
+    \only<1>{%
+      \begin{tabular}[c]{ccc}
+        \includegraphics[width=0.4\textwidth]{fig/butterfly.jpg}
+        &
+          \includegraphics[width=0.1\textwidth,totalheight=0.25\textheight]{fig/arrow.pdf}
+        &
+          \includegraphics[width=0.4\textwidth]{fig/warholized-butterfly.jpg}
+      \end{tabular}
+    }%
+    \only<2>{%
+      \includegraphics[width=0.70\textwidth]{fig/warholize-wkf-with-results.pdf}
+    }%
   \end{center}
 \end{frame}
 
