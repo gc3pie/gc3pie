@@ -17,7 +17,7 @@
   \\[1ex]
   University of Zurich
 }
-\date{November~14--17, 2016}
+\date{January~23--27, 2017}
 
 \begin{document}
 
@@ -32,9 +32,14 @@
 
   GC3Pie consists of three main components:
 
-  \begin{block}{GC3Libs:} Python library for controlling the life-cycle of computational job collections. \end{block}
-  \begin{block}{GC3Utils:} This is a small set of low-level utilities exposing the main functionality provided by GC3Libs. \end{block}
-  \begin{block}{GC3Apps:} A collection of driver scripts to run large job campaigns. \end{block}
+  \begin{describe}{GC3Libs} Python library for controlling the life-cycle of
+    computational job collections. \end{describe}
+
+  \begin{describe}{GC3Utils} This is a small set of low-level utilities exposing
+    the main functionality provided by GC3Libs. \end{describe}
+
+  \begin{describe}{GC3Apps} A collection of driver scripts to run large job
+    campaigns. \end{describe}
 \end{frame}
 
 \begin{frame}
@@ -525,7 +530,7 @@ class GrayscaleApp(Application):
   For example:
   \begin{python}
     inputs = [
-      '/home/rmurri/values.dat',
+      '/home/rmurri/db01/values.dat',
       '/home/rmurri/stats.csv',
     ]
   \end{python}
@@ -744,7 +749,7 @@ class AScript(SessionBasedScript):
     one instance of it (as in the previous slide).
 
     \+
-    Can you convert the \href{https://raw.githubusercontent.com/uzh/gc3pie/master/docs/programmers/tutorials/workflows/butterfly.jpg}{\texttt{butterfly.jpg}} file to gray-scale using
+    Can you convert the \href{https://raw.githubusercontent.com/uzh/gc3pie/master/docs/programmers/tutorials/workflows/fig/butterfly.jpg}{\texttt{butterfly.jpg}} file to gray-scale using
     this GC3Pie script?
 
     \+ \footnotesize
@@ -939,7 +944,7 @@ type = openstack
   When multiple resources are available, you can select where
   applications will be run with option \texttt{--resource}/\texttt{-r}:
 \begin{semiverbatim}
-    \$ ./warholize.py -{}-session -r localhost
+    \$ ./warholize.py -r localhost
 \end{semiverbatim}
 
   \+ The resource name must exists in the configuration file (i.e.,
