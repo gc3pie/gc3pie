@@ -17,7 +17,7 @@
   \\[1ex]
   University of Zurich
 }
-\date{November~14--17, 2016}
+\date{January~23--27, 2017}
 
 \begin{document}
 
@@ -59,17 +59,17 @@
 
   A session-based script creates a session
   \\
-  and \alert{runs all the jobs in it until completion.}
+  and \alert<1>{runs all the jobs in it until completion.}
 
   \+ Run jobs in session \texttt{logo},
   polling for updates every 5 seconds:
 \begin{semiverbatim}\small
-    \$ ./warholize.py bfly.jpg -{}-session S -{}-watch~5
+    \$ ./warholize.py bfly.jpg -{}-session S -{}-watch 5
 \end{semiverbatim}
 
   \+ \uncover<2>{
-    You can stop a GC3Pie script by pressing \emph{Ctrl+C}. \\
-    Run it again to resume activity from where it stopped.
+    \alert<2>{You can stop a GC3Pie script by pressing \emph{Ctrl+C}. \\
+    Run it again to resume activity from where it stopped.}
   }
 \end{frame}
 
@@ -199,7 +199,7 @@ GrayscaleApp.6
   \texttt{Task}/\texttt{Application} object:
 
 \begin{stdout}[basicstyle=\tiny\ttfamily]
-$ ^\HL{ginfo -s ex2b}^
+$ ^\HL{ginfo -s S}^
 GrayscaleApp.6
   ^\em [\ldots]^
   history:
@@ -220,15 +220,15 @@ GrayscaleApp.6
 
   The \texttt{gsession abort} command kills all tasks in a session.
 \begin{stdout}
-$ ~\HL{gsession abort ex2b}~
+$ ^\HL{gsession abort S}^
 \end{stdout}%$
 
   \+
   It produces normally no output; use the \texttt{-v} option to see a
   log of actions taken.
 
-  \+ \small \textbf{Note:} it is important that sessions are
-  terminated!  Otherwise, GC3Pie will consider part of the resources
+  \+ \small \alert{\textbf{Note:} it is important that sessions are
+  terminated!}  Otherwise, GC3Pie will consider part of the resources
   as still allocated to a task.  This is especially evident when
   running on a single computer: after launching a few tasks, GC3Pie
   will stop and refuse to run anything.
@@ -263,7 +263,7 @@ $ ~\HL{gsession abort ex2b}~
 
   To stop and abort a single task, use the \texttt{gkill} command:
 \begin{semiverbatim}
-    \$ gkill -s logo MyApplication.123
+    \$ gkill -s S MyApplication.123
 \end{semiverbatim}
 
 \end{frame}
@@ -277,13 +277,13 @@ $ ~\HL{gsession abort ex2b}~
   The \texttt{gselect} command is the go-to tool for selective listing
   of tasks in a session.  For example, to list finished tasks:
 \begin{semiverbatim}
-    \$ gselect -s logo -{}-state TERMINATED
+    \$ gselect -s S -{}-state TERMINATED
 \end{semiverbatim}
 
   \+ The output of \texttt{gselect} is a list of task IDs, to be fed
   into another GC3Pie command.  For example, to kill all queued tasks:
   \begin{stdout}
-    > gselect -s logo --state SUBMITTED | xargs gkill -s logo
+    > gselect -s S --state SUBMITTED | xargs gkill -s S
   \end{stdout}
 \end{frame}
 
