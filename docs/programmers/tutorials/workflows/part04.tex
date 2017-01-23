@@ -17,7 +17,7 @@
   \\[1ex]
   University of Zurich
 }
-\date{November~14--17, 2016}
+\date{January~23--27, 2017}
 
 \begin{document}
 
@@ -30,7 +30,7 @@
   \begin{enumerate}
   \item Customize positional argument processing
   \item Customize option processing
-  \item More complex \texttt{new\_tasks()} implementations
+  \item More complex code in \texttt{new\_tasks()}
   \end{enumerate}
 \end{frame}
 
@@ -100,7 +100,7 @@ $ python ex4a.py --foo=1 bar baz
 
 
 \begin{frame}[fragile]
-  \frametitle{Positional argument processing}
+  \frametitle{Positional argument processing: \texttt{nargs}}
 
 \begin{python}
   def setup_args(self):
@@ -116,7 +116,7 @@ $ python ex4a.py --foo=1 bar baz
 
 
 \begin{frame}[fragile]
-  \frametitle{Positional argument processing}
+  \frametitle{Positional argument processing: \texttt{nargs}}
 
 \begin{python}
   def setup_args(self):
@@ -137,7 +137,7 @@ $ python ex4a.py --foo=1 bar baz
 
 
 \begin{frame}[fragile]
-  \frametitle{Positional argument processing}
+  \frametitle{Positional argument processing: \texttt{metavar}}
 
 \begin{python}
   def setup_args(self):
@@ -163,7 +163,7 @@ usage: ex2c [-h] [-V] [-v] [--config-files CONFIG_FILES] [-c NUM]
 
 
 \begin{frame}[fragile]
-  \frametitle{Positional argument processing}
+  \frametitle{Positional argument processing: \texttt{help}}
 
 \begin{python}
   def setup_args(self):
@@ -186,7 +186,7 @@ positional arguments:
 
 
 \begin{frame}[fragile]
-  \frametitle{Positional argument processing}
+  \frametitle{Multiple positional argument processing}
 
   Calls to \lstinline|self.add_param()| can be repeated to
   parse many different command-line arguments in sequence:
@@ -194,7 +194,7 @@ positional arguments:
 class AScript(SessionBasedScript):
   # ~\em [\ldots]~
   def setup_args(self):
-    self.add_param('input',  help="Input file")
+    self.add_param('infile', help="Input file")
     self.add_param('radius', help="Convolution radius")
     self.add_param('sigma',  help="Threshold")
 \end{python}
@@ -206,7 +206,7 @@ class AScript(SessionBasedScript):
 \end{sh}%$
   generates the equivalent of the following Python code:
   \begin{python}
-  self.params.input = 'example.py'
+  self.params.infile = 'example.py'
   self.params.radius = '10'  # it's a string!
   self.params.sigma = '2.1'  # this one too!
   \end{python}
@@ -263,7 +263,7 @@ class AScript(SessionBasedScript):
   def setup_args(self):
 
     # this argument is a string (default type)
-    self.add_param('input',  type=str,   help="...")
+    self.add_param('infile', type=str,   help="...")
 
     # the `radius` argument is an integer
     self.add_param('radius', type=int,   help="...")
@@ -277,15 +277,16 @@ class AScript(SessionBasedScript):
 \begin{frame}[fragile]
   \frametitle{Argument types}
 
-  Declaring argument types makes for better usability: if an argument
-  does not match its type, the script exists immediately and the user
-  is notified with a clear error message.
+  \textbf{Declaring argument types makes for better usability!}
+
+  \+ If an argument does not match its type, \\ the script exists immediately
+  and the user is notified with a clear error message.
 
   \+
 \begin{sh}
 $ python downloads/argp.py foo.txt 123 x
 usage: argparse [-h] ~\em [\ldots]~
-                input radius sigma
+                infile radius sigma
 argp: error: argument sigma: invalid float value: 'x'
 \end{sh}%$
 \end{frame}
@@ -306,7 +307,7 @@ class AScript(SessionBasedScript):
   # ~\em [\ldots]~
   def setup_args(self):
     # reject non-existent input files outright
-    self.add_param('input',  type=existing_file, ~\ldots~)
+    self.add_param('infile', type=existing_file, ~\ldots~)
     # force radius to be > 0
     self.add_param('radius', type=positive_int, ~\ldots~)
     #  sigma is a floating-point number
@@ -419,8 +420,13 @@ class AScript(SessionBasedScript):
   \+ The command-line invocation for one such comparison would look like this:
 \begin{sh}
 $ blastp -query new.faa -subject known.faa \
-  -evalue 1e-6 -outfmt 9
+  -evalue 1e-6 -outfmt 5
 \end{sh}%$
+
+  \+
+  \begin{center}
+    \tiny\itshape (Thanks to Lars Malmstroem for suggesting the following BLAST-related exercises.)
+  \end{center}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -435,8 +441,10 @@ $ python topblast.py [-e ~$T$~] [-m ~$F$~] \
 \end{sh}%$
     where:
     \begin{itemize}
-    \item Option \texttt{-e} (alias: \texttt{-{}-e-value}) takes a floating point threshold argument $T$;
-    \item Option \texttt{-m} (alias: \texttt{-{}-output-format}) takes a single-digit integer argument $F$;
+    \item Option \texttt{-e} (alias: \texttt{-{}-e-value}) takes a floating
+      point threshold argument $T$ (defaulting to $1.0$);
+    \item Option \texttt{-m} (alias: \texttt{-{}-output-format}) takes a
+      single-digit integer argument $F$ (default $5$);
     \item Arguments \texttt{new.faa}, \texttt{k1.faa}, etc. are files.
     \end{itemize}
 
