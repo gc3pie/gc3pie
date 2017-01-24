@@ -77,5 +77,5 @@ class BlastApp(Application):
             outputs=["output.txt"],
             output_dir=("blast-" + inp1 + "-" + inp2 + ".d"),
             stdout=None,  # BLAST's option `-o` already does this
-            stderr="stderr.txt",
+            stderr="errors.txt",
             requested_memory=1*GB)
