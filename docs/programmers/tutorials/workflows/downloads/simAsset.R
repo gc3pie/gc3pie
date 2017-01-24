@@ -112,5 +112,5 @@ paste("DEBUG: nsims=", nsims);
 S <- assetPaths(S0, mu, sig, dt, etime, nsims);
 
 ## write out results
-write.csv(S, "results.csv", row.names=F);
+write.table(t(S), "results.csv", row.names=FALSE, col.names=FALSE, sep=",");
 plotPaths(S, "results.pdf");

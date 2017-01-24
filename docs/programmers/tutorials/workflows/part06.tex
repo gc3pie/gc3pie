@@ -17,7 +17,7 @@
   \\[1ex]
   University of Zurich
 }
-\date{November~14--17, 2016}
+\date{January~23--27, 2017}
 
 \begin{document}
 
@@ -224,7 +224,10 @@ $ ./grayscale.py bfly.jpg
 
   \+
   The path to the output directory is available as
-  \lstinline|self.output_dir|; if \texttt{stdout} and \texttt{stderr}
+  \lstinline|self.output_dir|.
+
+  \+
+  If \texttt{stdout} and \texttt{stderr}
   have been captured, the \textbf{relative} paths to the capture files
   are available as \lstinline|self.stdout| and
   \lstinline|self.stderr|.
@@ -246,6 +249,32 @@ class MyApp(Application):
       gc3libs.log.warn(
         "Application %s reported errors!", self)
 \end{python}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Useful in post-processing}\small
+
+  These attributes are available in the \texttt{terminated()} method:
+
+  \+
+  \begin{describe}{\lstinline|self.inputs|}
+    Python dictionary, mapping local (absolute) paths to remote paths (relative
+    to execution directory)
+  \end{describe}
+
+  \+
+  \begin{describe}{\lstinline|self.outputs|}
+    Python dictionary, mapping remote paths (relative to execution directory) to
+    \emph{URLs} where they have been copied. In particular,
+    \lstinline|self.outputs.keys()| is the list of output file names.
+  \end{describe}
+
+  \+
+  \begin{describe}{\lstinline|self.output_dir|}
+    Path to the local directory where output files have been downloaded.
+  \end{describe}
+
 \end{frame}
 
 
@@ -308,7 +337,7 @@ class MyApp(Application):
       7 signal}} for a list of OS signals and their numeric values.
 
   \+
-  {\bfseries Note that GC3Pie overloads some signal codes (unused
+  {\bfseries Note that GC3Pie uses some signal codes (not used
     by the OS) to represent its own specific errors.}
 
   \+
@@ -402,7 +431,7 @@ class MyApp(Application):
 
 
 \begin{frame}[fragile]
-  \begin{exercise*}[6.C] \emph{(Difficult)} \small
+  \begin{exercise*}[6.C] \emph{(Difficult)} \footnotesize
 
     MATLAB has the annoying habit of exiting with code 0 even when some error occurred.
 
@@ -413,13 +442,14 @@ class MyApp(Application):
       script file, like this: \texttt{app = MatlabApp("\href{https://github.com/uzh/gc3pie/blob/master/docs/programmers/tutorials/workflows/downloads/ra.m}{ra.m}")};
     \item Runs the following command:
 \begin{semiverbatim}
-matlab -nodesktop -nojvm \emph{file.m}
+matlab -nodesktop -nojvm -r \emph{file}
 \end{semiverbatim}
       where \emph{file.m} is the file given to the
       \texttt{MatlabApp()} constructor.
-    \item captures the standard error output (\texttt{stderr}) of the
-      MATLAB script and, if the string ``\texttt{Out of memory.}''
-      occurs in it, sets the application exitcode to 11.
+    \item captures the standard error output (\texttt{stderr}) of the MATLAB
+      script and, if one of the strings ``\texttt{Out of memory.}'' or
+      ``\texttt{exceeds maximum array size}'' occurs in it, sets the application
+      exitcode to 11.
     \end{itemize}
 
     Verify that it works by running MATLAB script
@@ -430,59 +460,76 @@ matlab -nodesktop -nojvm \emph{file.m}
 \end{frame}
 
 
-% \begin{frame}[fragile]
-%   \frametitle{Global post-processing}
-%   To add some code which will be executed \emph{just before the script
-%     exits,} add a \lstinline|after_main_loop| method:
-
-%   \begin{python}
-% def after_main_loop(self):
-%   model_names = {}
-%   for app in ~\HL{self.session.tasks.values()}~:
-%     if app.execution.state != Run.State.TERMINATED:
-%       return
-%     if app.model_name in model_names:
-%         model_names[app.model_name] += 1
-%     else:
-%         model_names[app.model_name] = 1
-%   \end{python}
-
-%   \begin{itemize}
-%   \item \lstinline|self.session.tasks| is a map
-%     \lstinline|JobID|~$\Rightarrow$~\lstinline|Application| object
-%   \item \lstinline|self.session.tasks.values()| thus contains a list
-%     of all the \textbf{Application}s created by the \lstinline|new_tasks|
-%   \end{itemize}
-% \end{frame}
-
-
 \begin{frame}
-  \frametitle{Global post-processing}
+  \frametitle{Global post-processing, I}
 Further options for customizing a session-based script:
-\begin{description}
-\item [\texttt{before\_main\_loop(self)}] to execute some code
-  \emph{before} the submission of the jobs.
-\item [\texttt{after\_main\_loop(self)}] to execute some code
-  \emph{after} the main loop. A list of all Application objects is
-  available in the \lstinline|self.session.tasks.values()| list.
-\end{description}
+
+\+
+\begin{describe}{\lstinline|before_main_loop(self)|}
+  to execute some code \emph{before} the main loop starts.
+\end{describe}
+
+\+
+\begin{describe}{\lstinline|after_main_loop(self)|}
+  to execute some code \emph{after} the main loop, i.e., before the script
+  quits. A list of all Application objects is available in the
+  \lstinline|self.session.tasks.values()| list.
+\end{describe}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Global post-processing, II}
+  Example: compute statistical distribution of termination statuses:
+
+  \begin{python}
+def after_main_loop(self):
+  # check that all tasks are terminated
+  can_postprocess = True
+  for task in self.session.tasks.values():
+    if task.execution.state != 'TERMINATED':
+      can_postprocess = False
+      break
+  if can_postprocess:
+    # do stuff... (see next slide)
+  \end{python}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Global post-processing, III}
+  Example: compute statistical distribution of termination statuses (cont'd):
+
+  \begin{python}
+def after_main_loop(self):
+  # ... (see prev slide)
+  if can_postprocess:
+    status_counts = defaultdict(int)
+    for app in self.session.tasks.values():
+      termstatus = app.execution.returncode
+      status_counts[termstatus] += 1
+  \end{python}
+
+  \+\small Variable \lstinline|self.session.tasks| holds a mapping
+  \lstinline|JobID|~$\Rightarrow$~\lstinline|Application|; thus
+  \lstinline|self.session.tasks.values()| is a list of all the
+  \texttt{Application} instances returned by \lstinline|new_tasks|
 \end{frame}
 
 
 \begin{frame}
-  \frametitle{Detour: Asian ``put'' option pricing, I}
-  \small
-  The script \texttt{simAsset.R} simulates pricing
-  \href{https://en.wikipedia.org/wiki/Asian_option}{Asian ``put''
-    options} over a certain amount of time.  Different pricing paths
-  are generated, all starting from the same initial price.
+  \frametitle{Detour: asset pricing, I}
+  \small The script \texttt{simAsset.R} simulates asset pricing over a certain
+  amount of time. Different pricing paths are generated using a
+  \href{https://en.wikipedia.org/wiki/Wiener_process}{1D Brownian motion},
+  all starting from the same initial price.
   \begin{center}
     \includegraphics[width=0.75\linewidth]{fig/simAsset.pdf}
   \end{center}
 \end{frame}
 
 \begin{frame}[fragile]
-  \frametitle{Detour: Asian ``put'' option pricing, II}
+  \frametitle{Detour: asset pricing, II}
   \small
   You can run the \texttt{simAsset.R} script with these positional parameters:
   \begin{description}
@@ -516,7 +563,7 @@ Further options for customizing a session-based script:
     \item takes the same command-line positional arguments as \texttt{simAsset.R}, \emph{plus} an additional integer trailing parameter $P$;
     \item runs \texttt{simAsset.R} (in parallel) $P$ times with the given arguments (so, effectively simulates $N \cdot P$ price paths);
     \item reads all the generated \texttt{results.csv} files, and
-    \item computes and prints the average value of the option at the end of the simulated time, across all $N \cdot P$ price paths.
+    \item computes and prints the average value of the asset at the end of the simulated time, across all $N \cdot P$ price paths.
     \end{itemize}
 
     \+ {\footnotesize (For easier reading CSV files, you can use the standard
