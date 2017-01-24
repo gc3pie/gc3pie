@@ -16,7 +16,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__version__ = '2.0.2'
+import itertools
+
+__version__ = '2.0.3'
 __author__ = '''
 Antonio Messina <antonio.s.messina@gmail.com>
 Riccardo Murri <riccardo.murri@gmail.com>
@@ -53,10 +55,11 @@ the correct 'python' binary.  For example:
 
   /usr/local/bin/python26 %s
 """ % (sys.executable, major, minor, release, sys.argv[0]))
-    sys.exit(70) # os.EX_UNAVAILABLE
-
+    sys.exit(70)  # os.EX_UNAVAILABLE
 
 ## now we know we're running Py 2.6+, do the rest of the setup
+
+import locale
 
 import logging
 
@@ -69,8 +72,6 @@ from distutils.util import strtobool
 # for use in `download_from_pypi`
 from distutils.version import LooseVersion
 
-from fnmatch import fnmatch
-
 import os
 from os import path
 
@@ -78,30 +79,37 @@ import re
 
 import shutil
 
-from subprocess import call, check_call, check_output, CalledProcessError
+from subprocess import check_call, check_output, CalledProcessError
 
 from urllib2 import urlopen
 
+locale.setlocale(locale.LC_ALL, 'C')
 
 ## defaults and constants
 
-PROG="GC3Pie install"
+PROG = "GC3Pie install"
 
-VIRTUALENV_LATEST_URL="https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
-VIRTUALENV_191_URL="https://raw.github.com/pypa/virtualenv/1.9.1/virtualenv.py"
+VIRTUALENV_LATEST_URL = "https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
+VIRTUALENV_191_URL = "https://raw.github.com/pypa/virtualenv/1.9.1/virtualenv.py"
+
 
 class default:
-    BASE_PIP_URL="https://pypi.python.org/simple"
-    GC3PIE_REPO_URL="https://github.com/uzh/gc3pie.git"
+    BASE_PIP_URL = "https://pypi.python.org/simple"
+    GC3PIE_REPO_URL = "https://github.com/uzh/gc3pie.git"
     TARGET = path.expandvars('$HOME/gc3pie')
     UNRELEASED = False
     WITH_APPS = True
+    ANACONDA = False
 
+
+ANACONDA_ADDITIONAL_CHANNELS = [
+    'synthicity',
+    'pdrops',
+    'gonzo'
+]
 
 # by default, ask for confirmation
 DO_NOT_ASK_AND_ASSUME_YES = False
-
-
 
 ## main
 
@@ -125,6 +133,9 @@ def main():
 
     require_sw_prerequisites()
 
+    if 'Anaconda' in sys.version:
+        default.ANACONDA = True
+
     check_target_directory(options.target, options.overwrite)
 
     create_virtualenv(options.target, options.python)
@@ -136,6 +147,10 @@ def main():
         logging.info("Installing GC3Pie released code from PyPI ...")
         install_gc3pie_from_pypi(options.target, options.features)
 
+    act_cmd = '. {t}/bin/activate'.format(t=options.target)
+    if default.ANACONDA:
+        act_cmd = '. source activate {t}'.format(t=os.path.basename(os.path.normpath(options.target)))
+
     print("""
 ===============================
 Installation of GC3Pie is done!
@@ -144,15 +159,15 @@ Installation of GC3Pie is done!
 In order to work with GC3Pie you have to enable the virtual
 environment with the command:
 
-    . {target}/bin/activate
+    {act_cmd}
 
 You need to run the above command on every new shell you open before
 using GC3Pie commands, but just once per session.
 
 If the shell's prompt starts with '(gc3pie)' it means that the virtual
 environment has been enabled.
+    """.format(act_cmd=act_cmd))
 
-    """.format(target=options.target))
     sys.exit(os.EX_OK)
 
 
@@ -214,7 +229,7 @@ def ask(question, default="yes"):
 
 def bool_to_yn(val):
     """Return ``yes`` or ``no`` depending on the truth value of `val`."""
-    return ('yes' if val else 'no')
+    return 'yes' if val else 'no'
 
 
 def check_ok_to_continue_or_abort(msg):
@@ -246,27 +261,36 @@ def check_target_directory(target, overwrite=None):
     - ``False``: do not remove target if it exists;
     - ``True``: wipe target away if exists, without warning.
     """
-    if path.exists(target):
-        if overwrite is None:
-            print("""
+    if default.ANACONDA:
+        virt_dir = os.path.basename(os.path.normpath(target))
+        if virt_dir in check_output(['conda', 'env', 'list']):
+            wipe = ask("Do you want to wipe the existing conda environment {e}?".format(e=virt_dir))
+            if wipe:
+                check_call(['conda', 'remove', '-n', virt_dir, '--all', '-y'])
+            else:
+                die(os.EX_CANTCREAT, "Unable to create virtual environment: target directory already exists",
+                    """
+The script was unable to create an Anacoda virtual environment because it already exists.
+
+In order to proceed, you must take the following action:
+
+* run this script again adding '--overwrite' option, which will
+overwrite the {target} directory, or
+                    """.format(**locals()))
+    elif path.exists(target):
+        print("""
 Destination directory '{target}' already exists.
 I can wipe it out in order to make a new installation,
 but this means any files in that directory, and the ones
 underneath it will be deleted.
-
-            """.format(**locals()))
-            wipe = ask(
-                "Do you want to wipe the installation directory '{target}' ?"
-                .format(** locals()))
-            if wipe:
-                overwrite = True
-            else:
-                overwrite = False
-
-        # if directory exists and cannot be overwritten, abort
-        if not overwrite:
-            die(os.EX_CANTCREAT,
-                "Unable to create virtualenv: target directory already exists",
+        """.format(**locals()))
+        wipe = ask(
+            "Do you want to wipe the installation directory '{target}' ?".format(**locals()))
+        if wipe:
+            logging.info("Deleting directory '%s' as requested ...", target)
+            shutil.rmtree(target)
+        else:
+            die(os.EX_CANTCREAT, "Unable to create virtual environment: target directory already exists",
                 """
 The script was unable to create a virtual environment in "{target}"
 because the directory already exists.
@@ -276,16 +300,13 @@ In order to proceed, you must take one of the following action:
 * delete the directory, or
 
 * run this script again adding '--overwrite' option, which will
-  overwrite the {target} directory, or
+overwrite the {target} directory, or
 
 * specify a different path by running this script again adding the
-  option "--target" followed by a non-existent directory.
+option "--target" followed by a non-existent directory.
                 """.format(**locals()))
-
-        # else remove the entire directory tree
-        else:
-            logging.info("Deleting directory '%s' as requested ...", target)
-            shutil.rmtree(target)
+    else:
+        print("no previous installations found")
 
 
 def create_virtualenv(destdir, python=sys.executable):
@@ -306,140 +327,116 @@ Please run 'deactivate', then run this script again.
 
     # Anaconda Python needs special treatment because of the relative
     # RPATH, see Issue 479
-    if 'Anaconda' in sys.version:
-        python_is_anaconda = True
-        anaconda_root_dir = fix_virtualenv_issue_with_anaconda(python, destdir)
+    if default.ANACONDA:
+        logging.info('Anaconda installation detected, switching from virtualenv to anaconda virtual environment')
+        args = ['conda', 'create', '-n', os.path.basename(os.path.normpath(destdir)), 'anaconda', '-y']
+        check_call(args)
     else:
-        python_is_anaconda = False
 
-    # check for conditions that require us to skip site packages:
-    # - GC3Pie already installed
-    # - `pip` or `easy_install` already in the system path (cannot upgrade setuptools and friends)
-    if (have_command('gc3utils')
-        or have_command('easy_install')
-        or have_command('pip')):
-        # Ananconda Python ships setuptools so we have to explicitly exclude them
-        if python_is_anaconda:
-            with_site_packages = ['--system-site-packages', '--no-setuptools']
-            check_ok_to_continue_or_abort("""
-Anaconda Python detected!  I'm creating the virtual environment with a
-'--system-site-packages' option, to let GC3Pie programs use all the
-libraries that come bundled with Anaconda.  If this leads to errors
-related to 'setuptools', 'distribute' or 'pip', then please report a
-bug to the GC3Pie mailing list gc3pie@googlegroups.com
-""")
-        else:
+        # check for conditions that require us to skip site packages:
+        # - GC3Pie already installed
+        # - `pip` or `easy_install` already in the system path (cannot upgrade setuptools and friends)
+        if have_command('gc3utils') or have_command('easy_install') or have_command('pip'):
             # XXX: could this be replaced by `--no-setuptools` simply?
             with_site_packages = ['--no-site-packages']
-    else:
-        # no issue in allowing access to system site packages
-        with_site_packages = ['--system-site-packages']
-
-    # use latest virtualenv that can use `.tar.gz` files
-    download(VIRTUALENV_191_URL, to_file='virtualenv.py')
-
-    # run: python virtualenv.py --[no,system]-site-packages $DESTDIR
-    try:
-        check_call(
-            [python, 'virtualenv.py']
-            + with_site_packages
-            + ['-p', python, destdir])
-        logging.info("Created Python virtual environment in '%s'", destdir)
-    except CalledProcessError as err:
-        rc = err.returncode
-        die(os.EX_SOFTWARE,
-            "Cannot create virtual environment",
-            """
-The command::
-
-        {python} virtualenv.py {with_site_packages} -p {python} {destdir}
-
-exited with failure code {rc} and did not create a Python virtual environment.
-
-Please get in touch with the GC3Pie developers at the email address
-gc3pie@googlegroups.com to get help with this error.
-            """.format(**locals()))
-
-    if python_is_anaconda:
-        # since we created the virtenv with `--no-setuptools`, the
-        # `pip` executable has not been created; copy the one shipped
-        # with Anaconda now
-        run(
-            "sed -e '1s^{anaconda_root_dir}/bin/python^{destdir}/bin/python^'"
-            " < '{anaconda_root_dir}/bin/pip' > '{destdir}/bin/pip'"
-            .format(**locals()))
-        run("chmod -v +x '{destdir}/bin/pip'".format(**locals()))
-        logging.info("Installed Anaconda's version of `pip` into the virtual env")
-
-    # sometimes virtualenv installs pip as pip-X.Y, try to patch this
-    bindir = '{destdir}/bin/'.format(**locals())
-    if not path.isfile('{bindir}/pip'.format(**locals())):
-        # find `pip` version that matches current Python
-        target = ('%d.%d' % sys.version_info[:2])
-        pips = [entry for entry in os.listdir(bindir)
-                if entry.startswith('pip-')]
-        for pip in pips:
-            _, pip_version = pip.split('-')
-            if pip_version == target:
-                os.symlink('{bindir}/{pip}'.format(**locals()),
-                           '{bindir}/pip'.format(**locals()))
-                logging.info("Using `%s` as default `pip` tool", pip)
-                break
         else:
-            # no `pip-X.Y` matched
-            die(os.EX_UNAVAILABLE, "No `pip` executable found",
-                """
-No `pip` executable was installed in the Python virtual environment.
+            # no issue in allowing access to system site packages
+            with_site_packages = ['--system-site-packages']
 
-Installation cannot continue; please get in touch with the GC3Pie
-developers at the email address gc3pie@googlegroups.com to get help
-with this error.
+        # use latest virtualenv that can use `.tar.gz` files
+        download(VIRTUALENV_191_URL, to_file='virtualenv.py')
 
-Please include the following information in your issue report:
-
->>> sys.executable = {python}
->>> sys.version = {version}
->>> bindir = {bindir}
->>> pips = {pips}
-                """.format(version=sys.version, **locals()))
-
-    # Recent versions of `pip` insist that setuptools>=0.8 is
-    # installed, because they try to use the "wheel" format for any
-    # kind of package.  So we need to update setuptools --without
-    # using `pip`!--, or `pip` will error out::
-    #
-    #     Wheel installs require setuptools >= 0.8 for dist-info support.
-    #
-    if run_in_virtualenv(
-            destdir,
-            "pip wheel --help 1>/dev/null 2>/dev/null",
-            abort_on_nonzero_exit=False) == 0:
-        logging.info("Trying to install or upgrade setuptools ...")
-        # NOTE: setuptools 2.x requires Python >= 2.6; since GC3Pie 2.1+
-        # dropped support for Python <2.6, we assume the Python version
-        # has already been checked when the code gets here and do not test
-        # it again ...
+        # run: python virtualenv.py --[no,system]-site-packages $DESTDIR
         try:
-            if path.exists(path.join(destdir, 'bin/easy_install')):
-                logging.info("`easy_install` is available, using it to upgrade setuptools")
-                run_in_virtualenv(destdir, "easy_install -U setuptools")
-            else:
-                tarfile = download_from_pypi('setuptools')
-                logging.info("Downloaded %s from PyPI; now installing it ...",
-                             path.basename(tarfile))
-                run("tar -xzf {tarfile}".format(**locals()))
-                run_in_virtualenv(
-                    destdir,
-                    "cd setuptools-* && {python} setup.py install".format(**locals()))
+            check_call(
+                [python, 'virtualenv.py']
+                + with_site_packages
+                + ['-p', python, destdir, '--distribute'])
+            logging.info("Created Python virtual environment in '%s'", destdir)
         except CalledProcessError as err:
+            rc = err.returncode
             die(os.EX_SOFTWARE,
-                "Failed to install the latest version of Python 'setuptools'",
+                "Cannot create virtual environment",
                 """
-The required Python package 'setuptools' could not be installed.
+    The command::
 
-Please get in touch with the GC3Pie developers at the email address
-gc3pie@googlegroups.com to get help with this error.
-                """)
+            {python} virtualenv.py {with_site_packages} -p {python} {destdir}
+
+    exited with failure code {rc} and did not create a Python virtual environment.
+
+    Please get in touch with the GC3Pie developers at the email address
+    gc3pie@googlegroups.com to get help with this error.
+                """.format(**locals()))
+
+        # sometimes virtualenv installs pip as pip-X.Y, try to patch this
+        bindir = '{destdir}/bin/'.format(**locals())
+        if not path.isfile('{bindir}/pip'.format(**locals())):
+            # find `pip` version that matches current Python
+            target = ('%d.%d' % sys.version_info[:2])
+            pips = [entry for entry in os.listdir(bindir)
+                    if entry.startswith('pip-')]
+            for pip in pips:
+                _, pip_version = pip.split('-')
+                if pip_version == target:
+                    os.symlink('{bindir}/{pip}'.format(**locals()),
+                               '{bindir}/pip'.format(**locals()))
+                    logging.info("Using `%s` as default `pip` tool", pip)
+                    break
+            else:
+                # no `pip-X.Y` matched
+                die(os.EX_UNAVAILABLE, "No `pip` executable found",
+                    """
+    No `pip` executable was installed in the Python virtual environment.
+
+    Installation cannot continue; please get in touch with the GC3Pie
+    developers at the email address gc3pie@googlegroups.com to get help
+    with this error.
+
+    Please include the following information in your issue report:
+
+    >>> sys.executable = {python}
+    >>> sys.version = {version}
+    >>> bindir = {bindir}
+    >>> pips = {pips}
+                    """.format(version=sys.version, **locals()))
+
+        # Recent versions of `pip` insist that setuptools>=0.8 is
+        # installed, because they try to use the "wheel" format for any
+        # kind of package.  So we need to update setuptools --without
+        # using `pip`!--, or `pip` will error out::
+        #
+        #     Wheel installs require setuptools >= 0.8 for dist-info support.
+        #
+        if run_in_virtualenv(
+                destdir,
+                "pip wheel --help 1>/dev/null 2>/dev/null",
+                abort_on_nonzero_exit=False) == 0:
+            logging.info("Trying to install or upgrade setuptools ...")
+            # NOTE: setuptools 2.x requires Python >= 2.6; since GC3Pie 2.1+
+            # dropped support for Python <2.6, we assume the Python version
+            # has already been checked when the code gets here and do not test
+            # it again ...
+            try:
+                if path.exists(path.join(destdir, 'bin/easy_install')):
+                    logging.info("`easy_install` is available, using it to upgrade setuptools")
+                    run_in_virtualenv(destdir, "easy_install -U setuptools")
+                else:
+                    tarfile = download_from_pypi('setuptools')
+                    logging.info("Downloaded %s from PyPI; now installing it ...",
+                                 path.basename(tarfile))
+                    run("tar -xzf {tarfile}".format(**locals()))
+                    run_in_virtualenv(
+                        destdir,
+                        "cd setuptools-* && {python} setup.py install".format(**locals()))
+            except CalledProcessError as err:
+                die(os.EX_SOFTWARE,
+                    "Failed to install the latest version of Python 'setuptools'",
+                    """
+    The required Python package 'setuptools' could not be installed.
+
+    Please get in touch with the GC3Pie developers at the email address
+    gc3pie@googlegroups.com to get help with this error.
+                    """)
 
 
 def die(rc, header, msg):
@@ -525,6 +522,7 @@ def download_from_pypi(pkgname, pip_url=default.BASE_PIP_URL):
                         else:
                             parts_out.append(part)
                     return '/'.join(parts_out)
+
                 url = normalize(path.join(base_url, url))
             match = pkg_version_re.match(filename)
             assert match
@@ -545,80 +543,8 @@ Unable to download package {pkgname} from PyPI.
     return download(url)
 
 
-def fix_virtualenv_issue_with_anaconda(python, destdir):
-    """
-    Apply a workaround for Anaconda Python's incompativility with virtualenvs.
-
-    The issue is that Anaconda Python ships an executable built with a
-    relative RPATH; if the executable is located in Ananconda's
-    distribution directory, then the correct `libpython.so` is found
-    and loaded.  Otherwise, Linux' `ld.so` falls back to searching for
-    `libpython.so` in the standard library search path, which ends up
-    finding the system Python `libpython.so` (or none at all) and
-    breaks things in subtle ways. (For instance, Anaconda-shipped
-    packages are no longer found...)  Since Python's `virtualenv.py`
-    *copies* the executable into the virtualenv (don't ask me why),
-    this breakage is certain.
-
-    The workaround is simply to create a `lib/` directory in the virtualenv
-    directory and symlink the Anaconda Python libraries from there.
-
-    See GC3Pie issue 495 for more information and the sources for this
-    workaround.
-    """
-    anaconda_root_dir = path.realpath(path.join(path.dirname(python), '..'))
-    anaconda_lib_dir = path.join(anaconda_root_dir, 'lib')
-    if not path.isdir(anaconda_lib_dir):
-        die(os.EX_SOFTWARE, "Unexpected Anaconda directory layout",
-            """
-Anaconda Python detected, but I expected to find a 'lib/' directory
-under the root directory '{anaconda_root_dir}', and there is none.
-Cannot proceed; please report this issue to the GC3Pie developers
-at gc3pie@googlegroups.com.
-
-Please include the following information in your issue report:
-
->>> sys.executable = {python}
->>> sys.version = {version}
-            """.format(version=sys.version, **locals()))
-
-    # list `libpython*.so*` files
-    libs = os.listdir(anaconda_lib_dir)
-    libpython_files = [filename for filename in libs
-                       if fnmatch(filename, 'libpython*.so*')]
-    if not libpython_files:
-        die(os.EX_SOFTWARE, "Unexpected Anaconda directory layout",
-            """
-Anaconda Python detected, but I expected to find a a libpython.so
-file under directory '${anaconda_root_dir}/lib', and there is none.
-Cannot proceed; please report this issue to the GC3Pie developers
-at gc3pie@googlegroups.com.
-
-Please include the following information in your issue report:
-
->>> sys.executable = {python}
->>> sys.version = {version}
-
-$ ls -l {anaconda_root_dir}/lib/
-{libs}
-            """.format(version=sys.version, **locals()))
-
-    # actually do the patching
-    logging.info(
-        "Applying workaround for Anaconda Python's"
-        " incompatibility with virtualenv ...")
-    dest_lib_dir = path.join(destdir, 'lib')
-    os.makedirs(dest_lib_dir)
-    for filename in libpython_files:
-        src= path.join(anaconda_lib_dir, filename)
-        dst = path.join(dest_lib_dir, filename)
-        os.symlink(src, dst)
-        logging.info("%s -> %s", src, dst)
-
-    return anaconda_root_dir
-
-
 __have_command_cache = {}
+
 
 def have_command(cmd):
     """
@@ -663,6 +589,13 @@ def have_sw_package(pkg):
 
 def install_gc3pie_from_github(venv_dir, features,
                                repo=default.GC3PIE_REPO_URL):
+    if default.ANACONDA:
+        die(os.EX_SOFTWARE, "Anaconda install from source not supported",
+            """
+Currently installing GC3Pie from github source on Anaconda python is not supported.
+
+            """.format(**locals()))
+
     require_cc()
     require_git()
 
@@ -688,7 +621,7 @@ def install_gc3pie_from_github(venv_dir, features,
     run_in_virtualenv(
         venv_dir,
         "cd {venv_dir}/src && pip install -e '.{FEATURES}'"
-        .format(FEATURES=features_for_pip, **locals()))
+            .format(FEATURES=features_for_pip, **locals()))
 
     bindir = path.join(venv_dir, 'bin')
     logging.info("Installing extra applications into '%s' ...", bindir)
@@ -712,33 +645,42 @@ def install_gc3pie_from_github(venv_dir, features,
 
 
 def install_gc3pie_from_pypi(venv_dir, features):
-    logging.info(
-        "Installing GC3Pie from PyPI package with '%s/bin/pip' ...", venv_dir)
-    run_in_virtualenv(
-        venv_dir,
-        "pip install 'gc3pie{features_for_pip}'"
-        .format(features_for_pip=str.join(' ', features), **locals()))
-
-    bindir = path.join(venv_dir, 'bin')
-    logging.info("Installing extra applications into '%s' ...", bindir)
-    gc3apps_dir = path.join(venv_dir, 'gc3apps')
-    if path.isdir(gc3apps_dir):
-        apps = [path.join(gc3apps_dir, entry)
-                for entry in os.listdir(gc3apps_dir)
-                if entry.endswith('.py')]
-        for app in apps:
-            dst = path.join(bindir, path.basename(app))
-            logging.info('  %s -> %s', app, dst)
-            os.symlink(app, dst)
-            # setup.py installs package_data without the 'x' permission
-            os.chmod(app, os.stat(app).st_mode|0755)
+    if not default.ANACONDA:
+        logging.info(
+            "Installing GC3Pie from PyPI package with '%s/bin/pip' ...", venv_dir)
+        run_in_virtualenv(
+            venv_dir,
+            "pip install 'gc3pie{features_for_pip}'"
+                .format(features_for_pip=str.join(' ', features), **locals()))
+        bindir = path.join(venv_dir, 'bin')
+        logging.info("Installing extra applications into '%s' ...", bindir)
+        gc3apps_dir = path.join(venv_dir, 'gc3apps')
+        if path.isdir(gc3apps_dir):
+            apps = [path.join(gc3apps_dir, entry)
+                    for entry in os.listdir(gc3apps_dir)
+                    if entry.endswith('.py')]
+            for app in apps:
+                dst = path.join(bindir, path.basename(app))
+                logging.info('  %s -> %s', app, dst)
+                os.symlink(app, dst)
+                # setup.py installs package_data without the 'x' permission
+                os.chmod(app, os.stat(app).st_mode | 0755)
+    else:
+        logging.info("Generating Anaconda Skeleton for GC3Pie")
+        check_call(['conda', 'skeleton', 'pypi', 'gc3pie'])
+        logging.info("Building GC3Pie Anaconda package")
+        channels = list(itertools.chain(*[["-c", c] for c in ANACONDA_ADDITIONAL_CHANNELS]))
+        check_call(['conda', 'build', 'gc3pie', '--no-test'] + channels)
+        shutil.rmtree('gc3pie')
+        check_call(['conda', 'install', '-n', os.path.basename(os.path.normpath(venv_dir)),
+                    '--use-local', 'gc3pie', '-y'] + channels)
 
 
 def parse_command_line_options():
     import optparse
 
     cmdline = optparse.OptionParser(usage="usage: %prog [options]",
-                                    version=(PROG +' '+ __version__))
+                                    version=(PROG + ' ' + __version__))
     cmdline.add_option("-a", "--feature",
                        action="store",
                        dest="features",
@@ -753,7 +695,7 @@ def parse_command_line_options():
                            " To install no optional feature, use '-a none' (default)."
                        ))
     cmdline.add_option("-d", "--target",
-                       action="store", # optional because action defaults to "store"
+                       action="store",  # optional because action defaults to "store"
                        dest="target",
                        default=default.TARGET,
                        help=("Install GC3Pie virtual environment into this path."))
@@ -835,7 +777,7 @@ Installation info:
 
     proceed = ask("Are you ready to continue?")
     if not proceed:
-          abort(os.EX_TEMPFAIL, "Aborting installation as requested.")
+        abort(os.EX_TEMPFAIL, "Aborting installation as requested.")
 
 
 def require_cc():
@@ -910,7 +852,7 @@ def require_sw_prerequisites():
 
     missing = which_missing_packages(required)
     if missing:
-            print ("""
+        print ("""
 The following software packages need to be installed
 in order for GC3Pie to work: {missing}
 
@@ -920,12 +862,12 @@ with GC3Pie installation anyway.  Be warned however, that continuing
 is very likely to fail!
 
 """.format(install_cmd=install_cmd, missing=str.join(', ', missing)))
-            proceed = ask("Proceed with installation anyway?")
-            if proceed:
-                logging.warning("Proceeding with installation at your request... keep fingers crossed!")
-            else:
-                die(os.EX_UNAVAILABLE, "missing software prerequisites",
-                    """
+        proceed = ask("Proceed with installation anyway?")
+        if proceed:
+            logging.warning("Proceeding with installation at your request... keep fingers crossed!")
+        else:
+            die(os.EX_UNAVAILABLE, "missing software prerequisites",
+                """
 Please ask your system administrator to install the missing packages,
 or, if you have root access, you can do that by running the following
 command from the 'root' account:
@@ -975,7 +917,7 @@ def which_missing_packages(pkgs):
 
 
 def yes_or_no(value):
-    return ('yes' if value else 'no')
+    return 'yes' if value else 'no'
 
 
 if __name__ == '__main__':
