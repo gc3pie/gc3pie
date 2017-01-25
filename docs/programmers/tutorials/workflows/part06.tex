@@ -274,7 +274,60 @@ class MyApp(Application):
   \begin{describe}{\lstinline|self.output_dir|}
     Path to the local directory where output files have been downloaded.
   \end{describe}
+\end{frame}
 
+
+\begin{frame}[fragile]
+  \frametitle{Detour: How to $\ldots$ in Python}
+  \small{}
+
+  \begin{describe}{$\ldots$ list directory contents}
+    Use the \lstinline|os.listdir()| function:
+    \begin{python}
+>>> import os
+>>> os.listdir('/etc', 'passwd')
+['journalctl', 'wdctl', 'uname', ...]
+\end{python}
+  Note that \lstinline|os.listdir()| returns a list of \emph{relative} file names.
+  \end{describe}
+
+  \begin{describe}{$\ldots$ concatenate a directory and a file name}
+    Use the \lstinline|os.path.join()| function:
+    \begin{python}
+>>> import os
+>>> os.path.join('/etc', 'passwd')
+'/etc/passwd'
+>>> os.path.isdir('/non/existent')
+False
+    \end{python}
+  \end{describe}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Detour: How to $\ldots$ in Python}
+  \small{}
+
+  \begin{describe}{$\ldots$ make a directory}
+    Use the \lstinline|os.makedirs()| function:
+    \begin{python}
+>>> import os
+>>> os.makedirs('pictures')
+   \end{python}
+   Note that \lstinline|os.makedirs()| will raise an error if the directory
+   \emph{already exists}.
+  \end{describe}
+
+  \begin{describe}{$\ldots$ check that a directory exists}
+    Use the \lstinline|os.path.isdir()| function:
+    \begin{python}
+>>> import os
+>>> os.path.isdir('/tmp')
+True
+>>> os.path.isdir('/non/existent')
+False
+    \end{python}
+  \end{describe}
 \end{frame}
 
 
@@ -431,6 +484,39 @@ class MyApp(Application):
 
 
 \begin{frame}[fragile]
+  \frametitle{Detour: How to $\ldots$ in Python}
+  \small{}
+
+  \begin{describe}{$\ldots$ take a substring of a string}
+    Use the \texttt{text[\emph{start}:\emph{end}]} notation:
+    \begin{python}
+>>> text = 'awesome.m'
+>>> text[0:-2]
+'awesome'
+    \end{python}
+  \end{describe}
+
+  \begin{describe}{$\ldots$ check for substring inclusion}
+    Use the \lstinline|in| operator:
+    \begin{python}
+>>> 'awe' in 'awesome'
+True
+    \end{python}
+  \end{describe}
+
+  \begin{describe}{$\ldots$ read whole contents of a file}
+    Use the \lstinline|read()| on a opened file:
+    \begin{python}
+>>> data = open('results.csv')
+>>> data.read()
+'50,50.123,...'
+    \end{python}
+
+  \end{describe}
+\end{frame}
+
+
+\begin{frame}[fragile]
   \begin{exercise*}[6.C] \emph{(Difficult)} \footnotesize
 
     MATLAB has the annoying habit of exiting with code 0 even when some error occurred.
@@ -551,6 +637,62 @@ def after_main_loop(self):
   \item[results.csv] table of generated data: each column is a simulation path, each row is a time step;
   \item[results.pdf] plot of the above.
   \end{description}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Detour: How to $\ldots$ in Python}
+  \small{}
+
+  \begin{describe}{$\ldots$ compute the sum of a list of numbers}
+    Use the built-in \lstinline|sum()| function:
+    \begin{python}
+>>> sum([1, 2, 3])
+6
+    \end{python}
+  \end{describe}
+
+  \begin{describe}{$\ldots$ get the number of items in a list}
+    Use the built-in \lstinline|len()| function:
+    \begin{python}
+>>> len(['a', 'b','c'])
+3
+    \end{python}
+  \end{describe}
+
+  \begin{describe}{$\ldots$ convert a string to number}
+    Use the built-in \lstinline|float()| or \lstinline|int()| functions:
+    \begin{python}
+>>> int('3')
+3
+    \end{python}
+  \end{describe}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Detour: How to $\ldots$ in Python}
+  \small{}
+
+  \begin{describe}{$\ldots$ read a CSV file}
+    Use the \href{https://docs.python.org/2/library/csv.html}{\texttt{csv}}
+    module from the standard library:
+    \begin{python}
+import csv
+
+path = '/some/file.csv'
+data = open(path)
+rows = csv.reader(data)
+for row in rows:
+  # process row
+    \end{python}
+  \end{describe}
+
+  \begin{describe}{$\ldots$ extract fields from CSV rows}
+    When using the \href{https://docs.python.org/2/library/csv.html}{\texttt{csv}}
+    module, rows are just tuples of values.  Use \texttt{row[\emph{i}]} to
+    access the \texttt{\emph{i}}-th field in the row.
+  \end{describe}
 \end{frame}
 
 
