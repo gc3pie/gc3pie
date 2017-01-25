@@ -17,7 +17,7 @@
   \\[1ex]
   University of Zurich
 }
-\date{November~14--17, 2016}
+\date{January~23--27, 2017}
 
 
 \begin{document}
@@ -149,7 +149,7 @@
 
   \+
   So you can nest them, and create parallelly-running sequences, or
-  sequences of ``job explosions'' (many jobs in parallel), or any
+  sequences of ``task explosions'' (many tasks in parallel), or any
   combination of this.
 \end{frame}
 
@@ -157,55 +157,58 @@
 \begin{frame}
   \frametitle{The Warholize workflow, I}
 
-  1. Convert the original image to grayscale.
+  {\color{gray}\itshape 1.}
+  Convert the original image to grayscale.
 
   \+
-  \includegraphics[width=0.75\textwidth]{fig/warholize-wkf1}
+  \includegraphics[height=0.60\textheight]{fig/warholize-wkf1}
 \end{frame}
 
 
 \begin{frame}
   \frametitle{The Warholize workflow, II}
 
-  2. Colorize the grayscale image using three different colors for each tile.
+  {\color{gray}\itshape 2.}
+  Colorize the grayscale image using three different colors for each tile.
 
   \+
-  \includegraphics[width=0.75\textwidth]{fig/warholize-wkf2}
+  \includegraphics[height=0.60\textheight]{fig/warholize-wkf2}
 \end{frame}
 
 
 \begin{frame}
   \frametitle{The Warholize workflow, III}
 
-  3. Arrange all the colorized images into an $N\times N$ frame.
+  {\color{gray}\itshape 3.}
+  Arrange all the colorized images into an $N\times N$ frame.
 
   \+
-  \includegraphics[width=0.75\textwidth]{fig/warholize-wkf3}
+  \includegraphics[height=0.60\textheight]{fig/warholize-wkf3}
 \end{frame}
 
 
 \begin{frame}
   \frametitle{The Warholize workflow, IV}
 
-  Step 2 actually entails two sub-steps:
+  Step~\textit{2.} actually entails two sub-steps:
   \begin{enumerate}[a)]
   \item mapping greyscale levels to random colors,
   \item applying this mapping to produce new images
   \end{enumerate}
 
   \+
-  \includegraphics[width=0.75\textwidth]{fig/warholize-wkf2a}
+  \includegraphics[height=0.60\textheight]{fig/warholize-wkf2a}
 \end{frame}
 
 
 \begin{frame}
   \frametitle{The Warholize workflow, V}
 
-  So, Step~2 is a \texttt{SequentialTaskCollection}-type task. Let's
-  call this two-pass sequence \texttt{TricolorizeImage} .
+  So, Step~\textit{2.} is a \texttt{SequentialTaskCollection}-type task.
+  Let's call this two-pass sequence \texttt{TricolorizeImage}.
 
   \+
-  \includegraphics[width=0.75\textwidth]{fig/warholize-TricolorizeImage}
+  \includegraphics[height=0.60\textheight]{fig/warholize-TricolorizeImage}
 \end{frame}
 
 
@@ -217,7 +220,7 @@
   \texttt{TricolorizeMultipleImages}.
 
   \+
-  \includegraphics[width=0.75\textwidth]{fig/warholize-TricolorizeMultipleImages}
+  \includegraphics[height=0.60\textheight]{fig/warholize-TricolorizeMultipleImages}
 \end{frame}
 
 \begin{frame}
@@ -229,7 +232,7 @@
   \texttt{WarholizeWorkflow}.
 
   \+
-  \includegraphics[width=0.70\textwidth]{fig/warholize-WarholizeWorkflow}
+  \includegraphics[height=0.60\textheight]{fig/warholize-WarholizeWorkflow}
 \end{frame}
 
 
