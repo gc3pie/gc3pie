@@ -1,0 +1,141 @@
+\documentclass[english,serif,mathserif,xcolor=pdftex,dvipsnames,table]{beamer}
+\usetheme{gc3}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{babel}
+
+\usepackage{gc3}
+
+\title[Recap]{%
+  Take-home messages \\ from each training day
+}
+\author[R. Murri, S3IT UZH]{%
+  Riccardo Murri \texttt{<riccardo.murri@uzh.ch>}
+  \\[1ex]
+  \emph{S3IT: Services and Support for Science IT}
+  \\[1ex]
+  University of Zurich
+}
+\date{January~23--27, 2017}
+
+\begin{document}
+
+% title frame
+\maketitle
+
+
+\begin{frame}[fragile]
+  \frametitle{Recap of Day 1}
+
+  \begin{enumerate}
+  \item \texttt{SessionBasedScript} is the ``engine'' to run GC3Pie workflows and task collections.
+
+  \+\item A script must be fed a list of tasks to execute by the \lstinline|new_tasks()| method.
+
+  \+\item GC3Pie code runs unmodified on different computational resources.
+  \end{enumerate}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Recap of Day 2}
+
+  \begin{enumerate}
+  \item Utility commands \texttt{gsession} and \texttt{ginfo} help
+    inspect a running session.  To debug problems, start with running
+    the session-based script with maximum verbosity:
+    \texttt{-{}-verbose} \texttt{-{}-verbose} \texttt{-{}-verbose}
+
+    \+\item Command-line argument and option processing is defined through
+    methods \lstinline|setup_args| and \lstinline|setup_options| of the
+    \texttt{SessionBasedScript}
+
+    \+\item Use \lstinline|requested_cores|,
+    \lstinline|requested_memory|, \lstinline|requested_walltime| to
+    specify environmental requirements of each task.
+  \end{enumerate}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Recap of Day 3}
+
+  \begin{enumerate}
+  \item Post-processing can be done:
+    \begin{itemize}
+    \item in the \texttt{terminated()} method of the \texttt{Application} (or \texttt{Task}) class, or
+    \item globally in the \lstinline|after_main_loop()| method of the \texttt{SessionBasedScript} class.
+    \end{itemize}
+  \item Exit code and termination status inspection.
+  \end{enumerate}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Recap of Day 4}
+
+  \begin{enumerate}
+  \item Applications can be composed into workflows using ``task collections'':
+    \begin{itemize}
+    \item \texttt{SequentialTaskCollection} is for a series of tasks that should
+      be executed \emph{in the order given}
+    \item \texttt{ParallelTaskCollection} is for tasks with no inter-dependency
+      (so, all potentially running at the same time)
+    \end{itemize}
+
+  \item task collections are tasks themselves, so collections can be nested to
+    create any kind of directed graph
+
+  \item \texttt{StagedTaskCollection} is for creating processing pipelines where
+    all the steps are \emph{known before runtime}
+  \end{enumerate}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Recap of Day 5}
+
+  \begin{itemize}
+  \item \texttt{ParallelTaskCollection} is for sets of tasks that can all
+    execute in parallel --- with no inter-dependency or communication.
+  \item \texttt{DependentTaskCollection} is for tasks whose dependencies are
+    known before runtime
+  \item The \texttt{next()} method of \texttt{SequentialTaskCollection} can be
+    used to create ``dynamic'' sequences that change while running.
+  \end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{...and after the course?}
+  \centering
+
+  All VMs to be deleted tomorrow morning. \\
+  So, \textbf{copy all data you want to save} today!
+
+  \+ 
+  Your account will be removed \\
+  from the \texttt{training} project on Science Cloud. \\
+  (Any other project membership stays.)
+
+  \+
+  For all things GC3Pie: visit our offices (Y11 F 66) \\
+  or \textbf{send email to \texttt{help@s3it.uzh.ch}}.
+\end{frame}
+
+
+\begin{frame}{}
+  \begin{center}
+    \Large Please provide your feedback \\ about this course: \\
+    \url{http://tinyurl.com/gc3pie-feedback-nov-2016}
+  \end{center}
+\end{frame}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
