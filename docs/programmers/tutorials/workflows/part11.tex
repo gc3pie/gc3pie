@@ -17,7 +17,7 @@
   \\[1ex]
   University of Zurich
 }
-\date{November~14--17, 2016}
+\date{January~23--27, 2017}
 
 \begin{document}
 
@@ -31,10 +31,10 @@
 
   \+
   \begin{columns}[c]
-    \column{0.5\linewidth}
-    \includegraphics[height=0.8\textheight]{fig/3n+1}
+    \column{0.4\linewidth}
+    \includegraphics[height=0.75\textheight]{fig/3n+1}
 
-    \column{0.5\linewidth}
+    \column{0.6\linewidth}\small
     Define a function $f$, for $n$ positive integer:
     \begin{itemize}
     \item if $n$ is even, then $f(n) = n / 2$,
@@ -46,19 +46,20 @@
     $n \to f(n) \to f(f(n)) \to f(f(f(n))) \to \ldots$
 
     \+
+    \itshape
     \textbf{Conjecture:} For every positive integer $n$, the sequence $S(n)$
-    eventually hits $1$.
+    eventually hits~$1$.
   \end{columns}
 \end{frame}
 
 \begin{frame}
-  \frametitle{The \emph{3n+1} conjecture, \emph{(I)}}
+  \frametitle{The \emph{3n+1} conjecture, \emph{I}}
   \label{sec:7}
 
   \+
   \begin{columns}[c]
     \column{0.5\linewidth}
-    \includegraphics[height=0.8\textheight]{fig/3n+1_A}
+    \includegraphics[height=0.75\textheight]{fig/3n+1_A}
 
     \column{0.5\linewidth}
     A computational job $F(n,k)$, applies
@@ -70,13 +71,13 @@
 \end{frame}
 
 \begin{frame}
-  \frametitle{The \emph{3n+1} conjecture, \emph{(II)}}
+  \frametitle{The \emph{3n+1} conjecture, \emph{II}}
   \label{sec:7b}
 
   \+
   \begin{columns}[c]
     \column{0.5\linewidth}
-    \includegraphics[height=0.8\textheight]{fig/3n+1_S}
+    \includegraphics[height=0.75\textheight]{fig/3n+1_S}
 
     \column{0.5\linewidth} 
     A sequence $H(n)$ of jobs computes the
@@ -85,13 +86,13 @@
 \end{frame}
 
 \begin{frame}
-  \frametitle{The \emph{3n+1} conjecture, \emph{(III)}}
+  \frametitle{The \emph{3n+1} conjecture, \emph{III}}
   \label{sec:7c}
 
   \+
   \begin{columns}[c]
     \column{0.5\linewidth}
-    \includegraphics[height=0.8\textheight]{fig/3n+1_P}
+    \includegraphics[height=0.75\textheight]{fig/3n+1_P}
 
     \column{0.5\linewidth}
     Run one sequence $H(n)$ per each $n = 1, \ldots, N$.
@@ -102,13 +103,13 @@
 \end{frame}
 
 \begin{frame}[fragile]
-  \frametitle{The \emph{3n+1} conjecture (IV)}
+  \frametitle{The \emph{3n+1} conjecture, \emph{IV}}
   \label{sec:10}
 
   \begin{columns}
     \column{0.25\linewidth}
     \begin{center}
-      \includegraphics[height=0.8\textheight]{fig/A}
+      \includegraphics[height=0.6\textheight]{fig/A}
     \end{center}
 
     \column{0.75\linewidth}
@@ -131,13 +132,13 @@ class HotpoApplication(Application):
 \end{frame}
 
 \begin{frame}[fragile]
-  \frametitle{The \emph{3n+1} conjecture (V)}
+  \frametitle{The \emph{3n+1} conjecture, \emph{V}}
   \label{sec:14}
 
   \begin{columns}
     \column{0.2\linewidth}
     \begin{center}
-      \includegraphics[height=0.8\textheight]{fig/S}
+      \includegraphics[height=0.75\textheight]{fig/S}
     \end{center}
 
     \column{0.8\linewidth}
@@ -166,17 +167,237 @@ class HotpoSequence(Seq):
   \end{columns}
 \end{frame}
 
+
 \begin{frame}[fragile]
-  \frametitle{The \emph{3n+1} conjecture (VI)}
+  \frametitle{The \texttt{next()} method in \texttt{SequentialTaskCollection}}
+  \label{sec:14}
+
+  \begin{columns}
+    \column{0.4\linewidth}
+    The \lstinline|next()| method is called whenever a
+    task in the sequence has turned to TERMINATED state.
+
+
+    \column{0.6\linewidth}
+    \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+from gc3libs.workflow \
+  import SequentialTaskCollection as Seq
+
+class HotpoSequence(Seq):
+
+  # ...
+
+  ~\HL{{\bfseries def next(\color{gray} self}, k):}~
+    last = self.tasks[k].result
+    if last == 1:
+      return TERMINATED
+    else:
+      self.tasks.append(
+        HotpoApplication(last))
+      return RUNNING
+    \end{lstlisting}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{The \texttt{next()} method in \texttt{SequentialTaskCollection}}
+  \label{sec:14}
+
+  \begin{columns}
+    \column{0.4\linewidth}
+    The second argument to \lstinline|next()| is the index (within
+    \lstinline|self.tasks|) of the task that just finished.
+
+
+    \column{0.6\linewidth}
+    \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+from gc3libs.workflow \
+  import SequentialTaskCollection as Seq
+
+class HotpoSequence(Seq):
+
+  # ...
+
+  def next(self, ~\HL{k}~):
+    last = self.tasks[k].result
+    if last == 1:
+      return TERMINATED
+    else:
+      self.tasks.append(
+        HotpoApplication(last))
+      return RUNNING
+    \end{lstlisting}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{The \texttt{next()} method in \texttt{SequentialTaskCollection}}
+  \label{sec:14}
+
+  \begin{columns}
+    \column{0.4\linewidth}
+    You can access all attributes of tasks that are already done.
+
+    \column{0.6\linewidth}
+    \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+from gc3libs.workflow \
+  import SequentialTaskCollection as Seq
+
+class HotpoSequence(Seq):
+
+  # ...
+
+  def next(self, k):
+    ~\HL{last = self.tasks[k].result}~
+    if last == 1:
+      return TERMINATED
+    else:
+      self.tasks.append(
+        HotpoApplication(last))
+      return RUNNING
+    \end{lstlisting}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{The \texttt{next()} method in \texttt{SequentialTaskCollection}}
+  \label{sec:14}
+
+  \begin{columns}
+    \column{0.4\linewidth}
+    Returning the state TERMINATED interrupts the
+    sequence: no other tasks from this collection will be run.
+
+    \column{0.6\linewidth}
+    \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+from gc3libs.workflow \
+  import SequentialTaskCollection as Seq
+
+class HotpoSequence(Seq):
+
+  # ...
+
+  def next(self, k):
+    last = self.tasks[k].result
+    if last == 1:
+      ~\HL{\textbf{return} 'TERMINATED'}~
+    else:
+      self.tasks.append(
+        HotpoApplication(last))
+      return 'RUNNING'
+    \end{lstlisting}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{The \texttt{next()} method in \texttt{SequentialTaskCollection}}
+  \label{sec:14}
+
+  \begin{columns}
+    \column{0.4\linewidth}
+    It is entirely possible to modify the
+    \texttt{SequentialTaskCollection} and add (or remove) tasks.
+
+    \column{0.6\linewidth}
+    \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+from gc3libs.workflow \
+  import SequentialTaskCollection as Seq
+
+class HotpoSequence(Seq):
+
+  # ...
+
+  def next(self, k):
+    last = self.tasks[k].result
+    if last == 1:
+      return 'TERMINATED'
+    else:
+      ~\HL{{\bfseries\color{gray} self}.tasks.append(}~
+        ~\HL{HotpoApplication(last))}~
+      return 'RUNNING'
+    \end{lstlisting}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{The \texttt{next()} method in \texttt{SequentialTaskCollection}}
+  \label{sec:14}
+
+  \begin{columns}
+    \column{0.4\linewidth}
+    Returning state \texttt{RUNNING} makes the sequence
+    continue with task \lstinline|k+1|
+
+    \column{0.6\linewidth}
+    \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+from gc3libs.workflow \
+  import SequentialTaskCollection as Seq
+
+class HotpoSequence(Seq):
+
+  # ...
+
+  def next(self, k):
+    last = self.tasks[k].result
+    if last == 1:
+      return 'TERMINATED'
+    else:
+      self.tasks.append(
+        HotpoApplication(last))
+      ~\HL{\textbf{return} 'RUNNING'}~
+    \end{lstlisting}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{The \texttt{next()} method in \texttt{SequentialTaskCollection}}
+  \label{sec:14}
+
+  \begin{columns}
+    \column{0.4\linewidth}
+    Alternatively, you can \textbf{return} a number \texttt{j} less than \texttt{k},
+    meaning that the sequence will rewind to the \texttt{j}-th task and continue
+    running from there.
+
+    \column{0.6\linewidth}
+    \begin{lstlisting}[basicstyle=\ttfamily\footnotesize]
+from gc3libs.workflow \
+  import SequentialTaskCollection as Seq
+
+class HotpoSequence(Seq):
+
+  # ...
+
+  def next(self, k):
+    last = self.tasks[k].result
+    if last == 1:
+      return 'TERMINATED'
+    else:
+      self.tasks.append(
+        HotpoApplication(last))
+      ~\HL{return 'RUNNING'}~
+    \end{lstlisting}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{The \emph{3n+1} conjecture, \emph{VI}}
   \label{sec:15}
 
   \begin{columns}
-    \column{0.5\linewidth}
+    \column{0.35\linewidth}
     \begin{center}
-      \includegraphics[height=0.8\textheight]{fig/3n+1_P}
+      \includegraphics[height=0.60\textheight]{fig/3n+1_P}
     \end{center}
 
-    \column{0.5\linewidth}
+    \column{0.6\linewidth}
     \small
     Parallel tasks are independent by definition, so it's even easier to
     create a collection:
