@@ -702,7 +702,9 @@ for row in rows:
     \+
     Write a \texttt{sim\_asset.py} program that:
     \begin{itemize}
-    \item takes the same command-line positional arguments as \texttt{simAsset.R}, \emph{plus} an additional integer trailing parameter $P$;
+    \item takes the same command-line positional arguments as
+      \href{https://github.com/uzh/gc3pie/blob/master/docs/programmers/tutorials/workflows/downloads/simAsset.R}{\texttt{simAsset.R}},
+      \emph{plus} an additional integer trailing parameter $P$;
     \item runs \texttt{simAsset.R} (in parallel) $P$ times with the given arguments (so, effectively simulates $N \cdot P$ price paths);
     \item reads all the generated \texttt{results.csv} files, and
     \item computes and prints the average value of the asset at the end of the simulated time, across all $N \cdot P$ price paths.
