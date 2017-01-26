@@ -119,6 +119,27 @@ class default:
 # by default, ask for confirmation
 DO_NOT_ASK_AND_ASSUME_YES = False
 
+paths_to_cleanup = []
+
+def cleanup(paths=paths_to_cleanup):
+    if isinstance(paths, (str, basestring)):
+        paths = [paths]
+
+    for path in paths:
+        path = os.path.abspath(path)
+        typ = 'directory' if os.path.isdir(path) else 'file'
+        if ask("Do you want to delete %s '%s'?" % (typ, path)):
+            logging.info("Deleting %s '%s' as requested...", typ, path)
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
+
+
+def cleanup_defer(paths):
+    if isinstance(paths, (str, basestring)):
+        paths = [paths]
+    paths_to_cleanup.extend([os.path.abspath(path) for path in paths])
 
 
 ## main
@@ -174,6 +195,8 @@ If the shell's prompt starts with '(gc3pie)' it means that the virtual
 environment has been enabled.
 
     """.format(target=options.target))
+    
+    cleanup()
     sys.exit(os.EX_OK)
 
 
@@ -357,9 +380,12 @@ bug to the GC3Pie mailing list gc3pie@googlegroups.com
         with_site_packages = ['--system-site-packages']
 
     tarball = download_from_pypi('virtualenv')
+    cleanup_defer(tarball)
+
     tar = tarfile.open(tarball)
     tar.extractall()
     venvsourcedir = tar.getnames()[0]
+    cleanup_defer(venvsourcedir)
 
     venvpath = os.path.join(venvsourcedir, 'virtualenv.py')
 
