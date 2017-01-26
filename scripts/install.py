@@ -379,8 +379,7 @@ bug to the GC3Pie mailing list gc3pie@googlegroups.com
         # no issue in allowing access to system site packages
         with_site_packages = ['--system-site-packages']
 
-    tarball = download_from_pypi('virtualenv')
-    cleanup_defer(tarball)
+    tarball = download_from_pypi('virtualenv', keep=False)
 
     tar = tarfile.open(tarball)
     tar.extractall()
@@ -475,7 +474,7 @@ Please include the following information in your issue report:
                 logging.info("`easy_install` is available, using it to upgrade setuptools")
                 run_in_virtualenv(destdir, "easy_install -U setuptools")
             else:
-                tfile = download_from_pypi('setuptools')
+                tfile = download_from_pypi('setuptools', keep=False)
                 logging.info("Downloaded %s from PyPI; now installing it ...",
                              path.basename(tfile))
                 run("tar -xzf {tfile}".format(**locals()))
@@ -516,7 +515,7 @@ Aborting installation!
     sys.exit(rc)
 
 
-def download(url, to_file=None):
+def download(url, to_file=None, keep=True):
     """
     Download contents of `url` to a local file.
     Return name of the local file.
@@ -530,10 +529,12 @@ def download(url, to_file=None):
     src = urlopen(url)
     dst = open(to_file, 'w')
     dst.write(src.read())
+    if not keep:
+        cleanup_defer(to_file)
     return to_file
 
 
-def download_from_pypi(pkgname, pip_url=default.BASE_PIP_URL, version=None):
+def download_from_pypi(pkgname, pip_url=default.BASE_PIP_URL, version=None, keep=False):
     """
     Download the given package from PyPI into a local file.
     Return path to the downloaded file.
@@ -579,7 +580,7 @@ Unable to download package {pkgname} from PyPI.
                 version, pkgname))
     src = sources[-1]
     url = src['url']
-    return download(url)
+    return download(url, keep=keep)
     
     
 def fix_virtualenv_issue_with_anaconda(python, destdir):
