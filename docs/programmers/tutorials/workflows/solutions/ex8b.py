@@ -55,6 +55,7 @@ class BlastDbTasks(StagedTaskCollection):
         self.subjects = subjects
         self.e_value = e_value
         self.output_fmt = output_fmt
+        StagedTaskCollection.__init__(self)
 
     def stage0(self):
         return ConcatFastaApp('db.faa', self.subjects)
