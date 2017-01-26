@@ -18,7 +18,7 @@
   \\[1ex]
   University of Zurich
 }
-\date{November~14--17, 2016}
+\date{January~23--27, 2017}
 
 
 \begin{document}
@@ -88,6 +88,205 @@ class MyScript(SessionBasedScript):
 \end{frame}
 
 
+\begin{frame}
+  \begin{exercise*}[8.A]
+
+    Write a \texttt{priceplot.py} script that performs the following two steps:
+    \begin{enumerate}
+    \item Run the
+      \href{https://github.com/uzh/gc3pie/blob/master/docs/programmers/tutorials/workflows/downloads/simAsset.R}{\texttt{simAsset.R}}
+      script (from Exercise~6.D) with the parameters given on the command line,
+      and
+    \item Feed the \texttt{results.csv} file it outputs into the
+      \href{https://github.com/uzh/gc3pie/blob/master/docs/programmers/tutorials/workflows/downloads/saplot.py}{\texttt{saplot.py}}
+      script and retrieve the produced \texttt{saplot.pdf} file.
+    \end{enumerate}
+
+    \+
+    Run it like \texttt{simAsset.R}, for example:
+\begin{semiverbatim}
+  \$ python priceplot.py 50 0.04 0.1 0.27 10 40
+\end{semiverbatim}
+
+  \end{exercise*}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Running jobs in sequence}
+
+  \texttt{StagedTaskCollection} provides a simple interface for
+  constructing sequences of tasks, but only when the number and
+  content of steps is \emph{known and fixed} at programming time.
+
+  \+
+  (By contrast, the most general \texttt{SequentialTaskCollection}
+  can alter the sequence on the fly, insert new stages while running
+  and loop back. But the code is also harder to write.)
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{columns}[t]
+    \begin{column}{0.6\textwidth}
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily]
+class Pipeline~\HL{(StagedTaskCollection)}~:
+  def __init__(self, image):
+    super(Pipeline).__init__(self)
+    self.source = image
+
+  def stage0(self):
+    # ...
+
+  def stage1(self):
+    # ...
+
+  # ...
+  def stage~{\bfseries\itshape X}~(self):
+    # ...
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \raggedleft
+
+      \+\+\small
+      Example: \\
+      subclassing a
+      \texttt{StagedTaskCollection}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{columns}[c]
+    \begin{column}{0.6\textwidth}
+      \begin{lstlisting}[basicstyle=\footnotesize\ttfamily]
+class Pipeline(StagedTaskCollection):
+  def __init__(self, image):
+    super(Pipeline).__init__(self)
+    self.source = image
+
+  def ~\HL{stage0(self)}~:
+    # ...
+
+  def ~\HL{stage1(self)}~:
+    # ...
+
+  # ...
+  def ~\HL{stage{\bfseries\itshape X}(self)}~:
+    # ...
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \raggedleft
+
+      Stages are numbered starting from $0$.
+
+      \+
+      You can have as many stages as you want.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{columns}[c]
+    \begin{column}{0.6\textwidth}
+      \begin{lstlisting}[basicstyle=\footnotesize\ttfamily]
+class Pipeline(StagedTaskCollection):
+  # ...
+
+  def stage0(self):
+    # run 1st step
+    ~\HL{return Application}~(
+      ['convert', self.source,
+       '-colorspace', 'gray',
+       'grayscale_' + self.source],
+      inputs = [self.source],
+      ...)
+
+  # ...
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \raggedleft
+
+      Each \texttt{stage{\itshape X}} method can return a \texttt{Task}
+      instance, that will run as the $X$-th step in the sequence.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{columns}[c]
+    \begin{column}{0.6\textwidth}
+      \begin{lstlisting}[basicstyle=\footnotesize\ttfamily]
+class Pipeline(StagedTaskCollection):
+  # ...
+
+  def stage1(self):
+    ~\HL{\textbf{if} \textbf{\color{gray} self}.tasks[0].execution.exitcode != 0:}~
+      # bail out
+      return (0, 1)
+    else:
+      # run 2nd step
+      return Application(...)
+
+  # ...
+  def stage~{\bfseries\itshape X}~(self):
+    # ...
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \raggedleft
+
+      \+\+\+\+\+
+      In later stages you can check the exit code of
+      earlier ones, and decide whether to continue the sequence or
+      abort.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \begin{columns}[c]
+    \begin{column}{0.6\textwidth}
+      \begin{lstlisting}[basicstyle=\footnotesize\ttfamily]
+class Pipeline(StagedTaskCollection):
+  # ...
+
+  def stage1(self):
+    if ...:
+      # bail out
+      ~\HL{return (0, 1)}~
+    else:
+      # run 2nd step
+      return Application(...)
+
+  # ...
+  def stage~{\bfseries\itshape X}~(self):
+    # ...
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \raggedleft
+
+      \+\+\+\+\+ 
+      To abort the sequence, return an integer (termination
+      status) or a pair \emph{(signal, exit code)}, instead of a
+      \texttt{Task} instance.
+
+      \+
+      This sets the collections' own signal and exit code, and also sets the
+      state as \texttt{TERMINATED}.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
 \begin{frame}[fragile]
   \frametitle{Detour: BLAST, again}
 
@@ -112,13 +311,14 @@ class MyScript(SessionBasedScript):
 
 
 \begin{frame}[fragile]
-  \begin{exercise*}[8.A]
+  \begin{exercise*}[8.B] \emph{(Difficult)}
+
     Write a \texttt{blastdb.py} script to build a BLAST DB and query it.
 
     \+
     The \texttt{blastdb.py} script shall be invoked like this:
 \begin{sh}
-$ python topblast.py query.faa p1.faa [p2.faa ...]
+$ python blastdb.py query.faa p1.faa [p2.faa ...]
 \end{sh}%$
     where arguments \texttt{new.faa}, \texttt{p1.faa}, etc. are FASTA-format files.
 
@@ -129,9 +329,10 @@ $ python topblast.py query.faa p1.faa [p2.faa ...]
   \end{exercise*}
 \end{frame}
 
+
 \begin{frame}
-  \begin{exercise*}[8.B]
-    Find out by running the \texttt{blastdb.py} script of Ex.~8.A:
+  \begin{exercise*}[8.C]
+    Find out by running the \texttt{blastdb.py} script of Ex.~8.B:
 
     \+
     \begin{enumerate}
@@ -141,207 +342,15 @@ $ python topblast.py query.faa p1.faa [p2.faa ...]
       \+
     \item After the whole sequence turns to TERMINATED state, what is
       the value of its signal and exitcode?
-
-      \+
-    \item How could you implement a ``cleanup'' feature that removes
-      intermediate results (e.g., the ``\texttt{.phr}'' files) and
-      only keeps the output from \texttt{blastpgp} \textbf{if the
-        whole sequence was successfully executed?}
     \end{enumerate}
   \end{exercise*}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \frametitle{Running jobs in sequence}
-
-  \texttt{StagedTaskCollection} provides a simple interface for
-  constructing sequences of tasks, but only when the number and
-  content of steps is \emph{known and fixed} at programming time.
 
   \+
-  (By contrast, the most general \texttt{SequentialTaskCollection}
-  can alter the sequence on the fly, insert new stages while running
-  and loop back. But the code is also harder to write.)
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \begin{columns}[t]
-    \begin{column}{0.6\textwidth}
-      \begin{lstlisting}
-class Pipeline~\HL{(StagedTaskCollection)}~:
-  def __init__(self, image):
-    StagedTaskCollection.__init__(self)
-    self.source = image
-
-  def stage0(self):
-    # run 1st step
-    return Application(...)
-
-  def stage1(self):
-    if self.tasks[0].execution.exitcode != 0:
-      # set collection signal and exit code,
-      # and state to TERMINATED
-      return (0, 1)
-    else:
-      # run 2nd step
-      return Application(...)
-
-  # ...
-  def stage~$N$~(self):
-    # ...
-      \end{lstlisting}
-    \end{column}
-    \begin{column}{0.4\textwidth}
-      \raggedleft
-
-      \+\+
-      Example of~a \texttt{StagedTaskCollection}
-      subclass.
-    \end{column}
-  \end{columns}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \begin{columns}[c]
-    \begin{column}{0.6\textwidth}
-      \begin{lstlisting}
-class Pipeline(StagedTaskCollection):
-  def __init__(self, image):
-    StagedTaskCollection.__init__(self)
-    self.source = image
-
-  def ~\HL{stage0(self)}~:
-    # ...
-
-  def ~\HL{stage1(self)}~:
-    # ...
-
-  # ...
-  def ~\HL{stage$\mathbf N$(self)}~:
-    # ...
-      \end{lstlisting}
-    \end{column}
-    \begin{column}{0.4\textwidth}
-      \raggedleft
-
-      Stages are numbered starting from $0$.
-
-      \+
-      You can have as many stages as you want.
-    \end{column}
-  \end{columns}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \begin{columns}[c]
-    \begin{column}{0.6\textwidth}
-      \begin{lstlisting}
-class Pipeline(StagedTaskCollection):
-  # ...
-
-  def stage0(self):
-    # run 1st step
-    ~\HL{return Application}~(
-      ['convert', self.source,
-       '-colorspace', 'gray',
-       'grayscale_' + self.source],
-      inputs = [self.source],
-      ...)
-
-  # ...
-      \end{lstlisting}
-    \end{column}
-    \begin{column}{0.4\textwidth}
-      \raggedleft
-
-      Each \texttt{stage$N$} method can return a \texttt{Task}
-      instance, that will run as step $N$ in the sequence.
-    \end{column}
-  \end{columns}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \begin{columns}[c]
-    \begin{column}{0.6\textwidth}
-      \begin{lstlisting}
-class Pipeline(StagedTaskCollection):
-  # ...
-
-  def stage1(self):
-    ~\HL{if self.tasks[0].execution.exitcode != 0:}~
-      # set collection signal and exit code,
-      # and state to TERMINATED
-      return (0, 1)
-    else:
-      # run 2nd step
-      return Application(...)
-
-  # ...
-  def stage~$N$~(self):
-    # ...
-      \end{lstlisting}
-    \end{column}
-    \begin{column}{0.4\textwidth}
-      \raggedleft
-
-      \+\+\+\+\+
-      In later stages you can check the exit code of
-      earlier ones, and decide whether to continue the sequence or
-      abort.
-    \end{column}
-  \end{columns}
-\end{frame}
-
-
-\begin{frame}[fragile]
-  \begin{columns}[c]
-    \begin{column}{0.6\textwidth}
-      \begin{lstlisting}
-class Pipeline(StagedTaskCollection):
-  # ...
-
-  def stage1(self):
-    if self.tasks[0].execution.exitcode != 0:
-      # set collection signal and exit code,
-      # and state to TERMINATED
-      ~\HL{return (0, 1)}~
-    else:
-      # run 2nd step
-      return Application(...)
-
-  # ...
-  def stage~$N$~(self):
-    # ...
-      \end{lstlisting}
-    \end{column}
-    \begin{column}{0.4\textwidth}
-      \raggedleft
-
-      \+\+\+\+\+ 
-      To abort the sequence, return an integer (termination
-      status) or a pair \emph{(signal, exit code)}, instead of a
-      \texttt{Task} instance.
-    \end{column}
-  \end{columns}
-\end{frame}
-
-
-\begin{frame}
-  \begin{exercise*}[8.C]
-    Rewrite the \texttt{blastdb.py} script from Ex.~8.A to use a
-    \texttt{StagedTaskCollection} and be sure to check that a step is
-    successful before proceeding to the next one.
-
-    \+
-    Upon successful completion of the pipeline, move the
-    \texttt{blastpgp} output into directory
-    \texttt{/home/ubuntu/results} and then delete all intermediate
-    files and directories.
+  \begin{exercise*}[8.D]
+    Implement (in \texttt{blastdb.py}) a ``cleanup'' feature that removes
+    intermediate results (e.g., the ``\texttt{.phr}'' files) and only keeps the
+    output from \texttt{blastpgp} \emph{if the whole sequence was successfully
+      executed}.
   \end{exercise*}
 \end{frame}
 
