@@ -77,21 +77,39 @@ from os import path
 import re
 
 import shutil
+import tarfile
 
-from subprocess import call, check_call, check_output, CalledProcessError
+from subprocess import call, check_call, CalledProcessError
+try:
+    from subprocess import check_output
+except:
+    from subprocess import PIPE, Popen
+    # Possibly running python 2.6
+    def check_output(*popenargs, **kwargs):
+        if 'stdout' in kwargs:
+            raise ValueError('stdout argument not allowed, it will be overridden.')
+        process = Popen(stdout=PIPE, *popenargs, **kwargs)
+        output, unused_err = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+            raise CalledProcessError(retcode, cmd, output=output)
+        return output
+
+    
 
 from urllib2 import urlopen
+import json
 
 
 ## defaults and constants
 
 PROG="GC3Pie install"
 
-VIRTUALENV_LATEST_URL="https://raw.github.com/pypa/virtualenv/master/virtualenv.py"
-VIRTUALENV_191_URL="https://raw.github.com/pypa/virtualenv/1.9.1/virtualenv.py"
-
 class default:
-    BASE_PIP_URL="https://pypi.python.org/simple"
+    BASE_PIP_URL="https://pypi.python.org/pypi"
     GC3PIE_REPO_URL="https://github.com/uzh/gc3pie.git"
     TARGET = path.expandvars('$HOME/gc3pie')
     UNRELEASED = False
@@ -110,9 +128,12 @@ logging.basicConfig(
     stream=sys.stderr,
     format=('<{me}> %(levelname)8s: %(message)s'.format(me=PROG)),
 )
-logging.captureWarnings(True)
-
-
+try:
+    logging.captureWarnings(True)
+except AttributeError:
+    # Possibly running on python 2.6. Ignore.
+    pass
+    
 def main():
     options = parse_command_line_options()
 
@@ -335,13 +356,17 @@ bug to the GC3Pie mailing list gc3pie@googlegroups.com
         # no issue in allowing access to system site packages
         with_site_packages = ['--system-site-packages']
 
-    # use latest virtualenv that can use `.tar.gz` files
-    download(VIRTUALENV_191_URL, to_file='virtualenv.py')
+    tarball = download_from_pypi('virtualenv')
+    tar = tarfile.open(tarball)
+    tar.extractall()
+    venvsourcedir = tar.getnames()[0]
+
+    venvpath = os.path.join(venvsourcedir, 'virtualenv.py')
 
     # run: python virtualenv.py --[no,system]-site-packages $DESTDIR
     try:
         check_call(
-            [python, 'virtualenv.py']
+            [python, venvpath]
             + with_site_packages
             + ['-p', python, destdir])
         logging.info("Created Python virtual environment in '%s'", destdir)
@@ -424,10 +449,10 @@ Please include the following information in your issue report:
                 logging.info("`easy_install` is available, using it to upgrade setuptools")
                 run_in_virtualenv(destdir, "easy_install -U setuptools")
             else:
-                tarfile = download_from_pypi('setuptools')
+                tfile = download_from_pypi('setuptools')
                 logging.info("Downloaded %s from PyPI; now installing it ...",
-                             path.basename(tarfile))
-                run("tar -xzf {tarfile}".format(**locals()))
+                             path.basename(tfile))
+                run("tar -xzf {tfile}".format(**locals()))
                 run_in_virtualenv(
                     destdir,
                     "cd setuptools-* && {python} setup.py install".format(**locals()))
@@ -482,7 +507,7 @@ def download(url, to_file=None):
     return to_file
 
 
-def download_from_pypi(pkgname, pip_url=default.BASE_PIP_URL):
+def download_from_pypi(pkgname, pip_url=default.BASE_PIP_URL, version=None):
     """
     Download the given package from PyPI into a local file.
     Return path to the downloaded file.
@@ -494,57 +519,43 @@ def download_from_pypi(pkgname, pip_url=default.BASE_PIP_URL):
     one actually downloaded is the one which comes first in Python
     string sorting order.
     """
-    base_url = (pip_url + '/' + pkgname)
-    index = urlopen(base_url)
-    src_pkg_mention_re = re.compile(
-        r'source/[a-z]/{pkgname}.*\.tar\.gz'.format(**locals()))
-    href_url_re = re.compile('href="(?P<url>[^#"]*)["#]')
-    pkg_version_re = re.compile(
-        r'{pkgname}-(?P<version>[0-9][0-9.a-z-]+)\.tar\.gz'.format(**locals()))
-
-    candidates = []
-    for line in index:
-        if src_pkg_mention_re.search(line):
-            match = href_url_re.search(line)
-            assert match
-            url = match.group('url')
-            filename = path.basename(url)
-            if not (url.startswith('http') or url.startswith('ftp')):
-                def normalize(u):
-                    parts_in = u.split('/')
-                    parts_out = []
-                    for part in parts_in:
-                        if part == '.':
-                            pass
-                        elif part == '..':
-                            if len(parts_out) > 0:
-                                parts_out.pop()
-                            else:
-                                raise ValueError(
-                                    "Going up from the root while normalizing URL '%s'" % (u,))
-                        else:
-                            parts_out.append(part)
-                    return '/'.join(parts_out)
-                url = normalize(path.join(base_url, url))
-            match = pkg_version_re.match(filename)
-            assert match
-            version = LooseVersion(match.group('version'))
-            candidates.append((url, version))
-
-    if not candidates:
+    base_url = (pip_url + '/' + pkgname + '/json')
+    try:
+        data = urlopen(base_url).read()
+    except:
         die(os.EX_PROTOCOL,
             ("Package '{pkgname}' not found on PyPI!".format(**locals())),
             """
 Unable to download package {pkgname} from PyPI.
 """.format(**locals()))
+        
+    try:
+        jdata = json.loads(data)
+    except ValueError:
+        raise ValueError(
+            "While downloading from %s, we received an invalid JSON"
+            " data." % base_url)
 
-    candidates.sort(key=(lambda uv: uv[1]), reverse=True)
-    url = candidates[0][0]
-
-    logging.info("Installing package `%s` from URL `%s`", pkgname, url)
+    if not version:
+        version = jdata['info']['version']
+    try:
+        releases = jdata['releases'][version]
+    except KeyError:
+        raise ValueError(
+            "Unable to find version '%s' of PyPI package '%s'."
+            " Available versions are: %s" % (
+                version, pkgname, sorted(jdata['releases'].keys())))
+    
+    sources = [r for r in releases if r['packagetype'] == 'sdist']
+    if not sources:
+        raise ValueError(
+            "Unable to find source package for version %s of package %s on PyPI" % (
+                version, pkgname))
+    src = sources[-1]
+    url = src['url']
     return download(url)
-
-
+    
+    
 def fix_virtualenv_issue_with_anaconda(python, destdir):
     """
     Apply a workaround for Anaconda Python's incompativility with virtualenvs.
