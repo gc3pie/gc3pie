@@ -18,7 +18,7 @@
   \\[1ex]
   University of Zurich
 }
-\date{November~14--17, 2016}
+\date{January~23--27, 2017}
 
 
 \begin{document}
@@ -109,12 +109,13 @@ class MyScript(SessionBasedScript):
   \href{https://docs.python.org/2/library/random.html#random.randint}{\texttt{randint}}
   function:
 \begin{python}
-  from random import randint
-
-  r = randint(0, 255)
-  g = randint(0, 255)
-  b = randint(0, 255)
-  color = ("xc:#%02x%02x%02x" % (r, g, b))
+  def random_color():
+    from random import randint
+    r = randint(0, 255)
+    g = randint(0, 255)
+    b = randint(0, 255)
+    color = ("xc:#%02x%02x%02x" % (r, g, b))
+    return color
 \end{python}
 \end{frame}
 
