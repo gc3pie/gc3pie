@@ -408,7 +408,7 @@ class UnrecoverableTransportError(UnrecoverableError):
 class CopyError(TransportError):
 
     """
-    Error copying a file from `source` to `destination.
+    Error copying a file from `source` to `destination`.
     """
 
     def __init__(self, source, destination, ex):

@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 """
-Support for running a generic application with the GC3Libs.
+Specialized support for popular scientific applications.
+
+Each application-specific class is packaged in a separate
+submodule, which see for details.
 """
 # Copyright (C) 2009-2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #

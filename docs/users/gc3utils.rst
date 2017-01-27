@@ -503,6 +503,8 @@ output files, plus some backend-specific information::
         verno: None
 
 
+.. _gselect:
+
 :command:`gselect`: select job ids from from a session
 ======================================================
 
@@ -587,7 +589,7 @@ This is possible with the `gcloud forget` command. You must supply the
 correct resource name with ``-r RESOURCE_NAME`` and a valid VM ID, and
 if the command succeeds then the VM will never be used by the EC2
 backend. Please note also that after running `gcloud forget`, the VM
-will not be shown in the output of `gcloud list`::
+will not be shown in the output of `gcloud list`.
 
 The following example will explain the behavior::
 

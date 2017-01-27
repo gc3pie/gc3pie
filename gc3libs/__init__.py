@@ -543,7 +543,7 @@ class Task(Persistable, Struct):
         Reset the state of this Task instance to ``NEW``.
 
         This is only allowed for tasks which are already in a terminal
-        state, or one of ``STOPPED``, ``UNKNOWN``, or ``NEW`;
+        state, or one of ``STOPPED``, ``UNKNOWN``, or ``NEW``;
         otherwise an `AssertionError` is raised.
 
         The task should then be resubmitted to actually resume

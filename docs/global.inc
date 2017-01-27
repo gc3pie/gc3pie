@@ -20,6 +20,8 @@
 .. _GAMESS: http://www.msg.ameslab.gov/gamess/
 .. _GC3Pie: http://gc3pie.googlecode.com/
 .. _`GC3Pie mailing list`: mailto:gc3pie@googlegroups.com
+.. _Git: https://git-scm.org/
+.. _GitHub: https://github.com/
 .. _`Grid Engine`: http://gridengine.org/blog/2011/11/23/what-now/
 .. _`Torque`: http://www.adaptivecomputing.com/products/open-source/torque/
 .. _`PBSPro`: http://www.pbspro.org/

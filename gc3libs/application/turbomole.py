@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 #
 """
-Specialized support for TurboMol.
+Specialized support for TURBOMOLE.
 """
 # Copyright (C) 2009-2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
@@ -97,13 +97,14 @@ class TurbomoleDefineApplication(gc3libs.Application):
     Any additional arguments are considered additional filenames to
     input files and copied to the execution directory.
 
-    :param str program: Name of the TURBOMOLE's program to run (e.g., ``ridft``)
+    :param str program: Name of the TURBOMOLE's program to run
+      (e.g., ``ridft``)
 
-    :param str define_in: Path to a file containing keystrokes to pass
-    as input to the 'define' program.
+    :param str define_in: Path to a file containing keystrokes
+      to pass as input to the 'define' program.
 
-    :param str coord: Path to a file containing the molecule
-    coordinates in TURBOMOLE's format.
+    :param str coord: Path to a file containing the molecule coordinates
+      in TURBOMOLE's format.
 
     :param others: Path(s) to additional input files.
     """

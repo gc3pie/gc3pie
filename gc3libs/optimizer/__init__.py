@@ -1,3 +1,4 @@
+
 #! /usr/bin/env python
 #
 """
@@ -98,15 +99,16 @@ class EvolutionaryAlgorithm(object):
     '''
     Base class for building an evolutionary algorithm for global optimization.
 
-    :param list initial_pop: Initial population for the optimization.
+    :param initial_pop: Initial population for the optimization.
+      The value can be any sequence that can be passed to `np.array()`
     :param int `itermax`: Maximum # of iterations.
     :param float `dx_conv_crit`: Abort optimization if all population members are within a certain distance to each other.
     :param float `y_conv_crit`: Declare convergence when the target function is below a `y_conv_crit`.
     :param obj `logger`: Configured logger to use.
-    :param list `after_update_opt_state`: Functions that are called at the end of
-                `update_opt_state`:meth:. Use this list
-                to provide problem-specific printing and plotting routines. Examples can be found
-                in `gc3libs.optimizer.extra`:mod:.
+    :param `after_update_opt_state`: List of functions that are called
+      at the end of `update_opt_state`:meth:.
+      Use this list to provide problem-specific printing and plotting routines.
+      Examples can be found in `gc3libs.optimizer.extra`:mod:.
     '''
 
     def __init__(self, initial_pop,
@@ -232,6 +234,8 @@ class EvolutionaryAlgorithm(object):
 
 def populate(create_fn, in_domain=None, max_n_resample=100):
     '''
+    Generate a new population.
+
     Uses :func:`create_fn` to generate a new population. If :func:`in_domain` is not
     fulfilled, :func:`create_fn` is called repeatedly. Invalid population members are
     replaced until reaching the desired valid population size or
@@ -244,7 +248,7 @@ def populate(create_fn, in_domain=None, max_n_resample=100):
                           Takes no arguments and returns a list of bools
                           indicating each members validity.
     :param int max_n_resample: Maximum number of resamples to be drawn to
-                               satisfy :func:`in_domain
+                               satisfy :func:`in_domain`
 
     :rtype: list of population members
     '''
@@ -287,8 +291,8 @@ def draw_population(
     '''
     Draw a random population with the following criteria:
 
-    :param list lower_bds: List of length `dim` indicating the lower bound in each dimension.
-    :param list upper_bds: List of length `dim` indicating the upper bound in each dimension.
+    :param lower_bds: List of length `dim` indicating the lower bound in each dimension.
+    :param upper_bds: List of length `dim` indicating the upper bound in each dimension.
     :param int dim: Dimension of each population member.
     :param int size: Population size.
     :param fun in_domain: Determines population's validity.

@@ -75,7 +75,8 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     process to control the optimization. Driver classes can be found
     in `gc3libs.optimizer.drivers.py`:mod:.
 
-    :param list initial_pop: Initial population for the optimization.
+    :param initial_pop: Initial population for the optimization.
+      Value can be any sequence that can be passed to the `np.array()` constructor.
     :param str de_strategy: e.g. DE_rand_either_or_algorithm. Allowed are:
     :param float `de_step_size`: Differential Evolution step size.
     :param float `prob_crossover`: Probability new population draws will replace old members.
@@ -86,7 +87,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     :param fun `in_domain`: Optional function that implements nonlinear constraints.
     :param float `seed`: Seed to initialize NumPy's random number generator.
     :param obj `logger`: Configured logger to use.
-    :param list `after_update_opt_state`: Functions that are called at the end of
+    :param `after_update_opt_state`: List of Functions that are called at the end of
                 `DifferentialEvolutionAlgorithm.after_update_opt_state`:meth:. Use this list
                 to provide problem-specific printing and plotting routines. Examples can be found
                 in `gc3libs.optimizer.extra`:mod:.

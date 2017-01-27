@@ -22,11 +22,13 @@
    gc3libs/application/turbomole
    gc3libs/authentication
    gc3libs/authentication/ec2
+   gc3libs/authentication/openstack
    gc3libs/authentication/ssh
    gc3libs/backends
    gc3libs/backends/batch
    gc3libs/backends/ec2
    gc3libs/backends/lsf
+   gc3libs/backends/openstack
    gc3libs/backends/pbs
    gc3libs/backends/sge
    gc3libs/backends/shellcmd

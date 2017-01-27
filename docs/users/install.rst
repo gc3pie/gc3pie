@@ -417,7 +417,6 @@ in order to build the documentation locally.
 .. _sphinx: http://sphinx.pocoo.org/
 .. _virtualenv: http://pypi.python.org/pypi/virtualenv/1.7
 
-.. _Git: http://git-scm.org/
 .. _`MacPorts`: http://www.macports.org/
 .. _`Fink`: http://sourceforge.net/projects/fink/
 .. _`Homebrew`: http://mxcl.github.com/homebrew/

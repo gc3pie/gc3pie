@@ -169,7 +169,7 @@ def register(scheme, constructor):
     :param str scheme: URL scheme to associate with the given constructor.
 
     :param callable constructor: A callable returning a `Store`:class:
-    instance. Typically, a class constructor.
+      instance. Typically, a class constructor.
     """
     global _registered_store_ctors
     assert callable(constructor), (

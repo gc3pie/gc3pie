@@ -102,7 +102,7 @@ New features
   ``ConnectionTimeout``, and ``ProxyCommand`` options from the SSH
   config file.  Location of an alternate configuration file to use
   with GC3Pie can be set in any ``[auth/*]`` section of type SSH; see
-  the `configuration`:ref: reference for details.  Thanks to Niko
+  the `configuration`:ref: section for details.  Thanks to Niko
   Eherenfeuchter and Karandash8 for feature requests and preliminary
   implementations.
 
@@ -266,7 +266,7 @@ Configuration file changes
 * All computational resource must have an ``architecture = ...`` line;
   see the ConfigurationFile wiki page for details
 * Probably more changes than it's worth to list here: check your
-  configuration against the configuration_ page!
+  configuration against the `configuration`:ref: page!
 
 Command-line utilities changes
 ------------------------------

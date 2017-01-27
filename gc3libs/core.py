@@ -266,7 +266,7 @@ variable ``GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL`` to ``yes`` or ``1``.
           If ``True``, submit task regardless of its execution state;
           if ``False`` (default), submission is a no-op if task is not
           in ``NEW`` state.
-        :param list targets:
+        :param targets:
           A list of `Resource`s to submit the task to; resources are
           tried in the order given.  If ``None`` (default), perform
           brokering among all the configured resources.

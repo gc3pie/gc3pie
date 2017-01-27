@@ -26,7 +26,6 @@ Code repository organization
 GC3Pie code is hosted in a GitHub_ repository, which you can
 access online__ or using any Git_ client.
 
-.. _GitHub: https://github.com/
 .. __: http://github.com/uzh/gc3pie/
 
 We encourage anyone to fork the repository and contribute back
@@ -550,7 +549,7 @@ GC3Pie documentation is divided in three sections:
 * :ref:`Contributor Documentation`: detailed information on how to
   contribute to GC3Pie and get your code included in the main library.
 
-The :ref:`GC3Libs programming API` is the most relevant part of the
+The `GC3Libs programming API <gc3libs_>` is the most relevant part of the
 docs for developers contributing code and is generated automatically
 from the docstrings inside the modules. Automatic documentation in
 Sphinx is described under

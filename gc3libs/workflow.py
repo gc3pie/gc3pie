@@ -628,6 +628,8 @@ class AbortOnError(_OnError):
     See :meth:`SequentialTaskCollection.next` and `GitHub issue #512`_
     for some caveats on applying this to dynamically-built task
     collections.
+
+    .. _`GitHub issue #512`: https://github.com/uzh/gc3pie/issues/512
     """
     _on_error_state = Run.State.TERMINATED
 
@@ -657,6 +659,8 @@ class StopOnError(_OnError):
     See :meth:`SequentialTaskCollection.next` and `GitHub issue #512`_
     for some caveats on applying this to dynamically-built task
     collections.
+
+    .. _`GitHub issue #512`: https://github.com/uzh/gc3pie/issues/512
     """
     _on_error_state = Run.State.STOPPED
 

@@ -35,11 +35,7 @@ look it up in the :ref:`glossary`. (But feel free to ask on the
 .. toctree::
 
    intro
-   gcodeml
    ggamess
    ggeotop
    grosetta
    gcrypto
-   gzods   
-
-
