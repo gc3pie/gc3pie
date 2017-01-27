@@ -122,14 +122,28 @@ class MyScript(SessionBasedScript):
 
 \begin{frame}
 \begin{exercise*}[9.A]
-  Write a \texttt{ParallelTaskCollection} class
-  \texttt{RandomlyColorize} that is initialized with two parameters:
-  an image file name \texttt{img} and a number \texttt{N}.
+  Write a \texttt{RandomlyColorize} task collection class (subclass of
+  \texttt{ParallelTaskCollection}) that is initialized with two parameters: an
+  image file name \texttt{img} and a number \texttt{N}.
 
   \+
   The \texttt{RandomlyColorize} collection then consists of
   \texttt{N} instances of the \texttt{ColorizeApp}, each initialized
   with the same image file name \texttt{img} and three random colors.
+\end{exercise*}
+\end{frame}
+
+
+\begin{frame}
+\begin{exercise*}[9.B]
+  Modify the \texttt{RandomlyColorize} class from Exercise~9.A
+  to:
+  \begin{enumerate}
+  \item take an additional parameter \texttt{tolerance} (a number from 0.0 to 100.0)
+  \item upon termination of all tasks in the collection, set the collection's
+    exit code to 0 (success) if at the percentage of failed jobs is less than
+    \texttt{tolerance}; set the exit code to 1 otherwise.
+  \end{enumerate}
 \end{exercise*}
 \end{frame}
 
@@ -166,7 +180,7 @@ $ montage \
   \small
 
   \+
-  \begin{exercise*}[9.B]
+  \begin{exercise*}[9.C]
     Write a \texttt{WarholizeScript} session-based script.
 
     \+
