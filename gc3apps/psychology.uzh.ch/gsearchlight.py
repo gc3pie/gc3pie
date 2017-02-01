@@ -57,8 +57,9 @@ import gc3libs.utils
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 
 DEFAULT_ITERATIONS=1000
+DEFAULT_CHUNKS=1
 DEFAULT_REMOTE_OUTPUT_FILE="result"
-MATLAB_CMD="matlab -nosplash -nodisplay -nodesktop -r \"{main_function} 1 {mask} {fn} {output};quit\""
+MATLAB_CMD="matlab -nosplash -nodisplay -nodesktop -r \'{main_function}({iterations} {mask} {fn} {output});quit\'"
 
 ## custom application class
 class GsearchlightApplication(Application):
@@ -68,7 +69,7 @@ class GsearchlightApplication(Application):
     """
     application_name = 'gsearchlight'
     
-    def __init__(self, iterations, mask_file, fn_file, matlab_file, **extra_args):
+    def __init__(self, iterations, mask, mask_hdr, fn_file, matlab_file, **extra_args):
 
         executables = []
         inputs = dict()
@@ -76,13 +77,25 @@ class GsearchlightApplication(Application):
 
         inputs[matlab_file] = os.path.basename(matlab_file)
         matlab_function = inputs[matlab_file].split('.')[0]
-        inputs[mask_file] = os.path.basename(mask_file)
+        inputs[mask] = os.path.basename(mask)
+        inputs[mask_hdr] = os.path.basename(mask_hdr)
         inputs[fn_file] = os.path.basename(fn_file)
             
-        arguments = MATLAB_CMD.format(main_function=matlab_function,
-                                      mask=inputs[mask_file],
-                                      fn=inputs[fn_file],
-                                      output=DEFAULT_REMOTE_OUTPUT_FILE)
+        # arguments = MATLAB_CMD.format(main_function=matlab_function,
+        #                               iterations=iterations,
+        #                               mask=inputs[mask_file],
+        #                               fn=inputs[fn_file],
+        #                               output=DEFAULT_REMOTE_OUTPUT_FILE)
+
+        wrapper = resource_filename(Requirement.parse("gc3pie"),
+                                    "gc3libs/etc/run_matlab.sh")
+        inputs[wrapper] = "./wrapper.sh"
+
+        arguments = "./wrapper.sh %s %d %s %s %s" % (matlab_function,
+                                                     iterations,                                                     
+                                                     inputs[mask],
+                                                     inputs[fn_file],
+                                                     DEFAULT_REMOTE_OUTPUT_FILE)
             
         # Set output
         outputs[DEFAULT_REMOTE_OUTPUT_FILE] = DEFAULT_REMOTE_OUTPUT_FILE
@@ -150,6 +163,22 @@ class GsearchlightScript(SessionBasedScript):
                        help="How to split the edges input data set. "
                        "Default: %(default)s.")
 
+        self.add_param("-G", "--group", metavar="INT",
+                       type=positive_int,
+                       dest="chunk", default=DEFAULT_CHUNKS,
+                       help="Group events together and process them in groups. "
+                       "Default: %(default)s.")
+
+    def parse_args(self):
+        """
+        check that 'mask' file is provided with its .hdr complement
+        """
+
+        mask_filename = self.params.mask.split(".")[0]
+        assert os.path.isfile(mask_filename+'.hdr'), \
+            "Mask file %s.hdr missing" % mask_filename
+        self.params.maskhdr = mask_filename+".hdr"
+        
     def new_tasks(self, extra):
         """
         Read content of 'command_file'
@@ -157,13 +186,23 @@ class GsearchlightScript(SessionBasedScript):
         """
         tasks = []
 
-        for iteration in range(0,self.params.niter):
+        for iteration in get_events(self.params.niter,self.params.chunk):
             extra_args = extra.copy()
             tasks.append(GsearchlightApplication(
                 iteration,
                 self.params.mask,
+                self.params.maskhdr,
                 self.params.fn,
                 self.params.Mfunct,
                 **extra_args))
                     
         return tasks
+
+def get_events(niter,chunk):
+    iterations = []
+    for i in range(0,(niter-(niter%chunk)),chunk):
+        iterations.append(chunk)
+    last = niter%chunk
+    if last > 0:
+        iterations.append(last)
+    return iterations

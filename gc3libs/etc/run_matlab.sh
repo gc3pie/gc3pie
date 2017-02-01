@@ -191,6 +191,9 @@ if [ -n "$src" ]; then
         *.tgz)  zcat "$src"  | tar -x $verbose -f '-' -C "$source_folder";;	
         *.tar.bz2) bzcat "$src" | tar -x $verbose -f '-' -C "$source_folder";;
     esac
+else
+    # a Matlab script has been provided.
+    source_folder=$PWD
 fi
 
 # if the sources were not extracted in the current directory,
