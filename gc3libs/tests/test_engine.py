@@ -31,9 +31,10 @@ import pytest
 from gc3libs import Run, Application, create_engine
 import gc3libs.config
 from gc3libs.core import Core, Engine, MatchMaker
+from gc3libs.persistence.filesystem import FilesystemStore
 from gc3libs.quantity import GB, hours
 
-from gc3libs.testing.helpers import SimpleParallelTaskCollection, SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_config_file, temporary_engine
+from gc3libs.testing.helpers import SimpleParallelTaskCollection, SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_config_file, temporary_core, temporary_directory, temporary_engine
 
 
 def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
@@ -394,6 +395,57 @@ def test_create_engine_with_core_options():
         assert engine._core.matchmaker == mm
         assert engine._core.auto_enable_auth == False
 
+
+def test_engine_find_task_by_id():
+    """
+    Test that saved tasks are can be retrieved from the Engine given their ID only.
+    """
+    with temporary_core() as core:
+        with temporary_directory() as tmpdir:
+            store = FilesystemStore(tmpdir)
+            engine = Engine(core, store=store)
+
+            task = SuccessfulApp()
+            store.save(task)
+            engine.add(task)
+
+            task_id = task.persistent_id
+            assert_equal(task, engine.find_task_by_id(task_id))
+
+
+@raises(KeyError)
+def test_engine_cannot_find_task_by_id_if_not_saved():
+    """
+    Test that *unsaved* tasks are cannot be retrieved from the Engine given their ID only.
+    """
+    with temporary_core() as core:
+        with temporary_directory() as tmpdir:
+            store = FilesystemStore(tmpdir)
+            engine = Engine(core, store=store)
+
+            task = SuccessfulApp()
+            engine.add(task)
+
+            store.save(task)  # guarantee it has a `.persistent_id`
+            task_id = task.persistent_id
+            engine.find_task_by_id(task_id)
+
+
+@raises(KeyError)
+def test_engine_cannot_find_task_by_id_if_no_store():
+    """
+    Test that `Engine.find_task_by_id` always raises `KeyError` if the Engine has no associated store.
+    """
+    with temporary_engine() as engine:
+       with temporary_directory() as tmpdir:
+            store = FilesystemStore(tmpdir)
+
+            task = SuccessfulApp()
+            engine.add(task)
+
+            store.save(task)  # guarantee it has a `.persistent_id`
+            task_id = task.persistent_id
+            engine.find_task_by_id(task_id)
 
 
 if __name__ == "__main__":

@@ -24,7 +24,8 @@ Utility functions for use in unit test code.
 # stdlib imports
 from contextlib import contextmanager
 import sys
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, mkdtemp
+import shutil
 
 # GC3Pie imports
 from gc3libs import Application, Run
@@ -71,6 +72,13 @@ def temporary_core(
     # need to clean up otherwise other tests will see the No-Op
     # backend
     del cfg.TYPE_CONSTRUCTOR_MAP['noop']
+
+
+@contextmanager
+def temporary_directory(*args, **kwargs):
+    tmpdir = mkdtemp(*args, **kwargs)
+    yield tmpdir
+    shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 @contextmanager

@@ -1208,6 +1208,7 @@ class Engine(object):
         self._to_kill = []
         self._core = controller
         self._store = store
+        self._tasks_by_id = {}
         for task in tasks:
             self.add(task)
         # public attributes
@@ -1251,6 +1252,11 @@ class Engine(object):
         queue = self._get_queue_for_task(task)
         if not _contained(task, queue):
             queue.append(task)
+            if self._store:
+                try:
+                    self._tasks_by_id[task.persistent_id] = task
+                except AttributeError:
+                    gc3libs.log.warning("Task %s has no persistent ID!", task)
             task.attach(self)
 
 
@@ -1260,7 +1266,21 @@ class Engine(object):
         """
         queue = self._get_queue_for_task(task)
         queue.remove(task)
+        if self._store:
+            try:
+                del self._tasks_by_id[task.persistent_id]
+            except AttributeError:
+                # already removed
+                pass
         task.detach()
+
+
+    def find_task_by_id(self, task_id):
+        """
+        Return the task with the given persistent ID added to this `Engine` instance.
+        If no task has that ID, raise a `KeyError`.
+        """
+        return self._tasks_by_id[task_id]
 
 
     def progress(self):
