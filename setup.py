@@ -159,6 +159,7 @@ setuptools.setup(
             # version 3.0.0 of the client libraries, we have to include separate
             # dependecy lists for Python 2.7+ and Python 2.6
             'python-novaclient',
+            'os-client-config',
         ],
         'openstack:python_version=="2.6"': [
             # The following Python modules are required by GC3Pie's `openstack`
