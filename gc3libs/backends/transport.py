@@ -26,6 +26,7 @@ __docformat__ = 'reStructuredText'
 __version__ = 'development version (SVN $Revision$)'
 
 
+import platform
 import os
 import os.path
 import errno
@@ -850,7 +851,9 @@ class LocalTransport(Transport):
     _process = None
 
     def __init__(self):
-        pass
+        # logging code in class `Transport` assumes a host name is recorded
+        # into `.remote_frontend`
+        self.remote_frontend = (platform.node() or 'localhost')
 
     def get_proc_state(self, pid):
         """
