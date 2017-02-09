@@ -64,41 +64,54 @@ def _make_remote_and_local_path_pair(transport, job, remote_relpath,
         return [(remote_path, local_path)]
 
 
-def _parse_gnu_time_duration(val):
+def _parse_time_duration(val):
     """
-    Convert the output of GNU time's `%e` format specifier into a GC3Pie `Duration` object.
+    Convert the output of common Linux/UNIX system utilities into a GC3Pie `Duration` object.
 
-    Any of the time formats *HH:MM:SS* (hours, minutes, seconds) or
-    *MM:SS* (minutes, seconds), or even just the number of seconds are
-    acceptable::
+    Any of the time formats *DD-HH:MM:SS* (days, hours, minutes, seconds),
+    *HH:MM:SS* (hours, minutes, seconds), or *MM:SS* (minutes, seconds), or
+    even just the number of seconds are acceptable::
 
-      >>> _parse_gnu_time_duration('1:02:03') == Duration('1h') + Duration('2m') + Duration('3s')
+      >>> _parse_time_duration('25-00:31:05') == Duration('25d') + Duration('31m') + Duration('5s')
       True
 
-      >>> _parse_gnu_time_duration('01:02') == Duration('1m') + Duration('2s')
+      >>> _parse_time_duration('1:02:03') == Duration('1h') + Duration('2m') + Duration('3s')
       True
 
-      >>> _parse_gnu_time_duration('42') == Duration(42, unit=Duration.s)
+      >>> _parse_time_duration('01:02') == Duration('1m') + Duration('2s')
+      True
+
+      >>> _parse_time_duration('42') == Duration(42, unit=Duration.s)
       True
 
     The *seconds* portion of the time string can be followed by
     decimal digits for greater precision::
 
-      >>> _parse_gnu_time_duration('0:00.00') == Duration(0, unit=Duration.s)
+      >>> _parse_time_duration('0:00.00') == Duration(0, unit=Duration.s)
       True
 
-      >>> _parse_gnu_time_duration('4.20') == Duration(4.20, unit=Duration.s)
+      >>> _parse_time_duration('4.20') == Duration(4.20, unit=Duration.s)
       True
 
     When only the number of seconds is given, an optional trailing
     unit specified `s` is allowed::
 
-      >>> _parse_gnu_time_duration('4.20s') == Duration(4.20, unit=Duration.s)
+      >>> _parse_time_duration('4.20s') == Duration(4.20, unit=Duration.s)
       True
+
+    Among the programs whose output can be parsed by this function, there are:
+
+    - GNU time's `%e` format specifier;
+    - output of `ps -o etime=` (on both GNU/Linux and MacOSX)
     """
     n = val.count(':')
     if 2 == n:
-        return Duration(val)
+        if '-' in val:
+            days, timespan = val.split('-')
+            return (Duration(days + 'd') + Duration(timespan))
+        else:
+            # Duration's ctor can natively parse this
+            return Duration(val)
     elif 1 == n:
         # AA:BB is rejected as ambiguous by `Duration`'s built-in
         # parser; work around it
@@ -235,7 +248,7 @@ ReturnCode=%x"""
         # GNU time output key    .execution attr                     converter function
         # |                        |                                  |
         # v                        v                                  v
-        'WallTime':              ('duration',                         _parse_gnu_time_duration),
+        'WallTime':              ('duration',                         _parse_time_duration),
         'KernelTime':            ('shellcmd_kernel_time',             Duration),
         'UserTime':              ('shellcmd_user_time',               Duration),
         'CPUUsage':              ('shellcmd_cpu_usage',               _parse_percentage),
@@ -761,13 +774,13 @@ ReturnCode=%x"""
                 # running time limit
                 if app.requested_walltime is not None:
                     exit_code2, stdout2, stderr2 = self.transport.execute_command(
-                        "ps -p %d -o etimes=" % pid)
+                        "ps -p %d -o etime=" % pid)
                     if exit_code2 != 0:
                         # job terminated already, do cleanup and return
                         self._cleanup_terminating_task(app, pid)
                         return app.execution.state
                     cancel = False
-                    elapsed = Duration(stdout2.strip() + 'seconds')
+                    elapsed = _parse_time_duration(stdout2.strip())
                     if elapsed > self.max_walltime:
                         log.warning("Task %s ran for %s, exceeding max_walltime %s of resource %s: cancelling it.",
                                     app, elapsed.to_timedelta(), self.max_walltime, self.name)
