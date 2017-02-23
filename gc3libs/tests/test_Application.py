@@ -26,6 +26,7 @@ from nose.plugins.skip import SkipTest
 
 from gc3libs import Application
 import gc3libs.exceptions
+import os
 
 
 @raises(TypeError)
@@ -98,6 +99,19 @@ def test_valid_invocation():
           'output_dir': '/tmp',
           }
     Application(**ma)
+
+
+def test_stdin_pwd():
+    path = 'scripts/simplescript.py'
+    ma = {'arguments': ['/bin/true'],
+          'inputs': [],
+          'outputs': [],
+          'output_dir': '/tmp',
+          'stdin': path,
+          }
+    app = Application(**ma)
+    assert os.path.abspath(path) == app.inputs[app.stdin]
+
 
 
 @raises(gc3libs.exceptions.InvalidValue)
