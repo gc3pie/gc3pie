@@ -33,9 +33,9 @@ from gc3libs.backends import transport
 from gc3libs.exceptions import TransportError
 
 
-class StubForTestTransport:
+class StubForTestTransport(object):
 
-    def extraSetup(self):
+    def extra_setup(self):
         (exitcode, tmpdir, stderror) = self.transport.execute_command(
             'mktemp -d /tmp/test_transport.XXXXXXXXX')
         self.tmpdir = tmpdir.strip()
@@ -151,23 +151,20 @@ class TestLocalTransport(StubForTestTransport):
     def setUp(self):
         self.transport = transport.LocalTransport()
         self.transport.connect()
-        StubForTestTransport.extraSetup(self)
+        self.extra_setup()
 
-
+@pytest.mark.skipif(
+    'SshTransport' not in os.environ.get('GC3PIE_TESTS_ALLOW', ''),
+    reason=("Skipping SSH test: SSH to localhost not allowed"
+            " (set env variable `GC3PIE_TESTS_ALLOW` to `SshTransport` to run)"))
 class TestSshTransport(StubForTestTransport):
 
     @pytest.fixture(autouse=True)
     def setUp(self):
         self.transport = transport.SshTransport('localhost',
                                                 ignore_ssh_host_keys=True)
-        try:
-            self.transport.connect()
-        except TransportError:
-            pytest.mark.skip(
-                "Unable to connect to localhost via ssh. Please enable "
-                "passwordless authentication to localhost in order to pass "
-                "this test.")
-        StubForTestTransport.extraSetup(self)
+        self.transport.connect()
+        self.extra_setup()
 
 # main: run tests
 
