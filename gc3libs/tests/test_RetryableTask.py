@@ -27,7 +27,7 @@ from gc3libs import Application
 from gc3libs.workflow import RetryableTask
 
 
-class TestApplication(Application):
+class MyApplication(Application):
 
     def __init__(self):
         Application.__init__(self,
@@ -46,7 +46,7 @@ class TestApplication(Application):
 
 @pytest.mark.xfail(raises=AssertionError)
 def test_persisted_change():
-    app = TestApplication()
+    app = MyApplication()
     task = RetryableTask(app)
     # task.execution.state = 'RUNNING'
 
