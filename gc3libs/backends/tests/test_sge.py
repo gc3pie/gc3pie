@@ -25,7 +25,7 @@ import os
 import shutil
 import tempfile
 
-from nose.tools import assert_equal
+import pytest
 
 import gc3libs
 import gc3libs.core
@@ -186,6 +186,7 @@ type=ssh
 username=NONEXISTENT
 """
 
+    @pytest.fixture(autouse=True)
     def setUp(self):
         (fd, self.tmpfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
@@ -205,7 +206,7 @@ username=NONEXISTENT
         self.transport.expected_answer['tracejob'] = qacct_notfound()
         self.transport.expected_answer['qdel'] = qdel_notfound()
 
-    def tearDown(self):
+        yield
         os.remove(self.tmpfile)
 
     def test_submission_failed(self):
@@ -221,16 +222,16 @@ username=NONEXISTENT
             assert False
         except Exception as e:
             assert isinstance(e, gc3libs.exceptions.LRMSError)
-        assert_equal(app.execution.state, State.NEW)
+        assert app.execution.state == State.NEW
 
         # This second example will show how the Application.__init__()
         # method changes the jobname in order not to have a digit at the
         # beginning of it.
         app = FakeApp(jobname='123Demo')
-        assert_equal(app.jobname, 'GC3Pie.123Demo')
+        assert app.jobname == 'GC3Pie.123Demo'
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
+        assert app.execution.state == State.SUBMITTED
 
     # Submission failed (unauthrozed user):
     #     t.expected_answer['qsub'] = qsub_failed_acl()
@@ -245,25 +246,25 @@ username=NONEXISTENT
         # Succesful submission:
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
+        assert app.execution.state == State.SUBMITTED
 
         # Update state. We would expect the job to be SUBMITTED
         self.transport.expected_answer['qstat'] = correct_qstat_queued()
         self.transport.expected_answer['qacct'] = qacct_notfound()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
+        assert app.execution.state == State.SUBMITTED
 
         # Update state. We would expect the job to be RUNNING
         self.transport.expected_answer['qstat'] = correct_qstat_running()
         self.transport.expected_answer['qacct'] = qacct_notfound()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.RUNNING)
+        assert app.execution.state == State.RUNNING
 
         # Job done. qstat doesn't find it, qacct should.
         self.transport.expected_answer['qstat'] = qstat_notfound()
         self.transport.expected_answer['qacct'] = correct_qacct_done()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
+        assert app.execution.state == State.TERMINATING
 
     def test_qacct_parsing(self):
         app = FakeApp()
@@ -271,40 +272,40 @@ username=NONEXISTENT
         self.core.submit(app)
         self.transport.expected_answer['qacct'] = correct_qacct_done()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
+        assert app.execution.state == State.TERMINATING
 
         job = app.execution
         # common job reporting values (see Issue 78)
-        assert_equal(job.exitcode, 0)
-        assert_equal(job.returncode, 0)
-        assert_equal(job.duration, 10 * seconds)
+        assert job.exitcode == 0
+        assert job.returncode == 0
+        assert job.duration == 10 * seconds
         assert (job.max_used_memory - 13.152 * MB) < 1 * MB  # floating approx
-        assert_equal(job.used_cpu_time, 0.248 * seconds)
+        assert job.used_cpu_time == 0.248 * seconds
         # SGE-specific values
-        assert_equal(job.sge_queue, 'all.q')
-        assert_equal(job.sge_jobname, 'DemoSGEApp')
-        assert_equal(job.sge_submission_time,
+        assert job.sge_queue == 'all.q'
+        assert job.sge_jobname == 'DemoSGEApp'
+        assert (job.sge_submission_time ==
                      datetime.datetime(year=2012,
                                        month=3,
                                        day=15,
                                        hour=8,
                                        minute=42,
                                        second=46))
-        assert_equal(job.sge_start_time,
+        assert (job.sge_start_time ==
                      datetime.datetime(year=2012,
                                        month=3,
                                        day=15,
                                        hour=8,
                                        minute=43,
                                        second=0))
-        assert_equal(job.sge_completion_time,
+        assert (job.sge_completion_time ==
                      datetime.datetime(year=2012,
                                        month=3,
                                        day=15,
                                        hour=8,
                                        minute=43,
                                        second=10))
-        assert_equal(job.sge_failed, 0)
+        assert job.sge_failed == 0
 
     def test_delete_job(self):
         app = FakeApp()
@@ -313,17 +314,17 @@ username=NONEXISTENT
 
         self.transport.expected_answer['qdel'] = qdel_success()
         self.core.kill(app)
-        assert_equal(app.execution.state, State.TERMINATED)
+        assert app.execution.state == State.TERMINATED
 
     def test_delete_job_twice(self):
         app = FakeApp()
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
+        assert app.execution.state == State.SUBMITTED
 
         self.transport.expected_answer['qdel'] = qdel_failed_acl()
         self.core.kill(app)
-        assert_equal(app.execution.state, State.TERMINATED)
+        assert app.execution.state == State.TERMINATED
 
 
 def tearDownModule():
@@ -367,13 +368,13 @@ qdel = /usr/local/bin/qdel # comments are ignored!
     cfg.merge_file(tmpfile)
     b = cfg.make_resources()['example']
 
-    assert_equal(b.qsub, ['/usr/local/bin/qsub', '-q', 'testing'])
+    assert b.qsub == ['/usr/local/bin/qsub', '-q', 'testing']
 
-    assert_equal(b._qacct, '/usr/local/sbin/qacct')
-    assert_equal(b._qdel, '/usr/local/bin/qdel')
-    assert_equal(b._qstat, '/usr/local/bin/qstat')
+    assert b._qacct == '/usr/local/sbin/qacct'
+    assert b._qdel == '/usr/local/bin/qdel'
+    assert b._qstat == '/usr/local/bin/qstat'
 
 
 if __name__ == "__main__":
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])

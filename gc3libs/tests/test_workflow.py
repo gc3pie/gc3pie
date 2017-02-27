@@ -25,15 +25,6 @@ import shutil
 import tempfile
 import re
 
-# nose
-from nose.tools import raises, assert_equal
-try:
-    from nose.tools import assert_is_instance
-except ImportError:
-    # Python 2.6 does not support assert_is_instance()
-    def assert_is_instance(obj, cls):
-        assert (isinstance(obj, cls))
-
 # GC3Pie imports
 from gc3libs import Run
 from gc3libs.workflow import SequentialTaskCollection, StagedTaskCollection, StopOnError
@@ -54,7 +45,7 @@ def test_staged_task_collection_progress():
         coll = ThreeStageCollection()
         coll.attach(core)
         coll.submit()
-        assert_equal(coll.execution.state, Run.State.SUBMITTED)
+        assert coll.execution.state == Run.State.SUBMITTED
 
         # first task is successful
         while coll.tasks[0].execution.state != Run.State.TERMINATED:
@@ -71,8 +62,8 @@ def test_staged_task_collection_progress():
         # third task is unsuccessful
         while coll.tasks[2].execution.state != Run.State.TERMINATED:
             coll.progress()
-        assert_equal(coll.execution.state, Run.State.TERMINATED)
-        assert_equal(coll.execution.exitcode, 1)
+        assert coll.execution.state == Run.State.TERMINATED
+        assert coll.execution.exitcode == 1
 
 
 def test_staged_task_collection_stage():
@@ -88,11 +79,11 @@ def test_staged_task_collection_stage():
         coll.submit()
         stage = coll.stage()
         assert isinstance(stage, SuccessfulApp), ("stage=%r" % (stage,))
-        assert_equal(stage.jobname, 'stage0')
+        assert stage.jobname == 'stage0'
 
         # advance to next task
         while coll.tasks[0].execution.state != Run.State.TERMINATED:
             coll.progress()
         stage = coll.stage()
         assert isinstance(stage, UnsuccessfulApp)
-        assert_equal(stage.jobname, 'stage1')
+        assert stage.jobname == 'stage1'

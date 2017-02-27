@@ -16,7 +16,7 @@ import os
 import subprocess
 
 FSAVERAGE = "fsaverage"
-FS_SUBJECT_FSAVERAGE = os.path.join(os.environ["FREESURFER_HOME"],"subjects",FSAVERAGE)
+FS_SUBJECT_FSAVERAGE = os.path.join(os.environ.get("FREESURFER_HOME", ''),"subjects",FSAVERAGE)
 
 TRAC_CMD_STEP1="trac-all -prep -c {dmrirc} -debug"
 TRAC_CMD_STEP2="trac-all -bedp -c {dmrirc}"
@@ -36,9 +36,9 @@ def RunTrac(dmrirc_input):
 
     # Verify input arguments
     assert os.path.isfile(dmrirc_input)
-    
+
     ret = 0
-    
+
     for step in TRAC_PIPELINE:
         cmd = step.format(dmrirc=dmrirc_input)
         print "Running '%s' " % cmd,
@@ -51,7 +51,7 @@ def RunTrac(dmrirc_input):
             break
         else:
             print "[ok]"
-    return ret        
+    return ret
 
 def runme(command):
     """
@@ -65,7 +65,7 @@ def runme(command):
         shell=True,
         stderr=subprocess.PIPE,
         stdout=subprocess.PIPE)
-    
+
     (stdout, stderr) = proc.communicate()
     return (proc.returncode, stdout, stderr)
 

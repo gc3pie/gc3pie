@@ -44,7 +44,7 @@ import subprocess
 
 NII_EXTENSION = "nii"
 FSAVERAGE = "fsaverage"
-FS_SUBJECT_FSAVERAGE = os.path.join(os.environ["FREESURFER_HOME"],"subjects",FSAVERAGE)
+FS_SUBJECT_FSAVERAGE = os.path.join(os.environ.get("FREESURFER_HOME", ''),"subjects",FSAVERAGE)
 
 def Usage():
     print ("Usage: gnift_wrapper.py <subject name> <NIFIT input folder> <subjects dir>")
@@ -60,7 +60,7 @@ def RunFreesurfer(subject, input, output):
     # Create output folder and add simlink to FSAVERAGE
     os.mkdir(output)
     os.symlink(FS_SUBJECT_FSAVERAGE,os.path.join(output,FSAVERAGE))
-    
+
     input_nii = dict()
     cross_files = []
     os.environ["SUBJECTS_DIR"] = output
@@ -80,7 +80,7 @@ def RunFreesurfer(subject, input, output):
     for timepoint in sorted(input_nii.keys()):
         inputs = '-i '+' -i '.join(x for x in input_nii[timepoint])
         data_input_outputfolder =  "%s.cross.%s" % (subject, timepoint)
-        
+
         "Example: recon-all -i in_data_path/s01/TP1/T1w_a.nii.gz -i in_data_path/s01/TP1/T1w_b.nii.gz -subjid s01.cross.TP1"
         command="recon-all -deface %s -subjid %s" % (inputs, data_input_outputfolder)
         runme(command)
@@ -92,16 +92,16 @@ def RunFreesurfer(subject, input, output):
         except AssertionError as ex:
             print ex.message
             return 1
-            
+
         cross_files.append(data_input_outputfolder)
-        
+
         print "Start CROSS SECTIONAL PROCESSING"
         "Example: recon-all -s s01.cross.TP1 -all"
         command="recon-all -deface -s %s -all" % data_input_outputfolder
         runme(command)
 
 
-    # BASE PROCESSING    
+    # BASE PROCESSING
     print "Start BASE PROCESSING with %d timepoints" % len(cross_files)
     inputs = '-tp '+' -tp '.join(x for x in sorted(cross_files))
     basefile = "%s.base" % subject
@@ -130,10 +130,10 @@ def runme(command):
         shell=True,
         stderr=subprocess.PIPE,
         stdout=subprocess.PIPE)
-    
+
     print "Running command %s" % command
     (stdout, stderr) = proc.communicate()
-    
+
     if proc.returncode != 0:
         print "Execution failed with exit code: %d" % proc.returncode
         print "Output message: %s" % stdout

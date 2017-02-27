@@ -27,8 +27,7 @@ import shutil
 import tempfile
 import time
 
-from nose.tools import raises, assert_equal, assert_not_equal
-from nose.plugins.skip import SkipTest
+import pytest
 
 import gc3libs
 import gc3libs.config
@@ -57,6 +56,7 @@ resourcedir=%s
 type=none
 """
 
+    @pytest.fixture(autouse=True)
     def setUp(self):
         (fd, cfgfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
@@ -74,22 +74,8 @@ type=none
         # Update resource status
         self.backend.get_resource_status()
 
-    def cleanup_file(self, fname):
-        self.files_to_remove.append(fname)
+        yield
 
-    def run_until_terminating(self, app, max_wait=10, polling_interval=0.1):
-        """
-        Wait until the given `app` job is done, but timeout and raise an
-        error if it takes too much time.
-        """
-        waited = 0
-        while app.execution.state != gc3libs.Run.State.TERMINATING \
-                and waited < max_wait:
-            time.sleep(polling_interval)
-            waited += polling_interval
-            self.core.update_job_state(app)
-
-    def tearDown(self):
         for fname in self.files_to_remove:
             if os.path.isdir(fname):
                 shutil.rmtree(fname)
@@ -105,6 +91,22 @@ type=none
                 self.core.free(app)
             except:
                 pass
+
+    def cleanup_file(self, fname):
+        self.files_to_remove.append(fname)
+
+    def run_until_terminating(self, app, max_wait=10, polling_interval=0.1):
+        """
+        Wait until the given `app` job is done, but timeout and raise an
+        error if it takes too much time.
+        """
+        waited = 0
+        while app.execution.state != gc3libs.Run.State.TERMINATING \
+                and waited < max_wait:
+            time.sleep(polling_interval)
+            waited += polling_interval
+            self.core.update_job_state(app)
+
 
     def test_submission_ok(self):
         """Test a successful submission cycle and the backends' resource book-keeping"""
@@ -126,17 +128,17 @@ type=none
 
         # there's no SUBMITTED state here: jobs go immediately into
         # RUNNING state
-        assert_equal(app.execution.state, gc3libs.Run.State.SUBMITTED)
-        assert_equal(self.backend.free_slots, 122)
-        assert_equal(self.backend.user_queued, 0)
-        assert_equal(self.backend.user_run, 1)
+        assert app.execution.state == gc3libs.Run.State.SUBMITTED
+        assert self.backend.free_slots == 122
+        assert self.backend.user_queued == 0
+        assert self.backend.user_run == 1
 
         self.run_until_terminating(app)
         try:
-            assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
-            assert_equal(self.backend.free_slots, 123)
-            assert_equal(self.backend.user_queued, 0)
-            assert_equal(self.backend.user_run, 0)
+            assert app.execution.state == gc3libs.Run.State.TERMINATING
+            assert self.backend.free_slots == 123
+            assert self.backend.user_queued == 0
+            assert self.backend.user_run == 0
         except:
             self.core.fetch_output(app)
             self.core.free(app)
@@ -144,18 +146,18 @@ type=none
 
         self.core.fetch_output(app)
         try:
-            assert_equal(app.execution.state, gc3libs.Run.State.TERMINATED)
-            assert_equal(self.backend.free_slots, 123)
-            assert_equal(self.backend.user_queued, 0)
-            assert_equal(self.backend.user_run, 0)
+            assert app.execution.state == gc3libs.Run.State.TERMINATED
+            assert self.backend.free_slots == 123
+            assert self.backend.user_queued == 0
+            assert self.backend.user_run == 0
         except:
             self.core.free(app)
             raise
 
+    @pytest.mark.skip("Test currently not working.")
     def test_check_app_after_reloading_session(self):
         """Check that the job status is still available the end of the starter script"""
-        raise SkipTest("Test currently not working.")
-    
+
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
 
@@ -176,12 +178,12 @@ type=none
         # and the output to a file, so that `Core` will be able to
         # retrieve it.
         self.run_until_terminating(app)
-        assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
-        assert_equal(app.execution.returncode, 0)
+        assert app.execution.state == gc3libs.Run.State.TERMINATING
+        assert app.execution.returncode == 0
 
+    @pytest.mark.skip("Test currently not working.")
     def test_app_argument_with_spaces(self):
         """Check that arguments with spaces are not split"""
-        raise SkipTest("Test currently not working.")
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
 
@@ -198,8 +200,8 @@ type=none
         self.cleanup_file(app.execution.lrms_execdir)
 
         self.run_until_terminating(app)
-        assert_equal(app.execution.state, gc3libs.Run.State.TERMINATING)
-        assert_not_equal(app.execution.returncode, 0)
+        assert app.execution.state == gc3libs.Run.State.TERMINATING
+        assert app.execution.returncode != 0
 
     def test_resource_usage(self):
         """Check book-keeping of core and memory resources"""
@@ -220,16 +222,16 @@ type=none
 
         cores_after = self.backend.free_slots
         mem_after = self.backend.available_memory
-        assert_equal(cores_before, cores_after + 2)
-        assert_equal(mem_before, mem_after + app.requested_memory)
+        assert cores_before == cores_after + 2
+        assert mem_before == mem_after + app.requested_memory
 
         self.run_until_terminating(app)
-        assert_equal(self.backend.free_slots, cores_before)
-        assert_equal(self.backend.available_memory, mem_before)
+        assert self.backend.free_slots == cores_before
+        assert self.backend.available_memory == mem_before
 
+    @pytest.mark.skip("Test currently not working.")
     def test_env_vars_definition(self):
         """Check that `Application.environment` settings are correctly propagated"""
-        raise SkipTest("Test currently not working.")
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
 
@@ -250,7 +252,7 @@ type=none
         assert os.path.exists(stdout_file)
         assert os.path.isfile(stdout_file)
         stdout_contents = open(stdout_file, 'r').read()
-        assert_equal(stdout_contents, 'OK\n')
+        assert stdout_contents == 'OK\n'
 
     def test_stdout_in_directory(self):
         """Check that `Application.stdout` can include a full path"""
@@ -276,9 +278,9 @@ type=none
         assert os.path.exists(stdout_file)
         assert os.path.isfile(stdout_file)
         stdout_contents = open(stdout_file, 'r').read()
-        assert_equal(stdout_contents, 'OK\n')
+        assert stdout_contents == 'OK\n'
 
-    @raises(gc3libs.exceptions.NoResources)
+    @pytest.mark.xfail(raises=gc3libs.exceptions.NoResources)
     def test_not_enough_cores_usage(self):
         """Check that a `NoResources` exception is raised if more cores are requested than available"""
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
@@ -292,7 +294,7 @@ type=none
             requested_memory=10 * Memory.MiB, )
         self.core.submit(bigapp)
 
-    @raises(gc3libs.exceptions.NoResources)
+    @pytest.mark.xfail(raises=gc3libs.exceptions.NoResources)
     def test_not_enough_memory_usage(self):
         """Check that a `NoResources` exception is raised if more memory is requested than available"""
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
@@ -327,18 +329,20 @@ resourcedir=%s
 type=none
 """
 
+    @pytest.fixture(autouse=True)
     def setUp(self):
         self.files_to_remove = []
 
-    def cleanup_file(self, fname):
-        self.files_to_remove.append(fname)
-
-    def tearDown(self):
+        yield
         for fname in self.files_to_remove:
             if os.path.isdir(fname):
                 shutil.rmtree(fname)
             elif os.path.exists(fname):
                 os.remove(fname)
+
+    def cleanup_file(self, fname):
+        self.files_to_remove.append(fname)
+
 
     def test_override_cfg_flag(self):
         (fd, cfgfile) = tempfile.mkstemp()
@@ -371,7 +375,7 @@ type=none
         self.backend = self.core.get_backend('localhost_test')
         # Update resource status
 
-        assert_equal(self.backend.max_cores, 1000)
+        assert self.backend.max_cores == 1000
 
     def test_resource_sharing_w_multiple_backends(self):
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
@@ -403,12 +407,12 @@ type=none
 
         try:
             core1.submit(app)
-            assert_equal(backend1.free_slots,
+            assert (backend1.free_slots ==
                          backend1.max_cores - app.requested_cores)
 
-            assert_equal(backend2.free_slots, backend2.max_cores)
+            assert backend2.free_slots == backend2.max_cores
             backend2.get_resource_status()
-            assert_equal(backend2.free_slots,
+            assert (backend2.free_slots ==
                          backend2.max_cores - app.requested_cores)
         finally:
             core1.kill(app)
@@ -416,5 +420,4 @@ type=none
 
 
 if __name__ == "__main__":
-    import nose
-    nose.runmodule()
+    pytest.main(["-v", __file__])

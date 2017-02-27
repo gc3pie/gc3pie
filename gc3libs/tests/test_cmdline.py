@@ -31,7 +31,6 @@ import re
 import time
 
 import cli.test
-from nose.tools import assert_true
 
 import gc3libs.cmdline
 import gc3libs.session
@@ -103,55 +102,44 @@ resourcedir = %s
             '-r',
             'localhost')
 
-        assert_true(
-            re.match(
+        assert re.match(
                 '.*TERMINATED\s+3/3\s+\(100.0+%\).*',
                 result.stdout,
-                re.S))
+                re.S)
 
         # FIXME: output dir should be inside session dir
         session_dir = os.path.join(self.env.base_path, 'TestOne')
-        assert_true(
-            os.path.isdir(
+        assert os.path.isdir(
                 os.path.join(self.env.base_path, 'SimpleScript.out.d')
             )
-        )
-        assert_true(
-            os.path.isfile(
+        assert os.path.isfile(
                 os.path.join(
                     self.env.base_path,
                     'SimpleScript.out.d',
-                    'SimpleScript.stdout')))
+                    'SimpleScript.stdout'))
 
-        assert_true(
-            os.path.isdir(
+        assert os.path.isdir(
                 os.path.join(self.env.base_path, 'SimpleScript.out2.d')
             )
-        )
-        assert_true(
-            os.path.isfile(
+        assert os.path.isfile(
                 os.path.join(
                     self.env.base_path,
                     'SimpleScript.out2.d',
-                    'SimpleScript.stdout')))
+                    'SimpleScript.stdout'))
 
-        assert_true(
-            os.path.isdir(session_dir)
-        )
+        assert os.path.isdir(session_dir)
 
-        assert_true(
-            os.path.isfile(
+        assert os.path.isfile(
                 os.path.join(
                     session_dir,
                     gc3libs.session.Session.INDEX_FILENAME,
-                )))
+                ))
 
-        assert_true(
-            os.path.isfile(
+        assert os.path.isfile(
                 os.path.join(
                     session_dir,
                     gc3libs.session.Session.STORE_URL_FILENAME,
-                )))
+                ))
 
     def test_simpledaemon_d(self):
         wdir = os.path.join(self.env.base_path, 'wdir')
@@ -177,22 +165,22 @@ resourcedir = %s
         # Kill the daemon
         # We should have a pidfile
         pidfile = os.path.join(wdir, 'simpledaemon.pid')
-        assert_true(os.path.isfile(pidfile))
+        assert os.path.isfile(pidfile)
 
         pid = open(pidfile).read()
         os.kill(int(pid), signal.SIGTERM)
 
-        assert_true(clean_exit, "Daemon didn't complete after 10 seconds")
-        assert_true(os.path.isdir(wdir))
+        assert clean_exit, "Daemon didn't complete after 10 seconds"
+        assert os.path.isdir(wdir)
 
         # Since it's a daemon, this shouldn't be needed
         proc.kill()
 
         # a logfile
-        assert_true(os.path.isfile(os.path.join(wdir, 'simpledaemon.log')))
+        assert os.path.isfile(os.path.join(wdir, 'simpledaemon.log'))
 
         # the output directory
-        assert_true(os.path.isdir(os.path.join(wdir, 'EchoApp')))
+        assert os.path.isdir(os.path.join(wdir, 'EchoApp'))
 
     def test_simpledaemon_inbox(self):
         wdir = os.path.join(self.env.base_path, 'wdir')
@@ -219,7 +207,7 @@ resourcedir = %s
                 break
             time.sleep(1)
 
-        assert_true(daemon_running)
+        assert daemon_running
         fd = open(os.path.join(inboxdir, 'foo'), 'w+')
         fd.close()
 
@@ -235,26 +223,26 @@ resourcedir = %s
         # Kill the daemon
         # We should have a pidfile
         pidfile = os.path.join(wdir, 'simpledaemon.pid')
-        assert_true(os.path.isfile(pidfile))
+        assert os.path.isfile(pidfile)
 
         pid = open(pidfile).read()
         os.kill(int(pid), signal.SIGTERM)
         os.kill(int(pid), signal.SIGHUP)
 
-        assert_true(clean_exit, "Daemon didn't complete after 10 seconds")
-        assert_true(os.path.isdir(wdir))
+        assert clean_exit, "Daemon didn't complete after 10 seconds"
+        assert os.path.isdir(wdir)
 
         # Since it's a daemon, this shouldn't be needed
         proc.kill()
 
         # a logfile
-        assert_true(os.path.isfile(os.path.join(wdir, 'simpledaemon.log')))
+        assert os.path.isfile(os.path.join(wdir, 'simpledaemon.log'))
 
         # the output directory
-        assert_true(os.path.isdir(os.path.join(wdir, 'EchoApp')))
+        assert os.path.isdir(os.path.join(wdir, 'EchoApp'))
 
 # main: run tests
 
 if "__main__" == __name__:
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])

@@ -26,7 +26,7 @@ import os
 import tempfile
 
 import mock
-from nose.tools import assert_equal, raises
+import pytest
 
 import gc3libs
 import gc3libs.core
@@ -345,6 +345,7 @@ type=ssh
 username=NONEXISTENT
 """
 
+    @pytest.fixture(autouse=True)
     def setUp(self):
         (fd, self.tmpfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
@@ -363,7 +364,8 @@ username=NONEXISTENT
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['scancel'] = scancel_notfound()
 
-    def tearDown(self):
+        yield
+
         os.remove(self.tmpfile)
 
     def test_sbatch_submit_ok(self):
@@ -371,9 +373,9 @@ username=NONEXISTENT
         app = FakeApp()
         self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
+        assert app.execution.state == State.SUBMITTED
 
-    @raises(LRMSError)
+    @pytest.mark.xfail(raises=LRMSError)
     def test_sbatch_submit_failed(self):
         """Test `squeue` output parsing with a job in PENDING state."""
         app = FakeApp()
@@ -389,7 +391,7 @@ username=NONEXISTENT
 
         self.transport.expected_answer['squeue'] = squeue_pending()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
+        assert app.execution.state == State.SUBMITTED
 
     def test_parse_squeue_output_pending_then_running(self):
         """Test `squeue` output parsing with a job in PENDING and then RUNNING state."""
@@ -399,11 +401,11 @@ username=NONEXISTENT
 
         self.transport.expected_answer['squeue'] = squeue_pending()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
+        assert app.execution.state == State.SUBMITTED
 
         self.transport.expected_answer['squeue'] = squeue_running()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.RUNNING)
+        assert app.execution.state == State.RUNNING
 
     def test_parse_squeue_output_immediately_running(self):
         """Test `squeue` output parsing with a job that turns immediately to RUNNING state."""
@@ -413,7 +415,7 @@ username=NONEXISTENT
 
         self.transport.expected_answer['squeue'] = squeue_running()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.RUNNING)
+        assert app.execution.state == State.RUNNING
 
     def test_job_termination1(self):
         """Test that job termination status is correctly reaped if `squeue` fails but `sacct` does not."""
@@ -427,7 +429,7 @@ username=NONEXISTENT
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_ok()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
+        assert app.execution.state == State.TERMINATING
 
         self._check_parse_sacct_done_ok(app.execution)
 
@@ -443,7 +445,7 @@ username=NONEXISTENT
         self.transport.expected_answer['squeue'] = squeue_recently_completed()
         self.transport.expected_answer['env'] = sacct_done_ok()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
+        assert app.execution.state == State.TERMINATING
 
         self._check_parse_sacct_done_ok(app.execution)
 
@@ -460,40 +462,40 @@ username=NONEXISTENT
         self.transport.expected_answer['squeue'] = squeue_recently_completed()
         self.transport.expected_answer['env'] = sacct_notfound()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.RUNNING)
+        assert app.execution.state == State.RUNNING
 
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_ok()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
+        assert app.execution.state == State.TERMINATING
 
         self._check_parse_sacct_done_ok(app.execution)
 
     def _check_parse_sacct_done_ok(self, job):
         # common job reporting values (see Issue 78)
-        assert_equal(job.cores, 1)
-        assert_equal(job.exitcode, 0)
-        assert_equal(job.signal, 0)
-        assert_equal(job.duration, 8*minutes + 7*seconds)
-        assert_equal(job.used_cpu_time, 5*minutes + 5.002*seconds)
-        assert_equal(job.max_used_memory, 7889776 * kB)
+        assert job.cores == 1
+        assert job.exitcode == 0
+        assert job.signal == 0
+        assert job.duration == 8*minutes + 7*seconds
+        assert job.used_cpu_time == 5*minutes + 5.002*seconds
+        assert job.max_used_memory == 7889776 * kB
         # SLURM-specific values
-        assert_equal(job.slurm_max_used_ram, 1612088 * kB)
-        assert_equal(job.slurm_submission_time,
+        assert job.slurm_max_used_ram == 1612088 * kB
+        assert (job.slurm_submission_time ==
                      datetime.datetime(year=2016,
                                        month=2,
                                        day=16,
                                        hour=12,
                                        minute=16,
                                        second=33))
-        assert_equal(job.slurm_start_time,
+        assert (job.slurm_start_time ==
                      datetime.datetime(year=2016,
                                        month=2,
                                        day=16,
                                        hour=14,
                                        minute=24,
                                        second=46))
-        assert_equal(job.slurm_completion_time,
+        assert (job.slurm_completion_time ==
                      datetime.datetime(year=2016,
                                        month=2,
                                        day=16,
@@ -514,7 +516,7 @@ username=NONEXISTENT
 
         self.transport.expected_answer['squeue'] = squeue_running()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.RUNNING)
+        assert app.execution.state == State.RUNNING
 
         # fail repeatedly within the acct delay, no changes to `app.execution`
         for t in 0, 1, 2:
@@ -522,14 +524,14 @@ username=NONEXISTENT
             self.transport.expected_answer['squeue'] = squeue_notfound()
             self.transport.expected_answer['env'] = sacct_notfound()
             self.core.update_job_state(app)
-            assert_equal(app.execution.state, State.RUNNING)
+            assert app.execution.state == State.RUNNING
             assert hasattr(app.execution, 'stat_failed_at')
-            assert_equal(app.execution.stat_failed_at, 0)
+            assert app.execution.stat_failed_at == 0
 
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_ok()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
+        assert app.execution.state == State.TERMINATING
 
     @mock.patch('gc3libs.backends.batch.time')
     def test_accounting_delay2(self, mock_time):
@@ -544,23 +546,23 @@ username=NONEXISTENT
 
         self.transport.expected_answer['squeue'] = squeue_running()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.RUNNING)
+        assert app.execution.state == State.RUNNING
 
         # fail first within the acct delay, no changes to `app.execution`
         mock_time.time.return_value = 0
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_notfound()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.RUNNING)
+        assert app.execution.state == State.RUNNING
         assert hasattr(app.execution, 'stat_failed_at')
-        assert_equal(app.execution.stat_failed_at, 0)
+        assert app.execution.stat_failed_at == 0
 
         # fail again, outside the accounting delay
         mock_time.time.return_value = 2000
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_notfound()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.UNKNOWN)
+        assert app.execution.state == State.UNKNOWN
 
     @mock.patch('gc3libs.backends.batch.time')
     def test_accounting_delay3(self, mock_time):
@@ -575,7 +577,7 @@ username=NONEXISTENT
 
         self.transport.expected_answer['squeue'] = squeue_running()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.RUNNING)
+        assert app.execution.state == State.RUNNING
 
         # fail repeatedly within the acct delay, no changes to `app.execution`
         for t in 1, 2, 3:
@@ -583,14 +585,14 @@ username=NONEXISTENT
             self.transport.expected_answer['squeue'] = squeue_notfound()
             self.transport.expected_answer['env'] = sacct_almost_done()
             self.core.update_job_state(app)
-            assert_equal(app.execution.state, State.RUNNING)
+            assert app.execution.state == State.RUNNING
             assert hasattr(app.execution, 'stat_failed_at')
-            assert_equal(app.execution.stat_failed_at, 1)
+            assert app.execution.stat_failed_at == 1
 
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_ok2()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
+        assert app.execution.state == State.TERMINATING
 
     def test_parse_sacct_output_parallel(self):
         """Test `sacct` output with a successful parallel job."""
@@ -601,33 +603,33 @@ username=NONEXISTENT
         # self.transport.expected_answer['sacct'] = sacct_done_parallel()
         self.transport.expected_answer['env'] = sacct_done_parallel()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
+        assert app.execution.state == State.TERMINATING
 
         job = app.execution
         # common job reporting values (see Issue 78)
-        assert_equal(job.cores, 64)
-        assert_equal(job.exitcode, 0)
-        assert_equal(job.signal, 0)
-        assert_equal(job.duration, 23 * seconds)
-        assert_equal(job.max_used_memory, 49184 * kB)
-        assert_equal(job.used_cpu_time, 1.452 * seconds)
+        assert job.cores == 64
+        assert job.exitcode == 0
+        assert job.signal == 0
+        assert job.duration == 23 * seconds
+        assert job.max_used_memory == 49184 * kB
+        assert job.used_cpu_time == 1.452 * seconds
         # SLURM-specific values
-        assert_equal(job.slurm_max_used_ram, 7884 * kB)
-        assert_equal(job.slurm_submission_time,
+        assert job.slurm_max_used_ram == 7884 * kB
+        assert (job.slurm_submission_time ==
                      datetime.datetime(year=2012,
                                        month=9,
                                        day=4,
                                        hour=11,
                                        minute=18,
                                        second=6))
-        assert_equal(job.slurm_start_time,
+        assert (job.slurm_start_time ==
                      datetime.datetime(year=2012,
                                        month=9,
                                        day=4,
                                        hour=11,
                                        minute=18,
                                        second=24))
-        assert_equal(job.slurm_completion_time,
+        assert (job.slurm_completion_time ==
                      datetime.datetime(year=2012,
                                        month=9,
                                        day=4,
@@ -644,32 +646,32 @@ username=NONEXISTENT
         # self.transport.expected_answer['sacct'] = sacct_done_bad_timestamps()
         self.transport.expected_answer['env'] = sacct_done_bad_timestamps()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
+        assert app.execution.state == State.TERMINATING
 
         job = app.execution
         # common job reporting values (see Issue 78)
-        assert_equal(job.exitcode, 0)
-        assert_equal(job.signal, 0)
-        assert_equal(job.duration, 66 * seconds)
-        assert_equal(job.max_used_memory, 0 * kB)
-        assert_equal(job.used_cpu_time, 0 * seconds)
+        assert job.exitcode == 0
+        assert job.signal == 0
+        assert job.duration == 66 * seconds
+        assert job.max_used_memory == 0 * kB
+        assert job.used_cpu_time == 0 * seconds
         # SLURM-specific values
-        assert_equal(job.slurm_max_used_ram, 0 * kB)
-        assert_equal(job.slurm_submission_time,
+        assert job.slurm_max_used_ram == 0 * kB
+        assert (job.slurm_submission_time ==
                      datetime.datetime(year=2012,
                                        month=9,
                                        day=24,
                                        hour=10,
                                        minute=47,
                                        second=28))
-        assert_equal(job.slurm_start_time,
+        assert (job.slurm_start_time ==
                      datetime.datetime(year=2012,
                                        month=9,
                                        day=24,
                                        hour=10,
                                        minute=47,
                                        second=29))
-        assert_equal(job.slurm_completion_time,
+        assert (job.slurm_completion_time ==
                      datetime.datetime(year=2012,
                                        month=9,
                                        day=24,
@@ -685,32 +687,32 @@ username=NONEXISTENT
         self.transport.expected_answer['squeue'] = squeue_notfound()
         self.transport.expected_answer['env'] = sacct_done_fractional_rusage()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
+        assert app.execution.state == State.TERMINATING
 
         job = app.execution
         # common job reporting values (see Issue 78)
-        assert_equal(job.exitcode, 0)
-        assert_equal(job.signal, 0)
-        assert_equal(job.duration, 7 * minutes + 29 * seconds)
-        assert_equal(job.max_used_memory, 4115516 * kB)
-        assert_equal(job.used_cpu_time, 58 * minutes + 10.420 * seconds)
+        assert job.exitcode == 0
+        assert job.signal == 0
+        assert job.duration == 7 * minutes + 29 * seconds
+        assert job.max_used_memory == 4115516 * kB
+        assert job.used_cpu_time == 58 * minutes + 10.420 * seconds
         # SLURM-specific values
-        assert_equal(job.slurm_max_used_ram, 74404 * kB)
-        assert_equal(job.slurm_submission_time,
+        assert job.slurm_max_used_ram == 74404 * kB
+        assert (job.slurm_submission_time ==
                      datetime.datetime(year=2013,
                                        month=8,
                                        day=30,
                                        hour=23,
                                        minute=16,
                                        second=22))
-        assert_equal(job.slurm_start_time,
+        assert (job.slurm_start_time ==
                      datetime.datetime(year=2013,
                                        month=8,
                                        day=30,
                                        hour=23,
                                        minute=16,
                                        second=22))
-        assert_equal(job.slurm_completion_time,
+        assert (job.slurm_completion_time ==
                      datetime.datetime(year=2013,
                                        month=8,
                                        day=30,
@@ -728,9 +730,9 @@ username=NONEXISTENT
         self.core.update_job_state(app)
         job = app.execution
 
-        assert_equal(job.state,    State.TERMINATING)
-        assert_equal(job.exitcode, os.EX_TEMPFAIL)
-        assert_equal(job.signal,   int(gc3libs.Run.Signals.RemoteKill))
+        assert job.state ==    State.TERMINATING
+        assert job.exitcode == os.EX_TEMPFAIL
+        assert job.signal ==   int(gc3libs.Run.Signals.RemoteKill)
 
     def test_parse_sacct_output_node_fail(self):
         app = FakeApp()
@@ -741,9 +743,9 @@ username=NONEXISTENT
         self.core.update_job_state(app)
         job = app.execution
 
-        assert_equal(job.state,    State.TERMINATING)
-        assert_equal(job.exitcode, os.EX_TEMPFAIL)
-        assert_equal(job.signal,   int(gc3libs.Run.Signals.RemoteError))
+        assert job.state ==    State.TERMINATING
+        assert job.exitcode == os.EX_TEMPFAIL
+        assert job.signal ==   int(gc3libs.Run.Signals.RemoteError)
 
     def test_parse_sacct_output_fail_early(self):
         app = FakeApp()
@@ -754,9 +756,9 @@ username=NONEXISTENT
         self.core.update_job_state(app)
         job = app.execution
 
-        assert_equal(job.state,    State.TERMINATING)
-        assert_equal(job.exitcode, 1)
-        assert_equal(job.signal,   0)
+        assert job.state ==    State.TERMINATING
+        assert job.exitcode == 1
+        assert job.signal ==   0
 
     def test_parse_sacct_output_job_cancelled(self):
         app = FakeApp()
@@ -767,9 +769,9 @@ username=NONEXISTENT
         self.core.update_job_state(app)
         job = app.execution
 
-        assert_equal(job.state,    State.TERMINATING)
-        assert_equal(job.exitcode, os.EX_TEMPFAIL)
-        assert_equal(job.signal,   int(gc3libs.Run.Signals.RemoteKill))
+        assert job.state ==    State.TERMINATING
+        assert job.exitcode == os.EX_TEMPFAIL
+        assert job.signal ==   int(gc3libs.Run.Signals.RemoteKill)
 
     def test_cancel_job1(self):
         app = FakeApp()
@@ -779,23 +781,23 @@ username=NONEXISTENT
         self.transport.expected_answer['scancel'] = scancel_success()
         self.transport.expected_answer['env'] = sacct_done_cancelled()
         self.core.kill(app)
-        assert_equal(app.execution.state, State.TERMINATED)
+        assert app.execution.state == State.TERMINATED
 
     def test_cancel_job2(self):
         app = FakeApp()
         self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
         self.core.submit(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
+        assert app.execution.state == State.SUBMITTED
 
         self.transport.expected_answer['scancel'] = scancel_permission_denied()
         self.core.kill(app)
-        assert_equal(app.execution.state, State.TERMINATED)
+        assert app.execution.state == State.TERMINATED
 
     def test_get_command(self):
-        assert_equal(self.backend.sbatch, ['sbatch'])
-        assert_equal(self.backend._sacct, 'sacct')
-        assert_equal(self.backend._scancel, 'scancel')
-        assert_equal(self.backend._squeue, 'squeue')
+        assert self.backend.sbatch == ['sbatch']
+        assert self.backend._sacct == 'sacct'
+        assert self.backend._scancel == 'scancel'
+        assert self.backend._squeue == 'squeue'
 
 
 def test_get_command_alternate():
@@ -831,10 +833,10 @@ squeue  = /usr/local/bin/squeue
     os.remove(tmpfile)
     b = cfg.make_resources()['example']
 
-    assert_equal(b.sbatch, ['/usr/local/bin/sbatch', '--constraint=gpu'])
-    assert_equal(b._sacct, '/usr/local/sbin/sacct')
-    assert_equal(b._scancel, '/usr/local/bin/scancel')
-    assert_equal(b._squeue, '/usr/local/bin/squeue')
+    assert b.sbatch == ['/usr/local/bin/sbatch', '--constraint=gpu']
+    assert b._sacct == '/usr/local/sbin/sacct'
+    assert b._scancel == '/usr/local/bin/scancel'
+    assert b._squeue == '/usr/local/bin/squeue'
 
 
 def test_count_jobs():
@@ -869,25 +871,24 @@ def test_count_jobs():
 '''
     # first user has 4 running jobs and 5 queued ones
     R, Q, r, q = gc3libs.backends.slurm.count_jobs(squeue_stdout, 'first_user')
-    assert_equal(R, 11)
-    assert_equal(Q, 5)
-    assert_equal(r, 4)
-    assert_equal(q, 5)
+    assert R == 11
+    assert Q == 5
+    assert r == 4
+    assert q == 5
     # second user has 6 running jobs and no queued ones
     R, Q, r, q = gc3libs.backends.slurm.count_jobs(squeue_stdout,
                                                    'second_user')
-    assert_equal(R, 11)
-    assert_equal(Q, 5)
-    assert_equal(r, 6)
-    assert_equal(q, 0)
+    assert R == 11
+    assert Q == 5
+    assert r == 6
+    assert q == 0
     # third user has only 1 running job
     R, Q, r, q = gc3libs.backends.slurm.count_jobs(squeue_stdout, 'third_user')
-    assert_equal(R, 11)
-    assert_equal(Q, 5)
-    assert_equal(r, 1)
-    assert_equal(q, 0)
+    assert R == 11
+    assert Q == 5
+    assert r == 1
+    assert q == 0
 
 
 if __name__ == "__main__":
-    import nose
-    nose.runmodule()
+    pytest.main(["-v", __file__])

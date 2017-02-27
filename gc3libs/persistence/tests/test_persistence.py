@@ -27,15 +27,11 @@ import shutil
 import tempfile
 
 # 3rd party imports
-from nose.plugins.skip import SkipTest
-from nose.tools import raises, assert_equal
+import pytest
 
-try:
-    import sqlalchemy
-    import sqlalchemy.sql as sql
-    sqlfunc = sqlalchemy.func
-except:
-    raise SkipTest("Cannot import `sqlalchemy`; skipping all SQL tests.")
+sqlalchemy = pytest.importorskip("sqlalchemy")
+sql = pytest.importorskip("sqlalchemy.sql")
+sqlfunc = sqlalchemy.func
 
 # GC3Pie imports
 import gc3libs
@@ -52,20 +48,20 @@ from gc3libs.persistence.sql import SqlStore
 from gc3libs.url import Url
 
 
-def test_store_ctor_with_extra_arguments():
+@pytest.mark.parametrize("cls", (SqlStore, FilesystemStore))
+def test_store_ctor_with_extra_arguments(cls, tmpdir):
     """Test if `Store`:class: classess accept extra keyword arguments
     without complaining.
 
     This test will ensure that any `Store` class can be called with
     arguments which are valid only on other `Store` classes.
     """
-    tmpdir = tempfile.mkdtemp()
     args = {
         'url': 'sqlite:///%s/test.sqlite' %
-        os.path.abspath(tmpdir),
+        os.path.abspath(str(tmpdir)),
         'table_name': 'store',
         'create': True,
-        'directory': tmpdir,
+        'directory': str(tmpdir),
         'idfactory': IdFactory(),
         'protocol': DEFAULT_PROTOCOL,
         'extra_fields': {
@@ -74,13 +70,8 @@ def test_store_ctor_with_extra_arguments():
                 sqlalchemy.TEXT()): lambda x: "test"},
     }
 
-    def run_test(cls, args):
-        cls(**args)
+    cls(**args)
 
-    for cls in (SqlStore, FilesystemStore):
-        yield run_test, cls, args
-        if os.path.exists(tmpdir):
-            shutil.rmtree(tmpdir)
 
 def test_eq_persisted_objects():
     """Test that the comparison of two persisted objects are the same
@@ -106,7 +97,7 @@ def test_eq_non_persisted_objects():
     b = Persistable()
     assert a != b
     assert a is not b
-    
+
 # for testing basic functionality we do no need fully-fledged GC3Pie
 # objects; let's define some simple make-do's.
 
@@ -227,7 +218,7 @@ class GenericStoreChecks(object):
 
         assert len(self.store.list()) == num_objs
 
-    @raises(gc3libs.exceptions.LoadError)
+    @pytest.mark.xfail(raises=gc3libs.exceptions.LoadError)
     def test_remove_method(self):
         """
         Test remove method of a generic `Store` class
@@ -254,8 +245,8 @@ class GenericStoreChecks(object):
         obj2 = self.store.load(id_)
         assert obj2.x == "Updated"
 
+    @pytest.mark.skip(reason="FIXME: Test code needs to be checked!")
     def test_persist_classes_with_slots(self):
-        raise SkipTest("FIXME: Test code needs to be checked!")
 
         # FIXME: check this code!
         obj = PersistableClassWithSlots('GC3')
@@ -307,41 +298,37 @@ class GenericStoreChecks(object):
         # return objects for further testing
         return (container_id, objid)
 
-    def test_task_objects(self):
-        """
-        Test that all `Task`-like objects are persistable
-        """
-        def check_task(task):
-            fd, tmpfile = tempfile.mkstemp()
-            store = make_store("sqlite://%s" % tmpfile)
-            try:
-                id = store.save(task)
-                store.load(id)
-            finally:
-                os.remove(tmpfile)
 
-        for obj in [
-            Task(),
-            gc3libs.workflow.TaskCollection(tasks=[Task(), Task()]),
-            gc3libs.workflow.SequentialTaskCollection([Task(), Task()]),
-            MyStagedTaskCollection(),
-            gc3libs.workflow.ParallelTaskCollection(tasks=[Task(), Task()]),
-            MyChunkedParameterSweep(1, 20, 1, 5),
-            gc3libs.workflow.RetryableTask(Task()),
-        ]:
-            check_task.description = "Test that Task-like `%s` class is stored" \
-                                     " correctly" % obj.__class__.__name__
-            yield check_task, obj
-
+@pytest.mark.parametrize("task", (Task(),
+        gc3libs.workflow.TaskCollection(tasks=[Task(), Task()]),
+        gc3libs.workflow.SequentialTaskCollection([Task(), Task()]),
+        MyStagedTaskCollection(),
+        gc3libs.workflow.ParallelTaskCollection(tasks=[Task(), Task()]),
+        MyChunkedParameterSweep(1, 20, 1, 5),
+        gc3libs.workflow.RetryableTask(Task())))
+def test_task_objects_buggy(task):
+    """
+    Test that all `Task`-like objects are persistable
+    """
+    fd, tmpfile = tempfile.mkstemp()
+    store = make_store("sqlite://%s" % tmpfile)
+    try:
+        id = store.save(task)
+        store.load(id)
+    finally:
+        os.remove(tmpfile)
+            
 
 class TestFilesystemStore(GenericStoreChecks):
 
+    @pytest.fixture(autouse=True)    
     def setUp(self):
         from gc3libs.persistence.filesystem import FilesystemStore
         self.tmpdir = tempfile.mkdtemp()
         self.store = FilesystemStore(self.tmpdir)
 
-    def tearDown(self):
+        yield
+        
         shutil.rmtree(self.tmpdir)
 
     # XXX: there's nothing which is `FilesystemStore`-specific here!
@@ -483,7 +470,7 @@ class SqlStoreChecks(GenericStoreChecks):
         q = sql.select([sqlfunc.count(self.store.t_store.c.extra)]).distinct()
         results = self.conn.execute(q)
         rows = results.fetchall()
-        assert_equal(len(rows), 1)
+        assert len(rows) == 1
 
         # create and save an object
         obj = SimplePersistableObject('an object')
@@ -499,17 +486,17 @@ class SqlStoreChecks(GenericStoreChecks):
         self.conn = self.store._engine.connect()
         results = self.conn.execute(q)
         rows = results.fetchall()
-        assert_equal(len(rows), 1)
-        assert_equal(rows[0][0], obj.foo.value)
+        assert len(rows) == 1
+        assert rows[0][0] == obj.foo.value
 
-    @raises(AssertionError)
+    @pytest.mark.skip(reason="Feature not supported anymore")
+    @pytest.mark.xfail(raises=AssertionError)
     def test_sql_error_if_no_extra_fields(self):
         """
         Test if `SqlStore` reads and writes extra columns.
         """
         # re-build store with a non-existent extra column; should raise
         # `AssertionError`
-        raise SkipTest("Feature not supported anymore")
         self._make_store(
             extra_fields={
                 sqlalchemy.Column(
@@ -549,7 +536,7 @@ class ExtraSqlChecks(object):
         q = sql.select([sqlfunc.count(self.store.t_store.c.extra)]).distinct()
         results = self.conn.execute(q)
         rows = results.fetchall()
-        assert_equal(len(rows), 1)
+        assert len(rows) == 1
 
         # create and save an object
         obj = SimplePersistableObject('an object')
@@ -563,8 +550,8 @@ class ExtraSqlChecks(object):
         #                % (self.store.table_name, id_))
         results = self.conn.execute(q)
         rows = results.fetchall()
-        assert_equal(len(rows), 1)
-        assert_equal(rows[0][0], obj.foo.value)
+        assert len(rows) == 1
+        assert rows[0][0] == obj.foo.value
 
 
 class TestSqliteStore(SqlStoreChecks):
@@ -574,23 +561,9 @@ class TestSqliteStore(SqlStoreChecks):
     @classmethod
     def setup_class(cls):
         # skip SQLite tests if no SQLite module present (Py 2.4)
-        try:
-            import sqlite3
-            # pep8 complains if an imported module is not used
-            assert sqlite3 is not None
-        except ImportError:
-            # SQLAlchemy uses `pysqlite2` on Py 2.4
-            try:
-                import pysqlite2
-                # pep8 complains if an imported module is not used
-                assert pysqlite2 is not None
-            except ImportError:
-                raise SkipTest("No SQLite module installed.")
+        sqlite3 = pytest.importorskip("sqlite3")
 
-    @classmethod
-    def teardown_class(cls):
-        pass
-
+    @pytest.fixture(autouse=True)
     def setUp(self):
         fd, self.tmpfile = tempfile.mkstemp()
         self.db_url = Url('sqlite://%s' % self.tmpfile)
@@ -599,7 +572,7 @@ class TestSqliteStore(SqlStoreChecks):
         # create a connection to the database
         self.conn = self.store._engine.connect()
 
-    def tearDown(self):
+        yield
         self.conn.close()
         os.remove(self.tmpfile)
 
@@ -614,18 +587,7 @@ class TestSqliteStoreWithAlternateTable(TestSqliteStore):
     @classmethod
     def setup_class(cls):
         # skip SQLite tests if no SQLite module present (Py 2.4)
-        try:
-            import sqlite3
-            # pep8 complains if an imported module is not used
-            assert sqlite3 is not None
-        except ImportError:
-            # SQLAlchemy uses `pysqlite2` on Py 2.4
-            try:
-                import pysqlite2
-                # pep8 complains if an imported module is not used
-                assert pysqlite2 is not None
-            except ImportError:
-                raise SkipTest("No SQLite module installed.")
+        sqlite3 = pytest.importorskip("sqlite3")
 
     def _make_store(self, **kwargs):
         return make_store(self.db_url, table_name='another_store', **kwargs)
@@ -644,17 +606,13 @@ class TestMysqlStore(SqlStoreChecks):
     @classmethod
     def setup_class(cls):
         # we skip MySQL tests if no MySQLdb module is present
-        try:
-            import MySQLdb
-            # pep8 complains if an imported module is not used
-            assert MySQLdb is not None
-        except:
-            raise SkipTest("MySQLdb module not installed.")
+        MySQLdb = pytest.importorskip("MySQLdb")
 
     @classmethod
     def teardown_class(cls):
         pass
 
+    @pytest.fixture(autouse=True)
     def setUp(self):
         fd, tmpfile = tempfile.mkstemp()
         os.remove(tmpfile)
@@ -664,12 +622,13 @@ class TestMysqlStore(SqlStoreChecks):
             self.db_url = Url('mysql://gc3user:gc3pwd@localhost/gc3')
             self.store = make_store(self.db_url, table_name=self.table_name)
         except sqlalchemy.exc.OperationalError:
-            raise SkipTest("Cannot connect to MySQL database.")
+            pytest.mark.skip("Cannot connect to MySQL database.")
 
         # create a connection to the database
         self.conn = self.store._engine.connect()
 
-    def tearDown(self):
+        yield
+
         self.conn.execute('drop table `%s`' % self.table_name)
         self.conn.close()
         # self.c.close()
@@ -680,5 +639,4 @@ class TestMysqlStore(SqlStoreChecks):
 
 
 if __name__ == "__main__":
-    import nose
-    nose.runmodule()
+    pytest.main(["-v", __file__])

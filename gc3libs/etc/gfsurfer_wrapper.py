@@ -28,7 +28,7 @@ import argparse
 
 NII_EXTENSION = "nii"
 FSAVERAGE = "fsaverage"
-FS_SUBJECT_FSAVERAGE = os.path.join(os.environ["FREESURFER_HOME"],"subjects",FSAVERAGE)
+FS_SUBJECT_FSAVERAGE = os.path.join(os.environ.get("FREESURFER_HOME", ''),"subjects",FSAVERAGE)
 FS_SEQ_LONG = "long"
 FS_SEQ_CROSS = "cross"
 FS_SEQ_DEFAULT = FS_SEQ_CROSS
@@ -39,7 +39,7 @@ FS_SEQ=[FS_SEQ_LONG,FS_SEQ_CROSS]
 
 def RunFreesurfer():
     """
-    By default the input files are in the same local directory as the wrapper executed. 
+    By default the input files are in the same local directory as the wrapper executed.
     """
 
     parser = argparse.ArgumentParser(description='Run Freesurfer.')
@@ -52,7 +52,7 @@ def RunFreesurfer():
     parser.add_argument('--seq', dest='sequence', action="append",
                         default=[FS_SEQ_CROSS],
                         help='Freesurfer sequence. Valid values %s' % FS_SEQ)
-    
+
     args = parser.parse_args()
 
     # Create output folder and add simlink to FSAVERAGE
@@ -81,7 +81,7 @@ def RunFreesurfer():
         "Example: recon-all -i file.nii.gz -subjid s01.cross.TP1"
         command="recon-all -i %s -subjid %s.crossTP1" % (args.nifti,args.nifti.split(".")[0])
         runme(command)
-        
+
         print "Start CROSS SECTIONAL PROCESSING"
         "Example: recon-all -s s01.cross.TP1 -all"
         command="recon-all -s %s.crossTP1 -all" % args.nifti.split(".")[0]
@@ -106,10 +106,10 @@ def runme(command):
         shell=True,
         stderr=subprocess.PIPE,
         stdout=subprocess.PIPE)
-    
+
     print "Running command %s" % command
     (stdout, stderr) = proc.communicate()
-    
+
     if proc.returncode != 0:
         print "Execution failed with exit code: %d" % proc.returncode
         print "Output message: %s" % stdout

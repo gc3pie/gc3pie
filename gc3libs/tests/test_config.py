@@ -25,18 +25,9 @@ import os
 import shutil
 import tempfile
 import re
+from itertools import product
 
-# nose
-from nose.tools import raises, assert_equal
-
-try:
-    from nose.tools import assert_is_instance
-except ImportError:
-    # Python 2.6 does not support assert_is_instance()
-    def assert_is_instance(obj, cls):
-        assert (isinstance(obj, cls))
-
-
+import pytest
 
 # GC3Pie imports
 from gc3libs import Run, Application
@@ -54,6 +45,36 @@ def _setup_config_file(confstr):
     f.write(confstr)
     f.close()
     return name
+
+@pytest.mark.xfail(raises=gc3libs.exceptions.NoConfigurationFile)
+def import_invalid_conf(confstr, **extra_args):
+    """`load` just ignores invalid input."""
+    tmpfile = _setup_config_file(confstr)
+    cfg = gc3libs.config.Configuration()
+    try:
+        cfg.load(tmpfile)
+    finally:
+        os.remove(tmpfile)
+    assert len(cfg.resources) == 0
+    assert len(cfg.auths) == 0
+
+
+@pytest.mark.xfail(raises=gc3libs.exceptions.ConfigurationError)
+def read_invalid_conf(confstr, **extra_args):
+    """`merge_file` raises a `ConfigurationError` exception on invalid input"""
+    tmpfile = _setup_config_file(confstr)
+    cfg = gc3libs.config.Configuration()
+    try:
+        cfg.merge_file(tmpfile)
+    finally:
+        os.remove(tmpfile)
+
+
+@pytest.mark.xfail(raises=gc3libs.exceptions.ConfigurationError)
+def parse_invalid_conf(confstr, **extra_args):
+    """`_parse` raises a `ConfigurationError` exception on invalid input."""
+    cfg = gc3libs.config.Configuration()
+    defaults, resources, auths = cfg._parse(StringIO(confstr))
 
 
 def test_valid_conf():
@@ -79,54 +100,52 @@ override = False
         resources = cfg.make_resources(ignore_errors=False)
         # resources are enabled by default
         assert 'test' in resources
-        assert_is_instance(resources['test'], ShellcmdLrms)
+        assert isinstance(resources['test'], ShellcmdLrms)
         # test types
-        assert_is_instance(resources['test']['name'], str)
-        assert_is_instance(resources['test']['max_cores_per_job'], int)
-        assert_is_instance(resources['test']['max_memory_per_core'], Memory)
-        assert_is_instance(resources['test']['max_walltime'], Duration)
-        assert_is_instance(resources['test']['max_cores'], int)
-        assert_is_instance(resources['test']['architecture'], set)
+        assert isinstance(resources['test']['name'], str)
+        assert isinstance(resources['test']['max_cores_per_job'], int)
+        assert isinstance(resources['test']['max_memory_per_core'], Memory)
+        assert isinstance(resources['test']['max_walltime'], Duration)
+        assert isinstance(resources['test']['max_cores'], int)
+        assert isinstance(resources['test']['architecture'], set)
         # test parsed values
-        assert_equal(resources['test']['name'], 'test')
-        assert_equal(resources['test']['max_cores_per_job'], 2)
-        assert_equal(resources['test']['max_memory_per_core'], 2 * GB)
-        assert_equal(resources['test']['max_walltime'], 8 * hours)
-        assert_equal(resources['test']['max_cores'], 2)
-        assert_equal(resources['test']['architecture'],
+        assert resources['test']['name'] == 'test'
+        assert resources['test']['max_cores_per_job'] == 2
+        assert resources['test']['max_memory_per_core'] == 2 * GB
+        assert resources['test']['max_walltime'] == 8 * hours
+        assert resources['test']['max_cores'] == 2
+        assert (resources['test']['architecture'] ==
                      set([Run.Arch.X86_64]))
     finally:
         os.remove(tmpfile)
 
 
-def test_invalid_confs():
-    """Test reading invalid configuration files"""
-    invalid_confs = [
-        # #0
-        (
-            'no section header',
-            "THIS IS NOT A CONFIG FILE"
-        ),
-        # #1
-        (
-            'malformed key=value',
-            """
+invalid_confs = [
+    # #0
+    (
+        'no section header',
+        "THIS IS NOT A CONFIG FILE"
+    ),
+    # #1
+    (
+    'malformed key=value',
+    """
 [auth/ssh]
 type - ssh
             """
-        ),
-        # #2
-        (
-            'missing required key `type` in `auth` section',
-            """
+    ),
+    # #2
+    (
+        'missing required key `type` in `auth` section',
+        """
 [auth/ssh]
 #type = ssh
-            """
-        ),
-        # #3
-        (
-            'missing required key `type` in `resource` section',
-            """
+        """
+    ),
+    # #3
+    (
+        'missing required key `type` in `resource` section',
+        """
 [resource/test]
 #type = shellcmd
 frontend = localhost
@@ -136,11 +155,11 @@ max_memory_per_core = 2GiB
 max_walltime = 8 hours
 max_cores = 10
 architecture = x86_64
-            """
-        ),
-        (
-            'missing required key `max_cores_per_job` in `resource` section',
-            """
+        """
+    ),
+    (
+        'missing required key `max_cores_per_job` in `resource` section',
+        """
 [resource/test]
 type = shellcmd
 frontend = localhost
@@ -150,11 +169,11 @@ max_memory_per_core = 2GiB
 max_walltime = 8 hours
 max_cores = 10
 architecture = x86_64
-            """
-        ),
-        (
-            'missing required key `max_memory_per_core` in `resource` section',
-            """
+        """
+    ),
+    (
+        'missing required key `max_memory_per_core` in `resource` section',
+        """
 [resource/test]
 type = shellcmd
 frontend = localhost
@@ -165,10 +184,10 @@ max_walltime = 8 hours
 max_cores = 10
 architecture = x86_64
         """
-        ),
-        (
-            'missing required key `max_walltime` in `resource` section',
-            """
+    ),
+    (
+        'missing required key `max_walltime` in `resource` section',
+        """
 [resource/test]
 type = shellcmd
 frontend = localhost
@@ -178,11 +197,11 @@ max_memory_per_core = 2GiB
 #max_walltime = 8 hours
 max_cores = 10
 architecture = x86_64
-            """
-        ),
-        (
-            'missing required key `max_cores` in `resource` section',
-            """
+        """
+    ),
+    (
+        'missing required key `max_cores` in `resource` section',
+        """
 [resource/test]
 type = shellcmd
 frontend = localhost
@@ -193,10 +212,10 @@ max_walltime = 8 hours
 #max_cores = 10
 architecture = x86_64
         """
-        ),
-        (
-            'missing required key `architecture` in `resource` section',
-            """
+    ),
+    (
+        'missing required key `architecture` in `resource` section',
+        """
 [resource/test]
 type = shellcmd
 frontend = localhost
@@ -206,69 +225,37 @@ max_memory_per_core = 2GiB
 max_walltime = 8 hours
 max_cores = 10
 #architecture = x86_64
-            """
-        )
-    ]
-    for n, (title, conf) in enumerate(invalid_confs):
-        n += 1  # start with `#1` instead of `#0`
+        """
+    )
+]
 
-        import_invalid_conf.description = (
-            test_invalid_confs.__doc__
-            + (' #%d: %s (load)' % (n, title))
-        )
-        yield import_invalid_conf, conf
+@pytest.mark.parametrize("conf", invalid_confs)
+@pytest.mark.xfail(raises=gc3libs.exceptions.NoConfigurationFile)
+def test_import_invalid_confs(conf):
+    """Test reading invalid configuration files"""
+    import_invalid_conf(conf[1])
 
-        read_invalid_conf.description = (
-            test_invalid_confs.__doc__
-            + (' #%d: %s (merge_file)' % (n, title))
-        )
-        yield read_invalid_conf, conf
+@pytest.mark.parametrize("conf", invalid_confs)
+@pytest.mark.xfail(raises=gc3libs.exceptions.ConfigurationError)
+def test_read_invalid_confs(conf):
+    """Test reading invalid configuration files"""
+    read_invalid_conf(conf[1])
 
-        parse_invalid_conf.description = (
-            test_invalid_confs.__doc__
-            + (' #%d: %s (_parse)' % (n, title))
-        )
-        yield parse_invalid_conf, conf
-
-
-@raises(gc3libs.exceptions.NoConfigurationFile)
-def import_invalid_conf(confstr, **extra_args):
-    """`load` just ignores invalid input."""
-    tmpfile = _setup_config_file(confstr)
-    cfg = gc3libs.config.Configuration()
-    try:
-        cfg.load(tmpfile)
-    finally:
-        os.remove(tmpfile)
-    assert_equal(len(cfg.resources), 0)
-    assert_equal(len(cfg.auths), 0)
+@pytest.mark.parametrize("conf", invalid_confs)
+@pytest.mark.xfail(raises=gc3libs.exceptions.ConfigurationError)
+def test_parse_invalid_confs(conf):
+    """Test reading invalid configuration files"""
+    parse_invalid_conf(conf[1])
+    
 
 
-@raises(gc3libs.exceptions.ConfigurationError)
-def read_invalid_conf(confstr, **extra_args):
-    """`merge_file` raises a `ConfigurationError` exception on invalid input"""
-    tmpfile = _setup_config_file(confstr)
-    cfg = gc3libs.config.Configuration()
-    try:
-        cfg.merge_file(tmpfile)
-    finally:
-        os.remove(tmpfile)
-
-
-@raises(gc3libs.exceptions.ConfigurationError)
-def parse_invalid_conf(confstr, **extra_args):
-    """`_parse` raises a `ConfigurationError` exception on invalid input."""
-    cfg = gc3libs.config.Configuration()
-    defaults, resources, auths = cfg._parse(StringIO(confstr))
-
-
-@raises(gc3libs.exceptions.NoAccessibleConfigurationFile)
+@pytest.mark.xfail(raises=gc3libs.exceptions.NoAccessibleConfigurationFile)
 def test_load_non_existing_file():
     """Test that `Configuration.load()` raises a `NoAccessibleConfigurationFile` exception if no configuration file exists"""
     cfg = gc3libs.config.Configuration('/NON_EXISTING_FILE')
 
 
-@raises(gc3libs.exceptions.NoAccessibleConfigurationFile)
+@pytest.mark.xfail(raises=gc3libs.exceptions.NoAccessibleConfigurationFile)
 def test_load_non_readable_file():
     """Test that `Configuration.load()` raises a `NoAccessibleConfigurationFile` exception if no configuration file can be read"""
     with tempfile.NamedTemporaryFile(prefix=__name__) as tmpfile:
@@ -276,7 +263,7 @@ def test_load_non_readable_file():
         cfg = gc3libs.config.Configuration(tmpfile.name)
 
 
-@raises(gc3libs.exceptions.NoValidConfigurationFile)
+@pytest.mark.xfail(raises=gc3libs.exceptions.NoValidConfigurationFile)
 def test_load_non_valid_file():
     """Test that `Configuration.load()` raises a `NoValidConfigurationFile` exception if no configuration file can be parsed"""
     tmpfile = _setup_config_file("""
@@ -305,14 +292,14 @@ architecture = x86_64
     try:
         cfg = gc3libs.config.Configuration(tmpfile)
         auth = cfg.make_auth('none')
-        assert_is_instance(auth(), gc3libs.authentication.NoneAuth)
+        assert isinstance(auth(), gc3libs.authentication.NoneAuth)
         # if this doesn't raise any error, we're good
         resources = cfg.make_resources(ignore_errors=False)
     finally:
         os.remove(tmpfile)
 
 
-@raises(gc3libs.exceptions.NoValidConfigurationFile)
+@pytest.mark.xfail(raises=gc3libs.exceptions.NoValidConfigurationFile)
 def test_auth_empty_keypair_name():
     """Test that if keypair_name is specified and empty, we fail."""
     tmpfile = _setup_config_file("""
@@ -350,13 +337,14 @@ override = False
         resources = cfg.make_resources(ignore_errors=False)
         assert 'ncores' not in resources['test']
         assert 'max_cores' in resources['test']
-        assert_equal(resources['test']['max_cores'], 77)
+        assert resources['test']['max_cores'] == 77
     finally:
         os.remove(tmpfile)
 
 
 class TestReadMultiple(object):
 
+    @pytest.fixture(autouse=True)
     def setUp(self):
         self.f1 = _setup_config_file("""
 [resource/localhost]
@@ -396,7 +384,8 @@ max_cores = 10
 architecture = x86_64
         """)
 
-    def tearDown(self):
+        yield
+        # Finalize
         os.remove(self.f1)
         os.remove(self.f2)
         os.remove(self.f3)
@@ -404,15 +393,15 @@ architecture = x86_64
     def test_read_config_multiple(self):
         """Test that `Configuration` aggregates multiple files"""
         cfg = gc3libs.config.Configuration(self.f1, self.f2, self.f3)
-        assert_equal(cfg.resources['localhost']['seq'], '3')
-        assert_equal(cfg.resources['localhost']['foo'], '2')
+        assert cfg.resources['localhost']['seq'] == '3'
+        assert cfg.resources['localhost']['foo'] == '2'
 
     def test_load_multiple(self):
         """Test that `Configuration.load` aggregates multiple files"""
         cfg = gc3libs.config.Configuration()
         cfg.load(self.f1, self.f2, self.f3)
-        assert_equal(cfg.resources['localhost']['seq'], '3')
-        assert_equal(cfg.resources['localhost']['foo'], '2')
+        assert cfg.resources['localhost']['seq'] == '3'
+        assert cfg.resources['localhost']['foo'] == '2'
 
     def test_merge_file_multiple(self):
         """Test that `Configuration.load` aggregates multiple files"""
@@ -420,18 +409,18 @@ architecture = x86_64
         cfg.merge_file(self.f1)
         cfg.merge_file(self.f2)
         cfg.merge_file(self.f3)
-        assert_equal(cfg.resources['localhost']['seq'], '3')
-        assert_equal(cfg.resources['localhost']['foo'], '2')
+        assert cfg.resources['localhost']['seq'] == '3'
+        assert cfg.resources['localhost']['foo'] == '2'
 
 
-@raises(gc3libs.exceptions.NoConfigurationFile)
+@pytest.mark.xfail(raises=gc3libs.exceptions.NoConfigurationFile)
 def test_no_valid_config1():
     """`Configuration.load` raises an exception if called with no arguments"""
     cfg = gc3libs.config.Configuration()
     cfg.load()
 
 
-@raises(gc3libs.exceptions.NoConfigurationFile)
+@pytest.mark.xfail(raises=gc3libs.exceptions.NoConfigurationFile)
 def test_no_valid_config2():
     """Test that `Configuration.load` raises an exception if none of the
     arguments is a valid config file"""
@@ -445,32 +434,34 @@ def test_no_valid_config2():
         os.remove(f2)
 
 
-def test_valid_architectures():
+valid_architectures = [
+    # a sample of the architecture strings that we accept
+    ('x86_64', [gc3libs.Run.Arch.X86_64]),
+    ('x86 64-bit', [gc3libs.Run.Arch.X86_64]),
+    ('64bits x86', [gc3libs.Run.Arch.X86_64]),
+    ('amd64', [gc3libs.Run.Arch.X86_64]),
+    ('AMD64', [gc3libs.Run.Arch.X86_64]),
+    ('intel 64', [gc3libs.Run.Arch.X86_64]),
+    ('emt64', [gc3libs.Run.Arch.X86_64]),
+    ('64 bits', [gc3libs.Run.Arch.X86_64]),
+    ('64-BIT', [gc3libs.Run.Arch.X86_64]),
+
+    ('x86 32-bit', [gc3libs.Run.Arch.X86_32]),
+    ('32bits x86', [gc3libs.Run.Arch.X86_32]),
+    ('i386', [gc3libs.Run.Arch.X86_32]),
+    ('i486', [gc3libs.Run.Arch.X86_32]),
+    ('i586', [gc3libs.Run.Arch.X86_32]),
+    ('i686', [gc3libs.Run.Arch.X86_32]),
+    ('32 bits', [gc3libs.Run.Arch.X86_32]),
+    ('32-bit', [gc3libs.Run.Arch.X86_32]),
+
+    ('32bit, 64bit', [gc3libs.Run.Arch.X86_64, gc3libs.Run.Arch.X86_32]),
+    ('64bit, x86_64', [gc3libs.Run.Arch.X86_64]),
+]
+
+@pytest.mark.parametrize("arch", valid_architectures)
+def test_valid_architectures(arch):
     """Test that valid architecture strings are parsed correctly"""
-    test_cases = [
-        # a sample of the architecture strings that we accept
-        ('x86_64', [gc3libs.Run.Arch.X86_64]),
-        ('x86 64-bit', [gc3libs.Run.Arch.X86_64]),
-        ('64bits x86', [gc3libs.Run.Arch.X86_64]),
-        ('amd64', [gc3libs.Run.Arch.X86_64]),
-        ('AMD64', [gc3libs.Run.Arch.X86_64]),
-        ('intel 64', [gc3libs.Run.Arch.X86_64]),
-        ('emt64', [gc3libs.Run.Arch.X86_64]),
-        ('64 bits', [gc3libs.Run.Arch.X86_64]),
-        ('64-BIT', [gc3libs.Run.Arch.X86_64]),
-
-        ('x86 32-bit', [gc3libs.Run.Arch.X86_32]),
-        ('32bits x86', [gc3libs.Run.Arch.X86_32]),
-        ('i386', [gc3libs.Run.Arch.X86_32]),
-        ('i486', [gc3libs.Run.Arch.X86_32]),
-        ('i586', [gc3libs.Run.Arch.X86_32]),
-        ('i686', [gc3libs.Run.Arch.X86_32]),
-        ('32 bits', [gc3libs.Run.Arch.X86_32]),
-        ('32-bit', [gc3libs.Run.Arch.X86_32]),
-
-        ('32bit, 64bit', [gc3libs.Run.Arch.X86_64, gc3libs.Run.Arch.X86_32]),
-        ('64bit, x86_64', [gc3libs.Run.Arch.X86_64]),
-    ]
     config_template = gc3libs.template.Template("""
 [resource/test]
 type = shellcmd
@@ -482,30 +473,26 @@ max_walltime = 8 hours
 max_cores = 10
 architecture = ${arch}
 """)
-    for arch, result in test_cases:
-        # display complete title for each generated test case
-        _check_parse_arch.description = (
-            test_valid_architectures.__doc__ +
-            (': %s -> %s' % (str(arch), str(result))))
-        yield (_check_parse_arch,
-               config_template.substitute(arch=arch),
-               result)
+    _check_parse_arch(config_template.substitute(arch=arch[0]), arch[1])
 
 
 def _check_parse_arch(confstr, result):
     cfg = gc3libs.config.Configuration()
     defaults, resources, auths = cfg._parse(StringIO(confstr))
-    assert_is_instance(resources['test']['architecture'], set)
-    assert_equal(resources['test']['architecture'], set(result))
+    assert isinstance(resources['test']['architecture'], set)
+    assert resources['test']['architecture'] == set(result)
 
 
-def test_invalid_architectures():
+invalid_architectures = [
+    '96bits', '31-BITS', 'amd65', 'xyzzy'
+]
+
+@pytest.mark.parametrize("arch", invalid_architectures)
+@pytest.mark.skip(raises=gc3libs.exceptions.ConfigurationError)
+def test_invalid_architectures(arch):
     """Invalid arch. strings should be rejected with `ConfigurationError`
 
     """
-    test_cases = [
-        '96bits', '31-BITS', 'amd65', 'xyzzy'
-    ]
     config_template = gc3libs.template.Template("""
 [resource/test]
 type = shellcmd
@@ -517,13 +504,8 @@ max_walltime = 8 hours
 max_cores = 10
 architecture = ${arch}
 """)
-    for arch in test_cases:
-        # display complete title for each generated test case
-        _check_parse_arch.description = (
-            test_invalid_architectures.__doc__ + (': %s' % arch))
-        yield (raises(
-            gc3libs.exceptions.ConfigurationError)(_check_parse_arch),
-            config_template.substitute(arch=arch), 'should not be used')
+    # display complete title for each generated test case
+    _check_parse_arch(config_template.substitute(arch=arch), "should not be used")
 
 
 class TestPrologueEpilogueScripts(object):
@@ -532,6 +514,7 @@ class TestPrologueEpilogueScripts(object):
     Test `prologue` and `epilogue` options for batch backends
     """
 
+    @pytest.fixture(autouse=True)
     def setUp(self):
         # setup conf dir and conf file
         self.files_to_remove = []
@@ -605,7 +588,8 @@ app2_epilogue_content = echo epilogue app2
         # assert_equal(resources['test']['prologue'],
         #              'scripts/shellcmd_pre.sh')
 
-    def tearDown(self):
+        yield
+        # Finalize
         for dirname in self.files_to_remove:
             shutil.rmtree(dirname)
 
@@ -619,7 +603,7 @@ app2_epilogue_content = echo epilogue app2
                     continue
                 assert os.path.isfile(v)
                 assert os.path.isabs(v)
-                assert_equal(os.path.abspath(v),
+                assert (os.path.abspath(v) ==
                              v)
 
     def test_pbs_prologue_and_epilogue_contents_when_files(self):
@@ -644,13 +628,13 @@ app2_epilogue_content = echo epilogue app2
         newjobs = [d for d in os.listdir(jobdir) if d not in jobs]
 
         # There must be only one more job...
-        assert_equal(len(newjobs), 1)
+        assert len(newjobs) == 1
 
         newjobdir = os.path.join(jobdir, newjobs[0])
         self.files_to_remove.append(newjobdir)
 
         # and only one file in it
-        assert_equal(len(os.listdir(newjobdir)), 1)
+        assert len(os.listdir(newjobdir)) == 1
 
         # Check the content of the script file
         scriptfname = os.path.join(newjobdir, (os.listdir(newjobdir)[0]))
@@ -690,13 +674,13 @@ app2_epilogue_content = echo epilogue app2
         newjobs = [d for d in os.listdir(jobdir) if d not in jobs]
 
         # There must be only one more job...
-        assert_equal(len(newjobs), 1)
+        assert len(newjobs) == 1
 
         newjobdir = os.path.join(jobdir, newjobs[0])
         self.files_to_remove.append(newjobdir)
 
         # and only one file in it
-        assert_equal(len(os.listdir(newjobdir)), 1)
+        assert len(os.listdir(newjobdir)) == 1
 
         # Check the content of the script file
         scriptfname = os.path.join(newjobdir, (os.listdir(newjobdir)[0]))
@@ -765,11 +749,11 @@ override = False
                     continue
                 assert os.path.isabs(v)
                 assert os.path.isfile(v)
-                assert_equal(os.path.abspath(v),
+                assert (os.path.abspath(v) ==
                              v)
 
 
-@raises(gc3libs.exceptions.ConfigurationError)
+@pytest.mark.xfail(raises=gc3libs.exceptions.ConfigurationError)
 def test_invalid_resource_type():
     """Test parsing a configuration file with an unknown resource type."""
     tmpfile = _setup_config_file("""
@@ -839,7 +823,7 @@ architecture = x86_64
         # resources are enabled by default
         assert 'test' in resources
         from gc3libs.backends.noop import NoOpLrms
-        assert_is_instance(resources['test'], NoOpLrms)
+        assert isinstance(resources['test'], NoOpLrms)
         # test types
     finally:
         # since TYPE_CONSTRUCTOR_MAP is a class-level variable, we
@@ -869,16 +853,16 @@ def test_resource_definition_via_dict():
     resources = cfg.make_resources(ignore_errors=False)
     # check result
     resource = resources[name]
-    assert_equal(resource.name, name)
-    assert_is_instance(resource,
+    assert resource.name == name
+    assert isinstance(resource,
                        gc3libs.backends.shellcmd.ShellcmdLrms)
-    assert_is_instance(resource.transport,
+    assert isinstance(resource.transport,
                        gc3libs.backends.transport.LocalTransport)
-    assert_equal(resource.max_cores_per_job, 1)
-    assert_equal(resource.max_memory_per_core, 1*GB)
-    assert_equal(resource.max_walltime, 8*hours)
-    assert_equal(resource.max_cores, 2)
-    assert_equal(resource.architecture, Run.Arch.X86_64)
+    assert resource.max_cores_per_job == 1
+    assert resource.max_memory_per_core == 1*GB
+    assert resource.max_walltime == 8*hours
+    assert resource.max_cores == 2
+    assert resource.architecture == Run.Arch.X86_64
 
 
 def test_multiple_instanciation(num_resources=3):
@@ -901,10 +885,10 @@ def test_multiple_instanciation(num_resources=3):
     for n in range(num_resources):
         name = ('test%d' % (n+1))
         resource = resources[name]
-        assert_equal(resource.name, name)
-        assert_is_instance(resource, gc3libs.backends.shellcmd.ShellcmdLrms)
+        assert resource.name == name
+        assert isinstance(resource, gc3libs.backends.shellcmd.ShellcmdLrms)
 
 
 if __name__ == "__main__":
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])
