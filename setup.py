@@ -55,6 +55,59 @@ class Tox(TestCommand):
         sys.exit(errno)
 
 
+## conditional dependencies
+#
+# Although PEP-508 and a number of predecessors specify a syntax for
+# conditional dependencies in Python packages, support for it is inconsistent
+# (at best) among the PyPA tools. An attempt to use the conditional syntax has
+# already caused issues #308, #249, #227, and many more headaches to me while
+# trying to find a combination of `pip`, `setuptools`, `wheel`, and dependency
+# specification syntax that would work reliably across all supported Linux
+# distributions. I give up, and revert to computing the dependencies via
+# explicit Python code in `setup.py`; this will possibly break wheels but it's
+# the least damage I can do ATM.
+
+python_version = sys.version_info[:2]
+if python_version == (2, 6):
+    version_dependent_requires = [
+        # The following Python modules are required by GC3Pie's `openstack`
+        # backend. Since OpenStack ceased support for Python 2.6 around
+        # version 3.0.0 of the client libraries, we have to include separate
+        # dependecy lists for Python 2.7+ and Python 2.6
+        #
+        # - OpenStack's "keystoneclient" requires `importlib`
+            'importlib',
+        # - support for Python 2.6 was removed from `novaclient` in commit
+        #   81f8fa655ccecd409fe6dcda0d3763592c053e57 which is contained in
+        #   releases 3.0.0 and above; however, we also need to pin down
+        #   the version of `oslo.config` and all the dependencies thereof,
+        #   otherwise `pip` will happily download the latest and
+        #   incompatible version,since `python-novaclient` specifies only
+        #   the *minimal* version of dependencies it is compatible with...
+            'stevedore<1.10.0',
+        'debtcollector<1.0.0',
+        'keystoneauth<2.0.0',
+        # yes, there's `keystoneauth` and `keystoneauth1` !!
+            'keystoneauth1<2.0.0',
+        'oslo.config<3.0.0',
+        'oslo.i18n<3.1.0',
+        'oslo.serialization<2.1.0',
+        'oslo.utils<3.1.0',
+        'python-novaclient<3.0.0',
+    ]
+elif python_version == (2, 7):
+    version_dependent_requires = [
+        # The following Python modules are required by GC3Pie's `openstack`
+        # backend. Since OpenStack ceased support for Python 2.6 around
+        # version 3.0.0 of the client libraries, we have to include separate
+        # dependecy lists for Python 2.7+ and Python 2.6
+        'python-novaclient',
+        'os-client-config',
+    ]
+else:
+    raise RuntimeError("GC3Pie requires Python 2.6 or 2.7")
+
+        
 ## real setup description begins here
 #
 setuptools.setup(
@@ -151,42 +204,8 @@ setuptools.setup(
         # needed by DependentTaskCollection
         # (but incompatible with Py 2.6, so we include a patched copy)
         #toposort==1.0
-    ],
+    ] + version_dependent_requires,
     extras_require={
-        'openstack:python_version=="2.7"': [
-            # The following Python modules are required by GC3Pie's `openstack`
-            # backend. Since OpenStack ceased support for Python 2.6 around
-            # version 3.0.0 of the client libraries, we have to include separate
-            # dependecy lists for Python 2.7+ and Python 2.6
-            'python-novaclient',
-            'os-client-config',
-        ],
-        'openstack:python_version=="2.6"': [
-            # The following Python modules are required by GC3Pie's `openstack`
-            # backend. Since OpenStack ceased support for Python 2.6 around
-            # version 3.0.0 of the client libraries, we have to include separate
-            # dependecy lists for Python 2.7+ and Python 2.6
-            #
-            # - OpenStack's "keystoneclient" requires `importlib`
-            'importlib',
-            # - support for Python 2.6 was removed from `novaclient` in commit
-            #   81f8fa655ccecd409fe6dcda0d3763592c053e57 which is contained in
-            #   releases 3.0.0 and above; however, we also need to pin down
-            #   the version of `oslo.config` and all the dependencies thereof,
-            #   otherwise `pip` will happily download the latest and
-            #   incompatible version,since `python-novaclient` specifies only
-            #   the *minimal* version of dependencies it is compatible with...
-            'stevedore<1.10.0',
-            'debtcollector<1.0.0',
-            'keystoneauth<2.0.0',
-            # yes, there's `keystoneauth` and `keystoneauth1` !!
-            'keystoneauth1<2.0.0',
-            'oslo.config<3.0.0',
-            'oslo.i18n<3.1.0',
-            'oslo.serialization<2.1.0',
-            'oslo.utils<3.1.0',
-            'python-novaclient<3.0.0',
-        ],
         'ec2': [
             # The following Python modules are required by GC3Pie's `ec2`
             # resource backend.
