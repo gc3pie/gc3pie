@@ -65,5 +65,5 @@ def test_sge_backends():
 
 
 if "__main__" == __name__:
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])

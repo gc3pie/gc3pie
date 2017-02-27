@@ -21,7 +21,7 @@
 __docformat__ = 'reStructuredText'
 
 
-from nose.tools import raises, assert_false
+import pytest
 
 from gc3libs import Application
 from gc3libs.workflow import RetryableTask
@@ -44,7 +44,7 @@ class TestApplication(Application):
         pass
 
 
-@raises(AssertionError)
+@pytest.mark.xfail(raises=AssertionError)
 def test_persisted_change():
     app = TestApplication()
     task = RetryableTask(app)
@@ -55,8 +55,8 @@ def test_persisted_change():
     task.update_state()
 
     # We expect task.changed to be true
-    assert_false(task.changed)
+    assert not task.changed
 
 if "__main__" == __name__:
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])

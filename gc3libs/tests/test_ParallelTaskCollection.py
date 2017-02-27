@@ -27,7 +27,6 @@ __docformat__ = 'reStructuredText'
 from gc3libs import Run, Task
 from gc3libs.workflow import ParallelTaskCollection
 
-from nose.tools import raises, assert_equal
 
 from gc3libs.testing.helpers import SimpleParallelTaskCollection, SuccessfulApp, UnsuccessfulApp, temporary_core
 
@@ -64,5 +63,5 @@ def test_ParallelTaskCollection_redo():
 # main: run tests
 
 if "__main__" == __name__:
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])

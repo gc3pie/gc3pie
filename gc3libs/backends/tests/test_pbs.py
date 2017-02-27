@@ -25,7 +25,7 @@ import os
 import shutil
 import tempfile
 
-from nose.tools import assert_equal
+import pytest
 
 import gc3libs
 import gc3libs.core
@@ -200,7 +200,7 @@ enabled=True
 type=ssh
 username=NONEXISTENT
 """
-
+    @pytest.fixture(autouse=True)
     def setUp(self):
         (fd, self.tmpfile) = tempfile.mkstemp()
         f = os.fdopen(fd, 'w+')
@@ -220,7 +220,8 @@ username=NONEXISTENT
         self.transport.expected_answer['tracejob'] = tracejob_notfound()
         self.transport.expected_answer['qdel'] = qdel_notfound()
 
-    def tearDown(self):
+        yield
+
         os.remove(self.tmpfile)
 
     def test_submission_failed(self):
@@ -232,7 +233,7 @@ username=NONEXISTENT
             self.core.submit(app)
         except Exception as e:
             assert isinstance(e, gc3libs.exceptions.LRMSError)
-        assert_equal(app.execution.state, State.NEW)
+        assert app.execution.state == State.NEW
 
         # Submission failed (unauthrozed user):
         self.transport.expected_answer['qsub'] = qsub_failed_acl()
@@ -240,7 +241,7 @@ username=NONEXISTENT
             self.core.submit(app)
         except Exception as e:
             assert isinstance(e, gc3libs.exceptions.LRMSError)
-        assert_equal(app.execution.state, State.NEW)
+        assert app.execution.state == State.NEW
 
     def test_pbs_basic_workflow(self):
         app = FakeApp()
@@ -248,25 +249,25 @@ username=NONEXISTENT
         # Succesful submission:
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
+        assert app.execution.state == State.SUBMITTED
 
         # Update state. We would expect the job to be SUBMITTED
         self.transport.expected_answer['qstat'] = correct_qstat_queued()
         self.transport.expected_answer['tracejob'] = correct_tracejob_queued()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
+        assert app.execution.state == State.SUBMITTED
 
         # Update state. We would expect the job to be RUNNING
         self.transport.expected_answer['qstat'] = correct_qstat_running()
         self.transport.expected_answer['tracejob'] = correct_tracejob_running()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.RUNNING)
+        assert app.execution.state == State.RUNNING
 
         # Job done. qstat doesn't find it, tracejob should.
         self.transport.expected_answer['qstat'] = qstat_notfound()
         self.transport.expected_answer['tracejob'] = correct_tracejob_done()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
+        assert app.execution.state == State.TERMINATING
 
     def test_tracejob_parsing(self):
         app = FakeApp()
@@ -274,33 +275,33 @@ username=NONEXISTENT
         self.core.submit(app)
         self.transport.expected_answer['tracejob'] = correct_tracejob_done()
         self.core.update_job_state(app)
-        assert_equal(app.execution.state, State.TERMINATING)
+        assert app.execution.state == State.TERMINATING
 
         job = app.execution
         # common job reporting values (see Issue 78)
-        assert_equal(job.exitcode, 0)
-        assert_equal(job.duration, 2 * minutes + 5 * seconds)
-        assert_equal(job.max_used_memory, 190944 * kB)
-        assert_equal(job.used_cpu_time, 0 * seconds)
+        assert job.exitcode == 0
+        assert job.duration == 2 * minutes + 5 * seconds
+        assert job.max_used_memory == 190944 * kB
+        assert job.used_cpu_time == 0 * seconds
         # PBS-specific values
-        assert_equal(job.pbs_queue, 'short')
-        assert_equal(job.pbs_jobname, 'DemoPBSApp')
-        assert_equal(job.pbs_max_used_ram, 2364 * kB)
-        assert_equal(job.pbs_submission_time,
+        assert job.pbs_queue == 'short'
+        assert job.pbs_jobname == 'DemoPBSApp'
+        assert job.pbs_max_used_ram == 2364 * kB
+        assert (job.pbs_submission_time ==
                      datetime.datetime(year=2012,
                                        month=3,
                                        day=9,
                                        hour=9,
                                        minute=31,
                                        second=53))
-        assert_equal(job.pbs_running_time,
+        assert (job.pbs_running_time ==
                      datetime.datetime(year=2012,
                                        month=3,
                                        day=9,
                                        hour=9,
                                        minute=32,
                                        second=3))
-        assert_equal(job.pbs_end_time,
+        assert (job.pbs_end_time ==
                      datetime.datetime(year=2012,
                                        month=3,
                                        day=9,
@@ -315,45 +316,45 @@ username=NONEXISTENT
 
         self.transport.expected_answer['qdel'] = qdel_success()
         self.core.kill(app)
-        assert_equal(app.execution.state, State.TERMINATED)
+        assert app.execution.state == State.TERMINATED
 
     def test_delete_already_deleted_job(self):
         app = FakeApp()
         self.transport.expected_answer['qsub'] = correct_submit()
         self.core.submit(app)
-        assert_equal(app.execution.state, State.SUBMITTED)
+        assert app.execution.state == State.SUBMITTED
 
         self.transport.expected_answer['qdel'] = qdel_failed_acl()
         self.core.kill(app)
-        assert_equal(app.execution.state, State.TERMINATED)
+        assert app.execution.state == State.TERMINATED
 
     def test_parse_acct_output(self):
         rc, stdout, stderr = correct_tracejob_done()
         status = self.backend._parse_acct_output(stdout, stderr)
         # common job reporting values (see Issue 78)
-        assert_equal(status['termstatus'], (0, 0))
-        assert_equal(status['duration'], 2 * minutes + 5 * seconds)
-        assert_equal(status['max_used_memory'], 190944 * kB)
-        assert_equal(status['used_cpu_time'], 0 * seconds)
+        assert status['termstatus'] == (0, 0)
+        assert status['duration'] == 2 * minutes + 5 * seconds
+        assert status['max_used_memory'] == 190944 * kB
+        assert status['used_cpu_time'] == 0 * seconds
         # PBS-specific values
-        assert_equal(status['pbs_queue'], 'short')
-        assert_equal(status['pbs_jobname'], 'DemoPBSApp')
-        assert_equal(status['pbs_max_used_ram'], 2364 * kB)
-        assert_equal(status['pbs_submission_time'],
+        assert status['pbs_queue'] == 'short'
+        assert status['pbs_jobname'] == 'DemoPBSApp'
+        assert status['pbs_max_used_ram'] == 2364 * kB
+        assert (status['pbs_submission_time'] ==
                      datetime.datetime(year=2012,
                                        month=3,
                                        day=9,
                                        hour=9,
                                        minute=31,
                                        second=53))
-        assert_equal(status['pbs_running_time'],
+        assert (status['pbs_running_time'] ==
                      datetime.datetime(year=2012,
                                        month=3,
                                        day=9,
                                        hour=9,
                                        minute=32,
                                        second=3))
-        assert_equal(status['pbs_end_time'],
+        assert (status['pbs_end_time'] ==
                      datetime.datetime(year=2012,
                                        month=3,
                                        day=9,
@@ -403,13 +404,13 @@ tracejob = /usr/local/sbin/tracejob
     cfg.merge_file(tmpfile)
     b = cfg.make_resources()['example']
 
-    assert_equal(b.qsub, ['/usr/local/bin/qsub', '-q', 'testing'])
+    assert b.qsub == ['/usr/local/bin/qsub', '-q', 'testing']
 
-    assert_equal(b._qstat, '/usr/local/bin/qstat')
-    assert_equal(b._qdel, '/usr/local/bin/qdel')
-    assert_equal(b._tracejob, '/usr/local/sbin/tracejob')
+    assert b._qstat == '/usr/local/bin/qstat'
+    assert b._qdel == '/usr/local/bin/qdel'
+    assert b._tracejob == '/usr/local/sbin/tracejob'
 
 
 if __name__ == "__main__":
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])

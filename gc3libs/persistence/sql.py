@@ -309,4 +309,3 @@ if "__main__" == __name__:
     import doctest
     doctest.testmod(name="sql",
                     optionflags=doctest.NORMALIZE_WHITESPACE)
-

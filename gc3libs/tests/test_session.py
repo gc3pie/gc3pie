@@ -26,8 +26,7 @@ import os
 import shutil
 import tempfile
 
-from nose.tools import assert_true, assert_false, assert_equal, raises
-from nose.plugins.skip import SkipTest
+import pytest
 
 import sqlalchemy
 import sqlalchemy.sql as sql
@@ -57,7 +56,7 @@ def test_create():
     tmpdir = tempfile.mktemp(dir='.')
     try:
         sess = Session(tmpdir)
-        assert_true(os.path.isdir(sess.path))
+        assert os.path.isdir(sess.path)
         sess.destroy()
     except:
         if os.path.exists(tmpdir):
@@ -65,7 +64,7 @@ def test_create():
         raise
 
 
-@raises(gc3libs.exceptions.LoadError, sqlalchemy.exc.OperationalError)
+@pytest.mark.xfail(raises=(gc3libs.exceptions.LoadError, sqlalchemy.exc.OperationalError))
 def test_destroy():
     tmpdir = tempfile.mktemp(dir='.')
     try:
@@ -73,7 +72,7 @@ def test_destroy():
         tid = sess.add(_PStruct(a=1, b='foo'))
         sess.destroy()
         # destroy should kill all traces of the sessiondir
-        assert_false(os.path.exists(sess.path))
+        assert not os.path.exists(sess.path)
         # in particular, no task can be loaded
         sess.load(tid)
     except:
@@ -84,30 +83,32 @@ def test_destroy():
 
 class TestSession(object):
 
+    @pytest.fixture(autouse=True)
     def setUp(self):
         tmpdir = tempfile.mktemp(dir='.')
         self.tmpdir = tmpdir
         self.sess = Session(tmpdir)
         self.extra_args = {}
 
-    def tearDown(self):
+        yield
+
         self.sess.destroy()
 
     def test_session_directory_created(self):
-        assert_true(os.path.isdir(self.sess.path))
-        assert_true(os.path.samefile(
+        assert os.path.isdir(self.sess.path)
+        assert os.path.samefile(
             os.path.join(os.path.abspath('.'), self.tmpdir),
-            self.sess.path))
+            self.sess.path)
 
     def test_store_url_file_exists(self):
         self.sess.flush()
         storefile = os.path.join(self.sess.path, Session.STORE_URL_FILENAME)
-        assert_true(os.path.isfile(storefile))
+        assert os.path.isfile(storefile)
 
     def test_add(self):
         tid = self.sess.add(_PStruct(a=1, b='foo'))
-        assert_equal(len(self.sess), 1)
-        assert_equal([tid], self.sess.list_ids())
+        assert len(self.sess) == 1
+        assert [tid] == self.sess.list_ids()
 
     def test_add_updates_metadata(self):
         """Check that on-disk metadata is changed on add(..., flush=True)."""
@@ -115,8 +116,8 @@ class TestSession(object):
         fd_job_ids = open(os.path.join(self.sess.path,
                                        self.sess.INDEX_FILENAME), 'r')
         ids = fd_job_ids.read().split()
-        assert_equal(len(ids), 1)
-        assert_equal(ids, [str(i) for i in self.sess.tasks])
+        assert len(ids) == 1
+        assert ids == [str(i) for i in self.sess.tasks]
 
     def test_empty_lines_in_index_file(self):
         """Check that the index file is read correctly even when there
@@ -134,29 +135,29 @@ class TestSession(object):
         else:
             self.sess = Session(self.sess.path)
         ids = self.sess.list_ids()
-        assert_equal(len(ids), 1)
-        assert_equal(ids, [str(i) for i in self.sess.tasks])
+        assert len(ids) == 1
+        assert ids == [str(i) for i in self.sess.tasks]
 
     def test_add_no_flush(self):
         """Check that metadata is not changed on add(..., flush=False)."""
         tid = self.sess.add(_PStruct(a=1, b='foo'), flush=False)
         # in-memory metadata is updated
-        assert_equal(len(self.sess), 1)
-        assert_equal([tid], self.sess.list_ids())
+        assert len(self.sess) == 1
+        assert [tid] == self.sess.list_ids()
         # on-disk metadata is not
         fd_job_ids = open(os.path.join(self.sess.path,
                                        self.sess.INDEX_FILENAME), 'r')
-        assert_equal('', fd_job_ids.read())
+        assert '' == fd_job_ids.read()
 
     def test_remove(self):
         # add tasks
         tid1 = self.sess.add(_PStruct(a=1, b='foo'))
         tid2 = self.sess.add(_PStruct(a=1, b='foo'))
-        assert_equal(len(self.sess), 2)
+        assert len(self.sess) == 2
         self.sess.remove(tid1)
-        assert_equal(len(self.sess), 1)
+        assert len(self.sess) == 1
         self.sess.remove(tid2)
-        assert_equal(len(self.sess), 0)
+        assert len(self.sess) == 0
 
     def test_remove_children(self):
         """
@@ -168,7 +169,7 @@ class TestSession(object):
         id = self.sess.add(obj)
         self.sess.remove(id)
 
-        assert_equal(len(self.sess.store.list()), 0)
+        assert len(self.sess.store.list()) == 0
 
     def test_reload_session(self):
         self.sess.add(_PStruct(a=1, b='foo'))
@@ -178,23 +179,23 @@ class TestSession(object):
             sess2 = Session(self.sess.path, **self.extra_args)
         else:
             sess2 = Session(self.sess.path)
-        assert_equal(len(sess2), 3)
+        assert len(sess2) == 3
         for task_id in sess2.tasks.iterkeys():
             task = sess2.store.load(task_id)
-            assert_equal(task, sess2.tasks[task_id])
+            assert task == sess2.tasks[task_id]
         for task2_id, task1_id in zip(sorted(sess2.tasks.keys()),
                                       sorted(self.sess.tasks.keys())):
-            assert_equal(self.sess.tasks[task1_id],
+            assert (self.sess.tasks[task1_id] ==
                          sess2.tasks[task2_id])
 
     def test_incomplete_session_dir(self):
         tmpdir = tempfile.mktemp(dir='.')
         os.mkdir(tmpdir)
         incomplete_sess = Session(tmpdir)
-        assert_true(os.path.exists(os.path.join(tmpdir,
-                                                Session.INDEX_FILENAME)))
-        assert_true(os.path.exists(os.path.join(tmpdir,
-                                                Session.STORE_URL_FILENAME)))
+        assert os.path.exists(os.path.join(tmpdir,
+                                                Session.INDEX_FILENAME))
+        assert os.path.exists(os.path.join(tmpdir,
+                                                Session.STORE_URL_FILENAME))
         incomplete_sess.destroy()
 
     def test_load_external_jobid(self):
@@ -203,7 +204,7 @@ class TestSession(object):
         obj1 = _PStruct(a=1, b='foo')
         extraid = self.sess.store.save(obj1)
         obj2 = self.sess.load(extraid)
-        assert_equal(obj1, obj2)
+        assert obj1 == obj2
         # remove object from the store, since self.sess.destroy() will
         # not remove it!
         self.sess.store.remove(extraid)
@@ -214,29 +215,29 @@ class TestSession(object):
         end_file = os.path.join(self.sess.path,
                                 self.sess.TIMESTAMP_FILES['end'])
 
-        assert_true(os.path.exists(start_file))
-        assert_false(os.path.exists(end_file))
+        assert os.path.exists(start_file)
+        assert not os.path.exists(end_file)
 
-        assert_equal(os.stat(start_file).st_mtime, self.sess.created)
+        assert os.stat(start_file).st_mtime == self.sess.created
 
         self.sess.set_end_timestamp()
-        assert_true(os.path.exists(end_file))
-        assert_equal(os.stat(end_file).st_mtime, self.sess.finished)
+        assert os.path.exists(end_file)
+        assert os.stat(end_file).st_mtime == self.sess.finished
 
     def test_load_session_reads_session_start_time(self):
         """Check if session reads the creation time from the `created` file"""
         session2 = Session(self.sess.path)
         start_file = os.path.join(self.sess.path,
                                   self.sess.TIMESTAMP_FILES['start'])
-        assert_equal(os.stat(start_file).st_mtime, self.sess.created)
-        assert_equal(os.stat(start_file).st_mtime, session2.created)
+        assert os.stat(start_file).st_mtime == self.sess.created
+        assert os.stat(start_file).st_mtime == session2.created
 
     def test_standard_session_iterator_for_tasks(self):
         self.sess.add(Task(jobname='task-1'))
         self.sess.add(Task(jobname='task-2'))
         self.sess.add(Task(jobname='task-3'))
 
-        assert_equal(set(('task-1', 'task-2', 'task-3')),
+        assert (set(('task-1', 'task-2', 'task-3')) ==
                      set(job.jobname for job in self.sess))
 
     def test_standard_session_iterator_for_tasks_and_task_collections(self):
@@ -244,7 +245,7 @@ class TestSession(object):
                               tasks=[Task() for i in range(3)])
         self.sess.add(coll)
 
-        assert_equal(['collection'],
+        assert (['collection'] ==
                      [job.jobname for job in self.sess])
 
     def test_workflow_iterator_for_session(self):
@@ -258,8 +259,8 @@ class TestSession(object):
 
         self.sess.add(coll)
 
-        assert_equal(['collection', 'task-0', 'task-1', 'task-2',
-                      'collection-1', 'task-1-0', 'task-1-1', 'task-1-2'],
+        assert (['collection', 'task-0', 'task-1', 'task-2',
+                      'collection-1', 'task-1-0', 'task-1-1', 'task-1-2'] ==
                      [job.jobname for job in self.sess.iter_workflow()])
 
 
@@ -273,8 +274,8 @@ class StubForSqlSession(TestSession):
         conn = self.sess.store._engine.connect()
         results = conn.execute(q)
         rows = results.fetchall()
-        assert_equal(len(rows), 1)
-        assert_equal(rows[0][0], jobid)
+        assert len(rows) == 1
+        assert rows[0][0] == jobid
 
         # remove object from the store, since self.sess.destroy() will
         # not remove it!
@@ -286,18 +287,9 @@ class TestSqliteSession(StubForSqlSession):
     @classmethod
     def setup_class(cls):
         # skip SQLite tests if no SQLite module present (Py 2.4)
-        try:
-            import sqlite3
-            assert sqlite3 is not None  # pep8 complains if we don't use it :)
-        except ImportError:
-            # SQLAlchemy uses `pysqlite2` on Py 2.4
-            try:
-                import pysqlite2
-                # pep8 complains if we don't use an ipmorted module
-                assert pysqlite2 is not None
-            except ImportError:
-                raise SkipTest("No SQLite module installed.")
+        sqlite3 = pytest.importorskip("sqlite3")
 
+    @pytest.fixture(autouse=True)
     def setUp(self):
         self.tmpdir = os.path.abspath(tempfile.mktemp(dir=os.getcwd()))
         #import pdb; pdb.set_trace()  ### DEBUG
@@ -306,7 +298,8 @@ class TestSqliteSession(StubForSqlSession):
             create=True,
             store_or_url="sqlite:///{0}/store.db".format(self.tmpdir))
 
-    def tearDown(self):
+        yield
+
         if os.path.exists(self.tmpdir):
             shutil.rmtree(self.tmpdir)
 
@@ -316,12 +309,9 @@ class TestMysqlSession(StubForSqlSession):
     @classmethod
     def setup_class(cls):
         # we skip MySQL tests if no MySQLdb module is present
-        try:
-            import MySQLdb
-            assert MySQLdb is not None  # pep8 complains if we don't use it :)
-        except:
-            raise SkipTest("MySQLdb module not installed.")
+        MySQLdb = pytest.importorskip("MySQLdb")
 
+    @pytest.fixture(autouse=True)
     def setUp(self):
         tmpdir = tempfile.mktemp(dir='.')
         self.tmpdir = os.path.basename(tmpdir)
@@ -334,9 +324,10 @@ class TestMysqlSession(StubForSqlSession):
         except sqlalchemy.exc.OperationalError:
             if os.path.exists(tmpdir):
                 shutil.rmtree(tmpdir)
-            raise SkipTest("Cannot connect to MySQL database.")
+            pytest.mark.skip("Cannot connect to MySQL database.")
 
-    def tearDown(self):
+        yield
+        
         self.sess.destroy()
         conn = self.sess.store._engine.connect()
         conn.execute("drop table `%s`" % self.tmpdir)
@@ -344,5 +335,4 @@ class TestMysqlSession(StubForSqlSession):
 # main: run tests
 
 if "__main__" == __name__:
-    import nose
-    nose.runmodule()
+    pytest.main(["-v", __file__])

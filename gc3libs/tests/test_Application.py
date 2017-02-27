@@ -21,19 +21,26 @@
 __docformat__ = 'reStructuredText'
 
 
-from nose.tools import raises
-from nose.plugins.skip import SkipTest
+import pytest
 
 from gc3libs import Application
 import gc3libs.exceptions
 
 
-@raises(TypeError)
+@pytest.mark.xfail(raises=TypeError)
 def test_invalid_invocation():
     Application()
 
-
-def test_mandatory_arguments():
+app_mandatory_arguments = (
+    'arguments',
+    'inputs',
+    'outputs',
+    'output_dir',
+)
+    
+@pytest.mark.parametrize("mandatory", app_mandatory_arguments)
+@pytest.mark.xfail(raises=TypeError)
+def test_mandatory_arguments(mandatory):
     # check for all mandatory arguments
     ma = {'arguments': ['/bin/true'],
           'inputs': [],
@@ -44,19 +51,22 @@ def test_mandatory_arguments():
     # test *valid* invocation
     Application(**ma)
 
-    @raises(TypeError)
-    def _create_app(tmp):
-        Application(**_tmp)
-        assert False, "We should have got an exception!"
-
-    # test *invalid* invocation removing only one of the arguments
-    for k in ma:
-        _tmp = ma.copy()
-        del _tmp[k]
-        yield _create_app, _tmp
+    del ma[mandatory]
 
 
-def test_wrong_type_arguments():
+app_wrong_arguments = (
+    # 'inputs' : ['duplicated', 'duplicated'],
+    # duplicated inputs doesnt raise an exception but just a warning
+    ('outputs', ['/should/not/be/absolute']),
+    # 'outputs' : ['duplicated', 'duplicated'],
+    # duplicated outputs doesnt raise an exception but just a warning
+    ('requested_architecture', 'FooBar'),
+    ('requested_cores', 'one'),
+)
+
+@pytest.mark.parametrize("wrongargs", app_wrong_arguments)
+@pytest.mark.xfail(raises=(gc3libs.exceptions.InvalidArgument, ValueError))
+def test_wrong_type_arguments(wrongargs):
     # Things that will raise errors:
     # * unicode arguments
     # * unicode files in inputs or outputs
@@ -72,23 +82,8 @@ def test_wrong_type_arguments():
           'requested_cores': 1,
           }
 
-    @raises(gc3libs.exceptions.InvalidArgument, ValueError)
-    def _create_app(tmp):
-        Application(**_tmpma)
-        raise SkipTest("FIXME invalid arguments")
-
-    for k, v in {
-        # 'inputs' : ['duplicated', 'duplicated'],
-        # duplicated inputs doesnt raise an exception but just a warning
-        'outputs': ['/should/not/be/absolute'],
-        # 'outputs' : ['duplicated', 'duplicated'],
-        # duplicated outputs doesnt raise an exception but just a warning
-        'requested_architecture': 'FooBar',
-        'requested_cores': 'one',
-    }.items():
-        _tmpma = ma.copy()
-        _tmpma[k] = v
-        yield _create_app, _tmpma
+    ma[wrongargs[0]] = wrongargs[1]
+    Application(**ma)
 
 
 def test_valid_invocation():
@@ -100,7 +95,7 @@ def test_valid_invocation():
     Application(**ma)
 
 
-@raises(gc3libs.exceptions.InvalidValue)
+@pytest.mark.xfail(raises=gc3libs.exceptions.InvalidValue)
 def test_io_spec_to_dict_unicode():
     import gc3libs.url
     Application._io_spec_to_dict(
@@ -113,5 +108,4 @@ def test_io_spec_to_dict_unicode():
 # main: run tests
 
 if "__main__" == __name__:
-    import nose
-    nose.runmodule()
+    pytest.main(["-v", __file__])

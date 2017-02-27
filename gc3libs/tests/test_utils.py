@@ -25,7 +25,7 @@ __docformat__ = 'reStructuredText'
 from itertools import izip
 
 # 3rd party imports
-from nose.tools import assert_equal, raises
+import pytest
 
 # GC3Pie imports
 import gc3libs.exceptions
@@ -40,17 +40,17 @@ class TestYieldAtNext(object):
         def generator_yield():
             yield 0
         g = gc3libs.utils.YieldAtNext(generator_yield())
-        assert_equal(g.next(), 0)
+        assert g.next() == 0
 
     def test_YieldAtNext_send(self):
         def generator_yield_send():
             val = (yield 1)
             yield val
         g = gc3libs.utils.YieldAtNext(generator_yield_send())
-        assert_equal(g.next(), 1)
+        assert g.next() == 1
         result = g.send('a sent value')
-        assert_equal(result, None)
-        assert_equal(g.next(), 'a sent value')
+        assert result == None
+        assert g.next() == 'a sent value'
 
     def test_YieldAtNext_send_iter(self):
         def generator_yield_send():
@@ -64,14 +64,14 @@ class TestYieldAtNext(object):
         for msg in g:
             print ("received: %s" % (msg,))
             # check msg
-            assert_equal(msg, expected[n])
+            assert msg == expected[n]
             # send another msg
             n += 1
             if n < len(expected):
                 result = g.send(expected[n])
-                assert_equal(result, None)
+                assert result == None
             else:
-                assert_equal(n, len(expected))
+                assert n == len(expected)
                 print ("%d messages received, no more messages to send" % (n,))
                 break
 
@@ -93,7 +93,7 @@ class TestYieldAtNext(object):
         for msg, expected_msg in izip(g, expected):
             print ("received: %s" % (msg,))
             # check msg
-            assert_equal(msg, expected_msg)
+            assert msg == expected_msg
 
     def test_YieldAtNext_throw(self):
         def generator_yield_throw():
@@ -104,17 +104,17 @@ class TestYieldAtNext(object):
             except RuntimeError:
                 yield 'exception caught'
         g = gc3libs.utils.YieldAtNext(generator_yield_throw())
-        assert_equal(g.next(), 2)
+        assert g.next() == 2
         result = g.throw(RuntimeError)
-        assert_equal(result, None)
-        assert_equal(g.next(), 'exception caught')
+        assert result == None
+        assert g.next() == 'exception caught'
 
-    @raises(StopIteration)
+    @pytest.mark.xfail(raises=StopIteration)
     def test_YieldAtNext_StopIteration(self):
         def generator_yield():
             yield 3
         g = gc3libs.utils.YieldAtNext(generator_yield())
-        assert_equal(g.next(), 3)
+        assert g.next() == 3
         # raises `StopIteration`
         g.next()
 
@@ -122,5 +122,4 @@ class TestYieldAtNext(object):
 # main: run tests
 
 if "__main__" == __name__:
-    import nose
-    nose.runmodule()
+    pytest.main(["-v", __file__])
