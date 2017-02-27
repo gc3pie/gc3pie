@@ -10,4 +10,4 @@ install:
   - "pip install --upgrade setuptools pip"
   - "pip install 'pytest>=3.0.6' mock"
   - "pip install -e .[openstack,ec2,daemon]"
-script: py.test -v
+script: pytest -v
