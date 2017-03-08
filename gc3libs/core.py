@@ -1821,7 +1821,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                             # - additional keywords
                             'fetch_output',
                     ):
-                        gc3libs.log.error(
+                        gc3libs.log.debug(
                             "Ignored error in fetching output of task '%s':"
                             " %s: %s",
                             task,
@@ -1853,7 +1853,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                         try:
                             self.remove(task)
                         except Exception as err:
-                            gc3libs.log.error(
+                            gc3libs.log.debug(
                                 "Could not remove task '%s': %s: %s",
                                 task, err.__class__.__name__, err)
                     else:
