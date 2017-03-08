@@ -109,14 +109,13 @@ class TestYieldAtNext(object):
         assert result == None
         assert g.next() == 'exception caught'
 
-    @pytest.mark.xfail(raises=StopIteration)
     def test_YieldAtNext_StopIteration(self):
         def generator_yield():
             yield 3
         g = gc3libs.utils.YieldAtNext(generator_yield())
         assert g.next() == 3
-        # raises `StopIteration`
-        g.next()
+        with pytest.raises(StopIteration):
+            g.next()
 
 
 # main: run tests

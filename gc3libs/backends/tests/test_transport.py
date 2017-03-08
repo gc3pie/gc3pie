@@ -116,14 +116,12 @@ class StubForTestTransport(object):
         finally:
             os.remove(tmpfile)
 
-    @pytest.mark.xfail(raises=TransportError)
     def test_open_failure_nonexistent_file(self):
-        fd = self.transport.open(
-            os.path.join(self.tmpdir, 'nonexistent'), 'r')
-        # This line is to make pep8 happy
-        assert fd is False
+        with pytest.raises(TransportError):
+            # pylint: disable=invalid-name,unused-variable
+            fd = self.transport.open(
+                os.path.join(self.tmpdir, 'nonexistent'), 'r')
 
-    @pytest.mark.xfail(raises=TransportError)
     def test_open_failure_unauthorized(self):
         # we cannot rely on *any* file being unreadable, as tests may
         # be running as `root` (e.g., in a Docker container), so we
@@ -132,17 +130,20 @@ class StubForTestTransport(object):
         os.fchmod(fd, 0o000)
         os.close(fd)
         # now re-open with normal Python functions
-        with self.transport.open(path, 'r') as stream:
-            assert stream is False
+        with pytest.raises(TransportError):
+            # pylint: disable=no-member
+            with self.transport.open(path, 'r') as stream:
+                assert stream is False
         try:
             os.unlink(path)
         except:
             pass
 
-    @pytest.mark.xfail(raises=TransportError)
     def test_remove_failure(self):
-        self.transport.remove(
-            os.path.join(self.tmpdir, 'nonexistent'))
+        with pytest.raises(TransportError):
+            # pylint: disable=no-member
+            self.transport.remove(
+                os.path.join(self.tmpdir, 'nonexistent'))
 
 
 class TestLocalTransport(StubForTestTransport):

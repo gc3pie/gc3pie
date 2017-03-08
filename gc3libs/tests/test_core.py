@@ -32,11 +32,12 @@ from gc3libs.quantity import GB, hours
 from gc3libs.testing.helpers import temporary_config_file
 
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.NoResources)
 def test_core_disable_resource_on_auth_init_failure():
     """Test that a resource is disabled if the auth cannot be initialized successfully."""
-    # create "bad authentication" class
+
+    # pylint: disable=no-self-use,unused-argument
     class BadInitAuth(object):
+        """Fail all authentication methods."""
         def __init__(self, **auth):
             raise RuntimeError("Bad authentication object!")
 
@@ -49,14 +50,16 @@ def test_core_disable_resource_on_auth_init_failure():
         def enable(self):
             raise AssertionError("This method should have never been called!")
 
-    _test_core_disable_resource_on_auth_failure(BadInitAuth)
+    with pytest.raises(gc3libs.exceptions.NoResources):
+        _test_core_disable_resource_on_auth_failure(BadInitAuth)
 
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.NoResources)
 def test_core_disable_resource_on_auth_check_failure():
     """Test that a resource is disabled if the auth cannot be checked successfully."""
-    # create "bad authentication" class
+
+    # pylint: disable=no-self-use,unused-argument
     class BadCheckAuth(object):
+        """Fail `Authentication.check()`"""
 
         def __init__(self, **auth):
             pass
@@ -70,14 +73,16 @@ def test_core_disable_resource_on_auth_check_failure():
         def enable(self):
             raise AssertionError("This method should have never been called!")
 
-    _test_core_disable_resource_on_auth_failure(BadCheckAuth)
+    with pytest.raises(gc3libs.exceptions.NoResources):
+        _test_core_disable_resource_on_auth_failure(BadCheckAuth)
 
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.NoResources)
 def test_core_disable_resource_on_auth_enable_failure():
     """Test that a resource is disabled if the auth cannot be enabled successfully."""
-    # create "bad authentication" class
+
+    # pylint: disable=no-self-use,unused-argument
     class BadEnableAuth(object):
+        """Fail `Authentication.enable()`"""
 
         def __init__(self, **auth):
             pass
@@ -91,7 +96,8 @@ def test_core_disable_resource_on_auth_enable_failure():
         def enable(self):
             raise RuntimeError("Bad authentication object!")
 
-    _test_core_disable_resource_on_auth_failure(BadEnableAuth)
+    with pytest.raises(gc3libs.exceptions.NoResources):
+        _test_core_disable_resource_on_auth_failure(BadEnableAuth)
 
 
 def _test_core_disable_resource_on_auth_failure(auth_cls):

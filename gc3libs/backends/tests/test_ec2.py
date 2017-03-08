@@ -142,12 +142,12 @@ class TestVMPool(object):
         assert self.vm1 == self.pool2['a']
         assert self.vm2 == self.pool2['b']
 
-    @pytest.mark.xfail(raises=gc3libs.exceptions.UnrecoverableError)
     def test_get_vm_not_in_cache_and_no_connection(self):
         # clone pool2 from disk copy
         pool = VMPool(self.pool2.path, None)
-        assert self.vm1 == pool['a']
-        assert self.vm2 == pool['b']
+        with pytest.raises(gc3libs.exceptions.UnrecoverableError):
+            # pylint: disable=pointless-statement
+            pool['a']
 
     def test_get_all_vms(self):
         all_vms1 = self.pool1.get_all_vms()

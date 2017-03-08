@@ -375,12 +375,12 @@ username=NONEXISTENT
         self.core.submit(app)
         assert app.execution.state == State.SUBMITTED
 
-    @pytest.mark.xfail(raises=LRMSError)
     def test_sbatch_submit_failed(self):
         """Test `squeue` output parsing with a job in PENDING state."""
         app = FakeApp()
         self.transport.expected_answer['sbatch'] = sbatch_submit_failed()
-        self.core.submit(app)
+        with pytest.raises(LRMSError):
+            self.core.submit(app)
         #assert_equal(app.execution.state, State.NEW)
 
     def test_parse_squeue_output_pending(self):

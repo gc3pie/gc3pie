@@ -225,7 +225,6 @@ def test_engine_redo_Task1():
         assert task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]
 
 
-@pytest.mark.xfail(raises=AssertionError)
 def test_engine_redo_Task2():
     """Test that `Engine.redo()` raises if called on a Task that is not TERMINATED."""
     with temporary_engine() as engine:
@@ -236,7 +235,9 @@ def test_engine_redo_Task2():
         assert task.execution.state != Run.State.NEW
 
         # cannot redo a task that is not yet terminated
-        task.redo()
+        with pytest.raises(AssertionError,
+                           message="`Task.redo()` succeeded on task not yet finished"):
+            task.redo()
 
 
 def test_engine_redo_Task3():

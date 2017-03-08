@@ -280,7 +280,6 @@ type=none
         stdout_contents = open(stdout_file, 'r').read()
         assert stdout_contents == 'OK\n'
 
-    @pytest.mark.xfail(raises=gc3libs.exceptions.NoResources)
     def test_not_enough_cores_usage(self):
         """Check that a `NoResources` exception is raised if more cores are requested than available"""
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
@@ -292,9 +291,9 @@ type=none
             output_dir=tmpdir,
             requested_cores=self.backend.free_slots + 1,
             requested_memory=10 * Memory.MiB, )
-        self.core.submit(bigapp)
+        with pytest.raises(gc3libs.exceptions.NoResources):
+            self.core.submit(bigapp)
 
-    @pytest.mark.xfail(raises=gc3libs.exceptions.NoResources)
     def test_not_enough_memory_usage(self):
         """Check that a `NoResources` exception is raised if more memory is requested than available"""
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
@@ -306,7 +305,8 @@ type=none
             output_dir=tmpdir,
             requested_cores=1,
             requested_memory=self.backend.total_memory + Memory.B, )
-        self.core.submit(bigapp)
+        with pytest.raises(gc3libs.exceptions.NoResources):
+            self.core.submit(bigapp)
 
 
 class TestBackendShellcmdCFG(object):

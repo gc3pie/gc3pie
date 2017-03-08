@@ -46,7 +46,7 @@ def _setup_config_file(confstr):
     f.close()
     return name
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.NoConfigurationFile)
+
 def import_invalid_conf(confstr, **extra_args):
     """`load` just ignores invalid input."""
     tmpfile = _setup_config_file(confstr)
@@ -56,10 +56,11 @@ def import_invalid_conf(confstr, **extra_args):
     finally:
         os.remove(tmpfile)
     assert len(cfg.resources) == 0
-    assert len(cfg.auths) == 0
+    assert len(cfg.auths) == 1
+    assert 'none' in cfg.auths
 
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.ConfigurationError)
+# pylint: disable=unused-argument
 def read_invalid_conf(confstr, **extra_args):
     """`merge_file` raises a `ConfigurationError` exception on invalid input"""
     tmpfile = _setup_config_file(confstr)
@@ -70,10 +71,11 @@ def read_invalid_conf(confstr, **extra_args):
         os.remove(tmpfile)
 
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.ConfigurationError)
+# pylint: disable=unused-argument
 def parse_invalid_conf(confstr, **extra_args):
     """`_parse` raises a `ConfigurationError` exception on invalid input."""
     cfg = gc3libs.config.Configuration()
+    # pylint: disable=unused-variable,protected-access
     defaults, resources, auths = cfg._parse(StringIO(confstr))
 
 
@@ -230,47 +232,50 @@ max_cores = 10
 ]
 
 @pytest.mark.parametrize("conf", invalid_confs)
-@pytest.mark.xfail(raises=gc3libs.exceptions.NoConfigurationFile)
 def test_import_invalid_confs(conf):
     """Test reading invalid configuration files"""
-    import_invalid_conf(conf[1])
+    with pytest.raises(gc3libs.exceptions.NoConfigurationFile):
+        import_invalid_conf(conf[1])
 
 @pytest.mark.parametrize("conf", invalid_confs)
-@pytest.mark.xfail(raises=gc3libs.exceptions.ConfigurationError)
 def test_read_invalid_confs(conf):
     """Test reading invalid configuration files"""
-    read_invalid_conf(conf[1])
+    with pytest.raises(gc3libs.exceptions.ConfigurationError):
+        read_invalid_conf(conf[1])
 
 @pytest.mark.parametrize("conf", invalid_confs)
-@pytest.mark.xfail(raises=gc3libs.exceptions.ConfigurationError)
 def test_parse_invalid_confs(conf):
     """Test reading invalid configuration files"""
-    parse_invalid_conf(conf[1])
-    
+    with pytest.raises(gc3libs.exceptions.ConfigurationError):
+        parse_invalid_conf(conf[1])
 
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.NoAccessibleConfigurationFile)
+
 def test_load_non_existing_file():
     """Test that `Configuration.load()` raises a `NoAccessibleConfigurationFile` exception if no configuration file exists"""
-    cfg = gc3libs.config.Configuration('/NON_EXISTING_FILE')
+    with pytest.raises(gc3libs.exceptions.NoAccessibleConfigurationFile):
+        # pylint: disable=unused-variable
+        cfg = gc3libs.config.Configuration('/NON_EXISTING_FILE')
 
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.NoAccessibleConfigurationFile)
 def test_load_non_readable_file():
     """Test that `Configuration.load()` raises a `NoAccessibleConfigurationFile` exception if no configuration file can be read"""
     with tempfile.NamedTemporaryFile(prefix=__name__) as tmpfile:
         os.chmod(tmpfile.name, 0)
-        cfg = gc3libs.config.Configuration(tmpfile.name)
+        with pytest.raises(gc3libs.exceptions.NoAccessibleConfigurationFile):
+            # pylint: disable=unused-variable
+            cfg = gc3libs.config.Configuration(tmpfile.name)
 
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.NoValidConfigurationFile)
 def test_load_non_valid_file():
     """Test that `Configuration.load()` raises a `NoValidConfigurationFile` exception if no configuration file can be parsed"""
     tmpfile = _setup_config_file("""
 This is not a valid configuration file.
 """)
     try:
-        cfg = gc3libs.config.Configuration(tmpfile)
+        with pytest.raises(gc3libs.exceptions.NoValidConfigurationFile):
+            # pylint: disable=unused-variable
+            cfg = gc3libs.config.Configuration(tmpfile)
     finally:
         os.remove(tmpfile)
 
@@ -299,7 +304,6 @@ architecture = x86_64
         os.remove(tmpfile)
 
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.NoValidConfigurationFile)
 def test_auth_empty_keypair_name():
     """Test that if keypair_name is specified and empty, we fail."""
     tmpfile = _setup_config_file("""
@@ -309,7 +313,9 @@ auth = ssh
 keypair_name =
     """)
     try:
-        cfg = gc3libs.config.Configuration(tmpfile)
+        with pytest.raises(gc3libs.exceptions.NoValidConfigurationFile):
+            # pylint: disable=unused-variable
+            cfg = gc3libs.config.Configuration(tmpfile)
     finally:
         os.remove(tmpfile)
 
@@ -413,14 +419,13 @@ architecture = x86_64
         assert cfg.resources['localhost']['foo'] == '2'
 
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.NoConfigurationFile)
 def test_no_valid_config1():
     """`Configuration.load` raises an exception if called with no arguments"""
     cfg = gc3libs.config.Configuration()
-    cfg.load()
+    with pytest.raises(gc3libs.exceptions.NoConfigurationFile):
+        cfg.load()
 
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.NoConfigurationFile)
 def test_no_valid_config2():
     """Test that `Configuration.load` raises an exception if none of the
     arguments is a valid config file"""
@@ -428,7 +433,8 @@ def test_no_valid_config2():
     f2 = _setup_config_file("INVALID INPUT")
     cfg = gc3libs.config.Configuration()
     try:
-        cfg.load(f1, f2)
+        with pytest.raises(gc3libs.exceptions.NoConfigurationFile):
+            cfg.load(f1, f2)
     finally:
         os.remove(f1)
         os.remove(f2)
@@ -488,12 +494,9 @@ invalid_architectures = [
 ]
 
 @pytest.mark.parametrize("arch", invalid_architectures)
-@pytest.mark.skip(raises=gc3libs.exceptions.ConfigurationError)
 def test_invalid_architectures(arch):
-    """Invalid arch. strings should be rejected with `ConfigurationError`
-
-    """
-    config_template = gc3libs.template.Template("""
+    """Invalid arch. strings should be rejected with `ConfigurationError` """
+    config = gc3libs.template.Template("""
 [resource/test]
 type = shellcmd
 frontend = localhost
@@ -503,9 +506,9 @@ max_memory_per_core = 2GiB
 max_walltime = 8 hours
 max_cores = 10
 architecture = ${arch}
-""")
-    # display complete title for each generated test case
-    _check_parse_arch(config_template.substitute(arch=arch), "should not be used")
+""").substitute(arch=arch)
+    with pytest.raises(gc3libs.exceptions.ConfigurationError):
+        _check_parse_arch(config, "should not be used")
 
 
 class TestPrologueEpilogueScripts(object):
@@ -753,7 +756,6 @@ override = False
                              v)
 
 
-@pytest.mark.xfail(raises=gc3libs.exceptions.ConfigurationError)
 def test_invalid_resource_type():
     """Test parsing a configuration file with an unknown resource type."""
     tmpfile = _setup_config_file("""
@@ -769,7 +771,9 @@ architecture = x86_64
     """)
     try:
         cfg = gc3libs.config.Configuration(tmpfile)
-        resources = cfg.make_resources(ignore_errors=False)
+        with pytest.raises(gc3libs.exceptions.ConfigurationError):
+            # pylint: disable=unused-variable
+            resources = cfg.make_resources(ignore_errors=False)
     finally:
         os.remove(tmpfile)
 

@@ -197,7 +197,6 @@ enabled=True
         assert self.backend.free_slots ==       cores_before
         assert self.backend.available_memory == mem_before
 
-    @pytest.mark.xfail(raises=gc3libs.exceptions.NoResources)
     def test_not_enough_cores_usage(self):
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
@@ -208,9 +207,9 @@ enabled=True
             output_dir=tmpdir,
             requested_cores=self.backend.free_slots + 1,
             requested_memory=10 * Memory.MiB, )
-        self.core.submit(bigapp)
+        with pytest.raises(gc3libs.exceptions.NoResources):
+            self.core.submit(bigapp)
 
-    @pytest.mark.xfail(raises=gc3libs.exceptions.NoResources)
     def test_not_enough_memory_usage(self):
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
         self.cleanup_file(tmpdir)
@@ -221,7 +220,8 @@ enabled=True
             output_dir=tmpdir,
             requested_cores=1,
             requested_memory=self.backend.available_memory + Memory.B, )
-        self.core.submit(bigapp)
+        with pytest.raises(gc3libs.exceptions.NoResources):
+            self.core.submit(bigapp)
 
 
 if __name__ == "__main__":

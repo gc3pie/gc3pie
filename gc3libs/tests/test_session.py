@@ -64,7 +64,6 @@ def test_create():
         raise
 
 
-@pytest.mark.xfail(raises=(gc3libs.exceptions.LoadError, sqlalchemy.exc.OperationalError))
 def test_destroy():
     tmpdir = tempfile.mktemp(dir='.')
     try:
@@ -74,7 +73,8 @@ def test_destroy():
         # destroy should kill all traces of the sessiondir
         assert not os.path.exists(sess.path)
         # in particular, no task can be loaded
-        sess.load(tid)
+        with pytest.raises(gc3libs.exceptions.LoadError):
+            sess.load(tid)
     except:
         if os.path.exists(tmpdir):
             shutil.rmtree(tmpdir)

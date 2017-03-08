@@ -44,7 +44,6 @@ class MyApplication(Application):
         pass
 
 
-@pytest.mark.xfail(raises=AssertionError)
 def test_persisted_change():
     app = MyApplication()
     task = RetryableTask(app)
@@ -55,8 +54,10 @@ def test_persisted_change():
     task.update_state()
 
     # We expect task.changed to be true
-    assert not task.changed
+    assert task.changed
+
 
 if "__main__" == __name__:
+    # pylint: disable=ungrouped-imports
     import pytest
     pytest.main(["-v", __file__])

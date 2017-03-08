@@ -218,7 +218,6 @@ class GenericStoreChecks(object):
 
         assert len(self.store.list()) == num_objs
 
-    @pytest.mark.xfail(raises=gc3libs.exceptions.LoadError)
     def test_remove_method(self):
         """
         Test remove method of a generic `Store` class
@@ -228,7 +227,8 @@ class GenericStoreChecks(object):
         id = self.store.save(obj)
         self.store.remove(id)
 
-        obj = self.store.load(id)
+        with pytest.raises(gc3libs.exceptions.LoadError):
+            obj = self.store.load(id)
 
     def test_replace_method(self):
         """Test the `replace` method of the `SqlStore` class"""
@@ -489,21 +489,20 @@ class SqlStoreChecks(GenericStoreChecks):
         assert len(rows) == 1
         assert rows[0][0] == obj.foo.value
 
-    @pytest.mark.skip(reason="Feature not supported anymore")
-    @pytest.mark.xfail(raises=AssertionError)
+    @pytest.mark.skip(reason="FIXME: Check if test is still valid")
     def test_sql_error_if_no_extra_fields(self):
         """
         Test if `SqlStore` reads and writes extra columns.
         """
-        # re-build store with a non-existent extra column; should raise
-        # `AssertionError`
-        self._make_store(
-            extra_fields={
-                sqlalchemy.Column(
-                    'extra',
-                    sqlalchemy.VARCHAR(
-                        length=128)): (
-                    lambda arg: arg.foo.value)})
+        # re-build store with a non-existent extra column
+        with pytest.raises(AssertionError):
+            self._make_store(
+                extra_fields={
+                    sqlalchemy.Column(
+                        'extra',
+                        sqlalchemy.VARCHAR(
+                            length=128)): (
+                                lambda arg: arg.foo.value)})
 
 
 class ExtraSqlChecks(object):
