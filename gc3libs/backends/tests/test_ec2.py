@@ -28,8 +28,11 @@ import tempfile
 # 3rd party imports
 import pytest
 
-# local imports
+# The EC2 backend might not be installed (it's currently marked as
+# optional in `setup.py`), so skip these tests altogether if there is any error
 boto = pytest.importorskip("boto")
+
+# local imports
 from gc3libs.backends.ec2 import VMPool
 import gc3libs.exceptions
 

@@ -27,13 +27,19 @@ import os
 
 # 3rd party imports
 from mock import MagicMock
+import pytest
 
 # local imports
 from gc3libs import Application
-from gc3libs.backends.openstack import OpenStackLrms
 import gc3libs.config
 import gc3libs.exceptions
 from gc3libs.quantity import MiB, GB
+
+# The OpenStack backend might not be installed (it's currently marked as
+# optional in `setup.py`), or we may be running Python 2.6 which is no longer
+# supported so skip these tests altogether if there is any error
+OpenStackLrms = pytest.importorskip('gc3libs.backends.openstack').OpenStackLrms
+
 
 from gc3libs.testing.helpers import temporary_config, temporary_config_file
 
