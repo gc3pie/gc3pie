@@ -69,34 +69,12 @@ class Tox(TestCommand):
 
 python_version = sys.version_info[:2]
 if python_version == (2, 6):
-    version_dependent_requires = [
-        # The following Python modules are required by GC3Pie's `openstack`
-        # backend. Since OpenStack ceased support for Python 2.6 around
-        # version 3.0.0 of the client libraries, we have to include separate
-        # dependecy lists for Python 2.7+ and Python 2.6
-        #
-        # - OpenStack's "keystoneclient" requires `importlib`
-            'importlib',
-        # - support for Python 2.6 was removed from `novaclient` in commit
-        #   81f8fa655ccecd409fe6dcda0d3763592c053e57 which is contained in
-        #   releases 3.0.0 and above; however, we also need to pin down
-        #   the version of `oslo.config` and all the dependencies thereof,
-        #   otherwise `pip` will happily download the latest and
-        #   incompatible version,since `python-novaclient` specifies only
-        #   the *minimal* version of dependencies it is compatible with...
-            'stevedore<1.10.0',
-        'debtcollector<1.0.0',
-        'keystoneauth<2.0.0',
-        # yes, there's `keystoneauth` and `keystoneauth1` !!
-            'keystoneauth1<2.0.0',
-        'oslo.config<3.0.0',
-        'oslo.i18n<3.1.0',
-        'oslo.serialization<2.1.0',
-        'oslo.utils<3.1.0',
-        'python-novaclient<3.0.0',
+    openstack_requires = [
+        # None, GC3Pie's OpenStack support on Python 2.6 ceased during
+        # the release cycle leading to version 2.5
     ]
 elif python_version == (2, 7):
-    version_dependent_requires = [
+    openstack_requires = [
         # The following Python modules are required by GC3Pie's `openstack`
         # backend. Since OpenStack ceased support for Python 2.6 around
         # version 3.0.0 of the client libraries, we have to include separate
@@ -204,7 +182,7 @@ setuptools.setup(
         # needed by DependentTaskCollection
         # (but incompatible with Py 2.6, so we include a patched copy)
         #toposort==1.0
-    ] + version_dependent_requires,
+    ],
     extras_require={
         'ec2': [
             # The following Python modules are required by GC3Pie's `ec2`
@@ -217,6 +195,7 @@ setuptools.setup(
             # optional feature ...
             'inotifyx',
         ],
+        'openstack': openstack_requires,
         'optimizer': [
             # The following Python modules are required by GC3Pie's
             # `gc3libs.optimizer` module.

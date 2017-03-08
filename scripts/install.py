@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__version__ = '2.0.2'
+__version__ = '2.0.3'
 __author__ = '''
 Antonio Messina <antonio.s.messina@gmail.com>
 Riccardo Murri <riccardo.murri@gmail.com>
@@ -98,7 +98,7 @@ except:
             raise CalledProcessError(retcode, cmd, output=output)
         return output
 
-    
+
 
 from urllib2 import urlopen
 import json
@@ -154,14 +154,29 @@ try:
 except AttributeError:
     # Possibly running on python 2.6. Ignore.
     pass
-    
+
 def main():
     options = parse_command_line_options()
-
     if options.unreleased:
         options.version_info = '*development version*'
     else:
         options.version_info = '*latest stable version*'
+
+    # compatibility check
+    if 'openstack' in options.features and (major, minor) == (2, 6):
+        abort(70, """OpenStack support requires Python 2.7+
+
+Python interpreter '{exe}' is running version
+{major}.{minor}.{release} of the language.
+
+If a version of Python suitable for using GC3Pie is present in some
+non-standard location, then please run this script again through
+the correct 'python' binary.  For example:
+
+        /usr/local/bin/python2.7 {me}
+        """.format(exe=sys.executable,
+                   major=major, minor=minor, release=release,
+                   me=__file__))
 
     print_intro_and_options(options)
 
@@ -195,7 +210,7 @@ If the shell's prompt starts with '(gc3pie)' it means that the virtual
 environment has been enabled.
 
     """.format(target=options.target))
-    
+
     cleanup()
     sys.exit(os.EX_OK)
 
@@ -555,7 +570,7 @@ def download_from_pypi(pkgname, pip_url=default.BASE_PIP_URL, version=None, keep
             """
 Unable to download package {pkgname} from PyPI.
 """.format(**locals()))
-        
+
     try:
         jdata = json.loads(data)
     except ValueError:
@@ -572,7 +587,7 @@ Unable to download package {pkgname} from PyPI.
             "Unable to find version '%s' of PyPI package '%s'."
             " Available versions are: %s" % (
                 version, pkgname, sorted(jdata['releases'].keys())))
-    
+
     sources = [r for r in releases if r['packagetype'] == 'sdist']
     if not sources:
         raise ValueError(
@@ -581,8 +596,8 @@ Unable to download package {pkgname} from PyPI.
     src = sources[-1]
     url = src['url']
     return download(url, keep=keep)
-    
-    
+
+
 def fix_virtualenv_issue_with_anaconda(python, destdir):
     """
     Apply a workaround for Anaconda Python's incompativility with virtualenvs.

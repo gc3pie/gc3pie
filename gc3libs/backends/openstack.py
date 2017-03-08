@@ -21,6 +21,10 @@
 __docformat__ = 'reStructuredText'
 
 
+import sys
+if sys.version_info < (2, 7):
+    raise ImportError("GC3Pie's OpenStack backend requires Python 2.7+")
+
 import os
 import paramiko
 from string import ascii_letters, digits
