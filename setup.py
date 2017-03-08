@@ -107,7 +107,7 @@ elif python_version == (2, 7):
 else:
     raise RuntimeError("GC3Pie requires Python 2.6 or 2.7")
 
-        
+
 ## real setup description begins here
 #
 setuptools.setup(
@@ -226,7 +226,7 @@ setuptools.setup(
 
     # Apparently, this list is read from right to left...
     tests_require=[
-        'tox', 'mock',
+        'tox', 'pytest', 'mock',
     ],
     cmdclass={'test': Tox},
 
