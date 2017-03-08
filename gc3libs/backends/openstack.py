@@ -214,6 +214,7 @@ class OpenStackLrms(LRMS):
 
         # "Connect" to the cloud (connection is actually performed
         # only when needed by the `Client` class.
+
         self.client = self._new_client()
 
         # Set up the VMPool persistent class. This has been delayed

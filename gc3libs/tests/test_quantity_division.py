@@ -29,9 +29,6 @@ __docformat__ = 'reStructuredText'
 
 from random import randint
 
-# 3rd party imports
-from nose.tools import assert_equal, raises
-
 # GC3Pie imports
 from gc3libs.quantity import Duration, Memory
 
@@ -42,27 +39,27 @@ def test_divide_duration1():
     n = randint(1, 100)
     d1 = Duration(2*n, unit=Duration.s)
     d2 = d1 / 2
-    assert_equal(d2,   Duration(n, unit=Duration.s))
-    assert_equal(2*d2, d1)
-    assert_equal(d2*2, d1)
+    assert d2 ==   Duration(n, unit=Duration.s)
+    assert 2*d2 == d1
+    assert d2*2 == d1
 
 # same, but with a non-base unit
 def test_divide_duration2():
     n = randint(1, 100)
     d1 = Duration(2*n, unit=Duration.days)
     d2 = d1 / 2
-    assert_equal(d2,   Duration(n, unit=Duration.days))
-    assert_equal(2*d2, d1)
-    assert_equal(d2*2, d1)
+    assert d2 ==   Duration(n, unit=Duration.days)
+    assert 2*d2 == d1
+    assert d2*2 == d1
 
 
 def test_divide_memory1():
     n = randint(1, 100)
     d1 = Memory(2*n, unit=Memory.B)
     d2 = d1 / 2
-    assert_equal(d2,   Memory(n, unit=Memory.B))
-    assert_equal(2*d2, d1)
-    assert_equal(d2*2, d1)
+    assert d2 ==   Memory(n, unit=Memory.B)
+    assert 2*d2 == d1
+    assert d2*2 == d1
 
 
 # same, but with a non-base unit
@@ -70,13 +67,13 @@ def test_divide_memory2():
     n = randint(1, 100)
     d1 = Memory(2*n, unit=Memory.MB)
     d2 = d1 / 2
-    assert_equal(d2,   Memory(n, unit=Memory.MB))
-    assert_equal(2*d2, d1)
-    assert_equal(d2*2, d1)
+    assert d2 ==   Memory(n, unit=Memory.MB)
+    assert 2*d2 == d1
+    assert d2*2 == d1
 
 
 # main: run tests
 
 if "__main__" == __name__:
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])

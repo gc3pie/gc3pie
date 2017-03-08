@@ -27,9 +27,6 @@ import logging
 import tempfile
 import shutil
 
-from nose.tools import raises, assert_true
-from nose.plugins.skip import SkipTest
-
 import cli.test
 
 import numpy as np
@@ -232,11 +229,11 @@ type=none
                                  #  ,'-vvvv'
                                  )
 
-        assert_true(result.stderr.find('Converged:'))
+        assert result.stderr.find('Converged:')
 
 
 # main: run tests
 
 if "__main__" == __name__:
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])

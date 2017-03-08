@@ -25,8 +25,6 @@ import os
 import shutil
 import tempfile
 
-from nose.tools import assert_equal
-
 from gc3libs import Application, Run, configure_logger, create_engine
 from gc3libs.workflow import SequentialTaskCollection
 
@@ -95,15 +93,15 @@ resourcedir = %s
                     == num_tasks_in_seq):
                 engine.progress()
                 # check that final SequentialCollection state is TERMINATED
-                assert_equal(seq.execution.state, Run.State.TERMINATED)
+                assert seq.execution.state == Run.State.TERMINATED
                 break
         # check that next() has been called once per each task
-        assert_equal(seq.next_called_n_times, num_tasks_in_seq)
+        assert seq.next_called_n_times == num_tasks_in_seq
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
 
 if "__main__" == __name__:
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])

@@ -25,14 +25,7 @@ import shutil
 import tempfile
 import re
 
-# nose
-from nose.tools import raises, assert_equal
-try:
-    from nose.tools import assert_is_instance
-except ImportError:
-    # Python 2.6 does not support assert_is_instance()
-    def assert_is_instance(obj, cls):
-        assert (isinstance(obj, cls))
+import pytest
 
 # GC3Pie imports
 from gc3libs import Run, Application, create_engine
@@ -83,27 +76,24 @@ def test_engine_kill_SequentialTaskCollection():
         # Because of our noop engine, as soon as the sequential is in
         # running we will have a job in TERMINATED and the others in
         # NEW.
-        assert_equal(
-            ['TERMINATED', 'NEW', 'NEW'],
-            [i.execution.state for i in seq.tasks],
-        )
+        assert (
+            ['TERMINATED', 'NEW', 'NEW'] ==
+            [i.execution.state for i in seq.tasks])
 
         # Killing a sequential should put all the applications in
         # TERMINATED state. However, we will need an extra run of
         # engine.progress() to update the status of all the jobs.
         engine.kill(seq)
-        assert_equal(
-            ['TERMINATED', 'NEW', 'NEW'],
-            [i.execution.state for i in seq.tasks],
-        )
+        assert (
+            ['TERMINATED', 'NEW', 'NEW'] ==
+            [i.execution.state for i in seq.tasks])
 
         engine.progress()
 
-        assert_equal(
-            ['TERMINATED', 'TERMINATED', 'TERMINATED'],
-            [i.execution.state for i in seq.tasks],
-        )
-        assert_equal(seq.execution.state, 'TERMINATED')
+        assert (
+            ['TERMINATED', 'TERMINATED', 'TERMINATED'] ==
+            [i.execution.state for i in seq.tasks])
+        assert seq.execution.state == 'TERMINATED'
 
 
 def test_engine_kill_redo_SequentialTaskCollection():
@@ -117,40 +107,35 @@ def test_engine_kill_redo_SequentialTaskCollection():
         # Because of our noop engine, as soon as the sequential is in
         # running we will have a job in TERMINATED and the others in
         # NEW.
-        assert_equal(
-            ['TERMINATED', 'NEW', 'NEW'],
-            [i.execution.state for i in seq.tasks],
-        )
+        assert (
+            ['TERMINATED', 'NEW', 'NEW'] ==
+            [i.execution.state for i in seq.tasks])
 
         # Killing a sequential should put all the applications in
         # TERMINATED state. However, we will need an extra run of
         # engine.progress() to update the status of all the jobs.
         engine.kill(seq)
-        assert_equal(
-            ['TERMINATED', 'NEW', 'NEW'],
-            [i.execution.state for i in seq.tasks],
-        )
+        assert (
+            ['TERMINATED', 'NEW', 'NEW'] ==
+            [i.execution.state for i in seq.tasks])
 
         engine.progress()
 
-        assert_equal(
-            ['TERMINATED', 'TERMINATED', 'TERMINATED'],
-            [i.execution.state for i in seq.tasks],
-        )
-        assert_equal(seq.execution.state, 'TERMINATED')
+        assert (
+            ['TERMINATED', 'TERMINATED', 'TERMINATED'] ==
+            [i.execution.state for i in seq.tasks])
+        assert seq.execution.state == 'TERMINATED'
 
         engine.redo(seq)
-        assert_equal(
-            ['NEW', 'NEW', 'NEW'],
-            [i.execution.state for i in seq.tasks],
-        )
-        assert_equal(seq.execution.state, 'NEW')
+        assert (
+            ['NEW', 'NEW', 'NEW'] ==
+            [i.execution.state for i in seq.tasks])
+        assert seq.execution.state == 'NEW'
         engine.progress()
-        assert_equal(
-            ['SUBMITTED', 'NEW', 'NEW'],
-            [i.execution.state for i in seq.tasks],
-        )
-        
+        assert (
+            ['SUBMITTED', 'NEW', 'NEW'] ==
+            [i.execution.state for i in seq.tasks])
+
 def test_engine_kill_ParallelTaskCollection():
     # Creates an engine with 2 cores.
     with temporary_engine(max_cores=2) as engine:
@@ -163,28 +148,25 @@ def test_engine_kill_ParallelTaskCollection():
         # Because of our noop engine, as soon as the parallel is in
         # running we will have all jobs in SUBMITTED and the others in
         # NEW.
-        assert_equal(
-            ['TERMINATED', 'SUBMITTED', 'NEW'],
-            [i.execution.state for i in par.tasks],
-        )
+        assert (
+            ['TERMINATED', 'SUBMITTED', 'NEW'] ==
+            [i.execution.state for i in par.tasks])
 
         # Killing a parallel should put all the applications in
         # TERMINATED state. However, we need a run of
         # engine.progress() to update the status of all the jobs
         engine.kill(par)
-        
-        assert_equal(
-            ['TERMINATED', 'SUBMITTED', 'NEW'],
-            [i.execution.state for i in par.tasks],
-        )
+
+        assert (
+            ['TERMINATED', 'SUBMITTED', 'NEW'] ==
+            [i.execution.state for i in par.tasks])
         engine.progress()
-        
-        assert_equal(
-            ['TERMINATED', 'TERMINATED', 'TERMINATED'],
-            [i.execution.state for i in par.tasks],
-        )
-        assert_equal(par.execution.state, 'TERMINATED')
-        
+
+        assert (
+            ['TERMINATED', 'TERMINATED', 'TERMINATED'] ==
+            [i.execution.state for i in par.tasks])
+        assert par.execution.state == 'TERMINATED'
+
 
 def test_engine_redo_SequentialTaskCollection():
     with temporary_engine() as engine:
@@ -243,7 +225,7 @@ def test_engine_redo_Task1():
         assert task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]
 
 
-@raises(AssertionError)
+@pytest.mark.xfail(raises=AssertionError)
 def test_engine_redo_Task2():
     """Test that `Engine.redo()` raises if called on a Task that is not TERMINATED."""
     with temporary_engine() as engine:
@@ -364,7 +346,7 @@ def test_engine_submit_to_multiple_resources(num_resources=3, num_jobs=50):
     ]
     # check that all jobs have been submitted and that each
     # resource got at least one job
-    assert_equal(sum(num_jobs_per_resource), num_jobs)
+    assert sum(num_jobs_per_resource) == num_jobs
     for num in num_jobs_per_resource:
         assert num > 0
     # since TYPE_CONSTRUCTOR_MAP is a class-level variable, we
@@ -378,14 +360,14 @@ def test_create_engine_default():
     with temporary_config_file() as cfgfile:
         # std factory params
         engine = create_engine(cfgfile.name)
-        assert_is_instance(engine, Engine)
+        assert isinstance(engine, Engine)
 
 
 def test_create_engine_non_default1():
     """Test `create_engine` with one non-default argument."""
     with temporary_config_file() as cfgfile:
         engine = create_engine(cfgfile.name, can_submit=False)
-        assert_equal(engine.can_submit, False)
+        assert engine.can_submit == False
 
 
 def test_create_engine_non_default2():
@@ -394,8 +376,8 @@ def test_create_engine_non_default2():
         engine = create_engine(cfgfile.name,
                                can_submit=False,
                                max_in_flight=1234)
-        assert_equal(engine.can_submit, False)
-        assert_equal(engine.max_in_flight, 1234)
+        assert engine.can_submit == False
+        assert engine.max_in_flight == 1234
 
 
 def test_create_engine_with_core_options():
@@ -407,12 +389,12 @@ def test_create_engine_with_core_options():
                                can_submit=False,
                                matchmaker=mm,
                                auto_enable_auth=False)
-        assert_equal(engine.can_submit, False)
-        assert_equal(engine._core.matchmaker, mm)
-        assert_equal(engine._core.auto_enable_auth, False)
+        assert engine.can_submit == False
+        assert engine._core.matchmaker == mm
+        assert engine._core.auto_enable_auth == False
 
 
 
 if __name__ == "__main__":
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])

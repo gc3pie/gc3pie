@@ -31,8 +31,6 @@ import gc3libs.config
 from gc3libs.backends.lsf import LsfLrms
 from gc3libs.quantity import Duration, hours, Memory, GB
 
-from nose.tools import assert_equal, raises
-
 _datetime_date = None
 
 files_to_remove = []
@@ -114,12 +112,12 @@ lsf_continuation_line_prefix_length = 12
     cfg.merge_file(tmpfile)
     b = cfg.make_resources()['example']
 
-    assert_equal(b.bsub, ['/usr/local/bin/bsub', '-R', 'lustre'])
+    assert b.bsub == ['/usr/local/bin/bsub', '-R', 'lustre']
 
-    assert_equal(b._bjobs, '/usr/local/bin/bjobs')
-    assert_equal(b._lshosts, '/usr/local/sbin/lshosts')
+    assert b._bjobs == '/usr/local/bin/bjobs'
+    assert b._lshosts == '/usr/local/sbin/lshosts'
 
-    assert_equal(b._CONTINUATION_LINE_START, 12 * ' ')
+    assert b._CONTINUATION_LINE_START == 12 * ' '
 
 
 def test_bjobs_output_done1():
@@ -170,8 +168,8 @@ Tue Jul 24 10:05:45: Done successfully. The CPU time used is 2.1 seconds.
  loadStop      -       -       -       -       -       -       -
 """
     jobstatus = lsf._parse_stat_output(bjobs_output, '')
-    assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.termstatus, (0, 0))
+    assert jobstatus.state == gc3libs.Run.State.TERMINATING
+    assert jobstatus.termstatus == (0, 0)
 
 
 def test_bjobs_output_for_accounting():
@@ -224,9 +222,9 @@ Tue Jul 24 10:05:45: Done successfully. The CPU time used is 2.1 seconds.
 
     # Also parse the output of jobs to get accounting information
     acct = lsf._parse_acct_output(bjobs_output, '')
-    assert_equal(acct['duration'], Duration('86s'))
-    assert_equal(acct['used_cpu_time'], Duration('2.1s'))
-    assert_equal(acct['max_used_memory'], Memory('41MB'))
+    assert acct['duration'] == Duration('86s')
+    assert acct['used_cpu_time'] == Duration('2.1s')
+    assert acct['max_used_memory'] == Memory('41MB')
 
 
 def test_bjobs_output_done2():
@@ -338,8 +336,8 @@ Mon Jul 30 15:12:56: Done successfully. The CPU time used is 1.7 seconds.
 """,
     # STDERR
     '')
-    assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.termstatus, (0, 0))
+    assert jobstatus.state == gc3libs.Run.State.TERMINATING
+    assert jobstatus.termstatus == (0, 0)
 
 
 def test_bjobs_output_done3():
@@ -383,8 +381,8 @@ Mon Aug  4 12:28:51 2014: Completed <exit>.
     """,
     # STDERR
     '')
-    assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.termstatus, (0, 127))
+    assert jobstatus.state == gc3libs.Run.State.TERMINATING
+    assert jobstatus.termstatus == (0, 127)
 
 
 def test_bjobs_output_done_long_ago():
@@ -403,8 +401,8 @@ def test_bjobs_output_done_long_ago():
         '',
         # STDERR
         'Job <943186> is not found')
-    assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.termstatus, None)
+    assert jobstatus.state == gc3libs.Run.State.TERMINATING
+    assert jobstatus.termstatus == None
 
 
 def test_bjobs_output_exit_nonzero():
@@ -442,8 +440,8 @@ Tue Jul 24 10:26:53: Completed <exit>.
     """,
     # STDERR
     '')
-    assert_equal(jobstatus.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(jobstatus.termstatus, (0, 42))
+    assert jobstatus.state == gc3libs.Run.State.TERMINATING
+    assert jobstatus.termstatus == (0, 42)
 
 
 def test_bjobs_incorrect_prefix_length():
@@ -488,8 +486,8 @@ Mon Aug  4 12:28:51 2014: Completed <exit>.
 """,
     # STDERR
     '')
-    assert_equal(stat_result.state, gc3libs.Run.State.UNKNOWN)
-    assert_equal(stat_result.termstatus, None)
+    assert stat_result.state == gc3libs.Run.State.UNKNOWN
+    assert stat_result.termstatus == None
 
 
 def test_bjobs_correct_explicit_prefix_length():
@@ -534,8 +532,8 @@ Mon Aug  4 12:28:51 2014: Completed <exit>.
 """,
     # STDERR
     '')
-    assert_equal(stat_result.state, gc3libs.Run.State.TERMINATING)
-    assert_equal(stat_result.termstatus, (0, 127))
+    assert stat_result.state == gc3libs.Run.State.TERMINATING
+    assert stat_result.termstatus == (0, 127)
 
 
 def test_bacct_done0():
@@ -590,16 +588,16 @@ SUMMARY:      ( time unit: second )
     """,
     # STDERR
     '')
-    assert_equal(acct['duration'], Duration('67s'))
-    assert_equal(acct['used_cpu_time'], Duration('0.08s'))
-    assert_equal(acct['max_used_memory'], Memory('227MB'))
+    assert acct['duration'] == Duration('67s')
+    assert acct['used_cpu_time'] == Duration('0.08s')
+    assert acct['max_used_memory'] == Memory('227MB')
     # timestamps
     year = datetime.date.today().year
-    assert_equal(acct['lsf_submission_time'],
+    assert (acct['lsf_submission_time'] ==
                  datetime.datetime(year, 10, 8, 17, 7, 54))
-    assert_equal(acct['lsf_start_time'],
+    assert (acct['lsf_start_time'] ==
                  datetime.datetime(year, 10, 8, 17, 8, 44))
-    assert_equal(acct['lsf_completion_time'],
+    assert (acct['lsf_completion_time'] ==
                  datetime.datetime(year, 10, 8, 17, 9, 51))
 
 
@@ -653,16 +651,16 @@ SUMMARY:      ( time unit: second )
     """,
     # STDERR
     '')
-    assert_equal(acct['duration'], Duration('6s'))
-    assert_equal(acct['used_cpu_time'], Duration('0.04s'))
-    assert_equal(acct['max_used_memory'], Memory('37MB'))
+    assert acct['duration'] == Duration('6s')
+    assert acct['used_cpu_time'] == Duration('0.04s')
+    assert acct['max_used_memory'] == Memory('37MB')
     # timestamps
     year = datetime.date.today().year
-    assert_equal(acct['lsf_submission_time'],
+    assert (acct['lsf_submission_time'] ==
                  datetime.datetime(year, 10, 8, 17, 8, 54))
-    assert_equal(acct['lsf_start_time'],
+    assert (acct['lsf_start_time'] ==
                  datetime.datetime(year, 10, 8, 17, 10, 1))
-    assert_equal(acct['lsf_completion_time'],
+    assert (acct['lsf_completion_time'] ==
                  datetime.datetime(year, 10, 8, 17, 10, 7))
 
 
@@ -716,16 +714,16 @@ SUMMARY:      ( time unit: second )
 """,
     # STDERR
     '')
-    assert_equal(acct['duration'], Duration('55s'))
-    assert_equal(acct['used_cpu_time'], Duration('0.04s'))
-    assert_equal(acct['max_used_memory'], Memory('35MB'))
+    assert acct['duration'] == Duration('55s')
+    assert acct['used_cpu_time'] == Duration('0.04s')
+    assert acct['max_used_memory'] == Memory('35MB')
     # timestamps
     year = datetime.date.today().year
-    assert_equal(acct['lsf_submission_time'],
+    assert (acct['lsf_submission_time'] ==
                  datetime.datetime(year, 10, 5, 17, 49, 35))
-    assert_equal(acct['lsf_start_time'],
+    assert (acct['lsf_start_time'] ==
                  datetime.datetime(year, 10, 5, 17, 50, 35))
-    assert_equal(acct['lsf_completion_time'],
+    assert (acct['lsf_completion_time'] ==
                  datetime.datetime(year, 10, 5, 17, 51, 30))
 
 
@@ -768,5 +766,5 @@ SUMMARY:      ( time unit: second )
 
 
 if __name__ == "__main__":
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])

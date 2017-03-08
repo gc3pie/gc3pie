@@ -23,10 +23,10 @@ __docformat__ = 'reStructuredText'
 
 
 ## imports
+import pytest
 
 from gc3libs import Run, Task
 
-from nose.tools import raises, assert_equal
 
 from gc3libs.testing.helpers import SuccessfulApp, UnsuccessfulApp, temporary_core
 
@@ -68,7 +68,7 @@ def test_task_redo1():
         assert task.execution.state in [Run.State.SUBMITTED, Run.State.RUNNING]
 
 
-@raises(AssertionError)
+@pytest.mark.xfail(raises=AssertionError)
 def test_task_redo2():
     """Test that `.redo()` raises if called on a Task that is not TERMINATED."""
     with temporary_core() as core:
@@ -92,5 +92,5 @@ def test_task_redo3():
 # main: run tests
 
 if "__main__" == __name__:
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main(["-v", __file__])

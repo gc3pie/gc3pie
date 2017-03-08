@@ -24,12 +24,15 @@ import os
 import shutil
 import tempfile
 
+import pytest
+
 import gc3libs.poller as plr
 
 class TestPollers(object):
+    @pytest.fixture(autouse=True)
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-    def tearDown(self):
+        yield
         shutil.rmtree(self.tmpdir)
 
     def test_filepoller(self):
@@ -59,7 +62,7 @@ class TestPollers(object):
         # * open
         # * close write
         assert len(events) == 3
-        
+
         url, mask = events[0]
         assert url.path == fpath
         assert mask == plr.events['IN_CREATE']
@@ -71,17 +74,16 @@ class TestPollers(object):
         url, mask = events[2]
         assert url.path == fpath
         assert mask == plr.events['IN_CLOSE_WRITE']
-        
+
         os.remove(fpath)
         events = poller.get_events()
         assert len(events) == 1
         url, mask = events[0]
         assert url.path == fpath
         assert mask == plr.events['IN_DELETE']
-        
+
 
 ## main: run tests
 
 if "__main__" == __name__:
-    import nose
-    nose.runmodule()
+    pytest.main(["-v", __file__])

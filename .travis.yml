@@ -8,6 +8,6 @@ addons:
     - time
 install:
   - "pip install --upgrade setuptools pip"
-  - "pip install nose mock"
+  - "pip install 'pytest>=3.0.6' mock"
   - "pip install -e .[openstack,ec2,daemon]"
-script: nosetests -v
+script: pytest -v

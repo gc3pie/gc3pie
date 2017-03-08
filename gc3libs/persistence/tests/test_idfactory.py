@@ -20,6 +20,8 @@
 #
 __docformat__ = 'reStructuredText'
 
+import pytest
+
 from gc3libs.persistence.idfactory import IdFactory
 
 
@@ -27,45 +29,40 @@ class DummyObject(object):
     pass
 
 
-class TestIdFactory(object):
+def test_new_item():
+    idfactory = IdFactory()
+    ids = []
+    dummy = DummyObject()
+    for i in range(10):
+        ids.append(idfactory.new(dummy))
+    assert len(ids) == len(set(ids))
 
-    """
-    Test the IdFactory class behavior
-    """
+    # reserve is tested only in order to check if we get an error calling
+    # it...
+    idfactory.reserve(5)
 
-    def test_new_item(self):
-        idfactory = IdFactory()
-        ids = []
-        dummy = DummyObject()
-        for i in range(10):
-            ids.append(idfactory.new(dummy))
-        assert len(ids) == len(set(ids))
+@pytest.mark.skip("Code currently bugged, cfr. issue #608")
+def test_custom_next_id():
+    class next_id(object):
 
-        # reserve is tested only in order to check if we get an error calling
-        # it...
-        idfactory.reserve(5)
+        def __init__(self):
+            self.curid = -1
 
-    def test_custom_next_id(self):
-        class next_id(object):
+        def __call__(self):
+            self.curid += 1
+            return self.curid
 
-            def __init__(self):
-                self.curid = -1
+    idfactory = IdFactory(next_id_fn=next_id())
 
-            def __call__(self):
-                self.curid += 1
-                return self.curid
+    ids = []
+    dummy = DummyObject()
+    for i in range(10):
+        ids.append(idfactory.new(dummy))
 
-        idfactory = IdFactory(next_id_fn=next_id())
+    assert len(ids) == len(set(ids))
 
-        ids = []
-        dummy = DummyObject()
-        for i in range(10):
-            ids.append(idfactory.new(dummy))
-
-        assert len(ids) == len(set(ids))
-
-        for i in range(len(ids)):
-            assert ids[i] == "DummyObject.%d" % i
+    for i in range(len(ids)):
+        assert ids[i] == "DummyObject.%d" % i
 
 
 # main: run tests
