@@ -140,8 +140,8 @@ def _parse_percentage(val):
     10.0
     >>> _parse_percentage('10%')
     10.0
-    >>> _parse_percentage('0.1%')
-    0.1
+    >>> _parse_percentage('0.25%')
+    0.25
     """
     return float(val[:-1]) if val.endswith('%') else float(val)
 
