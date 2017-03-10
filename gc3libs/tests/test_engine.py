@@ -447,57 +447,6 @@ def test_engine_cannot_find_task_by_id_if_no_store():
             with pytest.raises(KeyError):
                 engine.find_task_by_id(task_id)
 
-def test_engine_find_task_by_id():
-    """
-    Test that saved tasks are can be retrieved from the Engine given their ID only.
-    """
-    with temporary_core() as core:
-        with temporary_directory() as tmpdir:
-            store = FilesystemStore(tmpdir)
-            engine = Engine(core, store=store)
-
-            task = SuccessfulApp()
-            store.save(task)
-            engine.add(task)
-
-            task_id = task.persistent_id
-            assert_equal(task, engine.find_task_by_id(task_id))
-
-
-@raises(KeyError)
-def test_engine_cannot_find_task_by_id_if_not_saved():
-    """
-    Test that *unsaved* tasks are cannot be retrieved from the Engine given their ID only.
-    """
-    with temporary_core() as core:
-        with temporary_directory() as tmpdir:
-            store = FilesystemStore(tmpdir)
-            engine = Engine(core, store=store)
-
-            task = SuccessfulApp()
-            engine.add(task)
-
-            store.save(task)  # guarantee it has a `.persistent_id`
-            task_id = task.persistent_id
-            engine.find_task_by_id(task_id)
-
-
-@raises(KeyError)
-def test_engine_cannot_find_task_by_id_if_no_store():
-    """
-    Test that `Engine.find_task_by_id` always raises `KeyError` if the Engine has no associated store.
-    """
-    with temporary_engine() as engine:
-       with temporary_directory() as tmpdir:
-            store = FilesystemStore(tmpdir)
-
-            task = SuccessfulApp()
-            engine.add(task)
-
-            store.save(task)  # guarantee it has a `.persistent_id`
-            task_id = task.persistent_id
-            engine.find_task_by_id(task_id)
-
 
 if __name__ == "__main__":
     import pytest
