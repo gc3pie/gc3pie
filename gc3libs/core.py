@@ -28,7 +28,7 @@ import posix
 import sys
 import time
 import tempfile
-from warnings import warn, DeprecationWarning
+from warnings import warn
 
 from dictproxyhack import dictproxy
 
