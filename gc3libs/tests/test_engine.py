@@ -410,7 +410,7 @@ def test_engine_find_task_by_id():
             engine.add(task)
 
             task_id = task.persistent_id
-            assert task == engine.find_task_by_id(task_id)
+            assert engine.find_task_by_id(task_id) == task
 
 
 def test_engine_cannot_find_task_by_id_if_not_saved():
