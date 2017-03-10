@@ -1906,7 +1906,11 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         warn("Deprecated method `Engine.stats()` called"
              " -- please use `Engine.counts()` instead",
              DeprecationWarning, stacklevel=2)
-        return self.counts(only)
+        if only is None:
+            # adapt to use `.counts()` default
+            return self.counts()
+        else:
+            return self.counts(only)
         # for task in self._terminated:
         #     if only and not isinstance(task, only):
         #         continue
