@@ -24,6 +24,7 @@ __date__ = '$Date$'
 
 from collections import defaultdict
 from fnmatch import fnmatch
+import functools
 import itertools
 import os
 import posix
@@ -31,6 +32,8 @@ import sys
 import time
 import tempfile
 from warnings import warn, DeprecationWarning
+
+from dictproxyhack import dictproxy
 
 import gc3libs
 import gc3libs.debug
