@@ -29,16 +29,16 @@ To install GC3Pie: (1) download the installation script into a file
 The above command creates a directory `$HOME/gc3pie`:file: and installs
 the latest release of GC3Pie and all its dependencies into it.
 
-.. _`install.py`: https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
+.. _`install.py`: https://raw.githubusercontent.com/uzh/gc3pie/master/install.py
 
 Alternatively, you can also perform both steps at the terminal prompt::
 
     # use this if the `wget` command is installed
-    wget -O install.py https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
+    wget -O install.py https://raw.githubusercontent.com/uzh/gc3pie/master/install.py
     python install.py
 
     # use this if the `curl` command is installed instead
-    curl -O https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
+    curl -O https://raw.githubusercontent.com/uzh/gc3pie/master/install.py
     python install.py
 
 Choose either one of the two methods above, depending on whether
@@ -98,7 +98,7 @@ to the standard behavior.  In order to use these options, you have to:
 
 1. download the installation script into a file named `install.py`:file:::
 
-        wget https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
+        wget https://raw.githubusercontent.com/uzh/gc3pie/master/install.py
 
 2. run the command::
 
@@ -401,7 +401,7 @@ read online at:
   http://gc3pie.readthedocs.io/
 
 If you installed GC3Pie manually, or if you installed it using the
-``install.sh`` script with the ``--develop`` option, you can also
+``install.py`` script with the ``--develop`` option, you can also
 access a local copy of the documentation from the sources::
 
   cd $HOME/gc3pie # or wherever the gc3pie virtualenv is installed
