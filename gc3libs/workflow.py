@@ -178,7 +178,7 @@ class TaskCollection(Task):
                 return self.output_dir
             except AttributeError:
                 cwd = os.getcwd()
-                gc3libs.log.error(
+                gc3libs.log.warning(
                     "`TaskCollection._get_download_dir()` called"
                     " with no explicit download directory,"
                     " but object '%s' (%s) has no `output_dir`"
