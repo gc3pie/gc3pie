@@ -27,6 +27,7 @@ __docformat__ = 'reStructuredText'
 from contextlib import closing
 from cStringIO import StringIO
 import os
+from warnings import warn
 
 import sqlalchemy as sqla
 import sqlalchemy.sql as sql
@@ -216,6 +217,16 @@ class SqlStore(Store):
         if self._real_tables is None:
             self._delayed_init()
         return self._real_tables
+
+    # FIXME: Remove once the TissueMAPS code is updated not to use this any more!
+    @property
+    def t_store(self):
+        """
+        Deprecated compatibility alias for `SqlStore._tables`
+        """
+        warn("`SqlStore.t_store` has been renamed to `SqlStore._tables`;"
+             " please update your code", DeprecationWarning, 2)
+        return self._tables
 
     @property
     def extra_fields(self):
