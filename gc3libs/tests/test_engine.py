@@ -410,10 +410,9 @@ def test_engine_find_task_by_id():
             engine.add(task)
 
             task_id = task.persistent_id
-            assert_equal(task, engine.find_task_by_id(task_id))
+            assert task == engine.find_task_by_id(task_id)
 
 
-@raises(KeyError)
 def test_engine_cannot_find_task_by_id_if_not_saved():
     """
     Test that *unsaved* tasks are cannot be retrieved from the Engine given their ID only.
@@ -428,10 +427,10 @@ def test_engine_cannot_find_task_by_id_if_not_saved():
 
             store.save(task)  # guarantee it has a `.persistent_id`
             task_id = task.persistent_id
-            engine.find_task_by_id(task_id)
+            with pytest.raises(KeyError):
+                engine.find_task_by_id(task_id)
 
 
-@raises(KeyError)
 def test_engine_cannot_find_task_by_id_if_no_store():
     """
     Test that `Engine.find_task_by_id` always raises `KeyError` if the Engine has no associated store.
@@ -445,7 +444,8 @@ def test_engine_cannot_find_task_by_id_if_no_store():
 
             store.save(task)  # guarantee it has a `.persistent_id`
             task_id = task.persistent_id
-            engine.find_task_by_id(task_id)
+            with pytest.raises(KeyError):
+                engine.find_task_by_id(task_id)
 
 
 if __name__ == "__main__":
