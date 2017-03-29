@@ -438,10 +438,6 @@ class SshTransport(Transport):
         Additional arguments ``user``, ``port``, ``keyfile``, and
         ``timeout``, if given, override the above settings.
         """
-        self.remote_frontend = remote_frontend
-        self.port = port
-        self.username = username
-
         self.ssh = paramiko.SSHClient()
         self.ignore_ssh_host_keys = ignore_ssh_host_keys
         self.sftp = None
@@ -449,21 +445,31 @@ class SshTransport(Transport):
         self.transport_channel = None
 
         # use SSH options, if available
-        sshcfg = paramiko.SSHConfig()
+        self._ssh_config = paramiko.SSHConfig()
         config_filename = os.path.expanduser(ssh_config or gc3libs.Default.SSH_CONFIG_FILE)
         if os.path.exists(config_filename):
             with open(config_filename, 'r') as config_file:
-                sshcfg.parse(config_file)
-            # check if we have an ssh configuration stanza for this host
-            ssh_options = sshcfg.lookup(self.remote_frontend)
-        else:
-            # no options
-            ssh_options = {}
+                self._ssh_config.parse(config_file)
+
+        self.set_connection_params(remote_frontend, username, keyfile, port, timeout)
+
+
+    def set_connection_params(self, hostname, username=None, keyfile=None,
+                               port=None, timeout=None):
+        """
+        Set remote host name and other parameters used for new connections.
+        Currently-established connections are not affected.
+
+        The host name is the only mandatory argument; any other parameter will
+        be read from the SSH configuration file (unless explicitly provided to
+        this function).
+        """
+        # check if we have an ssh configuration stanza for this host
+        ssh_options = self._ssh_config.lookup(hostname)
 
         # merge SSH options from the SSH config file with parameters
         # we were given in this method call
-        if 'hostname' in ssh_options:
-            self.remote_frontend = ssh_options['hostname']
+        self.remote_frontend = ssh_options.get('hostname', hostname)
 
         if username is None:
             self.username = ssh_options.get('user', None)
@@ -853,6 +859,19 @@ class LocalTransport(Transport):
         # logging code in class `Transport` assumes a host name is recorded
         # into `.remote_frontend`
         self.remote_frontend = (platform.node() or 'localhost')
+
+    # pylint: disable=too-many-arguments,unused-argument
+    def set_connection_params(self, hostname, username=None, keyfile=None,
+                              port=None, timeout=None):
+        """
+        Set the host name stored in this `LocalTransport` instance.
+        Any other argument is ignored.
+
+        This method exists only for interface compatibility with
+        :class:`SshTranport`, which see.
+        """
+        self.remote_frontend = hostname
+
 
     def get_proc_state(self, pid):
         """

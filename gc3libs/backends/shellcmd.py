@@ -485,7 +485,7 @@ ReturnCode=%x"""
 
         def fset(self, value):
             self._frontend = value
-            self.transport.remote_frontend = value
+            self.transport.set_connection_params(value)
         return locals()
 
     def _gather_machine_specs(self):
