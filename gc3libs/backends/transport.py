@@ -478,7 +478,7 @@ class SshTransport(Transport):
             self.username = username
 
         if port is None:
-            self.port = ssh_options.get('port', gc3libs.Default.SSH_PORT)
+            self.port = int(ssh_options.get('port', gc3libs.Default.SSH_PORT))
         else:
             self.port = int(port)
 
@@ -489,8 +489,8 @@ class SshTransport(Transport):
             self.keyfile = keyfile
 
         if timeout is None:
-            self.timeout = ssh_options.get('connecttimeout',
-                                           gc3libs.Default.SSH_CONNECT_TIMEOUT)
+            self.timeout = float(ssh_options.get('connecttimeout',
+                                                 gc3libs.Default.SSH_CONNECT_TIMEOUT))
         else:
             self.timeout = float(timeout)
 
@@ -529,8 +529,8 @@ class SshTransport(Transport):
                         gc3libs.log.warning(
                             "Could not read 'known hosts' SSH keys (%s: %s)."
                             " I'm ignoring the error and continuing anyway,"
-                            " but this may mean trouble later on."
-                            % (err.__class__.__name__, err))
+                            " but this could mean trouble later on.",
+                            err.__class__.__name__, err)
                         pass
                 else:
                     gc3libs.log.info("Ignoring ssh host key file.")
@@ -560,7 +560,7 @@ class SshTransport(Transport):
         except Exception as ex:
             gc3libs.log.error(
                 "Could not create ssh connection to %s: %s: %s",
-                self.remote_frontend, ex.__class__.__name__, str(ex))
+                self.remote_frontend, ex.__class__.__name__, ex)
             self._is_open = False
 
             # Try to understand why the ssh connection failed.
