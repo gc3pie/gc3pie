@@ -613,7 +613,7 @@ The following configuration keys are required in a ``slurm``-type resource secti
 
   * ``frontend``: should contain the `FQDN (Fully-qualified domain
     name)`:abbr: of the SLURM front-end node. This configuration item
-    is only relevant if ``transport`` is ``local``. An SSH connection
+    is only relevant if ``transport`` is ``ssh``. An SSH connection
     will be attempted to this node, in order to submit jobs and
     retrieve status info.
 
