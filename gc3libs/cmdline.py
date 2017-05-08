@@ -1307,6 +1307,9 @@ class _SessionBasedCommand(_Script):
         # create an `Engine` instance to manage the job list
         self._controller = self.make_task_controller()
 
+        if self.stats_only_for is not None:
+            self._controller.init_counts_for(self.stats_only_for)
+
         # the main loop, at long last!
         self.before_main_loop()
         rc = 13  # Keep in sync with `_Script.run()` method
