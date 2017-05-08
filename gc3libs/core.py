@@ -1916,21 +1916,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             return self.counts()
         else:
             return self.counts(only)
-        # for task in self._terminated:
-        #     if only and not isinstance(task, only):
-        #         continue
-        #     if task.execution.returncode == 0:
-        #         result['ok'] += 1
-        #     else:
-        #         result['failed'] += 1
-        # result['total'] = (result[Run.State.NEW]
-        #                    + result[Run.State.SUBMITTED]
-        #                    + result[Run.State.RUNNING]
-        #                    + result[Run.State.STOPPED]
-        #                    + result[Run.State.TERMINATING]
-        #                    + result[Run.State.TERMINATED]
-        #                    + result[Run.State.UNKNOWN])
-        # return result
 
     # implement a Core-like interface, so `Engine` objects can be used
     # as substitutes for `Core`.
