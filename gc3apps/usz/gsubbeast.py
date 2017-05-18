@@ -250,6 +250,12 @@ class GsubbeastScript(SessionBasedScript):
                        dest="jar", default=None,
                        help="Path to Beast.jar file.")
         
+    def before_main_loop(self):
+        # XXX: should this be done with `make_controller` instead?
+        self._controller.retrieve_running = True
+        self._controller.retrieve_overwrites = True
+        self._controller.retrieve_changed_only = True
+
     def new_tasks(self, extra):
         """
         Read content of 'command_file'
