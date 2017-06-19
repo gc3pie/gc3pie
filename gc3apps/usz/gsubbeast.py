@@ -82,7 +82,7 @@ DEFAULT_REMOTE_OUTPUT_FOLDER = "./results"
 DEFAULT_SEED_RANGE=37444887175646646
 
 # Utility functions
-def _get_valid_input(input_folder, restart):
+def _get_valid_input(input_folder, resume):
     """
         [ input_xml for input_xml in os.listdir(self.params.input_folder) if mimetypes.guess_type(input_xml)[0] == 'application/xml' ]:
             for rep in range(0,self.params.repeat):
@@ -90,7 +90,7 @@ def _get_valid_input(input_folder, restart):
 
     state_file = None
     for input_file in [ input_xml for input_xml in os.listdir(input_folder) if mimetypes.guess_type(input_xml)[0] == 'application/xml' ]:
-        if restart and os.path.isfile(os.path.join(input_folder,input_file+'.state')):
+        if resume and os.path.isfile(os.path.join(input_folder,input_file+'.state')):
             state_file = os.path.join(input_folder,input_file+'.state')
         yield (os.path.join(input_folder,input_file),state_file)
                                      
@@ -193,7 +193,7 @@ class GsubbeastRetryableTask(RetryableTask):
         (e.g. VM crash or LRMS kill)
         """
         # XXX: check whether termination condition could not be met.
-        # Then include .state file and restart simulation.
+        # Then include .state file and resume simulation.
 
         (state_file,input_list) = _check_exit_condition(os.path.join(self.output_dir,
                                                                      self.task.stdout),
@@ -246,12 +246,12 @@ class GsubbeastScript(SessionBasedScript):
 
     def setup_options(self):
 
-        self.add_param("-U", "--restart",
+        self.add_param("-U", "--resume",
                        action="store_true",
-                       dest="restart",
+                       dest="resume",
                        default=False,
                        help="Use existing '.state' files to "
-                       "restart interrupted BEAST execution. "
+                       "resume interrupted BEAST execution. "
                        "Default: %(default)s.")
 
         self.add_param("-R", "--repeat", metavar="[INT]",
@@ -287,8 +287,8 @@ class GsubbeastScript(SessionBasedScript):
         """
         tasks = []
         
-        for (input_file,stat_file) in _get_valid_input(self.params.input_folder,
-                                           self.params.restart):
+        for (input_file, stat_file) in _get_valid_input(self.params.input_folder,
+                                           self.params.resume):
             for rep in range(1,self.params.repeat):
 
                 jobname = "{xml}-{rep}".format(xml=os.path.splitext(os.path.basename(input_file))[0],
