@@ -81,6 +81,20 @@ from gc3libs.workflow import RetryableTask
 DEFAULT_REMOTE_OUTPUT_FOLDER = "./results"
 DEFAULT_SEED_RANGE=37444887175646646
 
+# Utility functions
+def _get_valid_input(input_folder, restart):
+    """
+        [ input_xml for input_xml in os.listdir(self.params.input_folder) if mimetypes.guess_type(input_xml)[0] == 'application/xml' ]:
+            for rep in range(0,self.params.repeat):
+    """
+
+    state_file = None
+    for input_file in [ input_xml for input_xml in os.listdir(input_folder) if mimetypes.guess_type(input_xml)[0] == 'application/xml' ]:
+        if restart and os.path.isfile(os.path.join(input_folder,input_file+'.state')):
+            state_file = os.path.join(input_folder,input_file+'.state')
+        yield (os.path.join(input_folder,input_file),state_file)
+                                     
+    
 def _check_exit_condition(log, output_dir):
     """
     Inspect output folder.
@@ -112,7 +126,7 @@ class GsubbeastApplication(Application):
     """
     application_name = 'gsubbeast'
     
-    def __init__(self, input_file, seed, state_file=None, jar=None, **extra_args):
+    def __init__(self, input_file, state_file, seed, jar=None, **extra_args):
 
         executables = []
         inputs = dict()
@@ -143,6 +157,9 @@ class GsubbeastApplication(Application):
                                                                                   input_xml=inputs[input_file])
 
         gc3libs.log.debug("Creating application for executing: %s", arguments)
+
+        self.seed = seed
+        self.jar_option = jar_option
         
         Application.__init__(
             self,
@@ -156,12 +173,13 @@ class GsubbeastApplication(Application):
 
 
 class GsubbeastRetryableTask(RetryableTask):
-    def __init__(self, input_file, seed, state_file=None, jar=None, **extra_args):
+    def __init__(self, input_file, state_file, seed, jar=None, **extra_args):
         RetryableTask.__init__(
             self,
             # actual computational job
             GsubbeastApplication(
                 input_file,
+                state_file,
                 seed,
                 jar=jar,
                 **extra_args),
@@ -181,13 +199,16 @@ class GsubbeastRetryableTask(RetryableTask):
                                                                      self.task.stdout),
                                                         self.output_dir)
         if state_file:
+            resume_option=" -t {state_file}".format(state_file=self.state_file)
+            self.inputs = []
             for item in input_list:
                 # get the whole output folder as input and re-submit
                 self.inputs[os.path.join(self.output_dir,item)] = item
-            resume_statement=" --statefile {state_file} --resume".format(state_file=self.state_file)
-            self.arguments = "./wrapper.sh --seed {seed} {resume} {input_xml}".format(seed=self.seed,
-                                                                            resume=resume_statement,
-                                                                            input_xml=self.inputs[input_file])
+
+            self.arguments = "./wrapper.sh {jar} -s {seed} {resume} {input_xml}".format(seed=self.seed,
+                                                                                        jar=self.jar_options,
+                                                                                        resume=resume_option,
+                                                                                        input_xml=self.inputs[input_file])
             return True
         else:
             return False
@@ -195,16 +216,6 @@ class GsubbeastRetryableTask(RetryableTask):
     
 class GsubbeastScript(SessionBasedScript):
     """
-    Takes 1 .csv input file containing the list of parameters to be passed
-    to the `ctx-linkdyn-ordprm-sirs.p4` application.
-    Each line of the input .csv file correspond to the parameter list to be
-    passed to a single `ctx-linkdyn-ordprm-sirs.p4` execution. For each line
-    of the input .csv file a GsubbeastApplication needs to be generated (depends on
-    chunk value passed as part of the input options).
-    Splits input .csv file into smaller chunks, each of them of size 
-    'self.params.chunk_size'.
-    Then submits one execution for each of the created chunked files.
-
     The ``gsubbeast`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
@@ -223,12 +234,8 @@ class GsubbeastScript(SessionBasedScript):
     def __init__(self):
         SessionBasedScript.__init__(
             self,
-            version = __version__, # module version == script version
+            version = __version__,
             application = GsubbeastApplication, 
-            # only display stats for the top-level policy objects
-            # (which correspond to the processed files) omit counting
-            # actual applications because their number varies over
-            # time as checkpointing and re-submission takes place.
             stats_only_for = GsubbeastApplication,
             )
 
@@ -239,22 +246,39 @@ class GsubbeastScript(SessionBasedScript):
 
     def setup_options(self):
 
+        self.add_param("-U", "--restart",
+                       action="store_true",
+                       dest="restart",
+                       default=False,
+                       help="Use existing '.state' files to "
+                       "restart interrupted BEAST execution. "
+                       "Default: %(default)s.")
+
         self.add_param("-R", "--repeat", metavar="[INT]",
                        type=positive_int,
-                       dest="repeat", default=1,
+                       dest="repeat",
+                       default=1,
                        help="Repeat analysis. Default: %(default)s.")
 
 
         self.add_param("-B", "--jar", metavar="[PATH]",
                        type=existing_file,
-                       dest="jar", default=None,
+                       dest="jar",
+                       default=None,
                        help="Path to Beast.jar file.")
-        
+
+        self.add_param("-F", "--follow",
+                       dest="follow",
+                       action="store_true",
+                       default=False,
+                       help="Periodically fetch job's output folder and copy locally.")
+
+
     def before_main_loop(self):
         # XXX: should this be done with `make_controller` instead?
-        self._controller.retrieve_running = True
-        self._controller.retrieve_overwrites = True
-        self._controller.retrieve_changed_only = True
+        self._controller.retrieve_running = self.params.follow
+        self._controller.retrieve_overwrites = self.params.follow
+        self._controller.retrieve_changed_only = self.params.follow
 
     def new_tasks(self, extra):
         """
@@ -263,10 +287,11 @@ class GsubbeastScript(SessionBasedScript):
         """
         tasks = []
         
-        for input_file in [ input_xml for input_xml in os.listdir(self.params.input_folder) if mimetypes.guess_type(input_xml)[0] == 'application/xml' ]:
-            for rep in range(0,self.params.repeat):
+        for (input_file,stat_file) in _get_valid_input(self.params.input_folder,
+                                           self.params.restart):
+            for rep in range(1,self.params.repeat):
 
-                jobname = "{xml}-{rep}".format(xml=input_file.split('.')[0],
+                jobname = "{xml}-{rep}".format(xml=os.path.splitext(os.path.basename(input_file))[0],
                                                rep=rep)
                 
                 extra_args = extra.copy()
@@ -278,10 +303,11 @@ class GsubbeastScript(SessionBasedScript):
                 extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', jobname)
                 extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', jobname)
 
-                self.log.debug("Creating Application for file %s repetition : %d" % (input_file,rep))
+                self.log.debug("Creating Application for file '%s'" % jobname)
 
                 tasks.append(GsubbeastRetryableTask(
-                    os.path.abspath(os.path.join(self.params.input_folder,input_file)),
+                    input_file,
+                    stat_file,
                     seed=random.randrange(DEFAULT_SEED_RANGE),
                     jar=self.params.jar,
                     **extra_args))
