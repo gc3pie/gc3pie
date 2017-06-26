@@ -37,6 +37,21 @@ from gc3libs.quantity import GB, hours
 from gc3libs.testing.helpers import SimpleParallelTaskCollection, SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_config_file, temporary_core, temporary_directory, temporary_engine
 
 
+def test_engine_resources():
+    """
+    Check that configured resources can be accessed through the `Engine` object.
+    """
+    with temporary_engine() as engine:
+        resources = engine.resources
+        assert len(resources) == 1
+        assert 'test' in resources
+        test_rsc = resources['test']
+        # these should match the resource definition in `gc3libs.testing.helpers.temporary_core`
+        assert test_rsc.max_cores_per_job == 1
+        assert test_rsc.max_memory_per_core == 1*GB
+        assert test_rsc.max_walltime == 8*hours
+
+
 def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
     with temporary_engine() as engine:
 
