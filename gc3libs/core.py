@@ -1879,6 +1879,22 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         self.add(task)
 
 
+    @property
+    def resources(self):
+        """
+        Get dict of configured resources.
+
+        This mapping object has configured resource names as keys, and the
+        actual `gc3libs.backends.LRMS` instances as values. Note that only
+        resources whose ``.enabled`` attribute evaluates to ``True`` will be
+        considered for scheduling.
+
+        This is just a reference to the ``.resources`` attribute of the
+        underlying core object; see `Core.resources` for more information.
+        """
+        return self._core.resources
+
+
     # FIXME: rewrite using `collections.Counter` when we drop support for Py 2.6
     def counts(self, only=Task):
         """
