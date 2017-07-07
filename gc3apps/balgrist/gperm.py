@@ -68,8 +68,8 @@ from gc3libs.workflow import RetryableTask
 
 DEFAULT_BIDS_FOLDER="data/"
 DEFAULT_RESULT_FOLDER="output/"
-DEFAULT_DOCKER_BIDS_APP="poldracklab/fmriprep"
-DEFAULT_DOCKER_BIDS_ARGS=""
+DEFAULT_DOCKER_BIDS_ARGS="--no-submm-recon"
+DEFAULT_DOCKER_BIDS_APP="poldracklab/fmriprep "+DEFAULT_DOCKER_BIDS_ARGS
 DEFAULT_REPETITIONS=1
 
 ## Utility methods
@@ -124,11 +124,15 @@ class GpermApplication(Application):
         inputs[wrapper] = "./wrapper.sh"
         executables.append(inputs[wrapper])
 
+        docker_argument = ""
+        for argument in docker_args:
+            docker_argument += " {0} ".format(argument)
+            
         arguments = "./wrapper.sh {subject} {subject_name} {output} {docker_app} {docker_args}".format(subject=DEFAULT_BIDS_FOLDER,
                                                                                                        subject_name=subject_name,
                                                                                                        output=DEFAULT_RESULT_FOLDER,
                                                                                                        docker_app=docker_image,
-                                                                                                       docker_args=docler_args)
+                                                                                                       docker_args=docker_argument)
         gc3libs.log.debug("Creating application for executing: %s", arguments)
         
         Application.__init__(
@@ -178,13 +182,19 @@ class GpermScript(SessionBasedScript):
                        help="Repeat analysis. Default: %(default)s.")
 
         self.add_param("-D", "--docker", metavar="[PATH]",
-                       dest="docker_image", default=DEFAULT_DOCKER_BIDS_APP,
-                       help="BIDS app docker image. Default: %(default)s.")
+                       dest="docker", default=DEFAULT_DOCKER_BIDS_APP,
+                       help="BIDS app docker image and execution arguments. Default: '%(default)s'.")
 
-        self.add_param("-D_args", "--use-aroma", metavar="[STRING]",
-                       dest="docker_args", default=DEFAULT_DOCKER_BIDS_ARGS,
-                       help="BIDS app docker arguments. Default: %(default)s.")
-        
+
+    def parse_args(self):
+        """
+        parse 'docker' command and separate docker image reference
+        from execution arguments
+        """
+
+        self.docker_image = self.params.docker.split(' ')[0]
+        self.docker_args =  self.params.docker.split(' ')[1:]
+
     def new_tasks(self, extra):
         """
         For each valid input file create a new GpermRetryableTask
@@ -215,8 +225,8 @@ class GpermScript(SessionBasedScript):
                     subject_name,
                     control_files,
                     repeat,
-                    self.params.docker_image,
-                    self.params.docker_args,                    
+                    self.docker_image,
+                    self.docker_args,                    
                     **extra_args))
 
         return tasks

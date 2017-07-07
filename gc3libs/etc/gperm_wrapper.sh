@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 #
 # gperm_wrapper.sh -- base wrapper script for executing Docker BIDS apps
 # 
@@ -45,17 +45,21 @@ Usage:
   $PROG <subject folder> <subject name> <result folder> <docker image>
 EOF`
 
-# We want 4 non-option argument:
-if [ ! $# -eq 4 ]; then
+# We want >4 non-option argument:
+if [ $# < 4 ]; then
     die 1 "$USAGE"
 fi
 
 # Check input arguments
 SUBJECT_DIR=$PWD/$1
-SUBJECT_NAME=$2
-OUTPUT_DIR=$PWD/$3
-DOCKER_TO_RUN=$4
-DOCKER_ARGS=$5
+shift
+SUBJECT_NAME=$1
+shift
+OUTPUT_DIR=$PWD/$1
+shift
+DOCKER_TO_RUN=$1
+shift
+DOCKER_ARGS=$@
 
 # Create output folder if not present
 if ![ -d $OUTPUT_DIR ]; then
@@ -71,8 +75,8 @@ log "Using Docker image: ${DOCKER_TO_RUN}"
 log "Using Docker arguments: ${DOCKER_ARGS}"
 
 # run script
-echo "docker run -i --rm -v ${SUBJECT_DIR}:/bids:ro -v ${OUTPUT_DIR}:/output ${DOCKER_TO_RUN} /bids /output participant --participant_label ${SUBJECT_NAME} --no-submm-recon ${DOCKER_ARGS}"
-docker run -i --rm -v ${SUBJECT_DIR}:/bids:ro -v ${OUTPUT_DIR}:/output ${DOCKER_TO_RUN} /bids /output participant --participant_label ${SUBJECT_NAME} --no-submm-recon ${DOCKER_ARGS}
+echo "docker run -i --rm -v ${SUBJECT_DIR}:/bids:ro -v ${OUTPUT_DIR}:/output ${DOCKER_TO_RUN} /bids /output participant --participant_label ${SUBJECT_NAME} ${DOCKER_ARGS}"
+docker run -i --rm -v ${SUBJECT_DIR}:/bids:ro -v ${OUTPUT_DIR}:/output ${DOCKER_TO_RUN} /bids /output participant --participant_label ${SUBJECT_NAME} ${DOCKER_ARGS}
 RET=$?
 
 log "Simulation ended with exit code $RET"
