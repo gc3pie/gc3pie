@@ -62,15 +62,16 @@ _architecture_value_map = {
     re.compile('64[ _-]*bits?', re.I): gc3libs.Run.Arch.X86_64,
 }
 
+def _matching_architecture(value):
+    """Return first matching entry from `_architecture_value_map`."""
+    for matcher, arch in _architecture_value_map.iteritems():
+        if matcher.match(value):
+            return arch
+    raise ValueError("Unknown architecture '%s'." % value)
 
 def _parse_architecture(arch_str):
-    def matching_architecture(value):
-        for matcher, arch in _architecture_value_map.iteritems():
-            if matcher.match(value):
-                return arch
-        raise ValueError("Unknown architecture '%s'." % value)
-    archs = [matching_architecture(value.strip())
-             for value in arch_str.split(',')]
+    """Return set of values in `Run.Arch` corresponding to a comma-separated list of architecture strings."""
+    archs = [_matching_architecture(value.strip()) for value in arch_str.split(',')]
     if len(archs) == 0:
         raise ValueError("Empty or invalid 'architecture' setting.")
     return set(archs)
