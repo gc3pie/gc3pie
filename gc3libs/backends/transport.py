@@ -714,6 +714,7 @@ class SshTransport(Transport):
 
     @same_docstring_as(Transport.makedirs)
     def makedirs(self, path, mode=0o777):
+        gc3libs.log.debug("Making remote directory path '%s' ...", path)
         dirs = path.split('/')
         if '..' in dirs:
             raise gc3libs.exceptions.InvalidArgument(
@@ -1029,6 +1030,7 @@ class LocalTransport(Transport):
 
     @same_docstring_as(Transport.makedirs)
     def makedirs(self, path, mode=0o777):
+        gc3libs.log.debug("Making directory path '%s' ...", path)
         try:
             os.makedirs(path, mode)
         except OSError as e:
