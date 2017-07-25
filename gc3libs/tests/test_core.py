@@ -19,7 +19,7 @@
 #  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 # stdlib imports
-import sys
+import os
 
 import pytest
 
@@ -28,6 +28,7 @@ from gc3libs import Run, Application, create_core
 import gc3libs.config
 from gc3libs.core import Core, MatchMaker
 from gc3libs.quantity import GB, hours
+from gc3libs.utils import string_to_boolean
 
 from gc3libs.testing.helpers import temporary_config_file, temporary_core
 
@@ -47,6 +48,9 @@ def test_core_resources():
         assert test_rsc.max_walltime == 8*hours
 
 
+@pytest.mark.skipif(
+    string_to_boolean(os.environ.get('GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL', 'no')),
+    reason="Skipping test: not compatible with GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL=yes")
 def test_core_disable_resource_on_auth_init_failure():
     """Test that a resource is disabled if the auth cannot be initialized successfully."""
 
@@ -69,6 +73,9 @@ def test_core_disable_resource_on_auth_init_failure():
         _test_core_disable_resource_on_auth_failure(BadInitAuth)
 
 
+@pytest.mark.skipif(
+    string_to_boolean(os.environ.get('GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL', 'no')),
+    reason="Skipping test: not compatible with GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL=yes")
 def test_core_disable_resource_on_auth_check_failure():
     """Test that a resource is disabled if the auth cannot be checked successfully."""
 
@@ -92,6 +99,9 @@ def test_core_disable_resource_on_auth_check_failure():
         _test_core_disable_resource_on_auth_failure(BadCheckAuth)
 
 
+@pytest.mark.skipif(
+    string_to_boolean(os.environ.get('GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL', 'no')),
+    reason="Skipping test: not compatible with GC3PIE_RESOURCE_INIT_ERRORS_ARE_FATAL=yes")
 def test_core_disable_resource_on_auth_enable_failure():
     """Test that a resource is disabled if the auth cannot be enabled successfully."""
 
