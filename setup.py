@@ -206,7 +206,7 @@ setuptools.setup(
 
     # Apparently, this list is read from right to left...
     tests_require=[
-        'tox', 'pytest', 'mock',
+        'tox', 'pytest-catchlog', 'pytest', 'mock',
     ],
     cmdclass={'test': Tox},
 
