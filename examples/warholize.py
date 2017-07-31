@@ -363,8 +363,7 @@ class GrayScaleConvertApplication(ApplicationWithCachedResults):
             "Craeting  GrayScale convert application from file %s"
             "to file %s" % (input_image, grayscaled_image))
 
-        ApplicationWithCachedResults.__init__(
-            self,
+        super(GrayScaleConvertApplication, self).__init__(
             arguments = arguments + [grayscaled_image],
             inputs = [input_image],
             outputs = [grayscaled_image, 'stderr.txt', 'stdout.txt'],
@@ -522,8 +521,7 @@ class CreateLutApplication(ApplicationWithCachedResults):
         gc3libs.log.info("Creating lut file %s from %s using "
                          "colors: %s" % (
             self.lutfile, input_image, str.join(", ", colors)))
-        ApplicationWithCachedResults.__init__(
-            self,
+        super(CreateLutApplication, self).__init__(
             arguments = [
                 'convert',
                 '-size',
@@ -555,8 +553,7 @@ class ApplyLutApplication(ApplicationWithCachedResults):
         self.output_file = output_file
         self.application_name = 'warholize'
 
-        ApplicationWithCachedResults.__init__(
-            self,
+        super(ApplyLutApplication, self).__init__(
             arguments = [
                 'convert',
                 os.path.basename(input_image),
@@ -621,8 +618,7 @@ class MergeImagesApplication(ApplicationWithCachedResults):
             raise gc3libs.exceptions.InvalidArgument(
                 "We would expect to have a perfect square of images to merge, but we have %d instead" % len(input_files))
 
-        ApplicationWithCachedResults.__init__(
-            self,
+        super(MergeImagesApplication, self).__init__(
             arguments = ['montage'] + input_filenames + [
                 '-tile',
                 '%dx%d' % (tile, tile),
