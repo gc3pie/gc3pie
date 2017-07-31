@@ -96,12 +96,12 @@ type=none
 
     def run_until_terminating(self, app, max_wait=10, polling_interval=0.1):
         """
-        Wait until the given `app` job is done, but timeout and raise an
-        error if it takes too much time.
+        Wait until the given `app` task is done,
+        but timeout and raise an error if it takes too much time.
         """
         waited = 0
-        while app.execution.state != gc3libs.Run.State.TERMINATING \
-                and waited < max_wait:
+        while (app.execution.state != gc3libs.Run.State.TERMINATING
+                and waited < max_wait):
             time.sleep(polling_interval)
             waited += polling_interval
             self.core.update_job_state(app)
