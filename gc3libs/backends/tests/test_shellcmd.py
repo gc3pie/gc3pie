@@ -153,7 +153,6 @@ type=none
             self.core.free(app)
             raise
 
-    @pytest.mark.skip("Test currently not working.")
     def test_check_app_after_reloading_session(self):
         """Check that the job status is still available the end of the starter script"""
 
@@ -180,7 +179,6 @@ type=none
         assert app.execution.state == gc3libs.Run.State.TERMINATING
         assert app.execution.returncode == 0
 
-    @pytest.mark.skip("Test currently not working.")
     def test_app_argument_with_spaces(self):
         """Check that arguments with spaces are not split"""
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
@@ -228,7 +226,6 @@ type=none
         assert self.backend.free_slots == cores_before
         assert self.backend.available_memory == mem_before
 
-    @pytest.mark.skip("Test currently not working.")
     def test_env_vars_definition(self):
         """Check that `Application.environment` settings are correctly propagated"""
         tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')

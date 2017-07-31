@@ -1,7 +1,4 @@
 #! /usr/bin/env python
-"""
-Run applications as local processes.
-"""
 # Copyright (C) 2009-2017 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,16 +14,30 @@ Run applications as local processes.
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
+# make coding more python3-ish, must be the first statement
+from __future__ import (absolute_import, division, print_function)
+
+
+## module doc and other metadata
+"""
+Run applications as processes starting them from the shell.
+"""
+
 __docformat__ = 'reStructuredText'
 
 
+## imports and other dependencies
+
 # stdlib imports
+from abc import ABCMeta, abstractmethod
 import cPickle as pickle
 from getpass import getuser
 import os
 import os.path
 import posixpath
 import time
+
 from pkg_resources import Requirement, resource_filename
 
 # GC3Pie imports
@@ -34,33 +45,42 @@ import gc3libs
 import gc3libs.exceptions
 import gc3libs.backends.transport
 from gc3libs import log, Run
-from gc3libs.utils import same_docstring_as
-from gc3libs.utils import Struct, sh_quote_safe, sh_quote_unsafe, defproperty
+from gc3libs.utils import same_docstring_as, Struct, sh_quote_safe, sh_quote_unsafe
 from gc3libs.backends import LRMS
 from gc3libs.quantity import Duration, Memory, MB
 
 
-def _make_remote_and_local_path_pair(transport, job, remote_relpath,
-                                     local_root_dir, local_relpath):
+## helper functions
+#
+# Mainly for parsing output of shell programs.
+#
+
+def _parse_process_status(pstat):
     """
-    Return list of (remote_path, local_path) pairs corresponding to
+    Map `ps` process status letter to a `Run.State` label.
     """
-    # see https://github.com/fabric/fabric/issues/306 about why it is
-    # correct to use `posixpath.join` for remote paths (instead of
-    # `os.path.join`)
-    remote_path = posixpath.join(job.execution.lrms_execdir, remote_relpath)
-    local_path = os.path.join(local_root_dir, local_relpath)
-    if transport.isdir(remote_path):
-        # recurse, accumulating results
-        result = list()
-        for entry in transport.listdir(remote_path):
-            result += _make_remote_and_local_path_pair(
-                transport, job,
-                posixpath.join(remote_relpath, entry),
-                local_path, entry)
-        return result
+    # Check manpage of ``ps`` both on linux and MacOSX/BSD to know the meaning
+    # of these statuses
+    if pstat[0] in [
+            # sort by likelihood of process being in this state,
+            # to minimize loookup times
+            'R',  # in run queue
+            'S',  # interruptible sleep
+            'D',  # uninterruptible sleep (Linux)
+            'U',  # uninterruptible sleep (MacOSX)
+            'I',  # idle (= sleeping > 20s, MacOSX)
+            'W',  # paging (Linux, no longer valid since the 2.6.xx kernel)
+            'Z',  # "zombie" process
+    ]:
+        return Run.State.RUNNING
+    elif pstat[0] in [
+            'T',  # stopped by job control signal
+            't',  # stopped by debugger during the tracing
+            'X'   # dead (should never be seen)
+    ]:
+        return Run.State.STOPPED
     else:
-        return [(remote_path, local_path)]
+        raise KeyError("Unknown process status code `{0}`".format(pstat[0]))
 
 
 def _parse_time_duration(val):
@@ -149,9 +169,171 @@ def _parse_returncode_string(val):
     return Run.shellexit_to_returncode(int(val))
 
 
-class ShellcmdLrms(LRMS):
+## interface to different OS
+#
+# Linux and MacOSX require slightly different command incantations to
+# achieve the same task. The `Machine` class abstract this into a
+# uniform interface.
+#
 
-    """Execute an `Application`:class: instance as a local process.
+class _Machine(object):
+    """Base class for OS-specific shell services."""
+
+    __metaclass__ = ABCMeta
+
+    def __init__(self, transport):
+        self.transport = transport
+
+    @staticmethod
+    def detect(transport):
+        """Factory method to create a `_Machine` instance based on the running kernel."""
+        exit_code, stdout, stderr = transport.execute_command('uname -s')
+        running_kernel = stdout.strip()
+        if running_kernel == 'Linux':
+            return _LinuxMachine(transport)
+        elif running_kernel == 'Darwin':
+            return _MacOSXMachine(transport)
+        else:
+            raise RuntimeError(
+                "Unexpected kernel name: got {0},"
+                " expecting one of 'Linux', 'Darwin'"
+                .format(running_kernel))
+
+    def _run_command(self, cmd):
+        """
+        Run a command and return its STDOUT, or raise exception if it errors out.
+
+        This is like `subprocess.check_call`, with the following differences:
+
+        * the slave command is executed through `Transport.execute_command`
+          so it need not be locally executed.
+        * a `RuntimeError` exception is raised if either the exit code from the
+          process is non-zero or STDERR contains any text.
+        """
+        exit_code, stdout, stderr = self.transport.execute_command(cmd)
+        if exit_code != 0 or stderr:
+            raise RuntimeError("Got error running command `{0}` (exit code {1}): {2}"
+                               .format(cmd, exit_code, stderr.strip()))
+        return stdout
+
+    def get_architecture(self):
+        cmd = 'uname -m'
+        stdout = self._run_command(cmd)
+        return gc3libs.config._parse_architecture(stdout)
+
+    def get_process_state(self, pid):
+        """
+        Return the 1-letter state of process PID.
+        (See the ``ps`` man page for a list of possible codes and explanations.)
+
+        Raise ``LookupError`` if no process is identified by the given PID.
+        """
+        cmd = 'ps -p {0:d} -o state='.format(pid)
+        rc, stdout, stderr = self.transport.execute_command(cmd)
+        if rc == 1:  # FIXME: same return code on MacOSX?
+            raise LookupError('No process with PID {0}'.format(pid))
+        elif rc == 0:
+            return stdout.strip()
+        else:
+            raise RuntimeError("Got error running command `{0}` (exit code {1}): {2}"
+                               .format(cmd, exit_code, stderr.strip()))
+
+    def get_process_running_time(self, pid):
+        """
+        Return elapsed time since start of process identified by PID.
+
+        Raise ``LookupError`` if no process is identified by the given PID.
+        """
+        cmd = 'ps -p {0:d} -o etime='.format(pid)
+        rc, stdout, stderr = self.transport.execute_command(cmd)
+        if rc == 1:  # FIXME: same return code on MacOSX?
+            raise LookupError('No process with PID {0}'.format(pid))
+        elif rc == 0:
+            etime = stdout.strip()
+            return _parse_time_duration(etime)
+        else:
+            raise RuntimeError("Got error running command `{0}` (exit code {1}): {2}"
+                               .format(cmd, exit_code, stderr.strip()))
+
+    def get_total_cores(self):
+        """Return total nr. of CPU cores."""
+        cmd = self._get_total_cores_command()
+        stdout = self._run_command(cmd)
+        try:
+            return int(stdout)
+        except (ValueError, TypeError) as err:
+            raise RuntimeError("Cannot parse output `{0}` of command `{1}`"
+                               " as total number of CPU cores: {2}"
+                               .format(stdout.strip(), cmd, err))
+
+    # This could be a property of the class, but then we won't be able to
+    # use the `@abstractmethod` constructor to enforce that derived classes
+    # provide an implementation
+    @abstractmethod
+    def _get_total_cores_command(self):
+        """Command to run to print the nr. of CPU cores to STDOUT."""
+        pass
+
+    def get_total_memory(self):
+        """
+        Return amount of total amount of RAM as a `gc3libs.quantity.Memory` object.
+        """
+        parts, index, unit = self._get_total_memory_impl()
+        try:
+            qty = parts[index]
+            amount = int(qty)
+            return amount*unit
+        except KeyError:  # index out of bounds
+            raise AssertionError(
+                "Call to {0} returned out-f-bounds index {1} into sequence {2}"
+                .format(self._get_total_memory_impl, index, parts))
+        except (ValueError, TypeError) as err:
+            raise RuntimeError("Cannot `{0}` as a memory amount: {1}"
+                               .format(qty, err))
+
+
+    @abstractmethod
+    def _get_total_memory_impl(self):
+        """Machine-specific part of `get_total_memory`."""
+        pass
+
+
+class _LinuxMachine(_Machine):
+    """Linux-specific shell tools."""
+
+    def _get_total_cores_command(self):
+        """Return nr. of CPU cores from ``nproc``"""
+        return 'nproc'
+
+    def _get_total_memory_impl(self):
+        with self.transport.open('/proc/meminfo', 'r') as fd:
+            for line in fd:
+                if line.startswith('MemTotal'):
+                    return (line.split(), 1,  Memory.KiB)
+
+
+class _MacOSXMachine(_Machine):
+    """MacOSX-specific shell tools."""
+
+    def _get_total_cores_command(self):
+        """Return nr. of CPU cores from ``sysctl hw.ncpu``"""
+        return 'sysctl hw.ncpu'
+
+    def _get_total_memory_impl(self):
+        """Return amount of total memory from ``sysctl hw.memsize``"""
+        cmd = 'sysctl hw.memsize'
+        stdout = self._run_command(cmd)
+        return (stdout.split(':'), 1, Memory.B)
+
+
+## the main LRMS class
+#
+#
+#
+
+class ShellcmdLrms(LRMS):
+    """
+    Execute an `Application`:class: instance through the shell.
 
     Construction of an instance of `ShellcmdLrms` takes the following
     optional parameters (in addition to any parameters taken by the
@@ -173,74 +355,78 @@ class ShellcmdLrms(LRMS):
       or `/var/tmp`:file: (see `tempfile.mkftemp` for details).
 
     :param str resourcedir:
-
       Path to a filesystem location where to create a temporary
       directory that will contain information on the jobs running on
       the machine. The default value `None` means to use
       ``$HOME/.gc3/shellcmd.d``.
 
     :param str transport:
-      Transport to use to connecet to the resource. Valid values are
-      `ssh` or `local`.
+      Transport to use to connect to the resource. Valid values are
+      ``'ssh'`` or ``'local'``.
 
     :param str frontend:
-
-      If `transport` is `ssh`, then `frontend` is the hostname of the
+      If `transport` is ``'ssh'``, then `frontend` is the hostname of the
       remote machine where the jobs will be executed.
 
     :param bool ignore_ssh_host_key:
-
-      When connecting to a remote resource using `ssh` the server ssh
-      public key is usually checked against a database of known hosts,
-      and if the key is found but it does not match with the one saved
-      in the database the connection will fail. Setting
-      `ignore_ssh_host_key` to `True` will disable this check, thus
-      introducing a potential security issue, but allowing connection
-      even though the database contain old/invalid keys (the use case
-      is when connecting to VM on a cloud, since the IP is usually
-      reused and therefore the ssh key is recreated).
+      When connecting to a remote resource using the ``'ssh'`` transport the
+      server's SSH public key is usually checked against a database of known
+      hosts, and if the key is found but it does not match with the one saved
+      in the database, the connection will fail. Setting `ignore_ssh_host_key`
+      to `True` will disable this check, thus introducing a potential security
+      issue but allowing connection even though the database contains
+      old/invalid keys. (The main use case is when connecting to VMs on a IaaS
+      cloud, since the IP is usually reused and therefore the ssh key is
+      recreated.)
 
     :param bool override:
-
       `ShellcmdLrms` by default will try to gather information on the
       machine the resource is running on, including the number of
       cores and the available memory. These values may be different
       from the values stored in the configuration file. If `override`
-      is True, then the values automatically discovered will be used
+      is ``True``, then the values automatically discovered will be used
       instead of the ones in the configuration file. If `override` is
       False, instead, the values in the configuration file will be
       used.
 
     :param int ssh_timeout:
-
-      If `transport` is `ssh`, this value will be used as timeout (in
-      seconds) for the TCP connect.
-
+      If `transport` is ``'ssh'``, this value will be used as timeout (in
+      seconds) for connecting to the SSH TCP socket.
     """
 
-    # this matches what the ARC grid-manager does
-    TIMEFMT = """WallTime=%es
-KernelTime=%Ss
-UserTime=%Us
-CPUUsage=%P
-MaxResidentMemory=%MkB
-AverageResidentMemory=%tkB
-AverageTotalMemory=%KkB
-AverageUnsharedMemory=%DkB
-AverageUnsharedStack=%pkB
-AverageSharedMemory=%XkB
-PageSize=%ZB
-MajorPageFaults=%F
-MinorPageFaults=%R
-Swaps=%W
-ForcedSwitches=%c
-WaitSwitches=%w
-Inputs=%I
-Outputs=%O
-SocketReceived=%r
-SocketSent=%s
-Signals=%k
-ReturnCode=%x"""
+    TIMEFMT = '\n'.join([
+        'WallTime=%es',
+        'KernelTime=%Ss',
+        'UserTime=%Us',
+        'CPUUsage=%P',
+        'MaxResidentMemory=%MkB',
+        'AverageResidentMemory=%tkB',
+        'AverageTotalMemory=%KkB',
+        'AverageUnsharedMemory=%DkB',
+        'AverageUnsharedStack=%pkB',
+        'AverageSharedMemory=%XkB',
+        'PageSize=%ZB',
+        'MajorPageFaults=%F',
+        'MinorPageFaults=%R',
+        'Swaps=%W',
+        'ForcedSwitches=%c',
+        'WaitSwitches=%w',
+        'Inputs=%I',
+        'Outputs=%O',
+        'SocketReceived=%r',
+        'SocketSent=%s',
+        'Signals=%k',
+        'ReturnCode=%x',
+    ])
+    """
+    Format string for running commands with ``/usr/bin/time``.
+    It is used by GC3Pie to capture resource usage data for commands
+    executed through the shell.
+
+    The value used here lists all the resource usage values that *GNU
+    time* can capture, with the same names used by the ARC Resource
+    Manager (for historical reasons).
+    """
 
     # how to translate GNU time output into GC3Pie execution metrics
     TIMEFMT_CONV = {
@@ -270,15 +456,59 @@ ReturnCode=%x"""
         'Signals':               ('shellcmd_signals_delivered',       int),
         'ReturnCode':            ('returncode',                       _parse_returncode_string),
     }
+    """
+    How to translate *GNU time* output into values stored in the ``.execution`` attribute.
 
-    WRAPPER_DIR = '.gc3pie_shellcmd'
+    The dictionary maps key names (as used in the `TIMEFMT` string) to
+    a pair *(attribute name, converter function)* consisting of the
+    name of an attribute that will be set on a task's ``.execution``
+    object, and a function to convert the (string) value gotten from
+    *GNU time* output into the actual Python value written.
+    """
+
+    PRIVATE_DIR = '.gc3pie_shellcmd'
+    """
+    Subdirectory of a tasks's execution directory reserved for storing
+    `ShellcmdLrms`:class: files.
+    """
+
     WRAPPER_SCRIPT = 'wrapper_script.sh'
-    WRAPPER_DOWNLOADER = 'downloader.py'
+    """
+    Name of the task launcher script (within `PRIVATE_DIR`).
+
+    The `ShellcmdLrms`:class: writes here that wrap an application's
+    payload script, to collect resource usage or download/upload
+    result files, etc.
+    """
+
     WRAPPER_OUTPUT_FILENAME = 'resource_usage.txt'
+    """
+    Name of the file where resource usage is written to.
+
+    (Relative to `PRIVATE_DIR`.)
+    """
+
     WRAPPER_PID = 'wrapper.pid'
+    """
+    Name of the file where the wrapper script's PID is stored.
+
+    (Relative to `PRIVATE_DIR`).
+    """
+
+    MOVER_SCRIPT = 'mover.py'
+    """
+    Name of the data uploader/downloader script (within `PRIVATE_DIR`).
+    """
 
     RESOURCE_DIR = '$HOME/.gc3/shellcmd.d'
+    """
+    Path to the directory where bookkeeping files are stored.
+    (This is on the target machine where `ShellcmdLrms`:class:
+    executes commands.)
 
+    It may contain environmental variable references, which are
+    expanded through the (remote) shell.
+    """
 
     def __init__(self, name,
                  # these parameters are inherited from the `LRMS` class
@@ -304,8 +534,9 @@ ReturnCode=%x"""
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth, **extra_args)
 
-        # GNU time is needed
-        self.time_cmd = time_cmd
+        # whether actual machine params (cores, memory) should be
+        # auto-detected on first use
+        self.override = gc3libs.utils.string_to_boolean(override)
 
         # default is to use $TMPDIR or '/var/tmp' (see
         # `tempfile.mkftemp`), but we delay the determination of the
@@ -313,17 +544,11 @@ ReturnCode=%x"""
         # `transport` right now.
         self.spooldir = spooldir
 
-        # Resource dir is expanded in `_gather_machine_specs()` and
-        # only after that the `resource_dir` property will be
-        # set. This is done in order to delay a possible connection to
-        # a remote machine, and avoiding such a remote connection when
-        # it's not needed.
-        self.cfg_resourcedir = resourcedir or ShellcmdLrms.RESOURCE_DIR
-
         # Configure transport
         if transport == 'local':
             self.transport = gc3libs.backends.transport.LocalTransport()
             self._username = getuser()
+            self.frontend = 'localhost'
         elif transport == 'ssh':
             auth = self._auth_fn()
             self._username = auth.username
@@ -336,228 +561,166 @@ ReturnCode=%x"""
                 keyfile=(keyfile or auth.keyfile),
                 timeout=(ssh_timeout or auth.timeout),
             )
+            self.frontend = frontend
         else:
-            raise gc3libs.exceptions.TransportError(
-                "Unknown transport '%s'" % transport)
-        self.frontend = frontend
+            raise AssertionError("Unknown transport '{0}'" .format(transport))
 
-        # use `max_cores` as the max number of processes to allow
+        # Init bookkeeping
+        self.updated = False  # data may not reflect actual state
+        self.free_slots = self.max_cores
+        self.user_run = 0
         self.user_queued = 0
         self.queued = 0
-        self.job_infos = {}
         self.total_memory = max_memory_per_core
         self.available_memory = self.total_memory
-        self.override = gc3libs.utils.string_to_boolean(override)
+        self._job_infos = {}
 
-    @defproperty
-    def resource_dir():
-        def fget(self):
-            try:
-                return self._resource_dir
-            except:
-                # Since RESOURCE_DIR contains the `$HOME` variable, we
-                # have to expand it by connecting to the remote
-                # host. However, we don't want to do that during
-                # initialization, so we do it the first time this is
-                # actually needed.
-                self._gather_machine_specs()
-                return self._resource_dir
+        # Some init parameters can only be discovered / checked when a
+        # connection to the target resource is up.  We want to delay
+        # this until the time they are actually used, to avoid opening
+        # up a network connection when the backend is initialized
+        # (could be e.g. a `ginfo -n` call that has no need to operate
+        # on remote objects).
+        self._resourcedir_raw = resourcedir or ShellcmdLrms.RESOURCE_DIR
+        self._time_cmd = time_cmd
+        self._time_cmd_ok = False  # check on first use
 
-        def fset(self, value):
-            self._resource_dir = value
-        return locals()
 
-    @defproperty
-    def user_run():
-        def fget(self):
-            return len([i for i in self.job_infos.values()
-                        if not i['terminated']])
-        return locals()
+    @property
+    def frontend(self):
+        return self._frontend
 
-    @staticmethod
-    def _filter_cores(job):
-        if job['terminated']:
-            return 0
-        else:
-            return job['requested_cores']
+    @frontend.setter
+    def frontend(self, value):
+        self._frontend = value
+        self.transport.set_connection_params(value)
 
-    def _compute_used_cores(self, jobs):
-        """
-        Accepts a dictionary of job informations and returns the
-        sum of the `requested_cores` attributes.
-        """
-        return sum(map(self._filter_cores, jobs.values()))
 
-    @defproperty
-    def free_slots():
-        """Returns the number of cores free"""
-
-        def fget(self):
-            """
-            Sums the number of corse requested by jobs not in TERM*
-            state and returns the difference from the number of cores
-            of the resource.
-            """
-            return self.max_cores - self._compute_used_cores(self.job_infos)
-        return locals()
-
-    @same_docstring_as(LRMS.cancel_job)
-    def cancel_job(self, app):
+    @property
+    def resource_dir(self):
         try:
-            pid = int(app.execution.lrms_jobid)
-        except ValueError:
-            raise gc3libs.exceptions.InvalidArgument(
-                "Invalid field `lrms_jobid` in Job '%s':"
-                " expected a number, got '%s' (%s) instead"
-                % (app, app.execution.lrms_jobid,
-                   type(app.execution.lrms_jobid)))
-
-        self.transport.connect()
-        # Kill all the processes belonging to the same session as the
-        # pid we actually started.
-
-        # On linux, kill '$(ps -o pid= -g $(ps -o sess= -p %d))' would
-        # be enough, but on MacOSX it doesn't work.
-        exit_code, stdout, stderr = self.transport.execute_command(
-            "ps -p %d  -o sess=" % pid)
-        if exit_code != 0 or not stdout.strip():
-            # No PID found. We cannot recover the session group of the
-            # process, so we cannot kill any remaining orphan process.
-            log.error("Unable to find job '%s': no pid found." % pid)
-        else:
-            exit_code, stdout, stderr = self.transport.execute_command(
-                'kill $(ps -ax -o sess=,pid= | egrep "^[ \t]*%s[ \t]")' % stdout.strip())
-            # XXX: should we check that the process actually died?
-            if exit_code != 0:
-                # Error killing the process. It may not exists or we don't
-                # have permission to kill it.
-                exit_code, stdout, stderr = self.transport.execute_command(
-                    "ps ax | grep -E '^ *%d '" % pid)
-                if exit_code == 0:
-                    # The PID refers to an existing process, but we
-                    # couldn't kill it.
-                    log.error("Could not kill job '%s': %s", pid, stderr)
-                else:
-                    # The PID refers to a non-existing process.
-                    log.error(
-                        "Could not kill job '%s'. It refers to non-existent"
-                        " local process %s.", app, app.execution.lrms_jobid)
-        self._delete_job_resource_file(pid)
-
-    @same_docstring_as(LRMS.close)
-    def close(self):
-        # XXX: free any resources in use?
-        pass
-
-    def free(self, app):
-        """
-        Delete the temporary directory where a child process has run.
-        The temporary directory is removed with all its content,
-        recursively.
-
-        If the deletion is successful, the `lrms_execdir` attribute in
-        `app.execution` is reset to `None`; subsequent invocations of
-        this method on the same applications do nothing.
-        """
-        try:
-            if app.execution.lrms_execdir is not None:
-                self.transport.connect()
-                self.transport.remove_tree(app.execution.lrms_execdir)
-                app.execution.lrms_execdir = None
-        except Exception as ex:
-            log.warning("Could not remove directory '%s': %s: %s",
-                        app.execution.lrms_execdir, ex.__class__.__name__, ex)
-
-        try:
-            pid = app.execution.lrms_jobid
-            self._delete_job_resource_file(pid)
+            return self._resource_dir
         except AttributeError:
-            # lrms_jobid not yet assigned
-            # probabaly submit process failed before
-            # ingnore and continue
-            pass
+            # Since RESOURCE_DIR contains the `$HOME` variable, we
+            # have to expand it by connecting to the remote
+            # host. However, we don't want to do that during
+            # initialization, so we do it the first time this is
+            # actually needed.
+            self._init_resource_dir()
+            return self._resource_dir
 
-    @defproperty
-    def frontend():
-        def fget(self):
-            return self._frontend
+    @resource_dir.setter
+    def resource_dir(self, value):
+        self._resource_dir = value
 
-        def fset(self, value):
-            self._frontend = value
-            self.transport.set_connection_params(value)
-        return locals()
-
-    def _gather_machine_specs(self):
-        """
-        Gather information about this machine and, if `self.override`
-        is true, also update the value of `max_cores` and
-        `max_memory_per_jobs` attributes.
-
-        This method works with both Linux and MacOSX.
-        """
-        self.transport.connect()
-
+    def _init_resource_dir(self):
         # expand env variables in the `resource_dir` setting
         exit_code, stdout, stderr = self.transport.execute_command(
-            'echo %s' % sh_quote_unsafe(self.cfg_resourcedir))
+            'echo %s' % sh_quote_unsafe(self._resourcedir_raw))
         self.resource_dir = stdout.strip()
 
-        # XXX: it is actually necessary to create the folder
-        # as a separate step
         if not self.transport.exists(self.resource_dir):
             try:
-                log.info("Creating resource file directory: '%s' ...",
-                         self.resource_dir)
+                log.info("Creating resource directory: '%s' ...", self.resource_dir)
                 self.transport.makedirs(self.resource_dir)
             except Exception as ex:
-                log.error("Failed creating resource directory '%s':"
-                          " %s: %s", self.resource_dir, type(ex), str(ex))
+                log.error("Failed creating resource directory '%s': %s: %s",
+                          self.resource_dir, type(ex), ex)
                 # cannot continue
                 raise
 
-        exit_code, stdout, stderr = self.transport.execute_command('uname -m')
-        arch = gc3libs.config._parse_architecture(stdout)
-        if arch != self.architecture:
-            raise gc3libs.exceptions.ConfigurationError(
-                "Invalid architecture: configuration file says `%s` but "
-                "it actually is `%s`" % (str.join(', ', self.architecture),
-                                         str.join(', ', arch)))
 
-        exit_code, stdout, stderr = self.transport.execute_command('uname -s')
-        self.running_kernel = stdout.strip()
+    @property
+    def spooldir(self):
+        """
+        Root folder for all working directories of GC3Pie tasks.
 
-        # ensure `time_cmd` points to a valid value
-        self.time_cmd = self._locate_gnu_time()
-        if not self.time_cmd:
-            raise gc3libs.exceptions.ConfigurationError(
-                "Unable to find GNU `time` installed on your system."
-                " Please, install GNU time and set the `time_cmd`"
-                " configuration option in gc3pie.conf.")
+        When this backend executes a task, it first creates a temporary
+        subdirectory of this folder, then launches commands in there.
 
-        if not self.override:
-            # Ignore other values.
-            return
+        If not explicitly set (e.g. at construction time), the "spool
+        directory" will be given a default value according to the logic of
+        :meth:`_discover_spooldir`:
 
-        if self.running_kernel == 'Linux':
-            exit_code, stdout, stderr = self.transport.execute_command('nproc')
-            max_cores = int(stdout)
+        * If the remote environment variable ``TMPDIR`` is set and points to an
+          existing directory, that value is used;
+        * otherwise, the hard-coded default ``/var/tmp`` is used instead.
+        """
+        if not self._spooldir:
+            self._init_spooldir()
+        return self._spooldir
 
-            # get the amount of total memory from /proc/meminfo
-            with self.transport.open('/proc/meminfo', 'r') as fd:
-                for line in fd:
-                    if line.startswith('MemTotal'):
-                        self.total_memory = int(line.split()[1]) * Memory.KiB
-                        break
+    @spooldir.setter
+    def spooldir(self, value):
+        self._spooldir = value
 
-        elif self.running_kernel == 'Darwin':
-            exit_code, stdout, stderr = self.transport.execute_command(
-                'sysctl hw.ncpu')
-            max_cores = int(stdout.split(':')[-1])
+    def _init_spooldir(self):
+        """Set `self.spooldir` to a sensible value."""
+        rc, stdout, stderr = self.transport.execute_command(
+            'cd "$TMPDIR" && pwd')
+        if (rc != 0 or stdout.strip() == '' or stdout[0] != '/'):
+            log.debug(
+                "Unable to recover a valid absolute path for `spooldir`"
+                " on resource `%s`. Using `/var/tmp`.", self.name)
+            self.spooldir = '/var/tmp'
+        else:
+            self.spooldir = stdout.strip()
 
-            exit_code, stdout, stderr = self.transport.execute_command(
-                'sysctl hw.memsize')
-            self.total_memory = int(stdout.split(':')[1]) * Memory.B
 
+    @property
+    def time_cmd(self):
+        if not self._time_cmd_ok:
+            self._time_cmd = self._locate_gnu_time()
+            self._time_cmd_ok = True
+        return self._time_cmd
+
+
+    def _gather_machine_specs(self):
+        """
+        Gather information about target machine and update config.
+        The following attributes are set (or reset) as an effect
+        of calling this method:
+
+        - ``_machine``: Set to the an appropriate instance of
+          `_Machine`:class:, detected through connection via
+          `self.transport`.
+        - ``_resource_dir``: Set to the expansion of whatever was
+          passed as ``resource`` construction parameter.
+        - ``max_cores``: If ``self.override`` is true, set to the
+          number of processors on the target.
+        - ``total_memory``: If ``self.override`` is true, set to total
+          amount of memory on the target.
+        """
+        self.transport.connect()
+        self._machine = _Machine.detect(self.transport)
+        self._init_arch()
+        if self.override:
+            self._init_max_cores()
+            self._init_total_memory()
+            self._update_resource_usage_info()
+
+
+    def _init_arch(self):
+        arch = self._machine.get_architecture()
+        if not (arch <= self.architecture):
+            if self.override:
+                log.info(
+                    "Mismatch of value `architecture` on resource %s:"
+                    " configuration file says `achitecture=%s`"
+                    " but GC3Pie detected `%s`. Updating current value.",
+                    self.name,
+                    ','.join(self.architecture),
+                    ','.join(arch))
+                self.architecture = arch
+            else:
+                raise gc3libs.exceptions.ConfigurationError(
+                    "Invalid architecture: configuration file says `%s` but "
+                    "it actually is `%s`" % (str.join(', ', self.architecture),
+                                             str.join(', ', arch)))
+
+
+    def _init_max_cores(self):
+        max_cores = self._machine.get_total_cores()
         if max_cores != self.max_cores:
             log.info(
                 "Mismatch of value `max_cores` on resource '%s':"
@@ -566,6 +729,9 @@ ReturnCode=%x"""
                 self.name, self.max_cores, max_cores)
             self.max_cores = max_cores
 
+
+    def _init_total_memory(self):
+        self.total_memory = self._machine.get_total_memory()
         if self.total_memory != self.max_memory_per_core:
             log.info(
                 "Mismatch of value `max_memory_per_core` on resource %s:"
@@ -576,20 +742,21 @@ ReturnCode=%x"""
                 self.total_memory.to_str('%g%s', unit=Memory.MB))
             self.max_memory_per_core = self.total_memory
 
-        self.available_memory = self.total_memory
 
     def _locate_gnu_time(self):
         """
-        Return the command name to run the GNU `time` binary,
-        or ``None`` if it cannot be found.
+        Return the command path to run the GNU `time` binary.
+
+        :raise ConfigurationError:
+          if no GNU ``time`` executable can be located.
         """
         candidates = [
             'time',  # default on Linux systems
             'gtime', # MacOSX with Homebrew or MacPorts
         ]
-        if self.time_cmd:
+        if self._time_cmd:
             # try this first
-            candidates.insert(0, self.time_cmd)
+            candidates.insert(0, self._time_cmd)
         for time_cmd in candidates:
             gc3libs.log.debug(
                 "Checking if GNU time is available as command `%s`", time_cmd)
@@ -603,78 +770,38 @@ ReturnCode=%x"""
             if exit_code == 0:
                 # command is GNU! Good!
                 return time_cmd
-        return None
+        raise gc3libs.exceptions.ConfigurationError(
+            "Unable to find GNU `time` on resource `{name}`."
+            " Please, install GNU time and set the `time_cmd`"
+            " configuration option in gc3pie.conf."
+            .format(name=self.name))
 
-    def _get_persisted_resource_state(self):
-        """
-        Get information on total resources from the files stored in
-        `self.resource_dir`. It then returns a dictionary {PID: {key:
-        values}} with informations for each job which is associated to
-        a running process.
-        """
-        self.transport.connect()
-        pidfiles = self.transport.listdir(self.resource_dir)
-        log.debug("Checking status of the following PIDs: %s",
-                  str.join(", ", pidfiles))
-        job_infos = {}
-        for pid in pidfiles:
-            job = self._read_job_resource_file(pid)
-            if job:
-                job_infos[pid] = job
-            else:
-                # Process not found, ignore it
-                continue
-        return job_infos
 
-    def _read_job_resource_file(self, pid):
-        """
-        Get resource information on job with pid `pid`, if it
-        exists. Returns None if it does not exist.
-        """
-        self.transport.connect()
-        log.debug("Reading resource file for pid %s", pid)
-        jobinfo = None
-        fname = posixpath.join(self.resource_dir, str(pid))
-        with self.transport.open(fname, 'rb') as fp:
-            try:
-                jobinfo = pickle.load(fp)
-            except Exception as ex:
-                log.error("Unable to read remote resource file %s: %s",
-                          fname, ex)
-                raise
-        return jobinfo
+    ## Bookkeeping
+    #
+    # The following methods deal with internal book-keeping: how much
+    # of the target's configured resources has been used by GC3Pie.
+    # Presently, book-keeping is so complicated (and requires
+    # recomputing at each invocation) because GC3Pie does makes the
+    # assumption that the target resource is *shared*, i.e., other
+    # GC3Pie processes run concurrently by the user may compete for
+    # the same resources.
+    #
 
-    def _update_job_resource_file(self, pid, resources):
+    def _compute_used_cores(self, job_infos):
         """
-        Update file in `self.resource_dir/PID` with `resources`.
+        Accepts a dictionary of job informations and returns the
+        sum of the `requested_cores` attributes.
         """
-        self.transport.connect()
-        # XXX: We should check for exceptions!
-        log.debug("Updating resource file for pid %s", pid)
-        with self.transport.open(
-                posixpath.join(self.resource_dir, str(pid)), 'wb') as fp:
-            pickle.dump(resources, fp, -1)
-
-    def _delete_job_resource_file(self, pid):
-        """
-        Delete `self.resource_dir/PID` file
-        """
-        self.transport.connect()
-        log.debug("Deleting resource file for pid %s ...", pid)
-        pidfile = posixpath.join(self.resource_dir, str(pid))
-        try:
-            self.transport.remove(pidfile)
-        except Exception as err:
-            log.debug(
-                "Ignored error deleting file `%s`: %s: %s",
-                pidfile, err.__class__.__name__, err)
+        return sum(map(self._filter_cores, job_infos.values()))
 
     @staticmethod
-    def _filter_memory(job):
-        if job['requested_memory'] is None or job['terminated']:
-            return 0 * MB
+    def _filter_cores(job):
+        if job['terminated']:
+            return 0
         else:
-            return job['requested_memory']
+            return job['requested_cores']
+
 
     def _compute_used_memory(self, jobs):
         """
@@ -690,26 +817,204 @@ ReturnCode=%x"""
         else:
             return used_memory
 
-    @same_docstring_as(LRMS.get_resource_status)
-    def get_resource_status(self):
-        self.updated = False
+    @staticmethod
+    def _filter_memory(job):
+        if job['requested_memory'] is None or job['terminated']:
+            return 0 * MB
+        else:
+            return job['requested_memory']
+
+
+    def _get_persisted_job_info(self):
+        """
+        Get information on total resources from the files stored in
+        `self.resource_dir`. It then returns a dictionary {PID: {key:
+        values}} with informations for each job which is associated to
+        a running process.
+        """
+        self.transport.connect()
+        pidfiles = self.transport.listdir(self.resource_dir)
+        log.debug("Checking status of the following PIDs: %s",
+                  str.join(", ", pidfiles))
+        job_infos = {}
+        for pid in pidfiles:
+            job = self._read_job_info_file(pid)
+            if job:
+                job_infos[pid] = job
+            else:
+                # Process not found, ignore it
+                continue
+        return job_infos
+
+    def _read_job_info_file(self, pid):
+        """
+        Get resource information on job with pid `pid`, if it
+        exists. Returns None if it does not exist.
+        """
+        self.transport.connect()
+        log.debug("Reading resource file for pid %s", pid)
+        jobinfo = None
+        path = posixpath.join(self.resource_dir, str(pid))
+        with self.transport.open(path, 'rb') as fp:
+            try:
+                jobinfo = pickle.load(fp)
+            except Exception as ex:
+                log.error("Unable to read remote resource file %s: %s",
+                          path, ex)
+                raise
+        return jobinfo
+
+    def _write_job_info_file(self, pid, resources):
+        """
+        Update file in `self.resource_dir/PID` with `resources`.
+        """
+        self.transport.connect()
+        # XXX: We should check for exceptions!
+        log.debug("Updating resource file for pid %s", pid)
+        with self.transport.open(
+                posixpath.join(self.resource_dir, str(pid)), 'wb') as fp:
+            pickle.dump(resources, fp, -1)
+
+    def _delete_job_info_file(self, pid):
+        """
+        Delete `self.resource_dir/PID` file
+        """
+        self.transport.connect()
+        log.debug("Deleting resource file for pid %s ...", pid)
+        pidfile = posixpath.join(self.resource_dir, str(pid))
         try:
-            self.running_kernel
+            self.transport.remove(pidfile)
+        except Exception as err:
+            msg = str(err)
+            if 'OSError: [Errno 2]' not in msg:
+                log.debug(
+                    "Ignored error deleting file `%s`: %s: %s",
+                    pidfile, err.__class__.__name__, err)
+
+
+    ## Backend interface implementation
+    #
+    # These methods provide what is expected of any LRMS class.
+    #
+
+    def _connect(self):
+        """Ensure transport to remote resource works."""
+        try:
+            self.transport.connect()
+        except gc3libs.exceptions.TransportError as err:
+            log.error("Unable to connect to host `%s`: %s", self.frontend, err)
+            raise
+        try:
+            self._machine
         except AttributeError:
             self._gather_machine_specs()
 
-        self.job_infos = self._get_persisted_resource_state()
-        used_memory = self._compute_used_memory(self.job_infos)
-        self.available_memory = self.total_memory - used_memory
+    @same_docstring_as(LRMS.cancel_job)
+    def cancel_job(self, app):
+        try:
+            pid = int(app.execution.lrms_jobid)
+        except ValueError:
+            raise gc3libs.exceptions.InvalidArgument(
+                "Invalid field `lrms_jobid` in Task '{0}':"
+                " expected a number, got '{{2}) instead"
+                .format(app, app.execution.lrms_jobid,
+                        type(app.execution.lrms_jobid)))
+
+        self.transport.connect()
+        # Kill all the processes belonging to the same session as the
+        # pid we actually started.
+
+        # On linux, kill '$(ps -o pid= -g $(ps -o sess= -p %d))' would
+        # be enough, but on MacOSX it doesn't work.
+        exit_code, stdout, stderr = self.transport.execute_command(
+            "ps -p %d  -o sess=" % pid)
+        if exit_code != 0 or not stdout.strip():
+            # No PID found. We cannot recover the session group of the
+            # process, so we cannot kill any remaining orphan process.
+            log.error("Unable to find job '%s': no pid found.", pid)
+        else:
+            exit_code, stdout, stderr = self.transport.execute_command(
+                'kill $(ps -ax -o sess=,pid= | egrep "^[ \t]*%s[ \t]")' % stdout.strip())
+            # XXX: should we check that the process actually died?
+            if exit_code != 0:
+                # Error killing the process. It may not exist or we don't
+                # have permission to kill it.
+                exit_code, stdout, stderr = self.transport.execute_command(
+                    "ps ax | grep -E '^ *%d '" % pid)
+                if exit_code == 0:
+                    # The PID refers to an existing process, but we
+                    # couldn't kill it.
+                    log.error("Could not kill job '%s': %s", pid, stderr)
+                else:
+                    # The PID refers to a non-existing process.
+                    log.error(
+                        "Could not kill job '%s'. It refers to non-existent"
+                        " local process %s.", app, app.execution.lrms_jobid)
+        self._delete_job_info_file(pid)
+
+
+    @same_docstring_as(LRMS.close)
+    def close(self):
+        # XXX: free any resources in use?
+        pass
+
+
+    def free(self, app):
+        """
+        Delete the temporary directory where a child process has run.
+        The temporary directory is removed with all its content,
+        recursively.
+
+        If deletion is successful, the `lrms_execdir` attribute in
+        `app.execution` is reset to `None`; subsequent invocations of
+        this method on the same applications do nothing.
+        """
+        try:
+            if app.execution.lrms_execdir is not None:
+                log.debug('Deleting working directory of task `%s` ...', app)
+                self.transport.connect()
+                if self.transport.isdir(app.execution.lrms_execdir):
+                    self.transport.remove_tree(app.execution.lrms_execdir)
+                app.execution.lrms_execdir = None
+        except Exception as ex:
+            log.warning("Could not remove directory '%s': %s: %s",
+                        app.execution.lrms_execdir, ex.__class__.__name__, ex)
+
+        try:
+            pid = app.execution.lrms_jobid
+            self._delete_job_info_file(pid)
+        except AttributeError:
+            # lrms_jobid not yet assigned; probably submit
+            # failed -- ignore and continue
+            pass
+
+
+    @same_docstring_as(LRMS.get_resource_status)
+    def get_resource_status(self):
+        self.updated = False
+        self._connect()
+        self._update_resource_usage_info()
         self.updated = True
-        log.debug("Recovered resource information from files in %s:"
-                  " available memory: %s, memory used by jobs: %s",
-                  self.resource_dir,
-                  self.available_memory.to_str('%g%s',
-                                               unit=Memory.MB,
-                                               conv=float),
-                  used_memory.to_str('%g%s', unit=Memory.MB, conv=float))
         return self
+
+    def _update_resource_usage_info(self):
+        """
+        Helper method for (re)reading resource usage from disk.
+        """
+        self._job_infos = self._get_persisted_job_info()
+        used_memory = self._compute_used_memory(self._job_infos)
+        self.available_memory = self.total_memory - used_memory
+        self.free_slots = self.max_cores - self._compute_used_cores(self._job_infos)
+        self.user_run = sum(1 for info in self._job_infos.values()
+                            if not info['terminated'])
+        log.debug("Recovered resource information from files in %s:"
+                  " total nr. of cores: %s, used by jobs: %s;"
+                  " available memory: %s, memory used by jobs: %s.",
+                  self.resource_dir,
+                  self.max_cores, (self.max_cores - self.free_slots),
+                  self.available_memory.to_str('%g%s', unit=Memory.MB, conv=float),
+                  used_memory.to_str('%g%s', unit=Memory.MB, conv=float))
+
 
     @same_docstring_as(LRMS.get_results)
     def get_results(self, app, download_dir,
@@ -719,7 +1024,7 @@ ReturnCode=%x"""
                 "Retrieval of output files to non-local destinations"
                 " is not supported in the ShellCmd backend.")
 
-        self.transport.connect()
+        self._connect()
         # Make list of files to copy, in the form of (remote_path,
         # local_path) pairs.  This entails walking the
         # `Application.outputs` list to expand wildcards and
@@ -732,9 +1037,8 @@ ReturnCode=%x"""
             if remote_relpath == gc3libs.ANY_OUTPUT:
                 remote_relpath = ''
                 local_relpath = ''
-            stageout += _make_remote_and_local_path_pair(
-                self.transport, app, remote_relpath,
-                download_dir, local_relpath)
+            stageout += self._get_remote_and_local_path_pair(
+                app, remote_relpath, download_dir, local_relpath)
 
         # copy back all files, renaming them to adhere to the
         # ArcLRMS convention
@@ -747,383 +1051,41 @@ ReturnCode=%x"""
                                changed_only=changed_only)
         return
 
-    def update_job_state(self, app):
+    def _get_remote_and_local_path_pair(self, app, remote_relpath,
+                                         local_root_dir, local_relpath):
         """
-        Query the running status of the local process whose PID is
-        stored into `app.execution.lrms_jobid`, and map the POSIX
-        process status to GC3Libs `Run.State`.
+        Scan remote directoy and return list of corresponding remote and local paths.
+
+        The return value is a list of *(remote_path, local_path)* pairs: each
+        `remote_path` is an existing file on the remote end of the transport,
+        and *local_path* is the corresponding local path, constructed by
+        prepending `local_root_dir` to the relative remote path.
         """
-        self.transport.connect()
-        pid = app.execution.lrms_jobid
-        exit_code, stdout, stderr = self.transport.execute_command(
-            "ps ax | grep -E '^ *%d '" % pid)
-        if exit_code == 0:
-            log.debug("Process with PID %s found."
-                      " Checking its running status ...", pid)
-            # Process exists. Check the status
-            status = stdout.split()[2]
-            if status[0] == 'T':
-                # Job stopped
-                app.execution.state = Run.State.STOPPED
-            elif status[0] in ['R', 'I', 'U', 'S', 'D', 'W']:
-                # Job is running. Check manpage of ps both on linux
-                # and BSD to know the meaning of these statuses.
-                app.execution.state = Run.State.RUNNING
-                # if `requested_walltime` is set, enforce it as a
-                # running time limit
-                if app.requested_walltime is not None:
-                    exit_code2, stdout2, stderr2 = self.transport.execute_command(
-                        "ps -p %d -o etime=" % pid)
-                    if exit_code2 != 0:
-                        # job terminated already, do cleanup and return
-                        self._cleanup_terminating_task(app, pid)
-                        return app.execution.state
-                    cancel = False
-                    elapsed = _parse_time_duration(stdout2.strip())
-                    if elapsed > self.max_walltime:
-                        log.warning("Task %s ran for %s, exceeding max_walltime %s of resource %s: cancelling it.",
-                                    app, elapsed.to_timedelta(), self.max_walltime, self.name)
-                        cancel = True
-                    if elapsed > app.requested_walltime:
-                        log.warning("Task %s ran for %s, exceeding own `requested_walltime` %s: cancelling it.",
-                                    app, elapsed.to_timedelta(), app.requested_walltime)
-                        cancel = True
-                    if cancel:
-                        self.cancel_job(app)
-                        # set signal to SIGTERM in termination status
-                        self._cleanup_terminating_task(app, pid, termstatus=(15, -1))
-                        return app.execution.state
+        # see https://github.com/fabric/fabric/issues/306 about why it is
+        # correct to use `posixpath.join` for remote paths (instead of
+        # `os.path.join`)
+        remote_path = posixpath.join(app.execution.lrms_execdir, remote_relpath)
+        local_path = os.path.join(local_root_dir, local_relpath)
+        if self.transport.isdir(remote_path):
+            # recurse, accumulating results
+            result = list()
+            for entry in self.transport.listdir(remote_path):
+                result += self._make_remote_and_local_path_pair(
+                    app, posixpath.join(remote_relpath, entry), local_path, entry)
+            return result
         else:
-            log.debug(
-                "Process with PID %d not found,"
-                " assuming task %s has finished running.",
-                pid, app)
-            self._cleanup_terminating_task(app, pid)
+            return [(remote_path, local_path)]
 
-        self._get_persisted_resource_state()
-        return app.execution.state
-
-    def _cleanup_terminating_task(self, app, pid, termstatus=None):
-        app.execution.state = Run.State.TERMINATING
-        if termstatus is not None:
-            app.execution.returncode = termstatus
-        if pid in self.job_infos:
-            self.job_infos[pid]['terminated'] = True
-            if app.requested_memory is not None:
-                assert (app.requested_memory
-                        == self.job_infos[pid]['requested_memory'])
-                self.available_memory += app.requested_memory
-        wrapper_filename = posixpath.join(
-            app.execution.lrms_execdir,
-            ShellcmdLrms.WRAPPER_DIR,
-            ShellcmdLrms.WRAPPER_OUTPUT_FILENAME)
-        try:
-            log.debug(
-                "Reading resource utilization from wrapper file `%s` for task %s ...",
-                wrapper_filename, app)
-            with self.transport.open(wrapper_filename, 'r') as wrapper_file:
-                outcome = self._parse_wrapper_output(wrapper_file)
-                app.execution.update(outcome)
-                if termstatus is None:
-                    app.execution.returncode = outcome.returncode
-        except Exception as err:
-            msg = ("Could not open wrapper file `{0}` for task `{1}`: {2}"
-                   .format(wrapper_filename, app, err))
-            log.warning("%s -- Termination status and resource utilization fields will not be set.", msg)
-            raise gc3libs.exceptions.InvalidValue(msg)
-        finally:
-            self._delete_job_resource_file(pid)
-
-    def submit_job(self, app):
-        """
-        Run an `Application` instance as a local process.
-
-        :see: `LRMS.submit_job`
-        """
-        # Update current resource usage to check how many jobs are
-        # running in there.  Please note that for consistency with
-        # other backends, these updated information are not kept!
-        try:
-            self.transport.connect()
-        except gc3libs.exceptions.TransportError as ex:
-            raise gc3libs.exceptions.LRMSSubmitError(
-                "Unable to access shellcmd resource at %s: %s" %
-                (self.frontend, str(ex)))
-
-        job_infos = self._get_persisted_resource_state()
-        free_slots = self.max_cores - self._compute_used_cores(job_infos)
-        available_memory = self.total_memory - \
-            self._compute_used_memory(job_infos)
-
-        if self.free_slots == 0 or free_slots == 0:
-            # XXX: We shouldn't check for self.free_slots !
-            raise gc3libs.exceptions.LRMSSubmitError(
-                "Resource %s already running maximum allowed number of jobs"
-                " (%s). Increase 'max_cores' to raise." %
-                (self.name, self.max_cores))
-
-        if app.requested_memory and \
-                (available_memory < app.requested_memory or
-                 self.available_memory < app.requested_memory):
-            raise gc3libs.exceptions.LRMSSubmitError(
-                "Resource %s does not have enough available memory:"
-                " %s requested, but only %s available."
-                % (self.name,
-                   app.requested_memory.to_str('%g%s', unit=Memory.MB),
-                   available_memory.to_str('%g%s', unit=Memory.MB),)
-            )
-
-        log.debug("Executing local command '%s' ...",
-                  str.join(" ", app.arguments))
-
-        # Check if spooldir is a valid directory
-        if not self.spooldir:
-            ex, stdout, stderr = self.transport.execute_command(
-                'cd "$TMPDIR" && pwd')
-            if ex != 0 or stdout.strip() == '' or not stdout[0] == '/':
-                log.debug(
-                    "Unable to recover a valid absolute path for spooldir."
-                    " Using `/var/tmp`.")
-                self.spooldir = '/var/tmp'
-            else:
-                self.spooldir = stdout.strip()
-
-        # determine execution directory
-        exit_code, stdout, stderr = self.transport.execute_command(
-            "mktemp -d %s " % posixpath.join(
-                self.spooldir, 'gc3libs.XXXXXX'))
-        if exit_code != 0:
-            log.error(
-                "Error creating temporary directory on host %s: %s",
-                self.frontend, stderr)
-            log.debug('Freeing resources used by failed application')
-            self.free(app)
-            raise gc3libs.exceptions.LRMSSubmitError(
-                "Error creating temporary directory on host %s: %s",
-                self.frontend, stderr)
-
-        execdir = stdout.strip()
-        app.execution.lrms_execdir = execdir
-
-        # Copy input files to remote dir
-        for local_path, remote_path in app.inputs.items():
-            if local_path.scheme != 'file':
-                continue
-            remote_path = posixpath.join(execdir, remote_path)
-            remote_parent = os.path.dirname(remote_path)
-            try:
-                if (remote_parent not in ['', '.']
-                        and not self.transport.exists(remote_parent)):
-                    log.debug("Making remote directory '%s'", remote_parent)
-                    self.transport.makedirs(remote_parent)
-                log.debug("Transferring file '%s' to '%s'",
-                          local_path.path, remote_path)
-                self.transport.put(local_path.path, remote_path)
-                # preserve execute permission on input files
-                if os.access(local_path.path, os.X_OK):
-                    self.transport.chmod(remote_path, 0o755)
-            except:
-                log.critical(
-                    "Copying input file '%s' to remote host '%s' failed",
-                    local_path.path, self.frontend)
-                log.debug('Cleaning up failed application')
-                self.free(app)
-                raise
-
-        # try to ensure that a local executable really has
-        # execute permissions, but ignore failures (might be a
-        # link to a file we do not own)
-        if app.arguments[0].startswith('./'):
-            try:
-                self.transport.chmod(
-                    posixpath.join(execdir, app.arguments[0][2:]),
-                    0o755)
-                # os.chmod(app.arguments[0], 0755)
-            except:
-                log.error(
-                    "Failed setting execution flag on remote file '%s'",
-                    posixpath.join(execdir, app.arguments[0]))
-
-        # set up redirection
-        redirection_arguments = ''
-        if app.stdin is not None:
-            # stdin = open(app.stdin, 'r')
-            redirection_arguments += " <%s" % app.stdin
-
-        if app.stdout is not None:
-            redirection_arguments += " >%s" % app.stdout
-            stdout_dir = os.path.dirname(app.stdout)
-            if stdout_dir:
-                self.transport.makedirs(posixpath.join(execdir, stdout_dir))
-
-        if app.join:
-            redirection_arguments += " 2>&1"
-        else:
-            if app.stderr is not None:
-                redirection_arguments += " 2>%s" % app.stderr
-                stderr_dir = os.path.dirname(app.stderr)
-                if stderr_dir:
-                    self.transport.makedirs(posixpath.join(execdir, stderr_dir))
-
-        # set up environment
-        env_commands = []
-        for k, v in app.environment.iteritems():
-            env_commands.append(
-                "export {k}={v};"
-                .format(k=sh_quote_safe(k), v=sh_quote_unsafe(v)))
-
-        # Create the directory in which pid, output and wrapper script
-        # files will be stored
-        wrapper_dir = posixpath.join(
-            execdir,
-            ShellcmdLrms.WRAPPER_DIR)
-
-        if not self.transport.isdir(wrapper_dir):
-            try:
-                self.transport.makedirs(wrapper_dir)
-            except:
-                log.error("Failed creating remote folder '%s'"
-                          % wrapper_dir)
-                self.free(app)
-                raise
-
-        # Set up scripts to download/upload the swift/http files
-        downloadfiles = []
-        uploadfiles = []
-        wrapper_downloader_filename = posixpath.join(
-            wrapper_dir,
-            ShellcmdLrms.WRAPPER_DOWNLOADER)
-
-        for url, outfile in app.inputs.items():
-            if url.scheme in ['swift', 'swifts', 'swt', 'swts', 'http', 'https']:
-                downloadfiles.append("python '%s' download '%s' '%s'" % (wrapper_downloader_filename, str(url), outfile))
-
-        for infile, url in app.outputs.items():
-            if url.scheme in ['swift', 'swt', 'swifts', 'swts']:
-                uploadfiles.append("python '%s' upload '%s' '%s'" % (wrapper_downloader_filename, str(url), infile))
-        if downloadfiles or uploadfiles:
-            # Also copy the downloader.
-            with open(resource_filename(Requirement.parse("gc3pie"),
-                                        "gc3libs/etc/downloader.py")) as fd:
-                wrapper_downloader = self.transport.open(
-                    wrapper_downloader_filename, 'w')
-                wrapper_downloader.write(fd.read())
-                wrapper_downloader.close()
-
-        # Build
-        pidfilename = posixpath.join(wrapper_dir,
-                                     ShellcmdLrms.WRAPPER_PID)
-        wrapper_output_filename = posixpath.join(
-            wrapper_dir,
-            ShellcmdLrms.WRAPPER_OUTPUT_FILENAME)
-        wrapper_script_fname = posixpath.join(
-            wrapper_dir,
-            ShellcmdLrms.WRAPPER_SCRIPT)
-
-        try:
-            # Create the wrapper script
-            wrapper_script = self.transport.open(
-                wrapper_script_fname, 'w')
-            commands = (
-                r"""#!/bin/sh
-                echo $$ >{pidfilename}
-                cd {execdir}
-                exec {redirections}
-                {environment}
-                {downloadfiles}
-                '{time_cmd}' -o '{wrapper_out}' -f '{fmt}' {command}
-                rc=$?
-                {uploadfiles}
-                rc2=$?
-                if [ $rc -ne 0 ]; then exit $rc; else exit $rc2; fi
-                """.format(
-                    pidfilename=pidfilename,
-                    execdir=execdir,
-                    time_cmd=self.time_cmd,
-                    wrapper_out=wrapper_output_filename,
-                    fmt=ShellcmdLrms.TIMEFMT,
-                    redirections=redirection_arguments,
-                    environment=str.join('\n', env_commands),
-                    downloadfiles=str.join('\n', downloadfiles),
-                    uploadfiles=str.join('\n', uploadfiles),
-                    command=(str.join(' ',
-                                      (sh_quote_unsafe(arg)
-                                      for arg in app.arguments))),
-            ))
-            wrapper_script.write(commands)
-            wrapper_script.close()
-            #log.info("Wrapper script: <<<%s>>>", commands)
-        except gc3libs.exceptions.TransportError:
-            log.error("Freeing resources used by failed application")
-            self.free(app)
-            raise
-
-        try:
-            self.transport.chmod(wrapper_script_fname, 0o755)
-
-            # Execute the script in background
-            self.transport.execute_command(wrapper_script_fname, detach=True)
-        except gc3libs.exceptions.TransportError:
-            log.error("Freeing resources used by failed application")
-            self.free(app)
-            raise
-
-        # Just after the script has been started the pidfile should be
-        # filled in with the correct pid.
-        #
-        # However, the script can have not been able to write the
-        # pidfile yet, so we have to wait a little bit for it...
-        pidfile = None
-        for retry in gc3libs.utils.ExponentialBackoff():
-            try:
-                pidfile = self.transport.open(pidfilename, 'r')
-                break
-            except gc3libs.exceptions.TransportError as ex:
-                if '[Errno 2]' in str(ex):  # no such file or directory
-                    time.sleep(retry)
-                    continue
-                else:
-                    raise
-        if pidfile is None:
-            # XXX: probably self.free(app) should go here as well
-            raise gc3libs.exceptions.LRMSSubmitError(
-                "Unable to get PID file of submitted process from"
-                " execution directory `%s`: %s"
-                % (execdir, pidfilename))
-        pid = pidfile.read().strip()
-        try:
-            pid = int(pid)
-        except ValueError:
-            # XXX: probably self.free(app) should go here as well
-            pidfile.close()
-            raise gc3libs.exceptions.LRMSSubmitError(
-                "Invalid pid `%s` in pidfile %s." % (pid, pidfilename))
-        pidfile.close()
-
-        # Update application and current resources
-        app.execution.lrms_jobid = pid
-        # We don't need to update free_slots since its value is
-        # checked at runtime.
-        if app.requested_memory:
-            self.available_memory -= app.requested_memory
-        self.job_infos[pid] = {
-            'requested_cores': app.requested_cores,
-            'requested_memory': app.requested_memory,
-            'execution_dir': execdir,
-            'terminated': False,
-        }
-        self._update_job_resource_file(pid, self.job_infos[pid])
-        return app
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
         # `remote_filename` must be relative to the execution directory
         assert not os.path.isabs(remote_filename)
+        self._connect()
         # see https://github.com/fabric/fabric/issues/306 about why it
         # is correct to use `posixpath.join` for remote paths (instead
         # of `os.path.join`)
-        remote_filename = posixpath.join(
-            app.execution.lrms_execdir, remote_filename)
+        remote_filename = posixpath.join(app.execution.lrms_execdir, remote_filename)
         statinfo = self.transport.stat(remote_filename)
         # seeking backwards past the beginning of the file makes the
         # read() fail in SFTP, so be sure that we do not rewind too
@@ -1149,22 +1111,394 @@ ReturnCode=%x"""
                 with open(local_file, 'w+b') as locally:
                     locally.write(data)
 
-    def validate_data(self, data_file_list=[]):
-        """
-        Return `False` if any of the URLs in `data_file_list` cannot
-        be handled by this backend.
 
-        The `shellcmd`:mod: backend can only handle ``file`` URLs.
+    def submit_job(self, app):
         """
-        for url in data_file_list:
-            if url.scheme not in ['file', 'swift', 'swifts', 'swt', 'swts', 'http', 'https']:
-                return False
-        return True
+        Run an `Application` instance as a shell process.
+
+        :see: `LRMS.submit_job`
+        """
+        #
+        # This is a rather lengthy (if straightforward) function, whose actual
+        # implementation is brokwn down into several smaller pieces, listed
+        # hereafter. The body of `submit_jobs()` should give a high-level
+        # overview, and the helper functions carry the implementation details.
+        #
+
+        # if any failure happens here, we just raise an `LRMSSubmitError` and
+        # be done with it: there is nothing to clean up
+        try:
+            self._connect()
+            self._check_app_requirements(app)
+        except gc3libs.exceptions.LRMSSubmitError:
+            raise  # no need to convert
+        except Exception as err:
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "Failed submitting task {0} to resource `{1}`: {2}"
+                .format(app, self.name, err))
+
+        log.debug("Executing command '%s' through the shell on `%s` ...",
+                  " ".join(app.arguments), self.frontend)
+
+        # from this point on, any failure needs clean-up by calling `self.free(app)`
+        try:
+            app.execution.lrms_execdir = self._setup_app_execution_directory(app)
+            self._stage_app_input_files(app)
+            self._ensure_app_command_is_executable(app)
+
+            redirection_command = self._setup_redirection(app)
+            env_commands = self._setup_environment(app)
+
+            wrapper_dir = self._setup_wrapper_dir(app)
+            download_cmds, upload_cmds = self._setup_data_movers(app, wrapper_dir)
+            pidfilename = posixpath.join(wrapper_dir, self.WRAPPER_PID)
+            wrapper_output_path = posixpath.join(wrapper_dir, self.WRAPPER_OUTPUT_FILENAME)
+            wrapper_script_path = posixpath.join(wrapper_dir, self.WRAPPER_SCRIPT)
+
+            # create the wrapper script
+            with self.transport.open(wrapper_script_path, 'w') as wrapper:
+                wrapper.write(
+                    r"""#!/bin/sh
+                    echo $$ >'{pidfilename}'
+                    cd {execdir}
+                    {redirections}
+                    {environment}
+                    {download_cmds}
+                    '{time_cmd}' -o '{wrapper_out}' -f '{fmt}' {command}
+                    rc=$?
+                    {upload_cmds}
+                    rc2=$?
+                    if [ $rc -ne 0 ]; then exit $rc; else exit $rc2; fi
+                    """.format(
+                        pidfilename=pidfilename,
+                        execdir=app.execution.lrms_execdir,
+                        time_cmd=self.time_cmd,
+                        wrapper_out=wrapper_output_path,
+                        fmt=ShellcmdLrms.TIMEFMT,
+                        redirections=redirection_command,
+                        environment=('\n'.join(env_commands)),
+                        download_cmds=('\n'.join(download_cmds)),
+                        upload_cmds=('\n'.join(upload_cmds)),
+                       command=(' '.join(sh_quote_unsafe(arg) for arg in app.arguments)),
+                ))
+            self.transport.chmod(wrapper_script_path, 0o755)
+
+            # execute the script in background
+            self.transport.execute_command(wrapper_script_path, detach=True)
+            pid = self._read_app_process_id(pidfilename)
+            app.execution.lrms_jobid = pid
+
+        except gc3libs.exceptions.LRMSSubmitError:
+            self.free(app)
+            raise  # no need to convert
+
+        except Exception as err:
+            self.free(app)
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "Failed submitting task {0} to resource `{1}`: {2}"
+                .format(app, self.name, err))
+
+        # Update application and current resources
+        #
+        self.free_slots -= app.requested_cores
+        self.user_run += 1
+        if app.requested_memory:
+            self.available_memory -= app.requested_memory
+        self._job_infos[pid] = {
+            'requested_cores': app.requested_cores,
+            'requested_memory': app.requested_memory,
+            'execution_dir': app.execution.lrms_execdir,
+            'terminated': False,
+        }
+        self._write_job_info_file(pid, self._job_infos[pid])
+
+        return app
+
+    ## implementation of the `submit_job()` method
+
+    def _check_app_requirements(self, app, update=True):
+        """Raise exception if application requirements cannot be satisfied."""
+        # update resource status to get latest data on free cores, memory, etc
+        if update:
+            self.get_resource_status()
+
+        if self.free_slots == 0:  # or free_slots == 0:
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "Resource %s already running maximum allowed number of jobs"
+                " (%s). Increase 'max_cores' to raise." %
+                (self.name, self.max_cores))
+
+        if (app.requested_memory and self.available_memory < app.requested_memory):
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "Resource %s does not have enough available memory:"
+                " %s requested, but only %s available."
+                % (self.name,
+                   app.requested_memory.to_str('%g%s', unit=Memory.MB),
+                   available_memory.to_str('%g%s', unit=Memory.MB),)
+            )
+
+    def _setup_app_execution_directory(self, app):
+        """
+        Create a temporary subdirectory and return its (remote) path.
+
+        This is intended to be used as part of the "submit" process; in case of
+        failure it will raise an `LRMSSubmitError`.
+        """
+        target = posixpath.join(self.spooldir, 'gc3libs.XXXXXX')
+        exit_code, stdout, stderr = self.transport.execute_command(
+            "mktemp -d {0}".format(target))
+        if exit_code != 0 or stderr:
+            errmsg = (
+                "Error creating temporary directory `{0}` on host `{1}`:"
+                " `mktemp` exit code {2}; {3}"
+                .format(target, self.frontend, exit_code, stderr))
+            raise gc3libs.exceptions.LRMSSubmitError(errmsg, do_log=True)
+        return stdout.strip()
+
+    def _stage_app_input_files(self, app):
+        destdir = app.execution.lrms_execdir
+        for local_path, remote_path in app.inputs.items():
+            if local_path.scheme != 'file':
+                log.debug(
+                    "Ignoring input URL `%s` for task %s:"
+                    " only 'file:' schema supported by the ShellcmdLrms backend.",
+                    local_path, app)
+                continue
+            remote_path = posixpath.join(destdir, remote_path)
+            remote_parent = os.path.dirname(remote_path)
+            try:
+                if (remote_parent not in ['', '.']
+                        and not self.transport.exists(remote_parent)):
+                    self.transport.makedirs(remote_parent)
+                self.transport.put(local_path.path, remote_path)
+                # preserve execute permission on input files
+                if os.access(local_path.path, os.X_OK):
+                    self.transport.chmod(remote_path, 0o755)
+            except Exception as err:
+                log.error(
+                    "Staging input file `%s` to host `%s` failed: %s",
+                    local_path.path, self.frontend, err)
+                raise
+
+    def _ensure_app_command_is_executable(self, app):
+        """
+        Give an `Application`'s command file ``a+x`` permissions.
+
+        Ignore all failures: might be a link to a file we do not own.
+
+        In addition, only do this for "local" executable files: by documented
+        convention, any command name *not* starting with `./` will be searched
+        in `$PATH` and not in the current working directory (i.e., is not
+        something staged by GC3Pie).
+        """
+        execdir = app.execution.lrms_execdir
+        cmd = app.arguments[0]
+        if cmd.startswith('./'):
+            try:
+                self.transport.chmod(posixpath.join(execdir, cmd[2:]), 0o755)
+            except:
+                log.warning(
+                    "Failed setting execution flag on remote file '%s'",
+                    posixpath.join(execdir, cmd))
+
+    def _setup_redirection(self, app):
+        """
+        Return shell redirection operators to be applied when executing `app`.
+
+        Also ensure that directories where STDOUT and STDERR files should be
+        captured exist (on the remote side).
+        """
+        execdir = app.execution.lrms_execdir
+        redirections = ['exec']
+        if app.stdin is not None:
+            redirections.append("<'%s'" % app.stdin)
+        if app.stdout is not None:
+            redirections.append(">'%s'" % app.stdout)
+            stdout_dir = os.path.dirname(app.stdout)
+            if stdout_dir:
+                self.transport.makedirs(posixpath.join(execdir, stdout_dir))
+        if app.join:
+            redirections.append("2>&1")
+        else:
+            if app.stderr is not None:
+                redirections.append("2>'%s'" % app.stderr)
+                stderr_dir = os.path.dirname(app.stderr)
+                if stderr_dir:
+                    self.transport.makedirs(posixpath.join(execdir, stderr_dir))
+        if len(redirections) > 1:
+            return ' '.join(redirections)
+        else:
+            return ''  # nothing to do
+
+    def _setup_environment(self, app):
+        """Return commands to set up the environment for `app`."""
+        env_commands = []
+        for k, v in app.environment.iteritems():
+            env_commands.append(
+                "export {k}={v};"
+                .format(k=sh_quote_safe(k), v=sh_quote_unsafe(v)))
+        return env_commands
+
+    def _setup_wrapper_dir(self, app):
+        """
+        Create and return the directory in which GC3Pie aux files for `app` will be stored.
+        """
+        wrapper_dir = posixpath.join(app.execution.lrms_execdir, self.PRIVATE_DIR)
+        if not self.transport.isdir(wrapper_dir):
+            try:
+                self.transport.makedirs(wrapper_dir)
+            except Exception as err:
+                log.error("Failed creating remote folder '%s': %s", wrapper_dir, err)
+                raise
+        return wrapper_dir
+
+    # FIXME: data mover functionality should be available in all backends!
+    def _setup_data_movers(self, app, destdir):
+        """
+        Set up scripts to download/upload the swift/http files.
+        """
+        download_cmds = []
+        upload_cmds = []
+        mover_path = posixpath.join(destdir, ShellcmdLrms.MOVER_SCRIPT)
+        for url, outfile in app.inputs.items():
+            if url.scheme in ['swift', 'swifts', 'swt', 'swts', 'http', 'https']:
+                download_cmds.append(
+                    "python '{mover}' download '{url}' '{outfile}'"
+                    .format(mover=mover_path, url=str(url), outfile=outfile))
+        for infile, url in app.outputs.items():
+            if url.scheme in ['swift', 'swt', 'swifts', 'swts']:
+                upload_cmds.append(
+                    "python '{mover}' upload '{url}' '{infile}'"
+                    .format(mover=mover_path, url=str(url), infile=infile))
+        if download_cmds or upload_cmds:
+            # copy the downloader script
+            mover_src = resource_path(Requirement.parse("gc3pie"), "gc3libs/etc/mover.py")
+            with open(mover_src, 'r') as src:
+                with self.transport.open(mover_path, 'w') as dst:
+                    dst.write(src.read())
+        return download_cmds, upload_cmds
+
+    def _read_app_process_id(self, pidfilename):
+        """
+        Read and return the PID stored in `pidfilename`.
+        """
+        # Just after the script has been started the pidfile should be
+        # filled in with the correct pid.
+        #
+        # However, the script can have not been able to write the
+        # pidfile yet, so we have to wait a little bit for it...
+        pid = None
+        for retry in gc3libs.utils.ExponentialBackoff():
+            try:
+                with self.transport.open(pidfilename, 'r') as pidfile:
+                    pid = pidfile.read().strip()
+                    break
+            except gc3libs.exceptions.TransportError as ex:
+                if '[Errno 2]' in str(ex):  # no such file or directory
+                    time.sleep(retry)
+                    continue
+                else:
+                    raise
+        if pid is None:
+            # XXX: probably self.free(app) should go here as well
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "Unable to read PID file of submitted process from"
+                " execution directory `%s`: %s"
+                % (execdir, pidfilename))
+
+        # convert the PID to a Python integer
+        try:
+            return int(pid)
+        except (ValueError, TypeError) as err:
+            # XXX: probably self.free(app) should go here as well
+            raise gc3libs.exceptions.LRMSSubmitError(
+                "Invalid PID `{0}` in pidfile '{1}': {2}."
+                .format(pid, pidfilename, err))
+
+
+    def update_job_state(self, app):
+        """
+        Query the running status of the local process whose PID is
+        stored into `app.execution.lrms_jobid`, and map the POSIX
+        process status to GC3Libs `Run.State`.
+        """
+        self._connect()
+        pid = app.execution.lrms_jobid
+        try:
+            pstat = self._machine.get_process_state(pid)
+            app.execution.state = _parse_process_status(pstat)
+            if app.execution.state == Run.State.TERMINATING:
+                self._cleanup_terminating_task(app, pid)
+            else:
+                self._kill_if_over_time_limits(app)
+        except LookupError:
+            log.debug(
+                "Process with PID %d not found,"
+                " assuming task %s has finished running.",
+                pid, app)
+            self._cleanup_terminating_task(app, pid)
+        return app.execution.state
+
+    def _kill_if_over_time_limits(self, app):
+        elapsed = self._machine.get_process_running_time()
+        # determine whether to kill, depending on wall-clock time
+        cancel = False
+        if elapsed > self.max_walltime:
+            log.warning("Task %s has run for %s, exceeding max_walltime %s of resource %s: cancelling it.",
+                        app, elapsed.to_timedelta(), self.max_walltime, self.name)
+            cancel = True
+        if (app.requested_walltime and elapsed > app.requested_walltime):
+            log.warning("Task %s has run for %s, exceeding own `requested_walltime` %s: cancelling it.",
+                        app, elapsed.to_timedelta(), app.requested_walltime)
+            cancel = True
+        if cancel:
+            self.cancel_job(app)
+            # set signal to SIGTERM in termination status
+            self._cleanup_terminating_task(app, pid, termstatus=(15, -1))
+            return
+
+    def _cleanup_terminating_task(self, app, pid, termstatus=None):
+        app.execution.state = Run.State.TERMINATING
+        if termstatus is not None:
+            app.execution.returncode = termstatus
+        # if `self._job_infos` records this task as terminated, then
+        # updates to resource utilization records has already been
+        # done by `get_resource_status()`
+        if (pid in self._job_infos and not self._job_infos[pid]['terminated']):
+            self._job_infos[pid]['terminated'] = True
+            self._write_job_info_file(pid, self._job_infos[pid])
+            # do in-memory bookkeeping
+            assert (self._job_infos[pid]['requested_memory'] == app.requested_memory)
+            assert (self._job_infos[pid]['requested_cores'] == app.requested_cores)
+            self.free_slots += app.requested_cores
+            self.user_run -= 1
+            if app.requested_memory is not None:
+                self.available_memory += app.requested_memory
+        wrapper_filename = posixpath.join(
+            app.execution.lrms_execdir,
+            ShellcmdLrms.PRIVATE_DIR,
+            ShellcmdLrms.WRAPPER_OUTPUT_FILENAME)
+        try:
+            log.debug(
+                "Reading resource utilization from wrapper file `%s` for task %s ...",
+                wrapper_filename, app)
+            with self.transport.open(wrapper_filename, 'r') as wrapper_file:
+                outcome = self._parse_wrapper_output(wrapper_file)
+                app.execution.update(outcome)
+                if termstatus is None:
+                    app.execution.returncode = outcome.returncode
+        except Exception as err:
+            msg = ("Could not open wrapper file `{0}` for task `{1}`: {2}"
+                   .format(wrapper_filename, app, err))
+            log.warning("%s -- Termination status and resource utilization fields will not be set.", msg)
+            raise gc3libs.exceptions.InvalidValue(msg)
+        finally:
+            self._delete_job_info_file(pid)
 
     def _parse_wrapper_output(self, wrapper_file):
         """
         Parse the file saved by the wrapper in
-        `ShellcmdLrms.WRAPPER_OUTPUT_FILENAME` inside the WRAPPER_DIR
+        `ShellcmdLrms.WRAPPER_OUTPUT_FILENAME` inside the PRIVATE_DIR
         in the job's execution directory and return a `Struct`:class:
         containing the values found on the file.
 
@@ -1201,6 +1535,24 @@ ReturnCode=%x"""
             acctinfo['shellcmd_user_time'] + acctinfo['shellcmd_kernel_time'])
 
         return acctinfo
+
+
+    def validate_data(self, data_file_list=[]):
+        """
+        Return `False` if any of the URLs in `data_file_list` cannot
+        be handled by this backend.
+
+        The `shellcmd`:mod: backend can handle the following URL schemas:
+
+        - ``file`` (natively, read/write);
+        - ``swift``/``swifts``/``swt``/``swts`` (with Python-based remote helper, read/write);
+        - ``http``/``https`` (with Python-based remote helper, read-only).
+        """
+        for url in data_file_list:
+            if url.scheme not in ['file', 'swift', 'swifts', 'swt', 'swts', 'http', 'https']:
+                return False
+        return True
+
 
 # main: run tests
 
