@@ -443,29 +443,32 @@ class SequentialTaskCollection(TaskCollection):
         Update state of the collection, based on the jobs' statuses.
         """
         if self._current_task is None:
-            # it's either NEW or TERMINATED, no update
+            # state is either NEW or TERMINATED, no update
             assert self.execution.state in [
                 Run.State.NEW, Run.State.TERMINATED]
             return self.execution.state
-        else:
-            # update state of current task
-            task = self.tasks[self._current_task]
-            task.update_state(**extra_args)
-            gc3libs.log.debug("Task #%d in state %s",
-                              self._current_task, task.execution.state)
-        # set state based on the state of current task:
+
+        # update state of current task
+        task = self.tasks[self._current_task]
+        task.update_state(**extra_args)
+        gc3libs.log.debug("Task #%d in state %s",
+                          self._current_task, task.execution.state)
+
+        # now set state based on the state of current task:
         #
         # 1. first task ever gets special treatment
         if (self._current_task == 0
-                and task.execution.state in [
-                    Run.State.NEW,
-                    Run.State.SUBMITTED,
-                ]):
+            and task.execution.state in [
+                Run.State.NEW,
+                Run.State.SUBMITTED,
+            ]):
             # avoid state flapping back to NEW if it's already SUBMITTED
             if self.execution.state == Run.State.NEW:
                 self.execution.state = task.execution.state
+            return self.execution.state
+
         # 2. if current task is terminated, advance to next one
-        elif (task.execution.state == Run.State.TERMINATED):
+        if (task.execution.state == Run.State.TERMINATED):
             nxt = self.next(self._current_task)
             if nxt in Run.State:
                 self.execution.state = nxt
@@ -494,11 +497,15 @@ class SequentialTaskCollection(TaskCollection):
                 if not collection_state_already_set:
                     self.execution.state = Run.State.RUNNING
                 self.changed = True
+            return self.execution.state
+
         # 3. if task stopped, stop the sequence too
-        elif (task.execution.state == Run.State.STOPPED):
+        if (task.execution.state == Run.State.STOPPED):
             self.execution.state = Run.State.STOPPED
+            return self.execution.state
+
         # 4. if task is running or terminating, keep on running
-        elif task.execution.state in [
+        if task.execution.state in [
                 Run.State.NEW,
                 Run.State.SUBMITTED,
                 Run.State.RUNNING,
@@ -506,14 +513,13 @@ class SequentialTaskCollection(TaskCollection):
                 Run.State.UNKNOWN,
         ]:
             self.execution.state = Run.State.RUNNING
+            return self.execution.state
+
         # 5. this shouldn't happen!
-        else:
-            raise gc3libs.exceptions.InternalError(
-                "Unhandled task state `%s`"
-                " in SequentialTaskCollection.update_state()"
-                % task.execution.state
-            )
-        return self.execution.state
+        raise gc3libs.exceptions.InternalError(
+            "Unhandled task state `{0}`"
+            " in SequentialTaskCollection.update_state()"
+            .format(task.execution.state))
 
 
 class _OnError(object):

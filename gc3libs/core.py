@@ -1470,7 +1470,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 if state == Run.State.SUBMITTED:
                     # only real applications need to be counted
                     # against the limit; policy tasks are exempt
-                    # (this applies to all similar clause below)
+                    # (this applies to all similar clauses below)
                     if isinstance(task, Application):
                         currently_submitted += 1
                         currently_in_flight += 1
@@ -1527,7 +1527,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 else:
                     # if we got to this point, state has an invalid value
                     gc3libs.log.error(
-                        "Invalid state '%r' returned by task %s.",
+                        "Invalid state `%r` returned by task %s.",
                         state, task)
                     if not gc3libs.error_ignored(
                             # context:

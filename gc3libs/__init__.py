@@ -285,7 +285,6 @@ class Task(Persistable, Struct):
         if self._controller != controller:
             if self._attached:
                 self.detach()
-            # gc3libs.log.debug("Attaching %s to %s" % (self, controller))
             controller.add(self)
             self._attached = True
             self._controller = controller
@@ -302,7 +301,7 @@ class Task(Persistable, Struct):
         def __getattr__(self, name):
             def throw_error(*args, **kwargs):
                 raise gc3libs.exceptions.DetachedFromControllerError(
-                    "Task object is not attached to a controller.")
+                    "Task object is not attached to any controller.")
             return throw_error
     __no_controller = __NoController()
 
@@ -1833,7 +1832,9 @@ class Run(Struct):
             if self._state != value:
                 self.state_last_changed = time.time()
                 self.timestamp[value] = time.time()
-                self.history.append(value)
+                self.history.append(
+                    "Transition from state {0} to state {1}"
+                    .format(self._state, value))
                 if self._ref is not None:
                     # mark as changed
                     self._ref.changed = True

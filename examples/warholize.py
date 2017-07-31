@@ -322,8 +322,8 @@ class ApplicationWithCachedResults(gc3libs.Application):
     """
     def __init__(self, arguments, inputs, outputs, **extra_args):
         gc3libs.Application.__init__(self, arguments, inputs, outputs, **extra_args)
-        # check if all the output files are already available
 
+        # check if all the output files are already available
         all_outputs_available = True
         for output in self.outputs.values():
             if not os.path.exists(
