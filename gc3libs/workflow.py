@@ -450,8 +450,7 @@ class SequentialTaskCollection(TaskCollection):
         # update state of current task
         task = self.tasks[self._current_task]
         task.update_state(**extra_args)
-        gc3libs.log.debug("Task #%d in state %s",
-                          self._current_task, task.execution.state)
+        gc3libs.log.debug("Task `%s` in state %s", task, task.execution.state)
 
         # now set state based on the state of current task:
         #

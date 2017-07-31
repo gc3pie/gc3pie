@@ -516,15 +516,15 @@ class _Script(cli.app.CommandLineApp):
                    " http://dir.gmane.org/gmane.comp.python.gc3pie )"
                    " Thanks for your cooperation!")
             if len(sys.argv) > 0:
-                msg %= (str(ex), self.name, str.join(' ', sys.argv[1:]))
+                msg %= (ex, self.name, str.join(' ', sys.argv[1:]))
             else:
-                msg %= (str(ex), self.name, '')
+                msg %= (ex, self.name, '')
             # rc = 1
         except cli.app.Abort as ex:
-            msg = "%s: %s" % (ex.__class__.__name__, str(ex))
+            msg = "%s: %s" % (ex.__class__.__name__, ex)
             # rc = ex.status
         except EnvironmentError as ex:
-            msg = "%s: %s" % (ex.__class__.__name__, str(ex))
+            msg = "%s: %s" % (ex.__class__.__name__, ex)
             # rc = os.EX_IOERR  # 74 (see: /usr/include/sysexits.h )
         except Exception as ex:
             if 'GC3PIE_NO_CATCH_ERRORS' in os.environ:
@@ -532,15 +532,13 @@ class _Script(cli.app.CommandLineApp):
                 raise
             else:
                 # generic error exit
-                msg = "%s: %s" % (ex.__class__.__name__, str(ex))
+                msg = "%s: %s" % (ex.__class__.__name__, ex)
                 # rc = 1
         # output error message and -maybe- backtrace...
         try:
             self.log.critical(
                 msg,
-                exc_info=(
-                    self.params.verbose > self.verbose_logging_threshold +
-                    2))
+                exc_info=(self.params.verbose > self.verbose_logging_threshold + 2))
         except:
             # no logging setup, output to stderr
             sys.stderr.write("%s: FATAL ERROR: %s\n" % (self.name, msg))

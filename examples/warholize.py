@@ -280,13 +280,13 @@ class WarholizeWorkflow(SequentialTaskCollection):
     def next(self, iteration):
         last = self.tasks[-1]
 
-        if isinstance(last, GrayScaleConvertApplication):
+        if iteration == 0:
             self.add(TricolorizeMultipleImages(
                 os.path.join(self.output_dir, self.grayscaled_image),
                 self.copies, self.ncolors,
                 self.output_dir, **self.extra_args))
             return Run.State.RUNNING
-        elif isinstance(last, TricolorizeMultipleImages):
+        elif iteration == 1:
             self.add(MergeImagesApplication(
                 os.path.join(self.output_dir, self.grayscaled_image),
                 last.warhol_dir,
@@ -639,14 +639,13 @@ class MergeImagesApplication(ApplicationWithCachedResults):
     def terminated(self):
         """Copy output file to main directory"""
         try:
-            copyfile(os.path.join(self.output_dir,
-                                  self.output_file),
+            copyfile(os.path.join(self.output_dir, self.output_file),
                      self.input_dir)
         except:
-            gc3libs.log.warning("Ignoring error copying file %s to %s" % (
-                os.path.join(self.output_dir,
-                             self.output_file),
-                self.input_dir))
+            gc3libs.log.warning(
+                "Ignoring error copying file {0} to {1}"
+                .format(os.path.join(self.output_dir, self.output_file),
+                        self.input_dir))
 
 
 # Making the script executable

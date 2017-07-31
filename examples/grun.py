@@ -38,6 +38,15 @@ from gc3libs.cmdline import SessionBasedScript, nonnegative_int
 from gc3libs.workflow import TaskCollection
 from gc3libs.workflow import ParallelTaskCollection, SequentialTaskCollection
 
+## main: run command-line
+
+if "__main__" == __name__:
+    import grun
+    grun.GRunScript().run()
+
+
+## aux application classes
+
 class GRunApplication(Application):
     """
     An `Application` wrapper which will execute the arguments as a
@@ -62,14 +71,18 @@ class GRunApplication(Application):
                              stderr = "stderr.txt",
                              **extra_args)
 
+
+## the script definition
+
 class GRunScript(SessionBasedScript):
     """
-    Simple script to run an application or script. It also allow to
-    run it multiple times, in parallel or in a serial.
+    Simple GC3Pie script to run a command.
 
-    Mainly used for testing purposes.
+    Allows also to run it multiple times, in parallel or sequentially.
+    To be mainly used for testing purposes; for "production" runs,
+    consider writing a specialized script.
     """
-    version = '1.1'
+    version = '1.1.1'
     def setup_options(self):
         """Add options specific to this session-based script."""
         self.add_param('--parallel', metavar="COUNT",
@@ -126,9 +139,3 @@ class GRunScript(SessionBasedScript):
             print "  command line: %s" % str.join(" ", app.arguments)
             print "  return code:  %s" % app.execution._exitcode
             print "  output dir:   %s" % app.output_dir
-
-## main: run tests
-
-if "__main__" == __name__:
-    import grun
-    grun.GRunScript().run()
