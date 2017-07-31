@@ -873,17 +873,18 @@ class ShellcmdLrms(LRMS):
         a running process.
         """
         self.transport.connect()
-        pidfiles = self.transport.listdir(self.resource_dir)
-        log.debug("Checking status of the following PIDs: %s",
-                  str.join(", ", pidfiles))
         job_infos = {}
-        for pid in pidfiles:
-            job = self._read_job_info_file(pid)
-            if job:
-                job_infos[pid] = job
-            else:
-                # Process not found, ignore it
-                continue
+        pidfiles = self.transport.listdir(self.resource_dir)
+        if pidfiles:
+            log.debug("Checking status of the following PIDs: %s",
+                      str.join(", ", pidfiles))
+            for pid in pidfiles:
+                job = self._read_job_info_file(pid)
+                if job:
+                    job_infos[pid] = job
+                else:
+                    # Process not found, ignore it
+                    continue
         return job_infos
 
     def _read_job_info_file(self, pid):
@@ -892,14 +893,14 @@ class ShellcmdLrms(LRMS):
         exists. Returns None if it does not exist.
         """
         self.transport.connect()
-        log.debug("Reading resource file for pid %s", pid)
+        log.debug("Reading job info file for pid %s", pid)
         jobinfo = None
         path = posixpath.join(self.resource_dir, str(pid))
         with self.transport.open(path, 'rb') as fp:
             try:
                 jobinfo = pickle.load(fp)
             except Exception as ex:
-                log.error("Unable to read remote resource file %s: %s",
+                log.error("Unable to read remote job info file %s: %s",
                           path, ex)
                 raise
         return jobinfo
@@ -910,7 +911,7 @@ class ShellcmdLrms(LRMS):
         """
         self.transport.connect()
         # XXX: We should check for exceptions!
-        log.debug("Updating resource file for pid %s", pid)
+        log.debug("Updating job info file for pid %s", pid)
         with self.transport.open(
                 posixpath.join(self.resource_dir, str(pid)), 'wb') as fp:
             pickle.dump(resources, fp, -1)
@@ -920,7 +921,7 @@ class ShellcmdLrms(LRMS):
         Delete `self.resource_dir/PID` file
         """
         self.transport.connect()
-        log.debug("Deleting resource file for pid %s ...", pid)
+        log.debug("Deleting job info file for pid %s ...", pid)
         pidfile = posixpath.join(self.resource_dir, str(pid))
         try:
             self.transport.remove(pidfile)
