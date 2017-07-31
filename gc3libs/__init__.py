@@ -1836,6 +1836,10 @@ class Run(Struct):
                     "Transition from state {0} to state {1}"
                     .format(self._state, value))
                 if self._ref is not None:
+                    # update stats on controller
+                    if self._ref._attached:
+                        self._ref._controller._update_task_counts(self._ref, self._state, -1)
+                        self._ref._controller._update_task_counts(self._ref, value, +1)
                     # mark as changed
                     self._ref.changed = True
                     # invoke state-transition method

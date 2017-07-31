@@ -907,6 +907,14 @@ class Core(object):
         """
         pass
 
+    def _update_task_counts(self, task, state, increment):
+        """
+        No-op, implemented for compatibility with `Engine`.
+
+        This method is here just to allow `Core` and `Engine` objects
+        to be used interchangeably.
+        """
+        pass
 
 class Scheduler(object):
 
@@ -1193,7 +1201,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
     | False
     """
 
-    # pylint: disable=too-many-arguments,dangerous-default-value
     def __init__(self, controller, tasks=[], store=None,
                  can_submit=True, can_retrieve=True,
                  max_in_flight=0, max_submitted=0,
@@ -1265,6 +1272,25 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             self.add(task)
 
 
+    def _update_task_counts(self, task, state, increment):
+        """
+        Update the counts relative to `task`'s state by `increment`.
+
+        The task state is passed as an independent argument, in order
+        to allow us to decrease counters on the old task state.
+        """
+        for cls in self._counts:
+            if isinstance(task, cls):
+                self._counts[cls]['total'] += increment
+                self._counts[cls][state] += increment
+                if Run.State.TERMINATED == state:
+                    if task.execution.returncode == 0:
+                        self._counts[cls]['ok'] += increment
+                    else:
+                        self._counts[cls]['failed'] += increment
+
+
+    # pylint: disable=too-many-arguments,dangerous-default-value
     def __get_task_queue(self, task):
         """
         Return the "queue" object to which `task` should be added or removed.
@@ -1287,24 +1313,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 "Unhandled state '%s' in gc3libs.core.Engine." % state)
 
 
-    def __update_task_counts(self, task, state, increment):
-        """
-        Update the counts relative to `task`'s state by `increment`.
-
-        The task state is passed as an independent argument, in order
-        to allow us to decrease counters on the old task state.
-        """
-        for cls in self._counts:
-            if isinstance(task, cls):
-                self._counts[cls]['total'] += increment
-                self._counts[cls][state] += increment
-                if Run.State.TERMINATED == state:
-                    if task.execution.returncode == 0:
-                        self._counts[cls]['ok'] += increment
-                    else:
-                        self._counts[cls]['failed'] += 1
-
-
     def add(self, task):
         """
         Add `task` to the list of tasks managed by this Engine.
@@ -1321,9 +1329,11 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             try:
                 self._tasks_by_id[task.persistent_id] = task
             except AttributeError:
-                gc3libs.log.warning("Task %s has no persistent ID!", task)
+                gc3libs.log.debug(
+                    "Task %s added to Engine %s with no persistent ID!",
+                    task, self)
         task.attach(self)
-        self.__update_task_counts(task, task.execution.state, +1)
+        self._update_task_counts(task, task.execution.state, +1)
 
 
     def remove(self, task):
@@ -1333,11 +1343,15 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         if self._store:
             try:
                 del self._tasks_by_id[task.persistent_id]
-            except AttributeError:
+            except KeyError:
                 # already removed
                 pass
+            except AttributeError:
+                gc3libs.log.debug(
+                    "Task %s added to Engine %s with no persistent ID!",
+                    task, self)
         task.detach()
-        self.__update_task_counts(task, task.execution.state, -1)
+        self._update_task_counts(task, task.execution.state, -1)
 
 
     def find_task_by_id(self, task_id):
@@ -1364,6 +1378,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             select(self._new, only_cls),
             select(self._in_flight, only_cls),
             select(self._stopped, only_cls),
+            select(self._to_kill, only_cls),
             select(self._terminating, only_cls),
             select(self._terminated, only_cls),
         )
@@ -1408,7 +1423,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                     counter['ok'] += 1
                 else:
                     counter['failed'] += 1
-        if counter[Run.State.TERMINATED] > 0:
+        if Run.State.TERMINATED in counter and counter[Run.State.TERMINATED] > 0:
             warn("The Engine class will forget TERMINATED tasks in the near future."
                  "In order to get correct results, `init_counts_for`"
                  " should be called before any task reaches TERMINATED state",
@@ -1464,9 +1479,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 if self._store and task.changed:
                     self._store.save(task)
                 state = task.execution.state
-                if state != old_state:
-                    self.__update_task_counts(task, old_state, -1)
-                    self.__update_task_counts(task, state, +1)
                 if state == Run.State.SUBMITTED:
                     # only real applications need to be counted
                     # against the limit; policy tasks are exempt
@@ -1474,44 +1486,49 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                     if isinstance(task, Application):
                         currently_submitted += 1
                         currently_in_flight += 1
-                # elif state == Run.State.RUNNING or state ==
-                # Run.State.UNKNOWN:
                 elif state == Run.State.RUNNING:
                     if isinstance(task, Application):
-                        currently_in_flight += 1
-                    if self.can_retrieve and self.retrieve_running:
-                        # try to get output
-                        try:
-                            self._core.fetch_output(
-                                task,
-                                overwrite=self.retrieve_overwrites,
-                                changed_only=self.retrieve_changed_only)
-                        # pylint: disable=broad-except
-                        except Exception as err:
-                            if gc3libs.error_ignored(
-                                    # context:
-                                    # - module
-                                    'core',
-                                    # - class
-                                    'Engine',
-                                    # - method
-                                    'progress',
-                                    # - actual error class
-                                    err.__class__.__name__,
-                                    # - additional keywords
-                                    'RUNNING',
-                                    'fetch_output',
-                            ):
-                                gc3libs.log.error(
-                                    "Ignored error in fetching output of"
-                                    " RUNNING task '%s': %s: %s",
-                                    task, err.__class__.__name__, err)
-                                gc3libs.log.debug(
-                                    "(Original traceback follows.)",
-                                    exc_info=True)
-                            else:
-                                # propagate exceptions for debugging purposes
-                                raise
+                        if old_state == Run.State.SUBMITTED:
+                            currently_submitted -= 1
+                            # currently_in_flight does not change
+                        else:
+                            currently_in_flight += 1
+                        if self.can_retrieve and self.retrieve_running:
+                            # try to get output
+                            try:
+                                self._core.fetch_output(
+                                    task,
+                                    overwrite=self.retrieve_overwrites,
+                                    changed_only=self.retrieve_changed_only)
+                            # pylint: disable=broad-except
+                            except Exception as err:
+                                if gc3libs.error_ignored(
+                                        # context:
+                                        # - module
+                                        'core',
+                                        # - class
+                                        'Engine',
+                                        # - method
+                                        'progress',
+                                        # - actual error class
+                                        err.__class__.__name__,
+                                        # - additional keywords
+                                        'RUNNING',
+                                        'fetch_output',
+                                ):
+                                    gc3libs.log.error(
+                                        "Ignored error in fetching output of"
+                                        " RUNNING task '%s': %s: %s",
+                                        task, err.__class__.__name__, err)
+                                    gc3libs.log.debug(
+                                        "(Original traceback follows.)",
+                                        exc_info=True)
+                                else:
+                                    # propagate exceptions for debugging purposes
+                                    raise
+                elif state == Run.State.NEW:
+                    # can happen only with TaskCollections
+                    assert not isinstance(task, Application)
                 elif state == Run.State.STOPPED:
                     # task changed state, mark as to remove
                     transitioned.append(index)
@@ -1591,9 +1608,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 if self._store:
                     self._store.save(task)
                 state = task.execution.state
-                if state != old_state:
-                    self.__update_task_counts(task, old_state, -1)
-                    self.__update_task_counts(task, state, +1)
                 if old_state == Run.State.SUBMITTED:
                     if isinstance(task, Application):
                         currently_submitted -= 1
@@ -1643,9 +1657,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 if self._store and task.changed:
                     self._store.save(task)
                 state = task.execution.state
-                if state != old_state:
-                    self.__update_task_counts(task, old_state, -1)
-                    self.__update_task_counts(task, state, +1)
                 if state in [Run.State.SUBMITTED, Run.State.RUNNING]:
                     if isinstance(task, Application):
                         currently_in_flight += 1
@@ -1729,8 +1740,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                             currently_in_flight += 1
                         # if we get to this point, we know state is not NEW anymore
                         state = task.execution.state
-                        self.__update_task_counts(task, Run.State.NEW, -1)
-                        self.__update_task_counts(task, state, +1)
 
                         sched.send(task.execution.state)
                     # pylint: disable=broad-except
@@ -1839,9 +1848,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                     transitioned.append(index)
                     try:
                         self._core.free(task)
-                        # update counts
-                        self.__update_task_counts(task, Run.State.TERMINATING, -1)
-                        self.__update_task_counts(task, Run.State.TERMINATED, +1)
                     # pylint: disable=broad-except
                     except Exception as err:
                         gc3libs.log.error(
@@ -1961,7 +1967,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             # to expunge it from the queues ...
             queue = self.__get_task_queue(task)
             if _contained(task, queue):
-                queue.remove(task)
+                self.remove(task)
             task.redo()
         # ... and then add it again with the (possibly) new state
         return self.add(task)
