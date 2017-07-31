@@ -917,7 +917,6 @@ class LocalTransport(Transport):
 
     @same_docstring_as(Transport.connect)
     def connect(self):
-        gc3libs.log.debug("Opening LocalTransport... ")
         self._is_open = True
 
     @same_docstring_as(Transport.chmod)
