@@ -31,6 +31,7 @@ __docformat__ = 'reStructuredText'
 
 # stdlib imports
 from abc import ABCMeta, abstractmethod
+from collections import defaultdict
 import cPickle as pickle
 from getpass import getuser
 import os
@@ -291,11 +292,44 @@ class _Machine(object):
             raise RuntimeError("Cannot `{0}` as a memory amount: {1}"
                                .format(qty, err))
 
-
     @abstractmethod
     def _get_total_memory_impl(self):
         """Machine-specific part of `get_total_memory`."""
         pass
+
+    def list_process_tree(self, root_pid=1):
+        """
+        Return list of PIDs of children of the given process.
+
+        The returned list is empty if no process whose PID is
+        `root_pid` can be found.
+
+        Otherwise, the list is composed by walking the tree
+        breadth-first, so it always starts with `root_pid` and ends
+        with leaf processes (i.e., those which have no children).
+        """
+        ps_output = self._run_command(self._list_pids_and_ppids_command())
+
+        children = defaultdict(list)
+        for line in ps_output.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+            pid, ppid = line.split()
+            children[int(ppid)].append(int(pid))
+        if root_pid not in children:
+            return []
+
+        result = []
+        queue = [root_pid]
+        while queue:
+            node = queue.pop()  # dequeue
+            result.append(node)
+            for child in children[node]:
+                queue.insert(0, child)  # enqueue
+
+        return result
+
 
 
 class _LinuxMachine(_Machine):
@@ -311,6 +345,9 @@ class _LinuxMachine(_Machine):
                 if line.startswith('MemTotal'):
                     return (line.split(), 1,  Memory.KiB)
 
+    def _list_pids_and_ppids_command(self):
+        return 'ps --no-header -o pid,ppid'
+
 
 class _MacOSXMachine(_Machine):
     """MacOSX-specific shell tools."""
@@ -324,6 +361,9 @@ class _MacOSXMachine(_Machine):
         cmd = 'sysctl hw.memsize'
         stdout = self._run_command(cmd)
         return (stdout.split(':'), 1, Memory.B)
+
+    def _list_pids_and_ppids_command(self):
+        return 'ps -o pid=,ppid='
 
 
 ## the main LRMS class
@@ -909,8 +949,14 @@ class ShellcmdLrms(LRMS):
         except AttributeError:
             self._gather_machine_specs()
 
-    @same_docstring_as(LRMS.cancel_job)
     def cancel_job(self, app):
+        """
+        Kill all children processes of the given task `app`.
+
+        The PID of the wrapper script (which is the root of the PID
+        tree we are going to send a "TERM" signal) must have been
+        stored (by `submit_job`:meth:) as `app.execution.lrms_jobid`.
+        """
         try:
             pid = int(app.execution.lrms_jobid)
         except ValueError:
@@ -920,36 +966,84 @@ class ShellcmdLrms(LRMS):
                 .format(app, app.execution.lrms_jobid,
                         type(app.execution.lrms_jobid)))
 
-        self.transport.connect()
-        # Kill all the processes belonging to the same session as the
-        # pid we actually started.
+        self._connect()
 
-        # On linux, kill '$(ps -o pid= -g $(ps -o sess= -p %d))' would
-        # be enough, but on MacOSX it doesn't work.
-        exit_code, stdout, stderr = self.transport.execute_command(
-            "ps -p %d  -o sess=" % pid)
-        if exit_code != 0 or not stdout.strip():
-            # No PID found. We cannot recover the session group of the
-            # process, so we cannot kill any remaining orphan process.
-            log.error("Unable to find job '%s': no pid found.", pid)
+        pids_to_kill = self._machine.list_process_tree(pid)
+        if not pids_to_kill:
+            log.debug(
+                "No process identified by PID %s in `ps` output,"
+                " assuming task %s is already terminated.", pid, app)
         else:
-            exit_code, stdout, stderr = self.transport.execute_command(
-                'kill $(ps -ax -o sess=,pid= | egrep "^[ \t]*%s[ \t]")' % stdout.strip())
-            # XXX: should we check that the process actually died?
-            if exit_code != 0:
-                # Error killing the process. It may not exist or we don't
-                # have permission to kill it.
-                exit_code, stdout, stderr = self.transport.execute_command(
-                    "ps ax | grep -E '^ *%d '" % pid)
-                if exit_code == 0:
-                    # The PID refers to an existing process, but we
-                    # couldn't kill it.
-                    log.error("Could not kill job '%s': %s", pid, stderr)
-                else:
-                    # The PID refers to a non-existing process.
-                    log.error(
-                        "Could not kill job '%s'. It refers to non-existent"
-                        " local process %s.", app, app.execution.lrms_jobid)
+            assert (pid == pids_to_kill[0])
+
+            # list `pids_to_kill` starts with the root process and ends
+            # with leaf ones; we want to kill them in reverse order (leaves first)
+            kill_args = ' '.join(str(procid) for procid in reversed(pids_to_kill))
+            log.debug(
+                "Cancelling task %s on resource `%s`:"
+                " sending SIGTERM to processes with PIDs %s",
+                app, self.name, kill_args)
+            # ignore exit code and STDERR from `kill`: if any process
+            # exists while we're killing them, `kill` will error out
+            # but that error should be ignored...
+            self.transport.execute_command("kill {0}".format(kill_args))
+
+            # now double-check and send SIGKILLs
+            attempt = 1
+            waited_on_first = False
+            # XXX: should these be configurable?
+            wait = 60
+            max_attempts = 5
+            while pids_to_kill and attempt < max_attempts:
+                for target in list(reversed(pids_to_kill)):
+                    log.debug("Checking if PID %s is still running ...", target)
+                    try:
+                        pstat = self._machine.get_process_state(target)
+                    except LookupError:
+                        # process already died, good
+                        continue
+                    # see comments in `_parse_process_status` for the
+                    # meaning of the letters
+                    if pstat in ['R', 'S', 'I', 'W', 'T', 't']:
+                        if not waited_on_first:
+                            # wait some time to allow disk I/O before termination
+                            log.info("Waiting %s seconds to allow processes to terminate cleanly ...", wait)
+                            for _ in range(wait):  # Python ignores SIGINT while in `time.sleep()`
+                                time.sleep(1)
+                        exit_code, stdout, stderr = self.transport.execute_command(
+                            'kill -9 {0}'.format(target))
+                        if exit_code == 0:
+                            pids_to_kill.remove(target)
+                        else:
+                            log.debug(
+                                "Could not send SIGKILL"
+                                " to process %s on resource '%s':"
+                                " %s (exit code: %d)",
+                                target, self.name, stderr.strip(), exit_code)
+                    elif pstat in ['D', 'U']:
+                        log.error(
+                            "Process %s on resource %s is"
+                            " in uninterruptible sleep and cannot be killed.",
+                            target, self.name)
+                    elif pstat in ['X', 'Z']:
+                        log.warning(
+                            "Process %s on resource %s is already dead"
+                            " but process entry has not been cleared."
+                            " This might be a bug in GC3Pie or in `%s`.",
+                                 target, self.name, self.time_cmd)
+                        pids_to_kill.remove(target)
+                log.info("Waiting %s seconds to allow processes to terminate ...", wait)
+                for _ in range(wait):  # Python ignores SIGINT while in `time.sleep()`
+                    time.sleep(1)
+                attempt += 1
+
+            if pids_to_kill:
+                log.error(
+                    "Not all processes belonging to task %s could be killed:"
+                    " processes %s still alive on resource '%s'.",
+                    app, (' '.join(str(_) for _ in pids_to_kill)), self.name)
+
+        self._job_infos[pid]['terminated'] = True
         self._delete_job_info_file(pid)
 
 
