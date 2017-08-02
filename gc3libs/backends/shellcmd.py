@@ -1504,7 +1504,7 @@ class ShellcmdLrms(LRMS):
             try:
                 with self.transport.open(pidfile_path, 'r') as pidfile:
                     pid = pidfile.read().strip()
-                    return int(pid_txt)
+                    return int(pid)
             except ValueError:
                 # it happens that the PID file exists, but `.read()`
                 # returns the empty string... just wait and retry.
