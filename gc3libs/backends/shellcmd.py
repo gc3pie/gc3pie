@@ -1491,42 +1491,40 @@ class ShellcmdLrms(LRMS):
                     dst.write(src.read())
         return download_cmds, upload_cmds
 
-    def _read_app_process_id(self, pidfilename):
+    def _read_app_process_id(self, pidfile_path):
         """
-        Read and return the PID stored in `pidfilename`.
+        Read and return the PID stored in `pidfile_path`.
         """
         # Just after the script has been started the pidfile should be
         # filled in with the correct pid.
         #
         # However, the script can have not been able to write the
         # pidfile yet, so we have to wait a little bit for it...
-        pid = None
         for retry in gc3libs.utils.ExponentialBackoff():
             try:
-                with self.transport.open(pidfilename, 'r') as pidfile:
+                with self.transport.open(pidfile_path, 'r') as pidfile:
                     pid = pidfile.read().strip()
-                    break
+                    return int(pid_txt)
+            except ValueError:
+                # it happens that the PID file exists, but `.read()`
+                # returns the empty string... just wait and retry.
+                if pid == '':
+                    continue
+                else:
+                    raise gc3libs.exceptions.LRMSSubmitError(
+                        "Invalid PID `{0}` in pidfile '{1}': {2}."
+                        .format(pid, pidfile_path, err))
             except gc3libs.exceptions.TransportError as ex:
                 if '[Errno 2]' in str(ex):  # no such file or directory
                     time.sleep(retry)
                     continue
                 else:
                     raise
-        if pid is None:
-            # XXX: probably self.free(app) should go here as well
+        else:  # I wouldn't have imagined I'd ever use `for: .. else:`!
             raise gc3libs.exceptions.LRMSSubmitError(
                 "Unable to read PID file of submitted process from"
                 " execution directory `%s`: %s"
-                % (execdir, pidfilename))
-
-        # convert the PID to a Python integer
-        try:
-            return int(pid)
-        except (ValueError, TypeError) as err:
-            # XXX: probably self.free(app) should go here as well
-            raise gc3libs.exceptions.LRMSSubmitError(
-                "Invalid PID `{0}` in pidfile '{1}': {2}."
-                .format(pid, pidfilename, err))
+                % (execdir, pidfile_path))
 
 
     def update_job_state(self, app):
