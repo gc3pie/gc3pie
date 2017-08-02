@@ -654,6 +654,7 @@ class ShellcmdLrms(LRMS):
         self._resource_dir = value
 
     def _init_resource_dir(self):
+        self.transport.connect()
         # expand env variables in the `resource_dir` setting
         exit_code, stdout, stderr = self.transport.execute_command(
             'echo %s' % sh_quote_unsafe(self._resourcedir_raw))
