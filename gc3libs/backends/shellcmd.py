@@ -959,7 +959,7 @@ class ShellcmdLrms(LRMS):
         stored (by `submit_job`:meth:) as `app.execution.lrms_jobid`.
         """
         try:
-            pid = int(app.execution.lrms_jobid)
+            root_pid = int(app.execution.lrms_jobid)
         except ValueError:
             raise gc3libs.exceptions.InvalidArgument(
                 "Invalid field `lrms_jobid` in Task '{0}':"
@@ -969,13 +969,13 @@ class ShellcmdLrms(LRMS):
 
         self._connect()
 
-        pids_to_kill = self._machine.list_process_tree(pid)
+        pids_to_kill = self._machine.list_process_tree(root_pid)
         if not pids_to_kill:
             log.debug(
                 "No process identified by PID %s in `ps` output,"
-                " assuming task %s is already terminated.", pid, app)
+                " assuming task %s is already terminated.", root_pid, app)
         else:
-            assert (pid == pids_to_kill[0])
+            assert (root_pid == pids_to_kill[0])
 
             # list `pids_to_kill` starts with the root process and ends
             # with leaf ones; we want to kill them in reverse order (leaves first)
@@ -1001,16 +1001,16 @@ class ShellcmdLrms(LRMS):
                     try:
                         pstat = self._machine.get_process_state(target)
                     except LookupError:
-                        # process already died, good
+                        log.debug("Process %s can no longer be found in process table.", target)
+                        pids_to_kill.remove(target)
                         continue
                     # see comments in `_parse_process_status` for the
                     # meaning of the letters
                     if pstat in ['R', 'S', 'I', 'W', 'T', 't']:
                         if not waited_on_first:
                             # wait some time to allow disk I/O before termination
-                            log.info("Waiting %s seconds to allow processes to terminate cleanly ...", wait)
-                            for _ in range(wait):  # Python ignores SIGINT while in `time.sleep()`
-                                time.sleep(1)
+                            self._grace_time(wait)
+                            waited_on_first = True
                         exit_code, stdout, stderr = self.transport.execute_command(
                             'kill -9 {0}'.format(target))
                         if exit_code == 0:
@@ -1033,19 +1033,37 @@ class ShellcmdLrms(LRMS):
                             " This might be a bug in GC3Pie or in `%s`.",
                                  target, self.name, self.time_cmd)
                         pids_to_kill.remove(target)
-                log.info("Waiting %s seconds to allow processes to terminate ...", wait)
-                for _ in range(wait):  # Python ignores SIGINT while in `time.sleep()`
-                    time.sleep(1)
+                if not pids_to_kill:
+                    break
+                self._grace_time(wait)
                 attempt += 1
 
             if pids_to_kill:
                 log.error(
                     "Not all processes belonging to task %s could be killed:"
                     " processes %s still alive on resource '%s'.",
-                    app, (' '.join(str(_) for _ in pids_to_kill)), self.name)
+                    app, (' '.join(str(p) for p in pids_to_kill)), self.name)
 
-        self._job_infos[pid]['terminated'] = True
-        self._delete_job_info_file(pid)
+        try:
+            self._job_infos[root_pid]['terminated'] = True
+        except KeyError:
+            # It may happen than `cancel_job()` is called without the
+            # resource state having been updated (hence
+            # `self._job_infos` is empty); this happens e.g. with the
+            # `gkill` command.  If that happens, just ignore the
+            # error.  (XXX: There might be a better way to handle this...)
+            if self.updated:
+                raise
+            else:
+                # ignore
+                pass
+        self._delete_job_info_file(root_pid)
+
+    def _grace_time(self, wait):
+        if wait:
+            log.info("Waiting %s seconds to allow processes to terminate ...", wait)
+            for _ in range(wait):  # Python ignores SIGINT while in `time.sleep()`
+                time.sleep(1)
 
 
     @same_docstring_as(LRMS.close)
@@ -1329,7 +1347,7 @@ class ShellcmdLrms(LRMS):
                 " %s requested, but only %s available."
                 % (self.name,
                    app.requested_memory.to_str('%g%s', unit=Memory.MB),
-                   available_memory.to_str('%g%s', unit=Memory.MB),)
+                   self.available_memory.to_str('%g%s', unit=Memory.MB),)
             )
 
     def _setup_app_execution_directory(self, app):
@@ -1535,7 +1553,8 @@ class ShellcmdLrms(LRMS):
         return app.execution.state
 
     def _kill_if_over_time_limits(self, app):
-        elapsed = self._machine.get_process_running_time()
+        pid = app.execution.lrms_jobid
+        elapsed = self._machine.get_process_running_time(pid)
         # determine whether to kill, depending on wall-clock time
         cancel = False
         if elapsed > self.max_walltime:
