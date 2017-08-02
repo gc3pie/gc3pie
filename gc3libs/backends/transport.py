@@ -646,9 +646,10 @@ class SshTransport(Transport):
             gc3libs.log.debug("SshTransport running `%s`... ", command)
             stdin_stream, stdout_stream, stderr_stream = \
                 self.ssh.exec_command(command)
-            stdout = ''
-            stderr = ''
-            if not detach:
+            if detach:
+                stdout = ''
+                stderr = ''
+            else:
                 stdout = stdout_stream.read()
                 stderr = stderr_stream.read()
             exitcode = stdout_stream.channel.recv_exit_status()
@@ -928,22 +929,6 @@ class LocalTransport(Transport):
                 "Error changing local path '%s' mode to 0%o: %s: %s"
                 % (path, mode, ex.__class__.__name__, str(ex)))
 
-    def _execute_command_and_detach(self, command):
-        assert self._is_open is True, \
-            "`Transport.execute_command()` called" \
-            " on `Transport` instance closed / not yet open"
-
-        try:
-            _process = subprocess.Popen(command,
-                                        close_fds=True,
-                                        stdout=subprocess.PIPE,
-                                        shell=True)
-            return _process.pid
-        except Exception as ex:
-            raise gc3libs.exceptions.TransportError(
-                "Failed executing command '%s': %s: %s"
-                % (command, ex.__class__.__name__, str(ex)))
-
     def get_pid(self):
         if self._process is not None:
             return self._process.pid
@@ -954,16 +939,24 @@ class LocalTransport(Transport):
     def execute_command(self, command, detach=False):
         assert self._is_open is True, \
             "`Transport.execute_command()` called" \
-            " on `Transport` instance closed / not yet open"
+            " on closed (or not yet opened) `Transport` instance."
         if detach:
-            return self._execute_command_and_detach(command)
+            command = command + ' &'
         try:
-            self._process = subprocess.Popen(command,
-                                             stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE,
-                                             close_fds=True, shell=True)
-            stdout, stderr = self._process.communicate()
-            exitcode = self._process.returncode
+            process = subprocess.Popen(
+                command,
+                stdout=(None if detach else subprocess.PIPE),
+                stderr=(None if detach else subprocess.PIPE),
+                close_fds=True, shell=True)
+            if detach:
+                process.wait()
+                exitcode = process.returncode
+                stdout = ''
+                stderr = ''
+            else:
+                self._process = process
+                stdout, stderr = self._process.communicate()
+                exitcode = self._process.returncode
             gc3libs.log.debug(
                 "Executed local command '%s', got exit status: %d",
                 command, exitcode)
@@ -971,7 +964,7 @@ class LocalTransport(Transport):
         except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Failed executing command '%s': %s: %s"
-                % (command, ex.__class__.__name__, str(ex)))
+                % (command, ex.__class__.__name__, ex))
 
     @same_docstring_as(Transport.exists)
     def exists(self, path):
