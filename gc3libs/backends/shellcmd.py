@@ -1121,8 +1121,8 @@ class ShellcmdLrms(LRMS):
         self.user_run = sum(1 for info in self._job_infos.values()
                             if not info['terminated'])
         log.debug("Recovered resource information from files in %s:"
-                  " total nr. of cores: %s, used by jobs: %s;"
-                  " available memory: %s, memory used by jobs: %s.",
+                  " total nr. of cores: %s, requested by jobs: %s;"
+                  " available memory: %s, requested by jobs: %s.",
                   self.resource_dir,
                   self.max_cores, (self.max_cores - self.free_slots),
                   self.available_memory.to_str('%g%s', unit=Memory.MB, conv=float),
