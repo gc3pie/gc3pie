@@ -1596,12 +1596,15 @@ class ShellcmdLrms(LRMS):
                 "Reading resource utilization from wrapper file `%s` for task %s ...",
                 wrapper_filename, app)
             with self.transport.open(wrapper_filename, 'r') as wrapper_file:
-                outcome = self._parse_wrapper_output(wrapper_file)
+                outcome, valid = self._parse_wrapper_output(wrapper_file)
                 app.execution.update(outcome)
                 if termstatus is None:
-                    app.execution.returncode = outcome.returncode
-        except Exception as err:
-            msg = ("Could not open wrapper file `{0}` for task `{1}`: {2}"
+                    if valid:
+                        app.execution.returncode = outcome.returncode
+                    else:
+                        app.execution.returncode = (Run.Signals.RemoteError, -1)
+        except EnvironmentError as err:
+            msg = ("Could not read wrapper file `{0}` for task `{1}`: {2}"
                    .format(wrapper_filename, app, err))
             log.warning("%s -- Termination status and resource utilization fields will not be set.", msg)
             raise gc3libs.exceptions.InvalidValue(msg)
@@ -1618,6 +1621,7 @@ class ShellcmdLrms(LRMS):
         `wrapper_file` is an opened file. This method will rewind the
         file before reading.
         """
+        valid = True  # optimistic default
         wrapper_file.seek(0)
         acctinfo = Struct()
         for line in wrapper_file:
@@ -1644,10 +1648,13 @@ class ShellcmdLrms(LRMS):
 
         # apprently GNU time does not report the total CPU time, used
         # so compute it here
-        acctinfo['used_cpu_time'] = (
-            acctinfo['shellcmd_user_time'] + acctinfo['shellcmd_kernel_time'])
+        try:
+            acctinfo['used_cpu_time'] = (
+                acctinfo['shellcmd_user_time'] + acctinfo['shellcmd_kernel_time'])
+        except KeyError:
+            valid = False
 
-        return acctinfo
+        return acctinfo, valid
 
 
     def validate_data(self, data_file_list=[]):
