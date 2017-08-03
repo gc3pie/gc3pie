@@ -392,7 +392,7 @@ class UnexpectedStateError(TaskError):
     pass
 
 
-class TransportError(Error):
+class TransportError(Error, EnvironmentError):
     pass
 
 
