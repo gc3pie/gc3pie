@@ -1336,22 +1336,28 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         self._update_task_counts(task, task.execution.state, +1)
 
 
-    def remove(self, task):
-        """Remove a `task` from the list of tasks managed by this Engine."""
-        queue = self.__get_task_queue(task)
-        queue.remove(task)
-        if self._store:
-            try:
-                del self._tasks_by_id[task.persistent_id]
-            except KeyError:
-                # already removed
-                pass
-            except AttributeError:
-                gc3libs.log.debug(
-                    "Task %s added to Engine %s with no persistent ID!",
-                    task, self)
-        task.detach()
-        self._update_task_counts(task, task.execution.state, -1)
+    def remove(self, task, _override_queue=None):
+        """
+        Remove a `task` from the list of tasks managed by this Engine.
+
+        Removing a task that is not managed (i.e., already removed or
+        never added) is a no-op.
+        """
+        queue = _override_queue or self.__get_task_queue(task)
+        if _contained(task, queue):
+            queue.remove(task)
+            if self._store:
+                try:
+                    del self._tasks_by_id[task.persistent_id]
+                except KeyError:
+                    # already removed
+                    pass
+                except AttributeError:
+                    gc3libs.log.debug(
+                        "Task %s added to Engine %s with no persistent ID!",
+                        task, self)
+            task.detach()
+            self._update_task_counts(task, task.execution.state, -1)
 
 
     def find_task_by_id(self, task_id):
@@ -1857,10 +1863,16 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                             task, err.__class__.__name__, err)
                     if self.forget_terminated:
                         try:
-                            self.remove(task)
+                            # task state is TERMINATED but the queue
+                            # is still `self._terminating` so we need
+                            # to override the choice that
+                            # `self.__get_task_queue` would do
+                            self.remove(task, self._terminating)
+                            gc3libs.log.debug("Dropped TERMINATED task %s", task)
+                        # pylint: disable=broad-except
                         except Exception as err:
                             gc3libs.log.debug(
-                                "Could not remove task '%s': %s: %s",
+                                "Could not forget TERMINATED task '%s': %s: %s",
                                 task, err.__class__.__name__, err)
                     else:
                         self._terminated.append(task)
