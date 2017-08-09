@@ -1168,7 +1168,7 @@ class ShellcmdLrms(LRMS):
     def _get_remote_and_local_path_pair(self, app, remote_relpath,
                                          local_root_dir, local_relpath):
         """
-        Scan remote directoy and return list of corresponding remote and local paths.
+        Scan remote directory and return list of corresponding remote and local paths.
 
         The return value is a list of *(remote_path, local_path)* pairs: each
         `remote_path` is an existing file on the remote end of the transport,
@@ -1184,7 +1184,7 @@ class ShellcmdLrms(LRMS):
             # recurse, accumulating results
             result = list()
             for entry in self.transport.listdir(remote_path):
-                result += self._make_remote_and_local_path_pair(
+                result += self._get_remote_and_local_path_pair(
                     app, posixpath.join(remote_relpath, entry), local_path, entry)
             return result
         else:
