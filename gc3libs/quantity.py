@@ -906,15 +906,15 @@ class Duration(object):
 
     """
     __metaclass__ = Quantity(
-        # base unit is nanoseconds; use the SI symbol 'ns'
-        'ns',
+        # base unit is microseconds; use the approx SI symbol 'us'
+        'us',
         # alternate spellings
-        nanosec=1,
-        nanoseconds=1,
-        # microsecond(s)
+        microsec=1,
+        microseconds=1,
+        # millisecond(s)
         ms=1000,
-        microsec=1000,
-        microseconds=1000,
+        millisec=1000,
+        milliseconds=1000,
         # seconds(s)
         s=10 ** 6,
         sec=10 ** 6,
