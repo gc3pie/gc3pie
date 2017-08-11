@@ -19,8 +19,7 @@ via SSH.
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+# along with this program; If not, see <http://www.gnu.org/licenses/>.
 #
 __docformat__ = 'reStructuredText'
 
@@ -722,7 +721,7 @@ class SshTransport(Transport):
 
     @same_docstring_as(Transport.makedirs)
     def makedirs(self, path, mode=0o777):
-        gc3libs.log.debug("Making remote directory path '%s' ...", path)        
+        gc3libs.log.debug("Making remote directory path '%s' ...", path)
         dirs = path.split('/')
         if '..' in dirs:
             raise gc3libs.exceptions.InvalidArgument(
@@ -946,7 +945,7 @@ class LocalTransport(Transport):
     def execute_command(self, command, detach=False):
         assert self._is_open is True, \
             "`Transport.execute_command()` called" \
-            " on `Transport` instance closed / not yet open"
+            " on closed (or not yet opened) `Transport` instance."
         if detach:
             command = command + ' &'
         try:
