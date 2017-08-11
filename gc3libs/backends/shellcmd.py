@@ -1102,6 +1102,9 @@ class ShellcmdLrms(LRMS):
             pass
     
     def running_jobs(self):
+        """
+        Returns number of currently running jobs.
+        """
         return len(self._job_infos)
 
     @same_docstring_as(LRMS.get_resource_status)
