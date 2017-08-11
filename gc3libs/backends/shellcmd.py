@@ -1101,7 +1101,9 @@ class ShellcmdLrms(LRMS):
             # lrms_jobid not yet assigned; probably submit
             # failed -- ignore and continue
             pass
-
+    
+    def running_jobs(self):
+        return len(self._job_infos)
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
