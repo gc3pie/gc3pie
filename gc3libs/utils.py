@@ -679,29 +679,35 @@ def get_max_real_memory():
       ``RLIMIT_DATA`` and ``RLIMIT_AS``;
     - current Linux memory cgroup limits.
     """
+    limits = []
     # Python's `posix` module does not expose an interface to the libc
     # `getrlimit()` call, so we resort to parsing `/proc/self/limits`
     # if available
     try:
         ulimit, _ = parse_linux_proc_limits()
-        rlimit_as = ulimit['max_address_space'] or PlusInfinity()
-        rlimit_data = ulimit['max_data_size'] or PlusInfinity()
+        rlimit_as = ulimit['max_address_space']
+        if rlimit_as:
+            limits.append(rlimit_as)
+        rlimit_data = ulimit['max_data_size']
+        if rlimit_data:
+            limits.append(rlimit_data)
     except (IOError, ValueError):
-        rlimit_as = PlusInfinity()
-        rlimit_data = PlusInfinity()
+        pass
     # try using sysconf()
     try:
         avail_ram = get_available_physical_memory()
+        limits.append(avail_ram)
     except NotImplementedError:
-        avail_ram = PlusInfinity()
+        pass
     # try Linux memory cgroup
-    memcg_limit = get_linux_memcg_limit() or PlusInfinity()
+    memcg_limit = get_linux_memcg_limit()
+    if memcg_limit:
+        limits.append(memcg_limit)
     # whichever is lower
-    limit = min(avail_ram, rlimit_as, rlimit_data, memcg_limit)
-    if limit == PlusInfinity():
-        return None
+    if limits:
+        return min(limits)
     else:
-        return limit
+        return None
 
 
 def get_num_processors():
