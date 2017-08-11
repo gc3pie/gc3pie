@@ -151,7 +151,8 @@ class TaskCollection(Task):
         Update the running state of all managed tasks.
         """
         for task in self.tasks:
-            self._controller.update_job_state(task, **extra_args)
+            if task.execution.state not in [Run.State.NEW, Run.State.TERMINATED]:
+                self._controller.update_job_state(task, **extra_args)
 
     def kill(self, **extra_args):
         # XXX: provide default implementation that kills all jobs?
@@ -449,7 +450,8 @@ class SequentialTaskCollection(TaskCollection):
 
         # update state of current task
         task = self.tasks[self._current_task]
-        task.update_state(**extra_args)
+        if task.execution.state not in [Run.State. NEW, Run.State.TERMINATED]:
+            task.update_state(**extra_args)
         gc3libs.log.debug("Task `%s` in state %s", task, task.execution.state)
 
         # now set state based on the state of current task:
@@ -862,7 +864,8 @@ class ParallelTaskCollection(TaskCollection):
         for task in self.tasks:
             # gc3libs.log.debug("Updating state of %s in collection %s ..."
             #                  % (task, self))
-            task.update_state(**extra_args)
+            if task.execution.state not in [Run.State.NEW, Run.State.TERMINATED]:
+                task.update_state(**extra_args)
         self.execution.state = self._state()
         if self.execution.state == Run.State.TERMINATED:
             self.execution.returncode = (0, 0)
@@ -1118,7 +1121,8 @@ class RetryableTask(Task):
         TERMINATED and `self.retry()` is `True`.
         """
         own_state_old = self.execution.state
-        self.task.update_state()
+        if self.task.execution.state not in [Run.State.NEW, Run.State.TERMINATED]:
+            self.task.update_state()
         own_state_new = self._recompute_state()
         if (self.task.execution.state == Run.State.TERMINATED
                 and own_state_old != Run.State.TERMINATED):

@@ -1546,7 +1546,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 elif state == Run.State.TERMINATED:
                     # task changed state, mark as to remove
                     transitioned.append(index)
-                    self._terminated.append(task)
+                    if not self.forget_terminated:
+                        self._terminated.append(task)
                 else:
                     # if we got to this point, state has an invalid value
                     gc3libs.log.error(
@@ -1621,7 +1622,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 elif old_state == Run.State.RUNNING:
                     if isinstance(task, Application):
                         currently_in_flight -= 1
-                self._terminated.append(task)
+                if not self.forget_terminated:
+                    self._terminated.append(task)
                 transitioned.append(index)
             # pylint: disable=broad-except
             except Exception as err:
@@ -1676,7 +1678,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                     # task changed state, mark as to remove
                     transitioned.append(index)
                 elif state == Run.State.TERMINATED:
-                    self._terminated.append(task)
+                    if not self.forget_terminated:
+                        self._terminated.append(task)
                     # task changed state, mark as to remove
                     transitioned.append(index)
             # pylint: disable=broad-except
@@ -1879,9 +1882,11 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
 
                 if self._store and task.changed:
                     self._store.save(task)
-            # remove tasks for which final output has been retrieved
-            for index in reversed(transitioned):
-                del self._terminating[index]
+            if not self.forget_terminated:
+                # remove tasks for which final output has been retrieved
+                # (only if TERMINATED tasks have not been dropped already)
+                for index in reversed(transitioned):
+                    del self._terminating[index]
 
 
     def redo(self, task, *args, **kwargs):

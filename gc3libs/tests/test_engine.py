@@ -69,6 +69,27 @@ def test_engine_progress(num_jobs=1, transition_graph=None, max_iter=100):
             current_iter += 1
 
 
+def test_engine_forget_terminated(num_jobs=3, transition_graph=None, max_iter=100):
+    with temporary_engine() as engine:
+        engine.forget_terminated = True
+
+        # generate some no-op tasks
+        for n in range(num_jobs):
+            name = 'app{nr}'.format(nr=n+1)
+            engine.add(SuccessfulApp(name))
+
+        # run them all
+        current_iter = 0
+        done = engine.stats()[Run.State.TERMINATED]
+        while done < num_jobs and current_iter < max_iter:
+            engine.progress()
+            done = engine.stats()[Run.State.TERMINATED]
+            current_iter += 1
+
+        # check that they have been forgotten
+        assert not engine._terminated
+
+
 def test_engine_progress_collection():
     with temporary_engine() as engine:
         seq = SimpleSequentialTaskCollection(3)
@@ -79,6 +100,20 @@ def test_engine_progress_collection():
             engine.progress()
         assert seq.stage().jobname == 'stage2'
         assert seq.stage().execution.state == 'TERMINATED'
+
+
+def test_engine_progress_collection_and_forget_terminated():
+    with temporary_engine() as engine:
+        engine.forget_terminated = True
+
+        seq = SimpleSequentialTaskCollection(3)
+        engine.add(seq)
+
+        # run through sequence
+        while seq.execution.state != 'TERMINATED':
+            engine.progress()
+
+        assert not engine._terminated
 
 
 def test_engine_kill_SequentialTaskCollection():
