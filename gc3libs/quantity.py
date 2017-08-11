@@ -32,9 +32,6 @@ import operator
 import re
 import types
 
-# GC3Libs imports
-from gc3libs.utils import defproperty
-
 
 # utility functions
 
@@ -201,8 +198,8 @@ class _Quantity(object):
             unit = self.unit
         return (conv(self._amount) / conv(unit._amount))
 
-    @defproperty
-    def base():
+    @property
+    def base(self):
         """
         Return the base unit for all quantities in this class.
         The amount of any quantity is internally stored as a multiple
@@ -210,26 +207,20 @@ class _Quantity(object):
 
         This is a read-only class-level attribute.
         """
+        return self._base
 
-        def fget(self):
-            return self._base
-        return locals()
-
-    @defproperty
-    def unit():
+    @property
+    def unit(self):
         """
         The unit the amount of this quantity is expressed in.
 
         This is a read-only attribute: once set in the constructor, it
         cannot be changed.
         """
+        return self._unit
 
-        def fget(self):
-            return self._unit
-        return locals()
-
-    @defproperty
-    def name():
+    @property
+    def name(self):
         """
         The name of this quantity, or `None`.
 
@@ -239,10 +230,7 @@ class _Quantity(object):
         This is a read-only attribute: once set in the constructor, it
         cannot be changed.
         """
-
-        def fget(self):
-            return self._name
-        return locals()
+        return self._name
 
     # instance construction
 
