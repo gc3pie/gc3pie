@@ -24,14 +24,116 @@ __docformat__ = 'reStructuredText'
 from itertools import izip
 
 # 3rd party imports
+import mock
 import pytest
 
 # GC3Pie imports
 import gc3libs.exceptions
+from gc3libs.quantity import Duration, Memory
 import gc3libs.utils
 
 
 # test definitions
+
+def test_get_linux_memcg_limit_no_proc_self_cgroup():
+    with mock.patch('gc3libs.utils.open') as mo:
+        mo.side_effect = OSError(2, 'No such file or directory', '/proc/self/cgroup')
+        limit = gc3libs.utils.get_linux_memcg_limit()
+        mo.assert_called_once_with('/proc/self/cgroup', 'r')
+        assert limit is None
+
+
+def test_get_linux_memcg_limit_no_memcg():
+    mo = mock.mock_open(read_data='*** no memcg ***')
+    with mock.patch('gc3libs.utils.open', mo):
+        limit = gc3libs.utils.get_linux_memcg_limit()
+        mo.assert_called_once_with('/proc/self/cgroup', 'r')
+        assert limit is None
+
+
+def test_get_linux_memcg_limit_with_memcg_limit():
+    def fake_open(path, mode):
+        from StringIO import StringIO
+        from contextlib import closing
+        if path == '/proc/self/cgroup':
+            return closing(StringIO('2:memory:/test'))
+        elif path == '/sys/fs/cgroup/memory/test/memory.soft_limit_in_bytes':
+            raise OSError(2, 'No such file or directory',
+                          '/sys/fs/cgroup/memory/test/memory.soft_limit_in_bytes')
+        elif path == '/sys/fs/cgroup/memory/test/memory.limit_in_bytes':
+            return closing(StringIO('42'))
+        else:
+            raise AssertionError(
+                "Unexpected call to open({0!r}, {1!r})"
+                .format(path, mode))
+    with mock.patch('gc3libs.utils.open') as mo:
+        mo.side_effect = fake_open
+        limit = gc3libs.utils.get_linux_memcg_limit()
+        mo.assert_has_calls([
+            mock.call('/proc/self/cgroup', 'r'),
+            mock.call('/sys/fs/cgroup/memory/test/memory.soft_limit_in_bytes', 'r'),
+            mock.call('/sys/fs/cgroup/memory/test/memory.limit_in_bytes', 'r'),
+        ])
+        assert limit == Memory(42, Memory.B)
+
+
+def test_parse_linux_proc_limits():
+    # snapshot of `/proc/self/limits` taken on Linux 4.4.0-87-generic (Ubuntu 16.04)
+    data = """\
+Limit                     Soft Limit           Hard Limit           Units
+Max cpu time              unlimited            unlimited            seconds
+Max file size             unlimited            unlimited            bytes
+Max data size             unlimited            unlimited            bytes
+Max stack size            8388608              unlimited            bytes
+Max core file size        0                    unlimited            bytes
+Max resident set          unlimited            unlimited            bytes
+Max processes             30442                30442                processes
+Max open files            1024                 1048576              files
+Max locked memory         65536                65536                bytes
+Max address space         unlimited            unlimited            bytes
+Max file locks            unlimited            unlimited            locks
+Max pending signals       30442                30442                signals
+Max msgqueue size         819200               819200               bytes
+Max nice priority         0                    0
+Max realtime priority     0                    0
+Max realtime timeout      unlimited            unlimited            us
+"""
+    soft, hard = gc3libs.utils.parse_linux_proc_limits(data)
+    # soft limits
+    assert soft['max_realtime_timeout'] == None
+    assert soft['max_realtime_priority'] == 0
+    assert soft['max_nice_priority'] == 0
+    assert soft['max_msgqueue_size'] == Memory(819200, unit=Memory.B)
+    assert soft['max_pending_signals'] == 30442
+    assert soft['max_file_locks'] == None
+    assert soft['max_address_space'] == None
+    assert soft['max_locked_memory'] == Memory(65536, unit=Memory.B)
+    assert soft['max_open_files'] == 1024
+    assert soft['max_processes'] == 30442
+    assert soft['max_resident_set'] == None
+    assert soft['max_core_file_size'] == Memory(0, unit=Memory.B)
+    assert soft['max_stack_size'] == Memory(8388608, unit=Memory.B)
+    assert soft['max_data_size'] == None
+    assert soft['max_file_size'] == None
+    assert soft['max_cpu_time'] == None
+    # hard limits
+    assert hard['max_realtime_timeout'] == None
+    assert hard['max_realtime_priority'] == 0
+    assert hard['max_nice_priority'] == 0
+    assert hard['max_msgqueue_size'] == Memory(819200, unit=Memory.B)
+    assert hard['max_pending_signals'] == 30442
+    assert hard['max_file_locks'] == None
+    assert hard['max_address_space'] == None
+    assert hard['max_locked_memory'] == Memory(65536, unit=Memory.B)
+    assert hard['max_open_files'] == 1048576
+    assert hard['max_processes'] == 30442
+    assert hard['max_resident_set'] == None
+    assert hard['max_core_file_size'] == None
+    assert hard['max_stack_size'] == None
+    assert hard['max_data_size'] == None
+    assert hard['max_file_size'] == None
+    assert hard['max_cpu_time'] == None
+
 
 class TestYieldAtNext(object):
 

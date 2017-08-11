@@ -47,6 +47,7 @@ import gc3libs.compat.lockfile as lockfile
 import gc3libs
 import gc3libs.exceptions
 import gc3libs.debug
+from gc3libs.quantity import Duration, Memory
 
 # This fixes an issue with Python 2.4, which does not have
 # `shutl.WindowsError`
@@ -564,8 +565,8 @@ def fgrep(literal, filename):
     """
     Iterate over all lines in a file that contain the `literal` string.
     """
-    with open(filename, 'r') as file:
-        for line in file:
+    with open(filename, 'r') as stream:
+        for line in stream:
             if literal in line:
                 yield line
 
@@ -593,6 +594,134 @@ def from_template(template, **extra_args):
         template_contents = template
     # substitute `extra_args` into `t` and return it
     return (template_contents % extra_args)
+
+
+def get_available_physical_memory():
+    """
+    Return size of available memory (as a `gc3libs.quantity.Memory` object).
+    The figure only refers to RAM, i.e., *physical* memory as opposed
+    to *virtual* memory (swap).
+
+    Should work on any POSIX system that supports the
+    ``_SC_AVPHYS_PAGES`` variable in the ``sysconf()`` C library call.
+
+    :raise NotImplementedError:
+      If syscalls to determine amount of available physical memory
+      are not implemented on this system.
+    """
+    try:
+        pagesize = os.sysconf('SC_PAGE_SIZE')
+        avail_pages = os.sysconf('SC_AVPHYS_PAGES')
+        return Memory(avail_pages * pagesize, unit=Memory.B)
+    except ValueError:
+        raise NotImplementedError(
+            "Cannot determine amount of available physical memory.")
+
+
+def get_linux_memcg_limit():
+    """
+    Return memory limit in this process' Linux memory cgroup.
+    Return value is a `gc3libs.quantity.Memory` object,
+    or ``None`` if no limit can be detected.
+
+    As the Linux "memory cgroup" mechanism implements different
+    limits, and not all of them might have been set/enforced, we we
+    read possible limits in supposedly ascending order ("soft" limits
+    *should* be lower than "hard" limits) and return first one that
+    exists.
+
+    See also: `<https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt>`_
+    """
+    memcg_path = None
+    try:
+        for line in fgrep(':memory:', '/proc/self/cgroup'):
+            _, _, memcg_path = line.rstrip().split(':')
+            break
+    except EnvironmentError:
+        # older kernel, no file `/proc/self/cgroup`
+        pass
+    if memcg_path is None:
+        # no memory cgroup?
+        return None
+    # XXX: hard-coded cgroupfs mountpoint path
+    memcg_dir = os.path.join('/sys/fs/cgroup/memory', memcg_path.lstrip('/'))
+    limit = None
+    # read possible limits in ascending order ("soft" limits *should*
+    # be lower than "hard" limits) and return first one that exists
+    for limit_file in [
+            'memory.soft_limit_in_bytes',
+            'memory.limit_in_bytes',
+            'memory.memsw.limit_in_bytes',
+    ]:
+        path = os.path.join(memcg_dir, limit_file)
+        try:
+            with open(path, 'r') as limit_file:
+                limit = int(limit_file.read())
+                break
+        except (EnvironmentError, ValueError):
+            pass
+    if limit:
+        return Memory(limit, unit=Memory.B)
+    else:
+        return None
+
+
+def get_max_real_memory():
+    """
+    Return maximum size of available *real* memory.
+    Return value is a `gc3libs.quantity.Memory` object,
+    or ``None`` if no limit can be detected.
+
+    Various sources are polled for a limit, and the minimum is returned:
+
+    - *available physical memory*, as reported by sysconf(3);
+    - current resource limits (also known as ``ulimit`` in shell programming)
+      ``RLIMIT_DATA`` and ``RLIMIT_AS``;
+    - current Linux memory cgroup limits.
+    """
+    # Python's `posix` module does not expose an interface to the libc
+    # `getrlimit()` call, so we resort to parsing `/proc/self/limits`
+    # if available
+    try:
+        ulimit, _ = parse_linux_proc_limits()
+        rlimit_as = ulimit['max_address_space'] or PlusInfinity()
+        rlimit_data = ulimit['max_data_size'] or PlusInfinity()
+    except (IOError, ValueError):
+        rlimit_as = PlusInfinity()
+        rlimit_data = PlusInfinity()
+    # try using sysconf()
+    try:
+        avail_ram = get_available_physical_memory()
+    except NotImplementedError:
+        avail_ram = PlusInfinity()
+    # try Linux memory cgroup
+    memcg_limit = get_linux_memcg_limit() or PlusInfinity()
+    # whichever is lower
+    limit = min(avail_ram, rlimit_as, rlimit_data, memcg_limit)
+    if limit == PlusInfinity():
+        return None
+    else:
+        return limit
+
+
+def get_num_processors():
+    """
+    Return number of online processor cores.
+    """
+    # try different strategies and use first one that succeeeds
+    try:
+        return os.cpu_count()  # Py3 only
+    except AttributeError:
+        pass
+    try:
+        import multiprocessing
+        return multiprocessing.cpu_count()
+    except ImportError:  # no multiprocessing?
+        pass
+    except NotImplementedError:
+        # multiprocessing cannot determine CPU count
+        pass
+    return None
 
 
 def get_scheduler_and_lock_factory(lib):
@@ -996,6 +1125,72 @@ def occurs(pattern, filename, match=grep):
         return True
     except StopIteration:
         return False
+
+
+def parse_linux_proc_limits(data=None):
+    """
+    Return dictionary mapping limit name to corresponding value.
+    In case the actual limit is 'unlimited', value is set to ``None``.
+    """
+    if data is None:
+        with open('/proc/self/limits', 'r') as src:
+            data = src.read()
+    lines = data.split('\n')
+    assert lines
+    # Linux' `/proc/self/limits` shows data in 4 columns, but: (1)
+    # value in the first column may contain spaces, and (2) the value
+    # in the last column may be missing.  However, values in the same
+    # column (incl. header) are left-aligned on the same screen
+    # position (for human reading) so we need only note the starting
+    # position for each data column.
+    header = lines[0]
+    name_col = header.index('Limit')
+    soft_limit_col = header.index('Soft Limit')
+    hard_limit_col = header.index('Hard Limit')
+    unit_col = header.index('Units')
+    # parse data line-by-line
+    soft_limits = {}
+    hard_limits = {}
+    for line in lines[1:]:
+        if line == '':
+            continue
+        name = line[name_col:soft_limit_col].rstrip()
+        soft_limit = line[soft_limit_col:hard_limit_col].rstrip()
+        if unit_col < len(line):
+            hard_limit = line[hard_limit_col:unit_col].rstrip()
+            unit = line[unit_col:].rstrip()
+        else:
+            # no value for `Unit`
+            hard_limit = line[hard_limit_col:].rstrip()
+            unit = None
+        name = name.lower().replace(' ', '_')
+        soft_limits[name] = _parse_ulimit(soft_limit, unit)
+        hard_limits[name] = _parse_ulimit(hard_limit, unit)
+    return soft_limits, hard_limits
+
+def _parse_ulimit(limit, unit):
+    """
+    Helper function for `parse_linux_proc_limits`.
+    """
+    if limit == 'unlimited':
+        return None
+    else:
+        limit = int(limit)
+    # translate to `gc3libs.quantity` unit
+    if unit == 'bytes':
+        cls = Memory
+        unit = Memory.B
+    elif unit == 'seconds':
+        cls = Duration
+        unit = Duration.s
+    elif unit == 'us':
+        cls = Duration
+        unit = Duration.us
+    else:
+        # "files", "signals", "processes", etc.
+        cls = (lambda v, u: v)
+        unit = None
+    return cls(limit, unit)
 
 
 def parse_range(spec):
