@@ -456,6 +456,13 @@ class SshTransport(Transport):
         self._is_open = False
         self.transport_channel = None
 
+        # init connection params
+        self.username = None
+        self.keyfile = None
+        self.port = gc3libs.Default.SSH_PORT
+        self.timeout = gc3libs.Default.SSH_CONNECT_TIMEOUT
+        self.proxy_command = None
+
         # use SSH options, if available
         self._ssh_config = paramiko.SSHConfig()
         config_filename = os.path.expanduser(ssh_config or gc3libs.Default.SSH_CONFIG_FILE)
@@ -527,25 +534,24 @@ class SshTransport(Transport):
         self.remote_frontend = ssh_options.get('hostname', hostname)
 
         if username is None:
-            self.username = ssh_options.get('user', None)
+            self.username = ssh_options.get('user', self.username)
         else:
             assert type(username) in types.StringTypes
             self.username = username
 
         if port is None:
-            self.port = int(ssh_options.get('port', gc3libs.Default.SSH_PORT))
+            self.port = int(ssh_options.get('port', self.port))
         else:
             self.port = int(port)
 
         if keyfile is None:
-            self.keyfile = ssh_options.get('identityfile', None)
+            self.keyfile = ssh_options.get('identityfile', self.keyfile)
         else:
             assert type(keyfile) in types.StringTypes
             self.keyfile = keyfile
 
         if timeout is None:
-            self.timeout = float(ssh_options.get('connecttimeout',
-                                                 gc3libs.Default.SSH_CONNECT_TIMEOUT))
+            self.timeout = float(ssh_options.get('connecttimeout', self.timeout))
         else:
             self.timeout = float(timeout)
 
