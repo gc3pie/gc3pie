@@ -33,7 +33,7 @@ import gc3libs.authentication
 from collections import defaultdict
 import gc3libs.utils
 
-from gc3libs.quantity import Memory, GB, Duration, hours, MiB
+from gc3libs.quantity import Memory, GB, MB, MiB, Duration, hours
 from gc3libs.utils import defproperty
 
 
@@ -91,13 +91,13 @@ def _legacy_parse_duration(duration_str):
         return Duration(duration_str)
 
 
-def _legacy_parse_memory(memory_str):
+def _legacy_parse_memory(memory_str, name, unit=GB, unit_name='GB'):
     try:
-        # old-style config: integral number of GBs
-        val = int(memory_str) * GB
-        gc3libs.log.warning("'max_memory_per_core' should always have a "
-                            "valid unit format (e.g. '2 GB'). Using "
-                            "default unit: GB")
+        # old-style config: integral number of "unit"
+        val = int(memory_str) * unit
+        gc3libs.log.warning(
+            "'%s' should always have a valid unit format (e.g. '2 GB')."
+            " Using default unit: %s", name, unit_name)
         return val
     except ValueError:
         # apply usual quantity parsing rules; if this fails, users
@@ -524,10 +524,12 @@ class Configuration(gc3libs.utils.Struct):
         'architecture'        : _parse_architecture,
         'max_cores'           : int,
         'max_cores_per_job'   : int,
-        'max_memory_per_core' : _legacy_parse_memory,
+        'max_memory_per_core' : (lambda val: _legacy_parse_memory(val, 'max_memory_per_core')),
         'max_walltime'        : _legacy_parse_duration,
         'port'                : int,
         'vm_os_overhead'      : _legacy_parse_os_overhead,
+        'large_file_threshold': (lambda val: _legacy_parse_memory(val, 'large_file_threshold', MB, 'MB')),
+        'large_file_chunk_size':(lambda val: _legacy_parse_memory(val, 'large_file_chunk_size', MB, 'MB')),
         # LSF-specific
         'lsf_continuation_line_prefix_length': int,
     }

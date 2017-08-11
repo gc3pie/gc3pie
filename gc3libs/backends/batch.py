@@ -123,6 +123,8 @@ class BatchSystem(LRMS):
                  keyfile=None,
                  ignore_ssh_host_keys=False,
                  ssh_timeout=None,
+                 large_file_threshold=None,
+                 large_file_chunk_size=None,
                  **extra_args):
 
         # init base class
@@ -147,6 +149,8 @@ class BatchSystem(LRMS):
                 port=auth.port,
                 keyfile=(keyfile or auth.keyfile),
                 timeout=(ssh_timeout or auth.timeout),
+                large_file_threshold=large_file_threshold,
+                large_file_chunk_size=large_file_chunk_size,
             )
         else:
             raise gc3libs.exceptions.TransportError(

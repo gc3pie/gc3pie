@@ -36,6 +36,7 @@ import gc3libs.core
 import gc3libs.template
 from gc3libs.quantity import GB, hours
 from gc3libs.backends.shellcmd import ShellcmdLrms
+from gc3libs.backends.transport import SshTransport
 from gc3libs.quantity import Memory, Duration
 
 
@@ -891,6 +892,40 @@ def test_multiple_instanciation(num_resources=3):
         resource = resources[name]
         assert resource.name == name
         assert isinstance(resource, gc3libs.backends.shellcmd.ShellcmdLrms)
+
+
+def test_large_file_settings():
+    """Check that 'large file' SSH settings are correctly parsed"""
+    tmpfile = _setup_config_file("""
+[auth/ssh]
+type = ssh
+username = gc3pie
+
+[resource/test]
+type = shellcmd
+auth = ssh
+transport = ssh
+max_cores_per_job = 2
+max_memory_per_core = 2
+max_walltime = 8
+max_cores = 2
+architecture = x86_64
+override = no
+large_file_threshold = 1 GB
+large_file_chunk_size = 200 MB
+    """)
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+        resources = cfg.make_resources(ignore_errors=False)
+        # resources are enabled by default
+        assert 'test' in resources
+        backend = resources['test']
+        assert isinstance(backend, ShellcmdLrms)
+        assert isinstance(backend.transport, SshTransport)
+        assert backend.transport.large_file_threshold == 10**9 # 1*GB in bytes
+        assert backend.transport.large_file_chunk_size == 200*10**6 # 200*MB in bytes
+    finally:
+        os.remove(tmpfile)
 
 
 if __name__ == "__main__":

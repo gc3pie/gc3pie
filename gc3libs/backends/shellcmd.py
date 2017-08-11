@@ -432,6 +432,17 @@ class ShellcmdLrms(LRMS):
     :param int ssh_timeout:
       If `transport` is ``'ssh'``, this value will be used as timeout (in
       seconds) for connecting to the SSH TCP socket.
+
+    :param gc3libs.quantity.Memory large_file_threshold:
+      Copy files below this size in one single SFTP GET operation;
+      see `SshTransport.get`:meth: for more information.
+      Only used if `transport` is ``'ssh'``.
+
+    :param gc3libs.quantity.Memory large_file_chunk_size:
+      Copy files that are over the above-mentioned threshold by
+      sequentially transferring chunks of this size.
+      see `SshTransport.get`:meth: for more information.
+      Only used if `transport` is ``'ssh'``.
     """
 
     TIMEFMT = '\n'.join([
@@ -566,6 +577,8 @@ class ShellcmdLrms(LRMS):
                  keyfile=None,
                  ignore_ssh_host_keys=False,
                  ssh_timeout=None,
+                 large_file_threshold=None,
+                 large_file_chunk_size=None,
                  **extra_args):
 
         # init base class
@@ -600,6 +613,8 @@ class ShellcmdLrms(LRMS):
                 port=auth.port,
                 keyfile=(keyfile or auth.keyfile),
                 timeout=(ssh_timeout or auth.timeout),
+                large_file_threshold=large_file_threshold,
+                large_file_chunk_size=large_file_chunk_size,
             )
             self.frontend = frontend
         else:

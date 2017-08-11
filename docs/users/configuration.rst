@@ -62,7 +62,7 @@ Here is an example of what the configuration file looks like::
   # ...
 
 You can see that:
-  
+
 * The GC3Pie configuration file consists of several configuration
   sections.  Each configuration section starts with a keyword in
   square brackets and continues until the start or the next section or
@@ -286,36 +286,43 @@ Configuration keys common to *all* resource types
 
 The following configuration keys are commmon to all resources, regardless of type.
 
-======================= =======================================================
-Configuration key       Meaning
-======================= =======================================================
-``type``                Resource type, see above.
------------------------ -------------------------------------------------------
-``auth``                Name of a valid `[auth/{name}]`:file: section;
-                        only the authentication section name (after the ``/``)
-                        must be specified.
------------------------ -------------------------------------------------------
-``max_cores_per_job``   Maximum number of CPU cores that a job can request;
-                        a resource will be dropped during the brokering process
-                        if a task requests more cores than this.
------------------------ -------------------------------------------------------
-``max_memory_per_core`` Maximum amount of memory that a task can request;
-                        a resource will be dropped during the brokering process
-                        if a task requests more memory than this.
------------------------ -------------------------------------------------------
-``max_walltime``        Maximum job running time.
------------------------ -------------------------------------------------------
-``max_cores``           Total number of cores provided by the resource.
------------------------ -------------------------------------------------------
-``architecture``        Processor architecture.  Should be one of the strings
-                        ``x86_64`` (for 64-bit Intel/AMD/VIA processors),
-                        ``i686`` (for 32-bit Intel/AMD/VIA x86 processors),
-                        or ``x86_64,i686`` if both architectures are available
-                        on the resource.
------------------------ -------------------------------------------------------
-``time_cmd``            Path to the GNU `time`:command: program.
-                        Default is ``/usr/bin/time``
-======================= =======================================================
+========================= =======================================================
+Configuration key         Meaning
+========================= =======================================================
+``type``                  Resource type, see above.
+------------------------- -------------------------------------------------------
+``auth``                  Name of a valid `[auth/{name}]`:file: section;
+                          only the authentication section name (after the ``/``)
+                          must be specified.
+------------------------- -------------------------------------------------------
+``max_cores_per_job``     Maximum number of CPU cores that a job can request;
+                          a resource will be dropped during the brokering process
+                          if a task requests more cores than this.
+------------------------- -------------------------------------------------------
+``max_memory_per_core``   Maximum amount of memory that a task can request;
+                          a resource will be dropped during the brokering process
+                          if a task requests more memory than this.
+------------------------- -------------------------------------------------------
+``max_walltime``          Maximum job running time.
+------------------------- -------------------------------------------------------
+``max_cores``             Total number of cores provided by the resource.
+------------------------- -------------------------------------------------------
+``architecture``          Processor architecture.  Should be one of the strings
+                          ``x86_64`` (for 64-bit Intel/AMD/VIA processors),
+                          ``i686`` (for 32-bit Intel/AMD/VIA x86 processors),
+                          or ``x86_64,i686`` if both architectures are available
+                          on the resource.
+------------------------- -------------------------------------------------------
+``time_cmd``              Path to the GNU `time`:command: program.
+                          Default is ``/usr/bin/time``
+------------------------- -------------------------------------------------------
+``large_file_threshold``  Files less than this size will be copied in one go.
+                          Only relevant for SSH transfers; ignored otherwise.
+------------------------- -------------------------------------------------------
+``large_file_chunk_size`` Files larger than the threshold above will be copied
+                          in chunks of this size, one chunk at a time.
+                          Only relevant for SSH transfers; ignored otherwise.
+========================= =======================================================
 
 
 Configuration keys common to batch-queuing resource types
@@ -733,7 +740,7 @@ writing means use the default region on Amazon.
   an error is raised and the resource will not be used.
 
 * ``public_key``: public key to use when creating the keypair.
-  
+
   .. note::
 
     GC3Pie assumes that the corresponding private key is stored on a
@@ -742,7 +749,7 @@ writing means use the default region on Amazon.
     created on the cloud.
 
   .. note::
-   
+
     **For Amazon AWS users**: Please note that AWS EC2 does not accept
     *DSA* keys; use RSA keys only for AWS resources.
 
