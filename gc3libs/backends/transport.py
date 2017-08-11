@@ -19,7 +19,8 @@ via SSH.
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
 
@@ -443,6 +444,12 @@ class SshTransport(Transport):
         self._is_open = False
         self.transport_channel = None
 
+        # Init 
+        self.username = None
+        self.keyfile = None
+        self.port = gc3libs.Default.SSH_PORT
+        self.timeout = gc3libs.Default.SSH_CONNECT_TIMEOUT
+        
         # use SSH options, if available
         self._ssh_config = paramiko.SSHConfig()
         config_filename = os.path.expanduser(ssh_config or gc3libs.Default.SSH_CONFIG_FILE)
@@ -471,25 +478,25 @@ class SshTransport(Transport):
         self.remote_frontend = ssh_options.get('hostname', hostname)
 
         if username is None:
-            self.username = ssh_options.get('user', None)
+            self.username = ssh_options.get('user', self.username)
         else:
             assert type(username) in types.StringTypes
             self.username = username
 
         if port is None:
-            self.port = int(ssh_options.get('port', gc3libs.Default.SSH_PORT))
+            self.port = int(ssh_options.get('port', self.port))
         else:
             self.port = int(port)
 
         if keyfile is None:
-            self.keyfile = ssh_options.get('identityfile', None)
+            self.keyfile = ssh_options.get('identityfile', self.keyfile)
         else:
             assert type(keyfile) in types.StringTypes
             self.keyfile = keyfile
 
         if timeout is None:
             self.timeout = float(ssh_options.get('connecttimeout',
-                                                 gc3libs.Default.SSH_CONNECT_TIMEOUT))
+                                                 self.timeout))
         else:
             self.timeout = float(timeout)
 
@@ -646,10 +653,9 @@ class SshTransport(Transport):
             gc3libs.log.debug("SshTransport running `%s`... ", command)
             stdin_stream, stdout_stream, stderr_stream = \
                 self.ssh.exec_command(command)
-            if detach:
-                stdout = ''
-                stderr = ''
-            else:
+            stdout = ''
+            stderr = ''
+            if not detach:
                 stdout = stdout_stream.read()
                 stderr = stderr_stream.read()
             exitcode = stdout_stream.channel.recv_exit_status()
@@ -715,7 +721,6 @@ class SshTransport(Transport):
 
     @same_docstring_as(Transport.makedirs)
     def makedirs(self, path, mode=0o777):
-        gc3libs.log.debug("Making remote directory path '%s' ...", path)
         dirs = path.split('/')
         if '..' in dirs:
             raise gc3libs.exceptions.InvalidArgument(
@@ -918,6 +923,7 @@ class LocalTransport(Transport):
 
     @same_docstring_as(Transport.connect)
     def connect(self):
+        gc3libs.log.debug("Opening LocalTransport... ")
         self._is_open = True
 
     @same_docstring_as(Transport.chmod)
@@ -929,6 +935,22 @@ class LocalTransport(Transport):
                 "Error changing local path '%s' mode to 0%o: %s: %s"
                 % (path, mode, ex.__class__.__name__, str(ex)))
 
+    def _execute_command_and_detach(self, command):
+        assert self._is_open is True, \
+            "`Transport.execute_command()` called" \
+            " on `Transport` instance closed / not yet open"
+
+        try:
+            _process = subprocess.Popen(command,
+                                        close_fds=True,
+                                        stdout=subprocess.PIPE,
+                                        shell=True)
+            return _process.pid
+        except Exception as ex:
+            raise gc3libs.exceptions.TransportError(
+                "Failed executing command '%s': %s: %s"
+                % (command, ex.__class__.__name__, str(ex)))
+
     def get_pid(self):
         if self._process is not None:
             return self._process.pid
@@ -939,24 +961,16 @@ class LocalTransport(Transport):
     def execute_command(self, command, detach=False):
         assert self._is_open is True, \
             "`Transport.execute_command()` called" \
-            " on closed (or not yet opened) `Transport` instance."
+            " on `Transport` instance closed / not yet open"
         if detach:
-            command = command + ' &'
+            return self._execute_command_and_detach(command)
         try:
-            process = subprocess.Popen(
-                command,
-                stdout=(None if detach else subprocess.PIPE),
-                stderr=(None if detach else subprocess.PIPE),
-                close_fds=True, shell=True)
-            if detach:
-                process.wait()
-                exitcode = process.returncode
-                stdout = ''
-                stderr = ''
-            else:
-                self._process = process
-                stdout, stderr = self._process.communicate()
-                exitcode = self._process.returncode
+            self._process = subprocess.Popen(command,
+                                             stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE,
+                                             close_fds=True, shell=True)
+            stdout, stderr = self._process.communicate()
+            exitcode = self._process.returncode
             gc3libs.log.debug(
                 "Executed local command '%s', got exit status: %d",
                 command, exitcode)
@@ -964,7 +978,7 @@ class LocalTransport(Transport):
         except Exception as ex:
             raise gc3libs.exceptions.TransportError(
                 "Failed executing command '%s': %s: %s"
-                % (command, ex.__class__.__name__, ex))
+                % (command, ex.__class__.__name__, str(ex)))
 
     @same_docstring_as(Transport.exists)
     def exists(self, path):
@@ -1022,7 +1036,6 @@ class LocalTransport(Transport):
 
     @same_docstring_as(Transport.makedirs)
     def makedirs(self, path, mode=0o777):
-        gc3libs.log.debug("Making directory path '%s' ...", path)
         try:
             os.makedirs(path, mode)
         except OSError as e:
