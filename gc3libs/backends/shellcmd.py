@@ -844,6 +844,24 @@ class ShellcmdLrms(LRMS):
     # the same resources.
     #
 
+    def count_running_tasks(self):
+        """
+        Returns number of currently running tasks.
+
+        .. note::
+
+          1. The count of running tasks includes also tasks that may
+             have been started by another GC3Pie process so this count
+             can be positive when the resource has just been opened.
+
+          2. The count is updated every time the resource is updated,
+             so the returned number can be stale if the
+             `ShellcmdLrms.get_resource_status()` has not been called
+             for a while.
+        """
+        return sum(1 for info in self._job_infos.values() if not info['terminated'])
+
+
     def _compute_used_cores(self, job_infos):
         """
         Accepts a dictionary of job informations and returns the
@@ -1134,8 +1152,7 @@ class ShellcmdLrms(LRMS):
         used_memory = self._compute_used_memory(self._job_infos)
         self.available_memory = self.total_memory - used_memory
         self.free_slots = self.max_cores - self._compute_used_cores(self._job_infos)
-        self.user_run = sum(1 for info in self._job_infos.values()
-                            if not info['terminated'])
+        self.user_run = self.count_running_tasks()
         log.debug("Recovered resource information from files in %s:"
                   " total nr. of cores: %s, requested by jobs: %s;"
                   " available memory: %s, requested by jobs: %s.",
@@ -1204,6 +1221,17 @@ class ShellcmdLrms(LRMS):
             return result
         else:
             return [(remote_path, local_path)]
+
+
+    def has_running_tasks():
+        """
+        Return ``True`` if tasks are running on the resource.
+
+        See `ShellcmdLrms.count_running_tasks`:meth: for caveats
+        about the count of "running jobs" upon which this boolean
+        check is based.
+        """
+        return self.user_run > 0
 
 
     @same_docstring_as(LRMS.peek)

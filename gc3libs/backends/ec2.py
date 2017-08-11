@@ -965,7 +965,7 @@ class EC2Lrms(LRMS):
         # if no more applications are currently running, turn the instance off
         # check with the associated resource
         resource.get_resource_status()
-        if len(resource.job_infos) == 0:
+        if not resource.has_running_tasks():
             # turn VM off
             vm = self._get_vm(app.execution._lrms_vm_id)
             gc3libs.log.info("VM instance %s at %s is no longer needed."
@@ -987,7 +987,7 @@ class EC2Lrms(LRMS):
         # Update status of VMs and remote resources
         self.get_resource_status()
         for vm_id, resource in self.subresources.items():
-            if resource.updated and not resource.job_infos:
+            if resource.updated and resource.has_running_tasks():
                 vm = self._get_vm(vm_id)
                 gc3libs.log.warning(
                     "VM instance %s at %s is no longer needed. "

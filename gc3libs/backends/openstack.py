@@ -1079,7 +1079,7 @@ class OpenStackLrms(LRMS):
         # if no more applications are currently running, turn the instance off
         # check with the associated resource
         subresource.get_resource_status()
-        if len(subresource.job_infos) == 0:
+        if not subresource.has_running_tasks():
             # turn VM off
             vm = self._get_vm(app.execution._lrms_vm_id)
 
@@ -1101,7 +1101,7 @@ class OpenStackLrms(LRMS):
         # Update status of VMs and remote resources
         self.get_resource_status()
         for vm_id, subresource in self.subresources.items():
-            if subresource.updated and not subresource.job_infos:
+            if subresource.updated and subresource.has_running_tasks():
                 vm = self._get_vm(vm_id)
                 gc3libs.log.warning(
                     "VM instance %s at %s is no longer needed. "

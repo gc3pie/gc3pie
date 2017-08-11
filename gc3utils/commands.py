@@ -1800,7 +1800,7 @@ To get detailed info on a specific command, run:
             ips = []
             if vm.id in res.subresources:
                 if res.subresources[vm.id].updated:
-                    remote_jobs = str(len(res.subresources[vm.id].job_infos))
+                    remote_jobs = str(res.subresources[vm.id].running_jobs())
                     ncores = str(res.subresources[vm.id].max_cores)
 
             if res.type.startswith('ec2'):
@@ -1892,7 +1892,7 @@ To get detailed info on a specific command, run:
             vms = res._vmpool.get_all_vms()
             if vms:
                 for vm in vms:
-                    remote_jobs = len(res.subresources[vm.id].job_infos)
+                    remote_jobs = res.subresources[vm.id].running_jobs()
                     if remote_jobs == 0:
                         if self.params.dry_run:
                             print("No job running on VM `%s` of resource `%s`;"
