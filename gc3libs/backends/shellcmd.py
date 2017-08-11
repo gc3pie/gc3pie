@@ -1058,7 +1058,7 @@ class ShellcmdLrms(LRMS):
             else:
                 # ignore
                 pass
-        self._delete_job_info_file(root_pid)
+        # self._delete_job_info_file(root_pid)
 
     def _grace_time(self, wait):
         if wait:
@@ -1610,8 +1610,8 @@ class ShellcmdLrms(LRMS):
                    .format(wrapper_filename, app, err))
             log.warning("%s -- Termination status and resource utilization fields will not be set.", msg)
             raise gc3libs.exceptions.InvalidValue(msg)
-        finally:
-            self._delete_job_info_file(pid)
+        # finally:
+        #     self._delete_job_info_file(pid)
 
     def _parse_wrapper_output(self, wrapper_file):
         """
