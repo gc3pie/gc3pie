@@ -1183,15 +1183,15 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
       If both this and `overwrite` are ``True``, then only changed
       files are downloaded. See `Core.fetch_output`:meth: for details.
 
-      `forget_terminated`
-        When ``True``, `Engine.remove`:meth: is automatically called
-        on tasks when their state turns to ``TERMINATED``.
+    `forget_terminated`
+      When ``True``, `Engine.remove`:meth: is automatically called
+      on tasks when their state turns to ``TERMINATED``.
 
-        .. warning::
+      .. warning::
 
-          For historical reasons, the default for this option is
-          ``False`` but this can (and should!) be changed in future
-          releases.
+        For historical reasons, the default for this option is
+        ``False`` but this can (and should!) be changed in future
+        releases.
 
     Any of the above can also be set by passing a keyword argument to
     the constructor (assume ``g`` is a `Core`:class: instance)::
