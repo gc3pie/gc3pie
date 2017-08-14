@@ -859,44 +859,32 @@ class ShellcmdLrms(LRMS):
              `ShellcmdLrms.get_resource_status()` has not been called
              for a while.
         """
-        return sum(1 for info in self._job_infos.values() if not info['terminated'])
+        return sum(1 for info in self._job_infos.values()
+                   if not info['terminated'])
 
 
-    def _compute_used_cores(self, job_infos):
+    def count_used_cores(self):
         """
-        Accepts a dictionary of job informations and returns the
-        sum of the `requested_cores` attributes.
+        Return total nr. of cores used by running tasks.
+
+        Similar caveats as in `ShellcmdLrms.count_running_tasks`:meth:
+        apply here.
         """
-        return sum(map(self._filter_cores, job_infos.values()))
-
-    @staticmethod
-    def _filter_cores(job):
-        if job['terminated']:
-            return 0
-        else:
-            return job['requested_cores']
+        return sum(info['requested_cores']
+                   for info in self._job_infos.values()
+                   if not info['terminated'])
 
 
-    def _compute_used_memory(self, jobs):
+    def count_used_memory(self):
         """
-        Accepts a dictionary of job informations and returns the
-        sum of the `requested_memory` attributes.
-        """
-        used_memory = sum(map(self._filter_memory, jobs.values()))
-        # in case `jobs.values()` is the empty list, the `sum()`
-        # built-in returns (built-in) integer `0`, which is why we can
-        # use the `is` operator for this comparison ;-)
-        if used_memory is 0:
-            return 0 * MB
-        else:
-            return used_memory
+        Return total amount of memory used by running tasks.
 
-    @staticmethod
-    def _filter_memory(job):
-        if job['requested_memory'] is None or job['terminated']:
-            return 0 * MB
-        else:
-            return job['requested_memory']
+        Similar caveats as in `ShellcmdLrms.count_running_tasks`:meth:
+        apply here.
+        """
+        return sum((info['requested_memory']
+                    for info in self._job_infos.values()
+                    if not info['terminated']), 0*MB)
 
 
     def _get_persisted_job_info(self):
@@ -1148,9 +1136,9 @@ class ShellcmdLrms(LRMS):
         Helper method for (re)reading resource usage from disk.
         """
         self._job_infos = self._get_persisted_job_info()
-        used_memory = self._compute_used_memory(self._job_infos)
+        used_memory = self.count_used_memory()
         self.available_memory = self.total_memory - used_memory
-        self.free_slots = self.max_cores - self._compute_used_cores(self._job_infos)
+        self.free_slots = self.max_cores - self.count_used_cores()
         self.user_run = self.count_running_tasks()
         log.debug("Recovered resource information from files in %s:"
                   " total nr. of cores: %s, requested by jobs: %s;"
