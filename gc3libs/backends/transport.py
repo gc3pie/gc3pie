@@ -492,7 +492,7 @@ class SshTransport(Transport):
         used and why it is needed.
         """
         avail_mem = gc3libs.utils.get_max_real_memory()
-        if avail_mem is None:
+        if avail_mem is not None:
             # be sure to use no more than 50% of avail mem
             # if we cannot determine number of processors
             nproc = gc3libs.utils.get_num_processors() or 2
