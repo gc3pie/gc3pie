@@ -1073,7 +1073,6 @@ class ShellcmdLrms(LRMS):
             else:
                 # ignore
                 pass
-        self._delete_job_info_file(root_pid)
 
     def _grace_time(self, wait):
         if wait:
@@ -1116,7 +1115,12 @@ class ShellcmdLrms(LRMS):
             # lrms_jobid not yet assigned; probably submit
             # failed -- ignore and continue
             pass
-
+    
+    def running_jobs(self):
+        """
+        Returns number of currently running jobs.
+        """
+        return len(self._job_infos)
 
     @same_docstring_as(LRMS.get_resource_status)
     def get_resource_status(self):
@@ -1628,8 +1632,6 @@ class ShellcmdLrms(LRMS):
                    .format(wrapper_filename, app, err))
             log.warning("%s -- Termination status and resource utilization fields will not be set.", msg)
             raise gc3libs.exceptions.InvalidValue(msg)
-        finally:
-            self._delete_job_info_file(pid)
 
     def _parse_wrapper_output(self, wrapper_file):
         """

@@ -34,6 +34,7 @@ __changelog__ = """
 """
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@uzh.ch>'
 __docformat__ = 'reStructuredText'
+__version__ = '1.0.0'
 
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
