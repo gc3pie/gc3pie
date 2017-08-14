@@ -74,9 +74,12 @@ def test_engine_forget_terminated(num_jobs=3, transition_graph=None, max_iter=10
         engine.forget_terminated = True
 
         # generate some no-op tasks
+        tasks = []
         for n in range(num_jobs):
             name = 'app{nr}'.format(nr=n+1)
-            engine.add(SuccessfulApp(name))
+            app = SuccessfulApp(name)
+            engine.add(app)
+            tasks.append(app)
 
         # run them all
         current_iter = 0
@@ -88,6 +91,8 @@ def test_engine_forget_terminated(num_jobs=3, transition_graph=None, max_iter=10
 
         # check that they have been forgotten
         assert not engine._terminated
+        for task in tasks:
+            assert not task._attached
 
 
 def test_engine_progress_collection():
@@ -114,6 +119,9 @@ def test_engine_progress_collection_and_forget_terminated():
             engine.progress()
 
         assert not engine._terminated
+        assert not seq._attached
+        for task in seq.tasks:
+            assert not task._attached
 
 
 def test_engine_kill_SequentialTaskCollection():

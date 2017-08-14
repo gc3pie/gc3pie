@@ -1291,11 +1291,11 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
 
 
     # pylint: disable=too-many-arguments,dangerous-default-value
-    def __get_task_queue(self, task):
+    def __get_task_queue(self, task, _override_state=None):
         """
         Return the "queue" object to which `task` should be added or removed.
         """
-        state = task.execution.state
+        state = _override_state or task.execution.state
         if Run.State.NEW == state:
             return self._new
         elif state in [Run.State.SUBMITTED,
@@ -1544,9 +1544,11 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                     transitioned.append(index)
                     self._terminating.append(task)
                 elif state == Run.State.TERMINATED:
-                    # task changed state, mark as to remove
-                    transitioned.append(index)
-                    if not self.forget_terminated:
+                    if self.forget_terminated:
+                        self._drop_terminated_task(task, old_state)
+                    else:
+                        # task changed state, mark as to remove
+                        transitioned.append(index)
                         self._terminated.append(task)
                 else:
                     # if we got to this point, state has an invalid value
@@ -1622,9 +1624,11 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 elif old_state == Run.State.RUNNING:
                     if isinstance(task, Application):
                         currently_in_flight -= 1
-                if not self.forget_terminated:
+                if self.forget_terminated:
+                    self._drop_terminated_task(task, old_state)
+                else:
                     self._terminated.append(task)
-                transitioned.append(index)
+                    transitioned.append(index)
             # pylint: disable=broad-except
             except Exception as err:
                 if gc3libs.error_ignored(
@@ -1678,10 +1682,12 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                     # task changed state, mark as to remove
                     transitioned.append(index)
                 elif state == Run.State.TERMINATED:
-                    if not self.forget_terminated:
+                    if self.forget_terminated:
+                        self._drop_terminated_task(task, Run.State.STOPPED)
+                    else:
+                        # task changed state, mark as to remove
                         self._terminated.append(task)
-                    # task changed state, mark as to remove
-                    transitioned.append(index)
+                        transitioned.append(index)
             # pylint: disable=broad-except
             except Exception as err:
                 if gc3libs.error_ignored(
@@ -1865,21 +1871,13 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                             " has been destroyed already.)",
                             task, err.__class__.__name__, err)
                     if self.forget_terminated:
-                        try:
-                            # task state is TERMINATED but the queue
-                            # is still `self._terminating` so we need
-                            # to override the choice that
-                            # `self.__get_task_queue` would do
-                            self.remove(task, self._terminating)
-                            gc3libs.log.debug("Dropped TERMINATED task %s", task)
-                        # pylint: disable=broad-except
-                        except Exception as err:
-                            gc3libs.log.debug(
-                                "Could not forget TERMINATED task '%s': %s: %s",
-                                task, err.__class__.__name__, err)
+                        # task state is TERMINATED but the queue
+                        # is still `self._terminating` so we need
+                        # to override the choice that
+                        # `self.__get_task_queue` would do
+                        self._drop_terminated_task(task, Run.State.TERMINATING)
                     else:
                         self._terminated.append(task)
-
                 if self._store and task.changed:
                     self._store.save(task)
             if not self.forget_terminated:
@@ -1887,6 +1885,21 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 # (only if TERMINATED tasks have not been dropped already)
                 for index in reversed(transitioned):
                     del self._terminating[index]
+
+    def _drop_terminated_task(self, task, old_state):
+        queue = self.__get_task_queue(task, old_state)
+        try:
+            # task state is TERMINATED but the queue
+            # is still `self._terminating` so we need
+            # to override the choice that
+            # `self.__get_task_queue` would do
+            self.remove(task, queue)
+            gc3libs.log.debug(
+                "Dropped TERMINATED task %s (was: %s)", task, old_state)
+        except Exception as err:  # pylint: disable=broad-except
+            gc3libs.log.debug(
+                "Could not forget TERMINATED task '%s': %s: %s",
+                task, err.__class__.__name__, err)
 
 
     def redo(self, task, *args, **kwargs):
