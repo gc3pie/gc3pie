@@ -229,7 +229,7 @@ class _Machine(object):
 
         Raise ``LookupError`` if no process is identified by the given PID.
         """
-        cmd = 'ps -p {0:d} -o state='.format(pid)
+        cmd = 'ps -p {0} -o state='.format(pid)
         rc, stdout, stderr = self.transport.execute_command(cmd)
         if rc == 1:  # FIXME: same return code on MacOSX?
             raise LookupError('No process with PID {0}'.format(pid))
@@ -245,7 +245,7 @@ class _Machine(object):
 
         Raise ``LookupError`` if no process is identified by the given PID.
         """
-        cmd = 'ps -p {0:d} -o etime='.format(pid)
+        cmd = 'ps -p {0} -o etime='.format(pid)
         rc, stdout, stderr = self.transport.execute_command(cmd)
         if rc == 1:  # FIXME: same return code on MacOSX?
             raise LookupError('No process with PID {0}'.format(pid))
@@ -297,7 +297,7 @@ class _Machine(object):
         """Machine-specific part of `get_total_memory`."""
         pass
 
-    def list_process_tree(self, root_pid=1):
+    def list_process_tree(self, root_pid="1"):
         """
         Return list of PIDs of children of the given process.
 
@@ -316,7 +316,7 @@ class _Machine(object):
             if not line:
                 continue
             pid, ppid = line.split()
-            children[int(ppid)].append(int(pid))
+            children[str(ppid)].append(str(pid))
         if root_pid not in children:
             return []
 
@@ -903,7 +903,7 @@ class ShellcmdLrms(LRMS):
             for pid in pidfiles:
                 job = self._read_job_info_file(pid)
                 if job:
-                    job_infos[pid] = job
+                    job_infos[str(pid)] = job
                 else:
                     # Process not found, ignore it
                     continue
@@ -915,7 +915,7 @@ class ShellcmdLrms(LRMS):
         exists. Returns None if it does not exist.
         """
         self.transport.connect()
-        log.debug("Reading job info file for pid %s", pid)
+        log.debug("Reading job info file for pid %r", pid)
         jobinfo = None
         path = posixpath.join(self.resource_dir, str(pid))
         with self.transport.open(path, 'rb') as fp:
@@ -944,7 +944,7 @@ class ShellcmdLrms(LRMS):
         """
         self.transport.connect()
         log.debug("Deleting job info file for pid %s ...", pid)
-        pidfile = posixpath.join(self.resource_dir, str(pid))
+        pidfile = posixpath.join(self.resource_dir, pid)
         try:
             self.transport.remove(pidfile)
         except Exception as err:
@@ -981,7 +981,7 @@ class ShellcmdLrms(LRMS):
         stored (by `submit_job`:meth:) as `app.execution.lrms_jobid`.
         """
         try:
-            root_pid = int(app.execution.lrms_jobid)
+            root_pid = app.execution.lrms_jobid
         except ValueError:
             raise gc3libs.exceptions.InvalidArgument(
                 "Invalid field `lrms_jobid` in Task '{0}':"
@@ -1540,16 +1540,11 @@ class ShellcmdLrms(LRMS):
             try:
                 with self.transport.open(pidfile_path, 'r') as pidfile:
                     pid = pidfile.read().strip()
-                    return int(pid)
-            except ValueError:
-                # it happens that the PID file exists, but `.read()`
-                # returns the empty string... just wait and retry.
-                if pid == '':
-                    continue
-                else:
-                    raise gc3libs.exceptions.LRMSSubmitError(
-                        "Invalid PID `{0}` in pidfile '{1}': {2}."
-                        .format(pid, pidfile_path, err))
+                    # it happens that the PID file exists, but `.read()`
+                    # returns the empty string... just wait and retry.
+                    if pid == '':
+                        continue
+                    return pid
             except gc3libs.exceptions.TransportError as ex:
                 if '[Errno 2]' in str(ex):  # no such file or directory
                     time.sleep(retry)
