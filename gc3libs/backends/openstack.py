@@ -1101,13 +1101,12 @@ class OpenStackLrms(LRMS):
         # Update status of VMs and remote resources
         self.get_resource_status()
         for vm_id, subresource in self.subresources.items():
-            if subresource.updated and subresource.has_running_tasks():
+            if subresource.updated and not subresource.has_running_tasks():
                 vm = self._get_vm(vm_id)
                 gc3libs.log.warning(
                     "VM instance %s at %s is no longer needed. "
                     "You may need to terminate it manually.",
                     vm.id, vm.preferred_ip)
-                vm.delete()
                 self._vmpool.remove_vm(vm.id)
             subresource.close()
 

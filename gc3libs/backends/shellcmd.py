@@ -1210,7 +1210,7 @@ class ShellcmdLrms(LRMS):
             return [(remote_path, local_path)]
 
 
-    def has_running_tasks():
+    def has_running_tasks(self):
         """
         Return ``True`` if tasks are running on the resource.
 

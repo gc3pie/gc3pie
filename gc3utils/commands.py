@@ -1792,14 +1792,14 @@ To get detailed info on a specific command, run:
 
         images = []
         for vm in vms:
-            remote_jobs = 'N/A'
+            nr_remote_jobs = 'N/A'
             ncores = 'N/A'
             status = ''
             image_name = ''
             ips = []
             if vm.id in res.subresources:
                 if res.subresources[vm.id].updated:
-                    remote_jobs = str(res.subresources[vm.id].running_jobs())
+                    nr_remote_jobs = str(res.subresources[vm.id].user_run)
                     ncores = str(res.subresources[vm.id].max_cores)
 
             if res.type.startswith('ec2'):
@@ -1823,7 +1823,7 @@ To get detailed info on a specific command, run:
                 ips.remove(vm.preferred_ip)
 
             table.add_row((res.name, vm.id, status, vm.preferred_ip,
-                           str.join(', ', ips), remote_jobs, ncores,
+                           str.join(', ', ips), nr_remote_jobs, ncores,
                            image_name, vm.key_name))
 
         print(table)
@@ -1891,8 +1891,7 @@ To get detailed info on a specific command, run:
             vms = res._vmpool.get_all_vms()
             if vms:
                 for vm in vms:
-                    remote_jobs = res.subresources[vm.id].running_jobs()
-                    if remote_jobs == 0:
+                    if res.subresources[vm.id].has_running_tasks():
                         if self.params.dry_run:
                             print("No job running on VM `%s` of resource `%s`;"
                                   " would terminate it." % (vm.id, res.name))

@@ -987,13 +987,12 @@ class EC2Lrms(LRMS):
         # Update status of VMs and remote resources
         self.get_resource_status()
         for vm_id, resource in self.subresources.items():
-            if resource.updated and resource.has_running_tasks():
+            if resource.updated and not resource.has_running_tasks():
                 vm = self._get_vm(vm_id)
                 gc3libs.log.warning(
                     "VM instance %s at %s is no longer needed. "
                     "You may need to terminate it manually.",
                     vm.id, vm.public_dns_name)
-                vm.terminate()
                 del self._vmpool[vm.id]
             resource.close()
         # self._session.save_all()
