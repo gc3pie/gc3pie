@@ -85,16 +85,16 @@ def test_list_process_tree_full(transport):
         '',
     )
 
-    pids = mach.list_process_tree(2361)
+    pids = mach.list_process_tree("2361")
     assert pids == [
               # PID   PPID CMD
-        2361, # 2361  1466 /sbin/upstart --user
-        2431, # 2431  2361  \_ upstart-udev-bridge --daemon --user
-        2663, # 2663  2361  \_ gpg-agent --homedir /home/rmurri/.gnupg --use-standard-socket --daemon
-        2679, # 2679  2361  \_ /usr/lib/at-spi2-core/at-spi-bus-launcher
-        2725, # 2684  2679  |   \_ /usr/bin/dbus-daemon --config-file=/etc/at-spi2/accessibility.conf --nofork --print-address 3
-        2684, # 2725  2361  \_ /usr/bin/lxsession -s Lubuntu -e LXDE
-        2736, # 2736  2725  |   \_ lxpanel --profile Lubuntu
+        "2361", # 2361  1466 /sbin/upstart --user
+        "2431", # 2431  2361  \_ upstart-udev-bridge --daemon --user
+        "2663", # 2663  2361  \_ gpg-agent --homedir /home/rmurri/.gnupg --use-standard-socket --daemon
+        "2679", # 2679  2361  \_ /usr/lib/at-spi2-core/at-spi-bus-launcher
+        "2725", # 2684  2679  |   \_ /usr/bin/dbus-daemon --config-file=/etc/at-spi2/accessibility.conf --nofork --print-address 3
+        "2684", # 2725  2361  \_ /usr/bin/lxsession -s Lubuntu -e LXDE
+        "2736", # 2736  2725  |   \_ lxpanel --profile Lubuntu
     ]
 
 

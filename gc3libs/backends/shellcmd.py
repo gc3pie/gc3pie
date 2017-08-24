@@ -229,7 +229,7 @@ class _Machine(object):
 
         Raise ``LookupError`` if no process is identified by the given PID.
         """
-        cmd = 'ps -p {0:d} -o state='.format(pid)
+        cmd = 'ps -p {0} -o state='.format(pid)
         rc, stdout, stderr = self.transport.execute_command(cmd)
         if rc == 1:  # FIXME: same return code on MacOSX?
             raise LookupError('No process with PID {0}'.format(pid))
@@ -245,7 +245,7 @@ class _Machine(object):
 
         Raise ``LookupError`` if no process is identified by the given PID.
         """
-        cmd = 'ps -p {0:d} -o etime='.format(pid)
+        cmd = 'ps -p {0} -o etime='.format(pid)
         rc, stdout, stderr = self.transport.execute_command(cmd)
         if rc == 1:  # FIXME: same return code on MacOSX?
             raise LookupError('No process with PID {0}'.format(pid))
@@ -297,7 +297,7 @@ class _Machine(object):
         """Machine-specific part of `get_total_memory`."""
         pass
 
-    def list_process_tree(self, root_pid=1):
+    def list_process_tree(self, root_pid="1"):
         """
         Return list of PIDs of children of the given process.
 
@@ -316,7 +316,7 @@ class _Machine(object):
             if not line:
                 continue
             pid, ppid = line.split()
-            children[int(ppid)].append(int(pid))
+            children[ppid].append(pid)
         if root_pid not in children:
             return []
 
@@ -981,7 +981,7 @@ class ShellcmdLrms(LRMS):
         stored (by `submit_job`:meth:) as `app.execution.lrms_jobid`.
         """
         try:
-            root_pid = int(app.execution.lrms_jobid)
+            root_pid = app.execution.lrms_jobid
         except ValueError:
             raise gc3libs.exceptions.InvalidArgument(
                 "Invalid field `lrms_jobid` in Task '{0}':"
@@ -1539,8 +1539,7 @@ class ShellcmdLrms(LRMS):
         for retry in gc3libs.utils.ExponentialBackoff():
             try:
                 with self.transport.open(pidfile_path, 'r') as pidfile:
-                    pid = pidfile.read().strip()
-                    return int(pid)
+                    return pidfile.read().strip()
             except ValueError:
                 # it happens that the PID file exists, but `.read()`
                 # returns the empty string... just wait and retry.

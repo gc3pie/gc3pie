@@ -415,5 +415,37 @@ type=none
             core1.free(app)
 
 
+    def test_pid_list_is_string(self):
+        tmpdir = tempfile.mkdtemp(prefix=__name__, suffix='.d')
+        (fd, cfgfile) = tempfile.mkstemp()
+        f = os.fdopen(fd, 'w+')
+        f.write(TestBackendShellcmdCFG.CONF % ("False", cfgfile + '.d'))
+        f.close()
+        self.files_to_remove = [cfgfile, cfgfile + '.d']
+
+        self.cfg = gc3libs.config.Configuration()
+        self.cfg.merge_file(cfgfile)
+
+        self.core = gc3libs.core.Core(self.cfg)
+        self.backend = self.core.get_backend('localhost_test')
+        # Update resource status
+
+        app = gc3libs.Application(
+        arguments=['/bin/echo', 'Hello', 'World'],
+            inputs=[],
+            outputs=[],
+            output_dir=tmpdir,
+            requested_cores=1,
+            requested_memory=10 * Memory.MiB, )
+
+        try:
+            self.core.submit(app)
+            for pid in self.backend._job_infos.keys():
+                assert isinstance(pid,str)
+        finally:
+            self.core.kill(app)
+            self.core.free(app)            
+
+
 if __name__ == "__main__":
     pytest.main(["-v", __file__])
