@@ -165,15 +165,13 @@ class OpenStackLrms(LRMS):
         self.os_password = auth.os_password
         self.os_tenant_name = auth.os_project_name
         self.os_region_name = os_region
-        if self.os_auth_url is None:
-            raise gc3libs.exceptions.InvalidArgument(
-                "Cannot connect to the OpenStack API:"
-                " No 'os_auth_url' argument passed to the OpenStack backend.")
         # Keypair names can only contain alphanumeric chars!
-        if not set(keypair_name).issubset(set(ascii_letters + digits + '_')):
+        if not set(keypair_name).issubset(set(ascii_letters + digits + '_-.')):
             raise ConfigurationError(
-                "Keypair name `%s` is invalid: keypair names can only contain "
-                "alphanumeric chars: [a-zA-Z0-9_]" % keypair_name)
+                "Keypair name `{0}` is invalid:"
+                " keypair names can only consist of"
+                " alphanumeric chars, plus `_`, `-`, and `.`"
+                .format(keypair_name))
         self.keypair_name = keypair_name
         self.public_key = os.path.expanduser(
             os.path.expandvars(public_key.strip()))
