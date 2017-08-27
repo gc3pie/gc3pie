@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 #
 """
+Manage startup and teardown of cloud-based VMs to run applications.
+
+This only works on clouds implementing the OpenStack Compute API.
 """
 # Copyright (C) 2012-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
@@ -35,10 +38,10 @@ except ImportError as err:
     from gc3libs.exceptions import ConfigurationError
     raise ConfigurationError(
         "The OpenStack backend is used but the `os_client_config` module"
-        " cannot be used: {err}. Please, either install it with"
+        " cannot be loaded: {err}. Please, either install it with"
         "`pip install os-client-config` and verify that it works"
         " by running `python -c 'import os_client_config'`,"
-        " then try again, or update your configuration file and"
+        " or update your configuration file and"
         " disable any OpenStack-based resources."
         .format(err=err))
 
@@ -48,12 +51,13 @@ except ImportError as err:
     from gc3libs.exceptions import ConfigurationError
     raise ConfigurationError(
         "The OpenStack backend is used but the `novaclient` module"
-        " cannot be used: {err}. Please, either install it with"
+        " cannot be loaded: {err}. Please, either install it with"
         "`pip install python-novaclient` and verify that it works"
         " by running `python -c 'import novaclient'`,"
-        " then try again, or update your configuration file and"
+        " or update your configuration file and"
         " disable any OpenStack-based resources."
         .format(err=err))
+
 
 # GC3Pie imports
 import gc3libs
@@ -75,6 +79,7 @@ from gc3libs.backends.vmpool import VMPool, InstanceNotFound
 from gc3libs.utils import cache_for
 from gc3libs.quantity import MiB
 
+
 available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
 
 ERROR_STATES = ['ERROR', 'UNNKNOWN']
@@ -83,7 +88,6 @@ PENDING_STATES = ['BUILD', 'REBUILD', 'REBOOT', 'HARD_REBOOT',
 
 
 class OpenStackVMPool(VMPool):
-
     """
     Implementation of `VMPool` for OpenStack cloud
     """
@@ -1130,55 +1134,3 @@ if "__main__" == __name__:
     import doctest
     doctest.testmod(name="openstack",
                     optionflags=doctest.NORMALIZE_WHITESPACE)
-
-
-# Server states
-#    ACTIVE. The server is active.
-#
-#    BUILD. The server has not finished the original build process.
-#
-#    DELETED. The server is deleted.
-#
-#    ERROR. The server is in error.
-#
-#    HARD_REBOOT. The server is hard rebooting. This is equivalent to
-#    pulling the power plug on a physical server, plugging it back in,
-#    and rebooting it.
-#
-#    PASSWORD. The password is being reset on the server.
-#
-#    REBOOT. The server is in a soft reboot state. A reboot command
-#    was passed to the operating system.
-#
-#    REBUILD. The server is currently being rebuilt from an image.
-#
-#    RESCUE. The server is in rescue mode.
-#
-#    RESIZE. Server is performing the differential copy of data that
-#    changed during its initial copy. Server is down for this stage.
-#
-#    REVERT_RESIZE. The resize or migration of a server failed for
-#    some reason. The destination server is being cleaned up and the
-#    original source server is restarting.
-#
-#    SHUTOFF. The virtual machine (VM) was powered down by the user,
-#    but not through the OpenStack Compute API. For example, the user
-#    issued a shutdown -h command from within the server instance. If
-#    the OpenStack Compute manager detects that the VM was powered
-#    down, it transitions the server instance to the SHUTOFF
-#    status. If you use the OpenStack Compute API to restart the
-#    instance, the instance might be deleted first, depending on the
-#    value in the shutdown_terminate database field on the Instance
-#    model.
-#
-#    SUSPENDED. The server is suspended, either by request or
-#    necessity. This status appears for only the following
-#    hypervisors: XenServer/XCP, KVM, and ESXi. Review support tickets
-#    or contact Rackspace support to determine why the server is in
-#    this state.
-#
-#    UNKNOWN. The state of the server is unknown. Contact your cloud
-#    provider.
-#
-#    VERIFY_RESIZE. System is awaiting confirmation that the server is
-#    operational after a move or resize.
