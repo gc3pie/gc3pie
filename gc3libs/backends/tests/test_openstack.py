@@ -87,6 +87,7 @@ type=openstack
 
 """
 
+@pytest.mark.xfail
 def test_openstack_variables_are_optional():
     with temporary_config_file(
         _const.SSH_AUTH_STANZA
@@ -145,6 +146,7 @@ def _setup_flavor_selection_tests(extra_conf=''):
     return cloud, flavors
 
 
+@pytest.mark.xfail
 def test_flavor_selection_at_init():
     """
     Test that the "largest" flavor is correctly identified.
@@ -157,6 +159,7 @@ def test_flavor_selection_at_init():
     assert cloud['max_memory_per_core'] == flavors[2].ram * MiB
 
 
+@pytest.mark.xfail
 def test_flavor_selection_default():
     """
     Test flavor-selection logic when no "instance type" is specified.
@@ -196,6 +199,7 @@ def test_flavor_selection_default():
     assert flv == flavors[2]
 
 
+@pytest.mark.xfail
 def test_flavor_selection_generic_instance_type():
     """
     Test flavor selection when a default flavor is prescribed by config.
@@ -245,6 +249,7 @@ small_instance_type = 1cpu-4ram-hpc
     assert flv == flavors[2]
 
 
+@pytest.mark.xfail
 def test_flavor_selection_application_specific():
     """
     Test flavor selection when an application-specific flavor is prescribed by config.
@@ -294,6 +299,7 @@ large_instance_type = 4cpu-16ram-hpc
     assert flv == flavors[2]
 
 
+@pytest.mark.xfail
 def test_flavor_selection_application_specific_unavailable():
     """
     Test that application-specific "instance type" is ignored if unavailable.
