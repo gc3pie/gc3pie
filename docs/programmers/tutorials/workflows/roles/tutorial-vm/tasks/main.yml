@@ -1,0 +1,110 @@
+#
+# Ansible playbook to set up a VM to be used for the training session.
+#
+---
+
+- name: Require that OS is Debian or Ubuntu
+  fail:
+    msg: This playbook can only run on Debian or Ubuntu
+  when: 'ansible_os_family != "Debian"'
+
+- name: Set /etc/motd
+  become: yes
+  tags:
+    - motd
+  copy:
+    dest: /etc/motd
+    src: motd
+    mode: a+r
+
+- name: "Disable Ubuntu's 'dynamic motd'"
+  tags:
+    - motd
+  become: yes
+  lineinfile:
+    path: /etc/pam.d/sshd
+    regexp: "(?x) ^\\s* session \\s+ optional \\s+ pam_motd.so \\s+ motd=/run/motd.dynamic .*$"
+    state: absent
+    create: no
+  when: "ansible_distribution == 'Ubuntu'"
+
+- name: Ensure dependent packages are installed
+  become: yes
+  package:
+    name: '{{item}}'
+    state: installed
+  with_items:
+    # editors
+    - vim-nox
+    - emacs-nox
+    # ImageMagick commands are used in the "Warholize" workflow
+    - imagemagick
+    # BLAST is needed in some exercises
+    - blast2
+    - ncbi-blast+
+    # R is needed in some exercises
+    - r-base
+
+- name: Make training material available in the home directory
+  command:
+    rsync -a '{{gc3pie_dir}}/src/docs/programmers/tutorials/workflows/{{item}}' '{{home}}'
+  with_items:
+    - downloads
+    - solutions
+
+- name: Make "warholize.py" script available in the home directory
+  file:
+    dest: '{{home}}/warholize.py'
+    src: '{{gc3pie_dir}}/src/examples/warholize.py'
+    state: link
+
+- name: Make example pictures visible in the home directory
+  copy:
+    dest: '{{home}}/{{item}}'
+    src: '{{item}}'
+  with_items:
+    - bfly.jpg
+    - coffee.jpg
+    - lena.jpg
+    - zebra.jpg
+
+- name: Make "sc-authenticate.sh" available in the home directory
+  copy:
+    dest: '{{home}}/sc-authenticate.sh'
+    src: 'sc-authenticate.sh'
+    # do not make it executable: the file has to be sourced by the shell!
+    mode: 0444
+
+- name: Copy `.bashrc` fragment
+  tags:
+    - bashrc
+  copy:
+    dest: '{{home}}/.bashrc.gc3pie'
+    src: 'bashrc.gc3pie'
+    # do not make it executable: the file has to be sourced by the shell!
+    mode: 0444
+
+- name: Make `.bashrc` read the GC3Pie-specific fragment
+  tags:
+    - bashrc
+  lineinfile:
+    path: '{{home}}/.bashrc'
+    line: 'if [ -r "$HOME/.bashrc.gc3pie" ]; then . "$HOME/.bashrc.gc3pie"; fi'
+    state: present
+    insertafter: EOF
+    create: yes
+
+- name: Create GC3Pie config dir
+  file:
+    path: '{{ansible_user_dir}}/.gc3'
+    state: directory
+    mode: 0755
+
+- name: Deploy pre-edited configuration file(s)
+  copy:
+    dest: '{{ansible_user_dir}}/.gc3/{{item}}'
+    src: '{{item}}'
+    mode: 0644
+  with_items:
+    - gc3pie.conf
+    - gc3utils.log.conf

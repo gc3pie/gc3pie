@@ -1,0 +1,36 @@
+#
+# Install GC3Pie in `{{gc3pie_dir}}` (default: `$HOME/gc3pie`)
+#
+---
+
+- name: Require that OS is Debian or Ubuntu
+  fail:
+    msg: This playbook can only run on Debian or Ubuntu
+  when: 'ansible_os_family != "Debian"'
+
+- name: Ensure dependent packages are installed
+  package:
+    name='{{item}}'
+    state=installed
+  with_items:
+    - g++
+    - gcc
+    - git
+    - libffi-dev
+    - libssl-dev
+    - python
+    - python-dev
+    - python-virtualenv
+  become: yes
+
+- name: Download GC3Pie installer
+  get_url:
+    url: https://raw.githubusercontent.com/uzh/gc3pie/master/install.py
+    dest: /var/tmp/install.py
+    mode: 0755
+
+- name: Run GC3Pie installer
+  command:
+    python /var/tmp/install.py --yes --develop --overwrite --feature openstack,ec2 -d {{gc3pie_dir}}
+  args:
+    creates: '{{gc3pie_dir}}/bin/gsession'

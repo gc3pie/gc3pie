@@ -1,0 +1,3 @@
+---
+
+gc3pie_dir: '{{ansible_user_dir}}/gc3pie'

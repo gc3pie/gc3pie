@@ -1,0 +1,7 @@
+# match the style used in GC3Pie slides
+export PS1='> '
+
+# automatically activate the virtualenv
+if [ -r "$HOME/gc3pie/bin/activate" ]; then
+  . "$HOME/gc3pie/bin/activate"
+fi

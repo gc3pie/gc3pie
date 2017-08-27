@@ -1,0 +1,85 @@
+#
+# This is an example configuration file for GC3Pie,
+# meant to be used in the "GC3Pie for programmer" course.
+#
+# At the end of the course, it will contain real working definitions
+# of the UZH computing resources so it can also be used as a basis
+# for your own configuration file for production use.
+#
+
+# run tasks on the computer where GC3Pie commands are typed
+[resource/localhost]
+enabled = yes
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2GiB
+max_walltime = 12 hours
+max_cores = 2
+architecture = x86_64
+auth = none
+override = no
+
+
+# run tasks on the Hydra large-memory cluster
+[resource/hydra]
+enabled = no
+type = slurm
+frontend = login.s3it.uzh.ch
+transport = ssh
+auth = ssh_user_account
+max_walltime = 1 day
+max_cores = 96
+max_cores_per_job = 64
+max_memory_per_core = 1 TiB
+architecture = x86_64
+prologue_content =
+  module load cluster/largemem
+
+[auth/ssh_user_account]
+type=ssh
+# TO-DO: replace `uzh-shortname` with your actual UZH shortname
+username=uzh-shortname
+
+
+# run jobs on the UZH "ScienceCloud"
+[resource/sciencecloud]
+enabled=no
+type=openstack+shellcmd
+auth=openstack
+
+vm_pool_max_size = 32
+security_group_name=default
+security_group_rules=
+  tcp:22:22:0.0.0.0/0,
+  icmp:-1:-1:0.0.0.0/0
+network_ids=
+  c86b320c-9542-4032-a951-c8a068894cc2
+
+# definition of a single execution VM:
+# - flavor (i.e., size) of the VM
+instance_type=1cpu-4ram-hpc
+# - image_id of `Ubuntu 14.04 (2017-07-18)
+image_id=2a7a2c1a-76a7-4174-9116-4aa8799347ac
+
+max_cores_per_job = 8
+max_memory_per_core = 4 GiB
+max_walltime = 90 days
+max_cores = 32
+architecture = x86_64
+
+# how to connect
+vm_auth=ssh_user_ubuntu
+keypair_name=CHANGEMEPLEASE
+public_key=~/.ssh/id_rsa.pub
+
+[auth/ssh_user_ubuntu]
+# default user on Ubuntu VM images
+type=ssh
+username=ubuntu
+
+[auth/openstack]
+# only need to set the `type` here; any other value will be taken from
+# the `OS_*` environment variables
+type = openstack

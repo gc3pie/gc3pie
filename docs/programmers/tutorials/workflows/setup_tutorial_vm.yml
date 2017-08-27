@@ -1,0 +1,163 @@
+#
+# Set up the tutorial VM starting from a base Ubuntu VM image.
+# Only targeting OpenStack, and the variable values are specific
+# to the UZH "Science Cloud" infrastructure.
+#
+---
+
+- name: start VM
+  hosts: localhost
+  connection: local
+
+  vars:
+    keypair_name: rmurri
+
+    # cloud-specific params
+    vm_flavor: 1cpu-4ram-hpc
+    vm_network: uzh-only
+
+    # image-specific params
+    vm_image: ca58a839-660d-48a9-b7b7-906052cd3f39
+    vm_user:  ubuntu
+
+  tasks:
+    - name: Create a new VM instance with base OS
+      os_server:
+        name: 'tutorial-vm'
+        state: present
+        wait: yes
+
+        image: '{{ vm_image }}'
+        key_name: "{{ keypair_name }}"
+        flavor: "{{ vm_flavor }}"
+        network: "{{ vm_network }}"
+        security_groups: default
+
+    - name: gather VM facts
+      os_server_facts:
+        server: 'tutorial-vm'
+        detailed: no
+
+    - name: Add VM to inventory
+      add_host:
+        # `hostname` is the *IP address* of the new host
+        hostname: '{{ openstack_servers[0].accessIPv4 }}'
+        groups: 'target'
+        ansible_ssh_user: '{{ vm_user }}'
+        ansible_user: '{{ vm_user }}'
+
+    - name: prepare VM for Ansible
+      # this is needed on official Ubuntu 16.04 images, otherwise the next
+      # playbook fails already at the `gather_facts:` step because no Python 2.x
+      # can be found -- so it needs to run *before* the "update VM images" play
+      shell: |
+          timeout=300;
+          waited=0;
+          while [ $waited -lt $timeout ]; do
+              if ssh -o UserKnownHostsFile=/dev/null \
+                  -o StrictHostKeyChecking=no \
+                  {{ vm_user }}@{{ openstack_servers[0].accessIPv4 }} \
+                  'command -v apt-get && sudo apt-get install -y aptitude python; exit 0';
+              then
+                  break
+              fi
+              sleep 10
+              waited=$(expr $waited + 10)
+          done
+      # cannot use `{{ ansible_distribution }}` or the like here, since facts were
+      # not gathered about this host -- resort to a crude identification mechanism
+      when: 'vm_user == "ubuntu"'
+
+
+# this is a separate play so that the `gather_facts:` step runs on all the VMs
+# that were created in the "start" phase
+- name: update VM image
+  hosts: target
+  gather_facts: yes
+
+  roles:
+    - gc3pie
+    - tutorial-vm
+
+
+# this is a separate play to re-run the `gather_facts:` step;
+# we want vars like `ansible_distribution_version` to be up-to-date
+# in case the last steps changed it (e.g., minor release upgrade)
+- name: make VM snapshot
+  hosts: target
+  gather_facts: yes
+
+  vars_prompt:
+    - name: 'prefix'
+      prompt: 'Prefix for the all new snapshot names'
+      default: '***TEST*** '
+      private: no
+
+  tasks:
+
+    - name: clean up VM before snapshot (package files)
+      become: yes
+      command: |
+        apt-get clean -y
+      when: 'ansible_os_family == "Debian"'
+
+    - name: clean up VM before snapshot (package files)
+      become: yes
+      command: |
+        yum clean all
+      when: 'ansible_os_family == "RedHat"'
+
+    - name: clean up VM before snapshot (system files)
+      become: yes
+      shell: |
+        rm -r -f -v {{ item }}
+      args:
+        removes: '{{ item }}'
+      with_items:
+        - "/etc/cloud/uzh-customization-script"
+        - "/var/lib/cloud/data/*"
+        - "/var/lib/cloud/instance"
+        - "/var/lib/cloud/instances/*"
+
+    - name: clean up VM before snapshot (user files)
+      become: yes
+      shell: |
+        rm -r -f -v '{{ item[0] }}/{{ item[1] }}'
+      args:
+        removes: '{{ item[0] }}/{{ item[1] }}'
+      with_nested:
+        - ['/home/centos', '/home/debian', '/home/ubuntu', '/root', '{{ ansible_user_dir }}' ]
+        - [".ansible", ".bash_history", ".cache", ".lesshst", ".sudo_as_admin_successful", ".Xauthority", ".viminfo"]
+
+    - name: make VM snapshot
+      become: no
+      shell: |
+        nova image-create --poll "tutorial-vm" "{{ prefix }}GC3Pie tutorial {{ ansible_date_time.date}}"
+      delegate_to: localhost
+
+    - name: turn snapshot back into image
+          "{{ prefix }}{{ extra_prefix|default('') }}{{ ansible_distribution }} {{ ansible_distribution_version }} ({{ ansible_date_time.date}})"
+      become: no
+      shell: |
+        openstack image unset \
+          --property image_location \
+          --property image_state \
+          --property image_type \
+          --property kernel_id \
+          --property owner_id \
+          --property user_id \
+          --property ramdisk_id \
+          "{{ prefix }}GC3Pie tutorial {{ ansible_date_time.date}}"
+      delegate_to: localhost
+
+
+# - name: stop VMs
+#   hosts: localhost
+#   gather_facts: no
+
+#   tasks:
+#     - name: stop VM instance
+#       os_server:
+#         name: 'tutorial-vm'
+#         state: absent
+#         wait: yes

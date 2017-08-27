@@ -1,0 +1,4 @@
+---
+
+# shortcut
+home: '{{ansible_user_dir}}'
