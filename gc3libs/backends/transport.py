@@ -860,7 +860,7 @@ class SshTransport(Transport):
                       ignore_nonexisting, overwrite, changed_only)
 
     def _get_impl(self, source, destination):
-        if self.stat(destination).st_size < self.large_file_threshold:
+        if self.stat(source).st_size < self.large_file_threshold:
             self.sftp.get(source, destination)
         else:
             with self.sftp.open(source) as fsrc:
