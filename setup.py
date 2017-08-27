@@ -79,6 +79,8 @@ elif python_version == (2, 7):
         # backend. Since OpenStack ceased support for Python 2.6 around
         # version 3.0.0 of the client libraries, we have to include separate
         # dependecy lists for Python 2.7+ and Python 2.6
+        'python-glanceclient',
+        'python-neutronclient',
         'python-novaclient',
         'os-client-config',
     ]

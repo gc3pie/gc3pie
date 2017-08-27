@@ -76,7 +76,7 @@ from gc3libs.utils import same_docstring_as
 from gc3libs.backends import LRMS
 from gc3libs.backends.shellcmd import ShellcmdLrms
 from gc3libs.backends.vmpool import VMPool, InstanceNotFound
-from gc3libs.utils import cache_for
+from gc3libs.utils import cache_for, lookup
 from gc3libs.quantity import MiB
 
 
@@ -221,39 +221,39 @@ class OpenStackLrms(LRMS):
 
         # "Connect" to the cloud (connection is actually performed
         # only when needed by the `Client` class.
-
-        self.client = self._new_client()
+        self.compute_client, self.image_client, self.network_client = self._new_clients()
 
         # Set up the VMPool persistent class. This has been delayed
         # until here because otherwise self._conn is None
-        pooldir = os.path.join(os.path.expandvars(OpenStackLrms.RESOURCE_DIR),
-                               'vmpool', self.name)
-        self._vmpool = OpenStackVMPool(pooldir, self.client)
-        # XXX: we need to get the list of available flavors, in order
-        # to set self.max_cores  and self.max_memory_per_core
-        # self._connect()
+        pooldir = os.path.join(
+            os.path.expandvars(OpenStackLrms.RESOURCE_DIR),
+            'vmpool', self.name)
+        self._vmpool = OpenStackVMPool(pooldir, self.compute_client)
 
-    def _new_client(self):
+    def _new_clients(self):
         self.__connected = False
-        return os_client_config.make_client(
-            'compute',
-            auth_url=self.os_auth_url,
-            username=self.os_username,
-            password=self.os_password,
-            project_name=self.os_tenant_name,
-            region_name=self.os_region_name,
-        )
+        for kind in ['compute', 'image', 'network']:
+            yield os_client_config.make_client(
+                kind,
+                auth_url=self.os_auth_url,
+                username=self.os_username,
+                password=self.os_password,
+                project_name=self.os_tenant_name,
+                region_name=self.os_region_name,
+            )
 
     def _connect(self):
         if not self.__connected:
-            self.client.authenticate()
+            self.compute_client.authenticate()
             # Fill the flavors and update the resource.
-            self._flavors = self.client.flavors.list()
+            self._flavors = self.compute_client.flavors.list()
             flavor = max(self._flavors, key=self._flavor_ordering_key)
-            gc3libs.log.info("Largest flavor available on the cloud: %s",
-                             flavor.name)
+            # FIXME: if the configured values are lower, should they be honored instead?
             self['max_cores'] = self['max_cores_per_job'] = flavor.vcpus
             self['max_memory_per_core'] = flavor.ram * MiB
+            gc3libs.log.info(
+                "Largest VM flavor available on the cloud: %s (%d vCPUs, %s RAM)",
+                flavor.name, self['max_cores'], self['max_memory_per_core'])
         self.__connected = True
 
     def _create_instance(self, image_id, name='gc3pie-instance',
@@ -302,7 +302,7 @@ class OpenStackLrms(LRMS):
 
         gc3libs.log.debug("Create new VM using image id `%s`", image_id)
         try:
-            vm = self.client.servers.create(name, image_id, instance_type,
+            vm = self.compute_client.servers.create(name, image_id, instance_type,
                                             key_name=self.keypair_name, **args)
         except Exception as err:
             # scrape actual error kind and message out of the
@@ -328,8 +328,8 @@ class OpenStackLrms(LRMS):
         fd = open(os.path.expanduser(self.public_key))
         try:
             key_material = fd.read()
-            self.client.keypairs.create(self.keypair_name, key_material)
-            keypair = self.client.keypairs.get(self.keypair_name)
+            self.compute_client.keypairs.create(self.keypair_name, key_material)
+            keypair = self.compute_client.keypairs.get(self.keypair_name)
             gc3libs.log.info(
                 "Successfully imported key `%s` with fingerprint `%s`"
                 " as keypair `%s`" % (self.public_key,
@@ -353,7 +353,7 @@ class OpenStackLrms(LRMS):
                 vm.id, vm.preferred_ip)
             # Update resource based on flavor specs
             try:
-                flavor = self.client.flavors.get(vm.flavor['id'])
+                flavor = self.compute_client.flavors.get(vm.flavor['id'])
                 res = self.subresources[vm.id]
                 res['max_memory_per_core'] = flavor.ram * MiB
                 res['max_cores_per_job'] = flavor.vcpus
@@ -466,12 +466,17 @@ class OpenStackLrms(LRMS):
     @cache_for(120)
     def _get_security_groups(self):
         self._connect()
-        return self.client.security_groups.list()
+        try:
+            # python-novaclient < 8.0.0
+            return self.compute_client.security_groups.list()
+        except AttributeError:
+            return self.network_client.list_security_groups()['security_groups']
+
 
     @cache_for(120)
     def _get_security_group(self, name):
         groups = self._get_security_groups()
-        group = [grp for grp in groups if grp.name == name]
+        group = [grp for grp in groups if lookup(grp, 'name') == name]
         if not group:
             raise NotFound("Security group %s not found." % name)
         return group[0]
@@ -527,7 +532,7 @@ class OpenStackLrms(LRMS):
                 gc3libs.log.info("Creating security group %s",
                                  self.security_group_name)
 
-                self.client.security_groups.create(
+                self.compute_client.security_groups.create(
                     self.security_group_name,
                     "GC3Pie_%s" % self.security_group_name)
             except Exception as ex:
@@ -557,12 +562,18 @@ class OpenStackLrms(LRMS):
     @cache_for(120)
     def _get_available_images(self):
         self._connect()
-        return self.client.images.list()
+        try:
+            # python-novaclient < 8.0.0
+            return self.compute_client.images.list()
+        except AttributeError:
+            # ``glance_client.images.list()`` returns a generator, but callers
+            # of `._get_available_images()` expect a Python list
+            return list(self.image_client.images.list())
 
     @cache_for(120)
     def _get_available_flavors(self):
         self._connect()
-        return self.client.flavors.list()
+        return self.compute_client.flavors.list()
 
     def _get_flavor(self, name):
         for flavor in self._flavors:
@@ -575,7 +586,7 @@ class OpenStackLrms(LRMS):
     @cache_for(120)
     def _get_keypair(self, keypair_name):
         self._connect()
-        return self.client.keypairs.get(keypair_name)
+        return self.compute_client.keypairs.get(keypair_name)
 
     def get_image_id_for_job(self, job):
         """
@@ -1124,7 +1135,7 @@ class OpenStackLrms(LRMS):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        self.client = self._new_client()
+        self.compute_client, self.image_client, self.network_client = self._new_clients()
         self._connect()
 
 
