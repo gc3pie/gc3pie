@@ -1575,7 +1575,7 @@ class ShellcmdLrms(LRMS):
                 self._kill_if_over_time_limits(app)
         except LookupError:
             log.debug(
-                "Process with PID %d not found,"
+                "Process with PID %s not found,"
                 " assuming task %s has finished running.",
                 pid, app)
             self._cleanup_terminating_task(app, pid)
