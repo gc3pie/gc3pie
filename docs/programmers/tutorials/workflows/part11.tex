@@ -17,7 +17,7 @@
   \\[1ex]
   University of Zurich
 }
-\date{January~23--27, 2017}
+\date{Aug.~28 -- Sep.~1, 2017}
 
 \begin{document}
 
@@ -79,7 +79,7 @@
     \column{0.5\linewidth}
     \includegraphics[height=0.75\textheight]{fig/3n+1_S}
 
-    \column{0.5\linewidth} 
+    \column{0.5\linewidth}
     A sequence $H(n)$ of jobs computes the
     chain $n \to f(n) \to ... \to 1$.
   \end{columns}
@@ -155,7 +155,7 @@ class HotpoSequence(Seq):
     # compute first iteration of $f$
     SequentialTask.__init__(self,
       [ HotpoApplication(n) ])
-  
+
   def next(self, k):
     last = self.tasks[k].result
     if last == 1:
@@ -404,7 +404,7 @@ class HotpoSequence(Seq):
     \begin{lstlisting}
 tasks = ParallelTaskCollection([
   HotpoSequence(n)
-  for n in range(1, N) 
+  for n in range(1, N)
 ])
     \end{lstlisting}
 
@@ -421,7 +421,7 @@ tasks = ParallelTaskCollection([
     \begin{itemize}
     \item takes a single integer parameter $N$ on the command-line:
       \begin{semiverbatim}
-\$ python hotpo.py 42        
+\$ python hotpo.py 42
       \end{semiverbatim}
     \item computes all the ``$3n+1$'' sequences of numbers $1$ up to $N$ in parallel,
     \item prints a final statement that the Collatz conjecture is verified up to $N$ (or ---who knows--- not?)
