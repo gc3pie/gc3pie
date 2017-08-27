@@ -14,6 +14,7 @@ class AScript(SessionBasedScript):
     Minimal workflow scaffolding.
     """
     def __init__(self):
-      super(AScript, self).__init__(version='1.0')
+        super(AScript, self).__init__(version='1.0')
     def new_tasks(self, extra):
-      return []
+        apps_to_run = [ ]
+        return apps_to_run
