@@ -990,6 +990,52 @@ class History(object):
                                for record in self._messages]) + '\n'
 
 
+def lookup(obj, name):
+    """
+    Return attribute or item with the given name in collection `obj`.
+
+    :raise LookupError:
+      If `obj` has no attribute nor item with the given name.
+
+    This is meant for cases when different versions of an API may
+    either return a dictionary (hence, key/`__getitem__`-based lookup)
+    or an object/namespace (hence, `.`/`getattr`-style lookup) and you
+    want to handle them in a uniform way.
+
+    The following examples demo it::
+
+      >>> D = {'a':1, 'b':2}
+      >>> lookup(D, 'a')
+      1
+      >>> lookup(D, 'c')
+      Traceback (most recent call last):
+        ...
+      LookupError: Object ... has no attribute nor key named `c`
+
+      >>> class X(object):
+      ...   a = 1
+      ...   b = 2
+      >>> x = X()
+      >>> lookup(x, 'a')
+      1
+      >>> lookup(x, 'c')
+      Traceback (most recent call last):
+        ...
+      LookupError: Object ... has no attribute nor key named `c`
+    """
+    try:
+        return getattr(obj, name)
+    except AttributeError:
+        pass
+    try:
+        return obj[name]
+    except (KeyError, TypeError):
+        pass
+    raise LookupError(
+        'Object {0} has no attribute nor key named `{1}`'
+        .format(obj, name))
+
+
 def mkdir(path, mode=0o777):
     """
     Like `os.makedirs`, but does not throw an exception if PATH
@@ -2264,4 +2310,4 @@ class YieldAtNext(object):
 if __name__ == '__main__':
     import doctest
     doctest.testmod(name='utils',
-                    optionflags=doctest.NORMALIZE_WHITESPACE)
+                    optionflags=doctest.NORMALIZE_WHITESPACE|doctest.ELLIPSIS)
