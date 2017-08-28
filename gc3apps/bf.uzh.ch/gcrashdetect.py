@@ -80,18 +80,14 @@ def _scan_and_tar(tarfile_folder, input_folder):
         cwd = os.getcwd()
         os.chdir(input_folder)
 
-        if os.path.isfile(os.path.join(tarfile_folder,GCRASHDETECT_INPUT_ARCHIVE)):
-            gc3libs.log.warning("Using already present input archive '%s'." % os.path.join(tarfile_folder,
-                                                                                           GCRASHDETECT_INPUT_ARCHIVE))
-        else:
-            tar = tarfile.open(os.path.join(tarfile_folder,
-                                            GCRASHDETECT_INPUT_ARCHIVE),
-                               "w:gz",
-                               dereference=True)
+        tar = tarfile.open(os.path.join(tarfile_folder,
+                                        GCRASHDETECT_INPUT_ARCHIVE),
+                           "w:gz",
+                           dereference=True)
 
-            for f in [ elem for elem in os.listdir('.') if os.path.splitext(elem)[-1] in GCRASHDETECT_VALID_INPUT_FILE_EXTENSIONS or os.path.isdir(elem)]:
-                tar.add(f)
-            tar.close()
+        for f in [ elem for elem in os.listdir('.') if os.path.splitext(elem)[-1] in GCRASHDETECT_VALID_INPUT_FILE_EXTENSIONS or os.path.isdir(elem)]:
+            tar.add(f)
+        tar.close()
         os.chdir(cwd)
         return os.path.join(tarfile_folder,GCRASHDETECT_INPUT_ARCHIVE)
     except Exception, x:
