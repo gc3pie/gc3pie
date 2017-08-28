@@ -490,7 +490,7 @@ class Task(Persistable, Struct):
             ("Invalid `_controller` object '%s' in Task %s" %
              (self._controller, self))
         self._controller.free(self, **extra_args)
- 
+
 
     # convenience methods, do not really add any functionality over
     # what's above
@@ -1832,28 +1832,40 @@ class Run(Struct):
 
         def fset(self, value):
             assert value in Run.State, \
-                ("Value '%s' is not a legal `gc3libs.Run.State` value." %
-                 value)
-            if self._state != value:
-                self.state_last_changed = time.time()
-                self.timestamp[value] = time.time()
+                ("Value '{0}' is not a legal `gc3libs.Run.State` value."
+                 .format(value))
+            if self._state == value:
+                # no changes
+                return
+            self.state_last_changed = time.time()
+            self.timestamp[value] = time.time()
+            # invoke state-transition method
+            if self._ref is not None:
+                self._ref.changed = True
+                handler = value.lower()
+                gc3libs.log.debug(
+                    "Calling state-transition handler '%s' on %s ...",
+                    handler, self._ref)
+                getattr(self._ref, handler)()
+            # record state-transition in Task execution history
+            # (can be later queried with `ginfo` for e.g. debugging)
+            if value == Run.State.TERMINATED:
+                self.history.append(
+                    "Transition from state {0} to state {1} (returncode: {2})"
+                    .format(self._state, value, self.returncode))
+            else:
                 self.history.append(
                     "Transition from state {0} to state {1}"
                     .format(self._state, value))
-                if self._ref is not None:
-                    # update stats on controller
-                    if self._ref._attached:
-                        self._ref._controller._update_task_counts(self._ref, self._state, -1)
-                        self._ref._controller._update_task_counts(self._ref, value, +1)
-                    # mark as changed
-                    self._ref.changed = True
-                    # invoke state-transition method
-                    handler = value.lower()
-                    gc3libs.log.debug(
-                        "Calling state-transition handler '%s' on %s ...",
-                        handler, self._ref)
-                    getattr(self._ref, handler)()
+            # update stats on controller -- we need to do this
+            # *after* the `.terminated()` method has gotten a
+            # chance to run and set the final exitcode.
+            if self._ref is not None and self._ref._attached:
+                self._ref._controller._update_task_counts(self._ref, self._state, -1)
+                self._ref._controller._update_task_counts(self._ref, value, +1)
+            # finally, update state
             self._state = value
+
         return locals()
 
     def in_state(self, *names):
