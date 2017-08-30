@@ -882,9 +882,19 @@ class ShellcmdLrms(LRMS):
         Similar caveats as in `ShellcmdLrms.count_running_tasks`:meth:
         apply here.
         """
-        return sum((info['requested_memory']
-                    for info in self._job_infos.values()
-                    if not info['terminated']), 0*MB)
+        return sum(
+            # FIXME: if `requested_memory==None` then just do not
+            # account a task's memory usage.  This is of course
+            # incorrect and leads to situations where a single task
+            # can wreak havoc on an entire compute node, but is
+            # consistent with what we do during scheduling /
+            # requirements check.  (OTOH, it's *not* consistent with
+            # what other backends do: SLURM, for example, takes the
+            # pessimistic stance that a job with no memory
+            # requirements is using (DefMemPerCPU * NumCPUs)
+            ((info['requested_memory'] or 0*MB)
+             for info in self._job_infos.values()
+             if not info['terminated']), 0*MB)
 
 
     def _get_persisted_job_info(self):
