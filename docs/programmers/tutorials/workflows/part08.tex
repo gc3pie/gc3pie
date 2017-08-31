@@ -303,7 +303,7 @@ class Pipeline(StagedTaskCollection):
 \begin{sh}
   cat p1.faa p2.faa p3.faa > db.faa
   formatdb -i db.faa
-  blastpgp -i q.faa -d db.faa -e ...
+  blastpgp -i q.faa -d db.faa -e 1 -m 5
 \end{sh}
 
   \+ The \texttt{formatdb} step produces output files
