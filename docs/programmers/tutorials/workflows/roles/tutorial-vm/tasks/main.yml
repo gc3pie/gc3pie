@@ -35,8 +35,9 @@
     state: installed
   with_items:
     # editors
-    - vim-nox
     - emacs-nox
+    - nano
+    - vim-nox
     # ImageMagick commands are used in the "Warholize" workflow
     - imagemagick
     # BLAST is needed in some exercises
