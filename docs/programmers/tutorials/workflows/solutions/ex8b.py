@@ -91,7 +91,7 @@ class FormatDbApp(Application):
             self,
             arguments=["formatdb", "-i", input_name],
             inputs=[input_file_path],
-            outputs=[output_names],
+            outputs=output_names,
             output_dir=("formatdb-" + input_name + ".d"),
             stdout="formatdb.log",
             stderr="formatdb.log",
