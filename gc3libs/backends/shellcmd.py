@@ -1476,7 +1476,7 @@ class ShellcmdLrms(LRMS):
             stdout_dir = os.path.dirname(app.stdout)
             if stdout_dir:
                 self.transport.makedirs(posixpath.join(execdir, stdout_dir))
-        if app.join:
+        if app.join or (app.stderr and app.stderr == app.stdout):
             redirections.append("2>&1")
         else:
             if app.stderr is not None:
