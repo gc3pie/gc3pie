@@ -44,6 +44,8 @@
     - ncbi-blast+
     # R is needed in some exercises
     - r-base
+    # Python's MatPlotLib is needed in ex 8.A
+    - python-matplotlib
 
 - name: Make training material available in the home directory
   command:
