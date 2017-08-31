@@ -132,8 +132,9 @@ class MyScript(SessionBasedScript):
 \begin{lstlisting}[basicstyle=\footnotesize\ttfamily]
 class Pipeline~\HL{(StagedTaskCollection)}~:
   def __init__(self, image):
-    super(Pipeline).__init__(self)
     self.source = image
+    # super() must come last
+    super(Pipeline).__init__(self)
 
   def stage0(self):
     # ...
@@ -164,8 +165,9 @@ class Pipeline~\HL{(StagedTaskCollection)}~:
       \begin{lstlisting}[basicstyle=\footnotesize\ttfamily]
 class Pipeline(StagedTaskCollection):
   def __init__(self, image):
-    super(Pipeline).__init__(self)
     self.source = image
+    # super() must come last
+    super(Pipeline).__init__(self)
 
   def ~\HL{stage0(self)}~:
     # ...
