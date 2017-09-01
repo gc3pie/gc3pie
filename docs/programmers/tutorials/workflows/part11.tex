@@ -159,10 +159,10 @@ class HotpoSequence(Seq):
   def next(self, k):
     last = self.tasks[k].result
     if last == 1:
-      return TERMINATED
+      return 'TERMINATED'
     else:
       self.tasks.append(HotpoApplication(last))
-      return RUNNING
+      return 'RUNNING'
     \end{lstlisting}
   \end{columns}
 \end{frame}
@@ -190,11 +190,11 @@ class HotpoSequence(Seq):
   ~\HL{{\bfseries def next(\color{gray} self}, k):}~
     last = self.tasks[k].result
     if last == 1:
-      return TERMINATED
+      return 'TERMINATED'
     else:
       self.tasks.append(
         HotpoApplication(last))
-      return RUNNING
+      return 'RUNNING'
     \end{lstlisting}
   \end{columns}
 \end{frame}
@@ -222,11 +222,11 @@ class HotpoSequence(Seq):
   def next(self, ~\HL{k}~):
     last = self.tasks[k].result
     if last == 1:
-      return TERMINATED
+      return 'TERMINATED'
     else:
       self.tasks.append(
         HotpoApplication(last))
-      return RUNNING
+      return 'RUNNING'
     \end{lstlisting}
   \end{columns}
 \end{frame}
@@ -252,11 +252,11 @@ class HotpoSequence(Seq):
   def next(self, k):
     ~\HL{last = self.tasks[k].result}~
     if last == 1:
-      return TERMINATED
+      return 'TERMINATED'
     else:
       self.tasks.append(
         HotpoApplication(last))
-      return RUNNING
+      return 'RUNNING'
     \end{lstlisting}
   \end{columns}
 \end{frame}
