@@ -40,6 +40,8 @@
     - vim-nox
     # ImageMagick commands are used in the "Warholize" workflow
     - imagemagick
+    # `ghostscript` is needed by ImageMagick's `montage` command
+    - ghostscript
     # BLAST is needed in some exercises
     - blast2
     - ncbi-blast+
