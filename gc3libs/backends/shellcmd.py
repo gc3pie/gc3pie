@@ -286,7 +286,7 @@ class _Machine(object):
             return amount*unit
         except KeyError:  # index out of bounds
             raise AssertionError(
-                "Call to {0} returned out-f-bounds index {1} into sequence {2}"
+                "Call to {0} returned out-of-bounds index {1} into sequence {2}"
                 .format(self._get_total_memory_impl, index, parts))
         except (ValueError, TypeError) as err:
             raise RuntimeError("Cannot `{0}` as a memory amount: {1}"
