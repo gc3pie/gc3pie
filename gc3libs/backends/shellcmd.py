@@ -354,7 +354,7 @@ class _MacOSXMachine(_Machine):
 
     def _get_total_cores_command(self):
         """Return nr. of CPU cores from ``sysctl hw.ncpu``"""
-        return 'sysctl hw.ncpu'
+        return 'sysctl -n hw.ncpu'
 
     def _get_total_memory_impl(self):
         """Return amount of total memory from ``sysctl hw.memsize``"""
