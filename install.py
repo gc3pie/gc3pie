@@ -199,7 +199,7 @@ Installation of GC3Pie is done!
 ===============================
 
 In order to work with GC3Pie you have to enable the virtual
-environment with the command:
+environment with the command (yes, it starts with a dot+space):
 
     . {target}/bin/activate
 
