@@ -638,7 +638,8 @@ Please include the following information in your issue report:
     # list `libpython*.so*` files
     libs = os.listdir(anaconda_lib_dir)
     libpython_files = [filename for filename in libs
-                       if fnmatch(filename, 'libpython*.so*')]
+                       if (fnmatch(filename, 'libpython*.so*')
+                           or fnmatch(filename, 'libpython*.dylib'))]
     if not libpython_files:
         die(os.EX_SOFTWARE, "Unexpected Anaconda directory layout",
             """
