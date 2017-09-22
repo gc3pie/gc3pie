@@ -1292,10 +1292,10 @@ def parse_range(spec):
 
     As a special case to simplify user interfaces, a single number is
     accepted as a *degenerate* range: it will be parsed as a range
-    whose minimum and maximum are equal to the given number::
+    whose content is just the given number::
 
       >>> parse_range('42')
-      (42, 42, 1)
+      (42, 43, 1)
     """
     colons = spec.count(':')
     if colons == 2:
@@ -1304,7 +1304,11 @@ def parse_range(spec):
         low, high = spec.split(':')
         step = '1'  # parsed to int or float later on
     elif colons == 0:
-        low = high = spec
+        low = spec
+        if '.' in low:
+            high = str(float(low) + 1)
+        else:
+            high = str(int(low) + 1)
         step = '1'  # parsed to int or float later on
     else:
         raise ValueError(
