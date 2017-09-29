@@ -19,7 +19,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-
+__version__ = '$Revision$'
 
 import gc3libs
 from gc3libs.cmdline import SessionBasedScript
@@ -86,6 +86,7 @@ class GBeastScript(SessionBasedScript):
                        help='Beast version to run')
         self.add_param('--beast1', default='/apps/BEASTv1.8.2/lib/beast.jar', help='Path to BEAST v1 jar file')
         self.add_param('--beast2', default='/apps/BEASTv2.3.2/lib/beast.jar', help='Path to BEAST v2 jar file')
+        self.add_param('--beast2_4', default='/apps/BEASTv2.4.7/lib/beast.jar', help='Path to BEAST v2.4 jar file')
         self.add_param('--cores', default=1, type=int, help="Amount of cores to use. Default: %(default)s")
         self.add_param('path', help='Path to directory to watch for new input files')
 
@@ -104,12 +105,16 @@ class GBeastScript(SessionBasedScript):
     def add_new_application(self, fname):
         if fname.endswith('.xml'):
             beast = 'beast1'
-            if 'BEAST2' in fname:
+            jarfile = self.params.beast1
+            if 'BEAST2.4' in fname:
+                beast = 'beast2.4'
+                jarfile = self.params.beast2_4
+            elif 'BEAST2' in fname:
                 beast = 'beast2'
+                jarfile = self.params.beast2
             else:
                 gc3libs.log.warning("Unable to guess which version of BEAST you want to run for file %s. Assuming BEAST v1" % fname)
 
-            jarfile = self.params.beast1 if beast == 'beast1' else self.params.beast2
             try:
                 # We need to load from a previously saved job extra
                 # arguments, otherwise we don't know where to get
