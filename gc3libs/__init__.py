@@ -1339,6 +1339,9 @@ class Application(Task):
             qsub += ['-pe', pe_name, ('%d' % self.requested_cores)]
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '%s' % self.jobname]
+        if self.environment:
+            for name, value in self.environment.iteritems():
+                qsub += ['-v', '{0}={1}'.format(name, value)]
         return (qsub, self.cmdline(resource))
 
     def bsub(self, resource, **extra_args):
@@ -1394,6 +1397,17 @@ class Application(Task):
             bsub += ['-eo', ('%s' % self.stderr)]
         if 'jobname' in self and self.jobname:
             bsub += ['-J', ('%s' % self.jobname)]
+        if self.environment:
+            # I could not find a way to define environment variables
+            # on `bsub`'s command-line. However, according to
+            # https://www.ibm.com/support/knowledgecenter/en/SSETD4_9.1.3/lsf_config_ref/lsf_envars_job_exec.html
+            # LSF will copy environment variables from the user
+            # environment to the execution environment. So, let's use
+            # the `env` prefix trick.
+            bsub = (['/usr/bin/env']
+                    + ['{0}={1}'.format(name, value)
+                       for name, value in self.environment.iteritems()]
+                    + bsub)
         return (bsub, self.cmdline(resource))
 
     def qsub_pbs(self, resource, **extra_args):
@@ -1429,6 +1443,10 @@ class Application(Task):
             qsub += ['-l', 'nodes=1:ppn=%d' % self.requested_cores]
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '%s' % self.jobname[:15]]
+        if self.environment:
+            # XXX: is the `-v` option also supported by older versions of PBS/TORQUE?
+            for name, value in self.environment.iteritems():
+                qsub += ['-v', '{0}={1}'.format(name, value)]
         return (qsub, self.cmdline(resource))
 
     def sbatch(self, resource, **extra_args):
@@ -1483,6 +1501,26 @@ class Application(Task):
             sbatch += ['--mem', 1+int(self.requested_memory.amount(MB))]
         if 'jobname' in self and self.jobname:
             sbatch += ['--job-name', ('%s' % self.jobname)]
+        if self.environment:
+            # `sbatch` does not honor multiple `--export` options on
+            # the command line; all variables must be given as
+            # argument to the first `--export` occurrence, separated
+            # by commas.  This makes it impossible to pass variables
+            # whose value contains a comma: `--export FOO=1,BAR=2,3`
+            # will be parsed as exporting variables `FOO` (with value
+            # `1`), `BAR` (with value `2`) and `3` (with value from
+            # environment).  Therefore we prefix the command
+            # invocation with `env` to set all variable in the
+            # environment, and then only pass variable names to
+            # `--export`.  (Yes, it's still not possible to use
+            # environmental variables whose name contains a comma. We
+            # clearly do not live in the best of all possible worlds.)
+            sbatch = (['/usr/bin/env']
+                      + ['{0}={1}'.format(name, value)
+                         for name, value in self.environment.iteritems()]
+                      + sbatch
+                      + ['--export', ','.join(self.environment.keys())])
+
         return (sbatch, cmdline)
 
     # Operation error handlers; called when transition from one state
