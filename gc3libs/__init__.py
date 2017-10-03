@@ -1461,16 +1461,15 @@ class Application(Task):
         if self.requested_walltime:
             # SLURM uses `--time` for wall-clock time limit, expressed in
             # minutes
-            sbatch += ['--time', '%d' %
-                       self.requested_walltime.amount(minutes)]
+            sbatch += ['--time', ('%d' % self.requested_walltime.amount(minutes))]
         if self.stdout:
-            sbatch += ['--output', '%s' % self.stdout]
+            sbatch += ['--output', ('%s' % self.stdout)]
         if self.stdin:
             # `self.stdin` is the full pathname on the GC3Pie client host;
             # it is copied to its basename on the execution host
-            sbatch += ['--input', '%s' % os.path.basename(self.stdin)]
+            sbatch += ['--input', ('%s' % os.path.basename(self.stdin))]
         if self.stderr:
-            sbatch += ['-e', '%s' % self.stderr]
+            sbatch += ['-e', ('%s' % self.stderr)]
         if self.requested_cores != 1:
             sbatch += ['--ntasks', '1',
                        # require that all cores are on the same node

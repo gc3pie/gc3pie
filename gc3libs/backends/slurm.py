@@ -36,29 +36,7 @@ from gc3libs.utils import (same_docstring_as, sh_quote_safe_cmdline,
                            sh_quote_unsafe_cmdline)
 
 
-# environmental variables:
-#        SLURM_TIME_FORMAT Specify the format used to report time
-#        stamps. A value of standard, the default value, generates
-#        output in the form "year-month-dateThour:minute:second".
-
-# stat cmd: squeue --noheader --format='%i^%T^%r^%R'  -j jobid1,jobid2,...
-#   %i: job id
-#
-#   %T: Job state, extended form: PENDING, RUNNING, SUSPENDED,
-#       CANCELLED, COMPLETING, COMPLETED, CONFIGURING, FAILED, TIMEOUT,
-#       PREEMPTED, and NODE_FAIL.
-#
-#   %R: For pending jobs: the reason a job is waiting for execution is
-#       printed within parenthesis. For terminated jobs with failure: an
-#       explanation as to why the job failed is printed within
-#       parenthesis.  For all other job states: the list of allocate
-#       nodes.
-#   %r: reason a job is in its current state
-
-
-# data for parsing SLURM commands output
-
-# regexps for extracting relevant strings
+## data for parsing SLURM commands output
 
 # `sbatch` examples:
 #
@@ -75,15 +53,8 @@ _sbatch_jobid_re = re.compile(
     r'(sbatch:\s*)?(Granted job allocation|Submitted batch job)'
     ' (?P<jobid>\d+)')
 
-# `squeue` examples:
-#
-#    $ squeue --noheader --format='%i|%T|%r|%R' -j 2,3
-#    2|PENDING|Resources|(Resources)
-#    3|PENDING|Resources|(Resources)
-#
 
-
-# code
+## code
 
 def count_jobs(squeue_output, whoami):
     """
@@ -316,8 +287,8 @@ class SlurmLrms(batch.BatchSystem):
         acct = {
             'cores':            0,
             'duration':         Duration(0, unit=seconds),
-            'used_cpu_time':	Duration(0, unit=seconds),
-            'max_used_memory':	Memory(0, unit=bytes)
+            'used_cpu_time':    Duration(0, unit=seconds),
+            'max_used_memory':  Memory(0, unit=bytes)
         }
         exitcode = None
         signal = None
