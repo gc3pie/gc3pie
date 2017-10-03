@@ -93,7 +93,9 @@ class FakeTransport(LocalTransport):
         for match in self._COMMAND_RE.finditer(cmdline):
             cmd = match.group("cmd")
             if cmd in self.expected_answer:
-                return self.expected_answer[cmd]
+                reply = self.expected_answer[cmd]
+                log.debug("returning programmed reply for '%s': %s", cmd, reply)
+                return reply
 
         # if everything else failed, do run the command-line ...
         return LocalTransport.execute_command(self, cmdline)
