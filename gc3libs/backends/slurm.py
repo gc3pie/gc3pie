@@ -463,10 +463,8 @@ class SlurmLrms(batch.BatchSystem):
         The 'standard' format for SLURM timestamps is ISO8601;
         raise an error if any other format is detected.
         """
-        # XXX: datetime.strptime() only available starting Py 2.5
         try:
-            return datetime.datetime(
-                *(time.strptime(ts, SlurmLrms._TIMEFMT_ISO8601)[0:6]))
+            return datetime.datetime.strptime(ts, SlurmLrms._TIMEFMT_ISO8601)
         except ValueError as err:
             gc3libs.log.error(
                 "Could not parse '%s' as an SLURM 'standard' (ISO8601)"
