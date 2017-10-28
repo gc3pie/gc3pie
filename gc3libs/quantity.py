@@ -894,37 +894,42 @@ class Duration(object):
 
     """
     __metaclass__ = Quantity(
-        # base unit is microseconds; use the approx SI symbol 'us'
-        'us',
+        # base unit is nanoseconds; use the SI symbol 'ns'
+        'ns',
         # alternate spellings
-        microsec=1,
-        microseconds=1,
+        nanosec=1,
+        nanosecond=1,
+        nanoseconds=1,
+        # microsecond(s)
+        us=1000,  # approx SI symbol
+        microsec=1000,
+        microseconds=1000,
         # millisecond(s)
-        ms=1000,
-        millisec=1000,
-        milliseconds=1000,
+        ms=10 ** 6,
+        millisec=10 ** 6,
+        milliseconds=10 ** 6,
         # seconds(s)
-        s=10 ** 6,
-        sec=10 ** 6,
-        secs=10 ** 6,
-        second=10 ** 6,
-        seconds=10 ** 6,
+        s=10 ** 9,
+        sec=10 ** 9,
+        secs=10 ** 9,
+        second=10 ** 9,
+        seconds=10 ** 9,
         # minute(s)
-        m=60 * 10 ** 6,
-        min=60 * 10 ** 6,
-        mins=60 * 10 ** 6,
-        minute=60 * 10 ** 6,
-        minutes=60 * 10 ** 6,
+        m=60 * 10 ** 9,
+        min=60 * 10 ** 9,
+        mins=60 * 10 ** 9,
+        minute=60 * 10 ** 9,
+        minutes=60 * 10 ** 9,
         # hour(s)
-        h=60 * 60 * 10 ** 6,
-        hr=60 * 60 * 10 ** 6,
-        hrs=60 * 60 * 10 ** 6,
-        hour=60 * 60 * 10 ** 6,
-        hours=60 * 60 * 10 ** 6,
+        h=60 * 60 * 10 ** 9,
+        hr=60 * 60 * 10 ** 9,
+        hrs=60 * 60 * 10 ** 9,
+        hour=60 * 60 * 10 ** 9,
+        hours=60 * 60 * 10 ** 9,
         # day(s)
-        d=24 * 60 * 60 * 10 ** 6,
-        day=24 * 60 * 60 * 10 ** 6,
-        days=24 * 60 * 60 * 10 ** 6,
+        d=24 * 60 * 60 * 10 ** 9,
+        day=24 * 60 * 60 * 10 ** 9,
+        days=24 * 60 * 60 * 10 ** 9,
     )
 
     # override ctor to hook `_new_from_timedelta` in
