@@ -930,6 +930,11 @@ class Duration(object):
         d=24 * 60 * 60 * 10 ** 9,
         day=24 * 60 * 60 * 10 ** 9,
         days=24 * 60 * 60 * 10 ** 9,
+        # week(s)
+        w=7 * 24 * 60 * 60 * 10 ** 9,
+        wk=7 * 24 * 60 * 60 * 10 ** 9,
+        week=7 * 24 * 60 * 60 * 10 ** 9,
+        weeks=7 * 24 * 60 * 60 * 10 ** 9,
     )
 
     # override ctor to hook `_new_from_timedelta` in
