@@ -79,7 +79,7 @@ Installation instructions are in the `INSTALL.rst`_ file (in this
 same directory), or can be read online at:
 http://gc3pie.readthedocs.io/en/latest/users/install.html
 
-.. _`INSTALL.rst`: https://github.com/uzh/gc3pie/docs/users/install.txt
+.. _`INSTALL.rst`: https://github.com/uzh/gc3pie/blob/master/docs/users/install.rst
 
 
 .. References
