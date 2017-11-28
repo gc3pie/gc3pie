@@ -3,7 +3,7 @@
 #   gsubbeast.py -- Front-end script for running BEAST jobs.
 #   https://www.beast2.org/
 #
-#   Copyright (C) 2011, 2012 GC3, University of Zurich
+#   Copyright (c) 2017 2018 S3IT, University of Zurich, http://www.s3it.uzh.ch/
 #
 #   This program is free software: you can redistribute it and/or
 #   modify
@@ -70,7 +70,8 @@ from gc3libs.workflow import RetryableTask
 DEFAULT_REMOTE_OUTPUT_FOLDER = "./results"
 DEFAULT_SEED_RANGE=37444887175646646
 DEFAULT_JAR_LOCATION="/app/beast/lib/beast.jar"
-BEAST_COMMAND="java -jar {jar} -working -overwrite -beagle -seed {seed} {resume} {input_xml}"
+#BEAST_COMMAND="java -jar {jar} -working -overwrite -beagle -seed {seed} {resume} -threads -1 -instances -1 {input_xml}"
+BEAST_COMMAND="sudo docker run -v $PWD:/data smaffiol/beast2:2.4.7 -working -overwrite -beagle  -threads -1 -instances -1 /data/{input_xml}"
 
 # Utility functions
 def _get_id_from_inputfile(input_file):
@@ -109,6 +110,7 @@ def _check_exit_condition(log, output_dir):
     If termination condition not met, return list of .state files
     If termiantion condition is met, return an empty list.
     """
+    # XXX: weak! this is very dependent on beast stderr formats
     TERMIANTION_PATTERN = "End likelihood"
     with open(log) as fd:
         for line in fd:
@@ -184,50 +186,6 @@ class GsubbeastApplication(Application):
         if not os.path.isfile(result_log_file):
             gc3libs.log.error('Failed while checking outputfile %s.' % result_log_file)
             self.execution.returncode = (0, 99)
-
-
-class GsubbeastRetryableTask(RetryableTask):
-    def __init__(self, input_file, state_file, id_name, seed=None, jar=None, **extra_args):
-        RetryableTask.__init__(
-            self,
-            # actual computational job
-            GsubbeastApplication(
-                input_file,
-                state_file,
-                id_name,
-                seed=seed,
-                jar=jar,
-                **extra_args),
-            **extra_args
-            )
-
-    def retry(self):
-        """ 
-        Task will be retried iif the application crashed
-        due to an error within the exeuction environment
-        (e.g. VM crash or LRMS kill)
-        """
-        # XXX: check whether termination condition could not be met.
-        # Then include .state file and resume simulation.
-
-        (state_file,input_list) = _check_exit_condition(os.path.join(self.output_dir,
-                                                                     self.task.stdout),
-                                                        self.output_dir)
-        if state_file:
-            resume_option=" -t {state_file}".format(state_file=self.state_file)
-            self.inputs = []
-            for item in input_list:
-                # get the whole output folder as input and re-submit
-                self.inputs[os.path.join(self.output_dir,item)] = item
-
-            self.arguments = "./wrapper.sh {jar} -s {seed} {resume} {input_xml}".format(seed=self.seed,
-                                                                                        jar=self.jar_options,
-                                                                                        resume=resume_option,
-                                                                                        input_xml=self.inputs[input_file])
-            return True
-        else:
-            return False
-    
     
 class GsubbeastScript(SessionBasedScript):
     """
@@ -302,12 +260,16 @@ class GsubbeastScript(SessionBasedScript):
 
         self.add_param('-P', '--extract-columns',
                        dest='columns',
-                       default=['TreeHeight.t'],
+                       default='TreeHeight.t',
                        help='Comma separated list of columns name to extract from " \
                        "output log file. Default: %(default)s.')
 
     def parse_args(self):
         self.params.columns = self.params.columns.split(',')
+
+        if not os.path.isdir(self.params.result_csv):
+            gc3libs.log.info("Creating CSV result folder: '{0}'".self.params.result_csv)
+            os.makedirs(self.params.result_csv)
         
         
     def before_main_loop(self):
@@ -340,7 +302,7 @@ class GsubbeastScript(SessionBasedScript):
 
                 self.log.debug("Creating Application for file '%s'" % jobname)
 
-                tasks.append(GsubbeastRetryableTask(
+                tasks.append(GsubbeastApplication(
                     input_file,
                     stat_file,
                     id_name,
@@ -369,16 +331,17 @@ class GsubbeastScript(SessionBasedScript):
             df_dict[df_name] = pandas.DataFrame()
 
         for task in self.session:
-            if isinstance(task, GsubbeastRetryableTask) and task.execution.returncode == 0:
+            if isinstance(task, GsubbeastApplication) and task.execution.returncode == 0:
                 result_log_file = os.path.join(task.output_dir, '{0}.log'.format(task.id_name))
                 if os.path.isfile(result_log_file):
                     gc3libs.log.debug('Reading output file {0}'.format(result_log_file))
                     data = pandas.read_csv(result_log_file, sep='\t', comment="#")
                     for key in df_dict.keys():
-                        column_to_search = "{0}:{1}".format(key,task.id_name)
-                        gc3libs.log.debug("Column '{0}' counts {1} elements".format(key,
-                                                                                    len(data[column_to_search])))
-                        df_dict[key][task.id_name] = data[column_to_search]
+                        cols = [col for col in data.columns if key in col]
+                        # In case multiple entries, take the first occurrence                    
+                        # column_to_search = "{0}:{1}".format(key,task.id_name)
+                        gc3libs.log.debug("Column [{0}] found {1} occurances. Should be 1.".format(key,len(cols)))
+                        df_dict[key][task.id_name] = data[cols[0]]
 
                 else:
                     gc3libs.log.error('Output file {0} for task {1} not found'.format(result_log_file, task.id_name))
