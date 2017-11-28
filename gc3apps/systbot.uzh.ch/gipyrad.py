@@ -1,8 +1,8 @@
 #! /usr/bin/env python
 #
-#   gpyrad.py -- Front-end script for submitting multiple `PyRAD` jobs.
+#   gipyrad.py -- Front-end script for submitting multiple `IPyRAD` jobs.
 #
-#   Copyright (C) 2013, 2014 GC3, University of Zurich
+#   Copyright (c) 2017 2018 S3IT, University of Zurich, http://www.s3it.uzh.ch/
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -28,15 +28,10 @@ __docformat__ = 'reStructuredText'
 
 # summary of user-visible changes
 __changelog__ = """
-
-  2014-04-16:
-  * Retrieve only specific result folder as output.
-  * Initial experimental support for S3 repository
-
-  2014-02-24:
-  * Initial release, forked off the ``ggeosphere`` sources.
+  2017-11-27:
+  * initial working version
 """
-__author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
+__author__ = 'Sergio Maffioletti <sergio.maffioletti@uzh.ch>'
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
@@ -64,9 +59,9 @@ import gc3libs.url
 FASTQ_FORMATS = ["fastq","fastq.gz"]
 DATA_PATH="/data"
 IPYRAD_PARAMFILE_NAME="params.txt.modified"
-IPYRAD_COMMAND="sudo docker run --rm -v $PWD:{0} smaffiol/ipyrad -p {0}/{1} -s23".format(DATA_PATH,IPYRAD_PARAMFILE_NAME)
+IPYRAD_COMMAND="sudo docker run --rm -v $PWD:{0} smaffiol/ipyrad -p {0}/{1} -s123".format(DATA_PATH,IPYRAD_PARAMFILE_NAME)
 IPYRAD_PARAMFILE_PATTERN="sorted_fastq_path"
-IPYRAD_PARAMFILE_REPLACEMENT_STRING="{0}/*.fastq.gz             ## [4] [sorted_fastq_path]: Location of demultiplexed/sorted fastq files\n'".format(DATA_PATH)
+IPYRAD_PARAMFILE_REPLACEMENT_STRING="{0}/*.fastq.gz".format(DATA_PATH)
 
 ## Utility methods
 
@@ -77,10 +72,6 @@ def get_valid_input_pair(input_folder):
     search for a pair of type [R1,R2].
     Search is done at filename level.
     """
-
-    # Get a list of all R1 files
-    # for each R1, search for corresponding R2
-
     R1list = [infile.split('R1')[0] for infile in os.listdir(input_folder) \
               if infile.endswith('R1.fastq.gz')]
 
@@ -107,20 +98,17 @@ def prepare_ipyrad_param_file(pyrad_param_file):
     return wd.name
 
 ## custom application class
-
 class GipyradApplication(Application):
     """
     Fetches execution wrapper, input file and checks
     whether optional arguments have been passed.
-    Namely ''wclust'' that sets the pyRAD clustering
-    treshold and ''paramsfile'' needed to run PyRAD.
     """
 
-    application_name = 'pyrad'
+    application_name = 'gipyrad'
 
     def __init__(self, input_files, dockerimage, paramsfile, **extra_args):
         """
-        The wrapper script is being used for start the simulation. 
+        iPyrad is executed within docker container
         """
 
         inputs = []
@@ -132,11 +120,9 @@ class GipyradApplication(Application):
 
         Application.__init__(
             self,
-            # arguments should mimic the command line interfaca of the command to be
-            # executed on the remote end
             arguments = IPYRAD_COMMAND,
             inputs = inputs,
-            outputs = outputs,
+            outputs = gc3libs.ANY_OUTPUT,
             stdout = 'gipyrad.log',
             join=True,
             **extra_args)
@@ -145,8 +131,8 @@ class GipyradApplication(Application):
 
 class GipyradScript(SessionBasedScript):
     """
-Scan the specified INPUT directories recursively for simulation
-directories and submit a job for each one found; job progress is
+Scan the specified INPUT directories for valid fastq files and
+submit a job for each valid pair found; job progress is
 monitored and, when a job is done, its output files are retrieved back
 into the simulation directory itself.
 
@@ -182,23 +168,15 @@ newly-created jobs so that this limit is never exceeded.
 
         self.add_param("-P", "--params", metavar="PATH",
                        dest="paramsfile", default='./params.txt',
-                       help="Location of params.txt file required by pyrad. " \
-                       "WARNING: The default params.txt is used to make " \
-                       "assumption on the location of pyRAD and the " \
-                       "input folder where the *.fastq files are located. " \
-                       "Passing an alternative params.txt file might break " \
-                       "such assumptions resulting in a falied execution. "  \
-                       "Please check the default params.txt file located in " \
-                       "'test.pyRAD' folder where gipyrad.py is located.")
+                       help="Location of params.txt file required by ipyrad." \
+                       " Default: %(default)s")
 
     def new_tasks(self, extra):
 
         paramsfile = prepare_ipyrad_param_file(self.params.paramsfile)
         tasks = []
 
-        # for input_file in self._list_folder_by_url(self.input_folder_url):
         for input_file in get_valid_input_pair(self.params.input_folder):
-        # for input_file in [ os.path.join(self.params.input_folder,infile) for infile in os.listdir(self.params.input_folder) if infile.endswith('.fastq') or infile.endswith('.fastq.gz') ]:
 
             # extract jobname from the 1st file of the input_file pair
             jobname = "%s" % os.path.basename(input_file[0]).split(".")[0]
@@ -225,8 +203,3 @@ newly-created jobs so that this limit is never exceeded.
             ))
 
         return tasks
-
-
-
-
-
