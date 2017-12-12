@@ -79,16 +79,21 @@ def _get_id_from_inputfile(input_file):
     by convention, input XML files will have an 'id' tag in the 'data' item
     Return 'id' tag name
     """
-    id_name = filename = os.path.splitext(os.path.basename(input_file))[0]
-    tree = ET.parse(input_file)
-    root = tree.getroot()
-    data = root.find('data')
-    if data.get('id'):
-        id_name = data.get('id')
-    else:
-        gc3libs.log.warning("Failed to extract 'id' from input file {0}. Using filename instead".format(filename))
-    gc3libs.log.info("Using id '{0}' for filename {1}".format(id_name, filename))
-    return id_name
+    try:
+        id_name = filename = os.path.splitext(os.path.basename(input_file))[0]
+        tree = ET.parse(input_file)
+        root = tree.getroot()
+        data = root.find('data')
+        if data.get('id'):
+            id_name = data.get('id')
+        else:
+            gc3libs.log.warning("Failed to extract 'id' from input file {0}. Using filename instead".format(filename))
+            gc3libs.log.info("Using id '{0}' for filename {1}".format(id_name, filename))
+        return id_name
+    except ET.ParseError as px:
+        gc3libs.log.error("Failed parsing input file {0}. Error {1}".format(input_file,
+                                                                            px.message))
+        return None
 
 def _get_valid_input(input_folder, resume):
     """
@@ -233,6 +238,11 @@ class GsubbeastScript(SessionBasedScript):
                        default=1,
                        help="Repeat analysis. Default: %(default)s.")
 
+        self.add_param("-D", "--docker", metavar="[STRING]",
+                       dest="dockerimage",
+                       default=None,
+                       help="Docker image to use."  \
+                       "Note, -D and -B cannot be specified simultaneously.")
 
         self.add_param("-B", "--jar", metavar="[PATH]",
                        type=existing_file,
@@ -268,7 +278,7 @@ class GsubbeastScript(SessionBasedScript):
         self.params.columns = self.params.columns.split(',')
 
         if not os.path.isdir(self.params.result_csv):
-            gc3libs.log.info("Creating CSV result folder: '{0}'".self.params.result_csv)
+            gc3libs.log.info("Creating CSV result folder: '{0}'".format(self.params.result_csv))
             os.makedirs(self.params.result_csv)
         
         
@@ -288,10 +298,14 @@ class GsubbeastScript(SessionBasedScript):
         for (input_file, stat_file) in _get_valid_input(self.params.input_folder,
                                            self.params.resume):
             id_name = _get_id_from_inputfile(input_file)
+            if not id_name:
+                gc3libs.log.warning("skipping {0}".format(input_file))
+                continue
+
             for rep in range(0,self.params.repeat):
 
                 jobname = '{0}-{1}'.format(id_name, rep)                
-
+                
                 extra_args = extra.copy()
                 extra_args['jobname'] = jobname            
                 extra_args['output_dir'] = self.params.output
@@ -299,9 +313,9 @@ class GsubbeastScript(SessionBasedScript):
                 extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
                 extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', jobname)
                 extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', jobname)
-
+                
                 self.log.debug("Creating Application for file '%s'" % jobname)
-
+                
                 tasks.append(GsubbeastApplication(
                     input_file,
                     stat_file,
@@ -341,7 +355,10 @@ class GsubbeastScript(SessionBasedScript):
                         # In case multiple entries, take the first occurrence                    
                         # column_to_search = "{0}:{1}".format(key,task.id_name)
                         gc3libs.log.debug("Column [{0}] found {1} occurances. Should be 1.".format(key,len(cols)))
-                        df_dict[key][task.id_name] = data[cols[0]]
+                        if len(cols) > 0:
+                            df_dict[key][task.id_name] = data[cols[0]]
+                        else:
+                            gc3libs.log.error("Skipping column {0} as no occourrences have been found".format(key))
 
                 else:
                     gc3libs.log.error('Output file {0} for task {1} not found'.format(result_log_file, task.id_name))
