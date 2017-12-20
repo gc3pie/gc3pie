@@ -118,15 +118,27 @@ def _parse_value(key, value):
 
 
 def _parse_asctime(val):
-    try:
-        # XXX: replace with datetime.strptime(...) in Python 2.5+
-        return datetime.datetime(
-            *(time.strptime(val, '%a %b %d %H:%M:%S %Y')[0:6]))
-    except Exception as err:
-        gc3libs.log.error(
-            "Cannot parse '%s' as a SGE-format time stamp: %s: %s",
-            val, err.__class__.__name__, str(err))
-        return None
+    """
+    Parse a timestamp string output by GE and return a Python `datetime` object.
+    """
+    # while the format of asctime() is strictly mandated by POSIX and
+    # the ISO C standard, Univa GE changed the date/time printing in
+    # `qacct -j` to use the format of `sge_ctime()` which hard-code a
+    # MM/DD/YYYY representation.  Yet another representation (ISO
+    # 8601) is given in XML output... so try them all, one at a time
+    # hoping one succeeds!
+    for fmt in [
+            '%a %b %d %H:%M:%S %Y',  # standard asctime() format
+            '%m/%d/%Y %H:%M:%S',     # sge_ctime()
+            '%Y-%m-%dT%H:%M:%S',     # ISO 8601 / sge_ctimeXML()
+    ]:
+        try:
+            return datetime.strptime(val, fmt)
+        except ValueError:
+            pass  # try next format
+    gc3libs.log.error(
+        "Cannot parse '%s' as a SGE-format time stamp", val)
+    return None
 
 
 def parse_qstat_f(qstat_output):
