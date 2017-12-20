@@ -133,7 +133,7 @@ def _parse_asctime(val):
             '%Y-%m-%dT%H:%M:%S',     # ISO 8601 / sge_ctimeXML()
     ]:
         try:
-            return datetime.strptime(val, fmt)
+            return datetime.datetime.strptime(val, fmt)
         except ValueError:
             pass  # try next format
     gc3libs.log.error(
