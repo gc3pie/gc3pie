@@ -168,8 +168,8 @@ setuptools.setup(
     install_requires=[
         'coloredlogs',
         'dictproxyhack',
-        # paramiko and pycrypto are required for SSH operations
-        'paramiko',
+        # Paramiko ceased support for Python 2.6 in version 2.4.0
+        'paramiko<2.4',
         'pycrypto',
         # prettytable -- format tabular text output
         'prettytable',
