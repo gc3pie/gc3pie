@@ -297,10 +297,9 @@ GC3Libs internals.
             if self.params.header:
                 csv_output.writerow(only_keys)
 
-        def cmp_by_jobid(x, y):
-            return cmp(x.persistent_id, y.persistent_id)
         ok = 0
-        for app in sorted(self._get_jobs(self.params.args), cmp=cmp_by_jobid):
+        for app in sorted(self._get_jobs(self.params.args),
+                          key=(lambda task: task.persistent_id)):
             # since `_get_jobs` swallows any exception raised by
             # invalid job IDs or corrupted files, let us determine the
             # number of failures by counting the number of times we
@@ -1026,10 +1025,7 @@ List status of computational resources.
 
         resources = self._core.get_resources()
 
-        def cmp_by_name(x, y):
-            return cmp(x.name, y.name)
-
-        for resource in sorted(resources, cmp=cmp_by_name):
+        for resource in sorted(resources, key=(lambda rsc: rsc.name)):
             if self.params.args and resource.name not in self.params.args:
                 continue
             table = PrettyTable(['', resource.name, ' '])
@@ -1265,7 +1261,7 @@ To get detailed info on a specific command, run:
                 # Application class does not have a `tasks` attribute
                 pass
 
-        timestamps.sort(cmp=lambda x, y: cmp(x[0], y[0]))
+        timestamps.sort(key=(lambda ts: ts[0]))
         for entry in timestamps:
             print "%s %s: %s" % (
                 time.strftime(
