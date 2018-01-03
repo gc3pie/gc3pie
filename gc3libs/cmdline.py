@@ -2,7 +2,7 @@
 #
 #   cmdline.py -- Prototypes for GC3Libs-based scripts
 #
-#   Copyright (C) 2010, 2011, 2012, 2014, 2015 University of Zurich
+#   Copyright (C) 2010-2018 University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -495,10 +495,7 @@ class _Script(cli.app.CommandLineApp):
                    " If you cannot get this command to run after"
                    " a system reboot, please write to gc3pie@googlegroups.com"
                    " including any output you got by running '%s -vvvv %s'."
-                   " (You need to be subscribed to post to the mailing list;"
-                   " you can also post without being subscribed by using the"
-                   " web interface at"
-                   " http://dir.gmane.org/gmane.comp.python.gc3pie )")
+                   " (You need to be subscribed to post to the mailing list)")
             if len(sys.argv) > 0:
                 msg %= (ex.__class__.__name__, str(ex),
                         self.name, str.join(' ', sys.argv[1:]))
@@ -510,10 +507,7 @@ class _Script(cli.app.CommandLineApp):
             msg = ("BUG: %s\n"
                    "Please send an email to gc3pie@googlegroups.com"
                    " including any output you got by running '%s -vvvv %s'."
-                   " (You need to be subscribed to post to the mailing list;"
-                   " you can also post without being subscribed by using the"
-                   " web interface at"
-                   " http://dir.gmane.org/gmane.comp.python.gc3pie )"
+                   " (You need to be subscribed to post to the mailing list)"
                    " Thanks for your cooperation!")
             if len(sys.argv) > 0:
                 msg %= (ex, self.name, str.join(' ', sys.argv[1:]))

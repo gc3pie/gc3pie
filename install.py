@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  Copyright (C) 2015 S3IT, Zentrale Informatik, University of Zurich.
+#  Copyright (C) 2015-2018 University of Zurich.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -521,9 +521,8 @@ def die(rc, header, msg):
 
 If the above does not help you solve the issue, please contact the
 GC3Pie team by sending an email to gc3pie@googlegroups.com
-(mailing-list subscription required) or through the web-based forum
-http://dir.gmane.org/gmane.comp.python.gc3pie
-Include the full output of this script to help us identifying the problem.
+(mailing-list subscription required).  Include the full output of this
+script to help us identifying the problem.
 
 Aborting installation!
     """.format(me=PROG, header=header, msg=msg))
