@@ -3,7 +3,7 @@
 """
 Implementation of the `core` command-line front-ends.
 """
-# Copyright (C) 2009-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -20,12 +20,12 @@ Implementation of the `core` command-line front-ends.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 __docformat__ = 'reStructuredText'
-__author__ = "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>,"
-" Riccardo Murri <riccardo.murri@uzh.ch>,"
-" Antonio Messina <antonio.messina@uzh.ch>"
-__date__ = '$Date$'
-__copyright__ = "Copyright (c) 2009-2014 Grid Computing Competence Center,"
-" University of Zurich"
+__author__ = ', '.join([
+    "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>",
+    "Riccardo Murri <riccardo.murri@uzh.ch>",
+    "Antonio Messina <antonio.messina@uzh.ch>",
+])
+__copyright__ = "Copyright (c) 2009-2018 University of Zurich"
 
 
 # stdlib imports
