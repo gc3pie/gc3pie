@@ -3,7 +3,7 @@
 """
 SQL-based storage of GC3pie objects.
 """
-# Copyright (C) 2011-2012, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -26,6 +26,7 @@ __docformat__ = 'reStructuredText'
 from contextlib import closing
 from cStringIO import StringIO
 import os
+from urlparse import parse_qs
 from warnings import warn
 
 import sqlalchemy as sqla
@@ -34,6 +35,7 @@ import sqlalchemy.sql as sql
 # GC3Pie interface
 from gc3libs import Run
 import gc3libs.exceptions
+from gc3libs.url import Url
 import gc3libs.utils
 from gc3libs.utils import same_docstring_as
 
@@ -139,7 +141,7 @@ class SqlStore(Store):
     `FilesystemStore`:class:.
     """
 
-    def __init__(self, url, table_name="store", idfactory=None,
+    def __init__(self, url, table_name=None, idfactory=None,
                  extra_fields=None, create=True, **extra_args):
         """
         Open a connection to the storage database identified by `url`.
@@ -148,13 +150,26 @@ class SqlStore(Store):
         `url.scheme` value.
         """
         super(SqlStore, self).__init__(url)
+        if self.url.fragment:
+            kv = parse_qs(self.url.fragment)
+        else:
+            kv = {}
 
         # init static public args
         if not idfactory:
             self.idfactory = IdFactory(id_class=IntId)
         else:
             self.idfactory = idfactory
-        self.table_name = table_name
+
+        url_table_name = kv.get('table', "store")
+        if table_name is None:
+            self.table_name = url_table_name
+        else:
+            if table_name != url_table_name:
+                gc3libs.log.debug(
+                    "DB table name given in store URL fragment,"
+                    " but overriden by `table` argument to SqlStore()")
+            self.table_name = table_name
 
         # save ctor args for lazy-initialization
         self._init_extra_fields = (extra_fields if extra_fields is not None else {})
@@ -165,6 +180,22 @@ class SqlStore(Store):
         self._real_extra_fields = None
         self._real_tables = None
 
+    @staticmethod
+    def _to_sqlalchemy_url(url):
+        if url.scheme == 'sqlite':
+            # rewrite ``sqlite`` URLs to be RFC compliant, see:
+            # https://github.com/uzh/gc3pie/issues/261
+            db_url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
+        else:
+            db_url = str(url)
+        # remove fragment identifier, if any
+        try:
+            fragment_loc = db_url.index('#')
+            db_url = db_url[:fragment_loc]
+        except ValueError:
+            pass
+        return db_url
+
     def _delayed_init(self):
         """
         Perform initialization tasks that can interfere with
@@ -174,7 +205,8 @@ class SqlStore(Store):
         <https://github.com/uzh/gc3pie/issues/550>`_ for more details
         and motivation.
         """
-        self._real_engine = sqla.create_engine(str(self.url))
+        self._real_engine = sqla.create_engine(
+            self._to_sqlalchemy_url(self.url))
 
         # create schema
         meta = sqla.MetaData(bind=self._real_engine)
@@ -336,16 +368,14 @@ def make_sqlstore(url, *args, **extra_args):
 
     """
     assert isinstance(url, gc3libs.url.Url)
+    gc3libs.log.debug("Building SQL store from URL %s", url)
     if url.scheme == 'sqlite':
         # create parent directories: avoid "OperationalError: unable to open
         # database file None None"
         dir = gc3libs.utils.dirname(url.path)
         if not os.path.exists(dir):
             os.makedirs(dir)
-        # rewrite ``sqlite`` URLs to be RFC compliant, see:
-        # https://github.com/uzh/gc3pie/issues/261
-        url = "%s://%s/%s" % (url.scheme, url.netloc, url.path)
-    return SqlStore(str(url), *args, **extra_args)
+    return SqlStore(url, *args, **extra_args)
 
 
 # main: run tests

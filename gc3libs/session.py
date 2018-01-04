@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2012, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -229,9 +229,10 @@ class Session(list):
         try:
             store_fname = os.path.join(self.path, self.STORE_URL_FILENAME)
             self.store_url = gc3libs.utils.read_contents(store_fname).strip()
+            gc3libs.log.debug("Loading session from URL %s ...", self.store_url)
         except IOError:
             gc3libs.log.info(
-                "Unable to load session: file %s is missing." % (store_fname))
+                "Unable to load session: file %s is missing.", store_fname)
             raise
         if 'store' in extra_args:
             self.store = extra_args['store']

@@ -3,7 +3,7 @@
 """
 Utility classes and methods for dealing with URLs.
 """
-# Copyright (C) 2011-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -46,6 +46,7 @@ class Url(tuple):
     port        5       Port number as integer (if present)  None
     username    6       User name                            None
     password    7       Password                             None
+    fragment    8       URL fragment (part after ``#``)      empty string
     =========   =====   ===================================  ==================
 
     There are two ways of constructing `Url` objects:
@@ -128,11 +129,13 @@ class Url(tuple):
     __slots__ = ()
 
     _fields = ['scheme', 'netloc', 'path',
-               'hostname', 'port', 'query', 'username', 'password']
+               'hostname', 'port', 'query',
+               'username', 'password', 'fragment']
 
     def __new__(cls, urlstring=None, force_abs=True,
-                scheme='file', netloc='', path='', 
-                hostname=None, port=None, query='', username=None, password=None):
+                scheme='file', netloc='', path='',
+                hostname=None, port=None, query='',
+                username=None, password=None, fragment=''):
         """
         Create a new `Url` object.  See the `Url`:class: documentation
         for invocation syntax.
@@ -143,7 +146,7 @@ class Url(tuple):
                 return tuple.__new__(cls, (
                     urlstring.scheme, urlstring.netloc, urlstring.path,
                     urlstring.hostname, urlstring.port, urlstring.query,
-                    urlstring.username, urlstring.password
+                    urlstring.username, urlstring.password, urlstring.fragment
                 ))
             else:
                 # parse `urlstring` and use kwd arguments as default values
@@ -163,6 +166,7 @@ class Url(tuple):
                         urldata.query or query,
                         urldata.username or username,
                         urldata.password or password,
+                        urldata.fragment or fragment,
                         ))
                 except (ValueError, TypeError, AttributeError) as ex:
                     raise ValueError(
@@ -173,7 +177,7 @@ class Url(tuple):
             return tuple.__new__(cls, (
                 scheme, netloc, path,
                 hostname, port, query,
-                username, password
+                username, password, fragment
             ))
 
     def __getattr__(self, name):
@@ -196,7 +200,8 @@ class Url(tuple):
         """
         return (
             "Url(scheme=%r, netloc=%r, path=%r, hostname=%r,"
-            " port=%r, query=%r, username=%r, password=%r)" %
+            " port=%r, query=%r, username=%r, password=%r, fragment=%r)"
+            %
             (self.scheme,
              self.netloc,
              self.path,
@@ -204,7 +209,8 @@ class Url(tuple):
              self.port,
              self.query,
              self.username,
-             self.password))
+             self.password,
+             self.fragment))
 
     def __str__(self):
         """
@@ -228,14 +234,15 @@ class Url(tuple):
         """
         url = self.path
         # XXX: assumes all our URLs are of netloc-type!
-        if self.netloc or (self.scheme and not url.startswith('//')):
-            if url and not url.startswith('/'):
-                url = '/' + url
-            url = '//' + (self.netloc or '') + url
+        if url and not url.startswith('/'):
+            url = '/' + url
+        url = '//' + (self.netloc or '') + url
         if self.scheme:
             url = self.scheme + ':' + url
         if self.query:
             url += '?%s' % self.query
+        if self.fragment:
+            url += '#%s' % self.fragment
         return url
 
     def __eq__(self, other):
@@ -323,7 +330,7 @@ class Url(tuple):
                    path=os.path.join((self.path or '/'), relpath),
                    hostname=self.hostname, port=self.port,
                    username=self.username, password=self.password,
-                   query=self.query)
+                   query=self.query, fragment=self.fragment)
 
 
 class UrlKeyDict(dict):
@@ -455,7 +462,7 @@ class UrlValueDict(dict):
     URL-type value, regardless of how it was set::
 
         >>> repr(d[1]) == "Url(scheme='file', netloc='', path='/tmp/foo', " \
-        "hostname=None, port=None, query='', username=None, password=None)"
+        "hostname=None, port=None, query='', username=None, password=None, fragment='')"
         True
 
     Class `UrlValueDict` supports initialization by any of the
