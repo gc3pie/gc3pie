@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -152,15 +152,8 @@ def configure_logger(
     used for more advanced configuration; if it does not exist, then a
     sample one is created.
     """
-    if name is None:
-        name = os.path.basename(sys.argv[0])
-    log_conf = os.path.join(Default.RCDIR, name + '.log.conf')
     logging.basicConfig(level=level, format=format, datefmt=datefmt)
-    deploy_configuration_file(log_conf, "logging.conf.example")
-    logging.config.fileConfig(log_conf, {
-        'RCDIR': Default.RCDIR,
-        'HOMEDIR': os.path.expandvars('$HOME'),
-    })
+    _load_logging_configuration_file(name)
     log = logging.getLogger("gc3.gc3libs")
     log.setLevel(level)
     log.propagate = 1
@@ -175,6 +168,17 @@ def configure_logger(
                 level=level, fmt=format, datefmt=datefmt, programname=name)
         except ImportError as err:
             log.warning("Could not import `coloredlogs` module: %s", err)
+
+def _load_logging_configuration_file(name):
+    if name is None:
+        name = os.path.basename(sys.argv[0])
+    log_conf = os.path.join(Default.RCDIR, name + '.log.conf')
+    deploy_configuration_file(log_conf, "logging.conf.example")
+    logging.config.fileConfig(log_conf, {
+        'RCDIR': Default.RCDIR,
+        'HOMEDIR': os.path.expandvars('$HOME'),
+    })
+    return log_conf
 
 
 UNIGNORE_ERRORS = set(os.environ.get('GC3PIE_NO_CATCH_ERRORS', '').split(','))
