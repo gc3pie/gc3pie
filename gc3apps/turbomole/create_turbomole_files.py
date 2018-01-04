@@ -4,7 +4,7 @@
 Generate the same input files structure as `gricomp.py`, but without
 running any job.
 """
-# Copyright (C) 2011 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -41,9 +41,10 @@ import sys
 ## interface to Gc3libs
 
 import gc3libs
-from gc3libs.cmdline import GC3UtilsScript, positive_int, valid_directory
+from gc3libs.cmdline import positive_int, valid_directory
 from gc3libs.template import Template, expansions
 import gc3libs.utils
+from gc3utils.commands import GC3UtilsScript
 
 
 ## support classes

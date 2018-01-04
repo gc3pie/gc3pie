@@ -52,19 +52,143 @@ import gc3libs.persistence
 import gc3libs.utils as utils
 
 
-class _BaseCmd(gc3libs.cmdline.GC3UtilsScript):
+class GC3UtilsScript(gc3libs.cmdline._Script):
     """
-    Set version string in `gc3libs.cmdline.GC3UtilsScript`:class: to
-    this package's version.
+    Base class for GC3Utils scripts.
+
+    The default command line implemented is the following:
+
+      script [options] JOBID [JOBID ...]
+
+    By default, only the standard options ``-h``/``--help`` and
+    ``-V``/``--version`` are considered; to add more, override
+    `setup_options`:meth:
+    To change default positional argument parsing, override
+    `setup_args`:meth:
+
     """
+
     def __init__(self, **extra_args):
-        gc3libs.cmdline.GC3UtilsScript.__init__(self, version=__version__)
+        """
+        Set version string in `gc3libs.cmdline._Script`:class: to
+        this package's version.
+        """
+        super(GC3UtilsScript, self).__init__(
+            main=self.main, version=__version__, **extra_args)
+
+    ##
+    # CUSTOMIZATION METHODS
+    ##
+    # The following are meant to be freely customized in derived scripts.
+    ##
+
+    def setup_args(self):
+        """
+        Set up command-line argument parsing.
+
+        The default command line parsing considers every argument as a
+        job ID; actual processing of the IDs is done in
+        `parse_args`:meth:
+        """
+        self.add_param(
+            'args',
+            nargs='*',
+            metavar='JOBID',
+            help="Job ID string identifying the jobs to operate upon.")
+
+    def parse_args(self):
+        if hasattr(self.params, 'args') and '-' in self.params.args:
+            # Get input arguments *also* from standard input
+            self.params.args.remove('-')
+            self.params.args.extend(sys.stdin.read().split())
+
+    ##
+    # pyCLI INTERFACE METHODS
+    ##
+    # The following methods adapt the behavior of the
+    # `SessionBasedScript` class to the interface expected by pyCLI
+    # applications.  Think twice before overriding them, and read
+    # the pyCLI docs before :-)
+    ##
+
+    def setup(self):
+        """
+        Setup standard command-line parsing.
+
+        GC3Utils scripts should probably override `setup_args`:meth:
+        and `setup_options`:meth: to modify command-line parsing.
+        """
+        # setup of base classes (creates the argparse stuff)
+        super(GC3UtilsScript, self).setup()
+        # local additions
+        self.add_param("-s",
+                       "--session",
+                       action="store",
+                       required=True,
+                       default=gc3libs.Default.JOBS_DIR,
+                       help="Directory where job information will be stored.")
+
+    def pre_run(self):
+        """
+        Perform parsing of standard command-line options and call into
+        `parse_args()` to do non-optional argument processing.
+        """
+        # base class parses command-line
+        super(GC3UtilsScript, self).pre_run()
+
+    ##
+    # INTERNAL METHODS
+    ##
+    # The following methods are for internal use; they can be
+    # overridden and customized in derived classes, although there
+    # should be no need to do so.
+    ##
+
+    def _get_tasks(self, task_ids, ignore_failures=True):
+        """
+        Iterate over tasks (gc3libs.Application objects) corresponding
+        to the given IDs.
+
+        If `ignore_failures` is `True` (default), errors retrieving a
+        job from the persistence layer are ignored and the jobid is
+        skipped, therefore the returned list can be shorter than the
+        list of Job IDs given as argument.  If `ignore_failures` is
+        `False`, then any errors result in the relevant exception being
+        re-raised.
+        """
+        for jobid in task_ids:
+            try:
+                yield self.session.load(jobid)
+            except Exception as ex:
+                # Exempted from GC3Pie's `error_ignored()` policy as there
+                # is explicit control via the `ignore_failures` parameter
+                if ignore_failures:
+                    gc3libs.log.error(
+                        "Could not retrieve job '%s' (%s: %s). Ignoring.",
+                        jobid, ex.__class__.__name__, ex,
+                        exc_info=(self.params.verbose > 2))
+                    continue
+                else:
+                    raise
+
+    def _get_session(self, name):
+        """
+        Return a `gc3libs.session.Session` object corresponding to the
+        session identified by `name`.
+
+        :raise gc3libs.exceptions.InvalidArgument:
+          If the session cannot be loaded (e.g., does not exist).
+        """
+        try:
+            return Session(name, create=False)
+        except gc3libs.exceptions.InvalidArgument as err:
+            raise RuntimeError('Session {0} not found: {1}'.format(name, err))
 
 
 # ====== Main ========
 
 
-class cmd_gclean(_BaseCmd):
+class cmd_gclean(GC3UtilsScript):
     """
 Permanently remove jobs from local and remote storage.
 
@@ -91,19 +215,14 @@ force removal of a job regardless.
                        help="Remove job even when not in terminal state.")
 
     def main(self):
-        try:
-            self.session = Session(self.params.session, create=False)
-        except gc3libs.exceptions.InvalidArgument, ex:
-            # session not found?
-            raise RuntimeError('Session %s not found' % self.params.session)
+        self.session = self._get_session(self.params.session)
 
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage(
                 "Option '-A' conflicts with list of job IDs to remove.")
 
-        all_ids = [job.persistent_id for job in self.session.iter_workflow()]
         if self.params.all:
-            args = all_ids
+            args = [job.persistent_id for job in self.session.iter_workflow()]
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
         else:
@@ -191,7 +310,7 @@ force removal of a job regardless.
         return min(failed, 126)
 
 
-class cmd_ginfo(_BaseCmd):
+class cmd_ginfo(GC3UtilsScript):
     """
 Print detailed information about a job.
 
@@ -225,11 +344,7 @@ GC3Libs internals.
                        help="Print job history only")
 
     def main(self):
-        try:
-            self.session = Session(self.params.session, create=False)
-        except gc3libs.exceptions.InvalidArgument:
-            # session not found?
-            raise RuntimeError('Session %s not found' % self.params.session)
+        self.session = self._get_session(self.params.session)
 
         if self.params.csv and self.params.tabular:
             raise gc3libs.exceptions.InvalidUsage(
@@ -298,9 +413,9 @@ GC3Libs internals.
                 csv_output.writerow(only_keys)
 
         ok = 0
-        for app in sorted(self._get_jobs(self.params.args),
+        for app in sorted(self._get_tasks(self.params.args),
                           key=(lambda task: task.persistent_id)):
-            # since `_get_jobs` swallows any exception raised by
+            # since `_get_tasks` swallows any exception raised by
             # invalid job IDs or corrupted files, let us determine the
             # number of failures by counting the number of times we
             # actually run this loop and then subtract from the number
@@ -340,7 +455,7 @@ GC3Libs internals.
         return min(failed, 126)
 
 
-class cmd_gresub(_BaseCmd):
+class cmd_gresub(GC3UtilsScript):
     """
 Resubmit an already-submitted job with (possibly) different parameters.
 
@@ -388,11 +503,7 @@ is canceled before re-submission.
             self.params.memory_per_core = Memory(self.params.memory_per_core)
 
     def main(self):
-        try:
-            self.session = Session(self.params.session, create=False)
-        except gc3libs.exceptions.InvalidArgument, ex:
-            # session not found?
-            raise RuntimeError('Session %s not found' % self.params.session)
+        self.session = self._get_session(self.params.session)
 
         if len(self.params.args) == 0:
             self.log.error(
@@ -455,7 +566,7 @@ is canceled before re-submission.
         return min(failed, 126)
 
 
-class cmd_gstat(_BaseCmd):
+class cmd_gstat(GC3UtilsScript):
     """
 Print job state.
     """
@@ -500,11 +611,7 @@ Print job state.
 
     def main(self):
         # by default, DO NOT update job statuses
-        try:
-            self.session = Session(self.params.session, create=False)
-        except gc3libs.exceptions.InvalidArgument:
-            # session not found?
-            raise RuntimeError('Session %s not found' % self.params.session)
+        self.session = self._get_session(self.params.session)
 
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
@@ -553,7 +660,7 @@ Print job state.
         stats = utils.defaultdict(lambda: 0)
         tot = 0
         rows = []
-        for app in self._get_jobs(self.params.args):
+        for app in self._get_tasks(self.params.args):
             tot += 1  # one more job successfully loaded
             jobid = app.persistent_id
             if self.params.update:
@@ -653,7 +760,7 @@ Print job state.
                 lifetimes_csv = csv.writer(self.params.lifetimes)
             lifetimes_csv.writerows(lifetimes_rows)
 
-        # since `_get_jobs` swallows any exception raised by invalid
+        # since `_get_tasks` swallows any exception raised by invalid
         # job IDs or corrupted files, let us determine the number of
         # failures by counting the number of times we actually run
         # this loop and then subtract from the number of times we
@@ -663,7 +770,7 @@ Print job state.
         return min(failed, 126)
 
 
-class cmd_gget(_BaseCmd):
+class cmd_gget(GC3UtilsScript):
     """
 Retrieve output files of a job.
 
@@ -701,11 +808,7 @@ released once the output files have been fetched.
                        " side.")
 
     def main(self):
-        try:
-            self.session = Session(self.params.session, create=False)
-        except gc3libs.exceptions.InvalidArgument, ex:
-            # session not found?
-            raise RuntimeError('Session %s not found' % self.params.session)
+        self.session = self._get_session(self.params.session)
 
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage(
@@ -790,7 +893,7 @@ released once the output files have been fetched.
         return min(failed, 126)
 
 
-class cmd_gkill(_BaseCmd):
+class cmd_gkill(GC3UtilsScript):
     """
 Cancel a submitted job.  Given a list of jobs, try to cancel each
 one of them; exit with code 0 if all jobs were cancelled
@@ -806,11 +909,7 @@ error occurred.
                        help="Remove all stored jobs. USE WITH CAUTION!")
 
     def main(self):
-        try:
-            self.session = Session(self.params.session, create=False)
-        except gc3libs.exceptions.InvalidArgument, ex:
-            # session not found?
-            raise RuntimeError('Session %s not found' % self.params.session)
+        self.session = self._get_session(self.params.session)
 
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage(
@@ -864,7 +963,7 @@ error occurred.
         return min(failed, 126)
 
 
-class cmd_gtail(_BaseCmd):
+class cmd_gtail(GC3UtilsScript):
     """
 Display the last lines from a job's standard output or error stream.
 Optionally, keep running and displaying the last part of the file
@@ -904,11 +1003,7 @@ as more lines are written to the given stream.
                        help="output the last N lines, instead of the last 10")
 
     def main(self):
-        try:
-            self.session = Session(self.params.session, create=False)
-        except gc3libs.exceptions.InvalidArgument, ex:
-            # session not found?
-            raise RuntimeError('Session %s not found' % self.params.session)
+        self.session = self._get_session(self.params.session)
 
         if len(self.params.args) == 0:
             self.log.error(
@@ -976,7 +1071,7 @@ as more lines are written to the given stream.
         return min(failed, 126)
 
 
-class cmd_gservers(_BaseCmd):
+class cmd_gservers(GC3UtilsScript):
     """
 List status of computational resources.
     """
@@ -1056,7 +1151,7 @@ List status of computational resources.
             print('')
 
 
-class cmd_gsession(_BaseCmd):
+class cmd_gsession(GC3UtilsScript):
     """
 `gsession` get info on a session.
 
@@ -1131,14 +1226,7 @@ To get detailed info on a specific command, run:
         125 will be returned instead, since numbers above 125 have a
         special meaning for the shell.
         """
-        try:
-            self.session = Session(self.params.session, create=False)
-        except gc3libs.exceptions.InvalidArgument:
-            raise RuntimeError(
-                "Session '{0}' not found."
-                " Please specify a valid session"
-                " directory as argument"
-                .format(self.params.session))
+        self.session = self._get_session(self.params.session)
 
         rc = len(self.session.tasks)
         for task_id in self.session.tasks.keys():
@@ -1200,13 +1288,7 @@ To get detailed info on a specific command, run:
         With option `--recursive`, indent job ids to show the tree-like
         organization of jobs in the task collections.
         """
-        try:
-            self.session = Session(self.params.session, create=False)
-        except gc3libs.exceptions.InvalidArgument:
-            raise RuntimeError(
-                "Session '{0}' not found. Please specify a valid"
-                " session directory as argument"
-                .format(self.params.session))
+        self.session = self._get_session(self.params.session)
 
         def print_app_table(app, indent, recursive):
             rows = []
@@ -1241,13 +1323,7 @@ To get detailed info on a specific command, run:
         This method will print the history of the jobs in SESSION in a
         logfile fashon
         """
-        try:
-            self.session = Session(self.params.session, create=False)
-        except gc3libs.exceptions.InvalidArgument:
-            raise RuntimeError(
-                "Session '{0}' not found. Please specify a valid"
-                " session directory as argument"
-                .format(self.params.session))
+        self.session = self._get_session(self.params.session)
         timestamps = []
         task_queue = list(self.session.tasks.values())
         while task_queue:
@@ -1271,7 +1347,7 @@ To get detailed info on a specific command, run:
                 entry[2])
 
 
-class cmd_gselect(_BaseCmd):
+class cmd_gselect(GC3UtilsScript):
     """
 Print IDs of jobs that match the specified criteria.
 The criteria specified by command-line options will be
@@ -1466,12 +1542,7 @@ in order to be selected.
                  (self.params.output_message,)))
 
     def main(self):
-        try:
-            self.session = Session(self.params.session, create=False)
-            self.store = self.session.store
-        except gc3libs.exceptions.InvalidArgument:
-            # session not found?
-            raise RuntimeError("Session `%s` not found" % self.params.session)
+        self.session = self._get_session(self.params.session)
 
         # Load tasks from the store
         current_jobs = list(self.session.iter_workflow())
@@ -1662,7 +1733,7 @@ in order to be selected.
         return matching_jobs
 
 
-class cmd_gcloud(_BaseCmd):
+class cmd_gcloud(GC3UtilsScript):
     """
 `gcloud` manage VMs created by the EC2 backend
 
