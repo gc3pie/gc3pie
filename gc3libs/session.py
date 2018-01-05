@@ -161,11 +161,10 @@ class Session(list):
         """
         self.path = os.path.abspath(path)
         self.name = os.path.basename(self.path)
-        self.tasks = dict()
+        self.tasks = {}
         # Session not yet created
         self.created = -1
         self.finished = -1
-        self.cmdline = extra_args.get('cmdline', None)
 
         # load or make session
         if os.path.isdir(self.path):
@@ -209,22 +208,24 @@ class Session(list):
         self._save_index_file()
 
         # Save the current command line on ``created`` file.
-        fd = open(os.path.join(
-            self.path,
-            self.TIMESTAMP_FILES['start']), 'w')
-        fd.write(str.join(' ', sys.argv) + '\n')
-        fd.close()
+        with open(os.path.join(
+                self.path,
+                self.TIMESTAMP_FILES['start']), 'w') as fd:
+            fd.write(str.join(' ', sys.argv) + '\n')
 
         self.set_start_timestamp()
 
-    def _load_session(self, **extra_args):
+    def _load_session(self, store=None, **extra_args):
         """
         Load an existing session from disk.
 
-        Keyword arguments are passed to the `make_store` factory
-        method unchanged.
+        If a `store` argument is given, it is used as the session's
+        task store; otherwise a new task store is created, passing
+        keyword arguments to the `make_store` factory method.
 
-        Any error that occurs while loading jobs from disk is ignored.
+        Any error that occurs while loading jobs from disk is ignored,
+        unless environment variable ``GC3PIE_NO_CATCH_ERRORS``
+        includes the keywords ``session`` or ``persistence``.
         """
         try:
             store_fname = os.path.join(self.path, self.STORE_URL_FILENAME)
@@ -232,10 +233,10 @@ class Session(list):
             gc3libs.log.debug("Loading session from URL %s ...", self.store_url)
         except IOError:
             gc3libs.log.info(
-                "Unable to load session: file %s is missing.", store_fname)
+                "Unable to load session: file `%s` is missing.", store_fname)
             raise
-        if 'store' in extra_args:
-            self.store = extra_args['store']
+        if store is not None:
+            self.store = store
             self.store_url = self.store.url
         else:
             self.store = gc3libs.persistence.make_store(
@@ -250,9 +251,10 @@ class Session(list):
                 self.path, self.TIMESTAMP_FILES['start'])
             self.created = os.stat(start_file).st_mtime
         except OSError:
+            # FIXME: should we also set `self.created` to the current timestamp?
             gc3libs.log.warning(
                 "Unable to recover starting time from existing session:"
-                " file %s is missing." % (start_file))
+                " file `%s` is missing." % (start_file))
 
         for task_id in ids:
             try:
@@ -293,7 +295,9 @@ class Session(list):
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
 
+    #
     # collection management
+    #
 
     def add(self, task, flush=True):
         """
@@ -473,15 +477,10 @@ class Session(list):
         Save job IDs to the default session index.
         """
         idx_filename = os.path.join(self.path, self.INDEX_FILENAME)
-        try:
-            idx_fd = open(idx_filename, 'w')
+        with open(idx_filename, 'w') as idx_fd:
             for task_id in self.tasks:
                 idx_fd.write(str(task_id))
                 idx_fd.write('\n')
-            idx_fd.close()
-        except:
-            idx_fd.close()
-            raise
 
     def _save_store_url_file(self):
         """
