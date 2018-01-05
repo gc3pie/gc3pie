@@ -71,7 +71,7 @@ Glossary
     status (e.g., ``RUNNING`` or ``TERMINATED``).  The terms *state*
     and *status* are used interchangeably in GC3Pie_ documentation.
 
-  STDERR 
+  STDERR
     Abbreviation for "standard error stream"; it is the sequence of
     all text messages that a command prints to inform the user of
     problems or to report on operations progress.  The Linux/UNIX
@@ -84,7 +84,7 @@ Glossary
     Abbreviation for "standard output stream".  It is the sequence of
     all characters that constitute the output of a command.  The Linux/UNIX
     system allows two separate output streams, one for output proper, and
-    one for "error messages", dubbed `STDERR`:term:.  It is entirely up 
+    one for "error messages", dubbed `STDERR`:term:.  It is entirely up
     to the command to tag a message as "standard output" or "standard error".
 
   Session
@@ -94,4 +94,3 @@ Glossary
   Walltime
     Short for *wall-clock time*: indicates the total running time of a
     :term:`job`.
-  

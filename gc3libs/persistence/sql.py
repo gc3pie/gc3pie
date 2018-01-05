@@ -273,10 +273,9 @@ class SqlStore(Store):
     @same_docstring_as(Store.list)
     def list(self):
         q = sql.select([self._tables.c.id])
-        conn = self._engine.connect()
-        rows = conn.execute(q)
-        ids = [i[0] for i in rows.fetchall()]
-        conn.close()
+        with closing(self._engine.connect()) as conn:
+            rows = conn.execute(q)
+            ids = [i[0] for i in rows.fetchall()]
         return ids
 
     @same_docstring_as(Store.replace)
