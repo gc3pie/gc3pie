@@ -70,6 +70,15 @@ class Url(tuple):
         >>> u.path
         '/tmp/foo'
 
+      However, if a ``#`` character is present in the path name, it
+      will be taken as separating the path from the "fragment"::
+
+        >>> u = Url('/tmp/foo#1')
+        >>> u.path
+        '/tmp/foo'
+        >>> u.fragment
+        '1'
+
       Please note that extra leading slashes '/' are interpreted as
       the begining of a network location:
 
@@ -81,7 +90,7 @@ class Url(tuple):
         >>> Url('///foo/bar').path
         '/foo/bar'
 
-      Check RFC 3986 http://tools.ietf.org/html/rfc3986
+      (Check RFC 3986 http://tools.ietf.org/html/rfc3986)
 
       If `force_abs` is `True` (default), then the `path`
       attribute is made absolute, by calling `os.path.abspath` if
@@ -111,11 +120,17 @@ class Url(tuple):
         >>> u.path
         '/tmp/foo'
 
-      Query attributes are also supported:
+      Query attributes are also supported::
 
         >>> u = Url('http://www.example.org?foo=bar')
         >>> u.query
         'foo=bar'
+
+      and so are fragments::
+
+        >>> u = Url('postgresql://user@db.example.org#table=data')
+        >>> u.fragment
+        'table=data'
 
     * By passing keyword arguments only, to construct an `Url` object
       with exactly those values for the named fields::
@@ -152,7 +167,7 @@ class Url(tuple):
                 # parse `urlstring` and use kwd arguments as default values
                 try:
                     urldata = urlparse.urlsplit(
-                        urlstring, scheme=scheme, allow_fragments=False)
+                        urlstring, scheme=scheme, allow_fragments=True)
                     if urldata.scheme == 'file' and not os.path.isabs(
                             urldata.path) and force_abs:
                         urldata = urlparse.urlsplit(
