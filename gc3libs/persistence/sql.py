@@ -165,9 +165,13 @@ class SqlStore(Store):
         else:
             self.idfactory = idfactory
 
-        url_table_name = kv.get('table', "store")
+        url_table_names = kv.get('table')
+        if url_table_names:
+            url_table_name = url_table_names[-1]  # last wins
+        else:
+            url_table_name = ''
         if table_name is None:
-            self.table_name = url_table_name
+            self.table_name = url_table_name or "store"
         else:
             if table_name != url_table_name:
                 gc3libs.log.debug(
