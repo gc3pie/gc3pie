@@ -2103,17 +2103,13 @@ class BgEngine(object):
         self._before_progress_triggers = []
         self._before_progress_triggers_locked = lock()
 
-        assert len(args) > 0, (
+        assert len(args) + len(kwargs) > 0, (
             "`BgEngine()` must be called"
             " either with an `Engine` instance as second (and last) argument,"
             " or with a set of parameters to pass on to the `Engine` constructor.")
-        if isinstance(args[0], gc3libs.core.Engine):
+        if len(args) == 1 and isinstance(args[0], gc3libs.core.Engine):
             # first (and only!) arg is an `Engine` instance, use that
             self._engine = args[0]
-            assert len(args) == 1, (
-                "If an `Engine` instance is passed to `BgEngine()`"
-                " then it must be the only argument"
-                " after the concurrency framework name.")
         else:
             # use supplied parameters to construct an `Engine`
             self._engine = gc3libs.core.Engine(*args, **kwargs)
@@ -2134,8 +2130,9 @@ class BgEngine(object):
           Time span between successive calls of `_perform`:meth:
         """
         self.running = True
-        self._scheduler.add_job(self._perform,
-                                'interval', seconds=(interval.amount(Duration.s)))
+        self._scheduler.add_job(
+            self._perform,
+            'interval', seconds=(interval.amount(Duration.s)))
         self._scheduler.start()
         gc3libs.log.info(
             "Started background execution of Engine %s every %s",
@@ -2212,8 +2209,7 @@ class BgEngine(object):
                 func(*args, **kwargs)
             except Exception as err:  # pylint: disable=broad-except
                 gc3libs.log.warning(
-                    "Ignoring '%s' error,"
-                    " occurred while executing delayed call %s(*%r, **%r): %s",
+                    "Got '%s' while executing delayed call %s(*%r, **%r): %s",
                     err.__class__.__name__,
                     func.__name__, args, kwargs,
                     err, exc_info=__debug__)
@@ -2365,20 +2361,12 @@ class BgEngine(object):
 
     def get_resources(self):
         """Proxy to `Engine.get_resources`:meth: (which see)."""
-        if self.running:
-            with self._queue_locked:
-                self._queue.append((self._engine.get_resources, tuple(), {}))
-        else:
-            self._engine.get_resources()
+        return self._engine.get_resources()
 
 
     def get_backend(self, name):
         """Proxy to `Engine.get_backend`:meth: (which see)."""
-        if self.running:
-            with self._queue_locked:
-                self._queue.append((self._engine.get_backend, (name,), {}))
-        else:
-            self._engine.get_backend(name)
+        return self._engine.get_backend(name)
 
 
     def iter_tasks(self):

@@ -799,10 +799,11 @@ class ParallelTaskCollection(TaskCollection):
         """
         Add a task to the collection.
         """
-        task.detach()
         self.tasks.append(task)
         if self._attached:
             task.attach(self._controller)
+        else:
+            task.detach()
 
     def attach(self, controller):
         """
