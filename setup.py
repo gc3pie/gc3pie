@@ -69,11 +69,35 @@ class Tox(TestCommand):
 
 python_version = sys.version_info[:2]
 if python_version == (2, 6):
+    version_dependent_requires = [
+        # Alternate dependencies for Python 2.6:
+        # - PyCLI requires argparse,
+        'argparse',
+        # Paramiko ceased support for Python 2.6 in version 2.4.0
+        'paramiko<2.4', 'pycrypto',
+        # parsedatetime officially dropped supprt for Py 2.6 in version 1.0
+        # but the PyPI tags show that it is compatible with Py2.6 until <=1.4
+        'parsedatetime<1.5',
+        # python-daemon seems to have dropped Py2.6 between v1.6 and v2.0
+        'python-daemon<2.0',
+        'pyyaml<=3.11',
+        # SQLAlchemy ceased support for Py 2.6 in version 1.2.0
+        'sqlalchemy<1.2',
+    ]
     openstack_requires = [
         # None, GC3Pie's OpenStack support on Python 2.6 ceased during
         # the release cycle leading to version 2.5
     ]
 elif python_version == (2, 7):
+    version_dependent_requires = [
+        'paramiko', 'pycrypto',
+        # Needed for parsing human-readable dates (gselect uses it).
+        'parsedatetime',
+        # Needed by `gc3libs.cmdline`
+        'python-daemon',
+        'pyyaml',
+        'sqlalchemy',
+    ]
     openstack_requires = [
         # The following Python modules are required by GC3Pie's `openstack`
         # backend. Since OpenStack ceased support for Python 2.6 around
@@ -165,27 +189,17 @@ setuptools.setup(
     },
 
     # run-time dependencies
-    install_requires=[
+    install_requires=(version_dependent_requires + [
         'coloredlogs',
         'dictproxyhack',
-        # Paramiko ceased support for Python 2.6 in version 2.4.0
-        'paramiko<2.4',
-        'pycrypto',
         # prettytable -- format tabular text output
         'prettytable',
         # pyCLI -- object-oriented command-line app programming
         'pyCLI',
-        # Needed by SqlStore
-        'sqlalchemy',
-        # Needed for parsing human-readable dates (gselect uses it).
-        'parsedatetime',
-        # Needed by `gc3libs.cmdline`
-        'python-daemon',
-        'pyyaml',
         # needed by DependentTaskCollection
         # (but incompatible with Py 2.6, so we include a patched copy)
         #toposort==1.0
-    ],
+    ]),
     extras_require={
         'ec2': [
             # The following Python modules are required by GC3Pie's `ec2`
