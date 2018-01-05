@@ -95,7 +95,11 @@ class SqlStore(Store):
     used.
 
     The `table_name` argument is the name of the table to create. By
-    default it's ``store``.
+    default it's ``store``.  Alternatively, the table name can be
+    given in the "fragment" part of the database URL, as
+    ``#table=...`` (replace ``...`` with the actual table name).  The
+    constructor argument takes precedence over the table name
+    specified in the DB URL.
 
     The constructor will create the `table_name` table if it does not
     exist, but if there already is such a table it will assume that
