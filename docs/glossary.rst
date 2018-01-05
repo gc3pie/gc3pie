@@ -88,8 +88,16 @@ Glossary
     to the command to tag a message as "standard output" or "standard error".
 
   Session
+
     A :term:`persistent` collection of GC3Pie tasks and jobs. Sessions
-    are used by `GC3Apps`:ref: to store job status across program runs.
+    are used by `GC3Apps`:ref: to store job status across program
+    runs.  A session is specified by giving the filesystem path to a
+    *session directory*: the directory contains some files with
+    meta-data about the tasks that comprise the session.  It is also
+    possible to *simulate* a session by specifying a *task store URL*
+    (path to a filesystem directory where the jobs are stored, or
+    connection URL to a database); in this case the session meta-data
+    will be reconstructed from the set of tasks in the store.
 
   Walltime
     Short for *wall-clock time*: indicates the total running time of a

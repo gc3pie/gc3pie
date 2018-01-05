@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 """
-Implementation of the `core` command-line front-ends.
+Implementation of the command-line front-ends.
 """
 # Copyright (C) 2009-2018 University of Zurich. All rights reserved.
 #
@@ -45,10 +45,11 @@ from parsedatetime.parsedatetime import Calendar
 # local modules
 from gc3libs import __version__, Run
 from gc3libs.quantity import Duration, Memory
-from gc3libs.session import Session
+from gc3libs.session import Session, TemporarySession
 import gc3libs.cmdline
 import gc3libs.exceptions
 import gc3libs.persistence
+from gc3libs.url import Url
 import gc3libs.utils as utils
 
 
@@ -171,18 +172,31 @@ class GC3UtilsScript(gc3libs.cmdline._Script):
                 else:
                     raise
 
-    def _get_session(self, name):
+    def _get_session(self, url):
         """
         Return a `gc3libs.session.Session` object corresponding to the
-        session identified by `name`.
+        session identified by `url`.
 
         :raise gc3libs.exceptions.InvalidArgument:
           If the session cannot be loaded (e.g., does not exist).
         """
         try:
-            return Session(name, create=False)
+            url = Url(url)
+            if url.scheme == 'file':
+                return Session(url.path, create=False)
+            else:
+                return TemporarySession(url)
         except gc3libs.exceptions.InvalidArgument as err:
-            raise RuntimeError('Session {0} not found: {1}'.format(name, err))
+            raise RuntimeError(
+                "Cannot load session `{0}`: {1}".format(url, err))
+
+    def _list_all_tasks(self):
+        try:
+            return self.session.store.list()
+        except NotImplementedError:
+            raise NotImplementedError(
+                "Task storage module does not allow listing all tasks."
+                " Please specify the task IDs you wish to operate on.")
 
 
 # ====== Main ========
@@ -222,7 +236,7 @@ force removal of a job regardless.
                 "Option '-A' conflicts with list of job IDs to remove.")
 
         if self.params.all:
-            args = [job.persistent_id for job in self.session.iter_workflow()]
+            self.params.args = self._list_all_tasks()
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
         else:
@@ -365,7 +379,6 @@ GC3Libs internals.
             only_keys = self.params.keys.split(',')
         else:
             if self.params.verbose < 2:
-
                 def names_not_starting_with_underscore(name):
                     return not name.startswith('_')
                 only_keys = names_not_starting_with_underscore
@@ -381,13 +394,7 @@ GC3Libs internals.
 
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
-            try:
-                self.params.args = [job.persistent_id
-                                    for job in self.session.iter_workflow()]
-            except NotImplementedError:
-                raise NotImplementedError(
-                    "Job storage module does not allow listing all jobs."
-                    " Please specify the job IDs you wish to operate on.")
+            self.params.args = self._list_all_tasks()
 
         if posix.isatty(sys.stdout.fileno()):
             # try to screen width
@@ -615,9 +622,7 @@ Print job state.
 
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
-            # self.params.args = self.session.list_ids()
-            self.params.args = [job.persistent_id
-                                for job in self.session.iter_workflow()]
+            self.params.args = self._list_all_tasks()
 
         if len(self.params.args) == 0:
             print("No jobs submitted.")
@@ -668,10 +673,9 @@ Print job state.
                 app.update_state()
                 self.session.store.replace(jobid, app)
             if states is None or app.execution.in_state(*states):
-                # XXX: use `... if ... else ...` in Py > 2.4
-                if hasattr(app, 'jobname'):
+                try:
                     jobname = app.jobname
-                else:
+                except AttributeError:
                     jobname = ''
 
                 key_values = []
@@ -816,7 +820,7 @@ released once the output files have been fetched.
                 " use either '-A' or explicitly list task IDs.")
 
         if self.params.all:
-            args = [job.persistent_id for job in self.session.iter_workflow()]
+            args = self._list_all_tasks()
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
         else:
@@ -916,7 +920,7 @@ error occurred.
                 "Option '-A' conflicts with list of job IDs to remove.")
 
         if self.params.all:
-            args = [job.persistent_id for job in self.session.iter_workflow()]
+            args = self._list_all_tasks()
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
         else:
@@ -1279,14 +1283,14 @@ To get detailed info on a specific command, run:
 
     def list_jobs(self):
         """
-        Called with subcommand `list`.
+        Called with subcommand ``list``.
 
-        List the content of a session, like `gstat -n -v -s SESSION` does.
-        Unlike `gstat`, though, display stops at the top-level jobs
-        unless option `--recursive` is also given.
+        List the content of a session, like ``gstat -n -v -s SESSION``
+        does.  Unlike ``gstat``, though, display stops at the top-level
+        jobs unless option `--recursive` is also given.
 
-        With option `--recursive`, indent job ids to show the tree-like
-        organization of jobs in the task collections.
+        With option ``--recursive``, indent job ids to show the
+        tree-like organization of jobs in the task collections.
         """
         self.session = self._get_session(self.params.session)
 
