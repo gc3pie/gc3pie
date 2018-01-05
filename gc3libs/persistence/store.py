@@ -17,16 +17,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__docformat__ = 'reStructuredText'
 
+# stdlib imports
+from abc import ABCMeta, abstractmethod
 
 # GC3Pie imports
 import gc3libs
 from gc3libs.url import Url
 
 
-class Store(object):
+__docformat__ = 'reStructuredText'
 
+
+class Store(object):
     """
     Interface for storing and retrieving objects on permanent storage.
 
@@ -45,6 +48,8 @@ class Store(object):
         parts of the code.
     """
 
+    __metaclass__ = ABCMeta
+
     def __init__(self, url=None):
         if url and not isinstance(url, Url):
             url = Url(url)
@@ -60,30 +65,27 @@ class Store(object):
         raise NotImplementedError(
             "Method `list` not implemented in this class.")
 
+    @abstractmethod
     def remove(self, id_):
         """
         Delete a given object from persistent storage, given its ID.
         """
-        raise NotImplementedError(
-            "Abstract method 'Store.remove' called"
-            " -- should have been implemented in a derived class!")
+        pass
 
+    @abstractmethod
     def replace(self, id_, obj):
         """
         Replace the object already saved with the given ID with a copy
         of `obj`.
         """
-        raise NotImplementedError(
-            "Abstract method 'Store.replace' called"
-            " -- should have been implemented in a derived class!")
+        pass
 
+    @abstractmethod
     def load(self, id_):
         """
         Load a saved object given its ID, and return it.
         """
-        raise NotImplementedError(
-            "Abstract method 'Store.load' called"
-            " -- should have been implemented in a derived class!")
+        pass
 
     def _update_to_latest_schema(self):
         """
@@ -110,14 +112,12 @@ class Store(object):
                 self.execution._lrms_vm_id = self.execution.ec2_instance_id
                 del self.execution.ec2_instance_id
 
-
+    @abstractmethod
     def save(self, obj):
         """
         Save an object, and return an ID.
         """
-        raise NotImplementedError(
-            "Abstract method 'Store.save' called"
-            " -- should have been implemented in a derived class!")
+        pass
 
 
 class Persistable(object):
@@ -149,6 +149,7 @@ class Persistable(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
 
 # registration mechanism
 
