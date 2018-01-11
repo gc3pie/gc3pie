@@ -168,6 +168,14 @@ class Url(tuple):
                 try:
                     urldata = urlparse.urlsplit(
                         urlstring, scheme=scheme, allow_fragments=True)
+                    # Python 2.6 parses fragments only for http(s),
+                    # for any other scheme, the fragment is returned as
+                    # part of the path...
+                    if '#' in urldata.path:
+                        path_, fragment_ = urldata.path.split('#')
+                        urldata = urlparse.SplitResult(
+                            urldata.scheme, urldata.netloc,
+                            path_, urldata.query, fragment_)
                     if urldata.scheme == 'file' and not os.path.isabs(
                             urldata.path) and force_abs:
                         urldata = urlparse.urlsplit(
@@ -183,10 +191,10 @@ class Url(tuple):
                         urldata.password or password,
                         urldata.fragment or fragment,
                         ))
-                except (ValueError, TypeError, AttributeError) as ex:
+                except (ValueError, TypeError, AttributeError) as err:
                     raise ValueError(
-                        "Cannot parse string '%s' as a URL: %s: %s" %
-                        (urlstring, ex.__class__.__name__, str(ex)))
+                        "Cannot parse string '%s' as a URL: %s: %s"
+                        % (urlstring, err.__class__.__name__, err))
         else:
             # no `urlstring`, use kwd arguments
             return tuple.__new__(cls, (
