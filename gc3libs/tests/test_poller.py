@@ -2,11 +2,11 @@
 #
 """
 """
-# Copyright (C) 2012-2013, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2017-2018, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -26,61 +26,60 @@ import tempfile
 import pytest
 
 import gc3libs.poller as plr
+from gc3libs.utils import write_contents
+
+
+# for readability
+def _check_events(poller, path, expected):
+    events = [event for event in poller.get_events()
+              if event[0].path == path]
+    assert len(events) == len(expected)
+    for n, tags in enumerate(expected):
+        url, flags = events[n]
+        assert url.path == path
+        for tag in tags:
+            assert (flags & plr.events[tag]) != 0
+
 
 class TestPollers(object):
+
     @pytest.fixture(autouse=True)
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
         yield
         shutil.rmtree(self.tmpdir)
 
+
     def test_filepoller(self):
-        poller = plr.FilePoller(self.tmpdir, 0)
+        poller = plr.FilePoller(self.tmpdir)
+
+        # test create file
         fpath = os.path.join(self.tmpdir, 'foo')
-        with open(fpath, 'w'):
-            events = poller.get_events()
-            assert len(events) == 1
-            url, mask = events[0]
-            assert url.path == fpath
-            assert mask == plr.events['IN_CLOSE_WRITE']|plr.events['IN_CREATE']
+        write_contents(fpath, 'test')
+        _check_events(poller, fpath, [['IN_CLOSE_WRITE', 'IN_CREATE']])
+
+        # test remove file
         os.remove(fpath)
-        events = poller.get_events()
-        assert len(events) == 1
-        url, mask = events[0]
-        assert url.path == fpath
-        assert mask == plr.events['IN_DELETE']
+        _check_events(poller, fpath, [['IN_DELETE']])
+
 
     def test_inotifypoller(self):
-        poller = plr.INotifyPoller(self.tmpdir, plr.events['IN_ALL_EVENTS'])
+        poller = plr.INotifyPoller(self.tmpdir)
+
+        # test create file
         fpath = os.path.join(self.tmpdir, 'foo')
-        fd = open(fpath, 'w')
-        fd.close()
-        events = poller.get_events()
-        # In this case, we will receive 3 events:
-        # * create
-        # * open
-        # * close write
-        assert len(events) == 3
+        write_contents(fpath, 'test')
+        _check_events(poller, fpath, [
+            # inotify sends 4 distinct events
+            ['IN_CREATE'],
+            ['IN_OPEN'],
+            ['IN_MODIFY'],
+            ['IN_CLOSE_WRITE']
+        ])
 
-        url, mask = events[0]
-        assert url.path == fpath
-        assert mask == plr.events['IN_CREATE']
-
-        url, mask = events[1]
-        assert url.path == fpath
-        assert mask == plr.events['IN_OPEN']
-
-        url, mask = events[2]
-        assert url.path == fpath
-        assert mask == plr.events['IN_CLOSE_WRITE']
-
+        # test remove file
         os.remove(fpath)
-        events = poller.get_events()
-        assert len(events) == 1
-        url, mask = events[0]
-        assert url.path == fpath
-        assert mask == plr.events['IN_DELETE']
-
+        _check_events(poller, fpath, [['IN_DELETE']])
 
 ## main: run tests
 
