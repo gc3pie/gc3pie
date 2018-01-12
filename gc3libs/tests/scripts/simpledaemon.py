@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2012-2013, GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2017-2018, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,7 @@ __docformat__ = 'reStructuredText'
 
 import os
 import gc3libs
-from gc3libs.cmdline import SessionBasedDaemon
+from gc3libs.daemon import SessionBasedDaemon
 import inotifyx
 
 class SimpleDaemon(SessionBasedDaemon):
@@ -31,28 +31,25 @@ class SimpleDaemon(SessionBasedDaemon):
     def new_tasks(self, extra, epath=None, emask=0):
         app = None
         if not epath:
-            # Startup: just submit an Hello World application
-            extra['jobname'] = 'EchoApp'
             app = gc3libs.Application(
                 ['/bin/echo', 'first run'],
                 [],
                 gc3libs.ANY_OUTPUT,
                 stdout='stdout.txt',
                 stderr='stderr.txt',
+                jobname='EchoApp',
                 **extra)
             return [app]
         else:
             # A new file has been created. Process it.
-            extra['jobname'] = 'LSApp.%s' % os.path.basename(epath.path)
-            # inputs = [epath] if epath.scheme == 'file' else []
-            inputs = {epath:'foo'}
             if emask & inotifyx.IN_CLOSE_WRITE:
                 app = gc3libs.Application(
                     ['/bin/echo', epath],
-                    inputs,
-                    gc3libs.ANY_OUTPUT,
+                    inputs={epath:'foo'},
+                    outputs=gc3libs.ANY_OUTPUT,
                     stdout='stdout.txt',
                     stderr='stderr.txt',
+                    jobname=('LSApp.' + os.path.basename(epath.path)),
                     **extra)
                 return [app]
 

@@ -208,7 +208,7 @@ class INotifyPoller(Poller):
 
         self.watch(self.url.path)
         if self._recurse:
-            for dirpath, dirnames, filename in os.walk(self.url.path):
+            for dirpath, dirnames, filenames in os.walk(self.url.path):
                 self.watch(dirpath)
                 for name in filenames:
                     path = os.path.join(self.url.path, dirpath, name)
