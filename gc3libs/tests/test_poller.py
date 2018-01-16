@@ -22,6 +22,7 @@ __docformat__ = 'reStructuredText'
 import os
 import shutil
 import tempfile
+from time import sleep
 
 import pytest
 
@@ -52,15 +53,19 @@ class TestPollers(object):
 
     def test_filepoller(self):
         poller = plr.FilePoller(self.tmpdir)
+        assert self.tmpdir in poller._watched
 
         # test create file
         fpath = os.path.join(self.tmpdir, 'foo')
         write_contents(fpath, 'test')
         _check_events(poller, fpath, [['IN_CLOSE_WRITE', 'IN_CREATE']])
+        assert fpath in poller._watched
 
         # test remove file
         os.remove(fpath)
+        assert not os.path.exists(fpath)
         _check_events(poller, fpath, [['IN_DELETE']])
+        assert fpath not in poller._watched
 
 
     def test_inotifypoller(self):

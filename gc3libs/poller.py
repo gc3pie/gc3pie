@@ -345,16 +345,6 @@ class FilePoller(Poller):
                 new_events.append((Url(path), event))
                 self.watch(path)
 
-        # check if some file was deleted
-        already_watched = set(
-            path
-            for path in self._watched
-            if path.startswith(dirpath)
-        )
-        for path in (already_watched - contents - set([dirpath])):
-            new_events.append((Url(path), events['IN_DELETE']))
-            self._watched.pop(path)
-
         return new_events
 
 register_poller('file', FilePoller, not inotifyx,
