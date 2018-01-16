@@ -1169,9 +1169,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
 
     `max_submitted`
       If >0, limit the number of tasks in `SUBMITTED` state: if the
-      number of tasks in `SUBMITTED`, `RUNNING` or `STOPPED` state is
-      greater than `max_submitted`, then no new submissions will be
-      attempted.
+      number of tasks in `SUBMITTED` state is greater than
+      `max_submitted`, then no new submissions will be attempted.
 
     `output_dir`
       Base directory for job output; if not `None`, each task's
