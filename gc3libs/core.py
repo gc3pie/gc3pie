@@ -2,7 +2,7 @@
 """
 Top-level classes for task execution and control.
 """
-# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -1082,6 +1082,10 @@ def first_come_first_serve(tasks, resources, matchmaker=MatchMaker()):
     This is the default scheduling policy in GC3Pie's `Engine`:class.
 
     """
+    assert resources, "No execution resources available!"
+    # make a copy of the `resources` argument, so we can modify it
+    # when e.g. disabling resources that are full
+    resources = list(resources)
     for task_idx, task in enumerate(tasks):
         # keep only compatible resources
         compatible_resources = matchmaker.filter(task, resources)
@@ -1100,8 +1104,12 @@ def first_come_first_serve(tasks, resources, matchmaker=MatchMaker()):
             except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration:
                 # this is not a real error: the resource is adapting
                 # for the task and will actually accept it sometime in
-                # the future, so continue with next task
-                break
+                # the future, so disable resource and try next one
+                gc3libs.log.debug(
+                    "Disabling resource `%s` for this scheduling cycle",
+                    target.name)
+                resources.remove(target)
+                continue
             # pylint: disable=broad-except
             except Exception as err:
                 # note error condition but continue with next resource
@@ -1111,6 +1119,12 @@ def first_come_first_serve(tasks, resources, matchmaker=MatchMaker()):
             else:
                 # submission successful, continue with next task
                 break
+        if not resources:
+            gc3libs.log.debug(
+                "No more resources available,"
+                " aborting scheduling cycle with %d tasks remaining.",
+                len(tasks) - task_idx)
+            return
 
 
 # Work around infinite recursion error when trying to compare
@@ -1755,8 +1769,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                             currently_in_flight += 1
                         # if we get to this point, we know state is not NEW anymore
                         state = task.execution.state
-
                         sched.send(task.execution.state)
+
                     # pylint: disable=broad-except
                     except Exception as err1:
                         # record the error in the task's history
