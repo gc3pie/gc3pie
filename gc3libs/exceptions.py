@@ -111,7 +111,7 @@ class FatalError(UnrecoverableError):
         Exception.__init__(self, msg)
 
 
-# derived exceptions
+## derived exceptions
 
 class AuthError(Error):
 
@@ -321,6 +321,7 @@ class LRMSSkipSubmissionToNextIteration(ResourceNotReady):
             " Please fix the source code to use `ResourceNotReady` instead.",
             DeprecationWarning, 2)
         super(LRMSSkipSubmissionToNextIteration, self).__init__(msg, do_log)
+
 
 class MaximumCapacityReached(LRMSSubmitError, RecoverableError):
 

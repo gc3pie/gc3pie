@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Copyright (C) 2009-2017 University of Zurich. All rights reserved.
+# Copyright (C) 2009-2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -1378,11 +1378,11 @@ class ShellcmdLrms(LRMS):
 
         if self.free_slots == 0:  # or free_slots == 0:
             if self.override:
-                raise gc3libs.exceptions.LRMSSubmitError(
+                raise gc3libs.exceptions.MaximumCapacityReached(
                     "Resource {0} already running maximum allowed number of jobs"
                     .format(self.name))
             else:
-                raise gc3libs.exceptions.LRMSSubmitError(
+                raise gc3libs.exceptions.MaximumCapacityReached(
                     "Resource %s already running maximum allowed number of jobs"
                     " (%s). Increase 'max_cores' to raise." %
                     (self.name, self.max_cores))
@@ -1390,7 +1390,7 @@ class ShellcmdLrms(LRMS):
         if app.requested_memory:
             total_requested_memory = app.requested_cores * app.requested_memory
             if self.available_memory < total_requested_memory:
-                raise gc3libs.exceptions.LRMSSubmitError(
+                raise gc3libs.exceptions.MaximumCapacityReached(
                     "Resource {0} does not have enough available memory:"
                     " {1} requested total, but only {2} available."
                     .format(
