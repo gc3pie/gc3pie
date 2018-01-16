@@ -19,7 +19,7 @@ in core Python, namely:
   this indicates a bug in the software.
 
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich.
+# Copyright (C) 2009-2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -37,10 +37,12 @@ in core Python, namely:
 __docformat__ = 'reStructuredText'
 
 
+from warnings import warn
+
 import gc3libs
 
-# base error classes
 
+## base error classes
 
 class Error(Exception):
 
@@ -294,15 +296,31 @@ class LRMSSubmitError(LRMSError):
     pass
 
 
-class LRMSSkipSubmissionToNextIteration(LRMSSubmitError, RecoverableError):
+class ResourceNotReady(LRMSSubmitError, RecoverableError):
 
     """
-    An elastic resource has initiated adapting for a new task.
-    Although we cannot submit the task right now, it *will* be
-    accepted in the (not too distant) future.
+    A resource is not yet ready to accept tasks.
+
+    For instance: a new virtual machine has been started to run for a
+    task, but it is still booting.  Although we cannot submit the task
+    right now, it *will* be accepted in the (not too distant) future.
     """
     pass
 
+
+class LRMSSkipSubmissionToNextIteration(ResourceNotReady):
+
+    """
+    Older and deprecated alias for `ResourceNotReady`:class:
+
+    Only actually kept for backwards-compatibility.
+    """
+    def __init__(self, msg, do_log=False):
+        warn(
+            "Old class name `LRMSSkipSubmissionToNextIteration` called."
+            " Please fix the source code to use `ResourceNotReady` instead.",
+            DeprecationWarning, 2)
+        super(LRMSSkipSubmissionToNextIteration, self).__init__(msg, do_log)
 
 class MaximumCapacityReached(LRMSSubmitError, RecoverableError):
 

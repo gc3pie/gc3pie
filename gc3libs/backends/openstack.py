@@ -5,7 +5,7 @@ Manage startup and teardown of cloud-based VMs to run applications.
 
 This only works on clouds implementing the OpenStack Compute API.
 """
-# Copyright (C) 2012-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -63,9 +63,9 @@ except ImportError as err:
 import gc3libs
 from gc3libs.exceptions import \
     ConfigurationError, \
-    LRMSSkipSubmissionToNextIteration, \
     LRMSSubmitError, \
     MaximumCapacityReached, \
+    ResourceNotReady, \
     TransportError, \
     UnrecoverableAuthError, \
     UnrecoverableDataStagingError, \
@@ -1027,10 +1027,9 @@ class OpenStackLrms(LRMS):
             "No available resource was found, but some VM is still in"
             " `pending` state. Waiting until the next iteration before"
             " creating a new VM. Pending VM ids: %s", pending_vms)
-        raise LRMSSkipSubmissionToNextIteration(
+        raise ResourceNotReady(
             "Delaying submission until one of the VMs currently pending"
-            " is ready. Pending VM ids: %s"
-            % str.join(', ', pending_vms))
+            " is ready. (Pending VM ids: %r)" % (pending_vms,))
 
     @same_docstring_as(LRMS.peek)
     def peek(self, app, remote_filename, local_file, offset=0, size=None):

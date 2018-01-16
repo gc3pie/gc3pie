@@ -1101,7 +1101,7 @@ def first_come_first_serve(tasks, resources, matchmaker=MatchMaker()):
             try:
                 # result = yield (task_idx, target.name)
                 yield (task_idx, target.name)
-            except gc3libs.exceptions.LRMSSkipSubmissionToNextIteration:
+            except gc3libs.exceptions.ResourceNotReady:
                 # this is not a real error: the resource is adapting
                 # for the task and will actually accept it sometime in
                 # the future, so disable resource and try next one

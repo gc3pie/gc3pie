@@ -63,7 +63,7 @@ Note: the `-N` option removes all previous executions. Use it **only**
 when you need to start a new simulation and forget about previous
 ones.
 
-## Step 3: Detach from running `screen` session 
+## Step 3: Detach from running `screen` session
 
 Once ``gsPhenotypicalHomologyExample`` runs (and it has been launched with the `-C`
 option, it will continuously supervise the execution of all provided
@@ -90,7 +90,7 @@ Why all these ERROR messages ?
 
 If you see ERROR messages like the follwoing:
 gc3.gc3libs: ERROR: Got error in submitting task
-... LRMSSkipSubmissionToNextIteration: Delaying submission until some
+... ResourceNotReady: Delaying submission until some
 of the VMs currently pending is ready.
 
 or:
@@ -131,6 +131,3 @@ $ gsession terminate <session path>
 For more information on how to use the GC3Pie session commands, please
 attend one of the next S3IT training events or consult the online
 documentation at: http://gc3pie.readthedocs.org/en/master/users/gc3utils.html
-
-
-
