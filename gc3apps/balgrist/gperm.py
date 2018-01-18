@@ -36,6 +36,8 @@ gperm takes BIDS files as input.
 
 # summary of user-visible changes
 __changelog__ = """
+  2018-01-10:
+  * added support for freesurfer license file to be passed as part of the docker invokation. see: https://fmriprep.readthedocs.io/en/latest/installation.html#the-freesurfer-license
   2017-04-18:
   * Initial version
 """
@@ -66,11 +68,15 @@ import gc3libs.utils
 from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
 from gc3libs.workflow import RetryableTask
 
+PHOENY_OUTPUT_DIR="output"
 DEFAULT_BIDS_FOLDER="data/"
 DEFAULT_RESULT_FOLDER="output/"
 DEFAULT_DOCKER_BIDS_ARGS="--no-submm-recon"
+DEFAULT_FREESURFER_LICENSE_FILE="license.txt"
 DEFAULT_DOCKER_BIDS_APP="poldracklab/fmriprep "+DEFAULT_DOCKER_BIDS_ARGS
 DEFAULT_REPETITIONS=1
+
+DOCKER_RUN_COMMAND="sudo docker run -i --rm {DOCKER_MOUNT} {DOCKER_TO_RUN} /bids /output participant --participant_label {SUBJECT_NAME}"
 
 ## Utility methods
 def _get_subjects(input_folder):
@@ -85,11 +91,16 @@ def _get_subjects(input_folder):
     subjects_folders_list = []
     
     for element in os.listdir(input_folder):
-        full_element = os.path.join(input_folder,element)
-        if os.path.isfile(full_element) and (element.endswith(".json") or
-                                             element.endswith(".tsv")):
+        full_element = os.path.abspath(os.path.join(input_folder,element))
+        if element.endswith(".json") or element.endswith(".tsv"):
             # Valid control file
             control_files_list.append(full_element)
+        
+        # if os.path.isfile(full_element) and (element.endswith(".json") or
+        #                                      element.endswith(".tsv")):
+        #     # Valid control file
+        #     control_files_list.append(full_element)
+
         elif os.path.isdir(full_element):
             # Valid subject folder
             subjects_folders_list.append(full_element)
@@ -103,7 +114,7 @@ class GpermApplication(Application):
     """
     application_name = 'gperm'
     
-    def __init__(self, subject, subject_name, control_files, repeat_index, docker_image, docker_args, **extra_args):
+    def __init__(self, subject, subject_name, control_files, repeat_index, docker_run, freesurfer_license, **extra_args):
 
         executables = []
         inputs = dict()
@@ -117,22 +128,40 @@ class GpermApplication(Application):
             inputs[element] = os.path.join(DEFAULT_BIDS_FOLDER,
                                        os.path.basename(element))
 
+        if not os.path.isdir(DEFAULT_RESULT_FOLDER):
+            os.mkdir(DEFAULT_RESULT_FOLDER)
+        inputs[DEFAULT_RESULT_FOLDER] = DEFAULT_RESULT_FOLDER
 
-        wrapper = resource_filename(Requirement.parse("gc3pie"),
-                                    "gc3libs/etc/gperm_wrapper.sh")
+        # wrapper = resource_filename(Requirement.parse("gc3pie"),
+        #                             "gc3libs/etc/gperm_wrapper.sh")
 
-        inputs[wrapper] = "./wrapper.sh"
-        executables.append(inputs[wrapper])
+        # inputs[wrapper] = "./wrapper.sh"
+        # executables.append(inputs[wrapper])
 
-        docker_argument = ""
-        for argument in docker_args:
-            docker_argument += " {0} ".format(argument)
-            
-        arguments = "./wrapper.sh {subject} {subject_name} {output} {docker_app} {docker_args}".format(subject=DEFAULT_BIDS_FOLDER,
-                                                                                                       subject_name=subject_name,
-                                                                                                       output=DEFAULT_RESULT_FOLDER,
-                                                                                                       docker_app=docker_image,
-                                                                                                       docker_args=docker_argument)
+        # docker_argument = ""
+        # for argument in docker_args:
+        #     docker_argument += " {0} ".format(argument)
+
+
+        # Define mount points
+        DOCKER_MOUNT=" -v $PWD/{SUBJECT_DIR}:/bids:ro -v $PWD/{OUTPUT_DIR}:/output ".format(SUBJECT_DIR=DEFAULT_BIDS_FOLDER,
+                                                                                     OUTPUT_DIR=DEFAULT_RESULT_FOLDER)
+                                                                                  
+        if freesurfer_license:
+            inputs[freesurfer_license] = os.path.basename(freesurfer_license)
+            DOCKER_MOUNT+=" -v $PWD/{0}:/opt/freesurfer/license.txt ".format(inputs[freesurfer_license])
+
+        arguments = DOCKER_RUN_COMMAND.format(DOCKER_MOUNT=DOCKER_MOUNT,
+                                              DOCKER_TO_RUN=docker_run,
+                                              SUBJECT_NAME=subject_name)
+
+        
+        # arguments = "./wrapper.sh {subject} {subject_name} {output} {freesurfer_license} {docker_app} {docker_args}".format(subject=DEFAULT_BIDS_FOLDER,
+        #                                                                                                                         subject_name=subject_name,
+        #                                                                                                                         output=DEFAULT_RESULT_FOLDER,
+        #                                                                                                                         freesurfer_license=freesurfer_license,
+        #                                                                                                                         docker_app=docker_image,
+        #                                                                                                                         docker_args=docker_argument)
         gc3libs.log.debug("Creating application for executing: %s", arguments)
         
         Application.__init__(
@@ -181,6 +210,11 @@ class GpermScript(SessionBasedScript):
                        dest="repeat", default=DEFAULT_REPETITIONS,
                        help="Repeat analysis. Default: %(default)s.")
 
+        self.add_param("-L", "--license", metavar="[PATH]",
+                       type=existing_file,
+                       dest="freesurfer_license", default=None,
+                       help="Location of freesurfer license file. Default: %(default)s.")
+
         self.add_param("-D", "--docker", metavar="[PATH]",
                        dest="docker", default=DEFAULT_DOCKER_BIDS_APP,
                        help="BIDS app docker image and execution arguments. Default: '%(default)s'.")
@@ -225,8 +259,8 @@ class GpermScript(SessionBasedScript):
                     subject_name,
                     control_files,
                     repeat,
-                    self.docker_image,
-                    self.docker_args,                    
+                    self.params.docker,
+                    self.params.freesurfer_license,
                     **extra_args))
 
         return tasks

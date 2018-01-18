@@ -42,11 +42,11 @@ function die () {
 ## Parse command line options.
 USAGE=`cat <<EOF
 Usage: 
-  $PROG <subject folder> <subject name> <result folder> <docker image>
+  $PROG <subject folder> <subject name> <result folder> <freesurfer license file> <docker image> [<docker args>]
 EOF`
 
-# We want >4 non-option argument:
-if [ $# < 4 ]; then
+# We want >5 non-option argument:
+if [ $# < 5 ]; then
     die 1 "$USAGE"
 fi
 
@@ -56,6 +56,8 @@ shift
 SUBJECT_NAME=$1
 shift
 OUTPUT_DIR=$PWD/$1
+shift
+FREESURFER_LICENSE=$1
 shift
 DOCKER_TO_RUN=$1
 shift
@@ -74,9 +76,14 @@ log "Output dir: ${OUTPUT_DIR}"
 log "Using Docker image: ${DOCKER_TO_RUN}"
 log "Using Docker arguments: ${DOCKER_ARGS}"
 
+# Define mount points
+DOCKER_MOUNT="-v ${SUBJECT_DIR}:/bids:ro -v ${OUTPUT_DIR}:/output"
+if [ -n "$freesurfer_license" ]; then
+    DOCKER_MOUNT+="-v $freesurfer_license:/opt/freesurfer/license.txt"
+
 # run script
-echo "docker run -i --rm -v ${SUBJECT_DIR}:/bids:ro -v ${OUTPUT_DIR}:/output ${DOCKER_TO_RUN} /bids /output participant --participant_label ${SUBJECT_NAME} ${DOCKER_ARGS}"
-docker run -i --rm -v ${SUBJECT_DIR}:/bids:ro -v ${OUTPUT_DIR}:/output ${DOCKER_TO_RUN} /bids /output participant --participant_label ${SUBJECT_NAME} ${DOCKER_ARGS}
+echo "docker run -i --rm ${OUTPUT_MOUNT} ${DOCKER_TO_RUN} /bids /output participant --participant_label ${SUBJECT_NAME} ${DOCKER_ARGS}"
+docker run -i --rm ${OUTPUT_MOUNT} ${DOCKER_TO_RUN} /bids /output participant --participant_label ${SUBJECT_NAME} ${DOCKER_ARGS}
 RET=$?
 
 log "Simulation ended with exit code $RET"
