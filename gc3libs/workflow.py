@@ -10,7 +10,7 @@ patterns of job group execution; they can be combined to form more
 complex workflows.  Hook methods are provided so that derived classes
 can implement problem-specific job control policies.
 """
-# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2018  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -773,24 +773,30 @@ class ParallelTaskCollection(TaskCollection):
         we're in the middle of a computation).
         """
         stats = self.stats()
+        # special case which won't be handled by the logic in the loop
+        # below; avoid erroneously reporting a collection as
+        # `TERMINATED` when it has a mixture of `NEW` and `TERMINATED`
+        # states: we're in the middle of a computation so `RUNNING` is
+        # the correct state to report
         if (stats[Run.State.NEW] > 0
                 and stats[Run.State.TERMINATED] > 0
                 and stats[Run.State.NEW] + stats[Run.State.TERMINATED] ==
                 len(self.tasks)):
-            # we're in the middle of a computation (there's a mixture
-            # of unsubmitted and finished tasks), so let's chalk this
-            # up to ``RUNNING`` state
             return Run.State.RUNNING
-        for state in [Run.State.STOPPED,
-                      Run.State.RUNNING,
-                      Run.State.SUBMITTED,
-                      Run.State.UNKNOWN,
-                      Run.State.TERMINATING,
-                      # if we get here, then all jobs are TERMINATED or all
-                      # NEW
-                      Run.State.TERMINATED,
-                      Run.State.NEW,
-                      ]:
+        # go through states in order of "importance" and set the full
+        # collection state to the first one that has tasks in it
+        for state in [
+                # special/error states of child task:
+                Run.State.STOPPED,
+                Run.State.UNKNOWN,
+                # normal course of action:
+                Run.State.RUNNING,
+                Run.State.SUBMITTED,
+                Run.State.TERMINATING,
+                # if we get here, then all jobs are all TERMINATED or all NEW
+                Run.State.TERMINATED,
+                Run.State.NEW,
+        ]:
             if stats[state] > 0:
                 return state
         return Run.State.UNKNOWN
