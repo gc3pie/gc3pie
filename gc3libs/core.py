@@ -1549,7 +1549,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 elif state == Run.State.NEW:
                     # can happen only with TaskCollections
                     assert not isinstance(task, Application)
-                elif state == Run.State.STOPPED:
+                elif state in [Run.State.STOPPED, Run.State.UNKNOWN]:
                     # task changed state, mark as to remove
                     transitioned.append(index)
                     self._stopped.append(task)
