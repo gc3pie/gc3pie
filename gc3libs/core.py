@@ -1549,21 +1549,16 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 elif state == Run.State.NEW:
                     # can happen only with TaskCollections
                     assert not isinstance(task, Application)
-                elif state in [Run.State.STOPPED, Run.State.UNKNOWN]:
+                elif state in [
+                        Run.State.STOPPED,
+                        Run.State.TERMINATED,
+                        Run.State.TERMINATING,
+                        Run.State.UNKNOWN,
+                ]:
                     # task changed state, mark as to remove
                     transitioned.append(index)
-                    self._stopped.append(task)
-                elif state == Run.State.TERMINATING:
-                    # task changed state, mark as to remove
-                    transitioned.append(index)
-                    self._terminating.append(task)
-                elif state == Run.State.TERMINATED:
-                    if self.forget_terminated:
-                        self._drop_terminated_task(task, old_state)
-                    else:
-                        # task changed state, mark as to remove
-                        transitioned.append(index)
-                        self._terminated.append(task)
+                    queue = self.__get_task_queue(task)
+                    queue.append(task)
                 else:
                     # if we got to this point, state has an invalid value
                     gc3libs.log.error(
@@ -1638,11 +1633,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 elif old_state == Run.State.RUNNING:
                     if isinstance(task, Application):
                         currently_in_flight -= 1
-                if self.forget_terminated:
-                    self._drop_terminated_task(task, old_state)
-                else:
-                    self._terminated.append(task)
-                    transitioned.append(index)
+                self._terminated.append(task)
+                transitioned.append(index)
             # pylint: disable=broad-except
             except Exception as err:
                 if gc3libs.error_ignored(
@@ -1683,7 +1675,10 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 if self._store and task.changed:
                     self._store.save(task)
                 state = task.execution.state
-                if state in [Run.State.SUBMITTED, Run.State.RUNNING]:
+                if state in [
+                        Run.State.SUBMITTED,
+                        Run.State.RUNNING,
+                ]:
                     if isinstance(task, Application):
                         currently_in_flight += 1
                         if task.execution.state == Run.State.SUBMITTED:
@@ -1691,17 +1686,15 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                     self._in_flight.append(task)
                     # task changed state, mark as to remove
                     transitioned.append(index)
-                elif state == Run.State.TERMINATING:
-                    self._terminating.append(task)
+                elif state in [
+                        Run.State.TERMINATING,
+                        Run.State.TERMINATED,
+                        Run.State.UNKNOWN,
+                ]:
+                    queue = self.__get_task_queue(task)
+                    queue.append(task)
                     # task changed state, mark as to remove
                     transitioned.append(index)
-                elif state == Run.State.TERMINATED:
-                    if self.forget_terminated:
-                        self._drop_terminated_task(task, Run.State.STOPPED)
-                    else:
-                        # task changed state, mark as to remove
-                        self._terminated.append(task)
-                        transitioned.append(index)
             # pylint: disable=broad-except
             except Exception as err:
                 if gc3libs.error_ignored(
@@ -1884,30 +1877,22 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                             " (For cloud-based resources, it's possible that the VM"
                             " has been destroyed already.)",
                             task, err.__class__.__name__, err)
-                    if self.forget_terminated:
-                        # task state is TERMINATED but the queue
-                        # is still `self._terminating` so we need
-                        # to override the choice that
-                        # `self.__get_task_queue` would do
-                        self._drop_terminated_task(task, Run.State.TERMINATING)
-                    else:
-                        self._terminated.append(task)
+                    self._terminated.append(task)
                 if self._store and task.changed:
                     self._store.save(task)
-            if not self.forget_terminated:
-                # remove tasks for which final output has been retrieved
-                # (only if TERMINATED tasks have not been dropped already)
-                for index in reversed(transitioned):
-                    del self._terminating[index]
+            # remove tasks for which final output has been retrieved
+            for index in reversed(transitioned):
+                del self._terminating[index]
 
-    def _drop_terminated_task(self, task, old_state):
-        queue = self.__get_task_queue(task, old_state)
+            # now remove all terminated tasks
+            if self.forget_terminated:
+                for task in self._terminated:
+                    self._drop_terminated_task(task)
+
+    def _drop_terminated_task(self, task):
+        assert task.execution.state == Run.State.TERMINATED
         try:
-            # task state is TERMINATED but the queue
-            # is still `self._terminating` so we need
-            # to override the choice that
-            # `self.__get_task_queue` would do
-            self.remove(task, queue)
+            self.remove(task, self._terminated)
             gc3libs.log.debug(
                 "Dropped TERMINATED task %s (was: %s)", task, old_state)
         except Exception as err:  # pylint: disable=broad-except
