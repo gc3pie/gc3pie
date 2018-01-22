@@ -800,6 +800,15 @@ class ParallelTaskCollection(TaskCollection):
         ]:
             if stats[state] > 0:
                 return state
+        if self.tasks:
+            gc3libs.log.error(
+                "BUG! Non-empty task collection %r,"
+                " yet `self.stats()` returned zero...", self)
+        else:
+            gc3libs.log.warning(
+                "update_state() called on empty task collection %s"
+                " -- this operation makes no sense,"
+                " setting collection state to `UNKNOWN`", self)
         return Run.State.UNKNOWN
 
     def add(self, task):
