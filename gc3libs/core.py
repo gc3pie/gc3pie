@@ -1889,10 +1889,10 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             for index in reversed(transitioned):
                 del self._terminating[index]
 
-            # now remove all terminated tasks
-            if self.forget_terminated:
-                for task in self._terminated:
-                    self._drop_terminated_task(task)
+        # now remove all terminated tasks
+        if self.forget_terminated:
+            for task in self._terminated:
+                self._drop_terminated_task(task)
 
     def _drop_terminated_task(self, task):
         assert task.execution.state == Run.State.TERMINATED
