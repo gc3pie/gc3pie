@@ -63,7 +63,6 @@ class TestPollers(object):
 
         # test remove file
         os.remove(fpath)
-        assert not os.path.exists(fpath)
         _check_events(poller, fpath, [['IN_DELETE']])
         assert fpath not in poller._watched
 
