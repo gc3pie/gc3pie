@@ -1491,7 +1491,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         # update status of SUBMITTED/RUNNING tasks before launching
         # new ones, otherwise we would be checking the status of
         # some tasks twice...
-	gc3libs.log.debug("Engine %s about to update status of SUBMITTED+RUNNING tasks ...", self)
+        if self._in_flight:
+            gc3libs.log.debug("Engine %s about to update status of SUBMITTED+RUNNING tasks ...", self)
         transitioned = []
         for index, task in enumerate(self._in_flight):
             try:
@@ -1619,7 +1620,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             del self._in_flight[index]
 
         # execute kills and update count of submitted/in-flight tasks
-	gc3libs.log.debug("Engine %s about to kill jobs ...", self)
+        if self._to_kill:
+            gc3libs.log.debug("Engine %s about to kill jobs ...", self)
         transitioned = []
         for index, task in enumerate(self._to_kill):
             try:
@@ -1669,7 +1671,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         # update state of STOPPED tasks; again need to make before new
         # submissions, because it can alter the count of in-flight
         # tasks.
-	gc3libs.log.debug("Engine %s about to update state of STOPPED+UNKNOWN jobs ...", self)
+        if self._stopped:
+            gc3libs.log.debug("Engine %s about to update state of STOPPED+UNKNOWN jobs ...", self)
         transitioned = []
         for index, task in enumerate(self._stopped):
             try:
@@ -1728,9 +1731,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             del self._stopped[index]
 
         # now try to submit NEW tasks
-        # gc3libs.log.debug("Engine.progress: submitting new tasks [%s]"
-        #                  % str.join(', ', [str(task) for task in self._new]))
-	gc3libs.log.debug("Engine %s about to submit NEW tasks ...", self)
+        if self._new:
+            gc3libs.log.debug("Engine %s about to submit NEW tasks ...", self)
         transitioned = []
         if (self.can_submit and
                 currently_submitted < limit_submitted and
@@ -1821,7 +1823,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
 
         # finally, retrieve output of finished tasks
         if self.can_retrieve:
-	    gc3libs.log.debug("Engine %s about to retrieve output of TERMINATING tasks ...", self)
+            if self._terminating:
+                gc3libs.log.debug("Engine %s about to retrieve output of TERMINATING tasks ...", self)
             transitioned = []
             for index, task in enumerate(self._terminating):
                 # try to get output
