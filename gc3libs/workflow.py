@@ -152,7 +152,8 @@ class TaskCollection(Task):
         """
         for task in self.tasks:
             if task.execution.state not in [Run.State.NEW, Run.State.TERMINATED]:
-                self._controller.update_job_state(task, **extra_args)
+                gc3libs.log.debug("Updating state of task %s in collection %s ...", task, self)
+                task.update_state(**extra_args)
 
     def kill(self, **extra_args):
         # XXX: provide default implementation that kills all jobs?
