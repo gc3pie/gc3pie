@@ -878,11 +878,7 @@ class ParallelTaskCollection(TaskCollection):
         """
         Update state of all tasks in the collection.
         """
-        for task in self.tasks:
-            # gc3libs.log.debug("Updating state of %s in collection %s ..."
-            #                  % (task, self))
-            if task.execution.state not in [Run.State.NEW, Run.State.TERMINATED]:
-                task.update_state(**extra_args)
+        super(ParallelTaskCollection, self).update_state()
         self.execution.state = self._state()
         if self.execution.state == Run.State.TERMINATED:
             self.execution.returncode = (0, 0)
