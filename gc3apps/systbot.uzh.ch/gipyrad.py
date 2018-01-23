@@ -187,7 +187,7 @@ newly-created jobs so that this limit is never exceeded.
         for input_file in get_valid_input_pair(self.params.input_folder):
 
             # extract jobname from the 1st file of the input_file pair
-            jobname = "%s" % os.path.basename(input_file[0]).split(".")[0]
+            jobname = "%s" % os.path.basename(input_file[0]).split(".fastq.gz")[0]
             
             extra_args = extra.copy()
             extra_args['jobname'] = jobname
