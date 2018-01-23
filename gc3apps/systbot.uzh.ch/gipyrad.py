@@ -58,8 +58,9 @@ import gc3libs.url
 # Default values
 FASTQ_FORMATS = ["fastq","fastq.gz"]
 DATA_PATH="/data"
+IPYRAD_STEPS="1234567"
 IPYRAD_PARAMFILE_NAME="params.txt.modified"
-IPYRAD_COMMAND="sudo docker run --rm -v $PWD:{0} smaffiol/ipyrad -p {0}/{1} -s123".format(DATA_PATH,IPYRAD_PARAMFILE_NAME)
+IPYRAD_COMMAND="sudo docker run --rm -v $PWD:{0} smaffiol/ipyrad -p {0}/{1} -s{2}"
 IPYRAD_PARAMFILE_PATTERN="sorted_fastq_path"
 IPYRAD_PARAMFILE_REPLACEMENT_STRING="{0}/*.fastq.gz".format(DATA_PATH)
 
@@ -106,7 +107,7 @@ class GipyradApplication(Application):
 
     application_name = 'gipyrad'
 
-    def __init__(self, input_files, dockerimage, paramsfile, **extra_args):
+    def __init__(self, input_files, dockerimage, paramsfile, ipyradsteps, **extra_args):
         """
         iPyrad is executed within docker container
         """
@@ -120,7 +121,9 @@ class GipyradApplication(Application):
 
         Application.__init__(
             self,
-            arguments = IPYRAD_COMMAND,
+            arguments = IPYRAD_COMMAND.format(DATA_PATH,
+                                              IPYRAD_PARAMFILE_NAME,
+                                              ipyradsteps),
             inputs = inputs,
             outputs = gc3libs.ANY_OUTPUT,
             stdout = 'gipyrad.log',
@@ -166,9 +169,14 @@ newly-created jobs so that this limit is never exceeded.
                        help="Docker image to be used to execute ipyrad." \
                        " Default: %(default)s")
 
+        self.add_param("-S", "--ipyrad-steps", metavar="STRING",
+                       dest="ipyradsteps", default=IPYRAD_STEPS,
+                       help="ipyrad Set of assembly steps to perform." \
+                       " e.g., -S 123. Default: %(default)s")
+
         self.add_param("-P", "--params", metavar="PATH",
                        dest="paramsfile", default='./params.txt',
-                       help="Location of params.txt file required by ipyrad." \
+                       help="path to ipyrad params file for Assembly." \
                        " Default: %(default)s")
 
     def new_tasks(self, extra):
@@ -199,6 +207,7 @@ newly-created jobs so that this limit is never exceeded.
                 input_file,
                 self.params.dockerimage,
                 paramsfile,
+                self.params.ipyradsteps,
                 **extra_args
             ))
 

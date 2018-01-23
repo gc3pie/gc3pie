@@ -95,11 +95,6 @@ def _get_subjects(input_folder):
         if element.endswith(".json") or element.endswith(".tsv"):
             # Valid control file
             control_files_list.append(full_element)
-        
-        # if os.path.isfile(full_element) and (element.endswith(".json") or
-        #                                      element.endswith(".tsv")):
-        #     # Valid control file
-        #     control_files_list.append(full_element)
 
         elif os.path.isdir(full_element):
             # Valid subject folder
@@ -132,17 +127,6 @@ class GpermApplication(Application):
             os.mkdir(DEFAULT_RESULT_FOLDER)
         inputs[DEFAULT_RESULT_FOLDER] = DEFAULT_RESULT_FOLDER
 
-        # wrapper = resource_filename(Requirement.parse("gc3pie"),
-        #                             "gc3libs/etc/gperm_wrapper.sh")
-
-        # inputs[wrapper] = "./wrapper.sh"
-        # executables.append(inputs[wrapper])
-
-        # docker_argument = ""
-        # for argument in docker_args:
-        #     docker_argument += " {0} ".format(argument)
-
-
         # Define mount points
         DOCKER_MOUNT=" -v $PWD/{SUBJECT_DIR}:/bids:ro -v $PWD/{OUTPUT_DIR}:/output ".format(SUBJECT_DIR=DEFAULT_BIDS_FOLDER,
                                                                                      OUTPUT_DIR=DEFAULT_RESULT_FOLDER)
@@ -155,13 +139,6 @@ class GpermApplication(Application):
                                               DOCKER_TO_RUN=docker_run,
                                               SUBJECT_NAME=subject_name)
 
-        
-        # arguments = "./wrapper.sh {subject} {subject_name} {output} {freesurfer_license} {docker_app} {docker_args}".format(subject=DEFAULT_BIDS_FOLDER,
-        #                                                                                                                         subject_name=subject_name,
-        #                                                                                                                         output=DEFAULT_RESULT_FOLDER,
-        #                                                                                                                         freesurfer_license=freesurfer_license,
-        #                                                                                                                         docker_app=docker_image,
-        #                                                                                                                         docker_args=docker_argument)
         gc3libs.log.debug("Creating application for executing: %s", arguments)
         
         Application.__init__(

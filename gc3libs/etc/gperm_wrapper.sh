@@ -80,10 +80,11 @@ log "Using Docker arguments: ${DOCKER_ARGS}"
 DOCKER_MOUNT="-v ${SUBJECT_DIR}:/bids:ro -v ${OUTPUT_DIR}:/output"
 if [ -n "$freesurfer_license" ]; then
     DOCKER_MOUNT+="-v $freesurfer_license:/opt/freesurfer/license.txt"
+fi
 
 # run script
-echo "docker run -i --rm ${OUTPUT_MOUNT} ${DOCKER_TO_RUN} /bids /output participant --participant_label ${SUBJECT_NAME} ${DOCKER_ARGS}"
-docker run -i --rm ${OUTPUT_MOUNT} ${DOCKER_TO_RUN} /bids /output participant --participant_label ${SUBJECT_NAME} ${DOCKER_ARGS}
+echo "docker run -i --rm ${DOCKER_MOUNT} ${DOCKER_TO_RUN} /bids /output participant --participant_label ${SUBJECT_NAME} ${DOCKER_ARGS}"
+docker run -i --rm ${DOCKER_MOUNT} ${DOCKER_TO_RUN} /bids /output participant --participant_label ${SUBJECT_NAME} ${DOCKER_ARGS}
 RET=$?
 
 log "Simulation ended with exit code $RET"

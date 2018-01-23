@@ -68,10 +68,7 @@ from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, secon
 from gc3libs.workflow import RetryableTask
 
 DEFAULT_REMOTE_OUTPUT_FOLDER = "./results"
-DEFAULT_SEED_RANGE=37444887175646646
-DEFAULT_JAR_LOCATION="/app/beast/lib/beast.jar"
-#BEAST_COMMAND="java -jar {jar} -working -overwrite -beagle -seed {seed} {resume} -threads -1 -instances -1 {input_xml}"
-BEAST_COMMAND="sudo docker run -v $PWD:/data smaffiol/beast2:2.4.7 -working -overwrite -beagle  -threads -1 -instances -1 /data/{input_xml}"
+BEAST_COMMAND="sudo docker run -v $PWD:/data smaffiol/beast2:2.4.7 -working -overwrite -beagle {resume} -threads -1 -instances -1 /data/{input_xml}"
 
 # Utility functions
 def _get_id_from_inputfile(input_file):
@@ -97,15 +94,23 @@ def _get_id_from_inputfile(input_file):
 
 def _get_valid_input(input_folder, resume):
     """
-        [ input_xml for input_xml in os.listdir(self.params.input_folder) if mimetypes.guess_type(input_xml)[0] == 'application/xml' ]:
-            for rep in range(0,self.params.repeat):
+    Returns tuple (string,int,string):  (filename,id_name,resume_file)
+    each returned tuple should reference a valid input .xml filename
     """
 
     state_file = None
-    for input_file in [ input_xml for input_xml in os.listdir(input_folder) if mimetypes.guess_type(input_xml)[0] == 'application/xml' ]:
+    for input_file in [ os.path.join(input_folder,input_xml) for input_xml in os.listdir(input_folder) if mimetypes.guess_type(input_xml)[0] == 'application/xml' ]:
+        # extract ID name. If fails, skip file
+        id_name = _get_id_from_inputfile(input_file)
+        if not id_name:
+            gc3libs.log.warning("skipping {0}".format(input_file))
+            continue
+        # check whether statefile is present. If so, include in the returned tuple
         if resume and os.path.isfile(os.path.join(input_folder,input_file+'.state')):
-            state_file = os.path.join(input_folder,input_file+'.state')
-        yield (os.path.join(input_folder,input_file),state_file)
+            state_file = (input_file+'.state')
+
+        # Return tuple (filename,id_name,resume_file)
+        yield (input_file,id_name,state_file)
                                      
     
 def _check_exit_condition(log, output_dir):
@@ -140,7 +145,7 @@ class GsubbeastApplication(Application):
     """
     application_name = 'gsubbeast'
     
-    def __init__(self, input_file, state_file, id_name, seed, jar=None, **extra_args):
+    def __init__(self, input_file, state_file, id_name, **extra_args):
 
         executables = []
         inputs = dict()
@@ -154,22 +159,12 @@ class GsubbeastApplication(Application):
         else:
             resume_option=""
 
-        if jar:
-            inputs[jar] = os.path.basename(jar)
-            jar_cmd = inputs[jar]
-        else:
-            jar_cmd = DEFAULT_JAR_LOCATION
-
-        arguments = BEAST_COMMAND.format(jar=jar_cmd,
-                                         seed=seed,
-                                         resume=resume_option,
+        arguments = BEAST_COMMAND.format(resume=resume_option,
                                          input_xml=inputs[input_file])
 
         gc3libs.log.debug("Creating application for executing: %s", arguments)
 
         self.id_name = id_name
-        self.seed = seed
-        self.jar_cmd = jar_cmd
         
         Application.__init__(
             self,
@@ -232,23 +227,10 @@ class GsubbeastScript(SessionBasedScript):
                        "resume interrupted BEAST execution. "
                        "Default: %(default)s.")
 
-        self.add_param("-R", "--repeat", metavar="[INT]",
-                       type=positive_int,
-                       dest="repeat",
-                       default=1,
-                       help="Repeat analysis. Default: %(default)s.")
-
         self.add_param("-D", "--docker", metavar="[STRING]",
                        dest="dockerimage",
                        default=None,
-                       help="Docker image to use."  \
-                       "Note, -D and -B cannot be specified simultaneously.")
-
-        self.add_param("-B", "--jar", metavar="[PATH]",
-                       type=existing_file,
-                       dest="jar",
-                       default=None,
-                       help="Path to Beast.jar file.")
+                       help="Docker image to use.")
 
         self.add_param("-F", "--follow",
                        dest="follow",
@@ -295,34 +277,23 @@ class GsubbeastScript(SessionBasedScript):
         """
         tasks = []
         
-        for (input_file, stat_file) in _get_valid_input(self.params.input_folder,
-                                           self.params.resume):
-            id_name = _get_id_from_inputfile(input_file)
-            if not id_name:
-                gc3libs.log.warning("skipping {0}".format(input_file))
-                continue
-
-            for rep in range(0,self.params.repeat):
-
-                jobname = '{0}-{1}'.format(id_name, rep)                
+        for (input_file, id_name, stat_file) in _get_valid_input(self.params.input_folder,
+                                                                 self.params.resume):
+            extra_args = extra.copy()
+            extra_args['jobname'] = id_name
+            extra_args['output_dir'] = self.params.output
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', extra_args['jobname'])
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', extra_args['jobname'])
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', extra_args['jobname'])
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', extra_args['jobname'])
+            
+            self.log.debug("Creating Application for file '%s'" % extra_args['jobname'])
                 
-                extra_args = extra.copy()
-                extra_args['jobname'] = jobname            
-                extra_args['output_dir'] = self.params.output
-                extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
-                extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
-                extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', jobname)
-                extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', jobname)
-                
-                self.log.debug("Creating Application for file '%s'" % jobname)
-                
-                tasks.append(GsubbeastApplication(
-                    input_file,
-                    stat_file,
-                    id_name,
-                    seed=random.randrange(DEFAULT_SEED_RANGE),
-                    jar=self.params.jar,
-                    **extra_args))
+            tasks.append(GsubbeastApplication(
+                input_file,
+                stat_file,
+                id_name,
+                **extra_args))
 
         return tasks
 
@@ -373,3 +344,4 @@ class GsubbeastScript(SessionBasedScript):
 
         return
 
+    

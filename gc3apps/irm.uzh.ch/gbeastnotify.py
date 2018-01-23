@@ -27,6 +27,9 @@ import os
 import inotifyx
 from gc3libs.quantity import GiB, MiB
 
+BEAST1_COMMAND = "java -Xmx{requested_memory}m -jar {jar} -working -overwrite -threads {requested_cores} -beagle_instances {requested_cores} {input_xml}"
+BEAST24_COMMAND = "java -Xmx{requested_memory}m -jar {jar} -working -overwrite -threads {requested_cores} -instances {requested_cores} -beagle {input_xml}"
+
 ## main: run tests
 
 class GRunningApp(gc3libs.Task):
@@ -49,14 +52,18 @@ class GBeastApp(gc3libs.Application):
         self.extra = extra
         extra['output_dir'] = fname[:-4] + '.d'
         extra['requested_cores'] = ncores
-        extra['requested_memory'] = ncores*4000*GiB
+        extra['requested_memory'] = ncores*4*GiB
 
-        args = ['java',
-                '-Xmx%dm' % extra['requested_memory'].amount(MiB),
-                '-jar', jarfile,
-                '-threads', ncores,
-                '-beagle_instances', ncores,
-                fname]
+        if beast == 'beast2.4':
+            args = BEAST24_COMMAND.format(requested_memory=extra['requested_memory'].amount(MiB),
+                                           jar=jarfile,
+                                           requested_cores=ncores,
+                                           input_xml=fname)
+        else:
+            args = BEAST1_COMMAND.format(requested_memory=extra['requested_memory'].amount(MiB),
+                                         jar=jarfile,
+                                         requested_cores=ncores,
+                                         input_xml=fname)
 
         gc3libs.Application.__init__(
             self,
@@ -86,7 +93,7 @@ class GBeastScript(SessionBasedScript):
                        help='Beast version to run')
         self.add_param('--beast1', default='/apps/BEASTv1.8.2/lib/beast.jar', help='Path to BEAST v1 jar file')
         self.add_param('--beast2', default='/apps/BEASTv2.3.2/lib/beast.jar', help='Path to BEAST v2 jar file')
-        self.add_param('--beast2_4', default='/apps/BEASTv2.4.7/lib/beast.jar', help='Path to BEAST v2.4 jar file')
+        self.add_param('--beast2_4', default='/apps/BEASTv2.4.7/beast/lib/beast.jar', help='Path to BEAST v2.4 jar file')
         self.add_param('--cores', default=1, type=int, help="Amount of cores to use. Default: %(default)s")
         self.add_param('path', help='Path to directory to watch for new input files')
 
@@ -103,10 +110,10 @@ class GBeastScript(SessionBasedScript):
         self.iwatch = inotifyx.add_watch(self.ifd, self.params.path, inotifyx.IN_CLOSE_WRITE)
 
     def add_new_application(self, fname):
-        if fname.endswith('.xml'):
+        if fname.endswith('.xml') and not fname.startswith('._'):
             beast = 'beast1'
             jarfile = self.params.beast1
-            if 'BEAST2.4' in fname:
+            if 'BEAST24' in fname:
                 beast = 'beast2.4'
                 jarfile = self.params.beast2_4
             elif 'BEAST2' in fname:
