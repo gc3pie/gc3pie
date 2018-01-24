@@ -2,7 +2,7 @@
 #
 #   ggeosphere_web.py -- Front-end script for submitting multiple `GeoSphere` jobs.
 #
-#   Copyright (C) 2013, 2014 GC3, University of Zurich
+#   Copyright (C) 2013, 2014, 2018 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -97,7 +97,7 @@ class GeoSphereApplication(Application):
         self.input_dir = input_dir
 
         inputs = []
-        
+
         geosphere_wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
                                               "gc3libs/etc/geosphere_wrapper.sh")
 
@@ -105,7 +105,7 @@ class GeoSphereApplication(Application):
         inputs.append((geosphere_wrapper_sh,os.path.basename(geosphere_wrapper_sh)))
 
         cmd = "./geosphere_wrapper.sh -d "
-        
+
 
         if extra_args.has_key('s3cfg'):
             inputs.append((extra_args['s3cfg'],
@@ -176,8 +176,8 @@ class GeoSphereScript(SessionBasedScript):
     ggeosphere. Submit a job for each one found; job progress is
     monitored and, when a job is done, its output files are retrieved back
     into the simulation directory itself.
-    
-    The ``ggeosphere_web`` is a variant of the ``ggeosphere`` script. It is 
+
+    The ``ggeosphere_web`` is a variant of the ``ggeosphere`` script. It is
     conceived for a web-based execution. It does not terminate when all input models
     have been processed but it periodically checks whether new models have been added.
     In case, a new simulation is launched.
@@ -185,7 +185,7 @@ class GeoSphereScript(SessionBasedScript):
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
-    of all known jobs is printed.  
+    of all known jobs is printed.
 
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``ggeosphere`` will delay submission of
@@ -206,11 +206,11 @@ class GeoSphereScript(SessionBasedScript):
 
 
     def setup_options(self):
-        self.add_param("-c", "--config", 
+        self.add_param("-c", "--config",
                        metavar="PATH",
                        action="store",
                        default=A4MESH_CONFIG_FILE,
-                       dest="config_file", 
+                       dest="config_file",
                        help="Location of the configuration file. "+
                        "Default: /etc/a4mesh/a4mesh.cfg")
 
@@ -219,7 +219,7 @@ class GeoSphereScript(SessionBasedScript):
         Check presence of input folder (should contains R scripts).
         path to command_file should also be valid.
         """
-        
+
         # Load configuration file
         if not os.path.isfile(self.params.config_file):
             raise gc3libs.exceptions.InvalidUsage("Config file '%s' not found" % self.params.config_file)
@@ -244,12 +244,12 @@ class GeoSphereScript(SessionBasedScript):
 
     def _create_task(self, input_dir, **extra_args):
         working_dir = os.path.splitext(os.path.basename(input_dir))[0]
-        
+
         jobname = "a4mesh-%s" % working_dir
-    
+
         extra_args['jobname'] = jobname
-        
-        # FIXME: ignore SessionBasedScript feature of customizing 
+
+        # FIXME: ignore SessionBasedScript feature of customizing
         # output folder
         # extra_args['output_dir'] = self.params.output
         extra_args['output_dir'] = os.path.join(self.extra['simulation_log_location'],jobname)
@@ -260,16 +260,16 @@ class GeoSphereScript(SessionBasedScript):
         extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', jobname)
 
         extra_args['s3cfg'] = self.extra['s3cmd_conf_location']
-            
+
         self.log.info("Creating Task for input file: %s" % input_dir)
-        
+
         return GeoSphereTask(
             input_dir,
             working_dir,
             self.output_folder_url,
             **extra_args
         )
-        
+
 
     def new_tasks(self, extra):
 
@@ -302,8 +302,7 @@ class GeoSphereScript(SessionBasedScript):
                 # Add as a new task
                 gc3libs.log.debug("Found new model to add: '%s'" % input_dir)
                 task =  self._create_task(input_dir, **self.extra.copy())
-                self.session.add(task)
-                self._controller.add(task)
+                self.add(task)
 
         # # Remove all terminated tasks
         # for task in self.session.tasks:
@@ -330,41 +329,41 @@ class GeoSphereScript(SessionBasedScript):
             raise ConfigParser.ParsingError("Section 'default' not found")
 
 
-        self.extra['s3cmd_conf_location'] = validate_config_option(config, 
-                                                                   "s3cmd_conf_location", 
+        self.extra['s3cmd_conf_location'] = validate_config_option(config,
+                                                                   "s3cmd_conf_location",
                                                                    DEFAULT_S3CFG)
 
-        self.extra['fs_endpoint'] = validate_config_option(config, 
+        self.extra['fs_endpoint'] = validate_config_option(config,
                                                            "fs_endpoint")
-        
-        self.extra['model_input'] = validate_config_option(config, 
+
+        self.extra['model_input'] = validate_config_option(config,
                                                            "model_input")
 
-        self.extra['model_output'] = validate_config_option(config, 
+        self.extra['model_output'] = validate_config_option(config,
                                                             "model_output")
 
-        self.extra['computing_resources'] = validate_config_option(config, 
-                                                                   "computing_resources", 
+        self.extra['computing_resources'] = validate_config_option(config,
+                                                                   "computing_resources",
                                                                    DEFAULT_CLOUD_ALL)
 
-        self.extra['max_running'] = validate_config_option(config, 
-                                                           "max_running", 
+        self.extra['max_running'] = validate_config_option(config,
+                                                           "max_running",
                                                            DEFAULT_MAX_RUNNING)
 
-        self.extra['max_retries'] = validate_config_option(config, 
-                                                           "max_retries", 
+        self.extra['max_retries'] = validate_config_option(config,
+                                                           "max_retries",
                                                            DEFAULT_MAX_RETRIES)
 
-        self.extra['log_level'] = validate_config_option(config, 
-                                                         "log_level", 
+        self.extra['log_level'] = validate_config_option(config,
+                                                         "log_level",
                                                          DEFAULT_LOG_LEVEL)
 
-        self.extra['save_simulation_log'] = validate_config_option(config, 
-                                                                   "save_simulation_log", 
+        self.extra['save_simulation_log'] = validate_config_option(config,
+                                                                   "save_simulation_log",
                                                                    False)
 
-        self.extra['simulation_log_location'] = validate_config_option(config, 
-                                                                       "simulation_log_location", 
+        self.extra['simulation_log_location'] = validate_config_option(config,
+                                                                       "simulation_log_location",
                                                                        False)
 
 
@@ -372,7 +371,7 @@ class GeoSphereScript(SessionBasedScript):
         """
         Use s3cmd command line interface to interact with
         a remote S3-compatible ObjectStore.
-        Assumption: 
+        Assumption:
         . s3cmd configuration file available
         and correctly pointing to the right ObjectStore.
         . s3cmd available in PATH environmental variable.
@@ -392,13 +391,13 @@ class GeoSphereScript(SessionBasedScript):
             _command += " ls %s/"  % str(s3_url)
 
             _process = subprocess.Popen(_command,
-                                        stdout=subprocess.PIPE, 
+                                        stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE,
                                         close_fds=True, shell=True)
-                
+
             (out, err) = _process.communicate()
             exitcode = _process.returncode
-            
+
             if (exitcode != 0):
                 gc3libs.log.error("Failed accessing S3 container. "
                                   "Exitcode %s, error %s" % (exitcode,err))
@@ -411,7 +410,7 @@ class GeoSphereScript(SessionBasedScript):
                     # it's a S3 directory; ignore
                     continue
                 # object string format: '2014-01-09 16:41 3627374 s3://a4mesh/model_1.zip'
-                s3_url = s3_obj.split()[3] 
+                s3_url = s3_obj.split()[3]
                 if(s3_url.startswith("s3://")):
                    yield s3_url
 
@@ -467,7 +466,3 @@ save_simulation_log = False
 simulation_log_location = '/tmp/simulation_logs/
 
 """
-
-
-
-

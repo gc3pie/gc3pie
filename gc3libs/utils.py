@@ -8,7 +8,7 @@ function or class belongs in here is the following: place a function
 or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
-# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -440,7 +440,6 @@ def dirname(pathname):
 
 
 class Enum(frozenset):
-
     """
     A generic enumeration class.  Inspired by: http://goo.gl/1AL5N0
     with some more syntactic sugar added.
@@ -489,7 +488,6 @@ class Enum(frozenset):
 
 
 class ExponentialBackoff(object):
-
     """Generate waiting times with the `exponential backoff`_ algorithm.
 
     Returned times are in seconds (or fractions thereof); they are
@@ -914,7 +912,6 @@ def lock(path, timeout, create=True):
 
 
 class History(object):
-
     """
     A list of messages with timestamps and (optional) tags.
 
@@ -998,9 +995,9 @@ def lookup(obj, name):
       If `obj` has no attribute nor item with the given name.
 
     This is meant for cases when different versions of an API may
-    either return a dictionary (hence, key/`__getitem__`-based lookup)
-    or an object/namespace (hence, `.`/`getattr`-style lookup) and you
-    want to handle them in a uniform way.
+    either return a dictionary (hence, key/``__getitem__``-based
+    lookup) or an object/namespace (hence, ``.``/``getattr``-style
+    lookup) and you want to handle them in a uniform way.
 
     The following examples demo it::
 
@@ -1219,6 +1216,7 @@ def parse_linux_proc_limits(data=None):
         soft_limits[name] = _parse_ulimit(soft_limit, unit)
         hard_limits[name] = _parse_ulimit(hard_limit, unit)
     return soft_limits, hard_limits
+
 
 def _parse_ulimit(limit, unit):
     """
@@ -1552,6 +1550,17 @@ def read_contents(path):
     """
     with open(path, 'r') as stream:
         return stream.read()
+
+
+def remove(path):
+    """
+    Remove a file, but raise no exception if it does not exist.
+    """
+    try:
+        if os.path.exists(path):
+            os.remove(path)
+    except Exception:
+        pass
 
 
 def safe_repr(obj):

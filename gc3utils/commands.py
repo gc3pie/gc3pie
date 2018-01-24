@@ -33,7 +33,6 @@ import csv
 import sys
 import os
 import posix
-from prettytable import PrettyTable
 import time
 import types
 import re
@@ -41,6 +40,7 @@ import multiprocessing as mp
 
 # 3rd party modules
 from parsedatetime.parsedatetime import Calendar
+from prettytable import PrettyTable
 
 # local modules
 from gc3libs import __version__, Run

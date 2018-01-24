@@ -32,14 +32,13 @@ from gc3libs.utils import write_contents
 
 # for readability
 def _check_events(poller, path, expected):
-    events = [event for event in poller.get_events()
+    events = [event for event in poller.get_new_events()
               if event[0].path == path]
     assert len(events) == len(expected)
-    for n, tags in enumerate(expected):
-        url, flags = events[n]
+    for n, expected_event in enumerate(expected):
+        url, actual_event = events[n]
         assert url.path == path
-        for tag in tags:
-            assert (flags & plr.events[tag]) != 0
+        assert actual_event == expected_event
 
 
 class TestPollers(object):
@@ -58,12 +57,24 @@ class TestPollers(object):
         # test create file
         fpath = os.path.join(self.tmpdir, 'foo')
         write_contents(fpath, 'test')
-        _check_events(poller, fpath, [['IN_CLOSE_WRITE', 'IN_CREATE']])
+        _check_events(poller, fpath, ['created'])
         assert fpath in poller._watched
+
+        # since the `mtime` field only has 1-second resolution, we
+        # need to pause a bit to ensure the following
+        # `.get_new_events()` are able to see any modification
+        sleep(2)
+
+        # no new events here
+        _check_events(poller, fpath, [])
+
+        # test modify file
+        write_contents(fpath, 'test2')
+        _check_events(poller, fpath, ['modified'])
 
         # test remove file
         os.remove(fpath)
-        _check_events(poller, fpath, [['IN_DELETE']])
+        _check_events(poller, fpath, ['deleted'])
         assert fpath not in poller._watched
 
 
@@ -73,17 +84,19 @@ class TestPollers(object):
         # test create file
         fpath = os.path.join(self.tmpdir, 'foo')
         write_contents(fpath, 'test')
-        _check_events(poller, fpath, [
-            # inotify sends 4 distinct events
-            ['IN_CREATE'],
-            ['IN_OPEN'],
-            ['IN_MODIFY'],
-            ['IN_CLOSE_WRITE']
-        ])
+        _check_events(poller, fpath, ['created'])
+
+        # no new events here
+        _check_events(poller, fpath, [])
+
+        # test modify file
+        write_contents(fpath, 'test2')
+        _check_events(poller, fpath, ['modified'])
 
         # test remove file
         os.remove(fpath)
-        _check_events(poller, fpath, [['IN_DELETE']])
+        _check_events(poller, fpath, ['deleted'])
+
 
 ## main: run tests
 
