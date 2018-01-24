@@ -21,40 +21,49 @@ __docformat__ = 'reStructuredText'
 
 import os
 import gc3libs
-from gc3libs.daemon import SessionBasedDaemon
+from gc3libs.cmdline import SessionBasedDaemon
 import inotifyx
 
 class SimpleDaemon(SessionBasedDaemon):
     """Simple daemon"""
     version = '1.0'
 
-    def new_tasks(self, extra, epath=None, emask=0):
-        app = None
-        if not epath:
-            app = gc3libs.Application(
+    def new_tasks(self, extra):
+        """
+        Populate session with initial tasks.
+        """
+        jobname = 'EchoApp'
+        extra['output_dir'] = os.path.join(self.params.working_dir, jobname)
+        return [
+            gc3libs.Application(
                 ['/bin/echo', 'first run'],
-                [],
-                gc3libs.ANY_OUTPUT,
+                inputs=[],
+                outputs=gc3libs.ANY_OUTPUT,
                 stdout='stdout.txt',
                 stderr='stderr.txt',
-                jobname='EchoApp',
+                jobname=jobname,
                 **extra)
-            return [app]
-        else:
-            # A new file has been created. Process it.
-            if emask & inotifyx.IN_CLOSE_WRITE:
-                app = gc3libs.Application(
-                    ['/bin/echo', epath],
-                    inputs={epath:'foo'},
-                    outputs=gc3libs.ANY_OUTPUT,
-                    stdout='stdout.txt',
-                    stderr='stderr.txt',
-                    jobname=('LSApp.' + os.path.basename(epath.path)),
-                    **extra)
-                return [app]
+            ]
 
-        # No app created, return empty list
-        return []
+    def created(self, inbox, subject):
+        """
+        A new file has been created. Process it.
+        """
+        path = subject.path
+        jobname = ('LSApp.' + os.path.basename(path))
+        extra = self.extra.copy()
+        extra['output_dir'] = os.path.join(self.params.working_dir, jobname)
+        self.add(
+            gc3libs.Application(
+                ['/bin/echo', path],
+                inputs={path:'foo'},
+                outputs=gc3libs.ANY_OUTPUT,
+                stdout='stdout.txt',
+                stderr='stderr.txt',
+                jobname=jobname,
+                **extra)
+        )
+
 
 ## main: run tests
 
