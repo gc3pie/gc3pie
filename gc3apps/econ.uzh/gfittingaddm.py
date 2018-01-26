@@ -3,7 +3,7 @@
 #   gfittingaddm.py -- Front-end script for running MCMC with opneBUGS
 #   function throguh R over a large table set.
 #
-#   Copyright (C) 2011, 2012 GC3, University of Zurich
+#   Copyright (C) 2018, 2019 S3IT, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or
 #   modify
@@ -26,14 +26,15 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 See the output of ``gfittingaddm.py --help`` for program usage
 instructions.
 
-Input parameters consists of:
-:param str table input file: Path to an .txt file containing input data in table form
-
+arguments for the 'main' R script to be executed:
+@int:subject_number
+@int:number_of_simulations_per_subject
+@int:number_of_iteration_per_simulation
 """
 
 # summary of user-visible changes
 __changelog__ = """
-  2015-04-10:
+  2018-01-10:
   * Initial version
 """
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@uzh.ch>'
@@ -52,7 +53,6 @@ import time
 import tempfile
 
 import shutil
-# import csv
 
 from pkg_resources import Requirement, resource_filename
 
@@ -68,6 +68,8 @@ DEFAULT_CORES = 1
 DEFAULT_MEMORY = Memory(1500,MB)
 DEFAULT_WALLTIME = Duration(300,hours)
 DEFAULT_RESULTS = "Results"
+DEFAULT_SIMULATIONS=100
+DEFAULT_ITERATIONS=150
 
 ## custom application class
 class GfittingaddmApplication(Application):
@@ -85,16 +87,12 @@ class GfittingaddmApplication(Application):
         if rscript_folder:
             inputs[rscript_folder] = "./"
 
-        
         outputs[DEFAULT_RESULTS] = DEFAULT_RESULTS
 
-
-        # wrapper_sh = resource_filename(Requirement.parse("gc3pie"),
-        #                                       "gc3libs/etc/gfittingaddm.sh")
-        # inputs[wrapper_sh] = "./wrapper.sh"
-        # executables.append("./wrapper.sh")
-
-        arguments = "Rscript --vanilla {0}.R {1}".format(main_function, subject_number)
+        arguments = "Rscript --vanilla {0}.R {1} {2} {3}".format(main_function,
+                                                                 subject_number,
+                                                                 n_simulations,
+                                                                 n_iterations)
 
         Application.__init__(
             self,
@@ -108,10 +106,6 @@ class GfittingaddmApplication(Application):
 
 class GfittingaddmScript(SessionBasedScript):
     """
-    Splits input .csv file into smaller chunks, each of them of size 
-    'self.params.chunk_size'.
-    Then it submits one execution for each of the created chunked files.
-    
     The ``gfittingaddm`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
@@ -154,7 +148,18 @@ class GfittingaddmScript(SessionBasedScript):
                        dest="repeat", default=1,
                        help="Repeat each subject simulation. Default: '%(default)s'.")
 
-        
+        self.add_param("-S", "--simulations", metavar="[INT]",
+                       type=positive_int,
+                       dest="repeat", default=DEFAULT_SIMULATIONS,
+                       help="Number of simulations for each individual subject." \
+                       " Default: '%(default)s'.")
+
+        self.add_param("-I", "--iterations", metavar="[INT]",
+                       type=positive_int,
+                       dest="repeat", default=DEFAULT_ITERATIONS,
+                       help="Number of iterations for each individual simulation." \
+                       " Default: '%(default)s'.")
+
     def new_tasks(self, extra):
         """
         Chunk initial input file
