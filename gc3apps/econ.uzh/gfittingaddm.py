@@ -78,7 +78,7 @@ class GfittingaddmApplication(Application):
     """
     application_name = 'gfittingaddm'
     
-    def __init__(self, subject_number,  rscript_folder, main_function, **extra_args):
+    def __init__(self, subject_number,  rscript_folder, main_function, n_simulations, n_iterations, **extra_args):
 
         inputs = {}
         outputs = {}
@@ -150,13 +150,13 @@ class GfittingaddmScript(SessionBasedScript):
 
         self.add_param("-S", "--simulations", metavar="[INT]",
                        type=positive_int,
-                       dest="repeat", default=DEFAULT_SIMULATIONS,
+                       dest="simulations", default=DEFAULT_SIMULATIONS,
                        help="Number of simulations for each individual subject." \
                        " Default: '%(default)s'.")
 
         self.add_param("-I", "--iterations", metavar="[INT]",
                        type=positive_int,
-                       dest="repeat", default=DEFAULT_ITERATIONS,
+                       dest="iterations", default=DEFAULT_ITERATIONS,
                        help="Number of iterations for each individual simulation." \
                        " Default: '%(default)s'.")
 
@@ -177,6 +177,8 @@ class GfittingaddmScript(SessionBasedScript):
                 tasks.append(GfittingaddmApplication(subject_number,
                                                      self.params.Rscripts,
                                                      self.params.main_function,
+                                                     self.params.simulations,
+                                                     self.params.iterations,
                                                      **extra_args))
 
         return tasks
