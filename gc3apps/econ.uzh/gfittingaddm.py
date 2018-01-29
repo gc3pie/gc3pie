@@ -160,6 +160,19 @@ class GfittingaddmScript(SessionBasedScript):
                        help="Number of iterations for each individual simulation." \
                        " Default: '%(default)s'.")
 
+        self.add_param("-F", "--follow",
+                       dest="follow",
+                       action="store_true",
+                       default=False,
+                       help="Periodically fetch job's output folder and copy locally." \
+                       " Default: '%(default)s'.")
+
+    def before_main_loop(self):
+        # XXX: should this be done with `make_controller` instead?
+        self._controller.retrieve_running = self.params.follow
+        self._controller.retrieve_overwrites = self.params.follow
+        self._controller.retrieve_changed_only = self.params.follow
+
     def new_tasks(self, extra):
         """
         Chunk initial input file
