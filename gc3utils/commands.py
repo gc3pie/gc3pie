@@ -324,6 +324,18 @@ force removal of a job regardless.
         return min(failed, 126)
 
 
+class cmd_gclient(gc3libs.cmdline.DaemonClient):
+    """
+    Generic client for GC3Pie's XML-RPC server.
+
+    Use the `help` command to display a list of remote functions
+    supported by the server.
+    """
+    # all the functionality needed is already in the base class, no
+    # need to add anything here
+    pass
+
+
 class cmd_ginfo(GC3UtilsScript):
     """
 Print detailed information about a job.
