@@ -184,7 +184,7 @@ class TestSessionBasedDaemon(_TestsCommon):
         ])
 
         # allow daemon time to start and create PID file
-        time.sleep(1)
+        time.sleep(3)
 
         pidfile = join(self.basedir, 'session', 'simpledaemon.pid')
         pid = int(read_contents(pidfile))
@@ -197,7 +197,7 @@ class TestSessionBasedDaemon(_TestsCommon):
                 # kill the daemon and clean up
                 os.kill(pid, signal.SIGTERM)
                 # give it time to shut down
-                time.sleep(2)
+                time.sleep(3)
             except OSError as ex:
                 if ex.errno == 3:  # "No such process"
                     # daemon has already exited, ignore
@@ -299,13 +299,13 @@ class TestSessionBasedDaemon(_TestsCommon):
         ])
 
         # allow daemon time to start and create PID file
-        time.sleep(1)
+        time.sleep(3)
 
         pidfile = join(self.basedir, 'session', 'simpledaemon.pid')
         pid = int(read_contents(pidfile))
 
         # wait some more time to set up listener
-        time.sleep(1)
+        time.sleep(3)
 
         # get IDs of tasks in session
         _, stdout = self.run([self.client_py, session_dir, 'list', 'json'])
@@ -343,6 +343,9 @@ class TestSessionBasedDaemon(_TestsCommon):
             '-vvv',
             inbox_dir,
         ])
+
+        # wait some time to set up listener
+        time.sleep(5)
 
         # check that task IDs are the same
         _, stdout = self.run([self.client_py, session_dir, 'list', 'json'])
