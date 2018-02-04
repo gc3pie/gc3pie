@@ -870,8 +870,18 @@ class ParallelTaskCollection(TaskCollection):
         """
         Start all tasks in the collection.
         """
+        one_submitted = False
         for task in self.tasks:
-            task.submit(resubmit, targets, **extra_args)
+            try:
+                task.submit(resubmit, targets, **extra_args)
+                one_submitted = True
+            except (gc3libs.exceptions.ResourceNotReady,
+                    gc3libs.exceptions.MaximumCapacityReached):
+                if one_submitted:
+                    # stop submitting tasks
+                    break
+                else:
+                    raise
         self.execution.state = self._state()
 
     def update_state(self, **extra_args):
