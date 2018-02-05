@@ -1466,7 +1466,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
               self._update(task, from_state, -1)
               self._update(task, to_state, +1)
             """
-            stats_to_increment = ['total', to_state]
+            stats_to_increment = [to_state]
             if to_state == 'TERMINATED':
                 if task.execution.returncode == 0:
                     stats_to_increment.append('ok')
@@ -2045,8 +2045,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
 
         : param class only: Restrict counting to tasks of these classes.
         """
-        assert only in self._counts
-        return dictproxy(self._counts[only])
+        assert only in self._counts.totals
+        return dictproxy(self._counts.totals[only])
 
 
     def stats(self, only=None):
@@ -2057,17 +2057,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
 
           This is deprecated since GC3Pie version 2.5.
         """
-        result = defaultdict(int)
-        for task in self.iter_tasks(only):
-            state = task.execution.state
-            result[state] += 1
-            result['total'] += 1
-            if state == 'TERMINATED':
-                if task.execution.exitcode == 0:
-                    result['ok'] += 1
-                else:
-                    result['failed'] += 1
-        return result
         warn("Deprecated method `Engine.stats()` called"
              " -- please use `Engine.counts()` instead",
              DeprecationWarning, stacklevel=2)
