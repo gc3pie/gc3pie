@@ -220,7 +220,6 @@ type=none
         cores_after = self.backend.free_slots
         mem_after = self.backend.available_memory
         assert cores_before == cores_after + 2
-        # assert mem_before == mem_after + (app.requested_cores * app.requested_memory)
         assert mem_before == mem_after + app.requested_memory
         self.run_until_terminating(app)
         assert self.backend.free_slots == cores_before
