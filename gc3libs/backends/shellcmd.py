@@ -1357,7 +1357,7 @@ class ShellcmdLrms(LRMS):
         self.free_slots -= app.requested_cores
         self.user_run += 1
         if app.requested_memory:
-            self.available_memory -= (app.requested_memory * app.requested_cores)
+            self.available_memory -= app.requested_memory
         self._job_infos[pid] = {
             'requested_cores': app.requested_cores,
             'requested_memory': app.requested_memory,
@@ -1388,14 +1388,13 @@ class ShellcmdLrms(LRMS):
                     (self.name, self.max_cores))
 
         if app.requested_memory:
-            total_requested_memory = app.requested_cores * app.requested_memory
-            if self.available_memory < total_requested_memory:
+            if self.available_memory < app.requested_memory:
                 raise gc3libs.exceptions.MaximumCapacityReached(
                     "Resource {0} does not have enough available memory:"
                     " {1} requested total, but only {2} available."
                     .format(
                         self.name,
-                        total_requested_memory.to_str('%g%s', unit=Memory.MB),
+                        app.requested_memory.to_str('%g%s', unit=Memory.MB),
                         self.available_memory.to_str('%g%s', unit=Memory.MB))
             )
 
@@ -1629,7 +1628,7 @@ class ShellcmdLrms(LRMS):
             self.free_slots += app.requested_cores
             self.user_run -= 1
             if app.requested_memory is not None:
-                self.available_memory += (app.requested_memory * app.requested_cores)
+                self.available_memory += app.requested_memory
         wrapper_filename = posixpath.join(
             app.execution.lrms_execdir,
             ShellcmdLrms.PRIVATE_DIR,
