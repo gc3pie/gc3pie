@@ -264,7 +264,7 @@ class TaskCollection(Task):
         :param tuple only: Restrict counting to tasks of these classes.
 
         """
-        result = defaultdict(lambda: 0)
+        result = defaultdict(int)
         for task in self.tasks:
             if only and not isinstance(task, only):
                 continue
@@ -774,18 +774,8 @@ class ParallelTaskCollection(TaskCollection):
         we're in the middle of a computation).
         """
         stats = self.stats()
-        # special case which won't be handled by the logic in the loop
-        # below; avoid erroneously reporting a collection as
-        # `TERMINATED` when it has a mixture of `NEW` and `TERMINATED`
-        # states: we're in the middle of a computation so `RUNNING` is
-        # the correct state to report
-        if (stats[Run.State.NEW] > 0
-                and stats[Run.State.TERMINATED] > 0
-                and stats[Run.State.NEW] + stats[Run.State.TERMINATED] ==
-                len(self.tasks)):
-            return Run.State.RUNNING
-        # go through states in order of "importance" and set the full
-        # collection state to the first one that has tasks in it
+        # go through "live" states in order of "importance" and set
+        # the full collection state to the first one that has tasks
         for state in [
                 # special/error states of child task:
                 Run.State.STOPPED,
@@ -793,13 +783,20 @@ class ParallelTaskCollection(TaskCollection):
                 # normal course of action:
                 Run.State.RUNNING,
                 Run.State.SUBMITTED,
-                Run.State.TERMINATING,
-                # if we get here, then all jobs are all TERMINATED or all NEW
-                Run.State.TERMINATED,
-                Run.State.NEW,
         ]:
             if stats[state] > 0:
                 return state
+        # if we get here, then all jobs are all TERMINATING,
+        # TERMINATED, or NEW; if there are any NEW ones, then we're in
+        # the middle of a computation so `RUNNING` is the correct
+        # state to report
+        if stats[Run.State.NEW] > 0:
+            return Run.State.RUNNING
+        # `TERMINATING` wins over `TERMINATED`
+        if stats[Run.State.TERMINATING] > 0:
+            return Run.State.TERMINATING
+        if stats[Run.State.TERMINATED] > 0:
+            return Run.State.TERMINATED
         if self.tasks:
             gc3libs.log.error(
                 "BUG! Non-empty task collection %r,"
@@ -870,8 +867,18 @@ class ParallelTaskCollection(TaskCollection):
         """
         Start all tasks in the collection.
         """
+        one_submitted = False
         for task in self.tasks:
-            task.submit(resubmit, targets, **extra_args)
+            try:
+                task.submit(resubmit, targets, **extra_args)
+                one_submitted = True
+            except (gc3libs.exceptions.ResourceNotReady,
+                    gc3libs.exceptions.MaximumCapacityReached):
+                if one_submitted:
+                    # stop submitting tasks
+                    break
+                else:
+                    raise
         self.execution.state = self._state()
 
     def update_state(self, **extra_args):

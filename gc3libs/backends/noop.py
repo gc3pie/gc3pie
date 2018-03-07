@@ -2,7 +2,7 @@
 """
 Fake running applications, only useful for testing.
 """
-# Copyright (C) 2009-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -41,7 +41,6 @@ NORMAL_TRANSITION_GRAPH = {
 
 
 class NoOpLrms(LRMS):
-
     """
     Simulate execution of an `Application`:class instance.
 
@@ -124,9 +123,9 @@ class NoOpLrms(LRMS):
         Effectively, this just returns any resources accounted to the
         job into the free pool.
         """
-        if app.execution.state is Run.State.RUNNING:
+        if app.execution.state == Run.State.RUNNING:
             self.user_run -= 1
-        elif app.execution.state is Run.State.SUBMITTED:
+        elif app.execution.state == Run.State.SUBMITTED:
             self.user_queued -= 1
             self.queued -= 1
         self.free_slots += app.requested_cores
@@ -170,7 +169,7 @@ class NoOpLrms(LRMS):
         ]))
         dice = random()
         log.debug("Rolled dice, got %g result", dice)
-        for prob, state in sorted(transitions.items()):
+        for prob, to_state in sorted(transitions.items()):
             if dice < prob:
                 log.debug(
                     "Task %s transitions to state '%s'", app, state)
@@ -180,14 +179,14 @@ class NoOpLrms(LRMS):
                     self.user_queued -= 1
                 if app.execution.state == Run.State.RUNNING:
                     self.user_run -= 1
-                if state == Run.State.RUNNING:
+                if to_state == Run.State.RUNNING:
                     self.user_run += 1
-                if state == Run.State.TERMINATING:
+                if to_state == Run.State.TERMINATING:
                     self.free_slots += app.requested_cores
                     if app.requested_memory:
                         self.available_memory += app.requested_memory
                 # set the new app state
-                app.execution.state = state
+                app.execution.state = to_state
                 break
             else:
                 dice -= prob
@@ -203,16 +202,16 @@ class NoOpLrms(LRMS):
         cores/memory/etc to host a new application.  So, submission to
         a No-Op resource may still fail!
         """
-        free_slots = self.free_slots - app.requested_cores
-        if free_slots <= 0:
-            raise gc3libs.exceptions.LRMSSubmitError(
-                "Resource %s already running maximum allowed number of jobs"
-                " (%s). Increase 'max_cores' to raise." %
-                (self.name, self.max_cores))
+        if app.requested_cores > self.free_slots:
+            raise gc3libs.exceptions.MaximumCapacityReached(
+                "Resource %s does not have enough free cores:"
+                " %s requested, but %s available."
+                " Increase 'max_cores' to raise."
+                % (self.name, app.requested_cores, self.free_slots))
 
         if (app.requested_memory and
                  self.available_memory < app.requested_memory):
-            raise gc3libs.exceptions.LRMSSubmitError(
+            raise gc3libs.exceptions.MaximumCapacityReached(
                 "Resource %s does not have enough available memory:"
                 " %s requested, but only %s available."
                 % (self.name,
@@ -225,7 +224,7 @@ class NoOpLrms(LRMS):
 
         # Update application and current resources
         app.execution.lrms_jobid = id(app)
-        self.free_slots = free_slots
+        self.free_slots -= app.requested_cores
         if app.requested_memory:
             self.available_memory -= app.requested_memory
         self.queued += 1

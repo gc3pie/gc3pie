@@ -190,6 +190,7 @@ setuptools.setup(
             'gc3utils = gc3utils.frontend:main',
             # entry points to specific subcommands:
             'gclean = gc3utils.frontend:main',
+            'gclient = gc3utils.frontend:main',
             'gget = gc3utils.frontend:main',
             'ginfo = gc3utils.frontend:main',
             'gkill = gc3utils.frontend:main',

@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-#   cmdline.py -- Prototypes for GC3Libs-based scripts
+#   cmdline.py -- Base classes for GC3Libs-based scripts
 #
 #   Copyright (C) 2010-2018 University of Zurich
 #
@@ -17,32 +17,46 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-"""Prototype classes for GC3Libs-based scripts.
+"""
+Base classes for GC3Libs-based scripts.
 
 Classes implemented in this file provide common and recurring
 functionality for GC3Libs command-line utilities and scripts.  User
 applications should implement their specific behavior by subclassing
 and overriding a few customization methods.
 
-There is currently only one public class provided here:
+The following public classes are exported from this module:
 
 :class:`SessionBasedScript`
   Base class for the ``grosetta``/``ggamess``/``gcodeml`` scripts.
   Implements a long-running script to submit and manage a large number
   of tasks grouped into a "session".
-"""
-__author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
-__docformat__ = 'reStructuredText'
 
+`SessionBasedDaemon`:class:
+  Base class for GC3Pie servers. Implements a long-running daemon with
+  XML-RPC interface and support for "inboxes" (which can add or remove
+  tasks based on external events).
+
+`DaemonClient`:class:
+  Command-line client for interacting with instances of a
+  `SessionBasedDaemon`:class: via XML-RPC.
+"""
+
+from __future__ import (absolute_import, division, print_function)
 
 # stdlib modules
+import atexit
 import fnmatch
+import json
 import logging
+import logging.handlers
 from logging.handlers import SysLogHandler
 import math
+import multiprocessing.dummy as mp
 import os
 import os.path
 import signal
+import stat
 import sys
 from prettytable import PrettyTable
 import time
@@ -53,40 +67,55 @@ except ImportError:
     from StringIO import StringIO
 from collections import defaultdict
 from prettytable import PrettyTable
-import SimpleXMLRPCServer as sxmlrpc
+from SimpleXMLRPCServer import SimpleXMLRPCServer
+import xmlrpclib
 from warnings import warn
 import xmlrpclib
 
-import json
-import yaml
 
 # 3rd party modules
 import cli  # pyCLI
 import cli.app
 import cli._ext.argparse as argparse
+import daemon
+import yaml
 
 
-# interface to Gc3libs
+# interface to GC3Pie
 import gc3libs
 import gc3libs.config
 from gc3libs.compat import lockfile
 from gc3libs.compat.lockfile.pidlockfile import PIDLockFile
 import gc3libs.core
 import gc3libs.exceptions
+from gc3libs.exceptions import InvalidUsage
 import gc3libs.persistence
 from gc3libs.utils import (
     basename_sans,
     deploy_configuration_file,
+    prettyprint,
+    read_contents,
+    remove as rm_f,
     same_docstring_as,
     test_file,
+    write_contents,
 )
 import gc3libs.url
+from gc3libs.url import Url
 from gc3libs.quantity import Memory, GB, Duration, hours
 from gc3libs.session import Session
+from gc3libs.poller import make_poller
 
 
+## file metadata
+__author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
+__docformat__ = 'reStructuredText'
+
+
+##
 # types for command-line parsing; see
 # http://docs.python.org/dev/library/argparse.html#type
+##
 
 def nonnegative_int(num):
     """
@@ -236,7 +265,18 @@ def valid_directory(path):
     return path
 
 
+##
 # script classes
+##
+
+def make_logger(verbosity, name=None, threshold=0, progname=None):
+    loglevel = max(1, logging.WARNING - 10*max(0, verbosity - threshold))
+    gc3libs.configure_logger(loglevel, name or "gc3utils")
+    log = logging.getLogger(progname or name or 'gc3.gc3utils')
+    log.setLevel(loglevel)
+    log.propagate = True
+    return log
+
 
 class _Script(cli.app.CommandLineApp):
 
@@ -287,9 +327,11 @@ class _Script(cli.app.CommandLineApp):
         """
         pass
 
-    def cleanup(self):
+    def terminate(self):
         """
-        Method called when the script is interrupted
+        Called to stop the script from running.
+
+        By default this does nothing; override in derived classes.
         """
         pass
 
@@ -352,7 +394,8 @@ class _Script(cli.app.CommandLineApp):
                 os.path.basename(
                     sys.argv[0]))[0])
         extra_args.setdefault('reraise', Exception)
-        cli.app.CommandLineApp.__init__(self, **extra_args)
+        super(_Script, self).__init__(**extra_args)
+
         # provide some defaults
         self.verbose_logging_threshold = 0
 
@@ -387,7 +430,7 @@ class _Script(cli.app.CommandLineApp):
         and `setup_options`:meth: to modify command-line parsing.
         """
         # setup of base classes
-        cli.app.CommandLineApp.setup(self)
+        super(_Script, self).setup()
 
         self.add_param(
             "-v",
@@ -405,7 +448,11 @@ class _Script(cli.app.CommandLineApp):
                            ',', gc3libs.Default.CONFIG_FILE_LOCATIONS),
                        help="Comma separated list of configuration files",
                        )
-        return
+
+        # finish setup
+        self.setup_options()
+        self.setup_args()
+
 
     def pre_run(self):
         """
@@ -418,23 +465,12 @@ class _Script(cli.app.CommandLineApp):
         ignored, after which they start to lower the level of messages
         sent to standard error output.
         """
-        # finish setup
-        self.setup_options()
-        self.setup_args()
-
         # parse command-line
-        cli.app.CommandLineApp.pre_run(self)
+        super(_Script, self).pre_run()
 
         # setup GC3Libs logging
-        loglevel = max(1, logging.WARNING -
-                       10 *
-                       max(0, self.params.verbose -
-                           self.verbose_logging_threshold))
-        gc3libs.configure_logger(loglevel, "gc3utils")  # alternate: self.name
-        # alternate: ('gc3.' + self.name)
-        self.log = logging.getLogger('gc3.gc3utils')
-        self.log.setLevel(loglevel)
-        self.log.propagate = True
+        self.log = make_logger(self.params.verbose, 'gc3utils',
+                               threshold=self.verbose_logging_threshold)
         self.log.info("Starting %s at %s; invoked as '%s'",
                       self.name, time.asctime(), str.join(' ', sys.argv))
 
@@ -462,7 +498,7 @@ class _Script(cli.app.CommandLineApp):
         an appropriate error code.
         """
         try:
-            return cli.app.CommandLineApp.run(self)
+            return super(_Script, self).run()
         except gc3libs.exceptions.InvalidUsage:
             # Fatal errors do their own printing,
             # we only add a short usage message
@@ -472,7 +508,7 @@ class _Script(cli.app.CommandLineApp):
         except KeyboardInterrupt:
             sys.stderr.write(
                 "%s: Exiting upon user request (Ctrl+C)\n" % self.name)
-            self.cleanup()
+            self.terminate()
             return 13
         except SystemExit:
             #  sys.exit() has been called in `post_run()`.
@@ -675,7 +711,7 @@ class _SessionBasedCommand(_Script):
 
     def add(self, task):
         """
-        Method to add a task to the session (and the controller)
+        Add a task to the session (and the controller)
         """
         self._controller.add(task)
         self.session.add(task, flush=False)
@@ -700,12 +736,6 @@ class _SessionBasedCommand(_Script):
 
         Override in subclasses to plug any behavior here; the default
         implementation does nothing.
-
-        .. note::
-
-          **FIXME:** While in a SessionBasedScript this method is
-          called *after* processing all tasks, in a
-          `SessionBasedDaemon`:class: it is called *before*.
         """
         pass
 
@@ -721,6 +751,27 @@ class _SessionBasedCommand(_Script):
         implementation does nothing.
         """
         pass
+
+    def new_tasks(self, extra):
+        """
+        Iterate over :py:class:`Task` instances to be added to the session.
+
+        Called before starting the main loop but only when creating a
+        new session -- if the session exists already, then the call to
+        `new_tasks` is skipped.
+
+        :param extra: by default: `self.extra`
+        :return: List (any iterable will do) of `Task` instances
+
+        .. note::
+
+          This method *needs* to be overridden in derived classes; the
+          default implementation returns an empty task list, which
+          will keep sessions empty and thus make every session-based
+          command exit with "nothing to do".
+        """
+        return []
+
 
     ##
     # pyCLI INTERFACE METHODS
@@ -760,7 +811,7 @@ class _SessionBasedCommand(_Script):
         self.session = None
         # by default, print stats of all kind of jobs
         self.stats_only_for = None
-        self.extra = {}  # extra extra_args arguments passed to `parse_args`
+        self.extra = {}  # extra arguments passed to `parse_args`
         # init base classes
         _Script.__init__(
             self,
@@ -795,12 +846,11 @@ class _SessionBasedCommand(_Script):
         # `jobname`; keep in sync!
         self.extra.setdefault(
             'output_dir',
-            self.make_directory_path(
-                self.params.output,
-                'NAME'))
+            self.make_directory_path(self.params.output, 'NAME'))
         # build job list
         new_jobs = list(self.new_tasks(self.extra.copy()))
-        self._add_new_tasks(new_jobs)
+        if new_jobs:
+            self._add_new_tasks(new_jobs)
 
     def _add_new_tasks(self, new_jobs):
         # pre-allocate Job IDs
@@ -900,23 +950,36 @@ class _SessionBasedCommand(_Script):
             # not a RetryableTask
             pass
 
-    def setup_common_options(self, parser):
+
+    def setup(self):
+        """
+        Setup standard command-line parsing.
+
+        GC3Libs scripts should probably override `setup_args`:meth:
+        to modify command-line parsing.
+        """
+        # setup of base classes
+        _Script.setup(self)
+
+        #
+        # add own "standard options"
+        #
         # 1. job requirements
-        parser.add_param(
+        self.add_param(
             "-c", "--cpu-cores", dest="ncores",
             type=positive_int, default=1,  # 1 core
             metavar="NUM",
             help="Set the number of CPU cores required for each job"
             " (default: %(default)s). NUM must be a whole number."
         )
-        parser.add_param(
+        self.add_param(
             "-m", "--memory-per-core", dest="memory_per_core",
             type=Memory, default=2 * GB,  # 2 GB
             metavar="GIGABYTES",
             help="Set the amount of memory required per execution core;"
             " default: %(default)s. Specify this as an integral number"
             " followed by a unit, e.g., '512MB' or '4GB'.")
-        parser.add_param(
+        self.add_param(
             "-r",
             "--resource",
             action="store",
@@ -926,7 +989,7 @@ class _SessionBasedCommand(_Script):
             help="Submit jobs to a specific computational resources."
             " NAME is a resource name or comma-separated list of such names."
             " Use the command `gservers` to list available resources.")
-        parser.add_param(
+        self.add_param(
             "-w",
             "--wall-clock-time",
             dest="wctime",
@@ -939,7 +1002,7 @@ class _SessionBasedCommand(_Script):
             " '8 hours', or a combination thereof, e.g., '2hours 30minutes'.")
 
         # 2. session control
-        parser.add_param(
+        self.add_param(
             "-s",
             "--session",
             dest="session",
@@ -949,11 +1012,11 @@ class _SessionBasedCommand(_Script):
             metavar="PATH",
             help="Store the session information in the directory at PATH."
             " (Default: '%(default)s'). ")
-        parser.add_param("-u", "--store-url",
+        self.add_param("-u", "--store-url",
                        action="store",
                        metavar="URL",
                        help="URL of the persistent store to use.")
-        parser.add_param(
+        self.add_param(
             "-N",
             "--new-session",
             dest="new_session",
@@ -964,7 +1027,7 @@ class _SessionBasedCommand(_Script):
             " Any information about previous tasks is lost.")
 
         # 3. script execution control
-        parser.add_param(
+        self.add_param(
             "-C",
             "--continuous",
             "--watch",
@@ -975,14 +1038,14 @@ class _SessionBasedCommand(_Script):
             help="Keep running, monitoring jobs and possibly submitting"
             " new ones or fetching results every NUM seconds. Exit when"
             " all tasks are finished.")
-        parser.add_param("-J", "--max-running",
+        self.add_param("-J", "--max-running",
                        type=positive_int, dest="max_running", default=50,
                        metavar="NUM",
                        help="Set the maximum NUMber of jobs"
                          " in SUBMITTED or RUNNING state."
                          " (Default: %(default)s)"
                        )
-        parser.add_param(
+        self.add_param(
             "-o",
             "--output",
             dest="output",
@@ -1000,22 +1063,16 @@ class _SessionBasedCommand(_Script):
             " (YYYY-MM-DD); 'TIME' is replaced by the submission time"
             " formatted as HH:MM.  'SESSION' is replaced by the path to the"
             " session directory, with a '.out' suffix appended.")
-        return
 
-    def setup(self):
+
+    def pre_run(self):
         """
-        Setup standard command-line parsing.
-
-        GC3Libs scripts should probably override `setup_args`:meth:
-        to modify command-line parsing.
+        Perform parsing of standard command-line options and call into
+        `parse_args()` to do non-optional argument processing.
         """
-        # setup of base classes
-        _Script.setup(self)
+        # call base classes first (note: calls `parse_args()`)
+        _Script.pre_run(self)
 
-        # add own "standard options"
-        self.setup_common_options(self)
-
-    def _prerun_common_checks(self):
         # consistency checks
         self.params.walltime = Duration(self.params.wctime)
 
@@ -1029,7 +1086,7 @@ class _SessionBasedCommand(_Script):
         self.session = self._make_session(
             self.session_uri.path, self.params.store_url)
 
-        # keep a copy of the credentials in the session dir
+        # keep a copy of the credentials in the session dir, if needed
         self.config.auth_factory.add_params(
             private_copy_directory=self.session.path)
 
@@ -1039,16 +1096,6 @@ class _SessionBasedCommand(_Script):
         if (self.params.output and 'NAME' not in self.params.output
                 and 'ITER' not in self.params.output):
             self.params.output = os.path.join(self.params.output, 'NAME')
-
-    def pre_run(self):
-        """
-        Perform parsing of standard command-line options and call into
-        `parse_args()` to do non-optional argument processing.
-        """
-        # call base classes first (note: calls `parse_args()`)
-        _Script.pre_run(self)
-
-        self._prerun_common_checks()
 
 
     ##
@@ -1131,7 +1178,7 @@ class _SessionBasedCommand(_Script):
         except KeyboardInterrupt:  # gracefully intercept Ctrl+C
             sys.stderr.write(
                 "%s: Exiting upon user request (Ctrl+C)\n" % self.name)
-            self.cleanup()
+            self.terminate()
             pass
         self.after_main_loop()
 
@@ -1148,6 +1195,91 @@ class _SessionBasedCommand(_Script):
         self._controller.close()
 
         return rc
+
+
+    def _main_loop(self):
+        """
+        The main loop of the application.  It is in a separate
+        function so that we can call it just once or properly loop
+        around it, as directed by the `self.params.wait` option.
+
+        .. warning::
+
+          Overriding this method can disrupt the whole functionality of
+          the script, so be careful.
+
+        Invocation of this method should return a numeric exitcode,
+        that will be used as the scripts' exitcode.  See
+        `_main_loop_exitcode` for an explanation.
+        """
+        # hook methods
+        self._main_loop_before_tasks_progress()
+        self.every_main_loop()
+        # advance all jobs
+        self._controller.progress()
+        # compute exitcode based on the running status of jobs
+        stats = self._main_loop_after_tasks_progress()
+        if stats is None:
+            stats = self._controller.stats()
+        return self._main_loop_exitcode(stats)
+
+
+    def _main_loop_exitcode(self, stats):
+        """
+        Compute the exit code for the `_main` function.
+        (And, hence, for the whole session-based command.)
+
+        The exitcode is a bitfield; only the 4 least-significant bits
+        are used, with the following meaning:
+
+           ===  ============================================================
+           Bit  Meaning
+           ===  ============================================================
+             0  Set if a fatal error occurred: the script could not complete
+             1  Set if there are jobs in `FAILED` state
+             2  Set if there are jobs in `RUNNING` or `SUBMITTED` state
+             3  Set if there are jobs in `NEW` state
+           ===  ============================================================
+
+        Override this method if you need to alter the termination
+        condition for a `SessionBasedScript`.
+        """
+        rc = 0
+        if stats['failed'] > 0:
+            rc |= 2
+        if stats[gc3libs.Run.State.RUNNING] > 0 \
+                or stats[gc3libs.Run.State.SUBMITTED] > 0 \
+                or stats[gc3libs.Run.State.UNKNOWN]:
+            rc |= 4
+        if stats[gc3libs.Run.State.NEW] > 0:
+            rc |= 8
+        return rc
+
+
+    def _main_loop_before_tasks_progress(self):
+        """
+        Code that runs in the main loop before `.progress()` is invoked.
+
+        Override in subclasses to plug any behavior here; the default
+        implementation does nothing.
+       """
+        pass
+
+
+    def _main_loop_after_tasks_progress(self):
+        """
+        Code that runs in the main loop after `.progress()` is invoked.
+
+        Return either ``None`` or a dictionary of the same form that
+        `Engine.stats()`:meth: would return.  In the latter case, the
+        return value of this method is used *in stead* of the task
+        statistics returned by ``self._controller.stats()``.
+
+        Override in subclasses to plug any behavior here; the default
+        implementation does nothing.
+        """
+        pass
+
 
     def __abort_old_session(self):
         old_task_ids = self.session.list_ids()
@@ -1203,6 +1335,13 @@ class _SessionBasedCommand(_Script):
         for x in xrange(self.params.wait):
             time.sleep(1)
 
+
+
+##
+#
+# Foreground and interactive scripts
+#
+##
 
 class SessionBasedScript(_SessionBasedCommand):
     """
@@ -1448,7 +1587,7 @@ class SessionBasedScript(_SessionBasedCommand):
         to modify command-line parsing.
         """
         # setup of base classes
-        _SessionBasedCommand.setup(self)
+        super(SessionBasedScript, self).setup()
         # add own "standard options"
         self.add_param(
             "-l",
@@ -1475,30 +1614,17 @@ class SessionBasedScript(_SessionBasedCommand):
     # should be no need to do so.
     ##
 
-    def _main_loop(self):
+    def _main_loop_after_tasks_progress(self):
         """
-        The main loop of the application.  It is in a separate
-        function so that we can call it just once or properly loop
-        around it, as directed by the `self.params.wait` option.
+        Print statistics about managed tasks to STDOUT.
 
-        .. warning::
-
-          Overriding this method can disrupt the whole functionality of
-          the script, so be careful.
-
-        Invocation of this method should return a numeric exitcode,
-        that will be used as the scripts' exitcode.  See
-        `_main_loop_exitcode` for an explanation.
+        See `_SessionBasedCommand._main_loop_after_tasks_progress`:meth:
+        for a description of what this method can generally do.
         """
-        # advance all jobs
-        self._controller.progress()
-        # hook method
-        self.every_main_loop()
+        stats = self._controller.stats()
         # print results to user
         print ("Status of jobs in the '%s' session: (at %s)"
                % (self.session.name, time.strftime('%X, %x')))
-        # summary
-        stats = self._controller.stats()
         total = stats['total']
         if total > 0:
             if self.stats_only_for is not None:
@@ -1516,40 +1642,8 @@ class SessionBasedScript(_SessionBasedCommand):
                        % self.session.name)
             else:
                 print ("  No tasks in this session.")
-        # compute exitcode based on the running status of jobs
-        return self._main_loop_exitcode(stats)
+        return stats
 
-    def _main_loop_exitcode(self, stats):
-        # FIXME: Do these exit statuses make sense?
-        """
-        Compute the exit code for the `_main` function.
-        (And, hence, for the whole `SessionBasedScript`.)
-
-        The exitcode is a bitfield; only the 4 least-significant bits
-        are used, with the following meaning:
-
-           ===  ============================================================
-           Bit  Meaning
-           ===  ============================================================
-             0  Set if a fatal error occurred: the script could not complete
-             1  Set if there are jobs in `FAILED` state
-             2  Set if there are jobs in `RUNNING` or `SUBMITTED` state
-             3  Set if there are jobs in `NEW` state
-           ===  ============================================================
-
-        Override this method if you need to alter the termination
-        condition for a `SessionBasedScript`.
-        """
-        rc = 0
-        if stats['failed'] > 0:
-            rc |= 2
-        if stats[gc3libs.Run.State.RUNNING] > 0 \
-                or stats[gc3libs.Run.State.SUBMITTED] > 0 \
-                or stats[gc3libs.Run.State.UNKNOWN]:
-            rc |= 4
-        if stats[gc3libs.Run.State.NEW] > 0:
-            rc |= 8
-        return rc
 
     def _main_loop_done(self, rc):
         """
@@ -1560,6 +1654,7 @@ class SessionBasedScript(_SessionBasedCommand):
             return False
         else:
             return True
+
 
     def _search_for_input_files(self, paths, pattern=None):
         """
@@ -1615,3 +1710,925 @@ class SessionBasedScript(_SessionBasedCommand):
                     path)
 
         return inputs
+
+
+
+##
+#
+# Background/daemon scripts
+#
+##
+
+## client class
+
+class DaemonClient(_Script):
+    """
+    Send XML-RPC requests to a running `SessionBasedDaemon`.
+
+    The generic command line looks like the following:
+
+      PROG client SERVER CMD [ARG [ARG ...]]
+
+    The SERVER string is the URL where the XML-RPC server can be
+    contacted.  A pair `hostname:port` is accepted as abbreviation for
+    `http://hostname:port/` and a simple `:port` string is a valid
+    alias for `http://localhost:port/`.  Alternatively, the SERVER
+    argument can be the path to the ``daemon.url`` path where a
+    running server writes its contact information.
+
+    COMMAND is an XML-RPC command name; valid commands depend on the
+    server and can be listed by using `help` as the COMMAND string
+    (with no further arguments).  The remaining ARGs (if any) depend
+    on COMMAND.
+    """
+
+    # the generic client code is also useful as-is, without additional
+    # customization, so give it the required `version` attribute
+    version='1.0'
+
+    def setup_args(self):
+        """
+        Override this method to replace standard command-line arguments.
+        """
+        self.add_param('server', metavar='SERVER',
+                       help=("Path to the file containing hostname and port of the"
+                             " XML-RPC enpdoint of the daemon"))
+        self.add_param('cmd', metavar='COMMAND',
+                       help=("XML-RPC command to run. When COMMAND is `help`"
+                             " a list of available commands is printed."))
+        self.add_param('args', nargs='*', metavar='ARGS',
+                       help=("Optional arguments of COMMAND."))
+
+
+    def setup_options(self):
+        """
+        Override this method to add command-line options.
+        """
+        pass
+
+
+    def pre_run(self):
+        # skip `_Script.pre_run()` in chain call to avoid adding
+        # `--config-files` etc which are not relevant here
+        cli.app.CommandLineApp.pre_run(self)
+
+        # setup GC3Libs logging
+        self.log = make_logger(self.params.verbose, self.name,
+                               threshold=self.verbose_logging_threshold)
+
+        # call hook methods from derived classes
+        self.parse_args()
+
+
+    def main(self):
+        server = self._connect_to_server(self.params.server)
+        if server is None:
+            return os.EX_NOHOST
+        return self._run_command(server, self.params.cmd, *self.params.args)
+
+    def _connect_to_server(self, server_url):
+        url = self._parse_connect_string(server_url)
+        try:
+            return xmlrpclib.ServerProxy(str(url))
+        except Exception as err:
+            self.log.error("Cannot connect to server `%s`: %s", url, err)
+            return None
+
+    def _parse_connect_string(self, arg):
+        if arg.count(':') == 1:
+            if '://' in arg:
+                # nothing to do
+                pass
+            elif arg.startswith(':'):
+                # accept `:port` as alias for `localhost:port`
+                arg = ('http://localhost' + arg)
+            else:
+                # accept `host:port` as abbrev for `http://host:port`
+                arg = ('http://' + arg)
+        url = Url(arg)
+        if url.scheme == 'file':
+            path = url.path
+            info = os.stat(path)
+            if not stat.S_ISSOCK(info.st_mode):
+                # not a socket, so read actual URL from file
+                if stat.S_ISDIR(info.st_mode):
+                    path = os.path.join(path, 'daemon.url')
+                url = Url(read_contents(path))
+        return url
+
+    def _run_command(self, server, cmd, *args):
+        try:
+            func = getattr(server, cmd)
+        except AttributeError:
+            self.log.error(
+                "Server exports no command named `%s`."
+                " Use the `help` command to list all available methods.",
+                cmd)
+            return os.EX_UNAVAILABLE
+        try:
+            print(func(*args))
+            return os.EX_OK
+        except xmlrpclib.Fault as err:
+            self.log.error(
+                "Error running command `%s`: %s",
+                self.params.cmd, err.faultString)
+            return os.EX_SOFTWARE
+
+
+## daemon/server class
+
+class SessionBasedDaemon(_SessionBasedCommand):
+    """
+    Base class for GC3Pie daemons. Implements a long-running script
+    that can daemonize, provides an XML-RPC interface to interact with
+    the current workflow and implement the concept of "inbox" to
+    trigger the creation of new jobs as soon as a new file is created
+    on a folder, or is available on an HTTP(S) or SWIFT endpoint.
+
+    The generic script implements a command line like the following::
+
+      PROG [server options] INBOX [INBOX ...]
+    """
+
+    DEFAULT_HOST = 'localhost'
+    DEFAULT_PORT = 0
+
+    class Server(SimpleXMLRPCServer):
+        """
+
+        """
+
+        PORTFILE_NAME = 'daemon.url'
+
+        # FIXME: pick an unassigned port nr from https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv ?
+        def __init__(self, parent, commands=None,
+                     addr='localhost', port=0, portfile=None):
+            self.parent = parent
+            self.log = self.parent.log
+
+            # Start XMLRPC server
+            SimpleXMLRPCServer.__init__(self, (addr, port))
+            self.addr, self.port = self.socket.getsockname()
+            self.log.info("XML-RPC daemon running on %s:%s", self.addr, self.port)
+
+            # save listening URL
+            self.portfile = (
+                portfile
+                or os.path.join(self.parent.session.path,
+                                self.PORTFILE_NAME))
+            # assume we are doing this after PID file check,
+            # so if a "port file" already exists, it is stale
+            write_contents(
+                self.portfile, ('http://{addr}:{port}/'
+                                .format(addr=self.addr, port=self.port)))
+            # ensure portfile is removed upon exit
+            atexit.register(rm_f, self.portfile)
+
+            # Register XMLRPC methods
+            self.register_function(self.hello, "hello")
+            self.register_function(self.parent.help, "help")
+            self.register_introspection_functions()  # needed by `help`
+            self.register_function(self.parent.shutdown, "quit")
+            self.register_instance(commands or self.parent.commands,
+                                   allow_dotted_names=False)
+
+        def start(self):
+            """
+            Start serving requests.
+
+            Calls into this method never return,
+            so it should be run in a separate thread.
+            """
+            return self.serve_forever()
+
+        def stop(self):
+            """
+            Shut down the XML-RPC server and remove the URL file.
+            """
+            try:
+                self.shutdown()
+            except Exception as err:
+                # self.stop() could be called twice, let's assume it's not
+                # an issue but log the event anyway
+                self.log.warning(
+                    "Ignoring exception caught while shutting down: %s", err)
+            try:
+                if os.path.exists(self.portfile):
+                    os.remove(self.portfile)
+            except Exception as err:
+                self.log.warning(
+                    "Cannot remove file `%s`: %s", self.portfile, err)
+
+        def hello(self):
+            """
+            Print server URL.
+
+            Probably only useful for checking if the server is up and
+            responsive.
+            """
+            return ("HELLO from http://{addr}:{port}/"
+                    .format(addr=self.addr, port=self.port))
+
+
+    class Commands(object):
+        """
+        User-visible XML-RPC methods.
+
+        Subclass this to override default methods or add new ones.
+
+        .. note::
+
+          Every public *attribute* of this class is exposed by the
+          server; make sure that anithing which is not a public method
+          is prefixed with ``_``.
+        """
+        def __init__(self, parent):
+            self._parent = parent
+
+
+        def kill(self, jobid=None):
+            """
+            Usage: kill JOBID
+
+            Abort execution of a task and set it to TERMINATED state.
+            """
+            if not jobid:
+                return "Usage: kill JOBID"
+
+            try:
+                task = self._parent._controller.find_task_by_id(jobid)
+            except KeyError:
+                try:
+                    task = self._parent.session.load(jobid)
+                except Exception as err:
+                    return (
+                        "ERROR: Could not load task `%s` from session: %s"
+                        % (jobid, err))
+
+            try:
+                task.attach(self._parent._controller)
+                task.kill()
+                task.detach()
+                self._parent.session.save(task)
+                return ("Task `%s` successfully killed" % jobid)
+            except Exception as err:
+                return ("ERROR: could not kill task `%s`: %s" % (jobid, err))
+
+
+        def list(self, *opts):
+            """
+            Usage: list [daemon|session] [json|text|yaml]
+
+            List IDs of tasks managed by this daemon.
+            If the word ``session`` is present on the command-line,
+            then tasks stored in the session are printed instead
+            (which may be a superset of the tasks managed by the
+            engine).
+
+            One of the words ``json``, ``yaml``, or ``text``
+            (simple list of IDs, one per line) can be used to
+            choose the output format, with ``text`` being the default.
+            """
+
+            if 'session' in opts:
+                tasks = iter(self._parent.session.tasks)
+            else:
+                # default is `daemon`
+                tasks = self._parent._controller.iter_tasks()
+
+            task_ids = [task.persistent_id for task in tasks]
+
+            if 'json' in opts:
+                return json.dumps(task_ids)
+            elif 'yaml' in opts:
+                return yaml.dump(task_ids)
+            else:
+                return str.join('\n', task_ids)
+
+
+        def list_details(self, *opts):
+            """
+            Usage: list [daemon|session] [json|text|yaml]
+
+            Give information about tasks managed by this daemon;
+            for each task, the following information are printed:
+
+            * task name
+            * execution state (e.g., ``NEW``, ``RUNNING``, etc.)
+            * process exit code (only meaningful if state is ``TERMINATED``)
+            * last line in the execution log
+
+            If the word ``session`` is present on the command-line,
+            then tasks stored in the session are printed instead
+            (which may be a superset of the tasks managed by the
+            engine).
+
+            One of the words ``json``, ``yaml``, or ``text``
+            (human-readable plain text table) can be used to choose
+            the output format, with ``text`` being the default.
+            """
+            if 'session' in opts:
+                tasks = iter(self._parent.session.tasks)
+            else:
+                # default is `daemon`
+                tasks = self._parent._controller.iter_tasks()
+
+            rows = []
+            for task in tasks:
+                rows.extend(self._make_rows(task))
+
+            if 'json' in opts:
+                return json.dumps(rows)
+            elif 'yaml' in opts:
+                return yaml.dump(rows)
+            else:
+                # default is plain text table
+                table = PrettyTable()
+                table.border = True
+                table.align = 'l'
+                table.field_names = [
+                    "Job ID",
+                    "Name",
+                    "State",
+                    "Exit code",
+                    "Last logged event"
+                ]
+                for row in rows:
+                    table.add_row([
+                        row['id'],
+                        row['jobname'],
+                        row['state'],
+                        row['rc'],
+                        row['log']
+                    ])
+                return table.get_string()
+
+        @staticmethod
+        def _make_rows(task, indent='  ', recursive=True):
+            """
+            Helper method for ``list_details``.
+
+            List details for task and each of its subtasks (if
+            ``recursive`` is ``True``).  The detailed info is a
+            dictionary with the following keys:
+
+            * ``id``: Task's job ID,
+            * ``state``: Task execution state,
+            * ``rc``: Task execution exit code (if available),
+            * ``log``: Last logged line in Task history.
+            """
+            row = {
+                'id':    indent + str(task.persistent_id),
+                'state': task.execution.state,
+                'rc':    task.execution.returncode,
+                'log':   task.execution.info,
+            }
+            try:
+                row['jobname'] = task.jobname
+            except AttributeError:
+                row['jobname'] = ''
+
+            rows = [row]
+            if recursive and 'tasks' in task:
+                indent = indent + '  '
+                for task in task.tasks:
+                    rows.extend(self._make_rows(task, indent, recursive))
+
+            return rows
+
+
+        def manage(self, jobid=None):
+            """
+            Usage: manage JOBID
+
+            Tell daemon to start actively managing a task.
+            """
+            if not jobid:
+                return "Usage: manage JOBID"
+
+            # we should not add duplicates into the Engine,
+            # so check first that the task is not already there
+            try:
+                self._parent._controller.find_task_by_id(jobid)
+                return ("Task `%s` is already managed by the daemon.")
+            except KeyError:
+                pass
+
+            try:
+                task = self._parent.session.load(jobid)
+            except Exception as err:
+                return ("ERROR: Could not load task `%s`: %s" % (jobid, err))
+
+            try:
+                self._parent._controller.add(task)
+                return ("Task `%s` successfully add to daemon's Engine." % jobid)
+            except Exception as ex:
+                return ("ERROR: Could not add task `%s` to daemon: %s" % (jobid, ex))
+
+
+        def remove(self, jobid=None):
+            """
+            Usage: remove JOBID
+
+            Unmanage a task and remove it from the session.
+
+            WARNING: All traces of the task are removed and it will
+            not be possible to load or manage it again.
+            """
+            if not jobid:
+                return "Usage: remove JOBID"
+
+            try:
+                task = self._parent._controller.find_task_by_id(jobid)
+                managed = True
+            except KeyError:
+                try:
+                    task = self._parent.session.load(jobid)
+                    managed = False
+                except Exception as err:
+                    return (
+                        "ERROR: Could not load task `%s` from session: %s"
+                        % (jobid, err))
+
+            if task.execution.state != gc3libs.Run.State.TERMINATED:
+                return (
+                    "ERROR: can only remove tasks in TERMINATED state;"
+                    " current state is: %s"
+                    % task.execution.state)
+
+            try:
+                if managed:
+                    self._parent._controller.remove(task)
+                self._parent.session.remove(jobid)
+                return "Job %s successfully removed" % jobid
+            except Exception as ex:
+                return ("ERROR: could not remove task `%s`: %s" % (jobid, ex))
+
+
+        def redo(self, jobid=None):
+            """
+            Usage: redo JOBID
+
+            Resubmit the task identified by JOBID.
+
+            Only tasks in TERMINATED state can be resubmitted;
+            if necessary kill the task first.
+            """
+            if not jobid:
+                return "Usage: redo JOBID"
+
+            try:
+                task = self._parent._controller.find_task_by_id(jobid)
+            except KeyError:
+                try:
+                    task = self._parent.session.load(jobid)
+                except Exception as err:
+                    return (
+                        "ERROR: Could not load task `%s` from session: %s"
+                        % (jobid, err))
+
+            try:
+                task.attach(self._parent._controller)
+                task.redo()
+                self._parent.session.save(task)
+                return ("Task `%s` successfully resubmitted" % jobid)
+            except Exception as err:
+                return ("ERROR: could not resubmit task `%s`: %s" % (jobid, err))
+
+
+        def show(self, jobid=None, *attrs):
+            """
+            Usage: show JOBID [attributes]
+
+            Same output as ``ginfo -v JOBID [-p attributes]``
+            """
+            if not jobid:
+                return "Usage: show <jobid> [attributes]"
+
+            try:
+                task = self._parent._controller.find_task_by_id(jobid)
+            except KeyError:
+                try:
+                    task = self._parent.session.load(jobid)
+                except Exception as err:
+                    return (
+                        "ERROR: Could not load task `%s` from session: %s"
+                        % (jobid, err))
+
+            out = StringIO()
+            if not attrs:
+                attrs = None
+            prettyprint(task, indent=2, output=out, only_keys=attrs)
+            return out.getvalue()
+
+
+        def stats(self, *opts):
+            """
+            Usage: stats [json|text|yaml]
+
+            Print how many jobs are in any given state.
+
+            One of the words ``json``, ``yaml``, or ``text``
+            (human-readable plain text table) can be used to choose
+            the output format, with ``text`` being the default.
+            """
+
+            stats = dict(self._parent._controller.stats())
+
+            if 'json' in opts:
+                return json.dumps(stats)
+            elif 'yaml' in opts:
+                return yaml.dump(stats)
+            else:
+                # default is plain text table
+                table = PrettyTable()
+                table.border = True
+                table.align = 'l'
+                table.field_names = ["State", "Count"]
+                for state, count in sorted(stats.items()):
+                    table.add_row([state, count])
+                return table.get_string()
+
+
+        def unmanage(self, jobid=None):
+            """
+            Usage: unmanage JOBID
+
+            Tell daemon to stop actively managing a task.
+
+            The task will keep its state until the daemon is told to
+            manage it again.  In particular, tasks that are in
+            ``RUNNING`` state keep running and may complete even while
+            unmanaged.
+            """
+            if not jobid:
+                return "Usage: unmanage JOBID"
+
+            try:
+                task = self._parent._controller.find_task_by_id(jobid)
+            except KeyError:
+                return ("ERROR: Task `%s` not currently managed by daemon" % jobid)
+
+            try:
+                self._parent._controller.remove(task)
+                return "Task `%s` successfully forgotten" % jobid
+            except Exception as ex:
+                return ("ERROR: could not forget task `%s`: %s" % (jobid, ex))
+
+
+    #
+    # Basic commands exposed via XML-RPC
+    #
+
+    def help(self, cmd=None):
+        """
+        Show available commands, or get information about a specific
+        command.
+        """
+        if cmd:
+            return self.server.system_methodHelp(cmd)
+        else:
+            return ("""
+The following daemon commands are available:
+
+  {cmds}
+
+Run `help CMD` to get help on command CMD.
+            """.format(cmds=("\n  ".join(sorted(self.server.system_listMethods())))))
+
+    def shutdown(self):
+        """Terminate daemon."""
+
+        # run this in a separate thread so the server can reply to the requestor
+        pid = os.getpid()
+        def killme():
+            self.log.info("Shutting down as requested by `quit` command ...")
+
+            # stop main loop
+            self.running = False
+
+            # wait 1s so that the client connection is not hung up
+            # abruptly and we have time to give feedback
+            self._sleep(1)
+            self.server.stop()
+
+            # Send kill signal to current process if not terminated
+            # within 10s
+            self._sleep(9)
+            self.log.warning(
+                "Daemon still alive after 10s;"
+                " sending SIGTERM to process %s ...", pid)
+            os.kill(pid, signal.SIGTERM)
+
+            # If this is not working, try a more aggressive approach:
+            # SIGINT is interpreted by the Python interpreter as
+            # `KeyboardInterrupt`. It will also call
+            # `self.parent.cleanup()`, again.
+            self._sleep(10)
+            self.log.warning(
+                "Daemon still alive after 10s;"
+                " sending SIGINT to process %s ...", pid)
+            os.kill(pid, signal.SIGINT)
+
+            # We whould never reach this point, but Murphy's law...
+            self._sleep(10)
+            # Revert back to SIGKILL. This will leave the pidfile
+            # hanging around.
+            self.log.warning("Still alive: forcing death by SIGKILL.")
+            os.kill(pid, signal.SIGKILL)
+
+            self.log.error(
+                "Unable to kill process %d; giving up."
+                " Perhaps termination signals cannot be delivered"
+                " due to the process being in 'uninterruptible sleep'"
+                " (D) state?", pid)
+            return os.EX_OSERR
+        thread = mp.Process(target=killme)
+        thread.daemon = True
+        thread.start()
+        return ("Terminating process %d in 10s" % pid)
+
+
+
+    #
+    # Internal mechanisms
+    #
+
+    def terminate(self):
+        self.running = False
+        self.log.debug("Waiting for communication thread to terminate ...")
+        try:
+            self.server.stop()
+            self.server_process.terminate()
+            self.server_process.join(1)
+        except AttributeError:
+            # If the script is interrupted/killed during command line
+            # parsing the `self.server` daemon is not present and we get
+            # an AttributeError we can safely ignore.
+            pass
+
+    def setup(self):
+        super(SessionBasedDaemon, self).setup()
+
+        # change default for the `-C`, `--session` and `--output` options
+        self.actions['wait'].default = 30
+        self.actions['wait'].help = (
+            'Check the status of tasks every NUM'
+            ' seconds. Default: %(default)s')
+
+        # Default session dir and output dir are computed from
+        # --working-directory.  Set None here so that we can update it
+        # in pre_run()
+        self.actions['session'].default = None
+        self.actions['output'].default = None
+
+    def setup_options(self):
+        self.add_param('-F', '--foreground',
+                       action='store_true', default=False,
+                       help=("Do not daemonize "
+                             "and keep running as a foreground process"
+                             " in the starting shell."
+                             " Mostly useful for debugging."
+                             " Off by default."))
+
+        self.add_param('--working-dir',
+                       metavar='PATH', default=os.getcwd(),
+                       help=("Store session information and output files"
+                             " in the directory pointed to by PATH."
+                             " Ignored when runing in foreground."
+                             " Default: %(default)s"))
+
+        self.add_param('--listen', default="localhost:0", metavar="IP_ADDR",
+                       help=("IP address or hostname"
+                             " where the XML-RPC server should listen to."
+                             " Optionally a port number can be specified"
+                             " by separating it with a colon ':' character;"
+                             " a port number of '0' means the actual port"
+                             " will be dynamically allocated and only"
+                             " known once the daemon is started."
+                             " (It is written to the `daemon.url` file.)"
+                             " Default: %(default)s"))
+
+    def setup_args(self):
+        self.add_param('inbox', nargs='+',
+                       help=("'Inbox' directories:"
+                             " whenever a new file is created"
+                             " in one of these directories,"
+                             " a callback is triggered to add new jobs"))
+
+    def parse_args(self):
+        super(SessionBasedDaemon, self).parse_args()
+
+        self.params.working_dir = os.path.abspath(self.params.working_dir)
+
+        # Default session dir is inside the working directory
+        if not self.params.session:
+            self.params.session = os.path.join(self.params.working_dir, self.name)
+
+        # Convert inbox to Url objects
+        self.params.inbox = [Url(inbox) for inbox in self.params.inbox]
+
+        # Default output directory is the working directory.
+        if not self.params.output:
+            self.params.output = self.params.working_dir
+
+        # parse the host:port listen string
+        if ':' in self.params.listen:
+            # use `.rsplit()` to be IPv6-safe
+            addr, port = self.params.listen.rsplit(':', 1)
+            # handle case `:port`
+            if not addr:
+                addr = 'localhost'
+            # be forgiving of `host:` ...
+            if not port:
+                port = self.DEFAULT_PORT
+            try:
+                port = int(port)
+            except ValueError as err:
+                raise InvalidUsage(
+                    "Port number must be an integer between 0 and 65535."
+                    " Got `{port}` instead.".format(port=port))
+        else:
+            # only host given, no port
+            addr = self.params.listen
+            port = self.DEFAULT_PORT
+        self.listen_addr = addr
+        self.listen_port = port
+
+
+    def _main(self):
+        # make PID file (in the session dir, so no two
+        # instances of this daemon can be concurrently
+        # running)
+        lockfile_path = os.path.join(
+            self.session.path, self.name + '.pid')
+        lockfile = PIDLockFile(lockfile_path)
+        if lockfile.is_locked():
+            raise gc3libs.exceptions.FatalError(
+                "PID file `{0}` is already present."
+                " Ensure no other daemon is running,"
+                " then delete file and re-run this command."
+                .format(lockfile_path))
+        # ensure PID file is removed upon termination
+        atexit.register(rm_f, lockfile_path)
+
+        if self.params.foreground:
+            context = lockfile
+            self.log.warning(
+                "Keep running in foreground"
+                " as requested with `-F`/`--foreground` option ...")
+        else:
+            # redirect all output
+            logfile = open(os.path.join(self.params.working_dir, 'daemon.log'), 'w')
+            os.dup2(logfile.fileno(), 1)
+            os.dup2(logfile.fileno(), 2)
+            # use PEP 3134 context manager for daemonizing
+            context = daemon.DaemonContext(
+                files_preserve=list(set([1,2]).union(self.__get_logging_fds())),
+                pidfile=lockfile,  # DaemonContext wraps the PID file ctx
+                signal_map={signal.SIGTERM: self.terminate},
+                stderr=logfile,
+                stdout=logfile,
+                umask=0o002,
+                working_directory=self.params.working_dir,
+            )
+            self.log.info("About to daemonize ...")
+
+        with context:
+            self._start_inboxes()
+            self._start_server()
+            self.running = True
+            return super(SessionBasedDaemon, self)._main()
+
+    def _start_inboxes(self):
+        """
+        Populate `self.pollers` based on `self.params.inbox`.
+        """
+        self.pollers = [
+            make_poller(inbox, recurse=True)
+            for inbox in self.params.inbox
+        ]
+
+    def _start_server(self):
+        """
+        Start command server in a separate thread.
+        """
+        self.log.info(
+            "Starting XML-RPC server on %s:%s ...",
+            self.listen_addr, self.listen_port)
+        try:
+            self.server = self.Server(
+                self, self.Commands(self),
+                self.listen_addr, self.listen_port)
+            self.server_process = mp.Process(
+                target=self.server.start, name='server')
+            self.server_process.daemon = True
+            self.server_process.start()
+        except Exception as err:
+            self.log.error("Could not start server: %s", err)
+            raise
+
+    def __get_logging_fds(self):
+        fds = set([])
+        for handler in logging._handlerList:
+            # dereference weakref
+            try:
+                handler = handler()
+            except:
+                pass
+            self.log.debug("Inspecting logging handler %r", handler)
+            # ignore handlers without underlying file or socket
+            if isinstance(handler, (
+                    logging.NullHandler,
+                    logging.handlers.BufferingHandler,
+                    logging.handlers.HTTPHandler,
+                    logging.handlers.MemoryHandler,
+                    logging.handlers.SMTPHandler,
+            )):
+                continue
+            # code below works for StreamHandler and FileHandler
+            try:
+                fds.add(handler.stream.fileno())
+                continue  # skip logging below
+            except AttributeError:
+                pass
+            # code below works for SysLogHandler and SocketHandler
+            try:
+                fds.add(handler.socket.fileno())
+                continue  # skip logging below
+            except AttributeError:
+                pass
+            self.log.debug(
+                "Cannot extract file descriptor number from %r;"
+                " logging to this handler might be dropped"
+                " after daemonizing.", handler)
+        self.log.debug("File descriptors used in logging: %r", fds)
+        return fds
+
+
+    def _main_loop_before_tasks_progress(self):
+        """
+        Poll inboxes for events and fire the corresponding handlers.
+        """
+        self.log.debug("In `SessionBasedDaemon._main_loop_before_tasks_progress()`")
+        for inbox in self.pollers:
+            events = inbox.get_new_events()
+            for subject, what in events:
+                self.log.debug(
+                    "Got event %s on %s from Inbox %s",
+                    what, subject, inbox)
+                if what == 'created':
+                    self.created(inbox, subject)
+                elif what == 'modified':
+                    self.modified(inbox, subject)
+                elif what == 'deleted':
+                    self.deleted(inbox, subject)
+
+
+    def _main_loop_done(self, rc):
+        """
+        Tell the main loop to run until interrupted.
+        """
+        return not self.running
+
+
+    #
+    # react on Inbox events
+    #
+
+    def created(self, inbox, subject):
+        """
+        React to creation of `subject` in `inbox`.
+
+        A typical scenario is this: a new file is created in a watched
+        directory; this method could then react by creating a new task
+        to process that file.
+
+        This method should be overridden in derived classes, as the
+        default implementation does nothing.
+        """
+        pass
+
+    def modified(self, inbox, subject):
+        """
+        React to modification of `subject` in `inbox`.
+
+        .. note::
+
+          Not all Pollers are capable of generating ``modified``
+          events reliably.  This method is provided for completeness,
+          but likely only useful for filesystem-watching inboxes.
+
+        This method should be overridden in derived classes, as the
+        default implementation does nothing.
+        """
+        pass
+
+    def deleted(self, inbox, subject):
+        """
+        React to removal of `subject` from `inbox`.
+
+        This method should be overridden in derived classes, as the
+        default implementation does nothing.
+        """
+        pass

@@ -2,7 +2,7 @@
 #
 #   ggeosphere.py -- Front-end script for submitting multiple `GeoSphere` jobs.
 #
-#   Copyright (C) 2013, 2014 GC3, University of Zurich
+#   Copyright (C) 2013, 2014, 2018 GC3, University of Zurich
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -98,7 +98,7 @@ class GeoSphereApplication(Application):
         geosphere_wrapper.sh [options] <input model <output model>
 
         Options:
-        -w <working dir>         name of the working dir extracted from 
+        -w <working dir>         name of the working dir extracted from
                                  .tgz file
         -g <grok binary file>    path to 'grok' binary. Default in PATH
         -h <hgs binary file>     path to 'hgs' binary. Default in PATH
@@ -211,18 +211,18 @@ class GeoSphereScript(SessionBasedScript):
     ggeosphere. Submit a job for each one found; job progress is
     monitored and, when a job is done, its output files are retrieved back
     into the simulation directory itself.
-    
+
     The ``ggeosphere`` has two working models: classical CLI based that can be executed
     as local script or as web-based application (use the '--daemon-mode' to enable
     web-based application mode). In web-based application mode ``ggeosphere``
-    does not terminate when all input models have been processed but it 
+    does not terminate when all input models have been processed but it
     periodically checks whether new models have been added.
     In case, a new simulation is launched.
     It keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
-    of all known jobs is printed.  
+    of all known jobs is printed.
 
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``ggeosphere`` will delay submission of
@@ -242,11 +242,11 @@ class GeoSphereScript(SessionBasedScript):
             )
 
     def setup_options(self):
-        self.add_param("-I", "--Input", 
+        self.add_param("-I", "--Input",
                        metavar="PATH",
                        action="store",
                        default=None,
-                       dest="input_folder", 
+                       dest="input_folder",
                        help="Path to the input folder. "+
                        "Valid URLs: [local path], [s3://].")
 
@@ -254,15 +254,15 @@ class GeoSphereScript(SessionBasedScript):
                        metavar="PATH",
                        action="store",
                        default=None,
-                       dest="output_folder", 
+                       dest="output_folder",
                        help="Path to the output folder. "+
                        "Valid URLs: [local path], [s3://].")
 
-        self.add_param("-c", "--config", 
+        self.add_param("-c", "--config",
                        metavar="PATH",
                        action="store",
                        default=None,
-                       dest="config_file", 
+                       dest="config_file",
                        help="Location of the configuration file. "+
                        "Command line options take precedence over config file.")
 
@@ -313,7 +313,7 @@ class GeoSphereScript(SessionBasedScript):
         if self.params.output_folder:
             # Overwrite configuration file
             self.extra['output'] = self.params.output_folder
-        
+
         if not self.extra['input']:
             raise gc3libs.exceptions.InvalidUsage(
                 "Missing required argument 'input_folder'. " \
@@ -388,16 +388,16 @@ class GeoSphereScript(SessionBasedScript):
             if not os.path.exists(os.path.abspath(self.extra['output'].path)):
                 gc3libs.log.info("Creating output folder '%s'", self.extra['output'].path)
                 os.makedirs(self.extra['output'].path)
-            
+
 
         self.log.info("Input models location: [%s]" % str(self.extra['input']))
         self.log.info("Output results location: [%s]" % str(self.extra['output']))
         self.log.info("Running as daemon: [%s]" % str(self.extra['is_daemon']))
-        
+
 
 
     def _create_task(self, input_model, output_model, **extra_args):
-        
+
         # XXX: Weak
         # Convention is that input model files are named after the folder
         # they represent. So an input model:
@@ -405,10 +405,10 @@ class GeoSphereScript(SessionBasedScript):
         # will produce, once expanded, a folder named:
         # emme_v2_20131125-lowres-all2012_365d_monthly_DKpaper_LINUX
         working_dir = os.path.splitext(os.path.basename(str(input_model)))[0]
-        
+
         extra_args['jobname'] = working_dir
-        
-        # FIXME: ignore SessionBasedScript feature of customizing 
+
+        # FIXME: ignore SessionBasedScript feature of customizing
         # output folder
         # extra_args['output_dir'] = self.params.output
         extra_args['output_dir'] = os.path.join(self.extra['simulation_log_location'],extra_args['jobname'])
@@ -419,15 +419,15 @@ class GeoSphereScript(SessionBasedScript):
         extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', extra_args['jobname'])
 
         extra_args['s3cfg'] = self.extra['s3cfg']
-            
+
         self.log.info("Creating Task for input file: %s" % os.path.basename(str(input_model)))
-        
+
         return GeoSphereTask(
             input_model,
             output_model,
             **extra_args
         )
-        
+
 
     def new_tasks(self, extra):
 
@@ -451,7 +451,7 @@ class GeoSphereScript(SessionBasedScript):
         #     if task.execution.state in [Run.State.TERMINATED]:
         #         # Check whether output is present
         #         if task.output_model
-                
+
 
 
         for input_model in self._list_models_by_url(self.extra['input']):
@@ -474,8 +474,7 @@ class GeoSphereScript(SessionBasedScript):
                 # Add as a new task
                 gc3libs.log.info("Found new model to add: '%s'" % os.path.basename(str(input_model)))
                 task =  self._create_task(input_model, self._get_output(input_model), **self.extra.copy())
-                self.session.add(task)
-                self._controller.add(task)
+                self.add(task)
 
         # # Remove all terminated tasks
         # for task in self.session.tasks:
@@ -489,13 +488,13 @@ class GeoSphereScript(SessionBasedScript):
     def _get_output(self, input_model):
         """
         Returns an output gc3libs.url.Url representing
-        the expected output file procudes at the end of the 
+        the expected output file procudes at the end of the
         GeoSphere simulation given the provided input_model.
         Agreed convention with the A4Mesh team:
         output: 'result_<input_model>_<date>.tgz'
         """
         return gc3libs.url.Url(os.path.join(str(self.extra['output']),
-                                            "result_%s_%s.tgz" % 
+                                            "result_%s_%s.tgz" %
                                             (os.path.splitext(
                                                 os.path.basename(
                                                     str(input_model)))[0],
@@ -518,14 +517,14 @@ class GeoSphereScript(SessionBasedScript):
         """
         return a list of all .fastq files in the input folder
         """
-    
+
         return [ gc3libs.url.Url(os.path.join(input_folder.path,infile)) for infile in os.listdir(input_folder.path) if infile.endswith('.tgz') ]
 
     def _list_s3(self, s3_url):
         """
         Use s3cmd command line interface to interact with
         a remote S3-compatible ObjectStore.
-        Assumption: 
+        Assumption:
         . s3cmd configuration file available
         and correctly pointing to the right ObjectStore.
         . s3cmd available in PATH environmental variable.
@@ -540,18 +539,18 @@ class GeoSphereScript(SessionBasedScript):
         _command = "s3cmd "
         if self.extra['s3cfg']:
             _command += " -c %s " % self.extra['s3cfg']
-            
+
         _command += " ls %s"  % str(s3_url)
 
         try:
             _process = subprocess.Popen(_command,
-                                        stdout=subprocess.PIPE, 
+                                        stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE,
                                         close_fds=True, shell=True)
-                
+
             (out, err) = _process.communicate()
             exitcode = _process.returncode
-            
+
             if (exitcode != 0):
                 gc3libs.log.error("Failed accessing S3 folder. "
                                   "Exitcode %s, error %s" % (exitcode,err))
@@ -570,7 +569,7 @@ class GeoSphereScript(SessionBasedScript):
                 continue
             # object string format: '2014-01-09 16:41 3627374 s3://a4mesh/model_1.tgz'
             try:
-                s3_url = s3_obj.split()[3] 
+                s3_url = s3_obj.split()[3]
                 if(s3_url.startswith("s3://")) and(s3_url.endswith("tgz")):
                     yield gc3libs.url.Url(s3_url)
             except IndexError:
@@ -597,47 +596,47 @@ class GeoSphereScript(SessionBasedScript):
         if not config.has_section("default"):
             raise ConfigParser.ParsingError("Section 'default' not found")
 
-        self.extra['s3cfg'] = os.path.expandvars(validate_config_option(config, 
-                                                                        "S3ConfigFileLocation", 
+        self.extra['s3cfg'] = os.path.expandvars(validate_config_option(config,
+                                                                        "S3ConfigFileLocation",
                                                                         DEFAULT_S3CFG))
 
-        self.extra['input'] = os.path.expandvars(validate_config_option(config, 
+        self.extra['input'] = os.path.expandvars(validate_config_option(config,
                                                                         "InputLocation"))
-        
-        self.extra['output'] = os.path.expandvars(validate_config_option(config, 
+
+        self.extra['output'] = os.path.expandvars(validate_config_option(config,
                                                                          "OutputLocation"))
 
-        self.extra['preserve-output'] = validate_config_option(config, 
+        self.extra['preserve-output'] = validate_config_option(config,
                                                                "PreserveOutputWhenInputRemoved")
 
 
-        self.extra['computing_resources'] = validate_config_option(config, 
-                                                                   "computing_resources", 
+        self.extra['computing_resources'] = validate_config_option(config,
+                                                                   "computing_resources",
                                                                    DEFAULT_CLOUD_ALL)
 
-        self.extra['max_running'] = validate_config_option(config, 
-                                                           "max_running", 
+        self.extra['max_running'] = validate_config_option(config,
+                                                           "max_running",
                                                            DEFAULT_MAX_RUNNING)
 
-        self.extra['max_retries'] = validate_config_option(config, 
-                                                           "max_retries", 
+        self.extra['max_retries'] = validate_config_option(config,
+                                                           "max_retries",
                                                            DEFAULT_MAX_RETRIES)
 
-        self.extra['log_level'] = validate_config_option(config, 
-                                                         "log_level", 
+        self.extra['log_level'] = validate_config_option(config,
+                                                         "log_level",
                                                          DEFAULT_LOG_LEVEL)
 
-        self.extra['save_simulation_log'] = validate_config_option(config, 
-                                                                   "save_simulation_log", 
+        self.extra['save_simulation_log'] = validate_config_option(config,
+                                                                   "save_simulation_log",
                                                                    False)
 
-        self.extra['simulation_log_location'] = os.path.expandvars(validate_config_option(config, 
-                                                                       "simulation_log_location", 
+        self.extra['simulation_log_location'] = os.path.expandvars(validate_config_option(config,
+                                                                       "simulation_log_location",
                                                                        False))
 
 
 ###  TODO  ####
-# 
+#
 # . Wrapper script review
 # . pass also 'working_dir' name to wrapper script
 # . error in output_file location (distinguish between local vs S3)
@@ -645,6 +644,3 @@ class GeoSphereScript(SessionBasedScript):
 
 # wrapper script should be invoked as follow:
 # ./geosphere_wrapper.sh -d s3://models/input/emme_v2_20131125-lowres-all2011_365d_monthly_DKpaper_LINUX.tgz emme_v2_20131125-lowres-all2011_365d_monthly_DKpaper_LINUX s3://models/output/result_emme_v2_20131125-lowres-all2011_365d_monthly_DKpaper_LINUX_20140507-1612.tgz
-
-
-

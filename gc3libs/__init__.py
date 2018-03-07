@@ -156,7 +156,7 @@ def configure_logger(
     _load_logging_configuration_file(name)
     log = logging.getLogger("gc3.gc3libs")
     log.setLevel(level)
-    log.propagate = 1
+    log.propagate = True
     if colorize == 'auto':
         # set if STDERR is connected to a terminal
         colorize = sys.stderr.isatty()
@@ -168,6 +168,7 @@ def configure_logger(
                 level=level, fmt=format, datefmt=datefmt, programname=name)
         except ImportError as err:
             log.warning("Could not import `coloredlogs` module: %s", err)
+    return log
 
 def _load_logging_configuration_file(name):
     if name is None:
@@ -1898,12 +1899,6 @@ class Run(Struct):
                 self.history.append(
                     "Transition from state {0} to state {1}"
                     .format(self._state, value))
-            # update stats on controller -- we need to do this
-            # *after* the `.terminated()` method has gotten a
-            # chance to run and set the final exitcode.
-            if self._ref is not None and self._ref._attached:
-                self._ref._controller._update_task_counts(self._ref, self._state, -1)
-                self._ref._controller._update_task_counts(self._ref, value, +1)
             # finally, update state
             self._state = value
 
