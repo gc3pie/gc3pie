@@ -183,10 +183,11 @@ class TestSessionBasedDaemon(_TestsCommon):
             inbox_dir,
         ])
 
-        # allow daemon time to start and create PID file
-        time.sleep(3)
-
         pidfile = join(self.basedir, 'session', 'simpledaemon.pid')
+        self.check_with_timeout(
+            condition=lambda: exists(pidfile),
+            timeout=15,
+            errmsg="PID file not created")
         pid = int(read_contents(pidfile))
 
         try:
@@ -298,18 +299,20 @@ class TestSessionBasedDaemon(_TestsCommon):
             inbox_dir,
         ])
 
-        # allow daemon time to start and create PID file
-        time.sleep(3)
-
         pidfile = join(self.basedir, 'session', 'simpledaemon.pid')
+        self.check_with_timeout(
+            condition=lambda: exists(pidfile),
+            timeout=15,
+            errmsg="PID file not created")
         pid = int(read_contents(pidfile))
 
-        # wait some more time to set up listener
-        time.sleep(3)
-
-        # get IDs of tasks in session
-        _, stdout = self.run([self.client_py, session_dir, 'list', 'json'])
-        task_ids = json.loads(stdout)
+        # get IDs of tasks in session -- retry until the server is ready to respond
+        for _ in range(15):
+            try:
+                _, stdout = self.run([self.client_py, session_dir, 'list', 'json'])
+                task_ids = json.loads(stdout)
+            except ValueError:
+                time.sleep(1)
         assert len(task_ids) > 0
 
         # wait up to max_wait seconds for task to complete
@@ -344,12 +347,16 @@ class TestSessionBasedDaemon(_TestsCommon):
             inbox_dir,
         ])
 
-        # wait some time to set up listener
-        time.sleep(5)
+        # it may take a few seconds before the daemon is ready to serve requests,
+        # so try and possibly re-try...
+        for _ in range(15):
+            try:
+                _, stdout = self.run([self.client_py, session_dir, 'list', 'json'])
+                task_ids2 = json.loads(stdout)
+            except ValueError:
+                time.sleep(1)
 
         # check that task IDs are the same
-        _, stdout = self.run([self.client_py, session_dir, 'list', 'json'])
-        task_ids2 = json.loads(stdout)
         assert set(task_ids) == set(task_ids2)
 
         # check that one TERMINATED task is there
