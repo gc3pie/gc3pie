@@ -2354,7 +2354,7 @@ Run `help CMD` to get help on command CMD.
     # Internal mechanisms
     #
 
-    def terminate(self):
+    def terminate(self, exc_type=None, exc_value=None, tb=None):
         self.running = False
         self.log.debug("Waiting for communication thread to terminate ...")
         try:
