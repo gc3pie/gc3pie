@@ -73,6 +73,7 @@ if python_version == (2, 6):
         # Alternate dependencies for Python 2.6:
         # - PyCLI requires argparse,
         'argparse',
+        'lockfile==0.11.0',
         # Paramiko ceased support for Python 2.6 in version 2.4.0
         'paramiko<2.4', 'pycrypto',
         # parsedatetime officially dropped supprt for Py 2.6 in version 1.0
@@ -109,6 +110,7 @@ if python_version == (2, 6):
     ]
 elif python_version == (2, 7):
     version_dependent_requires = [
+        'lockfile',
         'paramiko', 'pycrypto',
         # Needed for parsing human-readable dates (gselect uses it).
         'parsedatetime',

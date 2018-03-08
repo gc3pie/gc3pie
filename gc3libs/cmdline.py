@@ -78,14 +78,14 @@ import cli  # pyCLI
 import cli.app
 import cli._ext.argparse as argparse
 import daemon
+import lockfile
+from lockfile.pidlockfile import PIDLockFile
 import yaml
 
 
 # interface to GC3Pie
 import gc3libs
 import gc3libs.config
-from gc3libs.compat import lockfile
-from gc3libs.compat.lockfile.pidlockfile import PIDLockFile
 import gc3libs.core
 import gc3libs.exceptions
 from gc3libs.exceptions import InvalidUsage
