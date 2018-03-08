@@ -1162,8 +1162,7 @@ class Application(Task):
                     " resource provides (%s, %s per CPU core)" %
                     (lrms.name,
                      self.requested_memory,
-                     self.requested_cores *
-                     lrms.max_memory_per_core,
+                     self.requested_cores * lrms.max_memory_per_core,
                      lrms.max_memory_per_core))
                 continue
             if (self.requested_walltime is not None
