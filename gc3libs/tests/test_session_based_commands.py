@@ -108,11 +108,11 @@ resourcedir = {basedir}/resource.d
         """
         for _ in range(timeout):
             if condition():
-                break
+                return
             time.sleep(1)
         else:
             assert False, (
-                (msg + " (within {timeout} seconds)")
+                (errmsg + " (within {timeout} seconds)")
                 .format(timeout=timeout))
 
 
