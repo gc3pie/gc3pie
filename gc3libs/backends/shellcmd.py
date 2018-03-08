@@ -1378,24 +1378,30 @@ class ShellcmdLrms(LRMS):
 
         if self.free_slots == 0:  # or free_slots == 0:
             if self.override:
-                raise gc3libs.exceptions.MaximumCapacityReached(
+                errmsg = (
                     "Resource {0} already running maximum allowed number of jobs"
                     .format(self.name))
             else:
-                raise gc3libs.exceptions.MaximumCapacityReached(
-                    "Resource %s already running maximum allowed number of jobs"
-                    " (%s). Increase 'max_cores' to raise." %
-                    (self.name, self.max_cores))
+                errmsg = (
+                    "Resource {0} already running maximum allowed number of jobs"
+                    " ({1}). Increase 'max_cores' to raise."
+                    .format(self.name, self.max_cores))
+            raise gc3libs.exceptions.MaximumCapacityReached(errmsg)
 
-        if app.requested_memory:
-            if self.available_memory < app.requested_memory:
-                raise gc3libs.exceptions.MaximumCapacityReached(
-                    "Resource {0} does not have enough available memory:"
-                    " {1} requested total, but only {2} available."
-                    .format(
-                        self.name,
-                        app.requested_memory.to_str('%g%s', unit=Memory.MB),
-                        self.available_memory.to_str('%g%s', unit=Memory.MB))
+        if self.free_slots < app.requested_cores:
+            raise gc3libs.exceptions.MaximumCapacityReached(
+                "Resource {0} does not have enough available execution slots:"
+                " {1} requested total, but only {2} available."
+                .format(self.name, app.requested_cores, self.free_slots))
+
+        if (app.requested_memory and self.available_memory < app.requested_memory):
+            raise gc3libs.exceptions.MaximumCapacityReached(
+                "Resource {0} does not have enough available memory:"
+                " {1} requested total, but only {2} available."
+                .format(
+                    self.name,
+                    app.requested_memory.to_str('%g%s', unit=Memory.MB),
+                    self.available_memory.to_str('%g%s', unit=Memory.MB))
             )
 
     def _setup_app_execution_directory(self, app):
