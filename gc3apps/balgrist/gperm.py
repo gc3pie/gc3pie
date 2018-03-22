@@ -36,6 +36,8 @@ gperm takes BIDS files as input.
 
 # summary of user-visible changes
 __changelog__ = """
+  2018-03-10:
+  * result of each subject get stored back to the corresponding input folder.
   2018-01-10:
   * added support for freesurfer license file to be passed as part of the docker invokation. see: https://fmriprep.readthedocs.io/en/latest/installation.html#the-freesurfer-license
   2017-04-18:
@@ -57,6 +59,7 @@ import time
 import tempfile
 import mimetypes
 import random
+import shutil
 
 from pkg_resources import Requirement, resource_filename
 
@@ -115,6 +118,7 @@ class GpermApplication(Application):
         inputs = dict()
         outputs = dict()
         
+        self.subject_dir = subject
         inputs[subject] = os.path.join(DEFAULT_BIDS_FOLDER,
                                        os.path.basename(subject))
 
@@ -150,7 +154,19 @@ class GpermApplication(Application):
             join=True,
             executables = executables,
             **extra_args)    
-    
+
+    def terminated(self):
+        """
+        Move output file in 'result_dir'
+        """
+        gc3libs.log.info("Moving results from {0} to {1}".format(self.output_dir,
+                                                                 self.subject_dir))
+
+        for elem in os.listdir(self.output_dir):
+            shutil.move(os.path.join(self.output_dir,elem),
+                        os.path.join(self.subject_dir,elem))
+
+        
 class GpermScript(SessionBasedScript):
     """
     The ``gperm`` command keeps a record of jobs (submitted, executed
