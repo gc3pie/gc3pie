@@ -161,6 +161,11 @@ class TestSessionBasedScript(_TestsCommon):
                            gc3libs.session.Session.STORE_URL_FILENAME,))
 
 
+# daemon-related tests fail on Py2.6 because (apparently) python-daemon
+# does not correctly create PID files on that platform; disable
+# the tests altogether, as we'll have to drop Py2.6 support soon...
+@pytest.mark.skipif(sys.version_info < (2,7),
+                    reason="python-daemon requires python 2.7+")
 class TestSessionBasedDaemon(_TestsCommon):
     """
     Test suite for session-based daemons.
