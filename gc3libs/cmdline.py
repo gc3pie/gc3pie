@@ -103,7 +103,7 @@ from gc3libs.utils import (
 import gc3libs.url
 from gc3libs.url import Url
 from gc3libs.quantity import Memory, GB, Duration, hours
-from gc3libs.session import Session
+from gc3libs.session import Session, TemporarySession
 from gc3libs.poller import make_poller
 
 
@@ -1012,9 +1012,8 @@ class _SessionBasedCommand(_Script):
             metavar="PATH",
             help="Store the session information in the directory at PATH."
             " (Default: '%(default)s'). ")
-        self.add_param("-u", "--store-url",
-                       action="store",
-                       metavar="URL",
+        self.add_param("-u", "--store-url", metavar="URL",
+                       action="store", default=None,
                        help="URL of the persistent store to use.")
         self.add_param(
             "-N",
@@ -1077,14 +1076,24 @@ class _SessionBasedCommand(_Script):
         self.params.walltime = Duration(self.params.wctime)
 
         # determine the session file name (and possibly create an empty index)
-        self.session_uri = gc3libs.url.Url(self.params.session)
+        try:
+            self.session_uri = gc3libs.url.Url(self.params.session)
+        except Exception as err:
+            raise gc3libs.exceptions.InvalidArgument(
+                "Cannot parse session URL `{0}`: {1}"
+                .format(self.params.session, err))
         if self.params.store_url == 'sqlite':
             self.params.store_url = (
                 "sqlite:///%s/jobs.db" % self.session_uri.path)
         elif self.params.store_url == 'file':
             self.params.store_url = ("file:///%s/jobs" % self.session_uri.path)
-        self.session = self._make_session(
-            self.session_uri.path, self.params.store_url)
+        try:
+            self.session = self._make_session(
+                self.session_uri, self.params.store_url)
+        except gc3libs.exceptions.InvalidArgument as err:
+            raise RuntimeError(
+                "Cannot load session `{0}`: {1}"
+                .format(self.session_uri, err))
 
         # keep a copy of the credentials in the session dir, if needed
         self.config.auth_factory.add_params(
@@ -1118,7 +1127,15 @@ class _SessionBasedCommand(_Script):
         passed parameters or add new ones, as long as the returned
         object implements the `Session` interface.
         """
-        return Session(session_uri, create=True, store_or_url=store_url)
+        if session_uri.scheme == 'file':
+            return Session(session_uri.path, create=True, store_or_url=store_url)
+        else:
+            if store_url is not None:
+                raise gc3libs.exceptions.InvalidValue(
+                    "When the session is not stored on a filesystem,"
+                    " using a separate task storage is not possible."
+                )
+            return TemporarySession(session_uri)
 
     def _main(self, *args):
         """
