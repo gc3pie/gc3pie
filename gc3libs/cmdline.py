@@ -1981,7 +1981,6 @@ class SessionBasedDaemon(_SessionBasedCommand):
                     return (
                         "ERROR: Could not load task `%s` from session: %s"
                         % (jobid, err))
-
             try:
                 task.attach(self._parent._controller)
                 task.kill()

@@ -344,19 +344,19 @@ class Session(list):
         """
         queue = [task_id]
         while queue:
-            toremove = queue.pop()
-            obj = self.store.load(toremove)
+            id_to_remove = queue.pop()
+            obj = self.store.load(id_to_remove)
             try:
                 for child in obj.tasks:
                     queue.append(child.persistent_id)
             except AttributeError:
                 pass
             try:
-                self.store.remove(toremove)
-            except Exception as ex:
+                self.store.remove(id_to_remove)
+            except Exception as err:
                 gc3libs.log.warning(
-                    "Error removing task id `%s` from the store:"
-                    " %s" % ex)
+                    "Error removing task id `%s` from the store: %s",
+                    err)
 
     def remove(self, task_id, flush=True):
         """
