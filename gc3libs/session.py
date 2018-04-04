@@ -594,8 +594,10 @@ class TemporarySession(Session):
                     shutil.rmtree(path)
             atexit.register(cleanup)
         # init `Session` class
+        extra_args.setdefault('create', True)
+        extra_args.setdefault('load', False)
         super(TemporarySession, self).__init__(
-            path, True, store_or_url, False, **extra_args)
+            path, store_or_url=store_or_url, **extra_args)
         # populate index
         if task_ids is None:
             try:
