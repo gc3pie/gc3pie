@@ -2439,7 +2439,8 @@ Run `help CMD` to get help on command CMD.
 
         # Default session dir is inside the working directory
         if not self.params.session:
-            self.params.session = os.path.join(self.params.working_dir, self.name)
+            self.params.session = os.path.join(
+                self.params.working_dir, 'session')
 
         # Convert inbox to Url objects
         self.params.inbox = [Url(inbox) for inbox in self.params.inbox]
