@@ -235,24 +235,33 @@ class Session(list):
         unless environment variable ``GC3PIE_NO_CATCH_ERRORS``
         includes the keywords ``session`` or ``persistence``.
         """
-        try:
-            store_fname = os.path.join(self.path, self.STORE_URL_FILENAME)
-            self.store_url = gc3libs.utils.read_contents(store_fname).strip()
-            gc3libs.log.debug("Loading session from URL %s ...", self.store_url)
-        except IOError:
-            gc3libs.log.info(
-                "Unable to load session: file `%s` is missing.", store_fname)
-            raise
         if store is not None:
             self.store = store
             self.store_url = self.store.url
         else:
+            store_filename = os.path.join(self.path, self.STORE_URL_FILENAME)
+            try:
+                self.store_url = \
+                    gc3libs.utils.read_contents(store_filename).strip()
+                gc3libs.log.debug(
+                    "Loading session from URL %s ...", self.store_url)
+            except (OSError, IOError) as err:
+                gc3libs.log.error(
+                    "Unable to load session tasks from file `%s`: %s",
+                    store_filename, err)
+                raise
             self.store = gc3libs.persistence.make_store(
                 self.store_url, **extra_args)
 
         idx_filename = os.path.join(self.path, self.INDEX_FILENAME)
-        with open(idx_filename) as idx_file:
-            ids = idx_file.read().split()
+        try:
+            with open(idx_filename) as idx_file:
+                ids = idx_file.read().split()
+        except (OSError, IOError) as err:
+            gc3libs.log.error(
+                "Unable to load session index from file `%s`: %s",
+                idx_filename, err)
+            raise
 
         try:
             start_file = os.path.join(
@@ -262,7 +271,7 @@ class Session(list):
             # FIXME: should we also set `self.created` to the current timestamp?
             gc3libs.log.warning(
                 "Unable to recover starting time from existing session:"
-                " file `%s` is missing." % (start_file))
+                " file `%s` is missing.", start_file)
 
         self.tasks = self.load_many(ids)
 
