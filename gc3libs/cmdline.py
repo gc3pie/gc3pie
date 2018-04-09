@@ -1850,7 +1850,7 @@ class DaemonClient(_Script):
         except xmlrpclib.Fault as err:
             self.log.error(
                 "Error running command `%s`: %s",
-                self.params.cmd, err.faultString)
+                cmd, err.faultString)
             return os.EX_SOFTWARE
 
 
