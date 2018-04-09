@@ -2014,7 +2014,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 # default is `daemon`
                 tasks = self._parent._controller.iter_tasks()
 
-            task_ids = [task.persistent_id for task in tasks]
+            task_ids = [str(task.persistent_id) for task in tasks]
 
             if 'json' in opts:
                 return json.dumps(task_ids)
