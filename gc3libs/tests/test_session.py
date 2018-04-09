@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2012, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012, 2015, 2018 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -52,7 +52,9 @@ class _PStruct(Struct, Persistable):
 
 
 def test_create():
-    tmpdir = tempfile.mktemp(dir='.')
+    tmpdir = tempfile.mktemp(
+        prefix=(os.path.basename(__file__) + '.'),
+        suffix='.d')
     try:
         sess = Session(tmpdir)
         assert os.path.isdir(sess.path)
@@ -64,7 +66,9 @@ def test_create():
 
 
 def test_destroy():
-    tmpdir = tempfile.mktemp(dir='.')
+    tmpdir = tempfile.mktemp(
+        prefix=(os.path.basename(__file__) + '.'),
+        suffix='.d')
     try:
         sess = Session(tmpdir)
         tid = sess.add(_PStruct(a=1, b='foo'))
@@ -83,8 +87,10 @@ def test_destroy():
 class TestSession(object):
 
     @pytest.fixture(autouse=True)
-    def setUp(self):
-        tmpdir = tempfile.mktemp(dir='.')
+    def _with_tmp_session(self):
+        tmpdir = tempfile.mktemp(
+            prefix=(os.path.basename(__file__) + '.'),
+            suffix='.d')
         self.tmpdir = tmpdir
         self.sess = Session(tmpdir)
         self.extra_args = {}
@@ -119,23 +125,23 @@ class TestSession(object):
         assert ids == [str(i) for i in self.sess.tasks]
 
     def test_empty_lines_in_index_file(self):
-        """Check that the index file is read correctly even when there
+        """
+        Check that the index file is read correctly even when there
         are empty lines.
 
-        Because of a bug, in some cases Session used to create invalid
-        job ids equals to ''
+        Because of a bug, in some cases the
+        `gc3libs.session.Session`:class: used to create invalid job
+        ids (equal to ``''``).
         """
         self.sess.add(_PStruct(a=1, b='foo'), flush=True)
-        fd_job_ids = open(os.path.join(self.sess.path,
-                                       self.sess.INDEX_FILENAME), 'a')
-        fd_job_ids.write('\n\n\n')
-        if hasattr(self, 'extra_args'):
-            self.sess = Session(self.sess.path, **self.extra_args)
-        else:
-            self.sess = Session(self.sess.path)
+        with open(os.path.join(self.sess.path,
+                               self.sess.INDEX_FILENAME), 'a') as fp:
+            fp.write('\n\n\n')
+            fp.flush()
+        self.sess = Session(self.sess.path, **self.extra_args)
         ids = self.sess.list_ids()
         assert len(ids) == 1
-        assert ids == [str(i) for i in self.sess.tasks]
+        assert ids == [str(task_id) for task_id in self.sess.tasks]
 
     def test_add_no_flush(self):
         """Check that metadata is not changed on add(..., flush=False)."""
@@ -174,10 +180,7 @@ class TestSession(object):
         self.sess.add(_PStruct(a=1, b='foo'))
         self.sess.add(_PStruct(a=2, b='bar'))
         self.sess.add(_PStruct(a=3, b='baz'))
-        if hasattr(self, 'extra_args'):
-            sess2 = Session(self.sess.path, **self.extra_args)
-        else:
-            sess2 = Session(self.sess.path)
+        sess2 = Session(self.sess.path, **self.extra_args)
         assert len(sess2) == 3
         for task_id in sess2.tasks.iterkeys():
             task = sess2.store.load(task_id)
@@ -188,7 +191,9 @@ class TestSession(object):
                          sess2.tasks[task2_id])
 
     def test_incomplete_session_dir(self):
-        tmpdir = tempfile.mktemp(dir='.')
+        tmpdir = tempfile.mktemp(
+            prefix=(os.path.basename(__file__) + '.'),
+            suffix='.d')
         os.mkdir(tmpdir)
         incomplete_sess = Session(tmpdir)
         assert os.path.exists(os.path.join(tmpdir,
@@ -198,15 +203,15 @@ class TestSession(object):
         incomplete_sess.destroy()
 
     def test_load_external_jobid(self):
-        """Check if we are able to load an object not belonging to the session
+        """
+        Check if we are able to load an object not belonging to the session.
         """
         obj1 = _PStruct(a=1, b='foo')
         extraid = self.sess.store.save(obj1)
-        obj2 = self.sess.load(extraid)
+        # note: `load(..., add=True) will also add `obj2` to the
+        # session so it gets removed when the session is destroyed.
+        obj2 = self.sess.load(extraid, add=True)
         assert obj1 == obj2
-        # remove object from the store, since self.sess.destroy() will
-        # not remove it!
-        self.sess.store.remove(extraid)
 
     def test_creation_of_timestamp_files(self):
         start_file = os.path.join(self.sess.path,
@@ -289,13 +294,16 @@ class TestSqliteSession(StubForSqlSession):
         sqlite3 = pytest.importorskip("sqlite3")
 
     @pytest.fixture(autouse=True)
-    def setUp(self):
-        self.tmpdir = os.path.abspath(tempfile.mktemp(dir=os.getcwd()))
-        #import pdb; pdb.set_trace()  ### DEBUG
+    def _with_tmp_session(self):
+        self.tmpdir = os.path.abspath(
+            tempfile.mktemp(
+                prefix=(os.path.basename(__file__) + '.'),
+                suffix='.d'))
         self.sess = Session(
             self.tmpdir,
             create=True,
             store_or_url="sqlite:///{0}/store.db".format(self.tmpdir))
+        self.extra_args = {}
 
         yield
 
@@ -311,11 +319,13 @@ class TestMysqlSession(StubForSqlSession):
         MySQLdb = pytest.importorskip("MySQLdb")
 
     @pytest.fixture(autouse=True)
-    def setUp(self):
-        tmpdir = tempfile.mktemp(dir='.')
-        self.tmpdir = os.path.basename(tmpdir)
+    def _with_tmp_session(self):
+        self.tmpdir = tempfile.mktemp(
+            prefix=(os.path.basename(__file__) + '.'),
+            suffix='.d')
+        self.tablename = os.path.basename(tmpdir)
+        self.extra_args = {'table_name': self.tablename}
         try:
-            self.extra_args = {'table_name': self.tmpdir}
             self.sess = Session(
                 tmpdir,
                 store_url="mysql://gc3user:gc3pwd@localhost/gc3",
@@ -326,10 +336,10 @@ class TestMysqlSession(StubForSqlSession):
             pytest.mark.skip("Cannot connect to MySQL database.")
 
         yield
-        
+
         self.sess.destroy()
         conn = self.sess.store._engine.connect()
-        conn.execute("drop table `%s`" % self.tmpdir)
+        conn.execute("drop table `%s`" % self.tablename)
 
 # main: run tests
 

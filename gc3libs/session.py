@@ -339,11 +339,8 @@ class Session(list):
         Remove task identified by `task_id` from the current session
         *but not* from the associated storage.
         """
-        if task_id not in self.tasks:
-            raise gc3libs.exceptions.InvalidArgument(
-                "Task '%s' not found in session" % task_id)
-        self.tasks.pop(task_id)
-        if flush:
+        obj = self.tasks.pop(task_id, None)
+        if flush and obj is not None:
             self.flush()
 
     def _recursive_remove_from_store(self, task_id):
@@ -417,14 +414,17 @@ class Session(list):
         self._save_store_url_file()
         self._save_index_file()
 
-    def load(self, obj_id):
+    def load(self, obj_id, add=True, flush=True):
         """
         Load an object from persistent storage and return it.
 
         This is just a convenience proxy for calling method `load` on
         the `Store` instance associated with this session.
         """
-        return self.store.load(obj_id)
+        obj = self.store.load(obj_id)
+        if add:
+            self.add(obj, flush)
+        return obj
 
     def load_many(self, obj_ids):
         """

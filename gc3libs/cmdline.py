@@ -1308,7 +1308,9 @@ class _SessionBasedCommand(_Script):
                 " if the tasks are too old and have already been"
                 " cleaned up by the system.")
             for task_id in old_task_ids:
-                task = self.session.load(task_id)
+                # `id` is by contruction already in session, so no
+                # need to additionally run `session.add()` here
+                task = self.session.load(task_id, add=False)
                 task.attach(self._core)
                 try:
                     task.kill()
@@ -1976,7 +1978,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 task = self._parent._controller.find_task_by_id(jobid)
             except KeyError:
                 try:
-                    task = self._parent.session.load(jobid)
+                    task = self._parent.session.load(jobid, add=False)
                 except Exception as err:
                     return (
                         "ERROR: Could not load task `%s` from session: %s"
@@ -2131,7 +2133,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 pass
 
             try:
-                task = self._parent.session.load(jobid)
+                task = self._parent.session.load(jobid, add=True)
             except Exception as err:
                 return ("ERROR: Could not load task `%s`: %s" % (jobid, err))
 
@@ -2159,7 +2161,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 managed = True
             except KeyError:
                 try:
-                    task = self._parent.session.load(jobid)
+                    task = self._parent.session.load(jobid, add=False)
                     managed = False
                 except Exception as err:
                     return (
@@ -2197,7 +2199,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 task = self._parent._controller.find_task_by_id(jobid)
             except KeyError:
                 try:
-                    task = self._parent.session.load(jobid)
+                    task = self._parent.session.load(jobid, add=True)
                 except Exception as err:
                     return (
                         "ERROR: Could not load task `%s` from session: %s"
@@ -2225,7 +2227,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 task = self._parent._controller.find_task_by_id(jobid)
             except KeyError:
                 try:
-                    task = self._parent.session.load(jobid)
+                    task = self._parent.session.load(jobid, add=False)
                 except Exception as err:
                     return (
                         "ERROR: Could not load task `%s` from session: %s"
