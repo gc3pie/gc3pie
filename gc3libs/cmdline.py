@@ -2495,6 +2495,7 @@ Run `help CMD` to get help on command CMD.
                 "Keep running in foreground"
                 " as requested with `-F`/`--foreground` option ...")
         else:
+            self.session.store.pre_fork()
             # redirect all output
             logfile = open(os.path.join(self.params.working_dir, 'daemon.log'), 'w')
             os.dup2(logfile.fileno(), 1)
@@ -2517,6 +2518,8 @@ Run `help CMD` to get help on command CMD.
             # prematurely removed while the daemon is still
             # preparing...
             atexit.register(rm_f, lockfile_path)
+            # un-suspend session store functionality
+            self.session.store.post_fork()
             self._start_inboxes()
             self._start_server()
             self.running = True

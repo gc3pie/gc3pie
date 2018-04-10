@@ -212,8 +212,10 @@ class SqlStore(Store):
         See `GC3Pie issue #550 <https://github.com/uzh/gc3pie/issues/550>`_
         for more details and motivation.
         """
-        self._real_engine = sqla.create_engine(
-            self._to_sqlalchemy_url(self.url))
+        url = self._to_sqlalchemy_url(self.url)
+        gc3libs.log.debug(
+            "Initializing SQLAlchemy engine for `%s`...", url)
+        self._real_engine = sqla.create_engine(url)
 
         # create schema
         meta = sqla.MetaData(bind=self._real_engine)
@@ -242,6 +244,25 @@ class SqlStore(Store):
             meta.create_all()
 
         self._real_tables = meta.tables[self.table_name]
+
+
+    def pre_fork(self):
+        """
+        Dispose current SQLAlchemy engine (if any).
+        A new SQLAlchemy engine will be initialized
+        upon the next interaction with a DB.
+
+        This method only exists to allow `SessionBasedDaemon`:class:
+        and similar applications that can do DB operations after
+        fork()ing to continue to operate, without incurring into a
+        SQLAlchemy "OperationalError: (...) could not receive data
+        from server: Transport endpoint is not connected"
+        """
+        if self._real_engine:
+            self._real_engine.dispose()
+        self._real_engine = None
+        self._real_extra_fields = None
+        self._real_tables = None
 
 
     @property

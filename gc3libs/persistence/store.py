@@ -55,6 +55,32 @@ class Store(object):
             url = Url(url)
         self.url = url
 
+    def pre_fork(self):
+        """
+        Make preparations for `fork()`ing the current process.
+
+        This should close open network connections or any other
+        sockets or file descriptors that cannot be used by both the
+        parent and child process.
+
+        The default implementation of this method does nothing; as of
+        2018-04-10, the only subclass making use of this functionality
+        is `SqlStore`:class:, which needs to dispose the SQLAlchemy
+        engine and re-create it after forking.
+        """
+        pass
+
+    def post_fork(self):
+        """
+        Restore functionality that was suspended in `pre_fork`:meth:
+
+        This method will be called after forking/daemonizing has been
+        successfully accomplished.
+
+        The default implementation of this method does nothing.
+        """
+        pass
+
     def list(self, **extra_args):
         """
         Return list of IDs of saved `Job` objects.
