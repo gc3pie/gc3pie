@@ -2488,8 +2488,6 @@ Run `help CMD` to get help on command CMD.
                 " Ensure no other daemon is running,"
                 " then delete file and re-run this command."
                 .format(lockfile_path))
-        # ensure PID file is removed upon termination
-        atexit.register(rm_f, lockfile_path)
 
         if self.params.foreground:
             context = lockfile
@@ -2514,6 +2512,11 @@ Run `help CMD` to get help on command CMD.
             self.log.info("About to daemonize ...")
 
         with context:
+            # ensure PID file is removed upon termination -- we need
+            # to do this *after* forking to avoid the PID file being
+            # prematurely removed while the daemon is still
+            # preparing...
+            atexit.register(rm_f, lockfile_path)
             self._start_inboxes()
             self._start_server()
             self.running = True
