@@ -1493,8 +1493,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                     self._tasks_by_id[task.persistent_id] = task
                 except AttributeError:
                     gc3libs.log.debug(
-                        "Task %s added to Engine %s with no persistent ID!",
-                        task, self)
+                        "Engine %s: Added task %s with no persistent ID!",
+                        self, task)
             task.attach(self)
 
 
@@ -1517,8 +1517,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 pass
             except AttributeError:
                 gc3libs.log.debug(
-                    "Task %s added to Engine %s with no persistent ID!",
-                    task, self)
+                    "Engine %s: Cannot remove task %s: has no persistent ID!",
+                    self, task)
         task.detach()
 
 
