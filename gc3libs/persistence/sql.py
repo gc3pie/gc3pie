@@ -44,33 +44,6 @@ from gc3libs.persistence.serialization import make_pickler, make_unpickler
 from gc3libs.persistence.store import Store
 
 
-def sql_next_id_factory(db):
-    """
-    This function will return a function which can be used as
-    `next_id_fn` argument for the `IdFactory` class constructor.
-
-    `db` is DB connection class conform to DB API2.0 specs (works also
-    with SQLAlchemy engine types)
-
-    The function returned has signature:
-
-        sql_next_id(n=1)
-
-    the id returned is the maximum `id` field in the `store` table plus
-    1.
-    """
-    def sql_next_id(n=1):
-        q = db.execute('select max(id) from store')
-        nextid = q.fetchone()[0]
-        if not nextid:
-            nextid = 1
-        else:
-            nextid = int(nextid) + 1
-        return nextid
-
-    return sql_next_id
-
-
 class IntId(int):
 
     def __new__(cls, prefix, seqno):
