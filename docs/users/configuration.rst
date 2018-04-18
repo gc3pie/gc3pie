@@ -630,7 +630,9 @@ resource manager. By default these commands are searched using the
 these commands and/or add some extra options. The following options
 are used by the SLURM backend:
 
-  * ``sbatch``: submit a job.
+  * ``sbatch``: submit a job; can specify additional arguments (they will be inserted between the ``sbatch`` invocation and the GC3Pie-provided options)
+
+  * ``srun``: run a job's payload; can specify additional arguments (they will be inserted between the ``srun`` invocation and the GC3Pie-provided options)
 
   * ``scancel``: cancel a job.
 

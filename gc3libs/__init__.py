@@ -1498,7 +1498,9 @@ class Application(Task):
                        '--cpus-per-task', ('%d' % self.requested_cores)]
             # we have to run the command through `srun` otherwise
             # SLURM launches every task as a single-CPU
-            cmdline = ['srun', '--cpus-per-task', ('%d' % self.requested_cores)] + cmdline
+            cmdline = (list(resource.srun)
+                       + ['--cpus-per-task', ('%d' % self.requested_cores)]
+                       + cmdline)
         if self.requested_memory:
             # SLURM uses `mem_free` for memory limits;
             # 'M' suffix allowed for Megabytes
