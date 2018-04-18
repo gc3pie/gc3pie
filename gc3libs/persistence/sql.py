@@ -133,10 +133,7 @@ class SqlStore(Store):
             kv = {}
 
         # init static public args
-        if not idfactory:
-            self.idfactory = IdFactory(id_class=IntId)
-        else:
-            self.idfactory = idfactory
+        self.idfactory = idfactory or IdFactory(id_class=IntId)
 
         url_table_names = kv.get('table')
         if url_table_names:

@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -121,10 +121,7 @@ class IdFactory(object):
         (which is the one used by default).
         """
         self._prefix = prefix
-        if next_id_fn is None:
-            self._next_id_fn = progressive_number
-        else:
-            self._next_id_fn = next_id_fn
+        self._next_id_fn = next_id_fn or progressive_number
         self._idclass = id_class
 
     def reserve(self, n):
@@ -142,11 +139,8 @@ class IdFactory(object):
         """
         Return a new "unique identifier" instance (a string).
         """
-        if self._prefix is None:
-            prefix = obj.__class__.__name__
-        else:
-            prefix = self._prefix
-        if len(IdFactory._seqno_pool) > 0:
+        prefix = self._prefix or obj.__class__.__name__
+        if IdFactory._seqno_pool:
             seqno = IdFactory._seqno_pool.pop()
         else:
             seqno = self._next_id_fn()
