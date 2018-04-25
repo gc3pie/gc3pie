@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2014, 2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -108,9 +108,10 @@ class FilesystemStore(Store):
         try:
             obj = self._load_from_file(filename)
         except Exception as ex:
-            gc3libs.log.warning("Failed loading file '%s': %s: %s",
-                                filename, ex.__class__.__name__, str(ex),
-                                exc_info=True)
+            gc3libs.log.warning(
+                "Failed loading file '%s': %s: %s",
+                filename, ex.__class__.__name__, ex,
+                exc_info=True)
             old_copy = filename + '.OLD'
             if os.path.exists(old_copy):
                 gc3libs.log.warning(
@@ -122,23 +123,23 @@ class FilesystemStore(Store):
                     sys.excepthook(* sys.exc_info())
                     raise gc3libs.exceptions.LoadError(
                         "Failed retrieving object from file '%s': %s: %s"
-                        % (filename, ex.__class__.__name__, str(ex)))
+                        % (filename, ex.__class__.__name__, ex))
             else:
                 # complain loudly
                 raise gc3libs.exceptions.LoadError(
                     "Failed retrieving object from file '%s': %s: %s"
-                    % (filename, ex.__class__.__name__, str(ex)))
+                    % (filename, ex.__class__.__name__, ex))
         if not hasattr(obj, 'persistent_id'):
             raise gc3libs.exceptions.LoadError(
-                "Invalid format in file '%s': missing 'persistent_id'"
-                " attribute" % (filename))
+                "Invalid format in file '%s':"
+                " missing 'persistent_id' attribute"
+                % (filename,))
         if str(obj.persistent_id) != str(id_):
             raise gc3libs.exceptions.LoadError(
-                "Retrieved persistent ID '%s' %s does not match given ID"
-                " '%s' %s" % (obj.persistent_id,
-                              type(obj.persistent_id),
-                              id_,
-                              type(id_)))
+                "Retrieved persistent ID '%s' %s"
+                " does not match given ID '%s' %s"
+                % (obj.persistent_id, type(obj.persistent_id),
+                   id_, type(id_)))
 
         super(FilesystemStore, self)._update_to_latest_schema()
         return obj
