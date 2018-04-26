@@ -1366,7 +1366,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         def add(self, task, action=None):
             """
             Append a task to the back of the appropriate action queue.
-            If the task is already managed, no change is made.
             """
             queue = (self._actions[action] if action else self.get_queue(task))
             queue.put(task)
