@@ -344,7 +344,7 @@ class SequentialTaskCollection(TaskCollection):
             self.tasks[self._current_task].kill(**extra_args)
             for i in range(self._current_task+1, len(self.tasks)):
                 self.tasks[i].execution.state = Run.State.TERMINATED
-                self.execution.returned = (Run.Signals.Cancelled, -1)
+                self.tasks[i].execution.returncode = (Run.Signals.Cancelled, -1)
         self.execution.state = Run.State.TERMINATED
         self.execution.returncode = (Run.Signals.Cancelled, -1)
         self.changed = True
