@@ -152,7 +152,9 @@ class TaskCollection(Task):
         """
         for task in self.tasks:
             if task.execution.state not in [Run.State.NEW, Run.State.TERMINATED]:
-                gc3libs.log.debug("Updating state of task %s in collection %s ...", task, self)
+                gc3libs.log.debug(
+                    "Updating state of task %s in collection %s ...",
+                    task, self)
                 task.update_state(**extra_args)
 
     def kill(self, **extra_args):
@@ -443,15 +445,15 @@ class SequentialTaskCollection(TaskCollection):
         """
         Update state of the collection, based on the jobs' statuses.
         """
-        if self._current_task is None:
+        task = self.stage()
+        if task is None:
             # state is either NEW or TERMINATED, no update
             assert self.execution.state in [
                 Run.State.NEW, Run.State.TERMINATED]
             return self.execution.state
 
         # update state of current task
-        task = self.tasks[self._current_task]
-        if task.execution.state not in [Run.State. NEW, Run.State.TERMINATED]:
+        if task.execution.state not in [Run.State.NEW, Run.State.TERMINATED]:
             task.update_state(**extra_args)
         gc3libs.log.debug("Task `%s` in state %s", task, task.execution.state)
 

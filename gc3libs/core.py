@@ -1423,13 +1423,11 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                         counter['failed'] += 1
             return counter
 
-        def _update(self, task, state, increment):
+        def _update(self, task, increment):
             """
             Update the counts relative to `task`'s state by `increment`.
-
-            The task state is passed as an independent argument, in order
-            to allow us to decrease counters on the old task state.
             """
+            state = task.execution.state
             stats_to_update = ['total', state]
             if state == 'TERMINATED':
                 if task.execution.returncode == 0:
@@ -1445,13 +1443,13 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             """
             Adjust totals to include `task`.
             """
-            self._update(task, task.execution.state, +1)
+            self._update(task, +1)
 
         def remove(self, task):
             """
             Adjust totals following the removal of `task`.
             """
-            self._update(task, task.execution.state, -1)
+            self._update(task, -1)
 
         def transitioned(self, task, from_state, to_state):
             """
@@ -1465,6 +1463,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
               self._update(task, from_state, -1)
               self._update(task, to_state, +1)
             """
+            if from_state == to_state:
+                return
             stats_to_increment = [to_state]
             if to_state == 'TERMINATED':
                 if task.execution.returncode == 0:
@@ -1497,7 +1497,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             task.attach(self)
 
 
-    def remove(self, task, _override_queue=None):
+    def remove(self, task):
         """
         Remove a `task` from the list of tasks managed by this Engine.
 
@@ -1637,7 +1637,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
 
             try:
                 self._core.kill(task)
-                if self._store:
+                if self._store and task.changed:
                     self._store.save(task)
             # pylint: disable=broad-except
             except Exception as err:
@@ -1840,7 +1840,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                     resource = self._core.resources[resource_name]
                     try:
                         self._core.submit(task, targets=[resource])
-                        if self._store:
+                        if self._store and task.changed:
                             self._store.save(task)
                         # if we get to this point, we know state is
                         # either SUBMITTED or RUNNING
@@ -1852,7 +1852,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                         state = task.execution.state
                         self._counts.transitioned(task, 'NEW', state)
                         # notify scheduler
-                        sched.send(task.execution.state)
+                        sched.send(state)
                     # pylint: disable=broad-except
                     except Exception as err1:
                         # record the error in the task's history
