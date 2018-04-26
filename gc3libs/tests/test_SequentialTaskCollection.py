@@ -3,7 +3,7 @@
 """
 Test class `SequentialTaskCollection`:class:.
 """
-# Copyright (C) 2011, 2012, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2018, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -113,6 +113,18 @@ def test_SequentialTaskCollection_redo3():
             seq.progress()
         assert seq.stage().jobname == 'stage2'
         assert seq.stage().execution.state == Run.State.TERMINATED
+
+
+def test_empty_SequentialTaskCollection_progress():
+    with temporary_core() as core:
+        seq = SimpleSequentialTaskCollection(0)
+        seq.attach(core)
+
+        # run until terminated
+        while seq.execution.state != Run.State.TERMINATED:
+            seq.progress()
+        assert seq.execution.state == Run.State.TERMINATED
+        assert seq.execution.returncode == 0
 
 
 # main: run tests

@@ -807,8 +807,8 @@ class ParallelTaskCollection(TaskCollection):
             gc3libs.log.warning(
                 "update_state() called on empty task collection %s"
                 " -- this operation makes no sense,"
-                " setting collection state to `UNKNOWN`", self)
-        return Run.State.UNKNOWN
+                " setting collection state to `TERMINATED`", self)
+        return Run.State.TERMINATED
 
     def add(self, task):
         """

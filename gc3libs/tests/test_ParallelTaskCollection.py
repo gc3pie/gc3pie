@@ -3,7 +3,7 @@
 """
 Test class `ParallelTaskCollection`:class:.
 """
-# Copyright (C) 2011, 2012, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2018, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -57,6 +57,18 @@ def test_ParallelTaskCollection_redo():
         assert par.execution.state == Run.State.NEW
         for task in par.tasks:
             assert task.execution.state == Run.State.NEW
+
+
+def test_empty_ParallelTaskCollection_progress():
+    with temporary_core() as core:
+        par = SimpleParallelTaskCollection(0)
+        par.attach(core)
+
+        # run until terminated
+        while par.execution.state != Run.State.TERMINATED:
+            par.progress()
+        assert par.execution.state == Run.State.TERMINATED
+        assert par.execution.returncode == 0
 
 
 # main: run tests
