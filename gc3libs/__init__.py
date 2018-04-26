@@ -104,6 +104,8 @@ class Default(object):
     # time to cache lshosts/bjobs information for
     LSF_CACHE_TIME = 30
 
+
+from gc3libs.events import emit, subscribe, TaskStateChange
 import gc3libs.exceptions
 from gc3libs.persistence import Persistable
 from gc3libs.url import UrlKeyDict, UrlValueDict
@@ -279,6 +281,7 @@ class Task(Persistable, Struct):
         self._attached = False
         self._controller = None
         self.changed = True
+        subscribe(self._on_state_change, TaskStateChange)
 
     # manipulate the "controller" interface used to control the associated job
     def attach(self, controller):
@@ -610,6 +613,15 @@ class Task(Persistable, Struct):
 
     # State transition handlers.
     #
+
+    def _on_state_change(self, event):
+        handler_name = event.to_state.lower()
+        gc3libs.log.debug(
+            "Calling state-transition handler '%s' on %s ...",
+            handler_name, self)
+        handler = getattr(self, handler_name, None)
+        if handler is not None:
+            return handler()
 
     def new(self):
         """
@@ -1894,14 +1906,6 @@ class Run(Struct):
                 return
             self.state_last_changed = time.time()
             self.timestamp[value] = time.time()
-            # invoke state-transition method
-            if self._ref is not None:
-                self._ref.changed = True
-                handler = value.lower()
-                gc3libs.log.debug(
-                    "Calling state-transition handler '%s' on %s ...",
-                    handler, self._ref)
-                getattr(self._ref, handler)()
             # record state-transition in Task execution history
             # (can be later queried with `ginfo` for e.g. debugging)
             if value == Run.State.TERMINATED:
@@ -1912,6 +1916,10 @@ class Run(Struct):
                 self.history.append(
                     "Transition from state {0} to state {1}"
                     .format(self._state, value))
+            # signal state-transition
+            if self._ref is not None:
+                self._ref.changed = True
+                emit(TaskStateChange(self._ref, self._state, value))
             # finally, update state
             self._state = value
 

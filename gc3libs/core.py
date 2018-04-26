@@ -33,8 +33,9 @@ from warnings import warn
 from dictproxyhack import dictproxy
 
 import gc3libs
-import gc3libs.debug
 from gc3libs import Application, Run, Task
+import gc3libs.debug
+from gc3libs.events import subscribe, TaskStateChange
 import gc3libs.exceptions
 from gc3libs.quantity import Duration
 import gc3libs.utils as utils
@@ -1257,11 +1258,16 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         # init counters/statistics
         self._counts = self._Counters(self)
         self._counts.init_for(Task)  # always gather these
+        subscribe(self._on_state_change, TaskStateChange)
 
         # Engine fully initialized, add all tasks
         for task in tasks:
             self.add(task)
 
+    def _on_state_change(self, event):
+        task = event.task
+        if task in self._managed:
+            self._counts.transitioned(event)
 
     class TaskQueue(object):
         def __init__(self):
@@ -1451,20 +1457,22 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             """
             self._update(task, -1)
 
-        def transitioned(self, task, from_state, to_state):
+        def transitioned(self, event):
             """
-            Update the counts, following a transition of `task`
-            from one state to another.  The counters relative
-            to `from_state` are decremented by unit, and correspondingly
-            the counters for `to_state` are incremented.
+            Update the counts, following a `TaskStateChange` event.
+
+            The counters relative to *event.from_state* are
+            decremented by unit, and correspondingly the counters for
+            *event.to_state* are incremented.
 
             This is functionally equivalent to, but more efficient than::
 
               self._update(task, from_state, -1)
               self._update(task, to_state, +1)
             """
-            if from_state == to_state:
-                return
+            task = event.task
+            from_state = event.from_state
+            to_state = event.to_state
             stats_to_increment = [to_state]
             if to_state == 'TERMINATED':
                 if task.execution.returncode == 0:
@@ -1658,11 +1666,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
 
             self._managed.requeue(task)
 
-            state = task.execution.state
-            if state != old_state:
-                self._counts.transitioned(task, old_state, state)
-
             # do book-keeping
+            state = task.execution.state
             if old_state == Run.State.SUBMITTED:
                 if isinstance(task, Application):
                     currently_submitted -= 1
@@ -1721,9 +1726,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
 
             # do book-keeping
             state = task.execution.state
-
-            if state != old_state:
-                self._counts.transitioned(task, old_state, state)
 
             if state in [
                     Run.State.RUNNING,
@@ -1850,7 +1852,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                             currently_in_flight += 1
                         # do book-keeping
                         state = task.execution.state
-                        self._counts.transitioned(task, 'NEW', state)
                         # notify scheduler
                         sched.send(state)
                     # pylint: disable=broad-except
@@ -1933,7 +1934,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                     )
 
                 if task.execution.state == Run.State.TERMINATED:
-                    self._counts.transitioned(task, 'TERMINATING', 'TERMINATED')
                     self._managed.requeue(task, 'cleanup')
                 else:
                     assert task.execution.state == 'TERMINATING'

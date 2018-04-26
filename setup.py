@@ -211,6 +211,7 @@ setuptools.setup(
     install_requires=(version_dependent_requires + [
         'coloredlogs',
         'dictproxyhack',
+        'generic',
         # prettytable -- format tabular text output
         'prettytable',
         # pyCLI -- object-oriented command-line app programming
