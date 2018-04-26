@@ -293,21 +293,33 @@ class Task(Persistable, Struct):
             self._attached = True
             self._controller = controller
 
-    # create a class-shared fake "controller" object, that just throws a
-    # DetachedFromController exception when any of its methods is used.  We
-    # use this as a safeguard for detached `Task` objects, in order to
-    # get sensible error reporting.
     class __NoController(object):
-        # XXX: this returns a function object for whatever `name`;
-        # should be fine since a "controller" interface should just contain
-        # methods, but one never knows...
+        """
+        A mock "controller", that just throws a `DetachedFromController`
+        exception when any of its methods is used.
 
+        We use this as a safeguard for detached `Task` objects,
+        in order to get sensible error reporting.
+
+        .. note::
+
+          Lookup of *any* attribute on an instance of this class
+          returns a function object; should be fine since a
+          "controller" interface should just contain methods, but one
+          never knows...
+        """
         def __getattr__(self, name):
             def throw_error(*args, **kwargs):
                 raise gc3libs.exceptions.DetachedFromControllerError(
                     "Task object is not attached to any controller.")
             return throw_error
+
     __no_controller = __NoController()
+    """
+    A class-shared fake "controller" object.
+
+    Used for marking detached `Task`:class: objects.
+    """
 
     def detach(self):
         """
