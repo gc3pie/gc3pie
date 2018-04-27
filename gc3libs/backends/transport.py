@@ -6,7 +6,7 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.
 """
-# Copyright (C) 2009-2017 University of Zurich. All rights reserved.
+# Copyright (C) 2009-2018 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -1175,10 +1175,14 @@ class LocalTransport(Transport):
             gc3libs.log.debug("LocalTransport.remove_tree():"
                               " removing local directory tree '%s'" % path)
             return shutil.rmtree(path)
-        except Exception as ex:
-            raise gc3libs.exceptions.TransportError(
-                "Could not remove directory tree '%s': %s: %s"
-                % (path, ex.__class__.__name__, str(ex)))
+        except OSError as err:
+            if err.errno == errno.ENOENT:
+                # ignore "No such file or directory"
+                pass
+            else:
+                raise gc3libs.exceptions.TransportError(
+                    "Could not remove directory tree '%s': %s: %s"
+                    % (path, ex.__class__.__name__, err))
 
     @same_docstring_as(Transport.stat)
     def stat(self, path):
