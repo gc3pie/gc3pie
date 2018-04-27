@@ -3,7 +3,7 @@
 """
 Test class `Task`:class:.
 """
-# Copyright (C) 2011, 2012, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2018, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -43,6 +43,40 @@ def test_task_progress():
         while task.execution.state != Run.State.TERMINATED:
             task.progress()
         assert task.execution.state == Run.State.TERMINATED
+
+
+def test_task_state_handlers():
+    report = {
+        'submitted': False,
+        'terminating': False,
+        'terminated': False,
+    }
+
+    class HandlerTestApp(SuccessfulApp):
+        def __init__(self, report):
+            super(HandlerTestApp, self).__init__()
+            self.report = report
+        def submitted(self):
+            self.report['submitted'] = True
+            print("Submitted!")
+        def terminating(self):
+            self.report['terminating'] = True
+            print("Terminating!")
+        def terminated(self):
+            print("Terminated!")
+            self.report['terminated'] = True
+
+    with temporary_core() as core:
+        task = HandlerTestApp(report)
+        task.attach(core)
+        task.submit()
+        assert report['submitted']
+
+        # run until terminated
+        while task.execution.state != Run.State.TERMINATED:
+            task.progress()
+        assert report['terminating']
+        assert report['terminated']
 
 
 def test_task_redo1():
