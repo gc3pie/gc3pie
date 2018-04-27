@@ -883,20 +883,22 @@ class ParallelTaskCollection(TaskCollection):
                     raise
         self.execution.state = self._state()
 
+
     def update_state(self, **extra_args):
         """
         Update state of all tasks in the collection.
         """
         super(ParallelTaskCollection, self).update_state()
-        self.execution.state = self._state()
-        if self.execution.state == Run.State.TERMINATED:
-            self.execution.returncode = (0, 0)
-            # set exitcode based on returncode of sub-tasks
-            for task in self.tasks:
-                if task.execution.returncode != 0:
-                    self.execution.exitcode = 1
-            # FIXME: incorrectly sets `changed` each time it's called!
-            self.changed = True
+        current_state = self.execution.state
+        updated_state = self._state()
+        if current_state != updated_state:
+            if updated_state == Run.State.TERMINATED:
+                self.execution.returncode = (0, 0)
+                # set exitcode based on returncode of sub-tasks
+                for task in self.tasks:
+                    if task.execution.returncode != 0:
+                        self.execution.exitcode = 1
+            self.execution.state = updated_state
 
 
 class ChunkedParameterSweep(ParallelTaskCollection):
