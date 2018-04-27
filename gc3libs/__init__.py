@@ -630,6 +630,8 @@ class Task(Persistable, Struct):
     #
 
     def _on_state_change(self, event):
+        if id(event.task) != id(self):
+            return
         handler_name = event.to_state.lower()
         gc3libs.log.debug(
             "Calling state-transition handler '%s' on %s ...",
