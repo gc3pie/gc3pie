@@ -884,21 +884,22 @@ class ParallelTaskCollection(TaskCollection):
         self.execution.state = self._state()
 
 
+    def terminated(self):
+        """
+        Set exitcode based on termination status of sub-tasks.
+        """
+        self.execution.returncode = (0, 0)
+        for task in self.tasks:
+            if task.execution.returncode != 0:
+                self.execution.exitcode = 1
+
+
     def update_state(self, **extra_args):
         """
         Update state of all tasks in the collection.
         """
         super(ParallelTaskCollection, self).update_state()
-        current_state = self.execution.state
-        updated_state = self._state()
-        if current_state != updated_state:
-            if updated_state == Run.State.TERMINATED:
-                self.execution.returncode = (0, 0)
-                # set exitcode based on returncode of sub-tasks
-                for task in self.tasks:
-                    if task.execution.returncode != 0:
-                        self.execution.exitcode = 1
-            self.execution.state = updated_state
+        self.execution.state = self._state()
 
 
 class ChunkedParameterSweep(ParallelTaskCollection):
