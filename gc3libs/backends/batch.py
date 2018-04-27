@@ -4,7 +4,7 @@
 This module provides a generic BatchSystem class from which all
 batch-like backends should inherit.
 """
-# Copyright (C) 2009-2016 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2018  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -760,10 +760,9 @@ class BatchSystem(LRMS):
         try:
             self.transport.connect()
             self.transport.remove_tree(job.ssh_remote_folder)
-        except:
+        except Exception as err:
             log.warning("Failed removing remote folder '%s': %s: %s",
-                        job.ssh_remote_folder, sys.exc_info()[0],
-                        sys.exc_info()[1])
+                        job.ssh_remote_folder, err.__class__, err)
         return
 
     @same_docstring_as(LRMS.get_results)
