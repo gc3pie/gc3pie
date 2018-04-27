@@ -167,6 +167,8 @@ class Persistable(object):
             return super(Persistable, self).__str__()
 
     def __eq__(self, other):
+        if id(self) == id(other):
+            return True
         try:
             return self.persistent_id == other.persistent_id
         except AttributeError:
