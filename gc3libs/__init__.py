@@ -154,20 +154,35 @@ def configure_logger(
     used for more advanced configuration; if it does not exist, then a
     sample one is created.
     """
+    # ensure basic logger configuration is there, and load more
+    # complex config from file if it exists
     logging.basicConfig(level=level, format=format, datefmt=datefmt)
     _load_logging_configuration_file(name)
-    log = logging.getLogger("gc3.gc3libs")
+    # initialize a logger so we can complain about missing
+    # `coloredlogs` later on
+    log = logging.getLogger(name)
     log.setLevel(level)
     log.propagate = True
+    # try to colorize logs going to the console
     if colorize == 'auto':
         # set if STDERR is connected to a terminal
         colorize = sys.stderr.isatty()
     if colorize:
         try:
             import coloredlogs
-            coloredlogs.install(
-                logger=log, reconfigure=True, stream=sys.stderr,
-                level=level, fmt=format, datefmt=datefmt, programname=name)
+            for name in set([
+                    #None,  # root logger
+                    "gc3.gc3libs",
+                    name,
+            ]):
+                coloredlogs.install(
+                    logger=logging.getLogger(name),
+                    reconfigure=True,
+                    stream=sys.stderr,
+                    level=level,
+                    fmt=format,
+                    datefmt=datefmt,
+                    programname=name)
         except ImportError as err:
             log.warning("Could not import `coloredlogs` module: %s", err)
     return log
