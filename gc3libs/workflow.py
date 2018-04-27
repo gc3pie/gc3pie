@@ -210,7 +210,7 @@ class TaskCollection(Task):
                 task_output_dir = task.output_dir
             else:
                 task_output_dir = task.persistent_id
-            # XXX: uses a feature from `os.path.join`: if the second
+            # NOTE: uses a feature from `os.path.join`: if the second
             # path is absolute, the first path is discarded and the
             # second one is returned unchanged
             task_output_dir = os.path.join(coll_output_dir, task_output_dir)
@@ -220,14 +220,13 @@ class TaskCollection(Task):
                 overwrite,
                 changed_only,
                 **extra_args)
-        # if any sub-task is not yet TERMINATED, return the base
-        # output directory for the collection...
-        for task in self.tasks:
-            if task.execution.state != Run.State.TERMINATED:
-                return coll_output_dir
-        # ...otherwise set the state to TERMINATED
-        self.execution.state = Run.State.TERMINATED
-        self.changed = True
+        # NOTE: `all()` of an empty list comprehension is ``True``
+        all_tasks_terminated = all(
+            task.execution.state == Run.State.TERMINATED
+            for task in self.tasks
+        )
+        if all_tasks_terminated:
+            self.execution.state = Run.State.TERMINATED
         return coll_output_dir
 
     def free(self):
