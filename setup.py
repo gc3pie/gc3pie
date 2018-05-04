@@ -209,9 +209,9 @@ setuptools.setup(
 
     # run-time dependencies
     install_requires=(version_dependent_requires + [
+        'blinker',
         'coloredlogs',
         'dictproxyhack',
-        'generic',
         # prettytable -- format tabular text output
         'prettytable',
         # pyCLI -- object-oriented command-line app programming

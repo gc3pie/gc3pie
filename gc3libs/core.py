@@ -35,7 +35,7 @@ from dictproxyhack import dictproxy
 import gc3libs
 from gc3libs import Application, Run, Task
 import gc3libs.debug
-from gc3libs.events import subscribe, TaskStateChange
+from gc3libs.events import TaskStateChange
 import gc3libs.exceptions
 from gc3libs.quantity import Duration
 import gc3libs.utils as utils
@@ -1258,16 +1258,16 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         # init counters/statistics
         self._counts = self._Counters(self)
         self._counts.init_for(Task)  # always gather these
-        subscribe(self._on_state_change, TaskStateChange)
+        TaskStateChange.connect(self._on_state_change)
 
         # Engine fully initialized, add all tasks
         for task in tasks:
             self.add(task)
 
-    def _on_state_change(self, event):
-        task = event.task
+    def _on_state_change(self, task, from_state, to_state):
         if task in self._managed:
-            self._counts.transitioned(event)
+            #gc3libs.log.debug("Task %s transitioned from %s to %s ...", task, from_state, to_state)
+            self._counts.transitioned(task, from_state, to_state)
 
     class TaskQueue(object):
         def __init__(self):
@@ -1457,22 +1457,19 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             """
             self._update(task, -1)
 
-        def transitioned(self, event):
+        def transitioned(self, task, from_state, to_state):
             """
             Update the counts, following a `TaskStateChange` event.
 
-            The counters relative to *event.from_state* are
-            decremented by unit, and correspondingly the counters for
-            *event.to_state* are incremented.
+            The counters relative to *from_state* are decremented by
+            unit, and correspondingly the counters for *to_state* are
+            incremented.
 
             This is functionally equivalent to, but more efficient than::
 
               self._update(task, from_state, -1)
               self._update(task, to_state, +1)
             """
-            task = event.task
-            from_state = event.from_state
-            to_state = event.to_state
             stats_to_increment = [to_state]
             if to_state == 'TERMINATED':
                 if task.execution.returncode == 0:

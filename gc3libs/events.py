@@ -29,31 +29,11 @@ provided by Python's library `generic`__.
 __docformat__ = 'reStructuredText'
 
 
-# import these names here, so we can use `from gc3libs.events import
-# subscribe` elsewhere in the code, and leave the dependency on
-# `generic.events` as an implementation detail
-from generic.event import fire as emit, subscribe, unsubscribe
+# do not make symbols imported from `blinker` public: use of `blinker`
+# here is an implementation detail
+from blinker import signal as _signal
 
 
-# FIXME: rewrite with `attrs` when we drop support for Py2.6!
-class TaskStateChange(object):
-    """
-    Fired when a `Task`:class: execution state changes.
+TaskStateChange = _signal('task_state_change')
 
-    No guarantee is given as to whether *task* is still in the old
-    *from_state* or has already transitioned to the new *to_state*.
-    """
-
-    __slots__ = ('task', 'from_state', 'to_state')
-
-    def __init__(self, task, from_state, to_state):
-        self.task = task
-        self.from_state = from_state
-        self.to_state = to_state
-
-
-# implement workaround for https://github.com/andreypopp/generic/issues/1
-# i.e., register a dummy event handler for `TaskStateChange`
-def _no_action(event):
-    pass
-subscribe(_no_action, TaskStateChange)
+TermStatusChange = _signal('task_termstatus_change')

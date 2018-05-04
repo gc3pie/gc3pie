@@ -105,7 +105,7 @@ class Default(object):
     LSF_CACHE_TIME = 30
 
 
-from gc3libs.events import emit, subscribe, TaskStateChange
+from gc3libs.events import TaskStateChange
 import gc3libs.exceptions
 from gc3libs.persistence import Persistable
 from gc3libs.url import UrlKeyDict, UrlValueDict
@@ -296,7 +296,7 @@ class Task(Persistable, Struct):
         self._attached = False
         self._controller = None
         self.changed = True
-        subscribe(self._on_state_change, TaskStateChange)
+        TaskStateChange.connect(self._on_state_change, sender=self)
 
     # manipulate the "controller" interface used to control the associated job
     def attach(self, controller):
@@ -629,10 +629,10 @@ class Task(Persistable, Struct):
     # State transition handlers.
     #
 
-    def _on_state_change(self, event):
-        if id(event.task) != id(self):
+    def _on_state_change(self, task, from_state, to_state):
+        if id(task) != id(self):
             return
-        handler_name = event.to_state.lower()
+        handler_name = to_state.lower()
         gc3libs.log.debug(
             "Calling state-transition handler '%s' on %s ...",
             handler_name, self)
@@ -1933,10 +1933,11 @@ class Run(Struct):
                 self.history.append(
                     "Transition from state {0} to state {1}"
                     .format(self._state, value))
-            # signal state-transition
             if self._ref is not None:
                 self._ref.changed = True
-                emit(TaskStateChange(self._ref, self._state, value))
+                # signal state-transition
+                TaskStateChange.send(
+                    self._ref, from_state=self._state, to_state=value)
             # finally, update state
             self._state = value
 
