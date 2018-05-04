@@ -35,7 +35,7 @@ from dictproxyhack import dictproxy
 import gc3libs
 from gc3libs import Application, Run, Task
 import gc3libs.debug
-from gc3libs.events import TaskStateChange
+from gc3libs.events import TaskStateChange, TermStatusChange
 import gc3libs.exceptions
 from gc3libs.quantity import Duration
 import gc3libs.utils as utils
@@ -1476,11 +1476,31 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                     stats_to_increment.append('ok')
                 else:
                     stats_to_increment.append('failed')
+                # update counts if exit code is later changed
+                TermStatusChange.connect(self._on_termstatus_change, sender=task)
             for cls in self.totals:
                 if isinstance(task, cls):
                     self.totals[cls][from_state] -= 1
                     for stat in stats_to_increment:
                         self.totals[cls][stat] += 1
+
+        def _on_termstatus_change(self, task, from_returncode, to_returncode):
+            # shortcut
+            if from_returncode == to_returncode:
+                return
+            # decrement the "from" status
+            target = 'ok' if from_returncode == 0 else 'failed'
+            for cls in self.totals:
+                if isinstance(task, cls):
+                    self.totals[cls][target] -= 1
+            # remove handler if task was resubmitted
+            if task.execution.state != 'TERMINATED':
+                TermStatusChange.disconnect(self._on_termstatus_change, sender=task)
+            # increment the "to" status
+            target = 'ok' if to_returncode == 0 else 'failed'
+            for cls in self.totals:
+                if isinstance(task, cls):
+                    self.totals[cls][target] += 1
 
 
     def add(self, task):

@@ -51,6 +51,7 @@ import logging.config
 log = logging.getLogger("gc3.gc3libs")
 log.propagate = True
 
+from gc3libs.events import TaskStateChange, TermStatusChange
 from gc3libs.quantity import MB, hours, minutes, seconds, MiB
 from gc3libs.compat._collections import OrderedDict
 
@@ -2013,8 +2014,8 @@ class Run(Struct):
                 self._exitcode = int(value) & 0xff
         return (locals())
 
-    @defproperty
-    def returncode():
+    @property
+    def returncode(self):
         """
         The `returncode` attribute of this job object encodes the
         `Run` termination status in a manner compatible with the POSIX
@@ -2066,34 +2067,40 @@ class Run(Struct):
 
         See also `Run.exitcode` and `Run.signal`.
         """
+        return self._make_termstatus(self.exitcode, self.signal)
 
-        def fget(self):
-            if self.exitcode is None and self.signal is None:
-                return None
-            if self.exitcode is None:
-                exitcode = -1
-            else:
-                exitcode = self.exitcode
-            if self.signal is None:
-                signal = 0
-            else:
-                signal = self.signal
-            return (exitcode << 8) | signal
+    @returncode.setter
+    def returncode(self, value):
+        old_exitcode, old_signal = self.exitcode, self.signal
+        if value is None:
+            self.signal = None
+            self.exitcode = None
+        else:
+            try:
+                # `value` can be a tuple `(signal, exitcode)`;
+                # ensure values are within allowed range
+                self.signal = int(value[0]) & 0x7f
+                self.exitcode = int(value[1]) & 0xff
+            except (TypeError, ValueError):
+                self.exitcode = (int(value) >> 8) & 0xff
+                self.signal = int(value) & 0x7f
+        if self._ref is not None:
+            if self.exitcode != old_exitcode and self.signal != old_signal:
+                TermStatusChange.send(
+                    self._ref,
+                    from_returncode=self._make_termstatus(old_exitcode, old_signal),
+                    to_returncode=self._make_termstatus(self.exitcode, self.signal))
 
-        def fset(self, value):
-            if value is None:
-                self.signal = None
-                self.exitcode = None
-            else:
-                try:
-                    # `value` can be a tuple `(signal, exitcode)`;
-                    # ensure values are within allowed range
-                    self.signal = int(value[0]) & 0x7f
-                    self.exitcode = int(value[1]) & 0xff
-                except (TypeError, ValueError):
-                    self.exitcode = (int(value) >> 8) & 0xff
-                    self.signal = int(value) & 0x7f
-        return (locals())
+    @staticmethod
+    def _make_termstatus(exitcode, signal=0):
+        if exitcode is None and signal is None:
+            return None
+        if exitcode is None:
+            exitcode = -1
+        if signal is None:
+            signal = 0
+        return (exitcode << 8) | signal
+
 
     # `Run.Signals` is an instance of global class `_Signals`
     Signals = _Signals()

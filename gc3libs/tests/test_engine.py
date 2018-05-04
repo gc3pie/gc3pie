@@ -19,6 +19,7 @@
 #  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 # stdlib imports
+from collections import defaultdict
 from cStringIO import StringIO
 import os
 import shutil
@@ -514,6 +515,93 @@ def test_engine_cannot_find_task_by_id_if_no_store():
             task_id = task.persistent_id
             with pytest.raises(KeyError):
                 engine.find_task_by_id(task_id)
+
+
+def test_engine_counts(num_jobs=100, max_iter=1000):
+    """
+    Test that `Engine.count()` returns correct results.
+    """
+    # make the `.progress()` call a little less deterministic
+    transition_graph = {
+        Run.State.SUBMITTED:   {0.8: Run.State.RUNNING},
+        Run.State.RUNNING:     {0.8: Run.State.TERMINATING},
+        Run.State.TERMINATING: {0.8: Run.State.TERMINATED},
+    }
+    with temporary_engine(transition_graph) as engine:
+        # populate with test apps
+        apps = []
+        for n in range(num_jobs):
+            name = 'app{nr}'.format(nr=n)
+            app = SuccessfulApp(name)
+            apps.append(app)
+        for app in apps:
+            engine.add(app)
+
+        # initial check on stats
+        actual_counts = engine.counts()
+        assert actual_counts['NEW'] == num_jobs
+
+        # check
+        iter_nr = 0
+        while (actual_counts['TERMINATED'] < num_jobs
+               or iter_nr < max_iter):
+            iter_nr += 1
+            engine.progress()
+            actual_counts = engine.counts()
+            expected_counts = _compute_counts(apps)
+            _check_counts(actual_counts, expected_counts)
+
+def _compute_counts(apps):
+    """
+    Helper method for `test_*_counts`.
+
+    Explicitly compute the job/state counts by running through the
+    entire list of jobs.
+    """
+    result = defaultdict(int)
+    for app in apps:
+        result['total'] += 1
+        state = app.execution.state
+        result[state] += 1
+        if state == 'TERMINATED':
+            if app.execution.returncode == 0:
+                result['ok'] += 1
+            else:
+                result['failed'] += 1
+    return result
+
+def _check_counts(actual, expected):
+    """
+    Common code for `test_*_counts`.
+
+    Check that `actual` is internally consistent and that it agrees
+    with `expected` on every task state.
+    """
+    total = expected['total']
+    # internal consistency checks
+    assert actual['total'] == total
+    assert total == sum([
+        actual['NEW'],
+        actual['SUBMITTED'],
+        actual['RUNNING'],
+        actual['TERMINATING'],
+        actual['TERMINATED'],
+    ])
+    assert actual['TERMINATED'] == (
+        actual['ok'] + actual['failed'])
+    # compare with explicit counting
+    for state in [
+            'NEW', 'SUBMITTED', 'RUNNING', 'TERMINATING',
+            'TERMINATED', 'ok', 'failed',
+    ]:
+        # need to make our own error message, otherwise
+        # `pytest` just prints something like `assert 0 == 2`
+        try:
+            assert actual[state] == expected[state]
+        except AssertionError:
+            raise AssertionError(
+                "Actual count for `{0}` is {1} but expected {2}"
+                .format(state, actual[state], expected[state]))
 
 
 if __name__ == "__main__":
