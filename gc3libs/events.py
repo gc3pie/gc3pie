@@ -50,3 +50,10 @@ class TaskStateChange(object):
         self.task = task
         self.from_state = from_state
         self.to_state = to_state
+
+
+# implement workaround for https://github.com/andreypopp/generic/issues/1
+# i.e., register a dummy event handler for `TaskStateChange`
+def _no_action(event):
+    pass
+subscribe(_no_action, TaskStateChange)
