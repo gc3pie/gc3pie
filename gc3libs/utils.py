@@ -1825,6 +1825,16 @@ class PlusInfinity(Singleton):
         >>> x > y
         False
 
+    Finally, addition and subtraction of a finite number from
+    `PlusInfinity` always results in `PlusInfinity`::
+
+        >>> y = x - 1
+        >>> x == y
+        True
+        >>> y = x + 1
+        >>> x == y
+        True
+
     """
 
     def __gt__(self, other):
@@ -1853,6 +1863,15 @@ class PlusInfinity(Singleton):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __add__(self, other):
+        return self
+
+    def __sub__(self, other):
+        if other == self:
+            raise RuntimeError(
+                "Undefined result subtracting +infinity from +infinity.")
+        return self
 
 
 # In Python 2.7 still, `DictMixin` is an old-style class; thus, we need
