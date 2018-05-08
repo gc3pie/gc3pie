@@ -537,22 +537,57 @@ def test_engine_limits(limit_submitted, limit_in_flight,
             app = SuccessfulApp(name)
             engine.add(app)
             apps.append(app)
+        # run all apps for (up to) a fixed nr of steps
+        iter_nr = 0
         stats = engine.counts()
-        iter = 0
-        while stats['TERMINATED'] < num_jobs and iter < max_iter:
-            iter += 1
+        while stats['TERMINATED'] < num_jobs and iter_nr < max_iter:
+            iter_nr += 1
             engine.progress()
             stats = engine.counts()
             submitted = stats['SUBMITTED']
             assert submitted <= engine.max_submitted
             in_flight = (stats['SUBMITTED'] + stats['RUNNING'])
             assert in_flight <= engine.max_in_flight
+        # catch errors in case of termination because of exceeded iter count
         assert stats["TERMINATED"] == num_jobs
 
 
-def test_engine_counts(num_jobs=100, max_iter=1000):
+@pytest.mark.parametrize("max_cores", [1, 2, 5, 12, 24])
+def test_engine_counts1(max_cores, num_jobs=24, max_iter=1000):
     """
-    Test that `Engine.count()` returns correct results.
+    Test that `Engine.count()` returns correct results with a plain list of tasks.
+    """
+    def populate(engine):
+        apps = []
+        for n in range(num_jobs):
+            name = 'app{nr}'.format(nr=n)
+            app = SuccessfulApp(name)
+            apps.append(app)
+            engine.add(app)
+        return apps
+    _test_engine_counts(populate, max_cores, num_jobs, max_iter=max_iter)
+
+@pytest.mark.parametrize("max_cores", [1, 2, 5, 12, 24])
+def test_engine_counts2(max_cores, n1=6, n2=6, max_iter=1000):
+    """
+    Test that `Engine.count()` returns correct results with a list of parallel collections.
+    """
+    def populate(engine):
+        apps = []
+        for n in range(n1):
+            par = SimpleParallelTaskCollection(n2)
+            par.jobname = 'par{nr}'.format(nr=n)
+            engine.add(par)
+            apps.append(par)
+            for task in par.tasks:
+                apps.append(task)
+        return apps
+    _test_engine_counts(populate, max_cores, n1 + n1*n2, max_iter=max_iter)
+
+def _test_engine_counts(populate, max_cores, num_jobs,
+                        num_new_jobs=None, max_iter=100):
+    """
+    Common code for the `test_engine_counts*` tests.
     """
     # make the `.progress()` call a little less deterministic
     transition_graph = {
@@ -560,24 +595,20 @@ def test_engine_counts(num_jobs=100, max_iter=1000):
         Run.State.RUNNING:     {0.8: Run.State.TERMINATING},
         Run.State.TERMINATING: {0.8: Run.State.TERMINATED},
     }
-    with temporary_engine(transition_graph) as engine:
+    with temporary_engine(transition_graph, max_cores=max_cores) as engine:
         # populate with test apps
-        apps = []
-        for n in range(num_jobs):
-            name = 'app{nr}'.format(nr=n)
-            app = SuccessfulApp(name)
-            apps.append(app)
-        for app in apps:
-            engine.add(app)
+        apps = populate(engine)
 
         # initial check on stats
         actual_counts = engine.counts()
-        assert actual_counts['NEW'] == num_jobs
+        if num_new_jobs is None:
+            num_new_jobs = num_jobs
+        assert actual_counts['NEW'] == num_new_jobs
 
         # check
         iter_nr = 0
         while (actual_counts['TERMINATED'] < num_jobs
-               or iter_nr < max_iter):
+               and iter_nr < max_iter):
             iter_nr += 1
             engine.progress()
             actual_counts = engine.counts()
