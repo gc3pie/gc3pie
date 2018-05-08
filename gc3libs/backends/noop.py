@@ -168,7 +168,7 @@ class NoOpLrms(LRMS):
             for prob, state in transitions.items() if prob > 0
         ]))
         dice = random()
-        log.debug("Rolled dice, got %g result", dice)
+        #log.debug("Rolled dice, got %g result", dice)
         for prob, to_state in sorted(transitions.items()):
             if dice < prob:
                 log.debug(
