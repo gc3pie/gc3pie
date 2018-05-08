@@ -1112,6 +1112,7 @@ def first_come_first_serve(task_queue, resources, matchmaker=MatchMaker()):
                 gc3libs.log.debug(
                     "Scheduler ignored error in submitting task '%s': %s: %s",
                     task, err.__class__.__name__, err, exc_info=True)
+                continue
         else:
             # unsuccessful submission, push task back into queue
             task_queue.put(task)
@@ -1257,7 +1258,14 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
 
         # init counters/statistics
         self._counts = self._Counters(self)
-        self._counts.init_for(Task)  # always gather these
+        # always gather statistics about `Task` instances, as `Task`
+        # is the root of the GC3Pie task hierarchy
+        self._counts.init_for(Task)
+        # but also count `Application` instances to enforce submission
+        # and running limits (only real tasks that consume compute
+        # resources count for those -- "policy" tasks like
+        # `TaskCollection` should not)
+        self._counts.init_for(Application)
         TaskStateChange.connect(self._on_state_change)
 
         # Engine fully initialized, add all tasks
@@ -1631,9 +1639,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         """
         gc3libs.log.debug("Engine.progress(): starting.")
 
-        # prepare
-        currently_submitted = 0
-        currently_in_flight = 0
         # pylint: disable=redefined-variable-type
         if self.max_in_flight > 0:
             limit_in_flight = self.max_in_flight
@@ -1682,16 +1687,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 )
 
             self._managed.requeue(task)
-
-            # do book-keeping
-            state = task.execution.state
-            if old_state == Run.State.SUBMITTED:
-                if isinstance(task, Application):
-                    currently_submitted -= 1
-                    currently_in_flight -= 1
-            elif old_state == Run.State.RUNNING:
-                if isinstance(task, Application):
-                    currently_in_flight -= 1
 
         # update status of tasks before launching new ones
         queue = self._managed.to_update
@@ -1754,28 +1749,8 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             else:
                 self._managed.requeue(task)
 
-            if state == Run.State.SUBMITTED:
-                # only real applications need to be counted
-                # against the limit; policy tasks are exempt
-                # (this applies to all similar clauses below)
-                if isinstance(task, Application):
-                    if old_state != Run.State.SUBMITTED:
-                        currently_submitted += 1
-                    if old_state not in [
-                            Run.State.SUBMITTED,
-                            Run.State.RUNNING,
-                    ]:
-                        currently_in_flight += 1
-            elif state == Run.State.RUNNING:
-                if isinstance(task, Application):
-                    if old_state == Run.State.SUBMITTED:
-                        currently_submitted -= 1
-                    if old_state not in [
-                            Run.State.SUBMITTED,
-                            Run.State.RUNNING,
-                    ]:
-                        currently_in_flight += 1
-                if (self.retrieve_running and task.would_output
+            if self.retrieve_running:
+                if (state == Run.State.RUNNING and task.would_output
                         and self.can_retrieve):
                     # try to get output
                     try:
@@ -1786,7 +1761,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                     # pylint: disable=broad-except
                     except Exception as err:
                         self.__ignore_or_raise(
-                            err, "fecthing output", task,
+                            err, "fetching output", task,
                             # context:
                             # - module
                             'core',
@@ -1800,45 +1775,23 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                             'RUNNING',
                             'fetch_output',
                         )
-            # elif state == Run.State.NEW:
-            #     # can happen after a `.redo()`, requeue
-            #     assert not isinstance(task, Application)
-            # elif state in [
-            #         Run.State.STOPPED,
-            #         Run.State.TERMINATED,
-            #         Run.State.TERMINATING,
-            #         Run.State.UNKNOWN,
-            # ]:
-            #     # nothing to do, task has already been requeued
-            #     pass
-            # else:
-            #     # if we got to this point, state has an invalid value
-            #     gc3libs.log.error(
-            #         "Invalid state `%r` returned by task %s.",
-            #         state, task)
-            #     if not gc3libs.error_ignored(
-            #             # context:
-            #             # - module
-            #             'core',
-            #             # - class
-            #             'Engine',
-            #             # - method
-            #             'progress',
-            #             # - actual error class
-            #             'InternalError',
-            #             # - additional keywords
-            #             'state',
-            #             'update',
-            #     ):
-            #         # propagate exception to caller
-            #         raise gc3libs.exceptions.InternalError(
-            #             "Invalid state '{state!r}' returned by task {task}"
-            #             .format(state=state, task=task))
+
+        # reckon how many tasks are "live"; we are only interested in
+        # tasks that consume real compute resources (i.e.,
+        # `Application` instances) and exclude "policy" classes (e.g.,
+        # all `TaskCollections`)
+        app_counts = self.counts(Application)
+        currently_submitted = app_counts['SUBMITTED']
+        currently_in_flight = currently_submitted + app_counts['RUNNING']
 
         # now try to submit NEW tasks
         if (self.can_submit and
                 currently_submitted < limit_submitted and
                 currently_in_flight < limit_in_flight):
+            submit_allowance = min(
+                limit_submitted - currently_submitted,
+                limit_in_flight - currently_in_flight
+            )
             queue = self._managed.to_submit
             if queue:
                 gc3libs.log.debug(
@@ -1856,21 +1809,24 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 # ... in sched:` line
                 sched = gc3libs.utils.YieldAtNext(_sched)
                 for task, resource_name in sched:
+                    # enforce Engine limits
+                    if submit_allowance <= 0:
+                        # we need to put back the task in the queue
+                        # here as we won't go call back into scheduler
+                        self._managed.to_submit.put(task)
+                        break
                     resource = self._core.resources[resource_name]
                     try:
                         self._core.submit(task, targets=[resource])
-                        if self._store and task.changed:
-                            self._store.save(task)
                         # if we get to this point, we know state is
                         # either SUBMITTED or RUNNING
+                        if self._store and task.changed:
+                            self._store.save(task)
                         self._managed.to_update.put(task)
                         if isinstance(task, Application):
-                            currently_submitted += 1
-                            currently_in_flight += 1
-                        # do book-keeping
-                        state = task.execution.state
+                            submit_allowance -= 1
                         # notify scheduler
-                        sched.send(state)
+                        sched.send(task.execution.state)
                     # pylint: disable=broad-except
                     except Exception as err1:
                         # record the error in the task's history
@@ -1901,10 +1857,6 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                                 'scheduler',
                                 'submit',
                             )
-                    # enforce Engine limits
-                    if (currently_submitted >= limit_submitted
-                            or currently_in_flight >= limit_in_flight):
-                        break
 
         # finally, retrieve output of finished tasks
         if self.can_retrieve:

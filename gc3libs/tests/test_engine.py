@@ -517,6 +517,39 @@ def test_engine_cannot_find_task_by_id_if_no_store():
                 engine.find_task_by_id(task_id)
 
 
+@pytest.mark.parametrize("limit_submitted,limit_in_flight", [
+    (2, 10),
+    (10, 5),
+])
+def test_engine_limits(limit_submitted, limit_in_flight,
+                       num_jobs=30, max_iter=100):
+    """
+    Test that `Engine.limit_in_flight` and `Engine.limit_submitted` are honored.
+    """
+    with temporary_engine(max_cores=50) as engine:
+        # set limits
+        engine.max_in_flight = 10
+        engine.max_submitted = 2
+        # populate with test apps
+        apps = []
+        for n in range(num_jobs):
+            name = 'app{nr}'.format(nr=n)
+            app = SuccessfulApp(name)
+            engine.add(app)
+            apps.append(app)
+        stats = engine.counts()
+        iter = 0
+        while stats['TERMINATED'] < num_jobs and iter < max_iter:
+            iter += 1
+            engine.progress()
+            stats = engine.counts()
+            submitted = stats['SUBMITTED']
+            assert submitted <= engine.max_submitted
+            in_flight = (stats['SUBMITTED'] + stats['RUNNING'])
+            assert in_flight <= engine.max_in_flight
+        assert stats["TERMINATED"] == num_jobs
+
+
 def test_engine_counts(num_jobs=100, max_iter=1000):
     """
     Test that `Engine.count()` returns correct results.
