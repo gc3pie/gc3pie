@@ -107,69 +107,67 @@ Testing the code
 
 In developing GC3Pie we try to use a `Test Driven Development`_
 approach, in the light of the quote: *It's tested or it's broken*. We
-use `tox`_ and `nose`_ as test runners, which make creating tests very
+use `tox`_ and `pytest`_ as test runners, which make creating tests very
 easy.
 
 .. _`Test Driven Development`: http://en.wikipedia.org/wiki/Test-driven_development
 .. _`tox`: http://tox.testrun.org/latest/
-.. _`nose`: http://readthedocs.io/docs/nose/en/latest/
+.. _`pytest`: https://docs.pytest.org/en/latest/
 
 
 Running the tests
 ~~~~~~~~~~~~~~~~~
 
-You can both run tests on your current environment using `nosetests` or use `tox_` to
+You can both run tests on your current environment using ``pytest`` or use `tox_` to
 create and run tests on separate environments. We suggest you to use
-`nosetests` while you are still fixing the problem, in order to be
+``pytest`` while you are still fixing the problem, in order to be
 able to run only the failing test, but we strongly suggest you to run
-`tox` *before* committing your code.
+``tox`` *before* committing your code.
 
-Running tests with `nosetests`
-++++++++++++++++++++++++++++++
+Running tests with ``pytest``
++++++++++++++++++++++++++++++
 
-In order to have the `nosetests` program, you need to install `nose_`
+In order to have the ``pytest`` program, you need to install `pytest_`
 in your current environment **and** gc3pie must be installed in
 develop mode::
 
-    pip install nose
+    pip install pytest
     python setup.py develop
 
 Then, from the top level directory, run the tests with::
 
-    nose -c nose.cfg
+    pytest -v
 
-Nose will then crawl the directory tree looking for available
+PyTest_ will then crawl the directory tree looking for available
 tests. You can also specify a subset of the available sets, by:
 
 * specifying the directory from which nose should start looking for tests::
 
     # Run only backend-related tests
-    nose -c nose.cfg gc3libs/backends
+    pytest -v gc3libs/backends/
 
 * specifying the file containing the tests you want to run::
 
     # Run only tests contained in a specific file
-    nose -c nose.cfg gc3libs/tests/test_session.py
+    pytest -v gc3libs/tests/test_session.py
 
-* specifying the id of the test (you need to run nose at least one to
-  know which id is assigned to each test)::
+* specifying the id of the test (a test ID is the file name, a double
+  colon, and the test function name)::
 
-    # Run only test number 123
-    nose -c nose.cfg 123
+    # Run only test `test_engine_limits` in file `test_engine.py`
+    pytest test_engine.py::test_engine_limits
 
 Running multiple tests
 ++++++++++++++++++++++
 
 In order to test GC3Pie against multiple version of python we use
 `tox`_, which creates virtual environments for all configured python
-version, runs `nose`_ inside each one of them, and prints a summary of
+version, runs `pytest`_ inside each one of them, and prints a summary of
 the test results.
 
-You don't need to have `tox` installed in the virtual environment you
+You don't need to have ``tox`` installed in the virtual environment you
 use to develop gc3pie, you can create a new virtual environment and
-install `tox` on it with::
-
-    pip install tox
+install ``tox`` on it with.
 
 Running tox_ is straightforward; just type ``tox`` on the command-line
 in GC3Pie's top level source directory.
@@ -188,9 +186,6 @@ the ``-e`` option::
     [TOX] py26: commands succeeded
     [TOX] congratulations :)
 
-(See section `skipping tests`_ for a discussion about how and when to
-define skipped tests.)
-
 Option ``-r`` instructs `tox`:command: to re-build the testing virtual
 environment. This is usually needed when you update the dependencies
 of GC3Pie or when you add or remove command line programs or
@@ -204,23 +199,6 @@ configuration files. However, if you feel that the environments can be
 2) deleting and recreating tox virtual environments::
 
       tox -r
-
-
-Organizing tests
-~~~~~~~~~~~~~~~~
-
-Each single python file should have a test file inside a ``tests``
-subpackage with filename created by prefixing ``test_`` to the
-filename to test.  For example, if you created a file ``foo.py``,
-there should be a file ``tests/test_foo.py`` which will contains tests
-for ``foo.py``.
-
-Even though following the naming convention above is not always
-possible, each test regarding a specific component should be in a file
-inside a ``tests`` directory inside that component.  For instance,
-tests for the subpackage `gc3libs.persistence` are located inside the
-directory ``gc3libs/persistence/tests`` but are not named after the
-specific file.
 
 
 Writing tests
@@ -247,157 +225,34 @@ remember:
 
 Writing tests is very easy: just create a file whose name begins with
 ``test_``, then put in it some functions which name begins with
-``test_``; the nose_ framework will automatically call each one of
-them. Moreover, nose_ will run also any doctest_ which will be found in
+``test_``; the pytest_ framework will automatically call each one of
+them. Moreover, pytest_ will run also any pytest_ which will be found in
 the code.
 
 .. _doctest: http://wiki.python.org/moin/DocTest
 
-Full documentation of the nose_ framework is available at the `nose`_
-website. However, there are some of the interesting features you may
-want to use to improve your tests, detailed in the following sections.
+The module `gc3libs.testing`:mod: contains a few helpers that make
+writing GC3Pie tests easier.
+
+Full documentation of the pytest_ framework is available at the `pytest`_
+website.
 
 
-Testing for errors
-++++++++++++++++++
+Organizing tests
+~~~~~~~~~~~~~~~~
 
-If your test must verify that the code raises an exception, instead
-of wrapping the test inside a ``try: ... except:`` block you can use
-the `@raises` decorator from the `nose.tools` module::
+Each single python file should have a test file inside a ``tests``
+subpackage with filename created by prefixing ``test_`` to the
+filename to test.  For example, if you created a file ``foo.py``,
+there should be a file ``tests/test_foo.py`` which will contains tests
+for ``foo.py``.
 
-    from nose.tools import raises
-
-    @raises(TypeError)
-    def test_invalid_invocation():
-        Application()
-
-This is exactly the same as writing::
-
-     try:
-         Application()
-         assert False, "we should have got an exception"
-     except TypeError:
-         pass
-
-
-Skipping tests
-++++++++++++++
-
-If you want to skip a test, just raise a `SkipTest` exception
-(imported from the `nose.plugins.skip` module). This is useful when
-you know that the test will fail, either because the code is not ready
-yet, or because some environmental conditions are not satisfied (e.g.,
-an optional module is missing, or the code needs to access a service
-that is not available).  For example::
-
-    from nose.plugins.skip import SkipTest
-    try:
-        import MySQLdb
-    except ImportError:
-        raise SkipTest("Error importing MySQL backend. Skipping MySQL low level tests")
-
-
-Generating tests
-++++++++++++++++
-
-It is possible to use `Python generators`_ to create multiple
-tests at run time::
-
-    def test_evens():
-        for i in range(0, 5):
-            yield check_even, i, i*3
-
-    def check_even(n, nn):
-        assert n % 2 == 0 or nn % 2 == 0
-
-This will result in five tests: nose_ will iterate the generator,
-creating a function test case wrapper for each tuple it
-yields. Specifically, in the example above, nose_ will execute the
-function calls ``check_even(0,0)``, ``check_even(1,3)``, ...,
-``check_even(4,12)`` as if each of them were written in the source as
-a separate test; if any of them fails (i.e., raises an
-`AssertionError`), then the test is considered failed.
-
-.. _`python generators`: http://wiki.python.org/moin/Generators
-
-
-Grouping tests into classes
-+++++++++++++++++++++++++++
-
-Tests that share the same set-up or clean-up code should be grouped
-into *test classes*:
-
-* The exact same set-up and clean-up code *(fixtures)* will be run
-  before and after each test, but is written down only once.
-
-* Python class inheritance can be used to run the same tests on
-  different configurations (e.g., by just overriding the set-up and
-  clean-up code).
-
-A test class is a regular Python class, whose name begins with
-``Test`` (first letter must be uppercase); each method whose name
-begins with ``test_`` defines a test case.
-
-If the class defines a `setUp` method, it will be called *before each
-test method*. If the class defines a `tearDown` method, it will be
-called *after each test method*.
-
-If class methods ``setup_class`` and ``teardown_class`` are defined,
-nose_ will invoke them *once* (before and after performing the tests
-of that class, respectively).
-
-A canonical example of a test class with fixtures looks like this::
-
-    class TestClass(object):
-
-       @classmethod
-       def setup_class(cls):
-          ...
-
-       @classmethod
-       def teardown_class(cls):
-          ...
-
-       def setUp(self):
-          ...
-
-       def tearDown(self):
-          ...
-
-       def test_case_1(self):
-          ...
-
-       def test_case_2(self):
-          ...
-
-       def test_case_3(self):
-          ...
-
-The nose_ framework will execute a code like this::
-
-    TestClass.setup_class()
-    for test_method in get_test_classes():
-       obj = TestClass()
-       obj.setUp()
-       try:
-          obj.test_method()
-       finally:
-          obj.tearDown()
-    TestClass.teardown_class()
-
-That is, for each test case, a new instance of the `TestClass` is
-created, set up, and torn down -- thus approximating the Platonic
-ideal of running each test in a completely new, pristine environment.
-
-
-Opening the python debugger while running a test
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When running using `nosetests`:command you cannot just execute
-`pdb.set_trace()` to open a debugger console. However, you can run the
-`set_trace()` function of the `nose.tools` module::
-
-    import nose.tools; nose.tools.set_trace()
+Even though following the naming convention above is not always
+possible, each test regarding a specific component should be in a file
+inside a ``tests`` directory inside that component.  For instance,
+tests for the subpackage `gc3libs.persistence` are located inside the
+directory ``gc3libs/persistence/tests`` but are not named after the
+specific file.
 
 
 Coding style
