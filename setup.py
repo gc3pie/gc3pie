@@ -143,7 +143,13 @@ setuptools.setup(
         " computational job submission to multiple resources."
     ),
     long_description=read_whole_file('README.rst'),
-    author="S3IT, Zentrale Informatik, University of Zurich",
+    author=', '.join([
+        # only long-time core authors are listed here;
+        # please see file `docs/credits.rst`
+        'Sergio Maffioletti',
+        'Antonio Messina',
+        'Riccardo Murri',
+    ]),
     author_email="gc3pie-dev@googlegroups.com",
     license="LGPL",
     keywords=str.join(' ', [
