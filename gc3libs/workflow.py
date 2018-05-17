@@ -890,7 +890,7 @@ class ParallelTaskCollection(TaskCollection):
         self.execution.returncode = (0, 0)
         for task in self.tasks:
             if task.execution.returncode != 0:
-                self.execution.exitcode = 1
+                self.execution.exitcode = os.EX_SOFTWARE
 
 
     def update_state(self, **extra_args):
