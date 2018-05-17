@@ -369,6 +369,7 @@ class Task(Persistable, Struct):
     def __setstate__(self, state):
         self.__dict__ = state
         self.detach()
+        TaskStateChange.connect(self._on_state_change, sender=self)
 
     # grid-level actions on this Task object are re-routed to the
     # grid/engine/core instance
