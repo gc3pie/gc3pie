@@ -1969,6 +1969,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             """
             if not jobid:
                 return "Usage: kill JOBID"
+            gc3libs.log.info("Daemon requested to kill job %s", jobid)
 
             try:
                 task = self._parent._controller.find_task_by_id(jobid)
@@ -2119,6 +2120,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             """
             if not jobid:
                 return "Usage: manage JOBID"
+            gc3libs.log.info("Daemon requested to manage job %s", jobid)
 
             # we should not add duplicates into the Engine,
             # so check first that the task is not already there
@@ -2151,6 +2153,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             """
             if not jobid:
                 return "Usage: remove JOBID"
+            gc3libs.log.info("Daemon requested to remove job %s", jobid)
 
             try:
                 task = self._parent._controller.find_task_by_id(jobid)
@@ -2190,6 +2193,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             """
             if not jobid:
                 return "Usage: redo JOBID"
+            gc3libs.log.info("Daemon requested to redo job %s", jobid)
 
             try:
                 task = self._parent._controller.find_task_by_id(jobid)
@@ -2277,6 +2281,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             """
             if not jobid:
                 return "Usage: unmanage JOBID"
+            gc3libs.log.info("Daemon requested to unmanage job %s", jobid)
 
             try:
                 task = self._parent._controller.find_task_by_id(jobid)

@@ -300,6 +300,7 @@ class TaskCollection(Task):
         else:
             # a sequence with no tasks terminates successfully
             self.execution._exitcode = 0
+        gc3libs.log.debug("%s: exit code set to %s", self, self.execution.exitcode)
 
 
 class SequentialTaskCollection(TaskCollection):
