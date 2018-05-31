@@ -397,7 +397,11 @@ class SequentialTaskCollection(TaskCollection):
         Rewind the sequence to a given stage and reset its state to ``NEW``.
         """
         if len(self.tasks) > 0:
-            super(SequentialTaskCollection, self).redo(*args, **kwargs)
+            assert from_stage < len(self.tasks), (
+                "Cannot redo {0} from stage {1}:"
+                " only {2} stages in task list."
+                .format(self, from_stage, len(self.tasks))
+            )
             self._current_task = from_stage
             task = self.stage()
             if task is not None:
@@ -405,6 +409,7 @@ class SequentialTaskCollection(TaskCollection):
             # All other tasks should be put in NEW again
             for i in range(from_stage+1, len(self.tasks)):
                 self.tasks[i].redo(*args, **kwargs)
+        super(SequentialTaskCollection, self).redo(*args, **kwargs)
 
     def submit(self, resubmit=False, targets=None, **extra_args):
         """
