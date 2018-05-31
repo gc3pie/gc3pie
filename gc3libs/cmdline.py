@@ -2182,18 +2182,34 @@ class SessionBasedDaemon(_SessionBasedCommand):
                 return ("ERROR: could not remove task `%s`: %s" % (jobid, ex))
 
 
-        def redo(self, jobid=None):
+        def redo(self, jobid=None, from_stage=None):
             """
-            Usage: redo JOBID
+            Usage: redo JOBID [STAGE]
 
-            Resubmit the task identified by JOBID.
+            Resubmit the task identified by JOBID.  If task is a
+            `SequentialTaskCollection`, then resubmit it from the
+            given stage (identified by its integer index in the
+            collection; by default, sequential task collections resume
+            from the very first task).
 
             Only tasks in TERMINATED state can be resubmitted;
             if necessary kill the task first.
             """
-            if not jobid:
-                return "Usage: redo JOBID"
-            gc3libs.log.info("Daemon requested to redo job %s", jobid)
+            if jobid is None:
+                return "Usage: redo JOBID [STAGE]"
+            if from_stage is None:
+                args = []
+                gc3libs.log.info("Daemon requested to redo job %s", jobid)
+            else:
+                try:
+                    args = [int(from_stage)]
+                except (TypeError, ValueError) as err:
+                    return (
+                        "ERROR: STAGE argument must be a non-negative integer,"
+                        " got {0!r} instead.".format(from_stage))
+                gc3libs.log.info(
+                    "Daemon requested to redo job %s from stage %s",
+                    jobid, from_stage)
 
             try:
                 task = self._parent._controller.find_task_by_id(jobid)
@@ -2207,7 +2223,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
 
             try:
                 task.attach(self._parent._controller)
-                task.redo()
+                task.redo(*args)
                 self._parent.session.save(task)
                 return ("Task `%s` successfully resubmitted" % jobid)
             except Exception as err:
