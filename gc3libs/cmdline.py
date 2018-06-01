@@ -2222,8 +2222,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                         % (jobid, err))
 
             try:
-                task.attach(self._parent._controller)
-                task.redo(*args)
+                self._parent._controller.redo(task, *args)
                 self._parent.session.save(task)
                 return ("Task `%s` successfully resubmitted" % jobid)
             except Exception as err:
