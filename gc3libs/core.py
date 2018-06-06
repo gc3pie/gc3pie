@@ -34,7 +34,6 @@ from dictproxyhack import dictproxy
 
 import gc3libs
 from gc3libs import Application, Run, Task
-import gc3libs.debug
 from gc3libs.events import TaskStateChange, TermStatusChange
 import gc3libs.exceptions
 from gc3libs.quantity import Duration
