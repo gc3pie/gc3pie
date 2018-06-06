@@ -301,13 +301,18 @@ class SqlStore(Store):
         for column in self.extra_fields:
             try:
                 fields[column] = self.extra_fields[column](obj)
-                gc3libs.log.debug(
-                    "Writing value '%s' in column '%s' for object '%s'",
-                    fields[column], column, obj)
             except Exception as ex:
                 gc3libs.log.warning(
                     "Error saving DB column '%s' of object '%s': %s: %s",
                     column, obj, ex.__class__.__name__, str(ex))
+
+	if __debug__:
+	    for column in fields:
+		if column == 'data':
+		    continue
+                gc3libs.log.debug(
+                    "Writing value '%s' in column '%s' for object '%s'",
+                    fields[column], column, obj)
 
         q = sql.select([self._tables.c.id]).where(self._tables.c.id == id_)
         with self._engine.begin() as conn:
