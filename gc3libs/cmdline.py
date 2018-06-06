@@ -2211,15 +2211,21 @@ class SessionBasedDaemon(_SessionBasedCommand):
                     "Daemon requested to redo job %s from stage %s",
                     jobid, from_stage)
 
+            # ensure we re-read task from the DB to pick up updates
             try:
                 task = self._parent._controller.find_task_by_id(jobid)
+                gc3libs.log.debug(
+                    "Daemon unloading job %s (will re-load soon)", jobid)
+                self._parent._controller.remove(task)
             except KeyError:
-                try:
-                    task = self._parent.session.load(jobid, add=True)
-                except Exception as err:
-                    return (
-                        "ERROR: Could not load task `%s` from session: %s"
-                        % (jobid, err))
+                pass
+
+            try:
+                task = self._parent.session.load(jobid, add=True)
+            except Exception as err:
+                return (
+                    "ERROR: Could not load task `%s` from session: %s"
+                    % (jobid, err))
 
             try:
                 self._parent._controller.redo(task, *args)
