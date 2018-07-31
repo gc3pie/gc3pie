@@ -1887,7 +1887,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 # pylint: disable=broad-except
                 except Exception as err:
                     self.__ignore_or_raise(
-                        err, "fecthing output", task,
+                        err, "fetching output", task,
                         # context:
                         # - module
                         'core',
