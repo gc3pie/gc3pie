@@ -58,7 +58,6 @@ import os.path
 import signal
 import stat
 import sys
-from prettytable import PrettyTable
 import time
 import threading
 try:
@@ -66,9 +65,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 from collections import defaultdict
-from prettytable import PrettyTable
 from SimpleXMLRPCServer import SimpleXMLRPCServer
-import xmlrpclib
 from warnings import warn
 import xmlrpclib
 
@@ -80,6 +77,7 @@ import cli._ext.argparse as argparse
 import daemon
 import lockfile
 from lockfile.pidlockfile import PIDLockFile
+from prettytable import PrettyTable
 import yaml
 
 
