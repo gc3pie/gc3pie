@@ -57,7 +57,7 @@ class Store(object):
 
     def pre_fork(self):
         """
-        Make preparations for `fork()`ing the current process.
+        Make preparations for `fork()`-ing the current process.
 
         This should close open network connections or any other
         sockets or file descriptors that cannot be used by both the
