@@ -2169,7 +2169,7 @@ def _split_specific_args(fn, argdict):
     args, varargs, _, _ = inspect.getargspec(fn)
     specific_args = {}
     for n, argname in enumerate(args):
-        if n == 1 and argname == 'self':
+        if n == 0 and argname == 'self':
             continue
         if argname in argdict:
             specific_args[argname] = argdict.pop(argname)
