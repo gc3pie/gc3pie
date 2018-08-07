@@ -713,15 +713,15 @@ class ShellcmdLrms(LRMS):
     def _init_spooldir(self):
         """Set `self.spooldir` to a sensible value."""
         rc, stdout, stderr = self.transport.execute_command(
-            'cd "${TMPDIR:-/var/tmp}" && pwd')
+            'cd "${TMPDIR:-{0}}" && pwd'.format(gc3libs.Default.SPOOLDIR))
         if (rc != 0 or stdout.strip() == '' or stdout[0] != '/'):
-            log.debug(
-                "Unable to recover a valid absolute path for `spooldir`"
-                " on resource `%s`. Using `/var/tmp`.", self.name)
-            self.spooldir = '/var/tmp'
+            raise SpoolDirError("Unable to recover a valid path for `spooldir` "
+                                "on resource {0}. "
+                                "Neither {1} nor {2} have worked.".format(self.name,
+                                                                          self.spooldir,
+                                                                          gc3libs.Default.SPOOLDIR))
         else:
             self.spooldir = stdout.strip()
-
 
     @property
     def time_cmd(self):
