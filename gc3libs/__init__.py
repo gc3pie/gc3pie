@@ -104,7 +104,7 @@ class Default(object):
 
     # time to cache lshosts/bjobs information for
     LSF_CACHE_TIME = 30
-
+    SPOOLDIR = "/var/tmp"
 
 from gc3libs.events import TaskStateChange
 import gc3libs.exceptions

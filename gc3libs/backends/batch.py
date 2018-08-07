@@ -125,6 +125,7 @@ class BatchSystem(LRMS):
                  ssh_timeout=None,
                  large_file_threshold=None,
                  large_file_chunk_size=None,
+                 spooldir = None,
                  **extra_args):
 
         # init base class
@@ -132,6 +133,13 @@ class BatchSystem(LRMS):
             self, name,
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth, **extra_args)
+
+
+        # default is to use $TMPDIR or '/var/tmp' (see
+        # `tempfile.mkftemp`), but we delay the determination of the
+        # correct dir to the submit_job, so that we don't have to use
+        # `transport` right now.
+        self.spooldir = spooldir
 
         # backend-specific setup
         self.frontend = frontend
@@ -156,6 +164,44 @@ class BatchSystem(LRMS):
             raise gc3libs.exceptions.TransportError(
                 "Unknown transport '%s'" % transport)
         self.accounting_delay = accounting_delay
+
+
+    @property
+    def spooldir(self):
+        """
+        Root folder for all working directories of GC3Pie tasks.
+
+        When this backend executes a task, it first creates a temporary
+        subdirectory of this folder, then launches commands in there.
+
+        If not explicitly set (e.g. at construction time), the "spool
+        directory" will be given a default value according to the logic of
+        :meth:`_discover_spooldir`:
+
+        * If the remote environment variable ``TMPDIR`` is set and points to an
+          existing directory, that value is used;
+        * otherwise, the hard-coded default ``/var/tmp`` is used instead.
+        """
+        if not self._spooldir:
+            self._init_spooldir()
+        return self._spooldir
+
+    @spooldir.setter
+    def spooldir(self, value):
+        self._spooldir = value
+
+    def _init_spooldir(self):
+        """Set `self.spooldir` to a sensible value."""
+        rc, stdout, stderr = self.transport.execute_command(
+            'cd "${TMPDIR:-{0}}" && pwd'.format(gc3libs.Default.SPOOLDIR))
+        if (rc != 0 or stdout.strip() == '' or stdout[0] != '/'):
+            raise gc3libs.exceptions.SpoolDirError("Unable to recover a valid path for `spooldir` "
+                                                   "on resource {0}. "
+                                                   "Neither {1} nor {2} have worked.".format(self.name,
+                                                                                             self.spooldir,
+                                                                                             gc3libs.Default.SPOOLDIR))
+        else:
+            self.spooldir = stdout.strip()
 
     def get_jobid_from_submit_output(self, output, regexp):
         """Parse the output of the submission command. Regexp is
@@ -402,9 +448,8 @@ class BatchSystem(LRMS):
         # Create the remote directory.
         try:
             self.transport.connect()
-
-            cmd = "mkdir -p $HOME/.gc3pie_jobs;" \
-                " mktemp -d $HOME/.gc3pie_jobs/lrms_job.XXXXXXXXXX"
+            cmd = "mkdir -p {0}/.gc3pie_jobs;" \
+                " mktemp -d {0}/.gc3pie_jobs/lrms_job.XXXXXXXXXX".format(self.spooldir)
             log.info("Creating remote temporary folder: command '%s' " % cmd)
             exit_code, stdout, stderr = self.transport.execute_command(cmd)
             if exit_code == 0:
