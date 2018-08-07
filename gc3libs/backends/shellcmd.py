@@ -713,7 +713,7 @@ class ShellcmdLrms(LRMS):
     def _init_spooldir(self):
         """Set `self.spooldir` to a sensible value."""
         rc, stdout, stderr = self.transport.execute_command(
-            'cd "$TMPDIR" && pwd')
+            'cd "${TMPDIR:-/var/tmp}" && pwd')
         if (rc != 0 or stdout.strip() == '' or stdout[0] != '/'):
             log.debug(
                 "Unable to recover a valid absolute path for `spooldir`"
