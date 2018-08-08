@@ -192,6 +192,7 @@ class BatchSystem(LRMS):
 
     def _init_spooldir(self):
         """Set `self.spooldir` to a sensible value."""
+        self.transport.connect()
         rc, stdout, stderr = self.transport.execute_command(
             'cd "${TMPDIR:-%s}" && pwd' % gc3libs.Default.SPOOLDIR)
         if (rc != 0 or stdout.strip() == '' or stdout[0] != '/'):
