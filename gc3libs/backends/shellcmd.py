@@ -696,7 +696,7 @@ class ShellcmdLrms(LRMS):
 
         If not explicitly set (e.g. at construction time), the "spool
         directory" will be given a default value according to the logic of
-        :meth:`_discover_spooldir`:
+        :meth:`_init_spooldir`:
 
         * If the remote environment variable ``TMPDIR`` is set and points to an
           existing directory, that value is used;
@@ -713,13 +713,12 @@ class ShellcmdLrms(LRMS):
     def _init_spooldir(self):
         """Set `self.spooldir` to a sensible value."""
         rc, stdout, stderr = self.transport.execute_command(
-            'cd "${TMPDIR:-%s}" && pwd' % gc3libs.Default.SPOOLDIR)
+            'cd "{0}" && pwd'.format(gc3libs.Default.SPOOLDIR))
         if (rc != 0 or stdout.strip() == '' or stdout[0] != '/'):
-            raise SpoolDirError("Unable to recover a valid path for `spooldir` "
-                                "on resource {0}. "
-                                "Neither {1} nor {2} have worked.".format(self.name,
-                                                                          self.spooldir,
-                                                                          gc3libs.Default.SPOOLDIR))
+            raise gc3libs.exceptions.SpoolDirError("Unable to use {0} for `spooldir` "
+                                                   "on resource {0}. ".format(gc3libs.Default.SPOOLDIR,
+                                                                              self.name
+                                                                              ))
         else:
             self.spooldir = stdout.strip()
 
