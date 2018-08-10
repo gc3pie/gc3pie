@@ -621,7 +621,7 @@ app2_epilogue_content = echo epilogue app2
         lrms = [ resource for resource in self.core.get_resources() if resource.name == 'testpbs'][0]
         # Ugly hack. We have to list the job dirs to check which one
         # is the new one.
-        jobdir = os.path.expanduser('{0}/.gc3pie_jobs'.format(lrms.spooldir))
+        jobdir = os.path.expanduser('{0}'.format(lrms.spooldir))
         jobs = []
         if os.path.isdir(jobdir):
             jobs = os.listdir(jobdir)
@@ -671,7 +671,7 @@ app2_epilogue_content = echo epilogue app2
         lrms = [ resource for resource in self.core.get_resources() if resource.name == 'testpbs'][0]
         # Ugly hack. We have to list the job dirs to check which one
         # is the new one.
-        jobdir = os.path.expanduser('{0}/.gc3pie_jobs'.format(lrms.spooldir))
+        jobdir = os.path.expanduser('{0}'.format(lrms.spooldir))
         jobs = []
         if os.path.isdir(jobdir):
             jobs = os.listdir(jobdir)

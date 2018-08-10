@@ -448,8 +448,8 @@ class BatchSystem(LRMS):
         # Create the remote directory.
         try:
             self.transport.connect()
-            cmd = "mkdir -p {0}/.gc3pie_jobs;" \
-                " mktemp -d {0}/.gc3pie_jobs/lrms_job.XXXXXXXXXX".format(self.spooldir)
+            cmd = "mkdir -p {0};" \
+                " mktemp -d {0}/lrms_job.XXXXXXXXXX".format(self.spooldir)
             log.info("Creating remote temporary folder: command '%s' " % cmd)
             exit_code, stdout, stderr = self.transport.execute_command(cmd)
             if exit_code == 0:
