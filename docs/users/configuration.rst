@@ -331,6 +331,20 @@ Configuration keys common to batch-queuing resource types
 The following configuration keys can be used in any resource of type ``pbs``,
 ``lsf``, ``sge``, or ``slurm``.
 
+  * ``spooldir``: Root path to the batch jobs' working
+    directories. GC3Pie will create dedicated temporary working
+    directories, one for each job, within this root folder.
+
+    By default, working directories are created as subdirectories
+    of ``$HOME/.gc3pie_jobs``.
+
+    .. note::
+
+       The job working directories *must* be visible (with the same
+       filesystem path) and writable on both the front-end node (with which GC3Pie
+       interacts) and the compute nodes (where a job's payload
+       actually runs).
+
   * ``prologue``: Path to a script file, whose contents are *inserted* into the
     submission script of each application that runs on the resource. Commands
     from the *prologue* script are executed before the real application; the
@@ -689,10 +703,13 @@ The following optional configuration keys are available in a
     configuration file will be used regardless of the real values
     discovered by the resource.
 
-  * ``spooldir``: Path to a filesystem location where to create
+  * ``spooldir``: Root path to a filesystem location where to create
     temporary working directories for processes executed through this
-    backend. The default value `None` means to use ``$TMPDIR`` or
-    `/tmp`:file: (see `tempfile.mkftemp` for details).
+    backend. GC3Pie will create dedicated temporary working
+    directories, one for each job, within this root folder.
+
+    By default, working directories are created as subdirectories
+    of ``$HOME/.gc3pie_jobs``.
 
 If ``transport`` is ``ssh``, then the following options are also read
 and take precedence above the corresponding options set in the "auth"
