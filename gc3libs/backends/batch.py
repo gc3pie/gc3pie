@@ -403,26 +403,21 @@ class BatchSystem(LRMS):
         job = app.execution
 
         # Create the remote directory.
-        try:
-            self.transport.connect()
-            cmd = (
-                "mkdir -p {0};"
-                " mktemp -d {0}/lrms_job.XXXXXXXXXX"
-                .format(self.spooldir))
-            log.info("Creating temporary job working directory")
-            exit_code, stdout, stderr = self.transport.execute_command(cmd)
-            if exit_code == 0:
-                ssh_remote_folder = stdout.split('\n')[0]
-            else:
-                raise gc3libs.exceptions.SpoolDirError(
-                    "Cannot create temporary job working directory"
-                    " on resource '%s'; command '%s' exited"
-                    " with code: %d and stderr: '%s'."
-                    % (self.name, cmd, exit_code, stderr))
-        except gc3libs.exceptions.TransportError:
-            raise
-        except:
-            raise
+        self.transport.connect()
+        cmd = (
+            "mkdir -p {0};"
+            " mktemp -d {0}/lrms_job.XXXXXXXXXX"
+            .format(self.spooldir))
+        log.info("Creating temporary job working directory")
+        exit_code, stdout, stderr = self.transport.execute_command(cmd)
+        if exit_code == 0:
+            ssh_remote_folder = stdout.split('\n')[0]
+        else:
+            raise gc3libs.exceptions.SpoolDirError(
+                "Cannot create temporary job working directory"
+                " on resource '%s'; command '%s' exited"
+                " with code: %d and stderr: '%s'."
+                % (self.name, cmd, exit_code, stderr))
 
         # Copy the input file(s) to remote directory.
         for local_path, remote_path in app.inputs.items():
