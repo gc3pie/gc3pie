@@ -60,11 +60,11 @@ from gc3libs.compat._collections import OrderedDict
 
 
 class Default(object):
-
     """
     A namespace for all constants and default values used in the
     GC3Libs package.
     """
+
     RCDIR = os.path.join(os.path.expandvars('$HOME'), ".gc3")
     CONFIG_FILE_LOCATIONS = [
         # system-wide config file
@@ -104,6 +104,11 @@ class Default(object):
 
     # time to cache lshosts/bjobs information for
     LSF_CACHE_TIME = 30
+
+    # root path for the working directory of jobs;
+    # on batch systems, this should be visible from both
+    # the frontend and the compute nodes
+    SPOOLDIR = "$HOME/.gc3pie_jobs"
 
 
 from gc3libs.events import TaskStateChange

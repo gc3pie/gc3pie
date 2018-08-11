@@ -2,7 +2,7 @@
 #
 # -*- coding: utf-8 -*-
 #
-#  Copyright (C) 2010-2012, 2015 S3IT, Zentrale Informatik, University of Zurich
+#  Copyright (C) 2010-2012, 2015, 2018 S3IT, Zentrale Informatik, University of Zurich
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -613,15 +613,19 @@ app2_epilogue_content = echo epilogue app2
     def test_pbs_prologue_and_epilogue_contents_when_files(self):
         """Prologue and epilogue scripts are inserted in the submission script
         """
-        # Ugly hack. We have to list the job dirs to check which one
-        # is the new one.
-        jobdir = os.path.expanduser('~/.gc3pie_jobs')
-        jobs = []
-        if os.path.isdir(jobdir):
-            jobs = os.listdir(jobdir)
         app = Application(['/bin/true'], [], [], '')
         self.core = gc3libs.core.Core(self.cfg)
         self.core.select_resource('testpbs')
+
+        # get the selected resource
+        lrms = [ resource for resource in self.core.get_resources() if resource.name == 'testpbs'][0]
+        # Ugly hack. We have to list the job dirs to check which one
+        # is the new one.
+        jobdir = os.path.expandvars(lrms.spooldir)
+        jobs = []
+        if os.path.isdir(jobdir):
+            jobs = os.listdir(jobdir)
+
         try:
             self.core.submit(app)
         except Exception:
@@ -658,16 +662,20 @@ app2_epilogue_content = echo epilogue app2
     def test_pbs_prologue_and_epilogue_contents_when_not_files(self):
         """Prologue and epilogue scripts are inserted in the submission script
         """
-        # Ugly hack. We have to list the job dirs to check which one
-        # is the new one.
-        jobdir = os.path.expanduser('~/.gc3pie_jobs')
-        jobs = []
-        if os.path.isdir(jobdir):
-            jobs = os.listdir(jobdir)
         app = Application(['/bin/true'], [], [], '')
         app.application_name = 'app2'
         self.core = gc3libs.core.Core(self.cfg)
         self.core.select_resource('testpbs')
+
+        # get the selected resource
+        lrms = [ resource for resource in self.core.get_resources() if resource.name == 'testpbs'][0]
+        # Ugly hack. We have to list the job dirs to check which one
+        # is the new one.
+        jobdir = os.path.expandvars(lrms.spooldir)
+        jobs = []
+        if os.path.isdir(jobdir):
+            jobs = os.listdir(jobdir)
+
         try:
             self.core.submit(app)
         except Exception:

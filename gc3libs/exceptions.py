@@ -174,7 +174,6 @@ class UnrecoverableDataStagingError(DataStagingError, UnrecoverableError):
     """
     pass
 
-
 class InputFileError(FatalError):
 
     """
@@ -381,6 +380,15 @@ class OutputNotAvailableError(InvalidOperation):
     """
     Raised upon attempts to retrieve the output for jobs that are
     still in `NEW` or `SUBMITTED` state.
+    """
+    pass
+
+
+class SpoolDirError(LRMSError, InvalidValue, UnrecoverableError):
+
+    """
+    Raised when a backend fails to access the spooldir either because
+    it does not exists or cannot be read.
     """
     pass
 

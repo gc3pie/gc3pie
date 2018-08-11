@@ -33,7 +33,7 @@ import time
 import uuid
 
 import gc3libs
-from gc3libs import log, Run
+from gc3libs import Default, log, Run
 from gc3libs.backends import LRMS
 from gc3libs.utils import same_docstring_as, sh_quote_safe
 import gc3libs.backends.transport
@@ -125,6 +125,7 @@ class BatchSystem(LRMS):
                  ssh_timeout=None,
                  large_file_threshold=None,
                  large_file_chunk_size=None,
+                 spooldir=Default.SPOOLDIR,
                  **extra_args):
 
         # init base class
@@ -135,6 +136,7 @@ class BatchSystem(LRMS):
 
         # backend-specific setup
         self.frontend = frontend
+        self.spooldir = spooldir
         if transport == 'local':
             self.transport = gc3libs.backends.transport.LocalTransport()
             self._username = getuser()
@@ -156,6 +158,7 @@ class BatchSystem(LRMS):
             raise gc3libs.exceptions.TransportError(
                 "Unknown transport '%s'" % transport)
         self.accounting_delay = accounting_delay
+
 
     def get_jobid_from_submit_output(self, output, regexp):
         """Parse the output of the submission command. Regexp is
@@ -400,24 +403,21 @@ class BatchSystem(LRMS):
         job = app.execution
 
         # Create the remote directory.
-        try:
-            self.transport.connect()
-
-            cmd = "mkdir -p $HOME/.gc3pie_jobs;" \
-                " mktemp -d $HOME/.gc3pie_jobs/lrms_job.XXXXXXXXXX"
-            log.info("Creating remote temporary folder: command '%s' " % cmd)
-            exit_code, stdout, stderr = self.transport.execute_command(cmd)
-            if exit_code == 0:
-                ssh_remote_folder = stdout.split('\n')[0]
-            else:
-                raise gc3libs.exceptions.LRMSError(
-                    "Failed executing command '%s' on resource '%s';"
-                    " exit code: %d, stderr: '%s'."
-                    % (cmd, self.name, exit_code, stderr))
-        except gc3libs.exceptions.TransportError:
-            raise
-        except:
-            raise
+        self.transport.connect()
+        cmd = (
+            "mkdir -p {0};"
+            " mktemp -d {0}/lrms_job.XXXXXXXXXX"
+            .format(self.spooldir))
+        log.info("Creating temporary job working directory")
+        exit_code, stdout, stderr = self.transport.execute_command(cmd)
+        if exit_code == 0:
+            ssh_remote_folder = stdout.split('\n')[0]
+        else:
+            raise gc3libs.exceptions.SpoolDirError(
+                "Cannot create temporary job working directory"
+                " on resource '%s'; command '%s' exited"
+                " with code: %d and stderr: '%s'."
+                % (self.name, cmd, exit_code, stderr))
 
         # Copy the input file(s) to remote directory.
         for local_path, remote_path in app.inputs.items():
