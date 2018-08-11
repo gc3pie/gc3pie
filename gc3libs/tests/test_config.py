@@ -2,7 +2,7 @@
 #
 # -*- coding: utf-8 -*-
 #
-#  Copyright (C) 2010-2012, 2015 S3IT, Zentrale Informatik, University of Zurich
+#  Copyright (C) 2010-2012, 2015, 2018 S3IT, Zentrale Informatik, University of Zurich
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -621,7 +621,7 @@ app2_epilogue_content = echo epilogue app2
         lrms = [ resource for resource in self.core.get_resources() if resource.name == 'testpbs'][0]
         # Ugly hack. We have to list the job dirs to check which one
         # is the new one.
-        jobdir = os.path.expanduser('{0}'.format(lrms.spooldir))
+        jobdir = os.path.expandvars(lrms.spooldir)
         jobs = []
         if os.path.isdir(jobdir):
             jobs = os.listdir(jobdir)
@@ -671,7 +671,7 @@ app2_epilogue_content = echo epilogue app2
         lrms = [ resource for resource in self.core.get_resources() if resource.name == 'testpbs'][0]
         # Ugly hack. We have to list the job dirs to check which one
         # is the new one.
-        jobdir = os.path.expanduser('{0}'.format(lrms.spooldir))
+        jobdir = os.path.expandvars(lrms.spooldir)
         jobs = []
         if os.path.isdir(jobdir):
             jobs = os.listdir(jobdir)

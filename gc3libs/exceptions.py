@@ -384,6 +384,15 @@ class OutputNotAvailableError(InvalidOperation):
     pass
 
 
+class SpoolDirError(LRMSError, InvalidValue, UnrecoverableError):
+
+    """
+    Raised when a backend fails to access the spooldir either because
+    it does not exists or cannot be read.
+    """
+    pass
+
+
 class TaskError(Error):
 
     """
@@ -481,13 +490,6 @@ class ApplicationDescriptionError(FatalError):
 
     """
     pass
-
-class SpoolDirError(InvalidValue, UnrecoverableError):
-
-    """
-    Raised when a backend fails to access the spooldir either because
-    it does not exists or cannot be read.
-    """
 
 
 # main: run tests

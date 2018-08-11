@@ -45,7 +45,7 @@ from pkg_resources import Requirement, resource_filename
 import gc3libs
 import gc3libs.exceptions
 import gc3libs.backends.transport
-from gc3libs import log, Run
+from gc3libs import Default, log, Run
 from gc3libs.utils import same_docstring_as, Struct, sh_quote_safe, sh_quote_unsafe
 from gc3libs.backends import LRMS
 from gc3libs.quantity import Duration, Memory, MB
@@ -570,7 +570,7 @@ class ShellcmdLrms(LRMS):
                  frontend='localhost', transport='local',
                  time_cmd=None,
                  override='False',
-                 spooldir=None,
+                 spooldir=Default.SPOOLDIR,
                  resourcedir=None,
                  # SSH-related options; ignored if `transport` is 'local'
                  ssh_config=None,
@@ -591,10 +591,6 @@ class ShellcmdLrms(LRMS):
         # auto-detected on first use
         self.override = gc3libs.utils.string_to_boolean(override)
 
-        # default is to use $TMPDIR or '/var/tmp' (see
-        # `tempfile.mkftemp`), but we delay the determination of the
-        # correct dir to the submit_job, so that we don't have to use
-        # `transport` right now.
         self.spooldir = spooldir
 
         # Configure transport
@@ -685,42 +681,6 @@ class ShellcmdLrms(LRMS):
                 # cannot continue
                 raise
 
-
-    @property
-    def spooldir(self):
-        """
-        Root folder for all working directories of GC3Pie tasks.
-
-        When this backend executes a task, it first creates a temporary
-        subdirectory of this folder, then launches commands in there.
-
-        If not explicitly set (e.g. at construction time), the "spool
-        directory" will be given a default value according to the logic of
-        :meth:`_init_spooldir`:
-
-        * If the remote environment variable ``TMPDIR`` is set and points to an
-          existing directory, that value is used;
-        * otherwise, the hard-coded default ``/var/tmp`` is used instead.
-        """
-        if not self._spooldir:
-            self._init_spooldir()
-        return self._spooldir
-
-    @spooldir.setter
-    def spooldir(self, value):
-        self._spooldir = value
-
-    def _init_spooldir(self):
-        """Set `self.spooldir` to a sensible value."""
-        rc, stdout, stderr = self.transport.execute_command(
-            'cd "{0}" && pwd'.format(gc3libs.Default.SPOOLDIR))
-        if (rc != 0 or stdout.strip() == '' or stdout[0] != '/'):
-            raise gc3libs.exceptions.SpoolDirError("Unable to use {0} for `spooldir` "
-                                                   "on resource {0}. ".format(gc3libs.Default.SPOOLDIR,
-                                                                              self.name
-                                                                              ))
-        else:
-            self.spooldir = stdout.strip()
 
     @property
     def time_cmd(self):

@@ -33,7 +33,7 @@ import time
 import uuid
 
 import gc3libs
-from gc3libs import log, Run
+from gc3libs import Default, log, Run
 from gc3libs.backends import LRMS
 from gc3libs.utils import same_docstring_as, sh_quote_safe
 import gc3libs.backends.transport
@@ -125,7 +125,7 @@ class BatchSystem(LRMS):
                  ssh_timeout=None,
                  large_file_threshold=None,
                  large_file_chunk_size=None,
-                 spooldir = None,
+                 spooldir=Default.SPOOLDIR,
                  **extra_args):
 
         # init base class
@@ -134,15 +134,9 @@ class BatchSystem(LRMS):
             architecture, max_cores, max_cores_per_job,
             max_memory_per_core, max_walltime, auth, **extra_args)
 
-
-        # default is to use $TMPDIR or '/var/tmp' (see
-        # `tempfile.mkftemp`), but we delay the determination of the
-        # correct dir to the submit_job, so that we don't have to use
-        # `transport` right now.
-        self.spooldir = spooldir
-
         # backend-specific setup
         self.frontend = frontend
+        self.spooldir = spooldir
         if transport == 'local':
             self.transport = gc3libs.backends.transport.LocalTransport()
             self._username = getuser()
@@ -165,43 +159,6 @@ class BatchSystem(LRMS):
                 "Unknown transport '%s'" % transport)
         self.accounting_delay = accounting_delay
 
-
-    @property
-    def spooldir(self):
-        """
-        Root folder for all working directories of GC3Pie tasks.
-
-        When this backend executes a task, it first creates a temporary
-        subdirectory of this folder, then launches commands in there.
-
-        If not explicitly set (e.g. at construction time), the "spool
-        directory" will be given a default value according to the logic of
-        :meth:`_init_spooldir`:
-
-        * If the remote environment variable ``TMPDIR`` is set and points to an
-          existing directory, that value is used;
-        * otherwise, the hard-coded default ``/var/tmp`` is used instead.
-        """
-        if not self._spooldir:
-            self._init_spooldir()
-        return self._spooldir
-
-    @spooldir.setter
-    def spooldir(self, value):
-        self._spooldir = value
-
-    def _init_spooldir(self):
-        """Set `self.spooldir` to a sensible value."""
-        self.transport.connect()
-        rc, stdout, stderr = self.transport.execute_command(
-            'cd "{0}" && pwd'.format(gc3libs.Default.SPOOLDIR))
-        if (rc != 0 or stdout.strip() == '' or stdout[0] != '/'):
-            raise gc3libs.exceptions.SpoolDirError("Unable to use {0} for `spooldir` "
-                                                   "on resource {0}. ".format(gc3libs.Default.SPOOLDIR,
-                                                                              self.name
-                                                                              ))
-        else:
-            self.spooldir = stdout.strip()
 
     def get_jobid_from_submit_output(self, output, regexp):
         """Parse the output of the submission command. Regexp is
@@ -448,17 +405,20 @@ class BatchSystem(LRMS):
         # Create the remote directory.
         try:
             self.transport.connect()
-            cmd = "mkdir -p {0};" \
-                " mktemp -d {0}/lrms_job.XXXXXXXXXX".format(self.spooldir)
-            log.info("Creating remote temporary folder: command '%s' " % cmd)
+            cmd = (
+                "mkdir -p {0};"
+                " mktemp -d {0}/lrms_job.XXXXXXXXXX"
+                .format(self.spooldir))
+            log.info("Creating temporary job working directory")
             exit_code, stdout, stderr = self.transport.execute_command(cmd)
             if exit_code == 0:
                 ssh_remote_folder = stdout.split('\n')[0]
             else:
-                raise gc3libs.exceptions.LRMSError(
-                    "Failed executing command '%s' on resource '%s';"
-                    " exit code: %d, stderr: '%s'."
-                    % (cmd, self.name, exit_code, stderr))
+                raise gc3libs.exceptions.SpoolDirError(
+                    "Cannot create temporary job working directory"
+                    " on resource '%s'; command '%s' exited"
+                    " with code: %d and stderr: '%s'."
+                    % (self.name, cmd, exit_code, stderr))
         except gc3libs.exceptions.TransportError:
             raise
         except:
