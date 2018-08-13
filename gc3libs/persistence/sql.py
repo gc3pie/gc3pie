@@ -28,6 +28,7 @@ from cStringIO import StringIO
 import os
 from urlparse import parse_qs
 from warnings import warn
+from weakref import WeakValueDictionary
 
 import sqlalchemy as sqla
 import sqlalchemy.sql as sql
@@ -42,6 +43,10 @@ from gc3libs.utils import same_docstring_as
 from gc3libs.persistence.idfactory import IdFactory
 from gc3libs.persistence.serialization import make_pickler, make_unpickler
 from gc3libs.persistence.store import Store
+
+
+# uncomment lines containing `_lvl` to show nested save/loads in logs
+#_lvl = ''
 
 
 class IntId(int):
@@ -157,6 +162,8 @@ class SqlStore(Store):
         self._real_engine = None
         self._real_extra_fields = None
         self._real_tables = None
+
+        self._loaded = WeakValueDictionary()
 
     @staticmethod
     def _to_sqlalchemy_url(url):
@@ -284,6 +291,11 @@ class SqlStore(Store):
         return self._save_or_replace(obj.persistent_id, obj)
 
     def _save_or_replace(self, id_, obj):
+        # if __debug__:
+        #     global _lvl
+        #     _lvl += '>'
+        #     gc3libs.log.debug("%s Saving %r@%x as %s ...", _lvl, obj, id(obj), id_)
+
         # build row to insert/update
         fields = {'id': id_}
 
@@ -306,10 +318,10 @@ class SqlStore(Store):
                     "Error saving DB column '%s' of object '%s': %s: %s",
                     column, obj, ex.__class__.__name__, str(ex))
 
-	if __debug__:
-	    for column in fields:
-		if column == 'data':
-		    continue
+        if __debug__:
+            for column in fields:
+                if column == 'data':
+                    continue
                 gc3libs.log.debug(
                     "Writing value '%s' in column '%s' for object '%s'",
                     fields[column], column, obj)
@@ -329,11 +341,45 @@ class SqlStore(Store):
         if hasattr(obj, 'changed'):
             obj.changed = False
 
+        # update cache
+        if str(id_) in self._loaded:
+            old = self._loaded[str(id_)]
+            if old is not obj:
+                self._loaded[str(id_)] = obj
+                # if __debug__:
+                #     gc3libs.log.debug(
+                #         "%s Overwriting object %s %r@%x with %r@%x",
+                #         _lvl, id_, old, id(old), obj, id(obj))
+                #     from traceback import format_stack
+                #     gc3libs.log.debug("Traceback:\n%s", ''.join(format_stack()))
+
+        # if __debug__:
+        #     gc3libs.log.debug("%s Done saving %r@%x as %s ...", _lvl, obj, id(obj), id_)
+        #     if _lvl:
+        #         _lvl = _lvl[:-1]
+
         # return id
-        return obj.persistent_id
+        return id_
 
     @same_docstring_as(Store.load)
     def load(self, id_):
+        # if __debug__:
+        #     global _lvl
+        #     _lvl += '<'
+        #     gc3libs.log.debug("%s Store %s: Loading task %s %r ...", _lvl, self, id_, type(id_))
+
+        # return cached copy, if any
+        try:
+            obj = self._loaded[str(id_)]
+            # if __debug__:
+            #     if _lvl:
+            #         _lvl = _lvl[:-1]
+            #     gc3libs.log.debug("%s Store %s: Returning cached object %r@%x as task %s", _lvl, self, obj, id(obj), id_)
+            return obj
+        except KeyError:
+            pass
+
+        # no cached copy, load from disk
         q = sql.select([self._tables.c.data]).where(self._tables.c.id == id_)
         with self._engine.begin() as conn:
             rawdata = conn.execute(q).fetchone()
@@ -342,6 +388,12 @@ class SqlStore(Store):
                 "Unable to find any object with ID '%s'" % id_)
         obj = make_unpickler(self, StringIO(rawdata[0])).load()
         super(SqlStore, self)._update_to_latest_schema()
+        assert str(id_) not in self._loaded
+        self._loaded[str(id_)] = obj
+        # if __debug__:
+        #     if _lvl:
+        #         _lvl = _lvl[:-1]
+        #     gc3libs.log.debug("%s Store %s: Done loading task %s as %r@%x.", _lvl, self, id_, obj, id(obj))
         return obj
 
     @same_docstring_as(Store.remove)
@@ -349,6 +401,10 @@ class SqlStore(Store):
         with self._engine.begin() as conn:
             conn.execute(
                 self._tables.delete().where(self._tables.c.id == id_))
+        try:
+            del self._loaded[str(id_)]
+        except KeyError:
+            pass
 
 
 # register all URLs that SQLAlchemy can handle

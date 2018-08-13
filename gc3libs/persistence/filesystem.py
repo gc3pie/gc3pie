@@ -22,6 +22,7 @@ __docformat__ = 'reStructuredText'
 # stdlib imports
 import os
 import sys
+from weakref import WeakValueDictionary
 
 # GC3Pie imports
 import gc3libs
@@ -79,6 +80,7 @@ class FilesystemStore(Store):
         self._directory = directory
 
         self.idfactory = idfactory
+        self._loaded = WeakValueDictionary()
         self._protocol = protocol
 
     @same_docstring_as(Store.list)
@@ -90,6 +92,7 @@ class FilesystemStore(Store):
 
     def _load_from_file(self, path):
         """Auxiliary method for `load`."""
+        # gc3libs.log.debug("Loading object from file '%s' ...", path)
         with open(path, 'rb') as src:
             unpickler = make_unpickler(self, src)
             obj = unpickler.load()
@@ -97,38 +100,38 @@ class FilesystemStore(Store):
 
     @same_docstring_as(Store.load)
     def load(self, id_):
-        filename = os.path.join(self._directory, id_)
-        # gc3libs.log.debug("Loading object from file '%s' ...", filename)
-
-        if not os.path.exists(filename):
-            raise gc3libs.exceptions.LoadError(
-                "No '%s' file found in directory '%s'"
-                % (id_, self._directory))
-
+        # return cached copy, if any
         try:
-            obj = self._load_from_file(filename)
-        except Exception as ex:
-            gc3libs.log.warning(
-                "Failed loading file '%s': %s: %s",
-                filename, ex.__class__.__name__, ex,
-                exc_info=True)
-            old_copy = filename + '.OLD'
-            if os.path.exists(old_copy):
+            return self._loaded[str(id_)]
+        except KeyError:
+            pass
+
+        # no cached copy, load from disk
+        filename = os.path.join(self._directory, id_)
+
+        sources = [filename, filename + '.OLD']
+        for source in sources:
+            if not os.path.exists(source):
+                gc3libs.log.debug(
+                    "Cannot load object %s from '%s':"
+                    " file does not exist", id_, source)
+                continue
+            try:
+                obj = self._load_from_file(source)
+                break  # exit `for source in sources` loop ...
+            except Exception as ex:
                 gc3libs.log.warning(
-                    "Will try loading from backup file '%s' instead...",
-                    old_copy)
-                try:
-                    obj = self._load_from_file(old_copy)
-                except Exception as ex:
-                    sys.excepthook(* sys.exc_info())
-                    raise gc3libs.exceptions.LoadError(
-                        "Failed retrieving object from file '%s': %s: %s"
-                        % (filename, ex.__class__.__name__, ex))
-            else:
-                # complain loudly
-                raise gc3libs.exceptions.LoadError(
-                    "Failed retrieving object from file '%s': %s: %s"
-                    % (filename, ex.__class__.__name__, ex))
+                    "Failed loading file '%s': %s: %s",
+                    filename, ex.__class__.__name__, ex,
+                    exc_info=True)
+        else:
+            # complain loudly
+            raise gc3libs.exceptions.LoadError(
+                "Failed loading object %s from file(s) %r."
+                " (Earlier log lines may provide more details.)"
+                % (id_, sources))
+
+        # minimal sanity check
         if not hasattr(obj, 'persistent_id'):
             raise gc3libs.exceptions.LoadError(
                 "Invalid format in file '%s':"
@@ -141,13 +144,23 @@ class FilesystemStore(Store):
                 % (obj.persistent_id, type(obj.persistent_id),
                    id_, type(id_)))
 
+        # maybe update object after GC3Pie update?
         super(FilesystemStore, self)._update_to_latest_schema()
+
+        # update cache
+        assert str(id_) not in self._loaded
+        self._loaded[str(id_)] = obj
+
         return obj
 
     @same_docstring_as(Store.remove)
     def remove(self, id_):
         filename = os.path.join(self._directory, id_)
         os.remove(filename)
+        try:
+            del self._loaded[str(id_)]
+        except KeyError:
+            pass
 
     @same_docstring_as(Store.replace)
     def replace(self, id_, obj):
@@ -183,34 +196,33 @@ class FilesystemStore(Store):
             backup = filename + '.OLD'
             os.rename(filename, backup)
 
-        # TODO: this should become `with tgt = ...:` as soon as we
-        # stop supporting Python 2.4
-        tgt = None
-        try:
-            tgt = open(filename, 'w+b')
-            pickler = make_pickler(self, tgt, obj)
-            pickler.dump(obj)
+        with open(filename, 'w+b') as tgt:
+            try:
+                pickler = make_pickler(self, tgt, obj)
+                pickler.dump(obj)
+            except Exception as err:
+                gc3libs.log.error(
+                    "Error saving task '%s' to file '%s': %s: %s",
+                    obj, filename, err.__class__.__name__, err)
+                # move backup file back in place
+                if backup is not None:
+                    try:
+                        os.rename(backup, filename)
+                    except:
+                        pass  # ignore errors
+                raise
             if hasattr(obj, 'changed'):
                 obj.changed = False
-            tgt.close()
+            # remove backup file, if exists
             try:
                 os.remove(backup)
             except:
                 pass  # ignore errors
-        except Exception as ex:
-            gc3libs.log.error("Error saving job '%s' to file '%s': %s: %s",
-                              obj, filename, ex.__class__.__name__, ex)
-            if tgt is not None:
-                try:
-                    tgt.close()
-                except:
-                    pass  # ignore errors
-            if backup is not None:
-                try:
-                    os.rename(backup, filename)
-                except:
-                    pass  # ignore errors
-            raise
+            # update cache
+            if id_ in self._loaded:
+                old = self._loaded[str(id_)]
+                if old is not obj:
+                    self._loaded[str(id_)] = obj
 
 
 def make_filesystemstore(url, *args, **extra_args):

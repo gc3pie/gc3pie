@@ -9,7 +9,7 @@ modules`__ for more details.
 .. __: http://docs.python.org/library/pickle.html
 
 """
-# Copyright (C) 2011-2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2012, 2018 University of Zurich.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -70,12 +70,10 @@ class _PersistentIdToSave(object):
     def __call__(self, obj):
         if obj is self._root:
             return None
-        elif hasattr(obj, 'persistent_id'):
-            if hasattr(obj, 'changed') and obj.changed:
-                self._driver.save(obj)
-            return obj.persistent_id
         elif isinstance(obj, Persistable):
-            self._driver.save(obj)
+            if (not hasattr(obj, 'persistent_id')
+                or getattr(obj, 'changed', True)):
+                self._driver.save(obj)
             return obj.persistent_id
 
 
