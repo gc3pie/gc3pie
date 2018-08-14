@@ -976,7 +976,7 @@ spooldir = /tmp/myspool/.gc3pie_jobs
         # assert os.path.isdir(backend.spooldir)
     finally:
         os.remove(tmpfile)
-        os.removedirs(backend.spooldir)
+        shutil.rmtree(backend.spooldir)
 
 # def test_batch_backend_create_spooldir():
 #     tmpfile = _setup_config_file("""
