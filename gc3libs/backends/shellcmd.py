@@ -46,7 +46,7 @@ import gc3libs
 import gc3libs.exceptions
 import gc3libs.backends.transport
 from gc3libs import Default, log, Run
-from gc3libs.utils import same_docstring_as, Struct, sh_quote_safe, sh_quote_unsafe
+from gc3libs.utils import dirname, same_docstring_as, Struct, sh_quote_safe, sh_quote_unsafe
 from gc3libs.backends import LRMS
 from gc3libs.quantity import Duration, Memory, MB
 
@@ -1372,12 +1372,13 @@ class ShellcmdLrms(LRMS):
         """
         target = posixpath.join(self.spooldir, 'gc3libs.XXXXXX')
         exit_code, stdout, stderr = self.transport.execute_command(
-            "mktemp -d {0}".format(target))
+            "mkdir -pv {0} && mktemp -d {1}".format(
+                os.path.abspath(dirname(target)), target))
         if exit_code != 0 or stderr:
             errmsg = (
                 "Error creating temporary directory `{0}` on host `{1}`:"
-                " `mktemp` exit code {2}; {3}"
-                .format(target, self.frontend, exit_code, stderr))
+                " {2} (exit code {3})"
+                .format(target, self.frontend, stderr, exit_code))
             raise gc3libs.exceptions.LRMSSubmitError(errmsg, do_log=True)
         return stdout.strip()
 
