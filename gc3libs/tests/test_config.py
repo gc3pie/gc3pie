@@ -945,7 +945,7 @@ username = gc3pie
 [resource/test]
 type = shellcmd
 auth = ssh
-transport = ssh
+transport = local
 max_cores_per_job = 2
 max_memory_per_core = 2
 max_walltime = 8
@@ -962,10 +962,21 @@ spooldir = /tmp/myspool/.gc3pie_jobs
         # resources are enabled by default
         assert 'test' in resources
         backend = resources['test']
-        backend._setup_app_execution_directory(None)
+        core = gc3libs.core.Core(cfg)
+        core.select_resource('test')
+        app = Application(['/bin/true'], [], [], '')
+        core.submit(app)
         assert os.path.isdir(backend.spooldir)
+
+        # resources = cfg.make_resources(ignore_errors=False)
+        # # resources are enabled by default
+        # assert 'test' in resources
+        # backend = resources['test']
+        # backend._setup_app_execution_directory(None)
+        # assert os.path.isdir(backend.spooldir)
     finally:
         os.remove(tmpfile)
+        os.removedirs(backend.spooldir)
 
 # def test_batch_backend_create_spooldir():
 #     tmpfile = _setup_config_file("""
