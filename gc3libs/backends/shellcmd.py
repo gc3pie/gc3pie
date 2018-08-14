@@ -46,7 +46,7 @@ import gc3libs
 import gc3libs.exceptions
 import gc3libs.backends.transport
 from gc3libs import Default, log, Run
-from gc3libs.utils import dirname, same_docstring_as, Struct, sh_quote_safe, sh_quote_unsafe
+from gc3libs.utils import same_docstring_as, Struct, sh_quote_safe, sh_quote_unsafe
 from gc3libs.backends import LRMS
 from gc3libs.quantity import Duration, Memory, MB
 
@@ -1371,8 +1371,7 @@ class ShellcmdLrms(LRMS):
         in case of any failure, raises a `SpoolDirError`.
         """
         target = posixpath.join(self.spooldir, 'shellcmd_job.XXXXXX')
-        cmd =  ("mkdir -pv {0} && mktemp -d {1}"
-                .format(os.path.abspath(dirname(target)), target))
+        cmd =  ("mkdir -pv {0} && mktemp -d {1}" .format(self.spooldir, target))
         exit_code, stdout, stderr = self.transport.execute_command(cmd)
         if exit_code != 0 or stderr:
             raise gc3libs.exceptions.SpoolDirError(
