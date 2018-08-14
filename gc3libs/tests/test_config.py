@@ -936,6 +936,42 @@ large_file_chunk_size = 200 MB
         os.remove(tmpfile)
 
 
+def test_shellcmd_backend_create_spooldir():
+    tmpfile = _setup_config_file("""
+[auth/ssh]
+type = ssh
+username = gc3pie
+    
+[resource/test]
+type = shellcmd
+auth = ssh
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2
+max_walltime = 8
+max_cores = 2
+architecture = x86_64
+override = no
+large_file_threshold = 1 GB
+large_file_chunk_size = 200 MB
+spooldir = /tmp/myspool/.gc3pie_jobs
+    """)
+    try:
+        cfg = gc3libs.config.Configuration(tmpfile)
+        resources = cfg.make_resources(ignore_errors=False)
+        # resources are enabled by default
+        assert 'test' in resources
+        backend = resources['test']
+        core = gc3libs.core.Core(cfg)
+        core.select_resource('test')
+        app = Application(['/bin/true'], [], [], '')
+        core.submit(app)
+        assert os.path.isdir(backend.spooldir)
+    finally:
+        os.remove(tmpfile)
+        backend.free(app)
+        shutil.rmtree(backend.spooldir)
+        
 if __name__ == "__main__":
     import pytest
     pytest.main(["-v", __file__])
