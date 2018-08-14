@@ -1367,19 +1367,19 @@ class ShellcmdLrms(LRMS):
         """
         Create a temporary subdirectory and return its (remote) path.
 
-        This is intended to be used as part of the "submit" process; in case of
-        failure it will raise an `LRMSSubmitError`.
+        This is intended to be used as part of the "submit" process;
+        in case of any failure, raises a `SpoolDirError`.
         """
-        target = posixpath.join(self.spooldir, 'gc3libs.XXXXXX')
-        exit_code, stdout, stderr = self.transport.execute_command(
-            "mkdir -pv {0} && mktemp -d {1}".format(
-                os.path.abspath(dirname(target)), target))
+        target = posixpath.join(self.spooldir, 'shellcmd_job.XXXXXX')
+        cmd =  ("mkdir -pv {0} && mktemp -d {1}"
+                .format(os.path.abspath(dirname(target)), target))
+        exit_code, stdout, stderr = self.transport.execute_command(cmd)
         if exit_code != 0 or stderr:
-            errmsg = (
-                "Error creating temporary directory `{0}` on host `{1}`:"
-                " {2} (exit code {3})"
-                .format(target, self.frontend, stderr, exit_code))
-            raise gc3libs.exceptions.LRMSSubmitError(errmsg, do_log=True)
+            raise gc3libs.exceptions.SpoolDirError(
+                "Cannot create temporary job working directory"
+                " `{0}` on host `{1}`; command `{2}` exited"
+                " with code {3} and error output: '{4}'."
+                .format(target, self.frontend, cmd, exit_code, stderr))
         return stdout.strip()
 
     def _stage_app_input_files(self, app):
