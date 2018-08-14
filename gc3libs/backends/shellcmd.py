@@ -1371,7 +1371,7 @@ class ShellcmdLrms(LRMS):
         in case of any failure, raises a `SpoolDirError`.
         """
         target = posixpath.join(self.spooldir, 'shellcmd_job.XXXXXX')
-        cmd =  ("mkdir -pv {0} && mktemp -d {1}" .format(self.spooldir, target))
+        cmd =  ("mkdir -p {0} && mktemp -d {1}" .format(self.spooldir, target))
         exit_code, stdout, stderr = self.transport.execute_command(cmd)
         if exit_code != 0 or stderr:
             raise gc3libs.exceptions.SpoolDirError(
