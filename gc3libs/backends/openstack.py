@@ -291,7 +291,7 @@ class OpenStackLrms(LRMS):
         # groups
 
         nics = None
-        if self.network_ids:
+        if hasattr(self,'network_ids') and self.network_ids:
             nics=[{'net-id': netid.strip(), 'v4-fixed-ip': ''}
                   for netid in self.network_ids.split(',')]
             gc3libs.log.debug("Specifying networks for vm %s: %s",
