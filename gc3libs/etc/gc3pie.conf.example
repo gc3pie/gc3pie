@@ -379,6 +379,15 @@ architecture=x64_64
 #   to_port    is an integer (use -1 for icmp)
 #   ipnetwork  is a network specification in the form `IPaddr/netmask` (0.0.0.0/0 for any IP address)
 
+# A comma separated list of network_ids to attach to the newly started
+# instance. Network ids could be normally obtained through the openstack
+# dashboard web interface or through the openstack CLI.
+# The following entry is optional for openstack deployment with one default
+# network. If multiple networks are available in the user's tenant,
+# then `network_ids` must be specified otherwise GC3Pie will throw an
+# UnrecoverableError and, therefore, won't be able to further proceed.
+# 
+# network_ids = c86b320c-9542-4032-a951-c8a068894cc2
 
 # 2) Start VMs using an EC2-compatible cloud infrastructure
 
