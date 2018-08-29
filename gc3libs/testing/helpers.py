@@ -4,7 +4,7 @@
 Utility functions for use in unit test code.
 """
 #
-#  Copyright (C) 2015, 2016 S3IT, Zentrale Informatik, University of Zurich
+#  Copyright (C) 2015, 2016, 2018 S3IT, Zentrale Informatik, University of Zurich
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -23,7 +23,6 @@ Utility functions for use in unit test code.
 
 # stdlib imports
 from contextlib import contextmanager
-import sys
 from tempfile import NamedTemporaryFile, mkdtemp
 import shutil
 
@@ -31,47 +30,71 @@ import shutil
 from gc3libs import Application, Run
 from gc3libs.config import Configuration
 from gc3libs.core import Core, Engine
-from gc3libs.quantity import GB, hours
+from gc3libs.quantity import GB, MB, hours
 from gc3libs.workflow import ParallelTaskCollection, SequentialTaskCollection
 
 
 @contextmanager
-def temporary_core(
-        transition_graph=None,
-        max_cores_per_job=1,
-        max_memory_per_core=1*GB,
-        max_walltime=8*hours,
-        max_cores=2,
-        architecture=Run.Arch.X86_64
-):
+def test_resource(name='test', **params):
+    """
+    Yield a GC3Pie configuration containing a single resource,
+    built using the given parameters.
+
+    The only resource is named ``test`` (can be changed by passing
+    keyword argument ``name``).
+
+    .. note::
+
+      The parameters *must* be given in the internal format expected
+      by the backend "LRMS" constructors, not in the string format
+      expected by the configuration file parser.
+    """
     cfg = Configuration()
     cfg.TYPE_CONSTRUCTOR_MAP['noop'] = ('gc3libs.backends.noop', 'NoOpLrms')
-    name = 'test'
-    cfg.resources[name].update(
+    rsc = cfg.resources[name]
+    # defaults (1) -- general
+    rsc.update(
         name=name,
         type='noop',
-        auth='none',
         transport='local',
-        max_cores_per_job=max_cores_per_job,
-        max_memory_per_core=max_memory_per_core,
-        max_walltime=max_walltime,
-        max_cores=max_cores,
-        architecture=architecture,
+        auth='none',
+        architecture=set([Run.Arch.X86_64]),
+        enabled=True,
+        # Use unusual values so that we can easily spot if the `override` option works
+        large_file_chunk_size=1.78*MB,
+        large_file_threshold=1.414*GB,
+        max_cores=123,
+        max_cores_per_job=123,
+        max_memory_per_core=999*GB,
+        max_walltime=7*hours,
     )
+    # update with given parameters
+    rsc.update(**params)
+    # defaults (2) -- type-specific
+    if rsc.type == 'shellcmd':
+        rsc.setdefault('override', False)
+        rsc.setdefault('time_cmd', '/usr/bin/time')
 
-    core = Core(cfg)
-    rsc = core.get_backend(name)
-    # give each job a 50% chance of moving from one state to the
-    # next one
-    if transition_graph:
-        rsc.transition_graph = transition_graph
-
-    yield core
+    yield cfg
 
     # since TYPE_CONSTRUCTOR_MAP is a class-level variable, we
     # need to clean up otherwise other tests will see the No-Op
     # backend
     del cfg.TYPE_CONSTRUCTOR_MAP['noop']
+
+
+@contextmanager
+def temporary_core(transition_graph=None, **params):
+    with test_resource(**params) as cfg:
+        name = params.get('name', 'test')
+        core = Core(cfg)
+        rsc = core.get_backend(name)
+        # give each job a 50% chance of moving from one state to the
+        # next one
+        if transition_graph:
+            rsc.transition_graph = transition_graph
+
+        yield core
 
 
 @contextmanager

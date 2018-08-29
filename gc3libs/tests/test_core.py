@@ -1,7 +1,7 @@
 # test_core.py
 # -*- coding: utf-8 -*-
 #
-#  Copyright (C) 2015 S3IT, Zentrale Informatik, University of Zurich
+#  Copyright (C) 2015-2018 S3IT, Zentrale Informatik, University of Zurich
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -43,9 +43,9 @@ def test_core_resources():
         assert 'test' in resources
         test_rsc = resources['test']
         # these should match the resource definition in `gc3libs.testing.helpers.temporary_core`
-        assert test_rsc.max_cores_per_job == 1
-        assert test_rsc.max_memory_per_core == 1*GB
-        assert test_rsc.max_walltime == 8*hours
+        assert test_rsc.max_cores_per_job == 123
+        assert test_rsc.max_memory_per_core == 999*GB
+        assert test_rsc.max_walltime == 7*hours
 
 
 @pytest.mark.skipif(

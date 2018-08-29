@@ -48,9 +48,9 @@ def test_engine_resources():
         assert 'test' in resources
         test_rsc = resources['test']
         # these should match the resource definition in `gc3libs.testing.helpers.temporary_core`
-        assert test_rsc.max_cores_per_job == 1
-        assert test_rsc.max_memory_per_core == 1*GB
-        assert test_rsc.max_walltime == 8*hours
+        assert test_rsc.max_cores_per_job == 123
+        assert test_rsc.max_memory_per_core == 999*GB
+        assert test_rsc.max_walltime == 7*hours
 
 
 def test_engine_progress(num_jobs=5, transition_graph=None, max_iter=100):
