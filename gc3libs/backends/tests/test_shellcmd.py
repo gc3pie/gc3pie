@@ -3,7 +3,7 @@
 """
 Unit tests for the `gc3libs.backends.shellcmd` module.
 """
-# Copyright (C) 2011-2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2015, 2018 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -32,6 +32,11 @@ import gc3libs
 import gc3libs.config
 import gc3libs.core
 from gc3libs.quantity import Memory
+from gc3libs.testing.helpers import (
+    SuccessfulApp,
+    temporary_core,
+    temporary_directory,
+)
 
 
 class TestBackendShellcmd(object):
@@ -444,6 +449,15 @@ type=none
         finally:
             self.core.kill(app)
             self.core.free(app)
+
+def test_shellcmd_backend_create_spooldir():
+    with temporary_directory() as tmpdir:
+        with temporary_core(spooldir=tmpdir) as core:
+            assert 'test' in core.resources
+            backend = core.get_backend('test')
+            app = SuccessfulApp()
+            core.submit(app)
+            assert os.path.isdir(backend.spooldir)
 
 
 if __name__ == "__main__":
