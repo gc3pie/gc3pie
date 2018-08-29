@@ -1,8 +1,10 @@
 include requirements*.txt
 include *.py
+exclude conftest.py
+exclude install.py
 recursive-include gc3libs *.py
 recursive-include gc3apps *.py
 recursive-include gc3utils *.py
-recursive-include docs/html/ *.html *.js *.css *.svg *.jpg *.gif workflow.png
+prune docs
 prune gc3apps/*/test
 recursive-include gc3libs/etc *
