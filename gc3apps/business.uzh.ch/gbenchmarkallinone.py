@@ -3,7 +3,7 @@
 #   gbenchmark.py -- Front-end script for benchmarking statistical
 #   Business software on a common set of network data.
 #
-#   Copyright (C) 2011, 2012 GC3, University of Zurich
+#   Copyright (C) 2011, 2012  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

@@ -11,7 +11,7 @@ provided by Python's library `generic`__.
 .. __: https://en.wikipedia.org/wiki/Observer_pattern
 .. __: http://generic.readthedocs.io/en/latest/event_system.html#event-system
 """
-# Copyright (C) 2018 University of Zurich
+# Copyright (C) 2018  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by

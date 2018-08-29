@@ -12,7 +12,7 @@ Drivers use an algorithm instance that conforms to
 :class:`optimizer.EvolutionaryAlgorithm <gc3libs.optimizer.EvolutionaryAlgorithm>` to generate new
 populations.
 """
-# Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2013  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

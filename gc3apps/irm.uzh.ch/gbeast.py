@@ -3,7 +3,7 @@
 """
 Run the BEAST or BEAST-2 programs from a prepared tree of input files.
 """
-# Copyright (C) 2012-2016 University of Zurich. All rights reserved.
+# Copyright (C) 2012-2016  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by

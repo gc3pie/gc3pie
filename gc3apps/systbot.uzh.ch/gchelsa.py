@@ -3,7 +3,7 @@
 #   gchelsa.py -- Front-end script for running chelsa application
 #   driven by a custom made R script.
 #
-#   Copyright (C) 2016 S3IT, University of Zurich
+#   Copyright (C) 2016  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

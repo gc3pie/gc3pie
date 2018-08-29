@@ -3,7 +3,7 @@
 #   gkjpd.py -- Front-end script for running ParRecoveryFun Matlab 
 #   function with a given combination of reference models.
 #
-#   Copyright (C) 2014, 2015 S3IT, University of Zurich
+#   Copyright (C) 2014, 2015  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

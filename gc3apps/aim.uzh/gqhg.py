@@ -3,7 +3,7 @@
 #   gqhg.py -- Front-end script for running the QHGMain binary
 #   over a list of intput population files .qdf
 #
-#   Copyright (C) 2016, 2017 S3IT, University of Zurich
+#   Copyright (C) 2016, 2017  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

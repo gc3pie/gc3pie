@@ -4,7 +4,7 @@
 Utility functions for use in unit test code.
 """
 #
-#  Copyright (C) 2015, 2016, 2018 S3IT, Zentrale Informatik, University of Zurich
+#  Copyright (C) 2015, 2016, 2018  University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it

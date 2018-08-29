@@ -8,7 +8,7 @@ also when `from __future__ import division` is in effect.
 
 Se issue #525 for background and possibly more info.
 """
-# Copyright (C) 2012, 2013, University of Zurich. All rights reserved.
+# Copyright (C) 2012, 2013,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by

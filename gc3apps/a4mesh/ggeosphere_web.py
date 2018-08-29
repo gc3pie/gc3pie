@@ -2,7 +2,7 @@
 #
 #   ggeosphere_web.py -- Front-end script for submitting multiple `GeoSphere` jobs.
 #
-#   Copyright (C) 2013, 2014, 2018 GC3, University of Zurich
+#   Copyright (C) 2013, 2014, 2018  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by

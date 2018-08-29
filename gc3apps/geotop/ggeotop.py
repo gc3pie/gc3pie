@@ -2,7 +2,7 @@
 #
 #   ggeotop.py -- Front-end script for submitting multiple `GEOtop` jobs to SMSCG.
 #
-#   Copyright (C) 2012, 2013 GC3, University of Zurich
+#   Copyright (C) 2012, 2013  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by

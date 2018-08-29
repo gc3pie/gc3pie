@@ -3,7 +3,7 @@
 #   gbraunian.py -- Front-end script for evaluating Matlab function
 #   `braunian` over large number of events.
 #
-#   Copyright (C) 2016, 2017 S3IT, University of Zurich
+#   Copyright (C) 2016, 2017  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

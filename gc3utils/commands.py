@@ -3,7 +3,7 @@
 """
 Implementation of the command-line front-ends.
 """
-# Copyright (C) 2009-2018 University of Zurich. All rights reserved.
+# Copyright (C) 2009-2018  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -25,8 +25,6 @@ __author__ = ', '.join([
     "Riccardo Murri <riccardo.murri@uzh.ch>",
     "Antonio Messina <antonio.messina@uzh.ch>",
 ])
-__copyright__ = "Copyright (c) 2009-2018 University of Zurich"
-
 
 # stdlib imports
 import csv

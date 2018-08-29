@@ -3,7 +3,7 @@
 #   gmbsim.py -- GC3Pie front-end for running the
 #   "sim_run_dclone_design_test.R" by Mollie Brooks
 #
-#   Copyright (C) 2014, 2015 S3IT, Zentrale Informatik, University of Zurich
+#   Copyright (C) 2014, 2015  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by

@@ -5,7 +5,7 @@
 Script for running over different parameter combinations. 
 """
 
-# Copyright (C) 2011 University of Zurich. All rights reserved.
+# Copyright (C) 2011  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

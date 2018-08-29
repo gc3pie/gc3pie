@@ -1,7 +1,7 @@
 # test_workflow.py
 # -*- coding: utf-8 -*-
 #
-#  Copyright (C) 2015, 2016 S3IT, Zentrale Informatik, University of Zurich
+#  Copyright (C) 2015, 2016  University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it

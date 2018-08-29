@@ -2,7 +2,7 @@
 #
 #   gregress.py -- Front-end script for running REMDataset pipeline.
 #
-#   Copyright (c) 2017, 2018 S3IT, University of Zurich, http://www.s3it.uzh.ch/
+#   Copyright (C) 2017, 2018  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

@@ -3,7 +3,7 @@
 #   gfittingaddm.py -- Front-end script for running MCMC with opneBUGS
 #   function throguh R over a large table set.
 #
-#   Copyright (C) 2018, 2019 S3IT, University of Zurich
+#   Copyright (C) 2018, 2019  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

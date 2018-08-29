@@ -2,7 +2,7 @@
 #
 #   gipyrad.py -- Front-end script for submitting multiple `IPyRAD` jobs.
 #
-#   Copyright (c) 2017 2018 S3IT, University of Zurich, http://www.s3it.uzh.ch/
+#   Copyright (C) 2017 2018  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by

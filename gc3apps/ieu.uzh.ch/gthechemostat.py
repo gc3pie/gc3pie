@@ -3,7 +3,7 @@
 #   gthechemostat.py -- Front-end script for running Matlab function
 #   function over a large parameter range.
 #
-#   Copyright (c) 2016 S3IT, University of Zurich, http://www.s3it.uzh.ch/
+#   Copyright (C) 2016  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

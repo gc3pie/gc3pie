@@ -3,7 +3,7 @@
 #   gsisp.py -- Front-end script for running sisp 
 #   function with a given combination of input parameters.
 #
-#   Copyright (C) 2015, 2016 GC3, University of Zurich
+#   Copyright (C) 2015, 2016  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

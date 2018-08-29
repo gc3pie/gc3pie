@@ -4,7 +4,7 @@
 #   Vader sentiment analysis jobs from an initial list of twitter archive
 #   documents.
 #
-#   Copyright (C) 2017, 2018 S3IT, University of Zurich
+#   Copyright (C) 2017, 2018  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

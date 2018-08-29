@@ -4,7 +4,7 @@
 Sub-package of utility function to aid in writing GC3Pie unit tests.
 """
 #
-#  Copyright (C) 2016, University of Zurich.
+#  Copyright (C) 2016,  University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it

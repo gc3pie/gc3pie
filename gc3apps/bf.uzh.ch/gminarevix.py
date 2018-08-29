@@ -3,7 +3,7 @@
 #   gminarevix.py -- Front-end script for running Matlab MinAREVIX_Cloud
 #   function over a set of structure data and structure models.
 #
-#   Copyright (C) 2014, 2015 GC3, University of Zurich
+#   Copyright (C) 2014, 2015  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

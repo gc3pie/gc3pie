@@ -2,7 +2,7 @@
 #
 #   gmhc_coev.py -- Front-end script for submitting multiple `MHC_coev` jobs to SMSCG.
 #
-#   Copyright (C) 2011-2012 S3IT, Zentrale Informatik, University of Zurich
+#   Copyright (C) 2011-2012  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by

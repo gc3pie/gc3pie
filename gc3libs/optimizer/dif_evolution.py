@@ -24,7 +24,7 @@ Some information related to Differential Evolution can be found in the following
 `~gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.evolve_fn`:func: is an adaptation of the following MATLAB code:
 http://www.icsi.berkeley.edu/~storn/DeMat.zip hosted on http://www.icsi.berkeley.edu/~storn/code.html#deb1.
 """
-# Copyright (C) 2011, 2012, 2013 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2013  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

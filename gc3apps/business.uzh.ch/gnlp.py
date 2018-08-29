@@ -3,7 +3,7 @@
 #   gnlp.py -- Front-end script for evaluating CoreNLP Sentiments
 #   over a large dataset.
 #
-#   Copyright (C) 2014, 2015 GC3, University of Zurich
+#   Copyright (C) 2014, 2015  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

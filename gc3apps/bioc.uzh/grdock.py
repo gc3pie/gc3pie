@@ -3,7 +3,7 @@
 #   grdock.py -- Front-end script for running the docking program rDock
 #   over a list of ligand files.
 #
-#   Copyright (C) 2014, 2015 S3IT, University of Zurich
+#   Copyright (C) 2014, 2015  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify

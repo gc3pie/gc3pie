@@ -2,7 +2,7 @@
 #
 #   gmphili.py -- Parallel runs of M. Th. Philipp's "stability" pipeline
 #
-#   Copyright (C) 2016 University of Zurich.
+#   Copyright (C) 2016  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify it
 #   under the terms of the GNU General Public License as published by the Free

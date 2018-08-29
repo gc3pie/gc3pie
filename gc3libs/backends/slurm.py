@@ -3,7 +3,7 @@
 """
 Job control on SLURM clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2012-2016, 2018 University of Zurich. All rights reserved.
+# Copyright (C) 2012-2016, 2018  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by

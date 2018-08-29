@@ -11,7 +11,7 @@ with a list of substitutions (using the syntax of Python's standard
 texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.
 """
-# Copyright (C) 2009-2012, 2014 University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012, 2014  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by

@@ -5,7 +5,7 @@ Manage startup and teardown of cloud-based VMs to run applications.
 
 This only works on clouds implementing the OpenStack Compute API.
 """
-# Copyright (C) 2012-2018 University of Zurich. All rights reserved.
+# Copyright (C) 2012-2018  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by

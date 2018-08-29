@@ -3,7 +3,7 @@
 #   gcombi.py -- Front-end script for evaluating Matlab functions
 #   function over a large number of parameters.
 #
-#   Copyright (C) 2015, 2016 S3IT, University of Zurich
+#   Copyright (C) 2015, 2016  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as 
