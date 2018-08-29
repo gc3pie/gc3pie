@@ -170,7 +170,7 @@ setuptools.setup(
         "torque",
         "workflow",
     ]),
-    url="http://gc3pie.googlecode.com/",  # project home page
+    url="http://gc3pie.readthedocs.io/",  # project home page
 
     # see http://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
