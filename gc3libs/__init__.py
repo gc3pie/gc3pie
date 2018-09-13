@@ -1806,7 +1806,7 @@ class Run(Struct):
             return self.history.last()
 
         def fset(self, value):
-            self.history.append(unicode(value))
+            self.history.append(unicode(value, errors='replace'))
         return locals()
 
     # states that a `Run` can be in
