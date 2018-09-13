@@ -1076,7 +1076,7 @@ class ShellcmdLrms(LRMS):
         this method on the same applications do nothing.
         """
         try:
-            if app.execution.lrms_execdir is not None:
+            if (hasattr(app.execution, 'lrms_execdir') and app.execution.lrms_execdir is not None):
                 log.debug('Deleting working directory of task `%s` ...', app)
                 self.transport.connect()
                 if self.transport.isdir(app.execution.lrms_execdir):
@@ -1380,7 +1380,7 @@ class ShellcmdLrms(LRMS):
             raise gc3libs.exceptions.SpoolDirError(
                 "Cannot create temporary job working directory"
                 " `{0}` on host `{1}`; command `{2}` exited"
-                " with code {3} and error output: '{4}'."
+                " with code {3} and error output: `{4}`."
                 .format(target, self.frontend, cmd, exit_code, stderr))
         return stdout.strip()
 
