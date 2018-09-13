@@ -48,6 +48,7 @@ class InboxProcessingDaemon(SessionBasedDaemon):
 
     # add command-line options specific to this script
     def setup_options(self):
+        super(InboxProcessingDaemon, self).setup_options()
         self.add_param('-p', '--pattern', metavar='PATTERN',
                        action='store', default=None,
                        help=("Only process files that match this pattern."))
