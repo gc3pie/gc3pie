@@ -1582,8 +1582,6 @@ class ShellcmdLrms(LRMS):
 
     def _cleanup_terminating_task(self, app, pid, termstatus=None):
         app.execution.state = Run.State.TERMINATING
-        if termstatus is not None:
-            app.execution.returncode = termstatus
         # if `self._job_infos` records this task as terminated, then
         # updates to resource utilization records has already been
         # done by `get_resource_status()`
@@ -1606,20 +1604,21 @@ class ShellcmdLrms(LRMS):
                 "Reading resource utilization from wrapper file `%s` for task %s ...",
                 wrapper_filename, app)
             with self.transport.open(wrapper_filename, 'r') as wrapper_file:
-                outcome, valid = self._parse_wrapper_output(wrapper_file)
-                app.execution.update(outcome)
-                if termstatus is None:
-                    if valid:
-                        app.execution.returncode = outcome.returncode
-                    else:
-                        app.execution.returncode = (Run.Signals.RemoteError, -1)
+                termstatus, outcome, valid = \
+                    self._parse_wrapper_output(wrapper_file, termstatus)
+                if valid:
+                    app.execution.update(outcome)
+                if termstatus is not None:
+                    app.execution.returncode = termstatus
+                else:
+                    app.execution.returncode = (Run.Signals.RemoteError, -1)
         except EnvironmentError as err:
             msg = ("Could not read wrapper file `{0}` for task `{1}`: {2}"
                    .format(wrapper_filename, app, err))
             log.warning("%s -- Termination status and resource utilization fields will not be set.", msg)
             raise gc3libs.exceptions.InvalidValue(msg)
 
-    def _parse_wrapper_output(self, wrapper_file):
+    def _parse_wrapper_output(self, wrapper_file, termstatus=None):
         """
         Parse the file saved by the wrapper in
         `ShellcmdLrms.WRAPPER_OUTPUT_FILENAME` inside the PRIVATE_DIR
@@ -1633,9 +1632,21 @@ class ShellcmdLrms(LRMS):
         wrapper_file.seek(0)
         acctinfo = Struct()
         for line in wrapper_file:
+            line = line.strip()
+            # if the executed command was killed by a signal, then GNU
+            # `time` will output `0` for the `%x` format specifier but
+            # still mark the exit signal in the output.
+            if line.startswith('Command terminated by signal'):
+                # since `Run.shellexit_to_returncode()` returns a
+                # pair, we need to use a pair as default for
+                # `returncode` here as well, to avoid comparing an
+                # integer with a tuple in the `max()` invocation
+                # at line 1670 below.
+                termstatus = (int(line.split()[4]), -1)
+                continue
             if '=' not in line:
                 continue
-            k, v = line.strip().split('=', 1)
+            k, v = line.split('=', 1)
             if k not in self.TIMEFMT_CONV:
                 gc3libs.log.warning(
                     "Unknown key '%s' in wrapper output file - ignoring!", k)
@@ -1651,6 +1662,14 @@ class ShellcmdLrms(LRMS):
             # field to ``None`` if there is a question mark in it.
             if v.startswith('?'):
                 acctinfo[name] = None
+            elif name == 'returncode':
+                # be sure not to overwrite here the error exit set in
+                # lines 1643--1645 above with the successful exit
+                # reported by GNU time's `%x` specifier
+                if termstatus is not None:
+                    termstatus = max(termstatus, conv(v))
+                else:
+                    termstatus = conv(v)
             else:
                 acctinfo[name] = conv(v)
 
@@ -1662,7 +1681,7 @@ class ShellcmdLrms(LRMS):
         except KeyError:
             valid = False
 
-        return acctinfo, valid
+        return termstatus, acctinfo, valid
 
 
     def validate_data(self, data_file_list=[]):

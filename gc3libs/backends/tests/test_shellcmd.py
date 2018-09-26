@@ -21,6 +21,7 @@ Unit tests for the `gc3libs.backends.shellcmd` module.
 __docformat__ = 'reStructuredText'
 
 
+from cStringIO import StringIO
 import os
 import shutil
 import tempfile
@@ -29,9 +30,10 @@ import time
 import pytest
 
 import gc3libs
+from gc3libs.backends.shellcmd import ShellcmdLrms
 import gc3libs.config
 import gc3libs.core
-from gc3libs.quantity import Memory
+from gc3libs.quantity import Duration, Memory, s, kB
 from gc3libs.testing.helpers import (
     SuccessfulApp,
     temporary_core,
@@ -458,6 +460,88 @@ def test_shellcmd_backend_create_spooldir():
             app = SuccessfulApp()
             core.submit(app)
             assert os.path.isdir(backend.spooldir)
+
+
+def test_shellcmd_backend_parse_wrapper_output_successful():
+    resource_usage = StringIO("""
+WallTime=2.10s
+KernelTime=0.61s
+UserTime=0.67s
+CPUUsage=61%
+MaxResidentMemory=61604kB
+AverageResidentMemory=0kB
+AverageTotalMemory=0kB
+AverageUnsharedMemory=0kB
+AverageUnsharedStack=0kB
+AverageSharedMemory=0kB
+PageSize=4096B
+MajorPageFaults=0
+MinorPageFaults=101799
+Swaps=0
+ForcedSwitches=82
+WaitSwitches=487
+Inputs=0
+Outputs=400
+SocketReceived=0
+SocketSent=0
+Signals=0
+ReturnCode=0
+    """)
+    with temporary_core(type='shellcmd') as core:
+        assert 'test' in core.resources
+        backend = core.get_backend('test')
+        termstatus, acctinfo, valid = backend._parse_wrapper_output(resource_usage)
+        assert valid
+        assert acctinfo.duration == 2.10*s
+        assert acctinfo.shellcmd_kernel_time == 0.61*s
+        assert acctinfo.shellcmd_user_time == 0.67*s
+        assert acctinfo.max_used_memory == 61604*kB
+        assert acctinfo.shellcmd_average_total_memory == 0*kB
+        assert acctinfo.shellcmd_filesystem_inputs == 0
+        assert acctinfo.shellcmd_filesystem_outputs == 400
+        assert acctinfo.shellcmd_swapped == 0
+        assert termstatus == (0, 0)
+
+
+def test_shellcmd_backend_parse_wrapper_output_signalled():
+    resource_usage = StringIO("""Command terminated by signal 15
+WallTime=6.44s
+KernelTime=0.00s
+UserTime=0.00s
+CPUUsage=0%
+MaxResidentMemory=2004kB
+AverageResidentMemory=0kB
+AverageTotalMemory=0kB
+AverageUnsharedMemory=0kB
+AverageUnsharedStack=0kB
+AverageSharedMemory=0kB
+PageSize=4096B
+MajorPageFaults=0
+MinorPageFaults=73
+Swaps=0
+ForcedSwitches=0
+WaitSwitches=2
+Inputs=0
+Outputs=0
+SocketReceived=0
+SocketSent=0
+Signals=0
+ReturnCode=0
+    """)
+    with temporary_core(type='shellcmd') as core:
+        assert 'test' in core.resources
+        backend = core.get_backend('test')
+        termstatus, acctinfo, valid = backend._parse_wrapper_output(resource_usage)
+        assert valid
+        assert acctinfo.duration == 6.44*s
+        assert acctinfo.shellcmd_kernel_time == 0.*s
+        assert acctinfo.shellcmd_user_time == 0.*s
+        assert acctinfo.max_used_memory == 2004*kB
+        assert acctinfo.shellcmd_average_total_memory == 0*kB
+        assert acctinfo.shellcmd_filesystem_inputs == 0
+        assert acctinfo.shellcmd_filesystem_outputs == 0
+        assert acctinfo.shellcmd_swapped == 0
+        assert termstatus == (15, -1)
 
 
 if __name__ == "__main__":
