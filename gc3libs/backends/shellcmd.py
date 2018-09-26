@@ -592,7 +592,7 @@ class ShellcmdLrms(LRMS):
 
         # whether actual machine params (cores, memory) should be
         # auto-detected on first use
-        self.override = gc3libs.utils.string_to_boolean(override)
+        self.override = override
 
         self.spooldir = spooldir
 

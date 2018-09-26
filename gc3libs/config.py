@@ -3,7 +3,7 @@
 """
 Deal with GC3Pie configuration files.
 """
-# Copyright (C) 2012-2016  University of Zurich. All rights reserved.
+# Copyright (C) 2012-2016, 2018  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -526,6 +526,7 @@ class Configuration(gc3libs.utils.Struct):
         'max_cores_per_job'   : int,
         'max_memory_per_core' : (lambda val: _legacy_parse_memory(val, 'max_memory_per_core')),
         'max_walltime'        : _legacy_parse_duration,
+        'override'            : gc3libs.utils.string_to_boolean,
         'port'                : int,
         'vm_os_overhead'      : _legacy_parse_os_overhead,
         'large_file_threshold': (lambda val: _legacy_parse_memory(val, 'large_file_threshold', MB, 'MB')),
