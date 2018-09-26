@@ -724,7 +724,7 @@ class ShellcmdLrms(LRMS):
             if self.override:
                 log.info(
                     "Mismatch of value `architecture` on resource %s:"
-                    " configuration file says `achitecture=%s`"
+                    " configuration file says `architecture=%s`"
                     " but GC3Pie detected `%s`. Updating current value.",
                     self.name,
                     ','.join(self.architecture),
@@ -798,9 +798,9 @@ class ShellcmdLrms(LRMS):
     ## Bookkeeping
     #
     # The following methods deal with internal book-keeping: how much
-    # of the target's configured resources has been used by GC3Pie.
+    # of the target's configured resources have been used by GC3Pie.
     # Presently, book-keeping is so complicated (and requires
-    # recomputing at each invocation) because GC3Pie does makes the
+    # recomputing at each invocation) because GC3Pie makes the
     # assumption that the target resource is *shared*, i.e., other
     # GC3Pie processes run concurrently by the user may compete for
     # the same resources.
@@ -1223,7 +1223,7 @@ class ShellcmdLrms(LRMS):
                 # is `local_file` a file-like object?
                 local_file.write(data)
             except (TypeError, AttributeError):
-                # no, then treat it as a file name
+                # ... no, then treat it as a file name
                 with open(local_file, 'w+b') as locally:
                     locally.write(data)
 
