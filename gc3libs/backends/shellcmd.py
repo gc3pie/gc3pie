@@ -172,13 +172,16 @@ def _parse_returncode_string(val):
 
 ## interface to different OS
 #
-# Linux and MacOSX require slightly different command incantations to
-# achieve the same task. The `Machine` class abstract this into a
-# uniform interface.
 #
 
 class _Machine(object):
-    """Base class for OS-specific shell services."""
+    """
+    Base class for OS-specific shell services.
+
+    Linux and MacOSX require slightly different command incantations
+    to achieve the same task. The `Machine` class abstract these into
+    a uniform interface.
+    """
 
     __metaclass__ = ABCMeta
 
