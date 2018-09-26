@@ -234,7 +234,7 @@ class _Machine(object):
         """
         cmd = 'ps -p {0} -o state='.format(pid)
         rc, stdout, stderr = self.transport.execute_command(cmd)
-        if rc == 1:  # FIXME: same return code on MacOSX?
+        if rc == 1:
             raise LookupError('No process with PID {0}'.format(pid))
         elif rc == 0:
             return stdout.strip()
@@ -250,7 +250,7 @@ class _Machine(object):
         """
         cmd = 'ps -p {0} -o etime='.format(pid)
         rc, stdout, stderr = self.transport.execute_command(cmd)
-        if rc == 1:  # FIXME: same return code on MacOSX?
+        if rc == 1:
             raise LookupError('No process with PID {0}'.format(pid))
         elif rc == 0:
             etime = stdout.strip()
