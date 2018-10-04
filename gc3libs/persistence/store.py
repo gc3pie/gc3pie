@@ -81,6 +81,17 @@ class Store(object):
         """
         pass
 
+    def invalidate_cache(self):
+        """
+        Clear the loaded objects cache (if any).
+
+        Subsequent `load()`:meth: calls are guaranteed to re-load the
+        data directly from the backing store.
+        """
+        # The default implementation of this method does nothing, since
+        # a `Store` subclass may not keep a cache of loaded objects.
+        pass
+
     def list(self, **extra_args):
         """
         Return list of IDs of saved `Job` objects.

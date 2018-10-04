@@ -271,6 +271,10 @@ class SqlStore(Store):
         return self._real_extra_fields
 
 
+    @same_docstring_as(Store.invalidate_cache)
+    def invalidate_cache(self):
+        self._loaded.clear()
+
     @same_docstring_as(Store.list)
     def list(self):
         q = sql.select([self._tables.c.id])

@@ -83,6 +83,10 @@ class FilesystemStore(Store):
         self._loaded = WeakValueDictionary()
         self._protocol = protocol
 
+    @same_docstring_as(Store.invalidate_cache)
+    def invalidate_cache(self):
+        self._loaded.clear()
+
     @same_docstring_as(Store.list)
     def list(self):
         if not os.path.exists(self._directory):
