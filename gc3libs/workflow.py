@@ -395,21 +395,34 @@ class SequentialTaskCollection(TaskCollection):
     def redo(self, from_stage=0, *args, **kwargs):
         """
         Rewind the sequence to a given stage and reset its state to ``NEW``.
+
+        In addition, when called with argument `from_stage` set to the
+        total number of tasks in the collection, will try *continuing*
+        the sequence by (ultimately) calling `self.next()` to get a
+        new task.
         """
-        if len(self.tasks) > 0:
-            assert from_stage < len(self.tasks), (
+        nr_tasks = len(self.tasks)
+        if nr_tasks > 0:
+            assert from_stage <= nr_tasks, (
                 "Cannot redo {0} from stage {1}:"
                 " only {2} stages in task list."
-                .format(self, from_stage, len(self.tasks))
+                .format(self, from_stage, nr_tasks)
             )
-            self._current_task = from_stage
-            task = self.stage()
-            if task is not None:
-                task.redo(*args, **kwargs)
-            # All other tasks should be put in NEW again
-            for i in range(from_stage+1, len(self.tasks)):
-                self.tasks[i].redo(*args, **kwargs)
-        super(SequentialTaskCollection, self).redo(*args, **kwargs)
+            if from_stage < nr_tasks:
+                self._current_task = from_stage
+                task = self.stage()
+                if task is not None:
+                    task.redo(*args, **kwargs)
+                # All other tasks should be put in NEW again
+                for i in range(from_stage+1, nr_tasks):
+                    self.tasks[i].redo(*args, **kwargs)
+                super(SequentialTaskCollection, self).redo(*args, **kwargs)
+            else:   # it's *continue* not *redo*
+                assert self.tasks[-1].execution.state == Run.State.TERMINATED
+                self.execution.state = Run.State.RUNNING
+                self._current_task = nr_tasks - 1
+                self.update_state()  # calls `next()`
+
 
     def submit(self, resubmit=False, targets=None, **extra_args):
         """
