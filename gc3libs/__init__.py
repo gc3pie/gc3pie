@@ -352,13 +352,12 @@ class Task(Persistable, Struct):
         an exception :class:`TaskDetachedFromGridError` being thrown.
         """
         if self._attached:
-
-            self._attached = False
             try:
                 self._controller.remove(self)
             except:
                 pass
             self._controller = Task.__no_controller
+            self._attached = False
 
     # interface with pickle/gc3libs.persistence: do not save the
     # attached grid/engine/core as well: it definitely needs to be
