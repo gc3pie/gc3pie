@@ -92,21 +92,6 @@ class Store(object):
             "Method `list` not implemented in this class.")
 
     @abstractmethod
-    def remove(self, id_):
-        """
-        Delete a given object from persistent storage, given its ID.
-        """
-        pass
-
-    @abstractmethod
-    def replace(self, id_, obj):
-        """
-        Replace the object already saved with the given ID with a copy
-        of `obj`.
-        """
-        pass
-
-    @abstractmethod
     def load(self, id_):
         """
         Load a saved object given its ID, and return it.
@@ -120,23 +105,22 @@ class Store(object):
         Called immediately after a successful `load()`, just before returning
         the retrieved object to the caller.
         """
-        # FIXME: remove after 2.5 release cycle
-        if isinstance(self, gc3libs.Application):
-            if hasattr(self, '_lrms_vm_id'):
-                # already updated, skip
-                pass
-            elif hasattr(self, 'os_instance_id'):
-                self.execution._lrms_vm_id = self.os_instance_id
-                del self.os_instance_id
-            elif hasattr(self, 'ec2_instance_id'):
-                self.execution._lrms_vm_id = self.ec2_instance_id
-                del self.ec2_instance_id
-            elif hasattr(self.execution, 'os_instance_id'):
-                self.execution._lrms_vm_id = self.execution.os_instance_id
-                del self.execution.os_instance_id
-            elif hasattr(self.execution, 'ec2_instance_id'):
-                self.execution._lrms_vm_id = self.execution.ec2_instance_id
-                del self.execution.ec2_instance_id
+        pass
+
+    @abstractmethod
+    def remove(self, id_):
+        """
+        Delete a given object from persistent storage, given its ID.
+        """
+        pass
+
+    @abstractmethod
+    def replace(self, id_, obj):
+        """
+        Replace the object already saved with the given ID with a copy
+        of `obj`.
+        """
+        pass
 
     @abstractmethod
     def save(self, obj):
