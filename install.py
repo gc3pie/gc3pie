@@ -408,7 +408,7 @@ bug to the GC3Pie mailing list gc3pie@googlegroups.com
         die(os.EX_SOFTWARE,
             "Failed to locate `virtualenv.py`.",
             """
-            Failed to locate `virtualenv.py` in dowloaded package directory `{0}`
+            Failed to locate `virtualenv.py` in downloaded package directory `{0}`
             """.format(venvsourcedir))
 
     # run: python virtualenv.py --[no,system]-site-packages $DESTDIR
