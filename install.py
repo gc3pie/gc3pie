@@ -402,7 +402,6 @@ bug to the GC3Pie mailing list gc3pie@googlegroups.com
     cleanup_defer(venvsourcedir)
 
     # search 'virtualenv.py'
-    # venvpath = os.path.join(venvsourcedir, 'virtualenv.py')
     venvpath = search_for(venvsourcedir, 'virtualenv.py')
     if not venvpath:
         die(os.EX_SOFTWARE,
