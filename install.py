@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  Copyright (C) 2015-2018 University of Zurich.
+#  Copyright (C) 2015-2019 University of Zurich.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -401,7 +401,14 @@ bug to the GC3Pie mailing list gc3pie@googlegroups.com
     venvsourcedir = tar.getnames()[0]
     cleanup_defer(venvsourcedir)
 
-    venvpath = os.path.join(venvsourcedir, 'virtualenv.py')
+    # search 'virtualenv.py'
+    venvpath = search_for(venvsourcedir, 'virtualenv.py')
+    if not venvpath:
+        die(os.EX_SOFTWARE,
+            "Failed to locate `virtualenv.py`.",
+            """
+            Failed to locale `virtualenv.py` in dowloaded package directory `{0}`
+            """.format(venvsourcedir))
 
     # run: python virtualenv.py --[no,system]-site-packages $DESTDIR
     try:
@@ -1013,6 +1020,15 @@ Run `cmd` like `check_call` does, but activate Python virtualenv in `ve_dir` fir
             raise
         else:
             return err.returncode
+
+
+def search_for(path, filename):
+    for rootdir, dirs, filenames in os.walk(path):
+        if filename in filenames:
+            return os.path.abspath(os.path.join(rootdir, filename))
+
+    # could not find `filename`; return None
+    return None
 
 
 def which_missing_packages(pkgs):
