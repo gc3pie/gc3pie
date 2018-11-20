@@ -401,7 +401,16 @@ bug to the GC3Pie mailing list gc3pie@googlegroups.com
     venvsourcedir = tar.getnames()[0]
     cleanup_defer(venvsourcedir)
 
-    venvpath = os.path.join(venvsourcedir, 'virtualenv.py')
+    # search 'virtualenv.py'
+    # venvpath = os.path.join(venvsourcedir, 'virtualenv.py')
+    venvpath = search_for(venvsourcedir, 'virtualenv.py')
+    if not venvpath:
+        die(os.EX_SOFTWARE,
+            "Failed to locate `virtualenv.py`.",
+            """
+            Failed to localte `virtualenv.py` from dowloaded package
+            in {0}.
+            """.format(venvsourcedir))
 
     # run: python virtualenv.py --[no,system]-site-packages $DESTDIR
     try:
@@ -1030,6 +1039,14 @@ def which_missing_packages(pkgs):
 def yes_or_no(value):
     return ('yes' if value else 'no')
 
+
+def search_for(path, filename):
+    for r,d,f in os.walk(path):
+        if os.path.isfile(os.path.join(r,filename)):
+            return os.path.abspath(os.path.join(r,filename))
+
+    # could not find `filename`; return None
+    return None
 
 if __name__ == '__main__':
     main()
