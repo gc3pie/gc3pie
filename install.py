@@ -114,7 +114,7 @@ class default:
     TARGET = path.expandvars('$HOME/gc3pie')
     UNRELEASED = False
     WITH_APPS = True
-    VIRTUALENV = "15.2.0"
+
 
 # by default, ask for confirmation
 DO_NOT_ASK_AND_ASSUME_YES = False
@@ -394,29 +394,21 @@ bug to the GC3Pie mailing list gc3pie@googlegroups.com
         # no issue in allowing access to system site packages
         with_site_packages = ['--system-site-packages']
 
-    # Check condition that requires us to skip download virtualenv:
-    # virtualenv already installed
-    if have_command('virtualenv'):
-        # run command
-        logging.info('Using system virtualenv... ')
-        cmd = [find_executable("virtualenv")] + with_site_packages + ['-p', python, destdir]
-    else:
-        # get virtualenv package
-        # Force version <= 15 as in newer versions,
-        # binary file is no-loner provided
-        tarball = download_from_pypi('virtualenv', version=default.VIRTUALENV, keep=False)
+    tarball = download_from_pypi('virtualenv', keep=False)
 
-        tar = tarfile.open(tarball)
-        tar.extractall()
-        venvsourcedir = tar.getnames()[0]
-        cleanup_defer(venvsourcedir)
+    tar = tarfile.open(tarball)
+    tar.extractall()
+    venvsourcedir = tar.getnames()[0]
+    cleanup_defer(venvsourcedir)
 
-        venvpath = os.path.join(venvsourcedir, 'virtualenv.py')
-        cmd = [python, venvpath] + with_site_packages + ['-p', python, destdir]
+    venvpath = os.path.join(venvsourcedir, 'virtualenv.py')
 
     # run: python virtualenv.py --[no,system]-site-packages $DESTDIR
     try:
-        check_call(cmd)
+        check_call(
+            [python, venvpath]
+            + with_site_packages
+            + ['-p', python, destdir])
         logging.info("Created Python virtual environment in '%s'", destdir)
     except CalledProcessError as err:
         rc = err.returncode
@@ -568,7 +560,6 @@ def download_from_pypi(pkgname, pip_url=default.BASE_PIP_URL, version=None, keep
     one actually downloaded is the one which comes first in Python
     string sorting order.
     """
-
     base_url = (pip_url + '/' + pkgname + '/json')
     try:
         data = urlopen(base_url).read()
