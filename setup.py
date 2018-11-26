@@ -75,9 +75,10 @@ if python_version == (2, 6):
         'argparse',
         'lockfile==0.11.0',
         # Paramiko depends on PyNaCl which depends on `pycparser`,
-        # which dropped support for Py2.6 in 2.19 (so fix it and do
-        # this before installing Paramiko)
-        'pycparser==2.18',
+        # which dropped support for Py2.6 in 2.19 but we need to pin
+        # `PyNaCl` itself: attempts to pin `pycparser` result in
+        # failure of installation attempts on Travis CI...
+        'PyNaCl==1.0.1',
         # Paramiko ceased support for Python 2.6 in version 2.4.0
         'paramiko<2.4', 'pycrypto',
         # parsedatetime officially dropped supprt for Py 2.6 in version 1.0
