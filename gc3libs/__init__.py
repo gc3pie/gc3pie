@@ -1554,25 +1554,16 @@ class Application(Task):
             sbatch += ['--mem', 1+int(self.requested_memory.amount(MB))]
         if 'jobname' in self and self.jobname:
             sbatch += ['--job-name', ('%s' % self.jobname)]
+        # ensure `sbatch` environment is propagated to jobs
+        # (should be the default, but "explicit is better than implicit")
+        sbatch += ['--export', 'ALL']
         if self.environment:
-            # `sbatch` does not honor multiple `--export` options on
-            # the command line; all variables must be given as
-            # argument to the first `--export` occurrence, separated
-            # by commas.  This makes it impossible to pass variables
-            # whose value contains a comma: `--export FOO=1,BAR=2,3`
-            # will be parsed as exporting variables `FOO` (with value
-            # `1`), `BAR` (with value `2`) and `3` (with value from
-            # environment).  Therefore we prefix the command
-            # invocation with `env` to set all variable in the
-            # environment, and then only pass variable names to
-            # `--export`.  (Yes, it's still not possible to use
-            # environmental variables whose name contains a comma. We
-            # clearly do not live in the best of all possible worlds.)
+            # ensure all the required env vars are set in `sbatch`'s
+            # environment, so they will be propagated to the job
             sbatch = (['/usr/bin/env']
                       + ['{0}={1}'.format(name, value)
                          for name, value in self.environment.iteritems()]
-                      + sbatch
-                      + ['--export', ','.join(self.environment.keys())])
+                      + sbatch)
 
         return (sbatch, cmdline)
 
