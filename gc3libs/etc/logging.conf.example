@@ -2,7 +2,7 @@
 #
 # Configuration file for gc3utils logging
 #
-# See http://docs.python.org/release/2.4/lib/logging-config-fileformat.html
+# See https://docs.python.org/2/library/logging.config.html#logging-config-fileformat
 # for the syntax of the configuration directives.
 # In addition to the standard syntax, the following strings will be given
 # special treatment:
@@ -59,7 +59,7 @@ formatter=logfile
 
 [handler_stderr]
 # console output level should not be set here, as it
-# will limit the effectiveness of option "-v" 
+# will limit the effectiveness of option "-v"
 level=NOTSET
 class=StreamHandler
 args=(sys.stderr,)
