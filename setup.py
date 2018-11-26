@@ -79,6 +79,8 @@ if python_version == (2, 6):
         # parsedatetime officially dropped supprt for Py 2.6 in version 1.0
         # but the PyPI tags show that it is compatible with Py2.6 until <=1.4
         'parsedatetime<1.5',
+        # PyNaCl depends on `pycparser`, which dropped support for Py2.6 in 2.19
+        'pycparser==2.18',
         # python-daemon seems to have dropped Py2.6 between v1.6 and v2.0
         'python-daemon<2.0',
         'pyyaml<=3.11',
