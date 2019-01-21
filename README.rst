@@ -151,7 +151,8 @@ This is what it looks like when the code is run:
 The output file looks as follows:
 
 .. code-block:: text
-    # cat GdemoSimpleApp_output/stdout.txt
+
+    $ cat GdemoSimpleApp_output/stdout.txt
     93607d089233
 
 
