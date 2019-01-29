@@ -408,7 +408,6 @@ bug to the GC3Pie mailing list gc3pie@googlegroups.com
             "Failed to locate `virtualenv.py`.",
             """
             Failed to locale `virtualenv.py` in dowloaded package directory `{0}`
-            in {0}.
             """.format(venvsourcedir))
 
     # run: python virtualenv.py --[no,system]-site-packages $DESTDIR
