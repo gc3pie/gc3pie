@@ -1040,7 +1040,7 @@ def yes_or_no(value):
 
 def search_for(path, filename):
     for rootdir, dirs, filenames in os.walk(path):
-        if os.path.isfile(os.path.join(r,filename)):
+        if filename in filenames:
             return os.path.abspath(os.path.join(rootdir, filename))
 
     # could not find `filename`; return None
