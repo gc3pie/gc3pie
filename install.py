@@ -407,7 +407,7 @@ bug to the GC3Pie mailing list gc3pie@googlegroups.com
         die(os.EX_SOFTWARE,
             "Failed to locate `virtualenv.py`.",
             """
-            Failed to localte `virtualenv.py` from dowloaded package
+            Failed to locale `virtualenv.py` in dowloaded package directory `{0}`
             in {0}.
             """.format(venvsourcedir))
 
