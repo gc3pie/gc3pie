@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__version__ = '2.0.3'
+__version__ = '2.0.4'
 __author__ = '''
 Antonio Messina <antonio.s.messina@gmail.com>
 Riccardo Murri <riccardo.murri@gmail.com>
@@ -735,6 +735,16 @@ def install_gc3pie_from_github(venv_dir, features,
     run("git clone --single-branch --depth 1 {repo} '{venv_dir}/src'"
         .format(**locals()))
 
+    # installing `cffi` (required by some dependency of `paramiko`) on
+    # Python 2.6 requires that `pycparser` is *already* installed on
+    # the system, otherwise the latest version will be unconditionally
+    # downloaded and installed, so we need to install it in a separate
+    # step *before* installation of the main code...
+    if (major, minor) == (2, 6):
+        logging.info("Installing pre-requirements for Python 2.6 ...")
+        run_in_virtualenv(
+            venv_dir, "pip install 'pycparser<2.19' 'pytest==3.2.5'")
+
     # fix for a stupid boto/pbr dependency issue
     if 'openstack' in features:
         run_in_virtualenv(venv_dir, "pip install pbr")
@@ -772,6 +782,16 @@ def install_gc3pie_from_github(venv_dir, features,
 
 
 def install_gc3pie_from_pypi(venv_dir, features):
+    # installing `cffi` (required by some dependency of `paramiko`) on
+    # Python 2.6 requires that `pycparser` is *already* installed on
+    # the system, otherwise the latest version will be unconditionally
+    # downloaded and installed, so we need to install it in a separate
+    # step *before* installation of the main code...
+    if (major, minor) == (2, 6):
+        logging.info("Installing pre-requirements for Python 2.6 ...")
+        run_in_virtualenv(
+            venv_dir, "pip install 'pycparser<2.19' 'pytest==3.2.5'")
+
     logging.info(
         "Installing GC3Pie from PyPI package with '%s/bin/pip' ...", venv_dir)
     run_in_virtualenv(

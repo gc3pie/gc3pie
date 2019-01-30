@@ -74,8 +74,12 @@ if python_version == (2, 6):
         # - PyCLI requires argparse,
         'argparse',
         'lockfile==0.11.0',
-        # Paramiko ceased support for Python 2.6 in version 2.4.0
-        'paramiko<2.4', 'pycrypto',
+        # Paramiko and its dependencies all ceased support for Py2.6
+        # NOTE: order matters!  Dependencies must come before the main pkg
+        'pycparser<2.19',
+        'pynacl<1.1.0',
+        'idna<2.7',
+        'paramiko<2.4',
         # parsedatetime officially dropped supprt for Py 2.6 in version 1.0
         # but the PyPI tags show that it is compatible with Py2.6 until <=1.4
         'parsedatetime<1.5',
