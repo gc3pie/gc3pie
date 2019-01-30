@@ -407,7 +407,7 @@ bug to the GC3Pie mailing list gc3pie@googlegroups.com
         die(os.EX_SOFTWARE,
             "Failed to locate `virtualenv.py`.",
             """
-            Failed to locale `virtualenv.py` in dowloaded package directory `{0}`
+            Failed to locate `virtualenv.py` in dowloaded package directory `{0}`
             """.format(venvsourcedir))
 
     # run: python virtualenv.py --[no,system]-site-packages $DESTDIR
@@ -606,7 +606,7 @@ Unable to download package {pkgname} from PyPI.
 
 def fix_virtualenv_issue_with_anaconda(python, destdir):
     """
-    Apply a workaround for Anaconda Python's incompativility with virtualenvs.
+    Apply a workaround for Anaconda Python's incompatibility with virtualenvs.
 
     The issue is that Anaconda Python ships an executable built with a
     relative RPATH; if the executable is located in Ananconda's
