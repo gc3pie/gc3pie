@@ -30,6 +30,6 @@ matrix:
     - python: "2.6"
       env:
         - FEATURES=""
-        # `boto` and `inotifyx` are required otherwise collection of tests errors out
-        - PRE="boto inotifyx numpy<1.12 pycparser<2.19 pytest==3.2.5"
-        - PYTEST_ADDOPTS="--continue-on-collection-errors"
+        # `inotifyx` is required otherwise collection of tests errors out
+        - PRE="inotifyx numpy<1.12 pycparser<2.19 pytest==3.2.5"
+        - PYTEST_ADDOPTS="--ignore gc3libs/backends/ec2.py --ignore gc3libs/backends/tests/test_ec2.py"
