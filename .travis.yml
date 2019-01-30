@@ -30,4 +30,4 @@ matrix:
     - python: "2.6"
       env:
         - FEATURES=""
-        - PRE="'numpy<1.12' 'pycparser<2.19' 'pytest==3.2.5'"
+        - PRE="numpy<1.12 pycparser<2.19 pytest==3.2.5"
