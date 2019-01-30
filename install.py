@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__version__ = '2.0.4'
+__version__ = '2.0.5'
 __author__ = '''
 Antonio Messina <antonio.s.messina@gmail.com>
 Riccardo Murri <riccardo.murri@gmail.com>
@@ -163,8 +163,8 @@ def main():
         options.version_info = '*latest stable version*'
 
     # compatibility check
-    if 'openstack' in options.features and (major, minor) == (2, 6):
-        abort(70, """OpenStack support requires Python 2.7+
+    if options.features != 'none' and (major, minor) == (2, 6):
+        abort(70, """Optional features require Python 2.7+
 
 Python interpreter '{exe}' is running version
 {major}.{minor}.{release} of the language.
