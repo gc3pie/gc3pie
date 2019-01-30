@@ -14,12 +14,12 @@ addons:
 install:
   - "pip install --upgrade setuptools pip"
   - 'if [ -n "$PRE" ]; then pip install $PRE; fi'
-  - 'pip install pytest mock'
+  - 'pip install mock pytest pytest-coverage'
   - "pip install -e .$FEATURES"
 
 script:
   - export BOTO_CONFIG=/dev/null
-  - pytest -v --continue-on-collection-errors
+  - pytest -v --cov=gc3libs
 
 matrix:
   include:
@@ -32,3 +32,4 @@ matrix:
         - FEATURES=""
         # `boto` and `inotifyx` are required otherwise collection of tests errors out
         - PRE="boto inotifyx numpy<1.12 pycparser<2.19 pytest==3.2.5"
+        - PYTEST_ADDOPTS="--continue-on-collection-errors"
