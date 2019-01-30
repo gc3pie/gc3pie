@@ -89,29 +89,6 @@ if python_version == (2, 6):
         # SQLAlchemy ceased support for Py 2.6 in version 1.2.0
         'sqlalchemy<1.2',
     ]
-    openstack_requires = [
-        # support for Python 2.6 was removed from `novaclient` in commit
-        # 81f8fa655ccecd409fe6dcda0d3763592c053e57 which is contained in
-        # releases 3.0.0 and above; however, we also need to pin down
-        # the version of `oslo.config` and all the dependencies thereof,
-        # otherwise `pip` will happily download the latest and
-        # incompatible version,since `python-novaclient` specifies only
-        # the *minimal* version of dependencies it is compatible with...
-        'stevedore<1.10.0',
-        'debtcollector<1.0.0',
-        'keystoneauth<2.0.0',
-        # yes, there"s `keystoneauth` and `keystoneauth1` !!
-        'keystoneauth1<2.0.0',
-        'oslo.config<3.0.0',
-        'oslo.i18n<3.1.0',
-        'oslo.serialization<2.1.0',
-        'oslo.utils<3.1.0',
-        'python-keystoneclient<2.0.0',
-        'python-novaclient<3.0.0',
-        'python-cinderclient<1.6.0',
-        # OpenStack's "keystoneclient" requires `importlib`
-        'importlib',
-    ]
 elif python_version == (2, 7):
     version_dependent_requires = [
         'lockfile',
@@ -122,13 +99,6 @@ elif python_version == (2, 7):
         'python-daemon',
         'pyyaml',
         'sqlalchemy',
-    ]
-    openstack_requires = [
-        'python-keystoneclient',
-        'python-glanceclient',
-        'python-neutronclient',
-        'python-novaclient',
-        'os-client-config',
     ]
 else:
     raise RuntimeError("GC3Pie requires Python 2.6 or 2.7")
@@ -242,7 +212,13 @@ setuptools.setup(
             # optional feature ...
             'inotifyx',
         ],
-        'openstack': openstack_requires,
+        'openstack': [
+            'python-keystoneclient',
+            'python-glanceclient',
+            'python-neutronclient',
+            'python-novaclient',
+            'os-client-config',
+        ],
         'optimizer': [
             # The following Python modules are required by GC3Pie's
             # `gc3libs.optimizer` module.
