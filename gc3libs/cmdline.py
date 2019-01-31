@@ -2,7 +2,7 @@
 #
 #   cmdline.py -- Base classes for GC3Libs-based scripts
 #
-#   Copyright (C) 2010-2018  University of Zurich. All rights reserved.
+#   Copyright (C) 2010-2019  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -2021,7 +2021,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
 
         def list_details(self, *opts):
             """
-            Usage: list [daemon|session] [json|text|yaml]
+            Usage: list_details [daemon|session] [json|text|yaml]
 
             Give information about tasks managed by this daemon;
             for each task, the following information are printed:
@@ -2076,8 +2076,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
                     ])
                 return table.get_string()
 
-        @staticmethod
-        def _make_rows(task, indent='  ', recursive=True):
+        def _make_rows(self, task, indent='  ', recursive=True):
             """
             Helper method for ``list_details``.
 
