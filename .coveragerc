@@ -1,0 +1,11 @@
+#
+# Configure Test Coverage Reporting
+# see: https://coverage.readthedocs.io/en/coverage-4.4.2/config.html
+#
+
+[run]
+omit =
+    # skip test files
+    */tests/*.py
+    # skip vendorized libraries
+    */compat/*.py
