@@ -19,7 +19,7 @@ install:
 
 script:
   - export BOTO_CONFIG=/dev/null
-  - pytest -v --cov=gc3libs
+  - pytest -v --cov=gc3libs --cov-branch
 
 matrix:
   include:
