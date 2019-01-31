@@ -1,10 +1,19 @@
 #!/usr/bin/env python
 """
 Setup file for installing GC3Pie.
+
+If environment variable ``GC3PIE_FORCE_INSTALL`` has the value ``1``,
+then compatiblity checks are skipped.
 """
 
 import sys
 
+import os
+if (os.environ.get('GC3PIE_FORCE_INSTALL', 'no').lower()
+    in ['1', 'y', 'yes', 'true', 'on']):
+    force_install = True
+else:
+    force_install = False  # default
 
 # ensure we run a "recent enough" version of `setuptools` (CentOS7 still ships
 # with setuptools 0.9.8!). There has been some instability in the support for
@@ -89,7 +98,7 @@ if python_version == (2, 6):
         # SQLAlchemy ceased support for Py 2.6 in version 1.2.0
         'sqlalchemy<1.2',
     ]
-elif python_version == (2, 7):
+elif python_version == (2, 7) or force_install:
     version_dependent_requires = [
         'lockfile',
         'paramiko', 'pycrypto',
