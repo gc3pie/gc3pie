@@ -37,10 +37,12 @@ matrix:
       env:
         - FEATURES="[openstack,ec2,daemon]"
         - PRE=""
+        - GC3PIE_FORCE_INSTALL="yes"
     - python: "3.6"
       env:
         - FEATURES="[openstack,ec2,daemon]"
         - PRE=""
+        - GC3PIE_FORCE_INSTALL="yes"
 
   allow_failures:
     - python: '3.5'
