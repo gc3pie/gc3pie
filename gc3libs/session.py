@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2012-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2012-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -133,7 +133,7 @@ class Session(list):
     DEFAULT_JOBS_DIR = 'jobs'
 
     def __init__(self, path, create=True, store_or_url=None,
-                 load=True, **extra_args):
+                 load=True, task_ids=None, **extra_args):
         """
         First argument `path` is the path to the session directory.
 
@@ -178,11 +178,13 @@ class Session(list):
         if os.path.isdir(self.path) and load:
             # Session already exists?
             try:
-                self._load_session(**extra_args)
+                self._load_session(task_ids=task_ids, **extra_args)
             except IOError as err:
                 gc3libs.log.debug("Cannot load session '%s': %s", path, err)
-                if err.errno == os.errno.ENOENT:  # "No such file or directory"
-                    if create:
+                # "No such file or directory" => create new session
+                if err.errno == os.errno.ENOENT:
+                    # only create session if no task IDs were given
+                    if create and not task_ids:
                         gc3libs.log.debug(
                             "Assuming session is incomplete or corrupted,"
                             " creating it again.")
@@ -194,6 +196,8 @@ class Session(list):
                 else:
                     raise
         else:
+            assert not task_ids, (
+                "Creating a new session with non-empty `task_ids` makes no sense!")
             if create:
                 self._create_session(store_or_url, **extra_args)
             else:
@@ -223,7 +227,7 @@ class Session(list):
 
         self.set_start_timestamp()
 
-    def _load_session(self, store=None, **extra_args):
+    def _load_session(self, store=None, task_ids=None, **extra_args):
         """
         Load an existing session from disk.
 
@@ -253,15 +257,16 @@ class Session(list):
             self.store = gc3libs.persistence.make_store(
                 self.store_url, **extra_args)
 
-        idx_filename = os.path.join(self.path, self.INDEX_FILENAME)
-        try:
-            with open(idx_filename) as idx_file:
-                ids = idx_file.read().split()
-        except (OSError, IOError) as err:
-            gc3libs.log.error(
-                "Unable to load session index from file `%s`: %s",
-                idx_filename, err)
-            raise
+        if task_ids is None:
+            idx_filename = os.path.join(self.path, self.INDEX_FILENAME)
+            try:
+                with open(idx_filename) as idx_file:
+                    task_ids = idx_file.read().split()
+            except (OSError, IOError) as err:
+                gc3libs.log.error(
+                    "Unable to load session index from file `%s`: %s",
+                    idx_filename, err)
+                raise
 
         try:
             start_file = os.path.join(
@@ -273,7 +278,7 @@ class Session(list):
                 "Unable to recover starting time from existing session:"
                 " file `%s` is missing.", start_file)
 
-        self.tasks = self.load_many(ids)
+        self.tasks = self.load_many(task_ids)
 
     def destroy(self):
         """

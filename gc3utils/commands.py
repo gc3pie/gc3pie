@@ -170,10 +170,13 @@ class GC3UtilsScript(gc3libs.cmdline._Script):
                 else:
                     raise
 
-    def _get_session(self, url):
+    def _get_session(self, url, **extra_args):
         """
         Return a `gc3libs.session.Session` object corresponding to the
         session identified by `url`.
+
+        Any keyword arguments will be passed unchanged to the session
+        object constructor.
 
         :raise gc3libs.exceptions.InvalidArgument:
           If the session cannot be loaded (e.g., does not exist).
@@ -181,9 +184,10 @@ class GC3UtilsScript(gc3libs.cmdline._Script):
         try:
             url = Url(url)
             if url.scheme == 'file':
-                return Session(url.path, create=False)
+                extra_args.setdefault('create', False)
+                return Session(url.path, **extra_args)
             else:
-                return TemporarySession(url)
+                return TemporarySession(url, **extra_args)
         except gc3libs.exceptions.InvalidArgument as err:
             raise RuntimeError(
                 "Cannot load session `{0}`: {1}".format(url, err))
@@ -227,19 +231,17 @@ force removal of a job regardless.
                        help="Remove job even when not in terminal state.")
 
     def main(self):
-        self.session = self._get_session(self.params.session)
-
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage(
                 "Option '-A' conflicts with list of job IDs to remove.")
 
         if self.params.all:
+            self.session = self._get_session(self.params.session)
             self.params.args = self._list_all_tasks()
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
         else:
-            args = self.params.args
-            if len(args) == 0:
+            if len(self.params.args) == 0:
                 self.log.warning(
                     "No job IDs given on command line: nothing to do."
                     " Type '%s --help' for usage help."
@@ -250,9 +252,12 @@ force removal of a job regardless.
                     % (os.path.basename(sys.argv[0])
                        if os.path.isabs(sys.argv[0])
                        else sys.argv[0]))
+                return os.EX_USAGE
+            self.session = self._get_session(self.params.session,
+                                             task_ids=self.params.args)
 
         failed = 0
-        for jobid in args:
+        for jobid in self.params.args:
             try:
                 app = self.session.store.load(jobid)
                 app.attach(self._core)
@@ -368,8 +373,7 @@ GC3Libs internals.
                        help="Print job history only")
 
     def main(self):
-        self.session = self._get_session(self.params.session)
-
+        # sanity checks for the command-line options
         if self.params.csv and self.params.tabular:
             raise gc3libs.exceptions.InvalidUsage(
                 "Conflicting options `-c`/`--csv` and `-t`/`--tabular`."
@@ -385,26 +389,11 @@ GC3Libs internals.
                 "Conflicting options `-H`/`--history` and `-c`/`--csv`."
                 " Choose either one, but not both.")
 
-        if len(self.params.keys) > 0:
-            only_keys = self.params.keys.split(',')
-        else:
-            if self.params.verbose < 2:
-                def names_not_starting_with_underscore(name):
-                    return not name.startswith('_')
-                only_keys = names_not_starting_with_underscore
-            else:
-                # print *all* keys if `-vv` is given
-                only_keys = None
-
         if ((self.params.tabular or self.params.csv)
                 and len(self.params.keys) == 0):
             raise gc3libs.exceptions.InvalidUsage(
                 "Options '--tabular' and `--csv` only make sense"
                 " in conjuction with option '--print'.")
-
-        if len(self.params.args) == 0:
-            # if no arguments, operate on all known jobs
-            self.params.args = self._list_all_tasks()
 
         if posix.isatty(sys.stdout.fileno()):
             # try to screen width
@@ -415,6 +404,25 @@ GC3Libs internals.
         else:
             # presume output goes to a file, so no width restrictions
             width = 0
+
+        # start reading stuff from disk
+        self.session = self._get_session(self.params.session,
+                                         task_ids=self.params.args)
+
+        if len(self.params.args) == 0:
+            # if no arguments, operate on all known jobs
+            self.params.args = self._list_all_tasks()
+
+        if len(self.params.keys) > 0:
+            only_keys = self.params.keys.split(',')
+        else:
+            if self.params.verbose < 2:
+                def names_not_starting_with_underscore(name):
+                    return not name.startswith('_')
+                only_keys = names_not_starting_with_underscore
+            else:
+                # print *all* keys if `-vv` is given
+                only_keys = None
 
         if self.params.tabular:
             # prepare table prettyprinter
@@ -520,8 +528,6 @@ is canceled before re-submission.
             self.params.memory_per_core = Memory(self.params.memory_per_core)
 
     def main(self):
-        self.session = self._get_session(self.params.session)
-
         if len(self.params.args) == 0:
             self.log.error(
                 "No job IDs given on command line: nothing to do."
@@ -532,6 +538,7 @@ is canceled before re-submission.
                 # otherwise print the exact path name.
                 % (os.path.basename(sys.argv[0]) if os.path.isabs(sys.argv[0])
                    else sys.argv[0]))
+            return os.EX_USAGE
 
         if self.params.resource_name:
             self._select_resources(self.params.resource_name)
@@ -542,6 +549,8 @@ is canceled before re-submission.
                          [res['name'] for res in self._core.get_resources()]),
                 self.params.resource_name)
 
+        self.session = self._get_session(self.params.session,
+                                         task_ids=self.params.args)
         failed = 0
         for jobid in self.params.args:
             app = self.session.load(jobid.strip())
@@ -628,11 +637,14 @@ Print job state.
 
     def main(self):
         # by default, DO NOT update job statuses
-        self.session = self._get_session(self.params.session)
 
         if len(self.params.args) == 0:
             # if no arguments, operate on all known jobs
+            self.session = self._get_session(self.params.session)
             self.params.args = self._list_all_tasks()
+        else:
+            self.session = self._get_session(self.params.session,
+                                             task_ids=self.params.args)
 
         if len(self.params.args) == 0:
             print("No jobs submitted.")
@@ -822,17 +834,17 @@ released once the output files have been fetched.
                        " side.")
 
     def main(self):
-        self.session = self._get_session(self.params.session)
-
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage(
                 "Option '-A' conflicts with list of job IDs:"
                 " use either '-A' or explicitly list task IDs.")
 
         if self.params.all:
+            self.session = self._get_session(self.params.session)
             args = self._list_all_tasks()
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
+                return os.EX_OK
         else:
             args = self.params.args
             if len(args) == 0:
@@ -846,6 +858,9 @@ released once the output files have been fetched.
                     % (os.path.basename(sys.argv[0])
                        if os.path.isabs(sys.argv[0])
                        else sys.argv[0]))
+                return es.EX_USAGE
+            self.session = self._get_session(self.params.session,
+                                             task_ids=args)
 
         failed = 0
         download_dirs = set()
@@ -923,16 +938,16 @@ error occurred.
                        help="Remove all stored jobs. USE WITH CAUTION!")
 
     def main(self):
-        self.session = self._get_session(self.params.session)
-
         if self.params.all and len(self.params.args) > 0:
             raise gc3libs.exceptions.InvalidUsage(
                 "Option '-A' conflicts with list of job IDs to remove.")
 
         if self.params.all:
+            self.session = self._get_session(self.params.session)
             args = self._list_all_tasks()
             if len(args) == 0:
                 self.log.info("No jobs in session: nothing to do.")
+                return os.EX_OK
         else:
             args = self.params.args
             if len(args) == 0:
@@ -946,6 +961,9 @@ error occurred.
                     % (os.path.basename(sys.argv[0])
                        if os.path.isabs(sys.argv[0])
                        else sys.argv[0]))
+                return os.EX_USAGE
+            self.session = self._get_session(self.params.session,
+                                             task_ids=args)
 
         failed = 0
         for jobid in args:
@@ -1017,8 +1035,6 @@ as more lines are written to the given stream.
                        help="output the last N lines, instead of the last 10")
 
     def main(self):
-        self.session = self._get_session(self.params.session)
-
         if len(self.params.args) == 0:
             self.log.error(
                 "No job IDs given on command line: nothing to do."
@@ -1029,13 +1045,16 @@ as more lines are written to the given stream.
                 # otherwise print the exact path name.
                 % (os.path.basename(sys.argv[0]) if os.path.isabs(sys.argv[0])
                    else sys.argv[0]))
+            return os.EX_USAGE
 
         if self.params.stderr:
             stream = 'stderr'
         else:
             stream = 'stdout'
-        failed = 0
 
+        self.session = self._get_session(self.params.session,
+                                         task_ids=self.params.args)
+        failed = 0
         for jobid in self.params.args:
             try:
                 app = self.session.load(jobid)
