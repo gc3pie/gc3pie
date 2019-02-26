@@ -32,7 +32,9 @@ relevant aspects of the application being represented.
 """
 __docformat__ = 'reStructuredText'
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.4.2'
+
+__url__ = 'https://github.com/uzh/gc3pie'
 
 
 import inspect
