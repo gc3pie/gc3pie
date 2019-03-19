@@ -1807,10 +1807,12 @@ class Run(Struct):
 
         def fset(self, value):
             try:
-                msg = unicode(value, errors='replace')
-            except TypeError:
-                msg = str(value)
-            self.history.append(msg)
+                self.history.append(unicode(value, errors='replace'))
+            except (TypeError, ValueError):
+                try:
+                    self.history.append(str(value))
+                except Exception as err:
+                    log.error("Cannot append `%s` to history of task %s", value, self)
         return locals()
 
     # states that a `Run` can be in
