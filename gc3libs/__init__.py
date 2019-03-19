@@ -38,6 +38,7 @@ __version__ = 'development version (SVN $Revision$)'
 import inspect
 import os
 import os.path
+import platform
 import string
 import sys
 import time
@@ -201,6 +202,7 @@ def _load_logging_configuration_file(name):
     logging.config.fileConfig(log_conf, {
         'RCDIR': Default.RCDIR,
         'HOMEDIR': os.path.expandvars('$HOME'),
+        'HOSTNAME': platform.node(),
     })
     return log_conf
 
