@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2009-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -1806,7 +1806,11 @@ class Run(Struct):
             return self.history.last()
 
         def fset(self, value):
-            self.history.append(unicode(value, errors='replace'))
+            try:
+                msg = unicode(value, errors='replace')
+            except TypeError:
+                msg = str(value)
+            self.history.append(msg)
         return locals()
 
     # states that a `Run` can be in
