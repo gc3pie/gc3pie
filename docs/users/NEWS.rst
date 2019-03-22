@@ -37,9 +37,18 @@ GC3Pie 2.5
 New features
 ------------
 
+* New `SessionBasedDaemon`:class: and accompanying "Inbox" classes to
+  implement scripts that automatically detach themselves into
+  background and react to events in configurable sources (filesystem,
+  database, S3/SWIFT storage).
+
+* Dropping cloud infrastructure support in Python 2.6; if you run
+  GC3Pie on Python 2.6, you will only be able to run tasks on the
+  "localhost" resource, or on any of the supported batch-queuing
+  systems.
+
 * Terminal log output is now colorized according to message level!
   (Thanks to Adrian Etter for suggesting this feature.)
-
 
 Incompatible changes
 --------------------
