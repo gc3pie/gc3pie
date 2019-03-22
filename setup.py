@@ -117,7 +117,7 @@ else:
 #
 setuptools.setup(
     name="gc3pie",
-    version="2.5.1",  # see PEP 440
+    version="2.5.2",  # see PEP 440
 
     packages=setuptools.find_packages(exclude=['ez_setup']),
     # metadata for upload to PyPI

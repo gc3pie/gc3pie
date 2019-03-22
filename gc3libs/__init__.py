@@ -32,7 +32,7 @@ relevant aspects of the application being represented.
 """
 __docformat__ = 'reStructuredText'
 
-__version__ = 'development version (SVN $Revision$)'
+__version__ = '2.5.2'
 
 
 import inspect
