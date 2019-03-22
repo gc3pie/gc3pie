@@ -278,7 +278,7 @@ class Session(list):
                 "Unable to recover starting time from existing session:"
                 " file `%s` is missing.", start_file)
 
-        self.tasks = self.load_many(task_ids)
+        self.tasks = self.load_many(task_ids, flush=False)
 
     def destroy(self):
         """
@@ -333,11 +333,14 @@ class Session(list):
             False
 
         """
-        newid = self.store.save(task)
-        self.tasks[newid] = task
+        try:
+            task_id = task.persistent_id
+        except AttributeError:
+            task_id = self.store.save(task)
+        self.tasks[task_id] = task
         if flush:
             self.flush()
-        return newid
+        return task_id
 
     def forget(self, task_id, flush=True):
         """
@@ -431,7 +434,7 @@ class Session(list):
             self.add(obj, flush)
         return obj
 
-    def load_many(self, obj_ids):
+    def load_many(self, obj_ids, add=True, flush=True):
         """
         Load objects given their IDs from persistent storage.
 
@@ -441,7 +444,7 @@ class Session(list):
         tasks = {}
         for task_id in obj_ids:
             try:
-                tasks[task_id] = self.store.load(task_id)
+                tasks[task_id] = self.load(task_id, add, flush)
             except Exception as err:
                 if gc3libs.error_ignored(
                         # context:
@@ -620,7 +623,7 @@ class TemporarySession(Session):
                 raise RuntimeError(
                     "Cannot create temporary session:"
                     " Task store `{0}` does not support listing all task IDs.")
-        self.tasks = self.load_many(task_ids)
+        self.tasks = self.load_many(task_ids, flush=True)
         self._save_index_file()
         # use url as the session name
         self.name = str(self.store.url)
