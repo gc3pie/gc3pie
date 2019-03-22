@@ -2567,6 +2567,18 @@ Run `help CMD` to get help on command CMD.
             self.server_process = mp.Process(
                 target=self.server.start, name='server')
             self.server_process.daemon = True
+            # catch SIGTERM and turn it into a `quit` command;
+            # signal handlers can only be set from the main thread
+            orig_sigterm_handler = signal.getsignal(signal.SIGTERM)
+            if orig_sigterm_handler is None:
+                orig_sigterm_handler = signal.SIG_DFL
+            def sigterm(signo, frame):
+                self.shutdown()
+                # restore old SIGTERM handler in case
+                # `self.shortdown()` needs to force kill this process
+                signal.signal(signal.SIGTERM, orig_sigterm_handler)
+            signal.signal(signal.SIGTERM, sigterm)
+            # actually start the serving thread
             self.server_process.start()
         except Exception as err:
             self.log.error("Could not start server: %s", err)
