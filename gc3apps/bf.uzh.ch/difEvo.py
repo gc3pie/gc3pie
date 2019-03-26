@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # Original source from http://cci.lbl.gov/cctbx_sources/scitbx/differential_evolution.py
 # broader web site http://www.icsi.berkeley.edu/~storn/code.html#pyth
 

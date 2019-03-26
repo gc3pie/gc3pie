@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 """
 Interface to different resource management systems for the GC3Libs.

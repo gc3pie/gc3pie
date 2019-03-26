@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gperm.py -- Front-end script for running Docker BIDS apps

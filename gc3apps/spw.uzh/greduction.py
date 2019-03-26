@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   greduction.py -- Front-end script for evaluating 'explain_matrix.py'

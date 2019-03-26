@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # test_configparser_subprocess.py
 #
 # -*- coding: utf-8 -*-

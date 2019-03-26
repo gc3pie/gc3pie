@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   sepjobs.py -- Classify GAMESS output files according to keyword matches

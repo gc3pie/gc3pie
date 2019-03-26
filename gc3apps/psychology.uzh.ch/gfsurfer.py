@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gfsurfer.py -- Front-end script for running the docking program rDock

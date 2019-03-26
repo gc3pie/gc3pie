@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #   testScenarios.py -- Front-end script for implementation of syntax used in Test GAMESS Suite.
 #

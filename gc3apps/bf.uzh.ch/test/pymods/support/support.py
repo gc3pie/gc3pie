@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # make compatible with python2
 from __future__ import print_function
 

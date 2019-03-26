@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gmhc_coev.py -- Front-end script for submitting multiple `MHC_coev` jobs to SMSCG.

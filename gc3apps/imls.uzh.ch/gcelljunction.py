@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gcelljunction.py -- GC3Pie front-end for running the

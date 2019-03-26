@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 """Exceptions specific to the `gc3libs` package.
 

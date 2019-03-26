@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gpyrad.py -- Front-end script for submitting multiple `PyRAD` jobs.

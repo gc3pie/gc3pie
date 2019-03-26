@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gbugs.py -- Front-end script for running MCMC with opneBUGS

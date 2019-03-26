@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #!/usr/bin/env python
 
 if __name__ == "__main__" and __package__ is None:

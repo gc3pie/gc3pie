@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gc_gps.py -- Front-end script for submitting multiple `GC-GPS` R-baseed jobs.

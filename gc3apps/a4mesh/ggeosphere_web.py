@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   ggeosphere_web.py -- Front-end script for submitting multiple `GeoSphere` jobs.

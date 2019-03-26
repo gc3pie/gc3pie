@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   Copyright (C) 2010 2013  University of Zurich. All rights reserved.

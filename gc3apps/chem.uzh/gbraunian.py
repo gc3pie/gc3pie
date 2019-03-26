@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gbraunian.py -- Front-end script for evaluating Matlab function

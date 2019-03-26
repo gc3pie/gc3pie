@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gdocking.py -- Front-end script for submitting ROSETTA `docking_protocol` jobs to SMSCG.

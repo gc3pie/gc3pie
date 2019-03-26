@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #!/usr/bin/env python
 """
 Setup file for installing GC3Pie.

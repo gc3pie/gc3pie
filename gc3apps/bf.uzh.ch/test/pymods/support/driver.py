@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #http://stackoverflow.com/questions/2082850/real-time-subprocess-popen-via-stdout-and-pipe
 import os, sys
 print(os.getcwd())

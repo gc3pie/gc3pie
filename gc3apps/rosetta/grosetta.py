@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   grosetta.py -- Front-end script for submitting ROSETTA jobs to SMSCG.

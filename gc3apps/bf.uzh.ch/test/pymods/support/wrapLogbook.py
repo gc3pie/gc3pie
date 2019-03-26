@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import logbook, sys, os
 
 class wrapLogger():

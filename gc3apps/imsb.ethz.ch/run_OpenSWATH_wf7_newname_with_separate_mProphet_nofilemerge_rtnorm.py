@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from fnmatch import fnmatch
 import os
 import sys

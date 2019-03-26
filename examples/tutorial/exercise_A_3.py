@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-#
 # @(#)exercise_A_3.py

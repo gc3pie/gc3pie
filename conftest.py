@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # pylint: disable=invalid-name,line-too-long
 """
 Dynamically configure test collection for `py.test`

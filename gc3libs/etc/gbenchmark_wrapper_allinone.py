@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #!/bin/env python
 #
 # gbenchmark_wrapper_allinone.py -- wrapper script for executing igraph R script

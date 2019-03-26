@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gminarevix.py -- Front-end script for running Matlab MinAREVIX_Cloud

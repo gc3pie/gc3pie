@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   ggeotop.py -- Front-end script for submitting multiple `GEOtop` jobs to SMSCG.

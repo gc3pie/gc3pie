@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gsentitweet.py -- Front-end script for evaluating running multiple

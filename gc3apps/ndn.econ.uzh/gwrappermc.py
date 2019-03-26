@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gwrappermc.py -- Front-end script for evaluating R-based 'weight'

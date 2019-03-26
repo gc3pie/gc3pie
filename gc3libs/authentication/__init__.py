@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 """
 Authentication support for the GC3Libs.

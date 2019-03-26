@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gabm.py -- Front-end script for running sheepriver simulation

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #! /usr/bin/env python
 """
 Make a line plot all price paths produced by `simAsset.R`,
