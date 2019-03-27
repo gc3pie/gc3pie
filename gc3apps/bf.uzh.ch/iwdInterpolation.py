@@ -113,7 +113,7 @@ class iwdInterpolation(object):
             if (np.linalg.norm(exitPoint - q1) > 1e-10):
                 if (self.check_is_inside(exitPoint)):
                     return exitPoint
-        print 'trouble --- no exit found'
+        print('trouble --- no exit found')
         exit()
             
 
@@ -188,30 +188,30 @@ if __name__ == '__main__':
     xMat = np.random.random_sample((nPoints, 2))
     fx = fun(xMat)
 
-    print fx 
+    print(fx )
 
     iwd = iwdInterpolation(xMat, fx, normExp, dx, makePlot)
 
-    print 'evaluation with point outside:'
+    print('evaluation with point outside:')
     testVec = np.array([1,0.6])
-    print iwd.check_is_inside(testVec)
-    print iwd(testVec)
+    print(iwd.check_is_inside(testVec))
+    print(iwd(testVec))
  
-    print 'exact value' 
-    print fun(testVec)
+    print('exact value' )
+    print(fun(testVec))
 
     if makePlot:
         p.show()
 
     exit()
 
-    print 'evaluation with point inside:'
+    print('evaluation with point inside:')
     testVec = np.array([0.5, 0.6])
-    print iwd.check_is_inside(testVec)
-    print iwd(testVec)
+    print(iwd.check_is_inside(testVec))
+    print(iwd(testVec))
 
-    print 'exact value' 
-    print fun(testVec)
+    print('exact value' )
+    print(fun(testVec))
 
-    print 'done'
+    print('done')
 

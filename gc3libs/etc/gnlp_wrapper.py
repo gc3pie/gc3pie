@@ -19,15 +19,15 @@ CONTENT = "content"
 
 
 def Usage():
-    print ("Usage: wrapper.py <input_file> <output_file>")
+    print("Usage: wrapper.py <input_file> <output_file>")
 
 
 def RunParser(input, output):
     if not os.path.isfile(input):
-        print "Input file %s not found" % input
+        print("Input file %s not found" % input)
         return 1
 
-    print "Parsing input file... "
+    print("Parsing input file... ")
 
     tree = ET.parse(input)
     root = tree.getroot()
@@ -44,7 +44,7 @@ def RunParser(input, output):
         fd.close()
     except OSError as osx:
         # Raise and exit
-        print "Failed while preparing simplified Content file. Error: %s" % str(osx)
+        print("Failed while preparing simplified Content file. Error: %s" % str(osx))
         return 1
 
     command = '/usr/bin/java -cp "$CORENLP/*" edu.stanford.nlp.sentiment.SentimentPipeline -file input_contents.xml'
@@ -54,21 +54,21 @@ def RunParser(input, output):
         stderr=subprocess.PIPE,
         stdout=subprocess.PIPE)
 
-    print "Running command %s" % command
+    print("Running command %s" % command)
     (stdout, stderr) = nlp.communicate()
 
     if nlp.returncode != 0:
-        print "Execution failed with exit code: %d" % nlp.returncode
+        print("Execution failed with exit code: %d" % nlp.returncode)
         try:
             res = open(output, 'w+')
             res.write(stderr)
             res.close()
         except Exception as ex:
-            print "Failed writing output file %s. Error type %s. Message: %s" % (output, type(ex), str(ex))
-            print "Failed CoreNLP execution with: %s" % stderr
+            print("Failed writing output file %s. Error type %s. Message: %s" % (output, type(ex), str(ex)))
+            print("Failed CoreNLP execution with: %s" % stderr)
         return nlp.returncode
 
-    print "Parsing results... "
+    print("Parsing results... ")
 
     index = 0
     row = None
@@ -91,10 +91,10 @@ def RunParser(input, output):
     child.tail = "\n"
     child.text = sentiment[1:]
 
-    print "Writing results to output file... "
+    print("Writing results to output file... ")
     tree.write(output)
 
-    print "Done"
+    print("Done")
     return 0
 
 if __name__ == '__main__':

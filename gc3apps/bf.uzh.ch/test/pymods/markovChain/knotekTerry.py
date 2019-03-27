@@ -48,7 +48,7 @@ def fn_var_to_markov(A0,A1,A2,SIGMA,N,random_draws,method):
   '''
   # make sure method = 1 is called
   if method == 2:
-    print 'method 2 not translated, see matlab code. Exiting... '
+    print('method 2 not translated, see matlab code. Exiting... ')
     sys.exit()
     
   # Convert input to array
@@ -468,11 +468,11 @@ if __name__ == '__main__':
   a = numpy.array([ -numpy.inf, 1, -5 ], dtype = float)
   b = numpy.array([ 3, numpy.inf, 4 ], dtype = float)
   cn = numpy.array([ [1, 2, 3, -2], [2, 4, 1, 2],  [-2, 3, 4, 1] ], dtype = float)
-  print r
-  print a
-  print b
-  print cn
-  print '---'
+  print(r)
+  print(a)
+  print(b)
+  print(cn)
+  print('---')
   [ p, e ] = qscmvnv( 5000, r, a, cn, b )
-  print p
-  print e
+  print(p)
+  print(e)

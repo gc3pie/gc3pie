@@ -51,7 +51,7 @@ def wrap(applic,  input_file_name, output_file_name,opts=None):
     application = applic()
     if isinstance(application, IApplication):
         runner = ApplicationRunner()
-        print 'use application runner'
+        print('use application runner')
     elif isinstance(application, IWrapper):
         runner = WrapperRunner()
     else:

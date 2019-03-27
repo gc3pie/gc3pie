@@ -34,7 +34,7 @@ def search_and_list(input_folder):
     #
     for r,d,f in os.walk(input_folder):
         if "geotop.inpts" in f and "in" in d and "out" in d:
-            print r
+            print(r)
 
 def main():
     """
@@ -56,7 +56,7 @@ def main():
     (options, args) = parser.parse_args(sys.argv[1:])
 
     if len(args) < 2:
-        print parser.usage
+        print(parser.usage)
         return 1
 
     command = args[0]
@@ -69,7 +69,7 @@ def main():
         for folder in input_folders:
             clean_folder(folder, simulate=options.simulate, rec_also=options.rec_also)
     else:
-        print parser.usage
+        print(parser.usage)
 
 def clean_folder(input_folder, simulate, rec_also):
     
@@ -102,7 +102,7 @@ def clean_folder(input_folder, simulate, rec_also):
                         # XXX: is this too strong assumption ?
                         # remove a folder 'out'
                         if simulate:
-                            print "Removing folder %s" % os.path.join(r,folder)
+                            print("Removing folder %s" % os.path.join(r,folder))
                         else:
                             shutil.rmtree(os.path.join(r,folder), ignore_errors=True)
                             if folder == "rec":
@@ -118,7 +118,7 @@ def clean_folder(input_folder, simulate, rec_also):
                 if fnmatch.fnmatch(fn,p):
                     try:
                         if simulate:
-                            print "Removing file %s" % os.path.join(r,fn)
+                            print("Removing file %s" % os.path.join(r,fn))
                         else:
                             os.remove(os.path.join(r,fn))
                     except Exception as x:

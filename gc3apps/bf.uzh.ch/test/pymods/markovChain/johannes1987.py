@@ -211,5 +211,5 @@ if __name__ == '__main__':
   returnDict = tauchen()
   T = returnDict['P']
   S = returnDict['y']
-  print T
-  print S
+  print(T)
+  print(S)

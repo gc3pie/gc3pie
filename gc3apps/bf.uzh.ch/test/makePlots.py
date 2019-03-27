@@ -81,7 +81,7 @@ def momentPlots(baseName, path, xVar, overlay, conditions = {}, xVarRange = None
   
   # make consistency check
   if not xVar in overviewTab.cols:
-    print 'xVar %s not found in table' % xVar
+    print('xVar %s not found in table' % xVar)
     sys.exit()
   
   overviewTab.order([xVar] + conditions.keys() + moments)

@@ -185,7 +185,7 @@ class MkovM:
       for ixVar2 in range(self.vars):
         VEt[ixVar1, ixVar2] = np.sum( self.lmbda * ( Et[:, ixVar1] - self.E[ixVar1] ) * ( Et[:, ixVar2] - self.E[ixVar2] ) )
         if VEt[ixVar1, ixVar2] < -1.e-4: # Take some slack here. 
-          print 'what?'
+          print('what?')
     return VEt
 
   
@@ -197,7 +197,7 @@ class MkovM:
         for ixVar2 in range(self.vars):
           condV[ixVar1, ixVar2] = np.dot(self.T[ixState, :], ( self.S[:, ixVar1] - self.Et[ixState, ixVar1] ) * ( self.S[:, ixVar2] - self.Et[ixState, ixVar2] ) )
           if condV[ixVar1, ixVar2] < -1.e-4:
-            print 'what?'
+            print('what?')
       Vt.append(condV)
     return Vt
   
@@ -394,8 +394,8 @@ if __name__ == '__main__':
   T = 1. / nStates * np.ones((nStates, nStates))
   
   x = MkovM(S, T)
-  print x
+  print(x)
   x.simulation()
-  print x['Std']
+  print(x['Std'])
   print('done')
 

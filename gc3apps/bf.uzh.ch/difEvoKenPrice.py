@@ -352,7 +352,7 @@ class deKenPrice:
       FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui       # crossover
       FM_origin = FM_pm3
       if np.any(FM_ui > 1.3):
-        print 'below zero'
+        print('below zero')
     elif (I_strategy == 2):                         # DE/local-to-best/1
       FM_ui = FM_popold + F_weight * ( FM_bm - FM_popold ) + F_weight * ( FM_pm1 - FM_pm2 )
       FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui
