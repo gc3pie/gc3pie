@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 #
 #  Copyright (C) 2015-2019 University of Zurich.
@@ -17,6 +16,7 @@ from __future__ import absolute_import
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from __future__ import absolute_import
 __version__ = '2.0.5'
 __author__ = '''
 Antonio Messina <antonio.s.messina@gmail.com>

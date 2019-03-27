@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 '''
 Created on Jun 5, 2012
@@ -6,6 +5,7 @@ Created on Jun 5, 2012
 @author: quandtan
 '''
 
+from __future__ import absolute_import
 import os
 import sys
 from ruffus import *

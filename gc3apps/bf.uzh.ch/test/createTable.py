@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 
 '''
@@ -21,6 +20,7 @@ from __future__ import absolute_import
 '''
 
 
+from __future__ import absolute_import
 import os, re, sys
 import numpy as np
 path2Pymods = os.path.join(os.path.dirname(__file__), '../')

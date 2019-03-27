@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 '''
 @Module
 gplot is a python 3.x wrapper class to gnuplot 4.x
@@ -32,6 +31,7 @@ alpha, Aug 27, 2010
 
 
 
+from __future__ import absolute_import
 from os import popen
 class Gnuplot():
   '''

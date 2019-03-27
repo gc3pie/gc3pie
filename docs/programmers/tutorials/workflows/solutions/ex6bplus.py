@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 
 """
@@ -10,6 +9,7 @@ execution, it prints:
 * whether the program has terminated by exiting, and the exit code.
 """
 
+from __future__ import absolute_import
 import os
 from os.path import abspath, basename
 import sys

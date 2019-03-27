@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 """
@@ -20,6 +19,7 @@ Accessors for object attributes and container items.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import absolute_import
 __docformat__ = 'reStructuredText'
 
 

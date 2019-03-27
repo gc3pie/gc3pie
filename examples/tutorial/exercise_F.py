@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 """
@@ -33,6 +32,7 @@ which will exit with an exit code between 1 and 6.
 __docformat__ = 'reStructuredText'
 
 
+from __future__ import absolute_import
 import gc3libs
 import gc3libs.cmdline
 import gc3libs.workflow

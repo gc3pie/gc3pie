@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 #
 #   gzods.py -- Front-end script for submitting multiple ZODS jobs
@@ -38,6 +37,7 @@ __docformat__ = 'reStructuredText'
 
 
 if __name__ == '__main__':
+from __future__ import absolute_import
         import gzods
         gzods.ZodsScript().run()
 

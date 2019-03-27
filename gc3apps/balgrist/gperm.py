@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gperm.py -- Front-end script for running Docker BIDS apps
@@ -51,6 +50,7 @@ __version__ = '1.0'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
+from __future__ import absolute_import
     import gperm
     gperm.GpermScript().run()
 

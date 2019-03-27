@@ -1,6 +1,6 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import numpy as np
 import scipy as scp
 import scipy.stats

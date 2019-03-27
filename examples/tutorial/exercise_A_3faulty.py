@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-#
 """
@@ -32,6 +31,7 @@ work on the source for `exercise_A_2.py`:
 #  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 # stdlib imports
+from __future__ import absolute_import
 import logging
 import sys
 import time

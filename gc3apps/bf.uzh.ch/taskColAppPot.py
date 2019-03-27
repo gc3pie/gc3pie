@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 """
@@ -27,6 +26,7 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
+from __future__ import absolute_import
 import os, sys
 import numpy as np
 

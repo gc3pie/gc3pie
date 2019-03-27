@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 
 """
@@ -12,6 +11,7 @@ trac-all -bedp -c {dmrirc}
 trac-all -path -c {dmrirc}
 """
 
+from __future__ import absolute_import
 import sys
 import os
 import subprocess

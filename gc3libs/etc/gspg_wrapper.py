@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/bin/env python
 
 """
@@ -24,6 +23,7 @@ from __future__ import absolute_import
 #-----------------------------------------------------------------------
 """
 
+from __future__ import absolute_import
 import os
 import sys
 import subprocess

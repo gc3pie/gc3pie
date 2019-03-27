@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 """
@@ -30,6 +29,7 @@ __docformat__ = 'reStructuredText'
 
 
 
+from __future__ import absolute_import
 import os
 import sys
 from gc3libs import Application

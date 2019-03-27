@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gmphili.py -- Parallel runs of M. Th. Philipp's "stability" pipeline
@@ -21,6 +20,7 @@ from __future__ import absolute_import
 """
 """
 
+from __future__ import absolute_import
 import csv
 import os
 

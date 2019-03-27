@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 """
@@ -20,6 +19,7 @@ from __future__ import absolute_import
 #
 
 # stdlib imports
+from __future__ import absolute_import
 from abc import ABCMeta, abstractmethod
 
 # GC3Pie imports

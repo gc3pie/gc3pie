@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 """
@@ -63,6 +62,7 @@ add a mapping `directory` => `(Test1, Test2, Test3)`
 #
 __docformat__ = 'reStructuredText'
 
+from __future__ import absolute_import
 import os
 import re
 

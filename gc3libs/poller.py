@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 """
@@ -23,6 +22,7 @@ created inside that URL.
 #
 
 # stdlib imports
+from __future__ import absolute_import
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 import os

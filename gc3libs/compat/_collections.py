@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 """
 A backport of the Python standard `collections` package, providing
 `OrderedDict` also on Python 2.6.
@@ -7,6 +6,7 @@ This package actually imports your Python `collections`, and adds
 its own version of `OrderedDict` only if missing.
 """
 
+from __future__ import absolute_import
 from collections import *  # noqa
 
 try:

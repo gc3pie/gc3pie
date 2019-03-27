@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gsPhenotypicalHomologyExample.py -- Front-end script for running sheepriver simulation
@@ -49,6 +48,7 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
+from __future__ import absolute_import
     import gsPhenotypicalHomologyExample
     gsPhenotypicalHomologyExample.GsPhenotypicalHomologyExampleScript().run()
 

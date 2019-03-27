@@ -1,10 +1,10 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 
 # Standard call: 
 # Inputs: parameters file, debug level, determistic flag
 # ../../inFiles/parameters.in debug false
 
+from __future__ import absolute_import
 import os, re, sys
 # Establish path to pymods
 try: 

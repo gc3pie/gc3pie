@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 """
 #Import data from the online GMTKN24 database
@@ -10,6 +9,7 @@ __changelog__ = '''
 __docformat__ = 'reStructuredText'
 
 
+from __future__ import absolute_import
 import itertools
 import logging
 import os

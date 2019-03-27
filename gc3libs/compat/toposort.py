@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #######################################################################
 # Implements a topological sort algorithm.
 #
@@ -41,6 +40,7 @@ from __future__ import absolute_import
 #
 ########################################################################
 
+from __future__ import absolute_import
 from functools import reduce as _reduce
 
 __all__ = ['toposort', 'toposort_flatten']

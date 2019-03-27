@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 """
@@ -21,6 +20,7 @@ from __future__ import absolute_import
 #
 __docformat__ = 'reStructuredText'
 
+from __future__ import absolute_import
 import argparse
 import json
 import logging

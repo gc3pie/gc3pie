@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gbugs.py -- Front-end script for running MCMC with opneBUGS
@@ -44,6 +43,7 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
+from __future__ import absolute_import
     import gbugs
     gbugs.GBugsScript().run()
 

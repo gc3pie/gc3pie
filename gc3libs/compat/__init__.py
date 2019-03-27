@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 """
@@ -17,6 +16,7 @@ the packages in the `gc3libs.compat` namespace.
 """
 # This file is only present so that the `compat/` directory is
 # recognized as a Python package.
+from __future__ import absolute_import
 __docformat__ = 'reStructuredText'
 
 

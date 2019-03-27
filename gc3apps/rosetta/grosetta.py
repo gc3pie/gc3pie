@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   grosetta.py -- Front-end script for submitting ROSETTA jobs to SMSCG.
@@ -42,6 +41,7 @@ __docformat__ = 'reStructuredText'
 
 # workaround Issue 95, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
+from __future__ import absolute_import
     import grosetta
     grosetta.GRosettaScript().run()
 

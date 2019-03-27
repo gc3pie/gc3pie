@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 """
@@ -22,6 +21,7 @@ from __future__ import absolute_import
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
+from __future__ import absolute_import
 import gc3libs
 from gc3libs.cmdline import SessionBasedScript
 import os

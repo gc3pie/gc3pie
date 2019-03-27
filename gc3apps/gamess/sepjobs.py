@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   sepjobs.py -- Classify GAMESS output files according to keyword matches
@@ -58,6 +57,7 @@ __author__ = 'Timm Reumann <timm.reumann@uzh.ch>, Riccardo Murri <riccardo.murri
 __docformat__ = 'reStructuredText'
 
 
+from __future__ import absolute_import
 import os
 import re
 import sys

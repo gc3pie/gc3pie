@@ -1,6 +1,6 @@
-from __future__ import absolute_import
 #!/usr/bin/env python3
 
+from __future__ import absolute_import
 import sys, time
 print(sys.version)
 

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/bin/env python
 #
 # gbenchmark_wrapper_allinone.py -- wrapper script for executing igraph R script
@@ -22,6 +21,7 @@ from __future__ import absolute_import
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
+from __future__ import absolute_import
 import sys
 import os
 import subprocess

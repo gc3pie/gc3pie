@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gspg.py -- Front-end script for evaluating R-based 'weight'
@@ -59,6 +58,7 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
+from __future__ import absolute_import
     import gspg
     gspg.GspgScript().run()
 

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 
 """
@@ -9,6 +8,7 @@ output file name to have it available when the application has
 terminated running.
 """
 
+from __future__ import absolute_import
 import os
 from os.path import abspath, basename, exists, join
 import sys

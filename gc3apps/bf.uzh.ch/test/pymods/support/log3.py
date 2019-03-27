@@ -1,10 +1,10 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 # encoding: utf-8
 # Author: sorin sbarnea
 # License: public domain
 from __future__ import print_function
 from __future__ import unicode_literals
+from __future__ import absolute_import
 import logging, sys, subprocess, types, time, os, codecs
 
 if sys.version_info[0] == 3:

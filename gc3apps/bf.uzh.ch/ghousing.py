@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 """
@@ -34,6 +33,7 @@ __docformat__ = 'reStructuredText'
 ## Need to set path to linux kernel and apppot, e.g.: export PATH=$PATH:~/workspace/apppot:~/workspace/
 
 # Preliminary imports
+from __future__ import absolute_import
 import os, shutil
 
 ## Remove all files in curPath if -N option specified.

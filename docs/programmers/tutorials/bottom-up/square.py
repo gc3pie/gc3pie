@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 """
 This is an example script to demonstrate the basics of GC3Pie.
@@ -9,6 +8,7 @@ You can find more examples at:
 """
 
 # stdlib imports
+from __future__ import absolute_import
 import logging
 import sys
 import time

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   Copyright (C) 2010 2013  University of Zurich. All rights reserved.
@@ -33,6 +32,7 @@ See the output of ``gtsub_control --help`` for program usage instructions.
 __docformat__ = 'reStructuredText'
 
 
+from __future__ import absolute_import
 import os
 import os.path
 import shlex

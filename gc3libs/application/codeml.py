@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   codeml.py -- Simple interface to the CODEML application
@@ -21,6 +20,7 @@ from __future__ import absolute_import
 """
 Simple interface to the CODEML application.
 """
+from __future__ import absolute_import
 __changelog__ = """
 Summary of user-visible changes:
 * 16-08-2011 AM: Extract aln_info from the .phy file and record it

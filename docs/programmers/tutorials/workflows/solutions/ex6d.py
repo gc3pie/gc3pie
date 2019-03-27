@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 
 """
@@ -15,6 +14,7 @@ Write a ``sim_asset.py`` program that:
   P price paths.
 """
 
+from __future__ import absolute_import
 import csv
 import os
 import sys

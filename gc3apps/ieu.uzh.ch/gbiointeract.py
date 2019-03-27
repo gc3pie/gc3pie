@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gbiointeract.py -- Front-end script for submitting multiple
@@ -29,6 +28,7 @@ See the output of ``gbiointeract --help`` for program usage instructions.
 __author__ = 'Antonio Messina <antonio.s.messina@gmail.com>'
 __docformat__ = 'reStructuredText'
 
+from __future__ import absolute_import
 import decimal
 import itertools
 import os

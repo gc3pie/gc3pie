@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 
 """
@@ -12,6 +11,7 @@ the same image file name ``img`` and three random
 colors.
 """
 
+from __future__ import absolute_import
 import os
 from os.path import abspath, basename
 import sys

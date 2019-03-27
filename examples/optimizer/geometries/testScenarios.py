@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #   testScenarios.py -- Front-end script for implementation of syntax used in Test GAMESS Suite.
 #
@@ -31,6 +30,7 @@ __changelog__ = """
 __author__ = 'Lukasz Miroslaw <lukasz.miroslaw@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
+from __future__ import absolute_import
 import re	
 import os.path
 import gc3libs

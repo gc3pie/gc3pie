@@ -1,6 +1,6 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import numpy as n, pylab as p, time
 import os
 

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 # Original source from http://cci.lbl.gov/cctbx_sources/scitbx/differential_evolution.py
 # broader web site http://www.icsi.berkeley.edu/~storn/code.html#pyth
 
@@ -34,6 +33,7 @@ and to permit others to do so.
 
 #from scitbx.array_family import flex
 #from stdlib import random
+from __future__ import absolute_import
 import numpy as np
 class differential_evolution_optimizer(object):
   """

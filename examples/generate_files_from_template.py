@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 """
@@ -7,6 +6,7 @@ Recursive substitution into templates.
 __docformat__ = 'reStructuredText'
 
 
+from __future__ import absolute_import
 import os
 import os.path
 import string

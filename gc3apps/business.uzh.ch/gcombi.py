@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gcombi.py -- Front-end script for evaluating Matlab functions
@@ -36,6 +35,7 @@ __docformat__ = 'reStructuredText'
 
 
 if __name__ == "__main__":
+from __future__ import absolute_import
     import gcombi
     gcombi.GCombiScript().run()
 

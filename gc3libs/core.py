@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 """
 Top-level classes for task execution and control.
@@ -20,6 +19,7 @@ Top-level classes for task execution and control.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 2110-1301 USA
 #
 
+from __future__ import absolute_import
 from collections import defaultdict, deque
 from fnmatch import fnmatch
 import functools

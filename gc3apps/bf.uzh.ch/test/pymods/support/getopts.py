@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/usr/bin/env python3
 "collect command-line options in a dictionary"
 
@@ -15,6 +14,7 @@ def getopts(argv):
 
 if __name__ == '__main__':
     print('test getopts')
+from __future__ import absolute_import
     from sys import argv                       # example client code
     myargs = getopts(argv)
     if '-i' in myargs:

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 #
 #   gdocking.py -- Front-end script for submitting ROSETTA `docking_protocol` jobs to SMSCG.
@@ -88,6 +87,7 @@ __docformat__ = 'reStructuredText'
 # workaround for Issue 95,
 # see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
+from __future__ import absolute_import
     import gdocking
     gdocking.GDockingScript().run()
 

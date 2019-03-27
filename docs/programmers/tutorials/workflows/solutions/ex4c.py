@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #! /usr/bin/env python
 
 """
@@ -16,6 +15,7 @@ correct error message in case new.faa is not an
 existing file, or dir is not a valid directory path.
 """
 
+from __future__ import absolute_import
 import os
 from os.path import abspath, basename, join
 import sys
