@@ -38,6 +38,7 @@ XXX: How to formally verify correctness of output from step 'cross'.
 XXX: Remove simlinks from output folder once completed.
 """
 
+from __future__ import absolute_import
 import sys
 import os
 import subprocess

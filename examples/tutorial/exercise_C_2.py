@@ -26,6 +26,7 @@ Exercise C (2)
 #
 __docformat__ = 'reStructuredText'
 
+from __future__ import absolute_import
 import gc3libs
 import gc3libs.cmdline
 

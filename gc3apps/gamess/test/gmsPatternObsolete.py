@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import re	
 import os.path
 	
@@ -65,22 +66,22 @@ class GamessPattern:
 		val = abs(valOK - valLog)
 		ret = " " + label + '=%.2E ' %(val)
 		if (val > tol):
-			#print "Test not passed. |valOK - valLog| = |",valOK," - ", valLog, "| = " ,val , " > tolerance: = ", tol 
+			#print("Test not passed. |valOK - valLog| = |",valOK," - ", valLog, "| = " ,val , " > tolerance: = ", tol )
 			
 			return (False,ret)
 		else:
 			if (self.DEBUG):
-				print "... passed"
+				print("... passed")
 			return (True,ret)
 	
 # Analyze the argument in LPositionInLine. Return the index of the column that correspond the a target value. 
 	def checkPositionInLine(self, posInLine):
 		try:
 			selNo = int(posInLine)
-			#print selNo, "selNo"
+			#print(selNo, "selNo")
 			selNo = selNo - 1 #for array indexing
 		except ValueError:
-				print "Could not convert to int, positionInLine must be integer"
+				print("Could not convert to int, positionInLine must be integer")
 				selNo = -1
 		return selNo
 	
@@ -105,7 +106,7 @@ class GamessPattern:
 				which = int(matchedLine)
 				return which
 			except ValueError:
-				print "ERROR: ",matchedLine," is incorrect."
+				print("ERROR: ",matchedLine," is incorrect.")
 				return -1
 			which = -1
 		return which
@@ -143,8 +144,8 @@ class GamessPattern:
 					targetLine = lines[num+whichFollowing]
 			else:
 				if (self.DEBUG):
-					print "Out of boundary. Skipping."
-					print "Length of file is:",lenLines, " and the extracted line has a number ", whichFollowing
+					print("Out of boundary. Skipping.")
+					print("Length of file is:",lenLines, " and the extracted line has a number ", whichFollowing)
 				return ""						
 		return targetLine	
 
@@ -160,7 +161,7 @@ class GamessPattern:
 		elif (whichLine==99):
 			finalWich = lenT-1  
 			lineCorrect = matchedLinesList[finalWich]	
-			#print "LINE CORRECT", lineCorrect
+			#print("LINE CORRECT", lineCorrect)
 			numberCorrect = lineNumbersList[finalWich]
 		else: # whichLine > 0): #correct values
 				finalWich = whichLine - 1 #starting from 0
@@ -172,12 +173,12 @@ class GamessPattern:
 	def getValueFromLine(self, line, position):
 		list = line.split()
 		if (position > len(list)):
-			print "Out of boundary, check the position in the target line."
+			print("Out of boundary, check the position in the target line.")
 			return ""
 		try:
 			value = float(list[position])
 		except ValueError:
-			print "Could not convert to float, list(selNo) = ",list[position]," must be float"
+			print("Could not convert to float, list(selNo) = ",list[position]," must be float")
 			return ""
 		return value
 	
@@ -193,17 +194,17 @@ class GamessPattern:
 		finalFlag = True
 		testNo = 0
 		if (self.DEBUG):
-			print self.name, "ENTERING DEBUG MODE.", 
-			print "Parameters:"
-			print "LPattern", self.LPattern
-			print "LMatchedLine", self.LMatchedLine
-			print "LFollowingLine", self.LFollowingLine 
-			print "LPositionInLine", self.LPositionInLine 
-			print "LValues", self.LValues 
-			print "LTolerances", self.LTolerances 
-			print "\n"
+			print(self.name, "ENTERING DEBUG MODE.", )
+			print("Parameters:")
+			print("LPattern", self.LPattern)
+			print("LMatchedLine", self.LMatchedLine)
+			print("LFollowingLine", self.LFollowingLine )
+			print("LPositionInLine", self.LPositionInLine )
+			print("LValues", self.LValues )
+			print("LTolerances", self.LTolerances )
+			print("\n")
 		if (len(self.LPattern) == 0):
-			print "Empty test. Skipping."
+			print("Empty test. Skipping.")
 			return False
 		
 		for pattern, whichLine, followingLine, positionInLine, value, tolerance, label in zip(self.LPattern, self.LMatchedLine, self.LFollowingLine, self.LPositionInLine, self.LValues, self.LTolerances, self.LLabel):
@@ -213,15 +214,15 @@ class GamessPattern:
 			whichFollowing  = self.checkMatchedLine(followingLine)
 			
 			if (self.DEBUG):
-				print "Internal Test No.", testNo
-				print "CHECKED MatchedLine", which
-				print "CHECKED followingLine", whichFollowing
+				print("Internal Test No.", testNo)
+				print("CHECKED MatchedLine", which)
+				print("CHECKED followingLine", whichFollowing)
 			#Extract the position of the value within the target line	
 			pos = self.checkPositionInLine(positionInLine)
 			if (self.DEBUG):
-				print "CHECKED positionInLine", pos
+				print("CHECKED positionInLine", pos)
 			if (whichFollowing < 0):
-				print "ERROR: whichFollowing ",whichFollowing, " is incorrect."
+				print("ERROR: whichFollowing ",whichFollowing, " is incorrect.")
 				return False
 			
 			#Extract a list of lines that match a regexp and line indices as lists. 
@@ -230,7 +231,7 @@ class GamessPattern:
 			# Nothing Found
 			if (len(linesFound) == 0):
 				if (self.DEBUG):
-					print "Nothing found with your regexp."
+					print("Nothing found with your regexp.")
 				finalFlag = finalFlag and False
 				continue
 			
@@ -243,17 +244,17 @@ class GamessPattern:
 				targetLine = self.grepNext(filename, numLine, whichFollowing)
 			
 			if (self.DEBUG):
-				print "MATCHED LINE: ", targetLine
+				print("MATCHED LINE: ", targetLine)
 			
 	
 			#Extract the value from matched line
 			valL = self.getValueFromLine(targetLine, pos)
 			if (valL == ""):
-				print "ERROR: Cannot retrieve the float value from line", targetLine
+				print("ERROR: Cannot retrieve the float value from line", targetLine)
 				return False
 			else:
 				if (self.DEBUG):
-					print "comparing", valL, "against", value;
+					print("comparing", valL, "against", value;)
 					
 				(flag, str) = self.chkabs(valL, value, tolerance, label)
 				

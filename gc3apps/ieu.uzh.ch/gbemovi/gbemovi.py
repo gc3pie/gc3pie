@@ -20,6 +20,7 @@
 #
 __docformat__ = 'reStructuredText'
 
+from __future__ import absolute_import
 import csv
 import logging
 import os

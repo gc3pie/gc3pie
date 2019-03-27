@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import numpy as np
 import sys, shutil, os
 from johannes1987 import tauchen as Tauchen1987Joh
@@ -91,16 +92,16 @@ def mcInterface(method, uncMean, persistence, varCov, nval, verb = 'DEBUG'):
     if not os.path.isfile(os.path.join(os.getcwd(), 'GHQUAD.DAT')):
       shutil.copy(os.path.join(pathToFile, 'GHQUAD.DAT'), os.getcwd())
     markovInputFile = open('PARMS', 'w')
-    print >> markovInputFile, len(nval)
-    print >> markovInputFile, 1
+    print(len(nval), file=markovInputFile)
+    print(str(1), file=markovInputFile)
     for ele in nval.flat:
-      print >> markovInputFile, ele
+        print(ele, file=markovInputFile)
     for ele in uncMean.flat:
-      print >> markovInputFile, ele
+        print(ele, file=markovInputFile)
     for ele in persistence.flat:
-      print >> markovInputFile, ele
+        print(ele, file=markovInputFile)
     for ele in varCov.flat:
-      print >> markovInputFile, ele
+        print(ele, file=markovInputFile)
 
     markovInputFile.close()
     states = nval.prod()
@@ -169,7 +170,7 @@ if __name__ == '__main__':
   
 #  ShockMatrix, TransMatrix = mcInterface('momentMatching', E, Theta, V, nval)
   KnotekTerry = MkovM(ShockMatrix, TransMatrix)
-  print KnotekTerry
+  print(KnotekTerry)
   KnotekTerry.simulation()
 
 

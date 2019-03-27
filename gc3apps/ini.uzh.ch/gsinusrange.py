@@ -30,6 +30,7 @@ instructions.
 """
 
 # summary of user-visible changes
+from __future__ import absolute_import
 __changelog__ = """
   2016-09-19:
   * Initial version

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import gc3libs.debug
 import gc3libs.application.apppot
 import re, os
@@ -36,12 +37,12 @@ if os.path.exists(aggregateOut):
     aggregateOutTable.rename('owner', 'thOwnership')
     empOwnershipTable = tableDict.fromTextFile(empOwnershipFile, width = 20, prec = 10)
     empOwnershipTable.rename('PrOwnership', 'empOwnership')
-    print empOwnershipTable
-#    print empOwnershipTable.cellFormat
+    print(empOwnershipTable)
+#    print(empOwnershipTable.cellFormat)
 
     ownershipTable = aggregateOutTable.merged(empOwnershipTable, 'age')
-    print ownershipTable
-#    print ownershipTable.cellFormat
+    print(ownershipTable)
+#    print(ownershipTable.cellFormat)
 
     yVars = ['thOwnership', 'empOwnership']
     # add the individual simulations
@@ -53,9 +54,9 @@ if os.path.exists(aggregateOut):
         profileOwnershipTable.rename('owner', 'thOwnership_' + profile)
         ownershipTable.merge(profileOwnershipTable, 'age')
         ownershipTable.drop('_merge') 
-print ownershipTable
+print(ownershipTable)
 f = open(ownershipTableFile, 'w')
-print >> f, ownershipTable
+print(ownershipTable, file=f)
 f.close()
 plotSimulation(table = ownershipTableFile, xVar = 'age', yVars = yVars, yVarRange = (0., 1.), figureFile = os.path.join(output_dir, 'ownership.png'), verb = 'CRITICAL')
 # make plot of life-cycle simulation (all variables)

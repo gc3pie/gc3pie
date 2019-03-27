@@ -41,6 +41,7 @@ __docformat__ = 'reStructuredText'
 
 # workaround Issue 95, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
+from __future__ import absolute_import
     import grosetta2015
     grosetta2015.GRosettaScript().run()
 

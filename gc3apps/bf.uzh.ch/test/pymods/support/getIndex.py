@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from __future__ import absolute_import
 import numpy as np
 from numpy import array, zeros, int16
 import sys

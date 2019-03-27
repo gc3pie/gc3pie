@@ -27,6 +27,7 @@ on a production environment!
 __docformat__ = 'reStructuredText'
 
 
+from __future__ import absolute_import
 import os
 import os.path
 import shlex

@@ -5,17 +5,18 @@
   Matlab working debug revision forwardPremium 218. markovChain 15. 
 '''
 
+from __future__ import absolute_import
 import numpy as np
 import scipy, scipy.linalg, scipy.optimize
 import MkovM
 try: 
   import cvxopt
 except ImportError:
-  print 'Warning: Could not import cvxopt. Momentmatching might not work. '
+  print('Warning: Could not import cvxopt. Momentmatching might not work. ')
 try: 
   import openopt
 except ImportError: 
-  print 'Warning: Could not import openopt. Momentmatching might not work. '
+  print('Warning: Could not import openopt. Momentmatching might not work. ')
 
 np.set_printoptions(precision = 7, linewidth = 300)
 #np.seterr(invalid='raise')
@@ -46,7 +47,7 @@ def optShock(dims, target):
   objective(S0)
   
   if dims['vars'] >= 3:
-    print '3 vars error'
+    print('3 vars error')
   
   # * for unpacking. Match unconditional mean. nVars constraints
   Aeq = scipy.linalg.block_diag(*[lmbda]*vars)
@@ -66,7 +67,7 @@ def optShock(dims, target):
                                       [0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]]) ) )
     beq = np.concatenate( (beq, np.zeros( (3) ) ) )
   else: 
-    print '# of states not implemented'
+    print('# of states not implemented')
   def linearCosntr(x):
     return -scipy.linalg.norm(np.dot(Aeq, x).flat - beq)
 
@@ -95,11 +96,11 @@ def optShock(dims, target):
     
   fOpt = objective(Svec)    
   if fOpt > 1e-5:
-    print 'computeShockMatrix: Warning, fval is %g \n' % fOpt
+    print('computeShockMatrix: Warning, fval is %g \n' % fOpt)
 
   Sopt = np.reshape(Svec, (states, vars), 'F' )
   testM = MkovM.MkovM(Sopt, T)
-  print testM
+  print(testM)
   
   # changes correlation... 
   #Sopt = np.sort(Sopt, axis = 0)
@@ -176,18 +177,18 @@ def optTrans(dims, target, S):
   Tvec = p.xf
   fOpt = objective(Tvec)
   if fOpt > 1e-5:
-    print 'computeTransMatrix: Warning, fval is %g \n' % fOpt
+    print('computeTransMatrix: Warning, fval is %g \n' % fOpt)
   
   Topt = np.reshape(Tvec, (states, states), 'F' )
   
   curMchain = MkovM.MkovM(S, Topt)
-  print curMchain
+  print(curMchain)
   
   # Report output
   for moment in target:
-    print 'after optimization mchain moment vs target moment for moment %s are' % (moment)
-    print curMchain[moment]
-    print target[moment]
+    print('after optimization mchain moment vs target moment for moment %s are' % (moment))
+    print(curMchain[moment])
+    print(target[moment])
   
   
   return Topt 
@@ -207,7 +208,7 @@ class objectiveTransMatrix(object):
     
     T = np.reshape(Tvec, (self.states, self.states), 'F' )
     
-    #print T
+    #print(T)
     
     curMkov = MkovM.MkovM(self.S, T)
     
@@ -224,10 +225,10 @@ class objectiveTransMatrix(object):
       out += weight * sqrdDeviation
 
     if np.isnan(out):
-      print 'objectiveShockMatrix: return NaN'
+      print('objectiveShockMatrix: return NaN')
     
     if ~np.isreal(out):
-      print 'objectiveShockMatrix: returning imaginary number'
+      print('objectiveShockMatrix: returning imaginary number')
       
     return out
   
@@ -257,10 +258,10 @@ class objectiveShockMatrix(object):
       out += weight * sqrdDeviation
     
     if np.isnan(out):
-      print 'objectiveShockMatrix: return NaN'
+      print('objectiveShockMatrix: return NaN')
     
     if ~np.isreal(out):
-      print 'objectiveShockMatrix: returning imaginary number'
+      print('objectiveShockMatrix: returning imaginary number')
 
     return out
 
@@ -286,7 +287,7 @@ if __name__ == '__main__':
   ind = np.lexsort((S.T[1], S.T[0]))
   S = S[ind].copy()
 
-  print S
+  print(S)
   
   transTarget = {}
 #transTarget['Et']    = np.array([[np.inf ] *6, [0.99, 0.99, 0.99, 1.01, 1.01, 1.01]  ]).T

@@ -8,6 +8,7 @@ You can find more examples at:
 """
 
 # stdlib imports
+from __future__ import absolute_import
 import logging
 import sys
 import time

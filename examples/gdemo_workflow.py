@@ -48,6 +48,7 @@ __docformat__ = 'reStructuredText'
 #import ConfigParser
 #import csv
 #import math
+from __future__ import absolute_import
 import os
 import os.path
 #import shutil

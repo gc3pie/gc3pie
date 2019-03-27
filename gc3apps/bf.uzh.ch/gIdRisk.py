@@ -30,6 +30,7 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
+from __future__ import absolute_import
 import shutil
 
 

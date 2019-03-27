@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 #
-from __future__ import division
 
 """
 Test that classes from `gc3libs.quantity.Quantity` behave well
@@ -23,6 +22,8 @@ Se issue #525 for background and possibly more info.
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from __future__ import absolute_import
+from __future__ import division
 __docformat__ = 'reStructuredText'
 
 

@@ -23,6 +23,7 @@ __changelog__ = '''
 __docformat__ = 'reStructuredText'
 
 
+from __future__ import absolute_import
 import csv
 from cStringIO import StringIO
 import itertools

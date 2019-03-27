@@ -14,6 +14,7 @@ This file is licensed under the GNU Lesser General Public License (LGPL)
 alpha, Aug 27, 2010
 '''
 
+from __future__ import absolute_import
 import gplot
 
 #...............................................................................

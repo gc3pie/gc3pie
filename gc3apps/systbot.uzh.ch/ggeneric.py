@@ -33,6 +33,7 @@ __docformat__ = 'reStructuredText'
 
 
 if __name__ == "__main__":
+from __future__ import absolute_import
     import ggeneric
     ggeneric.GGeneric().run()
 

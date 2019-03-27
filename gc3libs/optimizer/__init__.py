@@ -62,6 +62,7 @@ The module is organized as follows:
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from __future__ import absolute_import
 __author__ = 'Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """

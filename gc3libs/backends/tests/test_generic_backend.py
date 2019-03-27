@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 #
+from __future__ import absolute_import
 """
 """
 # Copyright (C) 2011-2012  University of Zurich. All rights reserved.
@@ -20,6 +21,7 @@
 """
 Check if all the backends are implementing all the needed methods.
 """
+
 __docformat__ = 'reStructuredText'
 
 from gc3libs.backends import LRMS

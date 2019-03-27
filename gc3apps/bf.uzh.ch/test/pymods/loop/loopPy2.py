@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 if __name__ == "__main__" and __package__ is None:
+from __future__ import absolute_import
   import sys
   mod = __import__('pymods')
   sys.modules["pymods"] = mod

@@ -10,6 +10,7 @@ Write a `pricetplot.py` script that performs the following two steps:
     retrieve the produced `saplot.pdf` file.
 """
 
+from __future__ import absolute_import
 import os
 from os.path import join
 

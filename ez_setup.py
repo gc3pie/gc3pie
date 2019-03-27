@@ -8,6 +8,7 @@ Maintained at https://github.com/pypa/setuptools/tree/bootstrap.
 Run this script to install or upgrade setuptools.
 """
 
+from __future__ import absolute_import
 import os
 import shutil
 import sys

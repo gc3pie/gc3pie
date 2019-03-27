@@ -6,6 +6,7 @@ This code is an adaptation of the following MATLAB code: http://www.icsi.berkele
 Please refer to this web site for more information: http://www.icsi.berkeley.edu/~storn/code.html#deb1
 """
 
+from __future__ import absolute_import
 import numpy as np
 import sys, os
 import logbook
@@ -351,7 +352,7 @@ class deKenPrice:
       FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui       # crossover
       FM_origin = FM_pm3
       if np.any(FM_ui > 1.3):
-        print 'below zero'
+        print('below zero')
     elif (I_strategy == 2):                         # DE/local-to-best/1
       FM_ui = FM_popold + F_weight * ( FM_bm - FM_popold ) + F_weight * ( FM_pm1 - FM_pm2 )
       FM_ui = FM_popold * FM_mpo + FM_ui * FM_mui

@@ -6,6 +6,7 @@ If environment variable ``GC3PIE_FORCE_INSTALL`` has the value ``1``,
 then compatiblity checks are skipped.
 """
 
+from __future__ import absolute_import
 import sys
 
 import os

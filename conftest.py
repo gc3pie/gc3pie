@@ -21,6 +21,7 @@ See: http://doc.pytest.org/en/latest/example/pythoncollection.html#customizing-t
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import absolute_import
 import sys
 
 # always ignore `setup.py` and other aux files

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import os, re, sys
 fileName = sys.argv[0]
 
@@ -16,7 +17,7 @@ except ImportError: # pythonpath not set. Attempt relative import.
     path2Pymods = os.path.join(curPath, '../code')
     path2Src    = os.path.join(curPath, '../code/src')
   else:
-    print 'aborting... dont recognize current path and path to pymods is not in pythonpath'
+    print('aborting... dont recognize current path and path to pymods is not in pythonpath')
     sys.exit()
   if not sys.path.count(path2Pymods):
     sys.path.append(path2Pymods)

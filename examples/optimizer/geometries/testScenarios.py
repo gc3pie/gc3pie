@@ -30,6 +30,7 @@ __changelog__ = """
 __author__ = 'Lukasz Miroslaw <lukasz.miroslaw@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
+from __future__ import absolute_import
 import re	
 import os.path
 import gc3libs

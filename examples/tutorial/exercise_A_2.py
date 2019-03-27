@@ -31,6 +31,7 @@ Starting from `exercise_A_2.py`:
 
 
 # stdlib imports
+from __future__ import absolute_import
 import logging
 import sys
 import time

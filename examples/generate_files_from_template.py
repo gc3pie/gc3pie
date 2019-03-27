@@ -6,6 +6,7 @@ Recursive substitution into templates.
 __docformat__ = 'reStructuredText'
 
 
+from __future__ import absolute_import
 import os
 import os.path
 import string
@@ -146,8 +147,8 @@ if "__main__" == __name__:
     for n, t in enumerate(expansions(GAMESS_INP)):
         if len(args) == 0:
             # no BASENAME, print to stdout
-            print ("==== Input file #"+ (fmt % n) +" ====")
-            print (t)
+            print("==== Input file #"+ (fmt % n) +" ====")
+            print(t)
         else:
             if t._keywords.has_key('DFTTYP'):
                 dfttyp = t._keywords['DFTTYP']

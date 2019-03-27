@@ -3,6 +3,7 @@
 Make a line plot all price paths produced by `simAsset.R`,
 together with their average value at any given time.
 """
+from __future__ import absolute_import
 import csv
 
 import matplotlib.pyplot as plt

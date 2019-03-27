@@ -14,6 +14,7 @@ image files.
 Each image shall be processed in a separate colorization task.
 """
 
+from __future__ import absolute_import
 import os
 from os.path import abspath, basename
 import sys

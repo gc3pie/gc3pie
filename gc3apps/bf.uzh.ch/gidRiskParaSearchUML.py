@@ -32,6 +32,7 @@ __docformat__ = 'reStructuredText'
 
 
 # std module imports
+from __future__ import absolute_import
 import numpy as np
 import os, sys, time
 import copy

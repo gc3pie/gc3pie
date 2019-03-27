@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from __future__ import absolute_import
 import numpy as np
 from numpy import array, zeros, int16
 import sys
@@ -67,14 +68,14 @@ class getIndex(object):
     elif self.restr == None or self.restr == u'none':
       skip = False
     else:
-      print u'Unknown restriction'
+      print(u'Unknown restriction')
       sys.exit()
 
     if skip == True:
      # print('skipping', self.loopIndex)
       return self.next()
     else:
-     # print ('returning loopindex', self.loopIndex)
+     # print('returning loopindex', self.loopIndex)
       return self.loopIndex.tolist()
 
 class Squares(object):
@@ -91,7 +92,7 @@ class Squares(object):
 
 
 if __name__ == u'__main__':
-  print u'start'
+  print(u'start')
   # x=Squares(1,5)
   # print(list(x))
 
@@ -109,7 +110,7 @@ if __name__ == u'__main__':
   indices = getIndex(base = [3,4], restr = u'lowertr')
   list(indices)
   for index in indices:
-    print u'index', index
+    print(u'index', index)
 
 
-  print u'done'
+  print(u'done')

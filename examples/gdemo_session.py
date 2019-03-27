@@ -31,6 +31,7 @@ __docformat__ = 'reStructuredText'
 # Workaround for Issue 95: import this module and run it first
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
+from __future__ import absolute_import
     import gdemo_session
     gdemo_session.Gdemo().run()
 

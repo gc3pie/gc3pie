@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import numpy as n, pylab as p, time
 import os
 
@@ -189,9 +190,9 @@ def lineLineIntersection(line1, line2):
         
 
 if __name__ == "__main__":
-    print 'entered main'
+    print('entered main')
     #points = n.random.random_sample((2,40))
-    #print points
+    #print(points)
     #hull_pts = convex_hull(points)
 
 #    p.show()
@@ -202,17 +203,17 @@ if __name__ == "__main__":
 #    pylab.savefig('simple_plot3') # 
 #    p.show() 
 
-    # print hull_pts
+    # print(hull_pts)
 
     A = n.array([[1, 2], [2, 4]])
     B = n.array([[3, 4], [1, 2]])
     p = n.array([[3.5, 10], [3,4]])
     q = project_point_to_line_segment(A, B, p)
-    print q
+    print(q)
     
     _angle_to_point(n.array([[1, 4], [1, 6]]), n.array([2, 4]))
     
-    print 'done'
+    print('done')
 
 
 

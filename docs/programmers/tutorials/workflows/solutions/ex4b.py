@@ -25,6 +25,7 @@ should run as a separate task. All of them share the same
 settings for the -e and -m options for blastpgp.
 """
 
+from __future__ import absolute_import
 import os
 from os.path import abspath, basename
 import sys
