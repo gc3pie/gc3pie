@@ -19,6 +19,7 @@ Implementation of the command-line front-ends.
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
+from __future__ import absolute_import
 __docformat__ = 'reStructuredText'
 __author__ = ', '.join([
     "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>",

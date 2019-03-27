@@ -109,6 +109,7 @@
 #
 # Let's start importing it, among with the main `gc3libs` module::
 
+from __future__ import absolute_import
 import gc3libs
 from gc3libs.cmdline import SessionBasedScript
 import os
