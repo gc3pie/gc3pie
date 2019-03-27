@@ -92,16 +92,16 @@ def mcInterface(method, uncMean, persistence, varCov, nval, verb = 'DEBUG'):
     if not os.path.isfile(os.path.join(os.getcwd(), 'GHQUAD.DAT')):
       shutil.copy(os.path.join(pathToFile, 'GHQUAD.DAT'), os.getcwd())
     markovInputFile = open('PARMS', 'w')
-    markovInputFile.write(len(nval) + "\n")
-    markovInputFile.write(str(1) + "\n")
+    print(len(nval), file=markovInputFile)
+    print(str(1), file=markovInputFile)
     for ele in nval.flat:
-      markovInputFile.write(ele + "\n")
+        print(ele, file=markovInputFile)
     for ele in uncMean.flat:
-      markovInputFile.write(ele + "\n")
+        print(ele, file=markovInputFile)
     for ele in persistence.flat:
-      markovInputFile.write(ele + "\n")
+        print(ele, file=markovInputFile)
     for ele in varCov.flat:
-      markovInputFile.write(ele + "\n")
+        print(ele, file=markovInputFile)
 
     markovInputFile.close()
     states = nval.prod()

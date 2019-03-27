@@ -56,7 +56,7 @@ if os.path.exists(aggregateOut):
         ownershipTable.drop('_merge') 
 print(ownershipTable)
 f = open(ownershipTableFile, 'w')
-f.write(ownershipTable + "\n")
+print(ownershipTable, file=f)
 f.close()
 plotSimulation(table = ownershipTableFile, xVar = 'age', yVars = yVars, yVarRange = (0., 1.), figureFile = os.path.join(output_dir, 'ownership.png'), verb = 'CRITICAL')
 # make plot of life-cycle simulation (all variables)
