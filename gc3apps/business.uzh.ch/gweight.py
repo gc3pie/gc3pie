@@ -28,7 +28,7 @@ instructions.
 
 Input parameters consists of:
 :param str edges file: Path to an .csv file containing input data in
-the for of: 
+the for of:
     X1   X2
 1  id1  id2
 2  id1  id3
@@ -42,9 +42,11 @@ XXX: To be clarified:
 . Should be possible to re-run a subset of the initial chunk list
 without re-creating a new session ?
 e.g. adding a new argument accepting chunk ranges (-R 3000:7500)
-This would trigger the re-run of the whole workflow only 
+This would trigger the re-run of the whole workflow only
 for lines between 3000 and 7500
 """
+
+from __future__ import absolute_import, print_function
 
 # summary of user-visible changes
 __changelog__ = """
@@ -58,7 +60,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gweight
     gweight.GWeightScript().run()
 
@@ -86,7 +87,7 @@ class GWeightApplication(Application):
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
     application_name = 'gweight'
-    
+
     def __init__(self, edges_data_filename, **extra_args):
 
         # setup output references
@@ -109,7 +110,7 @@ class GWeightApplication(Application):
         if extra_args.has_key('weight_function'):
             inputs[extra_args['weight_function']] = "./bin/f_get_weight.r"
             arguments = arguments + "-w ./bin/f_get_weight.r "
-            
+
         if extra_args.has_key('data'):
             inputs[extra_args['data']] = "./data/two_mode_network.rda"
             arguments += "-d ./data/two_mode_network.rda "
@@ -161,14 +162,14 @@ class GWeightTask(RetryableTask):
                 **extra_args),
             **extra_args
             )
-        
+
     def retry(self):
-        """ 
+        """
         Task will be retried iif the application crashed
         due to an error within the exeuction environment
         (e.g. VM crash or LRMS kill)
         """
-        # XXX: check whether it is possible to distingish 
+        # XXX: check whether it is possible to distingish
         # between the error conditions and set meaningfull exitcode
         to_retry = RetryableTask.retry(self)
         gc3libs.log.debug("GWeightTask called with retry [%s]" % str(to_retry))
@@ -187,22 +188,22 @@ class GWeightTask(RetryableTask):
 
 class GWeightScript(SessionBasedScript):
     """
-    Splits input .csv file into smaller chunks, each of them of size 
+    Splits input .csv file into smaller chunks, each of them of size
     'self.params.chunk_size'.
     Then it submits one execution for each of the created chunked files.
-    
+
     The ``gweight`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gweight`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gweight``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -210,7 +211,7 @@ class GWeightScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GWeightTask, 
+            application = GWeightTask,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -222,7 +223,7 @@ class GWeightScript(SessionBasedScript):
         self.add_param("-k", "--chunk", metavar="[NUM]", #type=executable_file,
                        dest="chunk_size", default="1000",
                        help="How to split the edges input data set.")
-        
+
         self.add_param("-M", "--master", metavar="[PATH]",
                        dest="driver_script", default=None,
                        help="Location of master driver R script.")
@@ -249,7 +250,7 @@ class GWeightScript(SessionBasedScript):
         Check presence of input folder (should contains R scripts).
         path to command_file should also be valid.
         """
-        
+
         # check args:
         # XXX: make them position independent
         if not os.path.isfile(self.params.edges_data):
@@ -270,8 +271,8 @@ class GWeightScript(SessionBasedScript):
         """
         tasks = []
 
-        for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.edges_data, 
-                                                                              self.params.chunk_size):            
+        for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.edges_data,
+                                                                              self.params.chunk_size):
             jobname = "gweight-%s" % (str(index_chunk))
 
             extra_args = extra.copy()
@@ -279,21 +280,21 @@ class GWeightScript(SessionBasedScript):
             extra_args['index_chunk'] = str(index_chunk)
 
             extra_args['jobname'] = jobname
-            
+
             extra_args['output_dir'] = self.params.output
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         os.path.join('.computation',
                                                                                      jobname))
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         os.path.join('.computation',
                                                                                      jobname))
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         os.path.join('.computation',
                                                                                      jobname))
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         os.path.join('.computation',
                                                                                      jobname))
-            
+
 
             if self.params.driver_script:
                 extra_args['driver_script'] = self.params.driver_script
@@ -327,7 +328,7 @@ class GWeightScript(SessionBasedScript):
                 if isinstance(task,GWeightTask) and task.execution.returncode == 0:
                     try:
                         for line in open(task.output_file):
-                            fout.write(line)    
+                            fout.write(line)
                     except OSError, osx:
                         # Report failure and continue
                         # XXX: Check what would be the correct behaviour
@@ -372,11 +373,11 @@ class GWeightScript(SessionBasedScript):
 
             for (i, line) in enumerate(fd):
                 if i % chunk_size == 0:
-                    if fout: 
+                    if fout:
                         fout.close()
                     (handle, self.tmp_filename) = tempfile.mkstemp(dir=chunk_files_dir,
                                                                     prefix=
-                                                                   'gweight-', 
+                                                                   'gweight-',
                                                                    suffix=
                                                                    "%d.csv" % i)
                     fout = open(self.tmp_filename,'w')

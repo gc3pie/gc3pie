@@ -29,12 +29,14 @@ instructions.
 
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2016-08-17:
   * Initial version
   2016-08-19:
-  * add '-f <function name>' option 
+  * add '-f <function name>' option
   2016-09-30:
   * add extra option 'bundle' and option value
     to the matlab function to be called
@@ -46,7 +48,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gpredict_PopContCC
     gpredict_PopContCC.Gpredict_PopContCCScript().run()
 
@@ -101,7 +102,7 @@ def _scanandtar(dir_to_scan, temp_folder=TEMP_FOLDER):
 
         if not os.path.isdir(temp_folder):
             os.mkdir(temp_folder)
-        
+
         with tarfile.open(os.path.join(temp_folder,TARFILE), "w:gz") as tar:
 
             tar.add(dir_to_scan, arcname=".")
@@ -109,14 +110,14 @@ def _scanandtar(dir_to_scan, temp_folder=TEMP_FOLDER):
 
             gc3libs.log.info("Created tar file '%s'" % TARFILE)
             return tar.name
-        
+
     except Exception, x:
         gc3libs.log.error("Failed creating input archive '%s': %s %s",
                           os.path.join(dir_to_scan,),
                           type(x),x.message)
         raise
 
-    
+
 ## custom application class
 
 class Gpredict_PopContCCApplication(Application):
@@ -124,7 +125,7 @@ class Gpredict_PopContCCApplication(Application):
     Custom class to wrap the execution of the matlab function.
     """
     application_name = 'gpredictpopcontcc'
-    
+
     def __init__(self, Mfunct, MatPredictor_file, VecResponse_file,
                  numberOfSamples, numberOfTrees, bundles, iteration, **extra_args):
 
@@ -153,7 +154,7 @@ class Gpredict_PopContCCApplication(Application):
 
         gc3libs.log.debug("Creating application for executing: %s",
                           arguments)
-        
+
         Application.__init__(
             self,
             arguments = arguments,
@@ -186,13 +187,13 @@ class Gpredict_PopContCCScript(SessionBasedScript):
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gpredict_PopContCC`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gpredict_PopContCC``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -200,7 +201,7 @@ class Gpredict_PopContCCScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = Gpredict_PopContCCApplication, 
+            application = Gpredict_PopContCCApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -221,7 +222,7 @@ class Gpredict_PopContCCScript(SessionBasedScript):
                        type=existing_file,
                        help="Path to the VecResponse file.")
 
-        
+
         self.add_param('numberOfSamples',
                        type=positive_int,
                        help="Number of samples.")
@@ -249,15 +250,15 @@ class Gpredict_PopContCCScript(SessionBasedScript):
                        " Total executions: repetitions / bundle. "
                        " Default: bundle in group of '%(default)s' repetitions.")
 
-        
+
     def new_tasks(self, extra):
         """
         Read content of 'command_file'
         For each command line, generate a new Application
         """
         tasks = []
-        
-        for iteration,bundle_size in _get_iterations(self.params.repetitions,self.params.bundle):            
+
+        for iteration,bundle_size in _get_iterations(self.params.repetitions,self.params.bundle):
             jobname = "gpredict_PopContCC-%d" % (iteration)
 
             extra_args = extra.copy()

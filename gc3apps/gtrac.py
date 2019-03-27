@@ -33,6 +33,8 @@ Input parameters consists of:
 Options:
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2015-02-17:
@@ -45,7 +47,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gtrac
     gtrac.GtracScript().run()
 
@@ -80,7 +81,7 @@ class GtracApplication(Application):
     """
     """
     application_name = 'gtraci'
-    
+
     def __init__(self, subject, subject_folder, dmrirc, **extra_args):
 
         self.output_dir = extra_args['output_dir']
@@ -99,17 +100,17 @@ class GtracApplication(Application):
             outputs = [DEFAULT_REMOTE_OUTPUT_FOLDER],
             stdout = 'gtrac.log',
             join=True,
-            **extra_args)        
+            **extra_args)
 
 class GtracScript(SessionBasedScript):
     """
-    
+
     The ``gtrac`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gtrac`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -119,21 +120,21 @@ class GtracScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GtracApplication, 
+            application = GtracApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
             stats_only_for = GtracApplication,
             )
- 
+
     def setup_args(self):
 
         self.add_param('input_data', type=str,
                        help="Root localtion of input data. "
                        "Note: expected folder structure: "
                        " 1 subfodler for each subject. "
-                       " In each subject folder, " 
+                       " In each subject folder, "
                        " 1 subfolder for each TimePoint. "
                        " Each TimePoint folder should contain 2 input "
                        "NFTI files.")
@@ -145,27 +146,27 @@ class GtracScript(SessionBasedScript):
         tasks = []
 
         for (subject_folder,subject_name, dmric) in self.get_input_subject_folder(self.params.input_data):
-        
+
             # extract root folder name to be used as jobname
             extra_args = extra.copy()
             extra_args['jobname'] = subject_name
 
             extra_args['output_dir'] = self.params.output
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         'run_%s' % subject_name)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         'run_%s' % subject_name)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         'run_%s' % subject_name)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         'run_%s' % subject_name)
-            
+
             tasks.append(GtracApplication(
                 subject_name,
                 os.path.join(self.params.input_data,subject_folder),
                 dmric,
                 **extra_args))
-            
+
         return tasks
 
     def get_input_subject_folder(self, input_folder):
@@ -178,5 +179,5 @@ class GtracScript(SessionBasedScript):
             for infile in f:
                 if infile.startswith(DMRIC_PATTERN):
                     yield (os.path.abspath(r),r,infile)
-        
-        # return os.listdir(input_folder)            
+
+        # return os.listdir(input_folder)

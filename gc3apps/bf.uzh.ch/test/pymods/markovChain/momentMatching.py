@@ -5,7 +5,7 @@
   Matlab working debug revision forwardPremium 218. markovChain 15. 
 '''
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import numpy as np
 import scipy, scipy.linalg, scipy.optimize
 import MkovM

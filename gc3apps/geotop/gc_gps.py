@@ -26,13 +26,15 @@ See the output of ``gc_gps.py --help`` for program usage instructions.
 Input parameters consists of:
 :param str command_file: Path to the file containing all the commands to be executed
    example:
-          R CMD BATCH --no-save --no-restore '--args pos=27 realizations=700 snr=1 
+          R CMD BATCH --no-save --no-restore '--args pos=27 realizations=700 snr=1
           mast.h=0.5 sd.mast.o=0' ./src/processit.R ./out/screen.out
 
 :param str src_dir: path to folder containing R scripts to be transferred to
 'src' folder on the remote execution node
 
 """
+
+from __future__ import absolute_import, print_function
 
 # summary of user-visible changes
 __changelog__ = """
@@ -46,7 +48,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gc_gps
     gc_gps.GcgpsScript().run()
 
@@ -86,9 +87,9 @@ class GcgpsApplication(Application):
             outputs = gc3libs.ANY_OUTPUT
         else:
             self.output_file_name = "pos-%s_rates_MC%s_snr%s_h%s_sd_o%s.Rdata" \
-                % (command_args['pos'], 
-                   command_args['realizations'], 
-                   command_args['snr'], command_args['mast.h'], 
+                % (command_args['pos'],
+                   command_args['realizations'],
+                   command_args['snr'], command_args['mast.h'],
                    command_args['sd.mast.o'])
 
             self.local_output_file = os.path.join(self.output_dir, self.output_file_name)
@@ -96,8 +97,8 @@ class GcgpsApplication(Application):
             outputs = ['./out/screen.out', ('./out/pos.output', self.output_file_name)]
 
         # setup input references
-        inputs = [ (os.path.join(src_dir,v),os.path.join("./src",v)) 
-                   for v in os.listdir(src_dir) 
+        inputs = [ (os.path.join(src_dir,v),os.path.join("./src",v))
+                   for v in os.listdir(src_dir)
                    if not os.path.isdir(os.path.join(src_dir,v)) ]
 
         if input_dir:
@@ -105,7 +106,7 @@ class GcgpsApplication(Application):
             # XXX: N.B. NOT recursively
             for elem in os.listdir(input_dir):
                 if os.path.isfile(os.path.join(input_dir,elem)):
-                    inputs.append((os.path.join(input_dir, elem), 
+                    inputs.append((os.path.join(input_dir, elem),
                                    os.path.join('./in',elem)))
 
         # prepare execution script from command
@@ -185,7 +186,7 @@ exit $RET
 
     def terminated(self):
         """
-        Extract output file from 'out' 
+        Extract output file from 'out'
         """
         # Cleanup tmp file
         try:
@@ -204,29 +205,29 @@ exit $RET
 
         # copy output file `pos*` in result_dir
         if not os.path.isfile(self.local_output_file):
-            gc3libs.log.error("Output file %s not found" 
+            gc3libs.log.error("Output file %s not found"
                               % self.local_output_file)
             self.execution.returncode = (0, 100)
         else:
             try:
-                shutil.move(self.local_output_file, 
+                shutil.move(self.local_output_file,
                             self.local_result_output_file)
             except Exception, ex:
                 gc3libs.log.error("Failed while transferring output file " +
                                   "%s " % self.local_output_file +
                                   "to result folder %s. " % self.result_dir +
-                                  "Error type %s. Message %s. " 
+                                  "Error type %s. Message %s. "
                                   % (type(ex),str(ex)))
-                
+
                 self.execution.returncode = (0, 100)
 
 def _parse_command(command):
         """
         Parse a command like the following:
-        "R CMD BATCH --no-save --no-restore '--args pos=5 realizations=700 
+        "R CMD BATCH --no-save --no-restore '--args pos=5 realizations=700
          snr=1 mast.h=0.5 sd.mast.o=0' ./src/processit.R ./out/screen.out"
         and should return a dictionary like the following:
-        {'pos': '5', 'realizations': '700', 'snr': '1', 
+        {'pos': '5', 'realizations': '700', 'snr': '1',
          'mast.h': '0.5', 'sd.mast.o': '0' }
         """
         try:
@@ -236,7 +237,7 @@ def _parse_command(command):
             # split and ignore '--args'
             args = args.split()[1:]
 
-            # return a dictionary from "pos=5 realizations=700 snr=1 
+            # return a dictionary from "pos=5 realizations=700 snr=1
             # mast.h=0.5 sd.mast.o=0"
             # return { k:v for k,v in [ v.split('=') for v in args ] }
             return dict( (k,v) for k,v in [ v.split('=') for v in args ])
@@ -251,7 +252,7 @@ class GcgpsTask(RetryableTask):
             self,
             # actual computational job
             GcgpsApplication(
-                command, 
+                command,
                 src_dir,
                 result_dir,
                 input_dir,
@@ -260,12 +261,12 @@ class GcgpsTask(RetryableTask):
             )
 
     def retry(self):
-        """ 
+        """
         Task will be retried iif the application crashed
         due to an error within the exeuction environment
         (e.g. VM crash or LRMS kill)
         """
-        # XXX: check whether it is possible to distingish 
+        # XXX: check whether it is possible to distingish
         # between the error conditions and set meaningfull exitcode
         return False
 
@@ -322,7 +323,7 @@ newly-created jobs so that this limit is never exceeded.
         Check presence of input folder (should contains R scripts).
         path to command_file should also be valid.
         """
-        
+
         # check args:
         # XXX: make them position independent
         if not os.path.isdir(self.params.R_source_folder):
@@ -360,9 +361,9 @@ newly-created jobs so that this limit is never exceeded.
 
         try:
             fd = open(self.params.command_file)
-            
+
             self.result_dir = os.path.dirname(self.params.output)
-            
+
             for line in fd:
                 command = line.strip()
 
@@ -371,7 +372,7 @@ newly-created jobs so that this limit is never exceeded.
                     continue
 
                 cmd_args = _parse_command(command)
-                
+
                 # setting jobname
                 jobname = "gc_gps-%s%s%s%s%s" % (cmd_args['pos'],
                                                  cmd_args['realizations'],
@@ -381,7 +382,7 @@ newly-created jobs so that this limit is never exceeded.
 
                 extra_args = extra.copy()
                 extra_args['jobname'] = jobname
-                # FIXME: ignore SessionBasedScript feature of customizing 
+                # FIXME: ignore SessionBasedScript feature of customizing
                 # output folder
                 extra_args['output_dir'] = self.params.output
 

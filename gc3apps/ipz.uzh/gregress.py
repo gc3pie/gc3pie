@@ -23,6 +23,8 @@
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2017-07-03:
@@ -35,7 +37,6 @@ __version__ = '1.0.0'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gregress
     gregress.GenREMScript().run()
 
@@ -81,9 +82,9 @@ class GenREMDatasetApplication(Application):
     as input argument.
     """
     application_name = 'genREM'
-    
+
     def __init__(self, method, data_file_list, source_folder, **extra_args):
-        
+
         inputs = dict()
 
         self.output = extra_args['results']
@@ -102,7 +103,7 @@ class GenREMDatasetApplication(Application):
         arguments = RSCRIPT_COMMAND.format(method=method,
                                            src=REMOTE_SCRIPTS_FOLDER,
                                            data=REMOTE_DATA_FOLDER)
-        
+
         Application.__init__(
             self,
             arguments = arguments,
@@ -126,7 +127,7 @@ class GenREMDatasetApplication(Application):
                                      data),
                         os.path.join(self.output,
                                      data))
-        
+
 class GenREMStagedTaskCollection(StagedTaskCollection):
     """
     Staged collection:
@@ -141,9 +142,9 @@ class GenREMStagedTaskCollection(StagedTaskCollection):
         self.extra = extra_args
         self.s0_outputfolder = os.path.join(extra_args['result'],"S0")
         self.s1_outputfolder = os.path.join(extra_args['result'],"S1")
-        self.s2_outputfolder = os.path.join(extra_args['result'],"S2")        
+        self.s2_outputfolder = os.path.join(extra_args['result'],"S2")
         StagedTaskCollection.__init__(self)
-            
+
     def stage0(self):
         """
         Step 0: Generate REMDataset
@@ -151,13 +152,13 @@ class GenREMStagedTaskCollection(StagedTaskCollection):
 
         extra_args = self.extra.copy()
         extra_args['jobname'] = "remdataset"
-        extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+        extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                     extra_args['jobname'])
-        extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+        extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                     extra_args['jobname'])
-        extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+        extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                     extra_args['jobname'])
-        extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+        extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                     extra_args['jobname'])
 
         # gc3libs.log.debug("Creating Stage0 task for : %s" % os.path.basename(self.input_stata_file))
@@ -176,13 +177,13 @@ class GenREMStagedTaskCollection(StagedTaskCollection):
             extra_args = self.extra.copy()
             extra_args['jobname'] = method
             extra_args['results'] = self.s1_outputfolder
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         extra_args['jobname'])
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         extra_args['jobname'])
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         extra_args['jobname'])
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         extra_args['jobname'])
 
             tasks.append(GenREMDatasetApplication(method,[self.s0_outputfolder],self.source_folder,**extra_args))
@@ -195,30 +196,30 @@ class GenREMStagedTaskCollection(StagedTaskCollection):
         extra_args = self.extra.copy()
         extra_args['jobname'] = "merge"
         extra_args['results'] = self.s2_outputfolder
-        extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+        extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                     extra_args['jobname'])
-        extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+        extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                     extra_args['jobname'])
-        extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+        extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                     extra_args['jobname'])
-        extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+        extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                     extra_args['jobname'])
 
         return GenREMDatasetApplication("merge",[self.s0_outputfolder, self.s1_outputfolder],self.source_folder,**extra_args)
 
-        
+
 class GenREMScript(SessionBasedScript):
     """
     Take initial RData DataFrame input file and run the full workflow by
     passing to the main execution script the workflow steps as part of the input
     arguments.
-    
+
     The ``gregress`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gscr`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -238,12 +239,12 @@ class GenREMScript(SessionBasedScript):
                        help="Location of initial RData file.")
 
     def setup_options(self):
-        self.add_param("-x", "--source", metavar="PATH", 
+        self.add_param("-x", "--source", metavar="PATH",
                        dest="src", default=None,
                        type=existing_directory,
                        help="Location of source R scripts.")
-        
-        self.add_param("-R", "--results", metavar="PATH", 
+
+        self.add_param("-R", "--results", metavar="PATH",
                        dest="result", default='results',
                        help="Location of results.")
 

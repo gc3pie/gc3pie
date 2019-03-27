@@ -27,6 +27,8 @@ See the output of ``gcrashdetect.py --help`` for program usage
 instructions.
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2017-06-22:
@@ -40,7 +42,6 @@ __version__ = '1.0'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gcrashdetect
     gcrashdetect.GcrashdetectScript().run()
 
@@ -104,7 +105,7 @@ class GcrashdetectApplication(Application):
     from the main input .csv file.
     """
     application_name = 'gcrashdetect'
-    
+
     def __init__(self, matlab_function, parameter_list, tarfile=None, **extra_args):
 
         inputs = dict()
@@ -117,10 +118,10 @@ class GcrashdetectApplication(Application):
         inputs[wrapper] = "./wrapper.sh"
 
         arguments = "./wrapper.sh %s " % matlab_function
-        
+
         for param in parameter_list:
             arguments += " %s " % param
-        
+
         if tarfile:
             inputs[tarfile] = os.path.basename(tarfile)
             arguments += "-s %s " % inputs[tarfile]
@@ -148,13 +149,13 @@ class GcrashdetectScript(SessionBasedScript):
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gcrashdetect`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gcrashdetect``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -162,7 +163,7 @@ class GcrashdetectScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__,
-            application = GcrashdetectApplication, 
+            application = GcrashdetectApplication,
             stats_only_for = GcrashdetectApplication,
             )
 
@@ -189,7 +190,7 @@ class GcrashdetectScript(SessionBasedScript):
         assert os.path.isfile(os.path.join(self.params.matlab_source_folder,
                                            self.params.matlab_function+'.m')), \
                                            "Matlab function file '%s' not found." % self.params.matlab_function
-        
+
     def new_tasks(self, extra):
         """
         For each line of the input .csv file generate
@@ -200,8 +201,8 @@ class GcrashdetectScript(SessionBasedScript):
         tarfile = None
         if self.params.matlab_source_folder:
             tarfile = _scan_and_tar(self.session.path, self.params.matlab_source_folder)
- 
-        
+
+
         for parameter in self._enumerate_csv(self.params.csv_input_file):
             parameter_str = '.'.join(str(x) for x in parameter)
             jobname = "gcrashdetect-%s" % parameter_str
@@ -209,7 +210,7 @@ class GcrashdetectScript(SessionBasedScript):
             extra_args = extra.copy()
 
             extra_args['jobname'] = jobname
-            
+
             extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
@@ -231,7 +232,7 @@ class GcrashdetectScript(SessionBasedScript):
     def _enumerate_csv(self, input_csv):
         """
         For each line of the input .csv file
-        return list of parameters 
+        return list of parameters
         """
         parameters = pandas.read_csv(input_csv)
         for i,p in enumerate(parameters.values):

@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-#   gprecovery.py -- Front-end script for running ParRecoveryFun Matlab 
+#   gprecovery.py -- Front-end script for running ParRecoveryFun Matlab
 #   function with a given combination of reference models.
 #
 #   Copyright (C) 2014, 2015  University of Zurich. All rights reserved.
@@ -33,6 +33,8 @@ Input parameters consists of:
 Options:
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2014-03-14:
@@ -45,7 +47,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gprecovery
     gprecovery.GprecoveryScript().run()
 
@@ -74,7 +75,7 @@ class GprecoveryApplication(Application):
     Custom class to wrap the execution of the Matlab script.
     """
     application_name = 'matlab-mcr'
-    
+
     def __init__(self, model_index, seed, **extra_args):
 
         self.output_dir = extra_args['output_dir']
@@ -118,7 +119,7 @@ class GprecoveryApplication(Application):
             shutil.move(os.path.join(self.output_dir,self.output_filename),
                              os.path.join(self.result_dir,self.output_filename))
         else:
-            gc3libs.log.error("Expected output file %s not found." 
+            gc3libs.log.error("Expected output file %s not found."
                               % os.path.join(self.output_dir,self.output_filename))
 
 
@@ -126,13 +127,13 @@ class GprecoveryScript(SessionBasedScript):
     """
     Fro each network file (with '.dat' extension) found in the 'input folder',
     GprecoveryScript generates as many Tasks as 'benchmarks' defined.
-    
+
     The ``gprecovery`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gprecovery`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -142,7 +143,7 @@ class GprecoveryScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GprecoveryApplication, 
+            application = GprecoveryApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -159,22 +160,22 @@ class GprecoveryScript(SessionBasedScript):
                        " Es. 1,3 | 1:4 | 3" % MODELS_SPECS)
 
     def setup_options(self):
-        self.add_param("-b", "--binary", metavar="[STRING]", 
+        self.add_param("-b", "--binary", metavar="[STRING]",
                        dest="run_binary", default=None,
                        help="Location of the Matlab compiled binary "
                        "version of the ParRecoveryFun. Default: None.")
 
-        self.add_param("-E", "--random_range", type=int, metavar="[int]", 
+        self.add_param("-E", "--random_range", type=int, metavar="[int]",
                        dest="random_range", default=1000,
                        help="Upper limit for the random seed used in the "
                        "fmin function. Default: 1000.")
 
-        self.add_param("-R", "--repeat", type=int, metavar="[int]", 
+        self.add_param("-R", "--repeat", type=int, metavar="[int]",
                        dest="repeat", default=1,
                        help="Repeat all simulation [repeat] times. "
                        " Default: 1 (no repeat).")
 
-        self.add_param("-S", "--store_results", type=str, metavar="[STRING]", 
+        self.add_param("-S", "--store_results", type=str, metavar="[STRING]",
                        dest="store_results", default=None,
                        help="Location where all results will be aggregated. "
                        "Default: (session folder).")
@@ -189,7 +190,7 @@ class GprecoveryScript(SessionBasedScript):
         if self.params.run_binary:
             if not os.path.isfile(self.params.run_binary):
                 raise gc3libs.exceptions.InvalidUsage("ParRecoveryFun binary "
-                                                      " file %s not found" 
+                                                      " file %s not found"
                                                       % self.params.run_binary)
         try:
             if self.params.models.count(':') == 1:
@@ -201,7 +202,7 @@ class GprecoveryScript(SessionBasedScript):
                         "Model not in valid range. "
                         "Range: %s" % str(MODELS_SPECS))
             elif self.params.models.count(',') >= 1:
-                self.models = [ int(s) for s in self.params.models.split(',') 
+                self.models = [ int(s) for s in self.params.models.split(',')
                                 if int(s) in MODELS_SPECS ]
             else:
                 if int(self.params.models) in MODELS_SPECS:
@@ -263,5 +264,5 @@ class GprecoveryScript(SessionBasedScript):
                     model,
                     seed,
                     **extra_args))
-            
+
         return tasks

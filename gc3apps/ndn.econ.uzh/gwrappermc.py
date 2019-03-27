@@ -28,7 +28,7 @@ instructions.
 
 Input parameters consists of:
 :param str edges file: Path to an .csv file containing input data in
-the for of: 
+the for of:
     X1   X2
 1  id1  id2
 2  id1  id3
@@ -43,9 +43,11 @@ XXX: To be clarified:
 . Should be possible to re-run a subset of the initial chunk list
 without re-creating a new session ?
 e.g. adding a new argument accepting chunk ranges (-R 3000:7500)
-This would trigger the re-run of the whole workflow only 
+This would trigger the re-run of the whole workflow only
 for lines between 3000 and 7500
 """
+
+from __future__ import absolute_import, print_function
 
 # summary of user-visible changes
 __changelog__ = """
@@ -59,7 +61,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gwrappermc
     gwrappermc.GwrappermcScript().run()
 
@@ -87,7 +88,7 @@ class GwrappermcApplication(Application):
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
     application_name = 'adimat'
-    
+
     def __init__(self, input_file, **extra_args):
 
         inputs = dict()
@@ -109,7 +110,7 @@ class GwrappermcApplication(Application):
             arguments += "-m ./data "
         arguments += " -i %s " % extra_args['index_chunk']
         arguments += "input.csv results"
-        
+
         Application.__init__(
             self,
             arguments = arguments,
@@ -123,22 +124,22 @@ class GwrappermcApplication(Application):
 
 class GwrappermcScript(SessionBasedScript):
     """
-    Splits input .csv file into smaller chunks, each of them of size 
+    Splits input .csv file into smaller chunks, each of them of size
     'self.params.chunk_size'.
     Then it submits one execution for each of the created chunked files.
-    
+
     The ``gwrappermc`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gwrappermc`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gwrappermc``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -146,7 +147,7 @@ class GwrappermcScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GwrappermcApplication, 
+            application = GwrappermcApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -167,7 +168,7 @@ class GwrappermcScript(SessionBasedScript):
         self.add_param("-R", "--result-file", metavar="STRING", type=str,
                        dest="merged_result", default="result.csv",
                        help="Name of merged result file. Default: result.csv")
-        
+
     def setup_args(self):
 
         self.add_param('csv_input_file', type=str,
@@ -178,7 +179,7 @@ class GwrappermcScript(SessionBasedScript):
         Check presence of input folder (should contains R scripts).
         path to command_file should also be valid.
         """
-        
+
         # check args:
         # XXX: make them position independent
         try:
@@ -198,7 +199,7 @@ class GwrappermcScript(SessionBasedScript):
                 if not os.path.isdir(self.params.main_loop):
                     raise gc3libs.exceptions.InvalidUsage(
                         "Main_Loop.m location %s not found" % self.params.main_loop)
-                
+
     def new_tasks(self, extra):
         """
         Read content of 'command_file'
@@ -206,8 +207,8 @@ class GwrappermcScript(SessionBasedScript):
         """
         tasks = []
 
-        for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.csv_input_file, 
-                                                                              self.params.chunk_size):            
+        for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.csv_input_file,
+                                                                              self.params.chunk_size):
             jobname = "gwrappermc-%s" % (str(index_chunk))
 
             extra_args = extra.copy()
@@ -216,7 +217,7 @@ class GwrappermcScript(SessionBasedScript):
             extra_args['chunk_size'] = int(self.params.chunk_size)
 
             extra_args['jobname'] = jobname
-            
+
             extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
@@ -225,7 +226,7 @@ class GwrappermcScript(SessionBasedScript):
 
             if self.params.main_loop:
                 extra_args['main_loop_folder'] = self.params.main_loop
-            
+
             self.log.debug("Creating Application for index : %d - %d" %
                            (index_chunk, (index_chunk + self.params.chunk_size)))
 
@@ -242,7 +243,7 @@ class GwrappermcScript(SessionBasedScript):
         """
 
         output_file_name_prefix = "Results"
-        
+
         # init result .csv file
         merged_csv = "result-%s" % os.path.basename(self.params.csv_input_file)
         result_columns = dict()
@@ -275,7 +276,7 @@ class GwrappermcScript(SessionBasedScript):
         finally:
             fout.close()
 
-                            
+
 
     def _generate_chunked_files_and_list(self, file_to_chunk, chunk_size=2):
         """
@@ -286,7 +287,7 @@ class GwrappermcScript(SessionBasedScript):
         e.g. ('/tmp/chunk2800.csv,2800) for the chunk segment that goes
         from 2800 to (2800 + chunk_size)
         """
-        
+
         chunk = []
         chunk_files_dir = os.path.join(self.session.path,"tmp")
 
@@ -299,7 +300,7 @@ class GwrappermcScript(SessionBasedScript):
                                   "Error %s." % str(osx) +
                                   "Using default '/tmp'")
                 chunk_files_dir = "/tmp"
-        
+
         cc = pandas.read_csv(file_to_chunk, header=None)
         for index in range(0, len(cc.columns), chunk_size):
             filename = "%s/chunk_%s.csv" % (chunk_files_dir,index)
@@ -307,4 +308,3 @@ class GwrappermcScript(SessionBasedScript):
             chunk.append((filename,index))
 
         return chunk
- 

@@ -14,7 +14,7 @@ def getopts(argv):
 
 if __name__ == '__main__':
     print('test getopts')
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
     from sys import argv                       # example client code
     myargs = getopts(argv)
     if '-i' in myargs:

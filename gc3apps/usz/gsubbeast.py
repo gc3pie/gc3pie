@@ -27,9 +27,11 @@ See the output of ``gsubbeast.py --help`` for program usage
 instructions.
 
 Input parameters consists of:
-:param str BEAST XML file: Path to an .xml file containing BEAST settings 
+:param str BEAST XML file: Path to an .xml file containing BEAST settings
 and input data
 """
+
+from __future__ import absolute_import, print_function
 
 # summary of user-visible changes
 __changelog__ = """
@@ -43,7 +45,6 @@ __version__ = '1.0'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gsubbeast
     gsubbeast.GsubbeastScript().run()
 
@@ -112,8 +113,8 @@ def _get_valid_input(input_folder, resume):
 
         # Return tuple (filename,id_name,resume_file)
         yield (input_file,id_name,state_file)
-                                     
-    
+
+
 def _check_exit_condition(log, output_dir):
     """
     Inspect output folder.
@@ -126,7 +127,7 @@ def _check_exit_condition(log, output_dir):
     with open(log) as fd:
         for line in fd:
             if TERMIANTION_PATTERN in line:
-                # Job completed. 
+                # Job completed.
                 # Return an empty list
                 return (None,None)
 
@@ -145,13 +146,13 @@ class GsubbeastApplication(Application):
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
     application_name = 'gsubbeast'
-    
+
     def __init__(self, input_file, state_file, id_name, **extra_args):
 
         executables = []
         inputs = dict()
         outputs = dict()
-        
+
         inputs[input_file] = os.path.basename(input_file)
 
         if state_file:
@@ -166,7 +167,7 @@ class GsubbeastApplication(Application):
         gc3libs.log.debug("Creating application for executing: %s", arguments)
 
         self.id_name = id_name
-        
+
         Application.__init__(
             self,
             arguments = arguments,
@@ -187,7 +188,7 @@ class GsubbeastApplication(Application):
         if not os.path.isfile(result_log_file):
             gc3libs.log.error('Failed while checking outputfile %s.' % result_log_file)
             self.execution.returncode = (0, 99)
-    
+
 class GsubbeastScript(SessionBasedScript):
     """
     The ``gsubbeast`` command keeps a record of jobs (submitted, executed
@@ -195,13 +196,13 @@ class GsubbeastScript(SessionBasedScript):
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gsubbeast`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gsubbeast``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -209,11 +210,11 @@ class GsubbeastScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__,
-            application = GsubbeastApplication, 
+            application = GsubbeastApplication,
             stats_only_for = GsubbeastApplication,
             )
 
-    def setup_args(self):        
+    def setup_args(self):
         self.add_param('input_folder',
                        type=existing_directory,
                        help="Path to input folder containing valid input .xml files.")
@@ -263,8 +264,8 @@ class GsubbeastScript(SessionBasedScript):
         if not os.path.isdir(self.params.result_csv):
             gc3libs.log.info("Creating CSV result folder: '{0}'".format(self.params.result_csv))
             os.makedirs(self.params.result_csv)
-        
-        
+
+
     def before_main_loop(self):
         # XXX: should this be done with `make_controller` instead?
         self._controller.retrieve_running = self.params.follow
@@ -277,7 +278,7 @@ class GsubbeastScript(SessionBasedScript):
         For each command line, generate a new GcgpsTask
         """
         tasks = []
-        
+
         for (input_file, id_name, stat_file) in _get_valid_input(self.params.input_folder,
                                                                  self.params.resume):
             extra_args = extra.copy()
@@ -287,9 +288,9 @@ class GsubbeastScript(SessionBasedScript):
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', extra_args['jobname'])
             extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', extra_args['jobname'])
             extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', extra_args['jobname'])
-            
+
             self.log.debug("Creating Application for file '%s'" % extra_args['jobname'])
-                
+
             tasks.append(GsubbeastApplication(
                 input_file,
                 stat_file,
@@ -324,7 +325,7 @@ class GsubbeastScript(SessionBasedScript):
                     data = pandas.read_csv(result_log_file, sep='\t', comment="#")
                     for key in df_dict.keys():
                         cols = [col for col in data.columns if key in col]
-                        # In case multiple entries, take the first occurrence                    
+                        # In case multiple entries, take the first occurrence
                         # column_to_search = "{0}:{1}".format(key,task.id_name)
                         gc3libs.log.debug("Column [{0}] found {1} occurances. Should be 1.".format(key,len(cols)))
                         if len(cols) > 0:
@@ -344,5 +345,3 @@ class GsubbeastScript(SessionBasedScript):
             df.to_csv(os.path.join(self.params.result_csv, '{0}.csv'.format(key)))
 
         return
-
-    

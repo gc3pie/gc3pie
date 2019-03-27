@@ -33,6 +33,8 @@ Input argument consists of:
 Options:
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2016-03-29:
@@ -48,7 +50,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gsPhenotypicalHomologyExample
     gsPhenotypicalHomologyExample.GsPhenotypicalHomologyExampleScript().run()
 
@@ -80,7 +81,7 @@ class GsPhenotypicalHomologyExampleApplication(Application):
     """
     """
     application_name = 'gsphenotypicalhomologyexample'
-    
+
     def __init__(self, hunting, **extra_args):
         """
         Remote execution: ./sheepriver_wrapper.sh 77
@@ -124,7 +125,7 @@ class GsPhenotypicalHomologyExampleApplication(Application):
 
         # set output folder
         arguments += " -o %s " % DEFAULT_OUTPUT_ARCHIVE
-            
+
         Application.__init__(
             self,
             arguments = arguments,
@@ -133,17 +134,17 @@ class GsPhenotypicalHomologyExampleApplication(Application):
             stdout = 'gsPhenotypicalHomologyExample.log',
             join=True,
             executables = ["./wrapper.sh"],
-            **extra_args)        
+            **extra_args)
 
 class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
     """
-    
+
     The ``gsPhenotypicalHomologyExample`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gsPhenotypicalHomologyExample`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -153,14 +154,14 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GsPhenotypicalHomologyExampleApplication, 
+            application = GsPhenotypicalHomologyExampleApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
             stats_only_for = GsPhenotypicalHomologyExampleApplication,
             )
- 
+
     def setup_args(self):
 
         self.add_param('range', type=str,
@@ -168,36 +169,36 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
                        "Format: [int],[int]|[int]:[int]. E.g 1:432|3|6,9")
 
     def setup_options(self):
-        self.add_param("-S", "--source", metavar="STRING", type=str, 
+        self.add_param("-S", "--source", metavar="STRING", type=str,
                        dest="sources",
                        default=None,
                        help="Location of java scripts to drive the "
                        " execution of sheepriver. Default: %(default)s")
 
-        self.add_param("-j", "--jar", metavar="STRING", type=str, 
+        self.add_param("-j", "--jar", metavar="STRING", type=str,
                        dest="jar",
                        default=None,
                        help="Location of .jar package to drive the "
                        " execution of sheepriver. Default: %(default)s")
-        
-        self.add_param("-P", "--param_SheepRiver_wear", metavar="PATH", type=str, 
+
+        self.add_param("-P", "--param_SheepRiver_wear", metavar="PATH", type=str,
                        dest="param_SheepRiver_wear",
                        default=None,
                        help="Location of the 'param_SheepRiver_wear' input file. "
                        "Default: %(default)s")
 
-        self.add_param("-M", "--seeds", metavar="PATH", type=str, 
+        self.add_param("-M", "--seeds", metavar="PATH", type=str,
                        dest="seeds",
                        default=None,
                        help="Location of the seeds file. "
                        "Default: %(default)s")
 
-        self.add_param("-I", "--replications", metavar="INT", type=int, 
+        self.add_param("-I", "--replications", metavar="INT", type=int,
                        dest="iterations",
                        default=DEFAULT_ITERATIONS,
                        help="Number of repeating iterations. "
                        "Default: %(default)s")
-        
+
     def parse_args(self):
         try:
             if self.params.sources:
@@ -217,10 +218,10 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
                 assert os.path.isfile(self.params.jar), \
                     "Jar file %s not found" % self.params.jar
 
-                
+
             assert isinstance(int(self.params.iterations),int), \
                 "Iterations should be a positive integer"
-                
+
             # Validate month range
             try:
                 # Check whether only single value has been passed
@@ -253,7 +254,7 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
                 gc3libs.log.debug(ex.message)
                 raise AttributeError("No valid input range. "
                                      "Format: [int],[int]|[int]:[int]. E.g 1:432|3")
-            
+
         except AssertionError as ex:
             raise OSError(ex.message)
 
@@ -271,13 +272,13 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
             extra_args['jobname'] = 'sheepriver-%s' % str(hunting)
 
             extra_args['output_dir'] = self.params.output
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         'run_%s' % hunting)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         'run_%s' % hunting)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         'run_%s' % hunting)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         'run_%s' % hunting)
 
             if self.params.sources:
@@ -293,9 +294,9 @@ class GsPhenotypicalHomologyExampleScript(SessionBasedScript):
                 extra_args['jar'] = os.path.abspath(self.params.jar)
 
             extra_args['iterations'] = self.params.iterations
-                
+
             tasks.append(GsPhenotypicalHomologyExampleApplication(
                 hunting,
                 **extra_args))
-            
+
         return tasks

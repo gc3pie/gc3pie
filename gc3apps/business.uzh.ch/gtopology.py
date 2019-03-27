@@ -36,6 +36,8 @@ XXX: To be clarified:
 * dependency in igraph python library
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2016-05-10:
@@ -48,7 +50,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gtopology
     gtopology.GtopologyScript().run()
 
@@ -78,7 +79,7 @@ class GtopologyApplication(Application):
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
     application_name = 'gtopology'
-    
+
     def __init__(self, param_file, source_folder, **extra_args):
 
         # setup output
@@ -93,7 +94,7 @@ class GtopologyApplication(Application):
             master_script = extra_args['master_script']
         else:
             master_script = DEFAULT_MASTER_SCRIPT
-            
+
         arguments ="pwd ; date ; cd source ; python %s ../input.csv " % master_script
 
         # prepare execution script from command
@@ -140,22 +141,22 @@ exit $RET
 
 class GtopologyScript(SessionBasedScript):
     """
-    Splits input .csv file into smaller chunks, each of them of size 
+    Splits input .csv file into smaller chunks, each of them of size
     'self.params.chunk_size'.
     Then it submits one execution for each of the created chunked files.
-    
+
     The ``gtopology`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gtopology`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gtopology``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -163,7 +164,7 @@ class GtopologyScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__,
-            application = GtopologyApplication, 
+            application = GtopologyApplication,
             stats_only_for = GtopologyApplication,
             )
 
@@ -187,7 +188,7 @@ class GtopologyScript(SessionBasedScript):
         self.add_param('source', type=str,
                        help="Location of the main script source folder.")
 
-        
+
     def parse_args(self):
         """
         Check presence of input folder (should contains R scripts).
@@ -208,7 +209,7 @@ class GtopologyScript(SessionBasedScript):
         int(self.params.chunk_size)
         self.params.chunk_size = int(self.params.chunk_size)
 
-        
+
     def new_tasks(self, extra):
         """
         Read content of 'command_file'
@@ -216,31 +217,31 @@ class GtopologyScript(SessionBasedScript):
         """
         tasks = []
 
-        for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.input, 
+        for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.input,
                                                                               self.params.chunk_size):
             extra_args = extra.copy()
 
             jobname = "gtopology-%s" % (str(index_chunk))
             extra_args['jobname'] = jobname
             extra_args['index_chunk'] = str(index_chunk)
-            
+
             extra_args['output_dir'] = self.params.output
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         os.path.join('.computation',
                                                                                      jobname))
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         os.path.join('.computation',
                                                                                      jobname))
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         os.path.join('.computation',
                                                                                      jobname))
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         os.path.join('.computation',
                                                                                      jobname))
 
             extra_args['source'] = self.params.source
             extra_args['master_script'] = self.params.master_script
-            
+
             self.log.debug("Creating Task for index : %d - %d" %
                            (index_chunk, (index_chunk + self.params.chunk_size)))
 
@@ -282,11 +283,11 @@ class GtopologyScript(SessionBasedScript):
 
             for (i, line) in enumerate(fd):
                 if i % chunk_size == 0:
-                    if fout: 
+                    if fout:
                         fout.close()
                     (handle, self.tmp_filename) = tempfile.mkstemp(dir=chunk_files_dir,
                                                                     prefix=
-                                                                   'gtopology-', 
+                                                                   'gtopology-',
                                                                    suffix=
                                                                    "%d.csv" % i)
                     fout = open(self.tmp_filename,'w')
@@ -311,4 +312,3 @@ class GtopologyScript(SessionBasedScript):
                                           "Message %s" % osx.message)
 
         return chunk
-     

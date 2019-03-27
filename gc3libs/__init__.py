@@ -30,7 +30,7 @@ subclasses can expose adapted interfaces, focusing on the most
 relevant aspects of the application being represented.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 __docformat__ = 'reStructuredText'
 
 __version__ = '2.5.2'

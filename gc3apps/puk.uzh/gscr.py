@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-#   gscr.py -- Front-end script for running ParRecoveryFun Matlab 
+#   gscr.py -- Front-end script for running ParRecoveryFun Matlab
 #   function with a given combination of reference models.
 #
 #   Copyright (C) 2014, 2015  University of Zurich. All rights reserved.
@@ -35,6 +35,8 @@ Input parameters consists of:
 Options:
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2014-11-13:
@@ -47,7 +49,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gscr
     gscr.GscrScript().run()
 
@@ -79,7 +80,7 @@ class GscrApplication(Application):
     Custom class to wrap the execution of the Matlab script.
     """
     application_name = 'scr_analysis'
-    
+
     def __init__(self, param_file, data_file, **extra_args):
 
         self.output_dir = extra_args['output_dir']
@@ -120,13 +121,13 @@ class GscrScript(SessionBasedScript):
     GscrScript extracts the corresponding index (from filename) and searches for
     the associated file in 'data folder'. For each pair ('param_file','data_file'),
     GscrScript generates execution Tasks.
-    
+
     The ``gscr`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gscr`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -136,7 +137,7 @@ class GscrScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GscrApplication, 
+            application = GscrApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -159,12 +160,12 @@ class GscrScript(SessionBasedScript):
                        "tscr_soundexp_scbd24.mat (index is 24).")
 
     def setup_options(self):
-        self.add_param("-b", "--binary", metavar="[STRING]", 
+        self.add_param("-b", "--binary", metavar="[STRING]",
                        dest="run_binary", default=None,
                        help="Location of the Matlab compiled binary "
                        "version of the ParRecoveryFun. Default: None.")
 
-        self.add_param("-S", "--store_results", type=str, metavar="[STRING]", 
+        self.add_param("-S", "--store_results", type=str, metavar="[STRING]",
                        dest="store_results", default=None,
                        help="Location where all results will be aggregated. "
                        "Default: (session folder).")
@@ -175,17 +176,17 @@ class GscrScript(SessionBasedScript):
         """
 
         if not os.path.isdir(self.params.params):
-            raise OSError("No such file or directory: %s ", 
+            raise OSError("No such file or directory: %s ",
                           os.path.abspath(self.params.params))
 
         if not os.path.isdir(self.params.data):
-            raise OSError("No such file or directory: %s ", 
+            raise OSError("No such file or directory: %s ",
                           os.path.abspath(self.params.data))
 
         if self.params.run_binary:
             if not os.path.isfile(self.params.run_binary):
                 raise gc3libs.exceptions.InvalidUsage("Estimate function binary "
-                                                      " file %s not found" 
+                                                      " file %s not found"
                                                       % self.params.run_binary)
 
     def new_tasks(self, extra):
@@ -200,10 +201,10 @@ class GscrScript(SessionBasedScript):
         for (param,data,dcm_index) in self.pair_param_data(self.params.params,self.params.data):
 
             jobname = "SCR-%d" % (dcm_index)
-            
+
             extra_args = extra.copy()
             extra_args['dcm_index'] = dcm_index
-            
+
             if self.params.run_binary:
                 extra_args['run_binary'] = self.params.run_binary
 
@@ -220,20 +221,20 @@ class GscrScript(SessionBasedScript):
             extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 'SCR-%d' % (dcm_index))
 
-            gc3libs.log.info("Creating GscrApplication with: %s %s %d", 
-                             param, 
-                             data, 
+            gc3libs.log.info("Creating GscrApplication with: %s %s %d",
+                             param,
+                             data,
                              dcm_index)
             tasks.append(GscrApplication(
                 param,
                 data,
                 **extra_args))
-            
+
         return tasks
 
     def pair_param_data(self, param, data):
         """
-        Walk through 'param' 
+        Walk through 'param'
         for each .m extract index
         find corresponding data file in 'data'
         return triple: [param_file, data_file, index]
@@ -265,7 +266,7 @@ class GscrScript(SessionBasedScript):
                 # Search corresponding file in data folder
                 if index in data_files:
                     # yield (param_file, data_files[index], index)
-                    gc3libs.log.info("Found new parameter/data pair, index %s." % 
+                    gc3libs.log.info("Found new parameter/data pair, index %s." %
                                      index)
                     processes.append((os.path.join(param,param_file),
                                       data_files[index],
@@ -275,4 +276,3 @@ class GscrScript(SessionBasedScript):
                                       (param_file, index))
 
         return processes
-    

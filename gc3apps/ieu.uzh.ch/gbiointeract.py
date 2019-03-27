@@ -28,7 +28,7 @@ See the output of ``gbiointeract --help`` for program usage instructions.
 __author__ = 'Antonio Messina <antonio.s.messina@gmail.com>'
 __docformat__ = 'reStructuredText'
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import decimal
 import itertools
 import os

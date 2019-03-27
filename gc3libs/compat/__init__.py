@@ -16,7 +16,7 @@ the packages in the `gc3libs.compat` namespace.
 """
 # This file is only present so that the `compat/` directory is
 # recognized as a Python package.
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 __docformat__ = 'reStructuredText'
 
 

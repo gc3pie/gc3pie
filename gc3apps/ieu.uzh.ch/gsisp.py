@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-#   gsisp.py -- Front-end script for running sisp 
+#   gsisp.py -- Front-end script for running sisp
 #   function with a given combination of input parameters.
 #
 #   Copyright (C) 2015, 2016  University of Zurich. All rights reserved.
@@ -27,6 +27,8 @@ See the output of ``gsisp.py --help`` for program usage
 instructions.
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2016-01-15:
@@ -38,7 +40,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gsisp
     gsisp.Gsispingsispipt().run()
 
@@ -70,7 +71,7 @@ class GsispingApplication(Application):
     Custom class to wrap the execution of the sisp script.
     """
     application_name = 'gsisp'
-    
+
     def __init__(self, input_folder, param_file, **extra_args):
 
         self.output_dir = extra_args['results_dir']
@@ -115,13 +116,13 @@ class Gsispingsispipt(SessionBasedScript):
     """
     For each param file (with '.in' extension) found in the 'param folder',
     GsispScript generates execution Tasks.
-    
+
     The ``gsisp`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gsisp`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -131,7 +132,7 @@ class Gsispingsispipt(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GsispingApplication, 
+            application = GsispingApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -147,7 +148,7 @@ class Gsispingsispipt(SessionBasedScript):
                        " considered." % PARAMETERS_FILE)
 
     def setup_options(self):
-        self.add_param("-S", "--sisp", metavar="PATH", 
+        self.add_param("-S", "--sisp", metavar="PATH",
                        dest="sisp", default=None,
                        help="Location of the sisp binary file.")
 
@@ -157,19 +158,19 @@ class Gsispingsispipt(SessionBasedScript):
         """
 
         if not os.path.isdir(self.params.parameters):
-            raise OSError("No such file or directory: %s ", 
+            raise OSError("No such file or directory: %s ",
                           os.path.abspath(self.params.parameters))
 
         if self.params.sisp:
             if not os.path.isfile(self.params.sisp):
                 raise gc3libs.exceptions.InvalidUsage("Sisp binary "
-                                                      " file %s not found" 
+                                                      " file %s not found"
                                                       % self.params.sisp)
             else:
                 self.params.sisp = os.path.abspath(self.params.sisp)
 
         # Walk through the input parameters folder and record all folders with `parameters.in` file
-        
+
         try:
             self.folders = dict()
             for root,dir,files in os.walk(self.params.parameters):
@@ -177,8 +178,8 @@ class Gsispingsispipt(SessionBasedScript):
                     self.folders[os.path.abspath(root)] = os.path.join(root,files[files.index(PARAMETERS_FILE)])
             assert len(self.folders) > 0, "No valid input paramenters found"
         except AssertionError as ex:
-            gc3libs.log.error(ex.message)            
-        
+            gc3libs.log.error(ex.message)
+
     def new_tasks(self, extra):
         """
         For each of the network data and for each of the selected benchmarks,
@@ -189,12 +190,12 @@ class Gsispingsispipt(SessionBasedScript):
         tasks = []
 
         for parameter_folder in self.folders.keys():
-            
+
             # Extract foldername
             jobname = os.path.basename(parameter_folder)
-            
+
             extra_args = extra.copy()
-            
+
             if self.params.sisp:
                 extra_args['sisp'] = self.params.sisp
 
@@ -204,5 +205,5 @@ class Gsispingsispipt(SessionBasedScript):
                 parameter_folder,
                 self.folders[parameter_folder],
                 **extra_args))
-            
+
         return tasks

@@ -33,7 +33,7 @@ and to permit others to do so.
 
 #from scitbx.array_family import flex
 #from stdlib import random
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import numpy as np
 class differential_evolution_optimizer(object):
   """

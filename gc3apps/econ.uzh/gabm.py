@@ -33,6 +33,8 @@ Input argument consists of:
 Options:
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2016-03-29:
@@ -48,7 +50,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gabm
     gabm.GabmScript().run()
 
@@ -78,7 +79,7 @@ class GabmApplication(Application):
     """
     """
     application_name = 'gabm'
-    
+
     def __init__(self, hunting, **extra_args):
         """
         Remote execution: ABM [value]
@@ -97,7 +98,7 @@ class GabmApplication(Application):
             arguments = DEFAULT_REMOTE_BIN
 
         arguments += " %d " % hunting
-            
+
         Application.__init__(
             self,
             arguments = arguments,
@@ -106,17 +107,17 @@ class GabmApplication(Application):
             stdout = 'gabm.log',
             join=True,
             executables = executables,
-            **extra_args)        
+            **extra_args)
 
 class GabmScript(SessionBasedScript):
     """
-    
+
     The ``gabm`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gabm`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -126,14 +127,14 @@ class GabmScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GabmApplication, 
+            application = GabmApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
             stats_only_for = GabmApplication,
             )
- 
+
     def setup_args(self):
 
         self.add_param('range', type=str,
@@ -141,17 +142,17 @@ class GabmScript(SessionBasedScript):
                        "Format: [int],[int]|[int]:[int]. E.g 1:432|3|6,9")
 
     def setup_options(self):
-        self.add_param("-B", "--binary", metavar="STRING", type=str, 
+        self.add_param("-B", "--binary", metavar="STRING", type=str,
                        dest="binary",
                        default=None,
                        help="Location of statically linked binary to run")
-        
+
     def parse_args(self):
         try:
             if self.params.binary:
                 assert os.path.isfile(self.params.binary), \
                     "Input binary file %s not found" % self.params.sources
-                
+
             # Validate month range
             try:
                 # Check whether only single value has been passed
@@ -188,7 +189,7 @@ class GabmScript(SessionBasedScript):
                 gc3libs.log.debug(ex.message)
                 raise AttributeError("No valid input range. "
                                      "Format: [int],[int]|[int]:[int]. E.g 1:432|3")
-            
+
         except AssertionError as ex:
             raise OSError(ex.message)
 
@@ -206,20 +207,20 @@ class GabmScript(SessionBasedScript):
             extra_args['jobname'] = 'abm-%s' % str(hunting)
 
             extra_args['output_dir'] = self.params.output
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         'run_%s' % hunting)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         'run_%s' % hunting)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         'run_%s' % hunting)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         'run_%s' % hunting)
 
             if self.params.binary:
                 extra_args['binary'] = os.path.abspath(self.params.binary)
-                
+
             tasks.append(GabmApplication(
                 hunting,
                 **extra_args))
-            
+
         return tasks

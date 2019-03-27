@@ -21,7 +21,7 @@ recon-all -s s01.cross.TP1 -all
 recon-all -long s01.cross.TP1 s01.base -all -qcache
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import sys
 import os
 import subprocess

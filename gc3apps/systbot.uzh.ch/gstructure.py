@@ -24,6 +24,8 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 See the output of ``gstructure --help`` for program usage instructions.
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
 
@@ -37,7 +39,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gstructure
     gstructure.GStructureScript().run()
 
@@ -64,7 +65,7 @@ class GStructureApplication(Application):
 
     def __init__(self, input_file, **extra_args):
         """
-        The wrapper script is being used for start the simulation. 
+        The wrapper script is being used for start the simulation.
         """
         files_to_send = []
 
@@ -74,13 +75,13 @@ class GStructureApplication(Application):
         basename_input_file = os.path.basename(input_file)
         files_to_send.append((gstructure_wrapper_sh,os.path.basename(gstructure_wrapper_sh)))
         files_to_send.append((input_file,basename_input_file))
-        
 
-        cmd = "./gstructure_wrapper.sh -d "  
+
+        cmd = "./gstructure_wrapper.sh -d "
 
         if 'mainparam_file' in extra_args:
             cmd += " -p %s " % extra_args['mainparam_file']
-            files_to_send.append(extra_args['mainparam_file'],'mainparams.txt')            
+            files_to_send.append(extra_args['mainparam_file'],'mainparams.txt')
 
         if 'extraparam_file' in extra_args:
             cmd += " -x %s " % extra_args['extraparam_file']
@@ -110,7 +111,7 @@ class GStructureApplication(Application):
 
         extra_args['requested_memory'] = 7*GB
 
-        self.output_dir = basename_input_file + "_output" 
+        self.output_dir = basename_input_file + "_output"
         extra_args['output_dir'] = self.output_dir
 
         Application.__init__(
@@ -183,24 +184,24 @@ newly-created jobs so that this limit is never exceeded.
                        "Default: INPUT_FILE.out" )
 
         self.add_param("-g", "--K-range", metavar="K_RANGE", default="1:20",
-                       dest="k_range", help="Structure K range. " 
+                       dest="k_range", help="Structure K range. "
                        "Default: %(default)s" )
 
         self.add_param("-e", "--replica", metavar="REPLICA_NUM", default=3,
                        dest="replica", help="Structure replicates. "
                        "Default: %(default)s" )
 
-        self.add_param("-T", "--control-file", metavar="CONTROL_FILE", 
-                       dest="control_file", help="Control csv file for managing multiple input files with differetn loc and ind") 
+        self.add_param("-T", "--control-file", metavar="CONTROL_FILE",
+                       dest="control_file", help="Control csv file for managing multiple input files with differetn loc and ind")
 
         self.add_param("--loc", type=int, metavar="LOC",
                        dest="loc", help="Number of loci in the structure input file")
-    
+
         self.add_param("--ind", type=int, metavar="IND",
                        dest="ind", help="Number of individuals in the structure input file")
 
         self.add_param("--input_source", type=str,metavar="INPUT_SOURCE",
-                       dest="input_source", help="Structure input file/Structure input directory") 
+                       dest="input_source", help="Structure input file/Structure input directory")
 
     def parse_args(self):
 
@@ -211,7 +212,7 @@ newly-created jobs so that this limit is never exceeded.
 
         tasks = []
         input_files = []
-        inputs = [] 
+        inputs = []
         extentions = ( '.tsv', '.txt', '.struc', '.tab' )
         extra_args = extra.copy()
 
@@ -227,7 +228,7 @@ newly-created jobs so that this limit is never exceeded.
         if self.params.replica:
             extra_args['replica'] = self.params.replica
 
-        # Check if control_file variable is defined. If yes, 
+        # Check if control_file variable is defined. If yes,
         # proceed differently for crating the tasks.
         if self.params.control_file:
             gc3libs.log.warning("As you issued the script with the control, file options loc and ind paramters will be ignored")
@@ -239,7 +240,7 @@ newly-created jobs so that this limit is never exceeded.
                     self.log.warning("Cannot open input file '%s': %s: %s",
                                      path, ex.__class__.__name__, str(ex))
                 for row in csv.reader(inputfile):
-                    extra_args['input_source'] = row[0]        
+                    extra_args['input_source'] = row[0]
                     extra_args['loc'] = row[1]
                     extra_args['ind'] = row[2]
 
@@ -262,28 +263,28 @@ newly-created jobs so that this limit is never exceeded.
                 for ext in extentions:
                         if self.params.input_source.endswith(ext):
                             input_files.append(self.params.input_source)
-    
-             for input_file in input_files:  
-    
+
+             for input_file in input_files:
+
                     jobname = "%s" % input_file.split(".")[0]
-                    
+
                     extra_args['jobname'] = jobname
-        
-                    # FIXME: ignore SessionBasedScript feature of customizing 
+
+                    # FIXME: ignore SessionBasedScript feature of customizing
                     # output folder
-                    
+
                     extra_args['loc'] = self.params.loc
                     extra_args['ind'] = self.params.ind
                     extra_args['input_source'] = self.params.input_source
                     #extra_args['output_dir'] = self.params.input_source
-                    
+
                     self.log.info("Creating Task for input file: %s" % input_file)
-                        
+
                     tasks.append(GStructureTask(
                         input_file,
                         **extra_args
                         ))
-    
+
         return tasks
 
 
@@ -291,6 +292,5 @@ newly-created jobs so that this limit is never exceeded.
         """
         return a list of all files in the input folder
         """
-    
-        return [ os.path.join(input_folder,infile) for infile in os.listdir(input_folder) ]
 
+        return [ os.path.join(input_folder,infile) for infile in os.listdir(input_folder) ]

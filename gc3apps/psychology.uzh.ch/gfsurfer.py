@@ -31,6 +31,8 @@ Input parameters consists of:
 Options:
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2015-02-17:
@@ -43,7 +45,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gfsurfer
     gfsurfer.GfsurferScript().run()
 
@@ -79,10 +80,10 @@ class GfsurferApplication(Application):
     """
     """
     application_name = 'gfsurfer'
-    
+
     def __init__(self, subject_name, input_nifti, freesurfer_steps, **extra_args):
 
-        output_dir = DEFAULT_REMOTE_OUTPUT_FOLDER + subject_name + ".crossTP1" 
+        output_dir = DEFAULT_REMOTE_OUTPUT_FOLDER + subject_name + ".crossTP1"
 
         inputs = dict()
         outputs = dict()
@@ -92,7 +93,7 @@ class GfsurferApplication(Application):
         inputs[gfsurfer_wrapper] = os.path.basename(gfsurfer_wrapper)
         inputs[input_nifti] = os.path.basename(input_nifti)
         outputs[output_dir] = output_dir
-        
+
         arguments = "./%s %s %s %s" % (inputs[gfsurfer_wrapper],
                                        subject_name,
                                        os.path.basename(input_nifti),
@@ -106,17 +107,17 @@ class GfsurferApplication(Application):
             stdout = 'gfsurfer.log',
             join=True,
             executables = [os.path.basename(gfsurfer_wrapper)],
-            **extra_args)        
+            **extra_args)
 
 class GfsurferScript(SessionBasedScript):
     """
-    
+
     The ``gfsurfer`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gfsurfer`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -126,14 +127,14 @@ class GfsurferScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GfsurferApplication, 
+            application = GfsurferApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
             stats_only_for = GfsurferApplication,
             )
- 
+
     def setup_args(self):
         self.add_param('input_data', type=str,
                        help="Root localtion of input data. "
@@ -141,13 +142,13 @@ class GfsurferScript(SessionBasedScript):
                        " - input files in case of cross sectional runs. "
                        " - subdirectories with input files for more TP in case of longitudinal ")
 
-        self.add_param("-P", "--pipeline", metavar="STRING", type=str, 
+        self.add_param("-P", "--pipeline", metavar="STRING", type=str,
                        dest="pipeline",
                        default="cross",
                        help="Comma separated list of Freesurfer steps to be "
                        " executed on each valid input file. "
                        " Valid values: %s." % FREESURFER_STEPS)
-        
+
     def parse_args(self):
         try:
             assert os.path.isdir(self.params.input_data), "Input folder %s not found" % self.params.input_data
@@ -174,19 +175,19 @@ class GfsurferScript(SessionBasedScript):
             extra_args['jobname'] = subject_name
 
             extra_args['output_dir'] = self.params.output
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         'run_%s' % subject_name)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         'run_%s' % subject_name)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         'run_%s' % subject_name)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         'run_%s' % subject_name)
-            
+
             tasks.append(GfsurferApplication(
                 subject_name,
                 os.path.join(self.params.input_data,input_nifti),
                 self.freesurfer_pipeline,
                 **extra_args))
-            
+
         return tasks

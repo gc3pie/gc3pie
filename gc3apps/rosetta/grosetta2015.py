@@ -23,6 +23,9 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``grosetta --help`` for program usage instructions.
 """
+
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2012-02-28:
@@ -41,7 +44,6 @@ __docformat__ = 'reStructuredText'
 
 # workaround Issue 95, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
-from __future__ import absolute_import
     import grosetta2015
     grosetta2015.GRosettaScript().run()
 
@@ -73,7 +75,7 @@ class Rosetta2015Application(Application):
     """
     """
     application_name = 'grosetta2015'
-    
+
     def __init__(self, input_folder, command_to_run, **extra_args):
 
         inputs = dict()
@@ -85,9 +87,9 @@ class Rosetta2015Application(Application):
 
         for input in os.listdir(input_folder):
             inputs[os.path.join(input_folder,input)] = os.path.basename(input)
-            
+
         # arguments = "./%s --no-tar @options" % (inputs[grosetta2015_wrapper_sh])
-        
+
         Application.__init__(
             self,
             arguments = command_to_run,
@@ -157,7 +159,7 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
 
     def new_tasks(self, extra):
         tasks = []
-        
+
         for input_folder in self.input_folders:
             # extract root folder name to be used as jobname
             pairname = input_folder
@@ -166,15 +168,15 @@ Note: the list of INPUT and OUTPUT files must be separated by ':'
             extra_args['jobname'] = pairname
 
             extra_args['output_dir'] = self.params.output
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         'run_%s' % pairname)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         'run_%s' % pairname)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         'run_%s' % pairname)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         'run_%s' % pairname)
-            
+
             gc3libs.log.debug("Adding task for folder %s" % input_folder)
 
             tasks.append(Rosetta2015Application(

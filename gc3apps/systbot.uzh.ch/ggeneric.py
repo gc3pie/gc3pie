@@ -2,10 +2,13 @@
 #
 """
 Front-end script for making a session out of a generic command-line.
-The tool has been requested from the System Botanik and should enable 
+The tool has been requested from the System Botanik and should enable
 various type of executables to be run on a VM by passing the arguments
-in a csv control file. 
+in a csv control file.
 """
+
+from __future__ import absolute_import, print_function
+
 # Copyright (C) 2011-2014  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -33,7 +36,6 @@ __docformat__ = 'reStructuredText'
 
 
 if __name__ == "__main__":
-from __future__ import absolute_import
     import ggeneric
     ggeneric.GGeneric().run()
 
@@ -63,7 +65,7 @@ class GGenericApplication(Application):
         # setup for finding actual files
 
         """
-        The wrapper script is being used for start the simulation. 
+        The wrapper script is being used for start the simulation.
         """
         files_to_send = []
 
@@ -85,7 +87,7 @@ class GGenericApplication(Application):
 
         cmd += " %s " % extra_args['options']
 
-        self.output_dir = basename_input_file + self.params.suffix 
+        self.output_dir = basename_input_file + self.params.suffix
         extra_args['output_dir'] = self.output_dir
 
         Application.__init__(
@@ -117,10 +119,10 @@ class GGenericTask(RetryableTask, gc3libs.utils.Struct):
 ## the script itself
 class GGeneric(SessionBasedScript):
     """
-Manages a task session for all the lines in the given control file. 
+Manages a task session for all the lines in the given control file.
 
-The script takes only two positional argument which arethe executable 
-to be run and the control file. 
+The script takes only two positional argument which arethe executable
+to be run and the control file.
 
 Further options that could be specified are for:
  - REPS_PER_PROCESS - this will set the number of repetitions of each run.
@@ -190,14 +192,14 @@ Further options that could be specified are for:
                     self.log.warning("Cannot open input file '%s': %s: %s",
                                      path, ex.__class__.__name__, str(ex))
                 for row in csv.reader(inputfile):
-                    # create a string containing the parameters  
-                    # to be used for calling the executable 
+                    # create a string containing the parameters
+                    # to be used for calling the executable
                     options=""
                     for i in range(0, length(row)):
                         options=options+args[i] + " "
                     extra_args['options'] = options
 
-                    # create multiple tasks of the same type 
+                    # create multiple tasks of the same type
                     # if we have to execute multiple runs with the
                     # same input.
                     for i in range(1, self.params.repeats):
@@ -207,6 +209,3 @@ Further options that could be specified are for:
                             ))
 
         return tasks
-
-
-

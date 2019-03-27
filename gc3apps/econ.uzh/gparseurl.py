@@ -33,6 +33,8 @@ Option:
 
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2015-10-24:
@@ -45,7 +47,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gparseurl
     gparseurl.GParseURLScript().run()
 
@@ -138,7 +139,7 @@ newly-created jobs so that this limit is never exceeded.
         Check presence of input folder (should contains R scripts).
         path to url_file should also be valid.
         """
-        
+
         if not os.path.exists(self.params.url_file):
             raise gc3libs.exceptions.InvalidUsage(
                 "gparseurl command file '%s' does not exist;"
@@ -165,7 +166,7 @@ newly-created jobs so that this limit is never exceeded.
             extra_args = extra.copy()
             extra_args['jobname'] = jobname
             extra_args['output_dir'] = self.params.output
-            
+
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', os.path.join('.computation',jobname))
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', os.path.join('.computation',jobname))
             extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', os.path.join('.computation',jobname))

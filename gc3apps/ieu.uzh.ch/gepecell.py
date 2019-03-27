@@ -28,7 +28,7 @@ instructions.
 
 Input parameters consists of:
 :param str edges file: Path to an .csv file containing input data in
-the for of: 
+the for of:
     X1   X2
 1  id1  id2
 2  id1  id3
@@ -42,9 +42,11 @@ XXX: To be clarified:
 . Should be possible to re-run a subset of the initial chunk list
 without re-creating a new session ?
 e.g. adding a new argument accepting chunk ranges (-R 3000:7500)
-This would trigger the re-run of the whole workflow only 
+This would trigger the re-run of the whole workflow only
 for lines between 3000 and 7500
 """
+
+from __future__ import absolute_import, print_function
 
 # summary of user-visible changes
 __changelog__ = """
@@ -58,7 +60,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gepecell
     gepecell.GepecellScript().run()
 
@@ -83,14 +84,14 @@ from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, secon
 from gc3libs.workflow import RetryableTask
 
 DEFAULT_REMOTE_OUTPUT_FOLDER = "output"
-DEFAULT_EPICELL_BINARY="robustnessintime"    
+DEFAULT_EPICELL_BINARY="robustnessintime"
 ## custom application class
 class GepecellApplication(Application):
     """
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
     application_name = 'gepecell'
-    
+
     def __init__(self, parameter_string, **extra_args):
 
         executables = []
@@ -113,7 +114,7 @@ class GepecellApplication(Application):
 
         gc3libs.log.debug("Creating application for executing: %s",
                           arguments)
-        
+
         Application.__init__(
             self,
             arguments = arguments,
@@ -138,7 +139,7 @@ class GepecellScript(SessionBasedScript):
     passed to a single `ctx-linkdyn-ordprm-sirs.p4` execution. For each line
     of the input .csv file a GepecellApplication needs to be generated (depends on
     chunk value passed as part of the input options).
-    Splits input .csv file into smaller chunks, each of them of size 
+    Splits input .csv file into smaller chunks, each of them of size
     'self.params.chunk_size'.
     Then submits one execution for each of the created chunked files.
 
@@ -147,13 +148,13 @@ class GepecellScript(SessionBasedScript):
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gepecell`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gepecell``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -161,7 +162,7 @@ class GepecellScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GepecellApplication, 
+            application = GepecellApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -170,7 +171,7 @@ class GepecellScript(SessionBasedScript):
             )
 
     def setup_args(self):
-        
+
         self.add_param('csv_input_file', type=str,
                        help="Input .csv file")
 
@@ -183,7 +184,7 @@ class GepecellScript(SessionBasedScript):
                        help="Path to alternative 'Robustnessintime' binary file." \
                        " Note: binary fily MUST be statically linked.")
 
-        
+
     def parse_args(self):
         """
         Check presence of input folder (should contains R scripts).
@@ -202,9 +203,9 @@ class GepecellScript(SessionBasedScript):
             if self.params.binary:
                 assert os.path.isfile(self.params.binary), \
                     "'Robustnessintime' binary file '%s' not found" % self.params.binary
-            
+
         except AssertionError as ex:
-            raise ValueError(ex.message)            
+            raise ValueError(ex.message)
 
     def new_tasks(self, extra):
         """
@@ -219,7 +220,7 @@ class GepecellScript(SessionBasedScript):
 
                 extra_args = extra.copy()
                 extra_args['jobname'] = jobname
-            
+
                 extra_args['output_dir'] = self.params.output
                 extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
                 extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
@@ -228,7 +229,7 @@ class GepecellScript(SessionBasedScript):
 
                 if self.params.binary:
                     extra_args['binary'] = self.params.binary
-                
+
                 tasks.append(GepecellApplication(
                     line,
                     **extra_args))
@@ -244,7 +245,7 @@ class GepecellScript(SessionBasedScript):
         e.g. ('/tmp/chunk2800.csv,2800) for the chunk segment that goes
         from 2800 to (2800 + chunk_size)
         """
-        
+
         chunks = []
         chunk_files_dir = os.path.join(self.session.path,"tmp")
 
@@ -263,9 +264,9 @@ class GepecellScript(SessionBasedScript):
 
         index = 0
         for chunk in reader:
-            index += 1     
+            index += 1
             filename = "%s/chunk_%s.csv" % (chunk_files_dir,index)
             chunk.to_csv(filename, header=True, index=False)
             chunks.append((filename,index))
-            
+
         return chunks

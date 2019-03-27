@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-#   ggatk.py -- Front-end script for running ParRecoveryFun Matlab 
+#   ggatk.py -- Front-end script for running ParRecoveryFun Matlab
 #   function with a given combination of reference models.
 #
 #   Copyright (C) 2015  University of Zurich. All rights reserved.
@@ -24,6 +24,8 @@
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2015-11-17:
@@ -36,7 +38,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import ggatk
     ggatk.GgatkScript().run()
 
@@ -69,7 +70,7 @@ def get_bams(input_folder):
     """
     Return list of .bam .bam.bai pairs
     """
-    for bam in [ bams for bams in os.listdir(input_folder) if bams.endswith('.bam') 
+    for bam in [ bams for bams in os.listdir(input_folder) if bams.endswith('.bam')
                  and os.path.isfile(os.path.join(input_folder,bams+".bai"))]:
         yield (os.path.join(input_folder,bam),
                os.path.join(input_folder,bam+".bai"))
@@ -77,7 +78,7 @@ def get_bams(input_folder):
 def get_vcf_group(input_folder, group_size):
     """
     Return list of .vcf file lists of size `group_size`
-    
+
     """
     vcf_list = [ os.path.join(input_folder,vcfs) for vcfs in os.listdir(input_folder) \
                  if vcfs.endswith(".vcf") ]
@@ -90,13 +91,13 @@ class GATKS0Application(Application):
     GATK Stage0: run GATK steps 1,2,3 on a given .bam (and .bai) file
     """
     application_name = 'gatks0'
-    
+
     def __init__(self, bam_file, bai_file, **extra_args):
 
         self.S0_output = extra_args['S0_output']
 
         extra_args['requested_memory'] = extra_args['S0_memory']
-        
+
         inputs = dict()
         outputs = dict()
         executables = []
@@ -148,7 +149,7 @@ class GATKS0Application(Application):
 
             assert os.path.isfile(vcf_indx_output), \
                 "Output file %s not found." % vcf_indx_output
-            
+
         except AssertionError as ex:
             self.execution.returncode = (0, posix.EX_OSFILE)
             gc3libs.log.error(ex.message)
@@ -159,7 +160,7 @@ class GATKS1Application(Application):
     XXX: does the corresponding .vcf.indx file has to be included ? YES
     """
     application_name = 'gatks1'
-    
+
     def __init__(self, vcf_group, index, **extra_args):
 
         self.S1_output = extra_args['S1_output']
@@ -204,7 +205,7 @@ class GATKS1Application(Application):
         vcf_output = os.path.join(self.S1_output, self.vcf_output_filename)
         try:
             assert os.path.isfile(vcf_output), \
-                "Output file %s not found." % vcf_output            
+                "Output file %s not found." % vcf_output
         except AssertionError as ex:
             self.execution.returncode = (0, posix.EX_OSFILE)
             gc3libs.log.ERROR(ex.message)
@@ -215,7 +216,7 @@ class GATKS2Application(Application):
     XXX: does the corresponding .vcf.indx file has to be included ?
     """
     application_name = 'gatks2'
-    
+
     def __init__(self, vcf_list, **extra_args):
 
         self.S2_output = extra_args['S2_output']
@@ -257,7 +258,7 @@ class GATKS2Application(Application):
         """
         try:
             assert os.path.isfile(self.vcf_output), \
-                "Output file %s not found." % vcf_output            
+                "Output file %s not found." % vcf_output
         except AssertionError as ex:
             self.execution.returncode = (0, posix.EX_OSFILE)
             gc3libs.log.ERROR(ex.message)
@@ -270,13 +271,13 @@ class GATKS2Application(Application):
 #     * Output: 2 files per sample (g.vcf and g.vcf.idx size 1GB total)
 #     Stage1: Run GATK pipeline steps 4,5 on all g.vcf files together
 #     * walltime and memory requirement unknown
-#     * steps 4,5 can also be run on groups of g.vcf files but then 
+#     * steps 4,5 can also be run on groups of g.vcf files but then
 #     results need to be combined (GATK step 6)
 #     * We will see whether this step is necessary resource-wise
 #     * Output: 1 .vcf file size: 50GB
 #     Stage2: Filter .vcf file
 #     * Run vcftools and own scripts
-#     * Output: single .vcf file size: 50MB 
+#     * Output: single .vcf file size: 50MB
 #     """
 #     def __init__(self, input_bam_folder, **extra_args):
 #         self.S0_output = extra_args['S0_output_dir']
@@ -298,11 +299,11 @@ class GATKSequentialTaskCollection(SequentialTaskCollection):
         self.output_dir = extra_args['output_dir']
 
         self.jobname = "GATK-" + "_".join(self.gatkseq)
-        
+
         # Get the first stage task in gatk_sequence
         initial_task_fn = getattr(self, "stage%d" % int(self.gatkseq.pop(0)))
         initial_task = initial_task_fn()
-        
+
         SequentialTaskCollection.__init__(self, [initial_task])
 
     def next(self,done):
@@ -343,7 +344,7 @@ class GATKSequentialTaskCollection(SequentialTaskCollection):
             self.execution.returncode = self.tasks[done].execution.returncode
             return Run.State.TERMINATED
 
-            
+
     def stage0(self):
         """
         Stage0: for each sample run GATK pipeline steps 1,2,3
@@ -370,14 +371,14 @@ java -jar -d64 ~/programs/GenomeAnalysisTK.jar\
             extra_args['bam_filename'] = os.path.basename(bam_file)
             extra_args['bai_filename'] = os.path.basename(bai_file)
             extra_args['jobname'] = "gatk-s0-%s" % extra_args['bam_filename']
-            
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         extra_args['jobname'])
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         extra_args['jobname'])
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         extra_args['jobname'])
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         extra_args['jobname'])
 
             gc3libs.log.debug("Creating Stage0 task for : %s" %
@@ -450,14 +451,14 @@ java -jar  /home/dleigh/GenomeAnalysisTK-3.1-1/GenomeAnalysisTK-3.4-46/GenomeAna
                                                int(self.extra['S1_group'])):
             extra_args = self.extra.copy()
             extra_args['jobname'] = "gatk-s1-%d" % index
-            
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         extra_args['jobname'])
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         extra_args['jobname'])
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         extra_args['jobname'])
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         extra_args['jobname'])
 
             gc3libs.log.debug("Creating Stage1 task for : %d" %
@@ -469,11 +470,11 @@ java -jar  /home/dleigh/GenomeAnalysisTK-3.1-1/GenomeAnalysisTK-3.4-46/GenomeAna
                 **extra_args))
 
         return ParallelTaskCollection(tasks)
-            
+
 
     def stage2(self):
         """
-        Start this stage IIF stage1 all completed (i.e. no failures)        
+        Start this stage IIF stage1 all completed (i.e. no failures)
         * Use same GATK and goat.genome vesion as in stage0
         Combine 10 g.vcf files:
         take 10 + 3 and run GenotypeGVCF
@@ -481,11 +482,11 @@ java -jar  /home/dleigh/GenomeAnalysisTK-3.1-1/GenomeAnalysisTK-3.4-46/GenomeAna
         output: 1 .cvf file (in result folder)
         Memory and walltime to be checked
         Example script:
-java -jar /home/dleigh/GenomeAnalysisTK-3.1-1/GenomeAnalysisTK-3.4-46/GenomeAnalysisTK.jar \ # specifying the jar script 
+java -jar /home/dleigh/GenomeAnalysisTK-3.1-1/GenomeAnalysisTK-3.4-46/GenomeAnalysisTK.jar \ # specifying the jar script
    -T GenotypeGVCFs \ # command within GATK
-   -R /home/dleigh/goatgenome/01.GENOME/scaffold/goat_scaffoldFG_V1.1.normalised.22.07.fa \ # reference genome location 
+   -R /home/dleigh/goatgenome/01.GENOME/scaffold/goat_scaffoldFG_V1.1.normalised.22.07.fa \ # reference genome location
    -stand_call_conf 30 \ # constant
-   -stand_emit_conf 10 \ # constant 
+   -stand_emit_conf 10 \ # constant
    --variant /home/dleigh/demultiplexed.reads/GATK/combined.g.vcf \ # the input files
    --variant /home/dleigh/demultiplexed.reads/GATK/combined2.g.vcf \
    --variant /home/dleigh/demultiplexed.reads/GATK/combined3.g.vcf \
@@ -499,16 +500,16 @@ java -jar /home/dleigh/GenomeAnalysisTK-3.1-1/GenomeAnalysisTK-3.4-46/GenomeAnal
 
         extra_args = self.extra.copy()
         extra_args['jobname'] = "gatk-s2"
-        
-        extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+
+        extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                     extra_args['jobname'])
-        extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+        extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                     extra_args['jobname'])
-        extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+        extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                     extra_args['jobname'])
-        extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+        extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                     extra_args['jobname'])
-        
+
         gc3libs.log.debug("Creating Stage2 task")
 
         return GATKS2Application(
@@ -521,13 +522,13 @@ class GgatkScript(SessionBasedScript):
     GscrScript extracts the corresponding index (from filename) and searches for
     the associated file in 'data folder'. For each pair ('param_file','data_file'),
     GscrScript generates execution Tasks.
-    
+
     The ``gscr`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gscr`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -556,16 +557,16 @@ class GgatkScript(SessionBasedScript):
         * gatk
         * goat.genome
         """
-        self.add_param("-g", "--gatk", metavar="PATH", 
+        self.add_param("-g", "--gatk", metavar="PATH",
                        dest="gatk", default=None,
                        help="Location of alternative GATK jar file.")
-        
-        self.add_param("-G", "--goat", metavar="PATH", 
+
+        self.add_param("-G", "--goat", metavar="PATH",
                        dest="goat", default=None,
                        help="Location of alternative goat genome folder.")
 
         self.add_param("-S0O", "--s0-output",
-                       metavar="PATH", 
+                       metavar="PATH",
                        dest="S0_output",
                        default=os.path.join(os.environ['PWD'],"S0.out"),
                        help="Location were all outputs from Stage0"
@@ -579,7 +580,7 @@ class GgatkScript(SessionBasedScript):
             " default: %(default)s. Specify this as an integral number"
             " followed by a unit, e.g., '512MB' or '4GB'.")
 
-        self.add_param("-S1O", "--s1-output", metavar="PATH", 
+        self.add_param("-S1O", "--s1-output", metavar="PATH",
                        dest="S1_output",
                        default=os.path.join(os.environ['PWD'],"S1.out"),
                        help="Location were all outputs from Stage1"
@@ -593,11 +594,11 @@ class GgatkScript(SessionBasedScript):
             " default: %(default)s. Specify this as an integral number"
             " followed by a unit, e.g., '512MB' or '4GB'.")
 
-        self.add_param("-S1G", "--s1-group-factor", metavar="NUM", 
+        self.add_param("-S1G", "--s1-group-factor", metavar="NUM",
                        dest="S1_group", default=30,
                        help="Group size for S1 aggregate task.")
 
-        self.add_param("-S2O", "--s2-output", metavar="PATH", 
+        self.add_param("-S2O", "--s2-output", metavar="PATH",
                        dest="S2_output",
                        default=os.path.join(os.environ['PWD'],"S2.out"),
                        help="Location were all outputs from Stage2"
@@ -610,10 +611,10 @@ class GgatkScript(SessionBasedScript):
             " default: %(default)s. Specify this as an integral number"
             " followed by a unit, e.g., '512MB' or '4GB'.")
 
-        self.add_param("-S2E", "--s2-extra", metavar="PATH", 
+        self.add_param("-S2E", "--s2-extra", metavar="PATH",
                        dest="S2_extra_input", default=None,
                        help="Location of the folder with Stage2 extra input files.")
-        
+
     def parse_args(self):
         try:
             assert os.path.isdir(self.params.bam_folder), \
@@ -647,9 +648,9 @@ class GgatkScript(SessionBasedScript):
                     "Location of alternative goat genome folder '%s' not found." \
                     % self.params.goat
                 self.params.goat = os.path.abspat(self.params.goat)
-                
+
         except AssertionError as ex:
-            raise ValueError(ex.message)            
+            raise ValueError(ex.message)
 
     def new_tasks(self, extra):
         """
@@ -664,12 +665,12 @@ class GgatkScript(SessionBasedScript):
         # extra_args['S1_output_dir'] = os.path.abspath(self.params.S1_output)
         # extra_args['S2_output_dir'] = os.path.abspath(self.params.S2_output)
         # extra_args['gatk_sequence'] = self.gatk_sequence
-        # if self.params.S2_extra_input:       
+        # if self.params.S2_extra_input:
         #     extra_args['S2_extra_input'] = os.path.abspath(self.params.S2_extra_input)
         # extra_args['S1_group'] = int(self.params.S1_group)
         # if self.params.gatk:
-        #     extra_args['gatk'] = self.params.gatk 
-            
+        #     extra_args['gatk'] = self.params.gatk
+
         # if self.params.goat:
         #     extra_args['goat'] = self.params.goat
 

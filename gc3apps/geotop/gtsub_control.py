@@ -32,7 +32,7 @@ See the output of ``gtsub_control --help`` for program usage instructions.
 __docformat__ = 'reStructuredText'
 
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os
 import os.path
 import shlex

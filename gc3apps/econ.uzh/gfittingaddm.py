@@ -32,6 +32,8 @@ arguments for the 'main' R script to be executed:
 @int:number_of_iteration_per_simulation
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2018-01-10:
@@ -44,7 +46,6 @@ __version__ = '0.1.0'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gfittingaddm
     gfittingaddm.GfittingaddmScript().run()
 
@@ -78,7 +79,7 @@ class GfittingaddmApplication(Application):
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
     application_name = 'gfittingaddm'
-    
+
     def __init__(self, subject_number,  rscript_folder, main_function, n_simulations, n_iterations, **extra_args):
 
         inputs = {}
@@ -112,13 +113,13 @@ class GfittingaddmScript(SessionBasedScript):
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gfittingaddm`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gfittingaddm``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -126,7 +127,7 @@ class GfittingaddmScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__,
-            application = GfittingaddmApplication, 
+            application = GfittingaddmApplication,
             stats_only_for = GfittingaddmApplication,
             )
 
@@ -139,7 +140,7 @@ class GfittingaddmScript(SessionBasedScript):
                        type=existing_directory,
                        dest="Rscripts", default=None,
                        help="Location of R Main scripts. Default: '%(default)s'.")
-        
+
         self.add_param("-F", "--main_function", metavar="[PATH]",
                        dest="main_function", default="runme",
                        help="R script main function to be invoked. Default: '%(default)s'.")
@@ -180,14 +181,14 @@ class GfittingaddmScript(SessionBasedScript):
         For each chunked fule, generate a new GfittingaddmTask
         """
         tasks = []
-        
+
         for subject_number in range(1,self.params.number_of_subjects+1):
             for rep in range(1,self.params.repeat+1):
                 extra_args = extra.copy()
                 extra_args['jobname'] = "subject{0}-rep{1}".format(subject_number,
                                                                    rep)
                 gc3libs.log.info("Creating task for subject number {0}".format(subject_number))
-                
+
                 tasks.append(GfittingaddmApplication(subject_number,
                                                      self.params.Rscripts,
                                                      self.params.main_function,
@@ -196,4 +197,3 @@ class GfittingaddmScript(SessionBasedScript):
                                                      **extra_args))
 
         return tasks
-

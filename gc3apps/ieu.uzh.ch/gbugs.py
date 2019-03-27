@@ -31,6 +31,8 @@ Input parameters consists of:
 
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2015-04-10:
@@ -43,7 +45,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gbugs
     gbugs.GBugsScript().run()
 
@@ -100,11 +101,11 @@ def generate_chunked_files_and_list(file_to_chunk, chunk_size=1000, tmp_folder=o
 
             for (i, line) in enumerate(fd):
                 if i % chunk_size == 0:
-                    if fout: 
+                    if fout:
                         fout.close()
                     (handle, tmp_filename) = tempfile.mkstemp(dir=chunk_files_dir,
                                                                     prefix=
-                                                                   'gbugs-', 
+                                                                   'gbugs-',
                                                                    suffix=
                                                                    "%d.txt" % i)
                     fout = open(tmp_filename,'w')
@@ -137,7 +138,7 @@ class GBugsApplication(Application):
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
     application_name = 'gbugs'
-    
+
     def __init__(self, input_table_filename, **extra_args):
 
         # setup output references
@@ -194,13 +195,13 @@ class OpenBUGSCollection(StagedTaskCollection):
         Chunk input table and run chunks in parallel
         """
         tasks = []
-        for (input_file, index_chunk) in generate_chunked_files_and_list(self.input_table_file, 
-                                                                              self.chunk_size):            
+        for (input_file, index_chunk) in generate_chunked_files_and_list(self.input_table_file,
+                                                                              self.chunk_size):
             jobname = "gbugs-%s" % (str(index_chunk))
             extra_args = self.extra.copy()
             extra_args['index_chunk'] = str(index_chunk)
             extra_args['jobname'] = jobname
-            
+
             # extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
@@ -220,22 +221,22 @@ class OpenBUGSCollection(StagedTaskCollection):
 
 class GBugsScript(SessionBasedScript):
     """
-    Splits input .csv file into smaller chunks, each of them of size 
+    Splits input .csv file into smaller chunks, each of them of size
     'self.params.chunk_size'.
     Then it submits one execution for each of the created chunked files.
-    
+
     The ``gbugs`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gbugs`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gbugs``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -243,7 +244,7 @@ class GBugsScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__,
-            application = GBugsApplication, 
+            application = GBugsApplication,
             stats_only_for = GBugsApplication,
             )
 
@@ -251,7 +252,7 @@ class GBugsScript(SessionBasedScript):
         self.add_param("-k", "--chunk", metavar="[NUM]",
                        dest="chunk_size", default="1000",
                        help="How to split the edges input data set.")
-        
+
         self.add_param("-M", "--master", metavar="[PATH]",
                        dest="driver_script", default=None,
                        help="Location of master driver R script.")
@@ -288,9 +289,8 @@ class GBugsScript(SessionBasedScript):
         """
         extra_args = extra.copy()
         extra_args['output_dir'] = self.params.output
-        return [OpenBUGSCollection(self.params.input_table, 
-                                   self.params.chunk_size, 
-                                   self.params.driver_script, 
-                                   self.params.stats_script, 
+        return [OpenBUGSCollection(self.params.input_table,
+                                   self.params.chunk_size,
+                                   self.params.driver_script,
+                                   self.params.stats_script,
                                    **extra_args)]
-

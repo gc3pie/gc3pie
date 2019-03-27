@@ -19,7 +19,7 @@
 #  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 # stdlib imports
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os
 
 import pytest

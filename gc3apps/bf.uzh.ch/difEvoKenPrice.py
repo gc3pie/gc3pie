@@ -6,7 +6,7 @@ This code is an adaptation of the following MATLAB code: http://www.icsi.berkele
 Please refer to this web site for more information: http://www.icsi.berkeley.edu/~storn/code.html#deb1
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import numpy as np
 import sys, os
 import logbook

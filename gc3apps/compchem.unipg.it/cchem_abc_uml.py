@@ -1,7 +1,5 @@
 #! /usr/bin/env python
 #
-"""
-"""
 # Copyright (C) 2011-2012  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,6 +16,11 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
+"""
+"""
+
+from __future__ import absolute_import, print_function
+
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
@@ -30,7 +33,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
-from __future__ import absolute_import
     import cchem_abc_uml
     cchem_abc_uml.ABC_uml_Workflow().run()
 

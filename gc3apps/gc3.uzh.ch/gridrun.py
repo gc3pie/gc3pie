@@ -23,6 +23,9 @@ and develop a custom tool instead!
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
+
+from __future__ import absolute_import, print_function
+
 __author__ = 'Riccardo Murri <riccardo.murri@gmail.com>'
 # summary of user-visible changes
 __changelog__ = """
@@ -35,7 +38,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gridrun
     gridrun.GridRunScript().run()
 

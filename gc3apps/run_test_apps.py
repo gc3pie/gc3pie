@@ -62,7 +62,7 @@ add a mapping `directory` => `(Test1, Test2, Test3)`
 #
 __docformat__ = 'reStructuredText'
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os
 import re
 

@@ -23,9 +23,10 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gipyrad --help`` for program usage instructions.
 """
+
+from __future__ import absolute_import, print_function
+
 __docformat__ = 'reStructuredText'
-
-
 # summary of user-visible changes
 __changelog__ = """
   2017-11-27:
@@ -39,7 +40,6 @@ __version__ = '$Revision$'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gipyrad
     gipyrad.GipyradScript().run()
 
@@ -83,14 +83,14 @@ def get_valid_input_pair(input_folder):
                                 "{0}R2.fastq.gz".format(infile.split('R2')[0]))) for infile in os.listdir(input_folder) if infile.endswith('R2.fastq.gz') and infile.split('R2')[0] in R1list]
 
     return input_list
-    
+
 def prepare_ipyrad_param_file(pyrad_param_file):
     """
     Replace input data references and prepare for docker execution
     change [4] to reflect docker invokation:
     /data/*.fastq.gz
     """
-    with open(IPYRAD_PARAMFILE_NAME,'w+') as wd:    
+    with open(IPYRAD_PARAMFILE_NAME,'w+') as wd:
         with open(pyrad_param_file,'r') as fd:
             for line in fd:
                 if IPYRAD_PARAMFILE_PATTERN in line:
@@ -163,7 +163,7 @@ newly-created jobs so that this limit is never exceeded.
     def setup_args(self):
         self.add_param('input_folder', type=existing_directory,
                        help="Path to folder containing fastq files.")
-        
+
     def setup_options(self):
         self.add_param("-D", "--dockerimage", metavar="STRING",
                        dest="dockerimage", default="smaffiol/ipyrad",
@@ -189,21 +189,21 @@ newly-created jobs so that this limit is never exceeded.
 
             # extract jobname from the 1st file of the input_file pair
             jobname = "%s" % os.path.basename(input_file[0]).split(".fastq.gz")[0]
-            
+
             extra_args = extra.copy()
             extra_args['jobname'] = jobname
 
-            # FIXME: ignore SessionBasedScript feature of customizing 
+            # FIXME: ignore SessionBasedScript feature of customizing
             # output folder
             extra_args['output_dir'] = self.params.output
-                
+
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', jobname)
 
             self.log.info("Creating Task: [{0}]".format(jobname))
-                
+
             tasks.append(GipyradApplication(
                 input_file,
                 self.params.dockerimage,

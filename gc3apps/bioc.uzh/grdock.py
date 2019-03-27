@@ -33,6 +33,8 @@ Input parameters consists of:
 Options:
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2015-02-17:
@@ -45,7 +47,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import grdock
     grdock.GrdockScript().run()
 
@@ -87,7 +88,7 @@ class GrdockApplication(Application):
     Es: input ligand: Docking1.sd -> output: Docked1.sd
     """
     application_name = 'grbdock'
-    
+
     def __init__(self, docking_file, docking_index, **extra_args):
 
         self.output_dir = extra_args['output_dir']
@@ -108,9 +109,9 @@ class GrdockApplication(Application):
                 inputs[os.path.abspath(os.path.join(extra_args['data_folder'],
                                                    element))] = os.path.basename(element)
 
-        arguments = "./%s -n %s -o Docked%s %s results" % (inputs[grdock_wrapper_sh], 
-                                                           extra_args['rbdock_iterations'], 
-                                                           self.docking_index, 
+        arguments = "./%s -n %s -o Docked%s %s results" % (inputs[grdock_wrapper_sh],
+                                                           extra_args['rbdock_iterations'],
+                                                           self.docking_index,
                                                            os.path.basename(docking_file))
 
         Application.__init__(
@@ -120,23 +121,23 @@ class GrdockApplication(Application):
             outputs = ["results/"],
             stdout = 'grdock.log',
             join=True,
-            **extra_args)        
+            **extra_args)
 
 
 class GrdockScript(SessionBasedScript):
     """
-    The script takes as input either a comma separated list of ligand files 
+    The script takes as input either a comma separated list of ligand files
     (with `.sd` extension) or a comma separated list of folders were to find the
     input ligand files.
-    For each input ligand file, `grdocking` creates an instance of 
+    For each input ligand file, `grdocking` creates an instance of
     GrdockApplication.
-    
+
     The ``grdock`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``grdock`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -146,7 +147,7 @@ class GrdockScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GrdockApplication, 
+            application = GrdockApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -186,7 +187,7 @@ class GrdockScript(SessionBasedScript):
 
         if self.params.data_folder:
             assert os.path.isdir(self.params.data_folder)
-            
+
 
     def new_tasks(self, extra):
         """
@@ -209,21 +210,21 @@ class GrdockScript(SessionBasedScript):
             extra_args = extra.copy()
 
             extra_args['output_dir'] = self.params.output
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         'run_%s' % jobname)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         'run_%s' % jobname)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         'run_%s' % jobname)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         'run_%s' % jobname)
-        
+
             extra_args['rbdock_iterations'] = self.params.rbdock_iterations
             extra_args['data_folder'] = self.params.data_folder
-            
+
             tasks.append(GrdockApplication(
                 docking_file,
                 docking_index,
                 **extra_args))
-            
+
         return tasks

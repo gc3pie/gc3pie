@@ -28,7 +28,7 @@ can be found in `gc3utils.commands`:mod:
 
 
 # stdlib imports
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os
 import os.path
 import sys

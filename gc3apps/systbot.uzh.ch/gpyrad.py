@@ -24,6 +24,8 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 See the output of ``gpyrad --help`` for program usage instructions.
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
 
@@ -41,7 +43,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gpyrad
     gpyrad.GpyradScript().run()
 
@@ -75,7 +76,7 @@ class GpyradApplication(Application):
 
     def __init__(self, input_file, **extra_args):
         """
-        The wrapper script is being used for start the simulation. 
+        The wrapper script is being used for start the simulation.
         """
 
         inputs = []
@@ -97,7 +98,7 @@ class GpyradApplication(Application):
             cmd += " -w %s " % extra_args['wclust']
             output_folder_name = 'clust%s' % extra_args['wclust']
         else:
-            # This is a convention of PyRAD 
+            # This is a convention of PyRAD
             output_folder_name = 'clust%.1f' % DEFAULT_WCLUST
         outputs.append(output_folder_name)
 
@@ -108,7 +109,7 @@ class GpyradApplication(Application):
         if 'paramsfile' in extra_args:
             cmd += " -p ./params.tmpl "
             #XXX: params file contains important paths needed
-            # by pyRAD. If we deploy an alternative params.txt file supplied 
+            # by pyRAD. If we deploy an alternative params.txt file supplied
             # by the end-user, we might incurr in the risk that we can no longer use
             # the assumptions we made with the original params.txt file.
             inputs.append((extra_args['paramsfile'],'./params.tmpl'))
@@ -239,14 +240,14 @@ newly-created jobs so that this limit is never exceeded.
         for input_file in self._list_folder_by_url(self.input_folder_url):
 
             jobname = "%s" % os.path.basename(input_file).split(".")[0]
-            
+
             extra_args = extra.copy()
             extra_args['jobname'] = jobname
 
-            # FIXME: ignore SessionBasedScript feature of customizing 
+            # FIXME: ignore SessionBasedScript feature of customizing
             # output folder
             extra_args['output_dir'] = self.params.output
-                
+
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', jobname)
@@ -261,7 +262,7 @@ newly-created jobs so that this limit is never exceeded.
                 extra_args['s3cfg'] = self.params.s3cfg
 
             self.log.info("Creating Task for input file: %s" % input_file)
-                
+
             tasks.append(GpyradTask(
                 input_file,            # path to valid input file
                 **extra_args
@@ -287,14 +288,14 @@ newly-created jobs so that this limit is never exceeded.
         """
         return a list of all .fastq files in the input folder
         """
-    
-        return [ os.path.join(input_folder.path,infile) for infile in os.listdir(input_folder.path) if infile.endswith('.fastq') ]        
+
+        return [ os.path.join(input_folder.path,infile) for infile in os.listdir(input_folder.path) if infile.endswith('.fastq') ]
 
     def _list_S3_container(self, s3_url):
         """
         Use s3cmd command line interface to interact with
         a remote S3-compatible ObjectStore.
-        Assumption: 
+        Assumption:
         . s3cmd configuration file available
         and correctly pointing to the right ObjectStore.
         . s3cmd available in PATH environmental variable.
@@ -308,13 +309,13 @@ newly-created jobs so that this limit is never exceeded.
             # 's3cmd ls' should return a list of model archives
             # for each of them bundle archive_name and working_dir
             _process = subprocess.Popen("s3cmd ls %s" % s3_url,
-                                        stdout=subprocess.PIPE, 
+                                        stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE,
                                         close_fds=True, shell=True)
-                
+
             (out, err) = _process.communicate()
             exitcode = _process.returncode
-            
+
             if (exitcode != 0):
                 raise Exception("Error: %s, %s", (out,err))
 
@@ -325,14 +326,10 @@ newly-created jobs so that this limit is never exceeded.
                     # it's a S3 directory; ignore
                     continue
                 # object string format: '2014-01-09 16:41 3627374 s3://a4mesh/model_1.zip'
-                s3_url = s3_obj.split()[3] 
+                s3_url = s3_obj.split()[3]
                 if(s3_url.endswith(".fastq")):
                    yield s3_url
 
         except Exception, ex:
             gc3libs.log.error("Failed while reading remote S3 container. "+
                               "%s", ex.message)
-
-
-
-

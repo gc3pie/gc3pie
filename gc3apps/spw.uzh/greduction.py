@@ -22,6 +22,8 @@
 """
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2015-02-06:
@@ -34,7 +36,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import greduction
     greduction.GreductionScript().run()
 
@@ -62,7 +63,7 @@ class GreductionApplication(Application):
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
     application_name = 'greduction'
-    
+
     def __init__(self, language_file, **extra_args):
 
         inputs = dict()
@@ -95,7 +96,7 @@ class GreductionScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GreductionApplication, 
+            application = GreductionApplication,
             stats_only_for = GreductionApplication,
             )
 
@@ -103,7 +104,7 @@ class GreductionScript(SessionBasedScript):
         self.add_param("-k", "--chunk", metavar="[NUM]", #type=executable_file,
                        dest="chunk_size", default="1000",
                        help="How to split the edges input data set.")
-        
+
         self.add_param("-M", "--master", metavar="[PATH]",
                        dest="explain_matrix", default=None,
                        help="Location of 'explain_matrix.py' file.")
@@ -118,7 +119,7 @@ class GreductionScript(SessionBasedScript):
         Check presence of input folder (should contains R scripts).
         path to command_file should also be valid.
         """
-        
+
         # check args:
         # XXX: make them position independent
         if not os.path.isfile(self.params.language_file):
@@ -138,8 +139,8 @@ class GreductionScript(SessionBasedScript):
         """
         tasks = []
 
-        for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.language_file, 
-                                                                               self.params.chunk_size):            
+        for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.language_file,
+                                                                               self.params.chunk_size):
 
 
             jobname = "greduction-%s" % (str(index_chunk))
@@ -149,21 +150,21 @@ class GreductionScript(SessionBasedScript):
             extra_args['index_chunk'] = str(index_chunk)
 
             extra_args['jobname'] = jobname
-            
+
             extra_args['output_dir'] = self.params.output
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         os.path.join('.computation',
                                                                                      jobname))
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         os.path.join('.computation',
                                                                                      jobname))
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         os.path.join('.computation',
                                                                                      jobname))
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         os.path.join('.computation',
                                                                                      jobname))
-            
+
 
             if self.params.explain_matrix:
                 extra_args['explain_matrix'] = self.params.explain_matrix
@@ -203,7 +204,7 @@ class GreductionScript(SessionBasedScript):
 
         for index in range(0,len(data),chunk_size):
             (handle, tmp_filename) = tempfile.mkstemp(dir=chunk_files_dir,
-                                                      prefix='greduction-', 
+                                                      prefix='greduction-',
                                                       suffix="%d.json" % index)
             with open(tmp_filename,'w') as fout:
                 json.dump(dict(data.items()[index:index+chunk_size-1]),fout)

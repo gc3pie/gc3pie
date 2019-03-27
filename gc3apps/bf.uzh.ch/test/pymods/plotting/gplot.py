@@ -31,7 +31,7 @@ alpha, Aug 27, 2010
 
 
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 from os import popen
 class Gnuplot():
   '''

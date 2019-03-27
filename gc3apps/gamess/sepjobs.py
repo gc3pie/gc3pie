@@ -57,7 +57,7 @@ __author__ = 'Timm Reumann <timm.reumann@uzh.ch>, Riccardo Murri <riccardo.murri
 __docformat__ = 'reStructuredText'
 
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os
 import re
 import sys

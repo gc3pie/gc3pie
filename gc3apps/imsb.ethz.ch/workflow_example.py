@@ -5,7 +5,7 @@ Created on Jun 5, 2012
 @author: quandtan
 '''
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os
 import sys
 from ruffus import *

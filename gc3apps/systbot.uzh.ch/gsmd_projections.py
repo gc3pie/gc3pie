@@ -25,6 +25,8 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 See the output of ``smd_projections --help`` for program usage instructions.
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
 
@@ -38,7 +40,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gsmd_projections
     gsmd_projections.GSMD_ProjectionsScript().run()
 
@@ -63,7 +64,7 @@ class GSMD_ProjectionsApplication(Application):
 
     def __init__(self, **extra_args):
         """
-        The wrapper script is being used for start the simulation. 
+        The wrapper script is being used for start the simulation.
         """
         files_to_send = []
 
@@ -73,13 +74,13 @@ class GSMD_ProjectionsApplication(Application):
         basename_input_tar = os.path.basename(extra_args['input_tar'])
         files_to_send.append((smd_projections_wrapper_sh,os.path.basename(smd_projections_wrapper_sh)))
         files_to_send.append((extra_args['input_tar'],basename_input_tar))
-        
 
-        cmd = "./smd_projections_wrapper.sh -d" 
+
+        cmd = "./smd_projections_wrapper.sh -d"
 
         if 'calibration' in extra_args:
             cmd += " -b "
-            files_to_send.append((extra_args['calibration'],'calibration.tar')) 
+            files_to_send.append((extra_args['calibration'],'calibration.tar'))
 
         cmd += " %s " % basename_input_tar
 
@@ -87,7 +88,7 @@ class GSMD_ProjectionsApplication(Application):
 
         extra_args['requested_memory'] = 6*GB
 
-        self.output_dir = basename_input_tar.split('.')[0] + "_output" 
+        self.output_dir = basename_input_tar.split('.')[0] + "_output"
         extra_args['output_dir'] = self.output_dir
 
         Application.__init__(
@@ -155,7 +156,7 @@ newly-created jobs so that this limit is never exceeded.
     def setup_args(self):
 
         self.add_param('input_source', type=str,
-                       help="Projections input directory") 
+                       help="Projections input directory")
 
     def parse_args(self):
 
@@ -169,8 +170,8 @@ newly-created jobs so that this limit is never exceeded.
         extra_args = extra.copy()
 
         cwd = os.getcwd()
-        os.chdir(self.params.input_source)    
-             
+        os.chdir(self.params.input_source)
+
         for projection_dir in self._list_local_folder(self.params.input_source):
 
             # Check if tar exists
@@ -184,7 +185,7 @@ newly-created jobs so that this limit is never exceeded.
                     pass
             tar = tarfile.open(input_tar_file, "w:gz", dereference=True)
             tar.add(projection_dir)
-            tar.close() 
+            tar.close()
             input_tars.append(tar)
 
         os.chdir(cwd)
@@ -209,16 +210,16 @@ newly-created jobs so that this limit is never exceeded.
 
             extra_args['calibration'] = calibration_tar_file
 
-        for input_tar in input_tars:  
+        for input_tar in input_tars:
 
             jobname = "%s" % input_tar
-            
+
             extra_args['jobname'] = jobname
-    
-            extra_args['input_tar'] = self.params.input_source + "/" + os.path.basename(input_tar.name) 
-            
+
+            extra_args['input_tar'] = self.params.input_source + "/" + os.path.basename(input_tar.name)
+
             self.log.info("Creating Task for input file: %s" % input_tar.name)
-                
+
             tasks.append(GSMD_ProjectionsTask(
                 **extra_args
                 ))
@@ -229,7 +230,5 @@ newly-created jobs so that this limit is never exceeded.
         """
         Return a list of all the directories in the input folder.
         """
-    
+
         return [ infile for infile in os.listdir(input_folder) if os.path.isdir(os.path.join(input_folder,infile)) ]
-
-

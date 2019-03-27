@@ -20,6 +20,9 @@ on the SMSCG infrastructure.
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
+
+from __future__ import absolute_import, print_function
+
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
@@ -37,7 +40,6 @@ __docformat__ = 'reStructuredText'
 
 # workaround Issue 95, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gricomp
     gricomp.GRICompScript().run()
 

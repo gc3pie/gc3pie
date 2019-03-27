@@ -2,7 +2,9 @@
 #
 """
 """
-#
+
+from __future__ import absolute_import, print_function
+
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
@@ -15,7 +17,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
-from __future__ import absolute_import
     import cchem_gfit_abc_workflow
     cchem_gfit_abc_workflow.ABC_Workflow().run()
 

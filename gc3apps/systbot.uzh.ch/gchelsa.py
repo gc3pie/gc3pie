@@ -33,6 +33,8 @@ Input argument consists of:
 Options:
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2016-02-109:
@@ -45,7 +47,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gchelsa
     gchelsa.GchelsaScript().run()
 
@@ -82,7 +83,7 @@ class GchelsaApplication(Application):
     """
     """
     application_name = 'gchelsa'
-    
+
     def __init__(self, month, **extra_args):
         """
         Remote command execution: R --vanilla --args "c(START,END) /tmp/ /mnt/s3it/out/ /mnt/" </mnt/CHELSA_LATLONG_HPC2.R >outfile.tx
@@ -113,7 +114,7 @@ exit $RET
                extra_args['output_data'],
                extra_args['input_data'],
                chelsa_script,
-               DEFAULT_REMOTE_OUTPUT_FILE) 
+               DEFAULT_REMOTE_OUTPUT_FILE)
 
         try:
             # create script file
@@ -132,9 +133,9 @@ exit $RET
             raise
 
         inputs[fd.name] = './gchelsa_wrapper.sh'
-        
+
         extra_args['requested_memory'] = DEFAULT_MEMORY
-        
+
         Application.__init__(
             self,
             arguments = ['./gchelsa_wrapper.sh'],
@@ -143,17 +144,17 @@ exit $RET
             stdout = 'gchelsa.log',
             join=True,
             executables = ['gchelsa_wrapper.sh'],
-            **extra_args)        
+            **extra_args)
 
 class GchelsaScript(SessionBasedScript):
     """
-    
+
     The ``gchelsa`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gchelsa`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -163,14 +164,14 @@ class GchelsaScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GchelsaApplication, 
+            application = GchelsaApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
             stats_only_for = GchelsaApplication,
             )
- 
+
     def setup_args(self):
 
         self.add_param('range', type=str,
@@ -178,25 +179,25 @@ class GchelsaScript(SessionBasedScript):
                        "Format: [int]|[int]:[int]. E.g 1:432|3")
 
     def setup_options(self):
-        self.add_param("-R", "--Rscript", metavar="STRING", type=str, 
+        self.add_param("-R", "--Rscript", metavar="STRING", type=str,
                        dest="Rscript",
                        default=None,
                        help="Location of master R script to drive the "
                        " execution of chelsa. Default: %(default)s")
 
-        self.add_param("-I", "--input", metavar="PATH", type=str, 
+        self.add_param("-I", "--input", metavar="PATH", type=str,
                        dest="input_data",
                        default=DEFAULT_REMOTE_INPUT,
                        help="Location of the input data folder. "
                        "Default: %(default)s")
 
-        self.add_param("-O", "--output", metavar="PATH", type=str, 
+        self.add_param("-O", "--output", metavar="PATH", type=str,
                        dest="output_data",
                        default=DEFAULT_REMOTE_OUTPUT,
                        help="Location of the output data folder. "
                        "Default: %(default)s")
-        
-        self.add_param("-T", "--temp", metavar="PATH", type=str, 
+
+        self.add_param("-T", "--temp", metavar="PATH", type=str,
                        dest="temp_data",
                        default=DEFAULT_REMOTE_TEMP,
                        help="Location of the temp data folder. "
@@ -213,7 +214,7 @@ class GchelsaScript(SessionBasedScript):
                 self.input_range = [ int(mrange) for mrange in \
                                      self.params.range.split(":") \
                                      if int(mrange) ]
-            
+
                 if len(self.input_range) == 1:
                     # Defined only single month
                     gc3libs.log.info("Defined single month to process: '%d'",
@@ -231,7 +232,7 @@ class GchelsaScript(SessionBasedScript):
                 gc3libs.log.debug(ex.message)
                 raise AttributeError("No valid input range. "
                                      "Format: [int]|[int]:[int]. E.g 1:432|3")
-            
+
         except AssertionError as ex:
             raise OSError(ex.message)
 
@@ -249,24 +250,24 @@ class GchelsaScript(SessionBasedScript):
             extra_args['jobname'] = 'chelsa-%s' % str(month)
 
             extra_args['output_dir'] = self.params.output
-            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                         'run_%s' % month)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                         'run_%s' % month)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                         'run_%s' % month)
-            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', 
+            extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',
                                                                         'run_%s' % month)
 
             if self.params.Rscript:
                 extra_args['Rscript'] = os.path.abspath(self.params.Rscript)
-                
+
             extra_args['input_data'] = self.params.input_data
             extra_args['output_data'] = self.params.output_data
             extra_args['temp_data'] = self.params.temp_data
-                
+
             tasks.append(GchelsaApplication(
                 month,
                 **extra_args))
-            
+
         return tasks

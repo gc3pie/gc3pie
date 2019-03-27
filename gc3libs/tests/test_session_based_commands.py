@@ -20,7 +20,7 @@ Tests for the cmdline module
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import json
 import os
 from os.path import abspath, dirname, exists, isdir, isfile, join

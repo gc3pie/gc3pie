@@ -6,7 +6,7 @@
 #   Copyright (C) 2015, 2016  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License as 
+#   modify it under the terms of the GNU General Public License as
 #   published by the Free Software Foundation, either version 3 of
 #   the License, or (at your option) any later version.
 #
@@ -32,6 +32,8 @@ Example:
 ...
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2016-04-20:
@@ -42,7 +44,6 @@ __docformat__ = 'reStructuredText'
 
 
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gpfi
     gpfi.GpfiScript().run()
 
@@ -69,7 +70,7 @@ class GpfiApplication(Application):
     Custom class to wrap the execution of the matlab script passed in src_dir.
     """
     application_name = 'gpfi'
-    
+
     def __init__(self, parameter, model, **extra_args):
 
         inputs = dict()
@@ -104,13 +105,13 @@ class GpfiScript(SessionBasedScript):
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gpfi`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gpfi``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -118,7 +119,7 @@ class GpfiScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__,
-            application = GpfiApplication, 
+            application = GpfiApplication,
             stats_only_for = GpfiApplication,
             )
 
@@ -135,7 +136,7 @@ class GpfiScript(SessionBasedScript):
         """
         assert os.path.isfile(self.params.csv_input_file), \
         "Input CSV file %s not found" % self.params.csv_input_file
-        
+
     def new_tasks(self, extra):
         """
         For each line of the input .csv file generate an execution Task
@@ -149,7 +150,7 @@ class GpfiScript(SessionBasedScript):
             extra_args = extra.copy()
 
             extra_args['jobname'] = jobname
-            
+
             extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
@@ -168,9 +169,9 @@ class GpfiScript(SessionBasedScript):
 
     def _enumerate_csv(self, csv_input):
         """
-        For each line of the input .csv file return list of parameters 
+        For each line of the input .csv file return list of parameters
         """
-        csv_file = open(csv_input, 'rb') 
+        csv_file = open(csv_input, 'rb')
         csv_reader = csv.reader(csv_file)
         next(csv_reader, None)
         for row in reader:

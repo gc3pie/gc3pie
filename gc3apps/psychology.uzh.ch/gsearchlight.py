@@ -26,6 +26,8 @@ See the output of ``gsearchlight.py --help`` for program usage
 instructions.
 """
 
+from __future__ import absolute_import, print_function
+
 __version__ = 'development version (SVN $Revision$)'
 # summary of user-visible changes
 __changelog__ = """
@@ -39,7 +41,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gsearchlight
     gsearchlight.GsearchlightScript().run()
 
@@ -69,7 +70,7 @@ class GsearchlightApplication(Application):
     over a subset of the total number of events.
     """
     application_name = 'gsearchlight'
-    
+
     def __init__(self, iterations, mask, mask_hdr, fn_file, matlab_file, **extra_args):
 
         executables = []
@@ -81,7 +82,7 @@ class GsearchlightApplication(Application):
         inputs[mask] = os.path.basename(mask)
         inputs[mask_hdr] = os.path.basename(mask_hdr)
         inputs[fn_file] = os.path.basename(fn_file)
-            
+
         # arguments = MATLAB_CMD.format(main_function=matlab_function,
         #                               iterations=iterations,
         #                               mask=inputs[mask_file],
@@ -93,17 +94,17 @@ class GsearchlightApplication(Application):
         inputs[wrapper] = "./wrapper.sh"
 
         arguments = "./wrapper.sh %s %d %s %s %s" % (matlab_function,
-                                                     iterations,                                                     
+                                                     iterations,
                                                      inputs[mask],
                                                      inputs[fn_file],
                                                      DEFAULT_REMOTE_OUTPUT_FILE)
-            
+
         # Set output
         outputs[DEFAULT_REMOTE_OUTPUT_FILE] = DEFAULT_REMOTE_OUTPUT_FILE
 
         gc3libs.log.debug("Creating application for executing: %s",
                           arguments)
-        
+
         Application.__init__(
             self,
             arguments = arguments,
@@ -125,13 +126,13 @@ class GsearchlightScript(SessionBasedScript):
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gsearchlight`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gsearchlight``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -139,12 +140,12 @@ class GsearchlightScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__,
-            application = GsearchlightApplication, 
+            application = GsearchlightApplication,
             stats_only_for = GsearchlightApplication,
             )
 
     def setup_args(self):
-        
+
         self.add_param('Mfunct',
                        type=existing_file,
                        help="Full path to Matlab function to execute.")
@@ -156,7 +157,7 @@ class GsearchlightScript(SessionBasedScript):
         self.add_param('fn',
                        type=existing_file,
                        help="Full path to Fn file.")
-        
+
     def setup_options(self):
         self.add_param("-I", "--iterations", metavar="INT",
                        type=positive_int,
@@ -179,7 +180,7 @@ class GsearchlightScript(SessionBasedScript):
         assert os.path.isfile(mask_filename+'.hdr'), \
             "Mask file %s.hdr missing" % mask_filename
         self.params.maskhdr = mask_filename+".hdr"
-        
+
     def new_tasks(self, extra):
         """
         Read content of 'command_file'
@@ -196,7 +197,7 @@ class GsearchlightScript(SessionBasedScript):
                 self.params.fn,
                 self.params.Mfunct,
                 **extra_args))
-                    
+
         return tasks
 
 def get_events(niter,chunk):

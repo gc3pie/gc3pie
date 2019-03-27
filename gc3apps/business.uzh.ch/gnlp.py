@@ -49,6 +49,8 @@ Input parameters consists of:
 </ROWSET>
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2014-09-05:
@@ -65,7 +67,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gnlp
     gnlp.GnlpScript().run()
 
@@ -102,7 +103,7 @@ class GnlpApplication(Application):
     Custom class to wrap the execution of the CoreNLP java script.
     """
     application_name = 'corenlp'
-    
+
     def __init__(self, input_data, **extra_args):
 
         # setup input references
@@ -134,22 +135,22 @@ class GnlpApplication(Application):
 
 class GnlpScript(SessionBasedScript):
     """
-    Splits input .xml file into smaller chunks, each of them of size 
+    Splits input .xml file into smaller chunks, each of them of size
     'self.params.chunk_size'.
     Then it submits one execution for each of the created chunked files.
-    
+
     The ``gnlp`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gnlp`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gnlp``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -157,7 +158,7 @@ class GnlpScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GnlpApplication, 
+            application = GnlpApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -171,7 +172,7 @@ class GnlpScript(SessionBasedScript):
                        help="How to split the .XML input data set. "
                        "Default: 1000")
 
-        self.add_param("--result-file", metavar="[STRING]", 
+        self.add_param("--result-file", metavar="[STRING]",
                        dest="result_file", default='result.xml',
                        help="Name of the result file generated as the aggregation"
                        " of all results from each chunked execution. "
@@ -186,7 +187,7 @@ class GnlpScript(SessionBasedScript):
         """
         Check presence of input file.
         """
-        
+
         # check args:
         if not os.path.isfile(self.params.input_data):
             raise gc3libs.exceptions.InvalidUsage(
@@ -205,7 +206,7 @@ class GnlpScript(SessionBasedScript):
         tasks = []
         last_index = 0
 
-        for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.input_data, 
+        for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.input_data,
                                                                               self.params.chunk_size):
 
             jobname = "gnlp-%d-%d" % (last_index,index_chunk)
@@ -218,7 +219,7 @@ class GnlpScript(SessionBasedScript):
 
             # extra_args['output_file'] = 'result.xml'
             extra_args['output_file'] = self.params.result_file
-            
+
             extra_args['output_dir'] = os.path.abspath(self.params.output)
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
@@ -241,7 +242,7 @@ class GnlpScript(SessionBasedScript):
         """
         Merge all result files together
         Then clean up tmp files.
-        Format of output file: 
+        Format of output file:
         FiledID@<Sentiments>..</Sentiments>
         e.g.
         296@<Sentiments>Neutral</Sentiments>
@@ -301,7 +302,7 @@ class GnlpScript(SessionBasedScript):
                     if line.strip() in ['<?xml version="1.0"?>','<ROWSET>','']:
                         # Ignore and continue
                         continue
-                
+
                     if line.strip() == "<row>":
                         if index % chunk_size == 0:
                             if fout:
@@ -313,10 +314,10 @@ class GnlpScript(SessionBasedScript):
                             fout = open(os.path.join(chunk_files_dir,"input-%d" % index),"w")
                             fout.write(XML_HEADER)
                         index += 1
-                    if not fout:    
+                    if not fout:
                         fout = open(os.path.join(chunk_files_dir,"input-%d" % index),"w")
                     fout.write(line)
-                    
+
             # Just close the current fout file if needed
             fout.close()
             chunk.append((fout.name, index))

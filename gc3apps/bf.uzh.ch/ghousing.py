@@ -33,7 +33,7 @@ __docformat__ = 'reStructuredText'
 ## Need to set path to linux kernel and apppot, e.g.: export PATH=$PATH:~/workspace/apppot:~/workspace/
 
 # Preliminary imports
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os, shutil
 
 ## Remove all files in curPath if -N option specified.

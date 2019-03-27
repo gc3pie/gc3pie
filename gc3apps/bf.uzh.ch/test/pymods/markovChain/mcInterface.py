@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import numpy as np
 import sys, shutil, os
 from johannes1987 import tauchen as Tauchen1987Joh

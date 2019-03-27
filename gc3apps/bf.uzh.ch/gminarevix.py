@@ -33,6 +33,8 @@ Input parameters consists of:
 Options:
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2014-03-14:
@@ -45,7 +47,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gminarevix
     gminarevix.GminarevixScript().run()
 
@@ -68,7 +69,7 @@ from gc3libs.quantity import Memory, kB, MB, MiB, GB, Duration, hours, minutes, 
 from gc3libs.workflow import RetryableTask
 
 # Resource requirements depending on Model type (only # cores)
-MODELS_SPECS = {'Wishart': {'requested_cores': 8, 'requested_memory': Memory(12*GB)}, 
+MODELS_SPECS = {'Wishart': {'requested_cores': 8, 'requested_memory': Memory(12*GB)},
                 'SVJJ': {'requested_cores': 16, 'requested_memory': Memory(32*GB)},
                 'SV2F': {'requested_cores': 8, 'requested_memory': Memory(12*GB)}}
 
@@ -84,7 +85,7 @@ class GminarevixApplication(Application):
     differential evolutionary alghorithm.
     """
     application_name = 'matlab-mcr'
-    
+
     def __init__(self, model_name, structure_data, **extra_args):
 
         self.output_dir = extra_args['output_dir']
@@ -129,13 +130,13 @@ class GminarevixScript(SessionBasedScript):
     """
     Fro each structure_data file (with '.mat' extension) found in the 'input folder',
     GminarevixScript generates as many Tasks as 'models' defined.
-    
+
     The ``gminarevix`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gminarevix`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -145,7 +146,7 @@ class GminarevixScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GminarevixApplication, 
+            application = GminarevixApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -164,7 +165,7 @@ class GminarevixScript(SessionBasedScript):
                        help="Path to the folder containing structure data files.")
 
     def setup_options(self):
-        self.add_param("-b", "--binary", metavar="[STRING]", 
+        self.add_param("-b", "--binary", metavar="[STRING]",
                        dest="run_binary", default=None,
                        help="Location of the Matlab compiled binary "
                        "version of the MinArevix.")
@@ -173,11 +174,11 @@ class GminarevixScript(SessionBasedScript):
         """
         Check validity of input parameters and selected benchmark.
         """
-        
+
         if self.params.run_binary:
             if not os.path.isfile(self.params.run_binary):
                 raise gc3libs.exceptions.InvalidUsage("MinArevix binary "
-                                                      " file %s not found" 
+                                                      " file %s not found"
                                                       % self.params.run_binary)
 
 
@@ -225,18 +226,18 @@ class GminarevixScript(SessionBasedScript):
 
                 extra_args['jobname'] = jobname
                 # extra_args['model_name'] = model
-                
+
                 if self.params.run_binary:
                     extra_args['run_binary'] = self.params.run_binary
 
                 extra_args['output_dir'] = self.params.output
-                extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', 
+                extra_args['output_dir'] = extra_args['output_dir'].replace('NAME',
                                                                             os.path.join(model,
                                                                                          input_file_name))
-                extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', 
+                extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION',
                                                                             os.path.join(model,
                                                                                          input_file_name))
-                extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', 
+                extra_args['output_dir'] = extra_args['output_dir'].replace('DATE',
                                                                             os.path.join(model,
                                                                                          input_file_name))
                 extra_args['output_dir'] = extra_args['output_dir'].replace('TIME',

@@ -6,7 +6,7 @@ This package actually imports your Python `collections`, and adds
 its own version of `OrderedDict` only if missing.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 from collections import *  # noqa
 
 try:

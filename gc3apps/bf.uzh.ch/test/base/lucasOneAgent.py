@@ -4,7 +4,7 @@
 # Inputs: parameters file, debug level, determistic flag
 # ../../inFiles/parameters.in debug false
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os, re, sys
 # Establish path to pymods
 try: 

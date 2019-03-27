@@ -23,6 +23,9 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gzods --help`` for program usage instructions.
 """
+
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2012-07-17:
@@ -37,7 +40,6 @@ __docformat__ = 'reStructuredText'
 
 
 if __name__ == '__main__':
-from __future__ import absolute_import
         import gzods
         gzods.ZodsScript().run()
 
@@ -97,17 +99,17 @@ class GzodsApp(gc3libs.Application):
                 gc3libs.log.debug("Retrieved the following file from ZODS job %s", output)
 
 
-#	Detect the following references to external files in input.xml
-#	input1:
-#	<average_structure>
+#       Detect the following references to external files in input.xml
+#       input1:
+#       <average_structure>
 #          <file format="cif" name="californium_simple_3.cif"/>
 #        </average_structure>
 #        input2:
-#	<reference_intensities file_format="xml" file_name="data.xml"/>
-#	input3:
-#	<optimization method>
-#		<restart file="diff_ev2.xml" />
-#	</optimization method>
+#       <reference_intensities file_format="xml" file_name="data.xml"/>
+#       input3:
+#       <optimization method>
+#               <restart file="diff_ev2.xml" />
+#       </optimization method>
 
     def check_input(self,filename):
 

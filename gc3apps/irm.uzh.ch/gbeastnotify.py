@@ -21,7 +21,7 @@
 __docformat__ = 'reStructuredText'
 __version__ = '$Revision$'
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import gc3libs
 from gc3libs.cmdline import SessionBasedScript
 import os

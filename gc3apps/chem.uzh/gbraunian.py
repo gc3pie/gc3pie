@@ -27,6 +27,8 @@ See the output of ``gbraunian.py --help`` for program usage
 instructions.
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2016-07-14:
@@ -39,7 +41,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gbraunian
     gbraunian.GbraunianScript().run()
 
@@ -76,7 +77,7 @@ class GbraunianApplication(Application):
     over a subset of the total number of events.
     """
     application_name = 'gbraunian'
-    
+
     def __init__(self, events, matlab_file, case_file, **extra_args):
 
         executables = []
@@ -86,18 +87,18 @@ class GbraunianApplication(Application):
         inputs[matlab_file] = os.path.basename(matlab_file)
         matlab_function = inputs[matlab_file].split('.')[0]
         inputs[case_file] = os.path.basename(case_file)
-            
+
         arguments = MATLAB_CMD.format(main_function=matlab_function,
                                       events=events,
                                       case_file=os.path.basename(case_file),
                                       output_file=DEFAULT_REMOTE_OUTPUT_FILE)
-            
+
         # Set output
         outputs[DEFAULT_REMOTE_OUTPUT_FILE] = DEFAULT_REMOTE_OUTPUT_FILE
 
         gc3libs.log.debug("Creating application for executing: %s",
                           arguments)
-        
+
         Application.__init__(
             self,
             arguments = arguments,
@@ -119,13 +120,13 @@ class GbraunianScript(SessionBasedScript):
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gbraunian`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gbraunian``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -133,7 +134,7 @@ class GbraunianScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GbraunianApplication, 
+            application = GbraunianApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -142,7 +143,7 @@ class GbraunianScript(SessionBasedScript):
             )
 
     def setup_args(self):
-        
+
         self.add_param('events', type=int,
                        help="Total number of events.")
 
@@ -151,12 +152,12 @@ class GbraunianScript(SessionBasedScript):
 
         self.add_param('case',
                        help="case file.")
-        
+
     def setup_options(self):
         self.add_param("-k", "--chunk", metavar="INT", type=int,
                        dest="chunk", default=DEFAULT_CHUNK,
                        help="How to split the edges input data set. "
-                       "Default: %(default)s.")                    
+                       "Default: %(default)s.")
 
     def parse_args(self):
         """
@@ -175,7 +176,7 @@ class GbraunianScript(SessionBasedScript):
             gc3libs.log.info("Using matlab function name: '%s'" % os.path.basename(self.params.main).split('.')[0])
 
         except AssertionError as ex:
-            raise ValueError(ex.message)            
+            raise ValueError(ex.message)
 
     def new_tasks(self, extra):
         """
@@ -191,7 +192,7 @@ class GbraunianScript(SessionBasedScript):
                 self.params.main,
                 self.params.case,
                 **extra_args))
-                    
+
         return tasks
 
 def get_events(events,chunk):

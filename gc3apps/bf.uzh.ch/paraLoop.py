@@ -29,7 +29,7 @@ __changelog__ = """
 __docformat__ = 'reStructuredText'
 
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import gc3libs.debug
 import re, os
 import numpy as np

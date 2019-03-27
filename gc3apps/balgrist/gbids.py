@@ -20,7 +20,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Front-end script for submitting multiple `BIDS apps` jobs fetching 
+Front-end script for submitting multiple `BIDS apps` jobs fetching
 docker images from the `BIDS apps` repository.
 
 It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
@@ -33,6 +33,8 @@ docker run -i --rm -v /mnt/filo/data/ds005:/bids_dataset:ro -v /mnt/filo/outputs
 
 gbids takes BIDS files as input.
 """
+
+from __future__ import absolute_import, print_function
 
 # summary of user-visible changes
 __changelog__ = """
@@ -48,7 +50,6 @@ __version__ = '1.0'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gbids
     gbids.GbidsScript().run()
 
@@ -91,7 +92,7 @@ def _get_subjects(input_folder):
     """
     control_files_list = []
     subjects_folders_list = []
-    
+
     for element in os.listdir(input_folder):
         full_element = os.path.abspath(os.path.join(input_folder,element))
         if element.endswith(".json") or element.endswith(".tsv"):
@@ -110,13 +111,13 @@ class GbidsApplication(Application):
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
     application_name = 'gbids'
-    
+
     def __init__(self, subject, subject_name, control_files, repeat_index, docker_run, freesurfer_license, **extra_args):
 
         executables = []
         inputs = dict()
         outputs = dict()
-        
+
         self.subject_dir = subject
         inputs[subject] = os.path.join(DEFAULT_BIDS_FOLDER,
                                        os.path.basename(subject))
@@ -133,7 +134,7 @@ class GbidsApplication(Application):
         # Define mount points
         DOCKER_MOUNT=" -v $PWD/{SUBJECT_DIR}:/bids:ro -v $PWD/{OUTPUT_DIR}:/output ".format(SUBJECT_DIR=DEFAULT_BIDS_FOLDER,
                                                                                      OUTPUT_DIR=DEFAULT_RESULT_FOLDER)
-                                                                                  
+
         if freesurfer_license:
             inputs[freesurfer_license] = os.path.basename(freesurfer_license)
             DOCKER_MOUNT+=" -v $PWD/{0}:/opt/freesurfer/license.txt ".format(inputs[freesurfer_license])
@@ -143,7 +144,7 @@ class GbidsApplication(Application):
                                               SUBJECT_NAME=subject_name)
 
         gc3libs.log.debug("Creating application for executing: %s", arguments)
-        
+
         Application.__init__(
             self,
             arguments = arguments,
@@ -152,7 +153,7 @@ class GbidsApplication(Application):
             stdout = 'gbids.log',
             join=True,
             executables = executables,
-            **extra_args)    
+            **extra_args)
 
     def terminated(self):
         """
@@ -165,7 +166,7 @@ class GbidsApplication(Application):
             shutil.move(os.path.join(self.output_dir,elem),
                         os.path.join(self.subject_dir,elem))
 
-        
+
 class GbidsScript(SessionBasedScript):
     """
     The ``gbids`` command keeps a record of jobs (submitted, executed
@@ -173,13 +174,13 @@ class GbidsScript(SessionBasedScript):
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gbids`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gbids``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -187,11 +188,11 @@ class GbidsScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__,
-            application = GbidsApplication, 
+            application = GbidsApplication,
             stats_only_for = GbidsApplication,
             )
 
-    def setup_args(self):        
+    def setup_args(self):
         self.add_param('input_folder',
                        type=existing_directory,
                        help="Path to input folder containing valid input .bids files.")
@@ -219,14 +220,14 @@ class GbidsScript(SessionBasedScript):
         """
 
         self.docker_image = self.params.docker.split(' ')[0]
-        self.docker_args =  self.params.docker.split(' ')[1:]        
+        self.docker_args =  self.params.docker.split(' ')[1:]
 
     def new_tasks(self, extra):
         """
         For each valid input file create a new GbidsRetryableTask
         """
         tasks = []
-        
+
         # Prepare empty output folder
         if not os.path.isdir(os.path.join(self.session.path,
                                          DEFAULT_RESULT_FOLDER)):
@@ -239,12 +240,12 @@ class GbidsScript(SessionBasedScript):
                 subject_name = os.path.basename(subject)
                 jobname = "{subject}-{rep}".format(subject=subject_name,
                                                    rep=repeat)
-                
+
                 extra_args = extra.copy()
 
                 extra_args['default_output'] = os.path.join(self.session.path,
                                                             DEFAULT_RESULT_FOLDER)
-                extra_args['jobname'] = jobname            
+                extra_args['jobname'] = jobname
                 extra_args['output_dir'] = self.params.output
                 extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
                 extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)

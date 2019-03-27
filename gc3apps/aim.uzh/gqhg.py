@@ -27,6 +27,8 @@ See the output of ``gqhg.py --help`` for program usage
 instructions.
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2016-07-01:
@@ -39,7 +41,6 @@ __version__ = '1.0.0'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gqhg
     gqhg.GqhgScript().run()
 
@@ -79,7 +80,7 @@ class GqhgApplication(Application):
     """
     """
     application_name = 'gqhgi'
-    
+
     def __init__(self, qdf_file, seed, steps, **extra_args):
 
         inputs = dict()
@@ -88,7 +89,7 @@ class GqhgApplication(Application):
         self.seed = seed
         output_logfile = "ooa_%d_08i" % seed
         qdf_filename = os.path.basename(qdf_file)
-        
+
         inputs[qdf_file] = qdf_filename
 
         if 'grid' in extra_args:
@@ -98,7 +99,7 @@ class GqhgApplication(Application):
         for input_file in extra_args['event_files']:
             inputs[input_file]=os.path.basename(input_file)
             extra_args['event'] = extra_args['event'].replace(input_file,os.path.basename(input_file))
-            
+
         arguments = DEFAULT_QHMAIN_COMMAND
         arguments += " --grid=%s " % grid_filename
         arguments += " --output-dir=%s " % DEFAULT_REMOTE_OUTPUT_FOLDER
@@ -107,7 +108,7 @@ class GqhgApplication(Application):
         arguments += " -n %d " % steps
         arguments += " --events=%s " % extra_args['event']
         arguments += " --log-file=%s.log > %s.out " % (output_logfile, output_logfile)
-        
+
         Application.__init__(
             self,
             arguments = arguments,
@@ -116,17 +117,17 @@ class GqhgApplication(Application):
                        output_logfile+".out"],
             stdout = 'gqhg.log',
             join=True,
-            **extra_args)        
+            **extra_args)
 
 class GqhgScript(SessionBasedScript):
     """
-    
+
     The ``gqhg`` command keeps a record of jobs (submitted, executed
     and pending) in a session file (set name with the ``-s`` option); at
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gqhg`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
@@ -136,7 +137,7 @@ class GqhgScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GqhgApplication, 
+            application = GqhgApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -174,7 +175,7 @@ class GqhgScript(SessionBasedScript):
                        "-- each event is separated by a comma"
                        "-- everything between : and .qdf is the filename"
                        "Default: %(default)s.")
-        
+
     def setup_args(self):
 
         self.add_param('input_data', type=str,
@@ -193,10 +194,10 @@ class GqhgScript(SessionBasedScript):
 
             assert os.path.isdir(self.params.input_data), \
                 "Input folder '%s' not found" % self.params.input_data
-            
+
             if self.params.grid:
                 assert os.path.isfile(self.params.grid), \
-                    "Grid file %s not found" % self.params.grid                
+                    "Grid file %s not found" % self.params.grid
 
             self.qdf_files = [ os.path.abspath(os.path.join(self.params.input_data,qdf))
                                for qdf in os.listdir(self.params.input_data)
@@ -206,7 +207,7 @@ class GqhgScript(SessionBasedScript):
 
         except AssertionError as ex:
             raise ValueError(ex.message)
-        
+
     def new_tasks(self, extra):
         """
         For each input folder, create an instance of GqhgApplication
@@ -214,7 +215,7 @@ class GqhgScript(SessionBasedScript):
         tasks = []
 
         list_input_qdf = parse_event_string(self.params.events)
-        
+
         for qdf_file in self.qdf_files:
 
             for iteration in range(1,int(self.params.iterations)+1):
@@ -230,34 +231,34 @@ class GqhgScript(SessionBasedScript):
                 extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
                 extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', jobname)
                 extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', jobname)
-                
+
                 if self.params.grid:
                     extra_args['grid'] = os.path.abspath(self.params.grid)
 
                 extra_args['event_files'] = list_input_qdf
                 extra_args['event'] = self.params.events
-                    
+
                 tasks.append(GqhgApplication(
                     qdf_file,
                     seed,
                     int(self.params.steps),
                     **extra_args))
-            
+
         return tasks
 
-def parse_event_string(eventstring):  
+def parse_event_string(eventstring):
     """Return a list of input event files given the command line event string."""
-    """assumes: -- each event file has suffix .qdf 
+    """assumes: -- each event file has suffix .qdf
                 -- 'env' type events only (e.g. not 'write')
-                -- each event is separated by a comma   
+                -- each event is separated by a comma
                 -- events string begins with '-events='
                 -- everything between : and .qdf is the filename
    """
     import string
-    filesuffix = ".qdf"  
+    filesuffix = ".qdf"
     eventfilelist = []
     events = eventstring.split(",")
-    for thisevent in events:   
+    for thisevent in events:
         if "=" in thisevent:   #   (e.g. '-events='.......)
             thisevent = thisevent.split("=")[1]
         first3letters = ""
@@ -269,9 +270,9 @@ def parse_event_string(eventstring):
             if iletter == 3:
                 break
         if first3letters[:3] != "env":
-            continue   # not the event we are looking for 
+            continue   # not the event we are looking for
 
-        # filename starts after the ":" 
+        # filename starts after the ":"
         stringtmp = thisevent.split(":")[1].strip() # strip any space before filename
         stringtmp = stringtmp.split(filesuffix)[0]
         stringtmp += filesuffix

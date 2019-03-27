@@ -35,6 +35,8 @@ Option paramenters consist of:
                           will be re-deployed on the reference appliances.
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2013-12-30:
@@ -47,7 +49,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gmodis
     gmodis.GmodisScript().run()
 
@@ -104,7 +105,7 @@ class GmodisApplication(Application):
                            for v in os.listdir(extra_args['fsc_dir'])))
 
 
-            
+
 
             _command.append("-f ./%s " % os.path.basename(extra_args['fsc_dir']))
 
@@ -149,12 +150,12 @@ class GmodisTask(RetryableTask):
             )
 
     def retry(self):
-        """ 
+        """
         Task will be retried iif the application crashed
         due to an error within the exeuction environment
         (e.g. VM crash or LRMS kill)
         """
-        # XXX: check whether it is possible to distinguish 
+        # XXX: check whether it is possible to distinguish
         # between the error conditions and set meaningfull exitcode
         return False
 
@@ -214,7 +215,7 @@ newly-created jobs so that this limit is never exceeded.
         Check presence of input folder (should contains R scripts).
         path to command_file should also be valid.
         """
-        
+
         # check args:
         # XXX: make them position independent
         if not os.path.isdir(self.params.input_dir):
@@ -248,33 +249,33 @@ newly-created jobs so that this limit is never exceeded.
         Read content of 'command_file'
         For each command line, generate a new GcgpsTask
         """
-        
+
 
         tasks = []
 
         for input_file in os.listdir(os.path.abspath(self.params.input_dir)):
-            try: 
+            try:
                 # Take only .mat files
-                if input_file.endswith('.mat'): 
-                    
+                if input_file.endswith('.mat'):
+
                     # Use first sequence in input file name as jobname
                     # e.g. FSC10A1.A2000083_aT_fsc_stitch.mat will get
                     # gmodis-FSC10A1.A2000083
                     jobname = "gmodis-%s" % input_file[:16]
-                    
+
                     extra_args = extra.copy()
                     extra_args['jobname'] = jobname
-                    # FIXME: ignore SessionBasedScript feature of customizing 
+                    # FIXME: ignore SessionBasedScript feature of customizing
                     # output folder
                     extra_args['output_dir'] = self.params.output
-                    
+
                     extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
                     extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
                     extra_args['output_dir'] = extra_args['output_dir'].replace('DATE', jobname)
                     extra_args['output_dir'] = extra_args['output_dir'].replace('TIME', jobname)
-                    
+
                     self.log.info("Creating Task for input file: %s" % input_file)
-                    
+
                     if self.params.matlab_driver:
                         extra_args['matlab_driver'] = self.params.matlab_driver
 
@@ -287,7 +288,7 @@ newly-created jobs so that this limit is never exceeded.
                     tasks.append(GmodisTask(
                         os.path.join(os.path.abspath(self.params.input_dir),input_file),
                         **extra_args))
-                    
+
             except Exception, ex:
                 self.log.error("Unexpected error. Error type: %s, Message: %s" % (type(ex),str(ex)))
 

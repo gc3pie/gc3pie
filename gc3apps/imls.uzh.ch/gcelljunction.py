@@ -24,6 +24,9 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gcelljunction --help`` for program usage instructions.
 """
+
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
 * 2014-08-15: Add option to restart jobs from saved data.
@@ -38,7 +41,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
-from __future__ import absolute_import
     import gcelljunction
     gcelljunction.GCellJunctionScript().run()
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import numpy as np
 import os, sys
 path2Pymods = os.path.join(os.path.dirname(__file__), '../../')

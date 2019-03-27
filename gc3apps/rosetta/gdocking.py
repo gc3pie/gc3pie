@@ -23,6 +23,9 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``gdocking --help`` for program usage instructions.
 """
+
+from __future__ import absolute_import, print_function
+
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
@@ -87,7 +90,6 @@ __docformat__ = 'reStructuredText'
 # workaround for Issue 95,
 # see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gdocking
     gdocking.GDockingScript().run()
 
@@ -217,7 +219,7 @@ of newly-created jobs so that this limit is never exceeded.
             )
 
     def setup_options(self):
-        self.add_param("-f", "--flags-file", dest="flags_file", 
+        self.add_param("-f", "--flags-file", dest="flags_file",
                        default=os.path.join(gc3libs.Default.RCDIR, 'docking_protocol.flags'),
                        metavar="PATH",
                        help="Pass the specified flags file to Rosetta 'docking_protocol'"
@@ -263,7 +265,6 @@ of newly-created jobs so that this limit is never exceeded.
         except Exception, ex:
             gc3libs.log.error("Invalid flags file `%s`: please supply a valid flags file by adding the option `-f PATH`" % self.params.flags_file)
             raise ex
-        
+
         self.extra['flags_file'] = os.path.abspath(self.params.flags_file)
         self.log.info("Using flags file '%s'", self.extra['flags_file'])
-

@@ -1,5 +1,5 @@
 #http://stackoverflow.com/questions/2082850/real-time-subprocess-popen-via-stdout-and-pipe
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os, sys
 print(os.getcwd())
 from subprocess import Popen, PIPE

@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import gc3libs.debug
 import gc3libs.application.apppot
 import re, os

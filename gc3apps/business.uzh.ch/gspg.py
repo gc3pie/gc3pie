@@ -28,7 +28,7 @@ instructions.
 
 Input parameters consists of:
 :param str edges file: Path to an .csv file containing input data in
-the for of: 
+the for of:
     X1   X2
 1  id1  id2
 2  id1  id3
@@ -42,9 +42,11 @@ XXX: To be clarified:
 . Should be possible to re-run a subset of the initial chunk list
 without re-creating a new session ?
 e.g. adding a new argument accepting chunk ranges (-R 3000:7500)
-This would trigger the re-run of the whole workflow only 
+This would trigger the re-run of the whole workflow only
 for lines between 3000 and 7500
 """
+
+from __future__ import absolute_import, print_function
 
 # summary of user-visible changes
 __changelog__ = """
@@ -58,7 +60,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: http://code.google.com/p/gc3pie/issues/detail?id=95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gspg
     gspg.GspgScript().run()
 
@@ -87,20 +88,20 @@ class GspgApplication(Application):
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
     application_name = 'gspg'
-    
+
     def __init__(self, input_file, **extra_args):
 
 
         executables = []
         inputs = dict()
-        
+
         inputs[input_file] = "./input.csv"
         gspg_wrapper = resource_filename(Requirement.parse("gc3pie"),
                                               "gc3libs/etc/gspg_wrapper.py")
 
         inputs[gspg_wrapper] = "./wrapper.py"
 
-        
+
         self.output_folder = "./results"
 
         # setup output references
@@ -122,7 +123,7 @@ class GspgApplication(Application):
 
         gc3libs.log.debug("Creating application for executing: %s",
                           arguments)
-        
+
         Application.__init__(
             self,
             arguments = arguments,
@@ -147,7 +148,7 @@ class GspgScript(SessionBasedScript):
     passed to a single `ctx-linkdyn-ordprm-sirs.p4` execution. For each line
     of the input .csv file a GspgApplication needs to be generated (depends on
     chunk value passed as part of the input options).
-    Splits input .csv file into smaller chunks, each of them of size 
+    Splits input .csv file into smaller chunks, each of them of size
     'self.params.chunk_size'.
     Then submits one execution for each of the created chunked files.
 
@@ -156,13 +157,13 @@ class GspgScript(SessionBasedScript):
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gspg`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gspg``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -170,7 +171,7 @@ class GspgScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__, # module version == script version
-            application = GspgApplication, 
+            application = GspgApplication,
             # only display stats for the top-level policy objects
             # (which correspond to the processed files) omit counting
             # actual applications because their number varies over
@@ -179,7 +180,7 @@ class GspgScript(SessionBasedScript):
             )
 
     def setup_args(self):
-        
+
         self.add_param('csv_input_file', type=str,
                        help="Input .csv file")
 
@@ -226,9 +227,9 @@ class GspgScript(SessionBasedScript):
         """
         tasks = []
 
-        for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.csv_input_file, 
+        for (input_file, index_chunk) in self._generate_chunked_files_and_list(self.params.csv_input_file,
                                                                               self.params.chunk_size):
-            
+
             jobname = "gspg-%s" % (str(index_chunk))
 
             extra_args = extra.copy()
@@ -237,7 +238,7 @@ class GspgScript(SessionBasedScript):
             extra_args['chunk_size'] = int(self.params.chunk_size)
 
             extra_args['jobname'] = jobname
-            
+
             extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
@@ -265,7 +266,7 @@ class GspgScript(SessionBasedScript):
         e.g. ('/tmp/chunk2800.csv,2800) for the chunk segment that goes
         from 2800 to (2800 + chunk_size)
         """
-        
+
         chunks = []
         chunk_files_dir = os.path.join(self.session.path,"tmp")
 
@@ -284,9 +285,9 @@ class GspgScript(SessionBasedScript):
 
         index = 0
         for chunk in reader:
-            index += 1     
+            index += 1
             filename = "%s/chunk_%s.csv" % (chunk_files_dir,index)
             chunk.to_csv(filename, header=True, index=False)
             chunks.append((filename,index))
-            
+
         return chunks

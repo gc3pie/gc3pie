@@ -22,7 +22,7 @@
 gsnowpack is a driver script that allows to run 'snowpack' on a series of input
 data gathered from publicly available GSN stations. Data correspond to an
 arbitrary number of GSN stations (first prototype used 2 stations).
-The script is meant to be invoked every 30' and analyse updated data from the 
+The script is meant to be invoked every 30' and analyse updated data from the
 same stations.
 For each station, gsnowpack launches a single job whose task is to run snowpack
 with a gsn configuration that allows to fetch fresh data from a given station
@@ -46,6 +46,8 @@ Options parameters:
 
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2013-04-09:
@@ -60,7 +62,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gsnowpack
     gsnowpack.GsnowpackScript().run()
 
@@ -150,10 +151,10 @@ create_plots.sh output/${SNO_NAME}.pro img/
 
 # Could be check whether images produced are of 0 size
 # in case remove them
-for image in `ls img/*.` 
-do 
+for image in `ls img/*.`
+do
   if [ -s img/$image ]; then
-     echo "Zero size image $i" 
+     echo "Zero size image $i"
      rm img/$image
   fi
 done
@@ -208,7 +209,7 @@ echo "[`date`] End"
         Return a list of image files
         """
         return [os.path.join(self.output_dir,'images',img) for img in os.listdir(os.path.join(self.output_dir,'images')) if img.endswith('.png')]
-        
+
 
     def get_snofiles(self):
         """
@@ -246,7 +247,7 @@ newly-created jobs so that this limit is never exceeded.
             # actual applications because their number varies over
             # time as checkpointing and re-submission takes place.
             stats_only_for = GsnowpackApplication,
-            ) 
+            )
 
     def setup_options(self):
         self.add_param("-g", "--gsn", metavar="PATH",
@@ -255,7 +256,7 @@ newly-created jobs so that this limit is never exceeded.
 
         self.add_param("-p", "--publish", metavar="PATH",
                        dest="www", default=None,
-                       help="Location of http server's DocRoot." + 
+                       help="Location of http server's DocRoot." +
                        " Results (plots) will be copied and organised there")
 
     def setup_args(self):
@@ -263,7 +264,7 @@ newly-created jobs so that this limit is never exceeded.
         self.add_param('sno_files_location', type=str,
                        help="Path to the folder containing the .sno files")
 
-        
+
     def process_args(self):
         from time import localtime, strftime
         # set timestamp
@@ -289,7 +290,7 @@ newly-created jobs so that this limit is never exceeded.
         inputfiles = []
 
         # self.sno_files_list = {}
-            
+
         if not os.path.isdir(self.params.sno_files_location):
             gc3libs.log.error("Argument '%s' is not a directory path." % self.params.sno_files_location)
         else:
@@ -315,7 +316,7 @@ newly-created jobs so that this limit is never exceeded.
                         for _file in os.listdir(dirpath):
                             if _file.startswith(extra_args['station_name']):
                                 input_list.append(os.path.join(dirpath,_file))
-                            
+
 
                         extra_args['time_stamp'] = self.time_stamp
 
@@ -327,7 +328,7 @@ newly-created jobs so that this limit is never exceeded.
                             os.path.join(extra_args['station_name'],extra_args['time_stamp']))
 
                         self.log.info("Creating new Task: '%s'" % jobname)
-                        
+
                         tasks.append(GsnowpackApplication(
                                 input_list,
                                 gsn_ini = self.params.gsn_ini,
@@ -339,10 +340,10 @@ newly-created jobs so that this limit is never exceeded.
         """
         After completion of the SessionBasedScript
         publish the result images to self.params.www.
-        
+
         The agreed schema is the following:
         [self.params.www]/[station_name]/[images].png
-        an additional 'time_stamp' file will be placed 
+        an additional 'time_stamp' file will be placed
         in [self.params.www]/[station_name]
         to alow the web server to publish also the actual
         time stamp of the displayed images.
@@ -351,7 +352,7 @@ newly-created jobs so that this limit is never exceeded.
             if isinstance(task,GsnowpackApplication) and task.execution.returncode == 0:
                 # Only consider successfully terminated tasks
                 _update_original_sno_files(task)
-        
+
                 if self.params.www and task.get_images():
                     try:
                         _publish_data(task, self.params.www)
@@ -376,7 +377,7 @@ def _publish_data(task, www_location):
 
     station_folder = os.path.join(www_location,task.station_name)
     time_stamp = task.time_stamp
-    
+
     # check if current task has actual images
     # and if they are not empty file
     # This extra check is necessary as the plotting routine
@@ -405,7 +406,7 @@ def _publish_data(task, www_location):
         # image needs to be renamed with the following schema
         # [station_name]-[attribute-displayed]-[timestamp]
         # timestamp format: YYYYMMDD-hhmm
-        
+
         try:
             img_attribute_displayed = os.path.basename(image).split('.')[0]
         except Exception, ex:
@@ -424,8 +425,8 @@ def _publish_data(task, www_location):
             gc3libs.log.error("Failed while moving image file '%s' to '%s'." +
                               "Error message '%"  % (image, station_folder, str(osx)))
             continue
-            
-            
+
+
     # Write time_stamp file
     time_stamp_file = os.path.join(station_folder,'.time_stamp')
     try:
@@ -456,4 +457,3 @@ def _update_original_sno_files(task):
         except Exception, ex:
             gc3libs.log.error("Failed while updating .sno files %s. Error type '%s', message '%s'" % (snofile, type(ex), str(ex)))
             continue
-

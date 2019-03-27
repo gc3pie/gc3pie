@@ -36,6 +36,8 @@ Contents of a typical input folder::
     maps/
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2013-11-05:
@@ -56,7 +58,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import ggeotop
     ggeotop.GGeotopScript().run()
 
@@ -190,7 +191,7 @@ class GeotopApplication(Application):
             executable_name = os.path.abspath(executable)
             _command += " %s " % os.path.abspath(self.simulation_dir)
             outputs = []
-            
+
         _command += "%s" % executable_name
 
         # set some execution defaults...
@@ -318,8 +319,8 @@ class GeotopApplication(Application):
             # call _scan_and_tar to create new archive
             # XXX: To consider a better way of handling this
             # at the moment the entire input archive is recreated
-            
-            
+
+
             # XXX: How to distinguish a failed geotop execution from one terminated
             # by the LRMS ?
 
@@ -408,7 +409,7 @@ newly-created jobs so that this limit is never exceeded.
         #                default=1800,
         #                help="Creates a summary of the current execution.")
 
-        self.add_param("-S", "--sharedfs", dest="shared_FS", 
+        self.add_param("-S", "--sharedfs", dest="shared_FS",
                        action="store_true", default=False,
                        help="Whether the destination resource should assume shared filesystem where Input/Output data will be made available. Data transfer will happen through lcoal filesystem. Default: False.")
 

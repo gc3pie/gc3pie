@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 """
 """
 # Copyright (C) 2011-2012  University of Zurich. All rights reserved.

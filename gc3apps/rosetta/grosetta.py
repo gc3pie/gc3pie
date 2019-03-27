@@ -23,6 +23,9 @@ It uses the generic `gc3libs.cmdline.SessionBasedScript` framework.
 
 See the output of ``grosetta --help`` for program usage instructions.
 """
+
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2012-02-28:
@@ -38,10 +41,8 @@ __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 
-
 # workaround Issue 95, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
-from __future__ import absolute_import
     import grosetta
     grosetta.GRosettaScript().run()
 

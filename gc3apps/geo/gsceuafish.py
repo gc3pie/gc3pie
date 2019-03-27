@@ -34,6 +34,8 @@ Example:
 ...
 """
 
+from __future__ import absolute_import, print_function
+
 # summary of user-visible changes
 __changelog__ = """
   2015-11-05:
@@ -46,7 +48,6 @@ __docformat__ = 'reStructuredText'
 # run script, but allow GC3Pie persistence module to access classes defined here;
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == "__main__":
-from __future__ import absolute_import
     import gsceuafish
     gsceuafish.GsceuafishScript().run()
 
@@ -74,7 +75,7 @@ class GsceuafishApplication(Application):
     Custom class to wrap the execution of the R scripts passed in src_dir.
     """
     application_name = 'sceuafish'
-    
+
     def __init__(self, parameter, **extra_args):
 
         inputs = dict()
@@ -90,7 +91,7 @@ class GsceuafishApplication(Application):
 
         if "main_loop_folder" in extra_args:
             inputs[extra_args['main_loop_folder']] = './data/'
-        
+
         Application.__init__(
             self,
             arguments = _command,
@@ -112,13 +113,13 @@ class GsceuafishScript(SessionBasedScript):
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gsceuafish`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
 
     Once the processing of all chunked files has been completed, ``gsceuafish``
-    aggregates them into a single larger output file located in 
+    aggregates them into a single larger output file located in
     'self.params.output'.
     """
 
@@ -126,7 +127,7 @@ class GsceuafishScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__,
-            application = GsceuafishApplication, 
+            application = GsceuafishApplication,
             stats_only_for = GsceuafishApplication,
             )
 
@@ -148,7 +149,7 @@ class GsceuafishScript(SessionBasedScript):
         """
         assert os.path.isfile(self.params.csv_input_file), \
         "Input CSV file %s not found" % self.params.csv_input_file
-        
+
         if self.params.main_loop:
             assert os.path.isdir(self.params.main_loop), \
             "Main_Loop.m location %s not found" % self.params.main_loop
@@ -167,7 +168,7 @@ class GsceuafishScript(SessionBasedScript):
             extra_args = extra.copy()
 
             extra_args['jobname'] = jobname
-            
+
             extra_args['output_dir'] = self.params.output
             extra_args['output_dir'] = extra_args['output_dir'].replace('NAME', jobname)
             extra_args['output_dir'] = extra_args['output_dir'].replace('SESSION', jobname)
@@ -176,7 +177,7 @@ class GsceuafishScript(SessionBasedScript):
 
             if self.params.main_loop:
                 extra_args['main_loop_folder'] = self.params.main_loop
-            
+
             self.log.debug("Creating Application for parameter : %s" %
                            (parameter_str))
 
@@ -189,7 +190,7 @@ class GsceuafishScript(SessionBasedScript):
     def _enumerate_csv(self, input_csv):
         """
         For each line of the input .csv file
-        return list of parameters 
+        return list of parameters
         """
         parameters = pandas.read_csv(input_csv,header=None)
         for i,p in enumerate(parameters.values):
