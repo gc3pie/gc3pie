@@ -328,7 +328,7 @@ class ComputeTargetVals(ParallelTaskCollection):
         try:
             os.mkdir(self.iteration_folder)
         except OSError:
-            print '%s already exists' % self.iteration_folder
+            print('%s already exists' % self.iteration_folder)
 
         # save pop to file
         if cur_pop_file:

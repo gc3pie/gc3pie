@@ -31,7 +31,7 @@ import logging
 
 
 if __name__ == "__main__":
-    print "Compute Rosenbrock function"
+    print("Compute Rosenbrock function")
 
     # log = open('/home/benjamin/.gc3/debug.log', 'a')
     # log.write("Running in directory: '%s'\n" % os.getcwd())
@@ -47,4 +47,4 @@ if __name__ == "__main__":
     out_file = open("rosenbrock.out", 'w')
     out_file.write(str(fun) + '\n')
 
-    print "done"
+    print("done")

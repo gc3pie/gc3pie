@@ -29,10 +29,10 @@ import subprocess
 DEFAULT_RESULT_FOLDER = "./results"
 
 def usage():
-    print """
+    print("""
     Usage:
     gbenchmark_allinone.py <benchmark_file> <network files folder>
-    """
+    """)
 
 def RunBenchmarks(benchmark_file, network_files_folder):
 
@@ -54,14 +54,14 @@ def RunBenchmarks(benchmark_file, network_files_folder):
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE)
 
-        print "Running command %s" % command
+        print("Running command %s" % command)
         (stdout, stderr) = proc.communicate()
-        
-        if proc.returncode != 0:
-            print "Execution failed with exit code: %d" % proc.returncode
 
-            print stdout
-            print stderr
+        if proc.returncode != 0:
+            print("Execution failed with exit code: %d" % proc.returncode)
+
+            print(stdout)
+            print(stderr)
 
             returncode = proc.returncode
 

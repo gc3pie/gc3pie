@@ -1074,7 +1074,7 @@ as more lines are written to the given stream.
                                            " %s" % (where, stream))
                             file_handle.seek(where)
                             for line in file_handle.readlines():
-                                print line.strip()
+                                print(line.strip())
                             where = file_handle.tell()
                             self.log.debug("Read up to position %d in stream"
                                            " %s" % (where, stream))
@@ -1086,7 +1086,7 @@ as more lines are written to the given stream.
                         fh = app.peek(stream, offset=-estimated_size,
                                       size=estimated_size)
                         for line in fh.readlines()[-(self.params.num_lines):]:
-                            print line.strip()
+                            print(line.strip())
                         fh.close()
 
                 except gc3libs.exceptions.InvalidOperation:  # Cannot `peek()` on a task collection  # noqa
@@ -1373,12 +1373,12 @@ To get detailed info on a specific command, run:
 
         timestamps.sort(key=(lambda ts: ts[0]))
         for entry in timestamps:
-            print "%s %s: %s" % (
+            print("%s %s: %s" % (
                 time.strftime(
                     "%b %d %H:%M:%S", time.localtime(entry[0])
                     ),
                 str(entry[1]),
-                entry[2])
+                entry[2]))
 
 
 class cmd_gselect(GC3UtilsScript):
@@ -1959,7 +1959,7 @@ To get detailed info on a specific command, run:
                 printed += len(vms)
 
             if not printed:
-                print "  no known VMs are currently running on this resource."
+                print("  no known VMs are currently running on this resource.")
             gc3libs.log.debug(
                 "list_vms: Releasing lock for resource %s", res.name)
             lock.release()

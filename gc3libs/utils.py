@@ -8,7 +8,7 @@ function or class belongs in here is the following: place a function
 or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
-# Copyright (C) 2009-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -467,7 +467,7 @@ class Enum(frozenset):
 
     Finally, enumeration labels can also be iterated upon::
 
-      >>> for a in sorted(Animal): print a
+      >>> for a in sorted(Animal): print(a)
       CAT
       DOG
     """
@@ -503,10 +503,8 @@ class ExponentialBackoff(object):
     or by looping over it::
 
       >>> random.seed(314) # not-so-random for testing purposes...
-      >>> for wt in ExponentialBackoff():
-      ...   print wt,
-      ...
-      0.0 0.0 0.0 0.25 0.15 0.3
+      >>> list(ExponentialBackoff())
+      [0.0, 0.0, 0.0, 0.25, 0.15000000000000002, 0.30000000000000004]
 
     .. _`exponential backoff`: http://goo.gl/PxVICA
 
@@ -809,9 +807,9 @@ def ifelse(test, if_true, if_false):
     conditional assignment operator::
 
       >>> a = 1
-      >>> b = ifelse(a, "yes", "no"); print b
+      >>> b = ifelse(a, "yes", "no"); print(b)
       yes
-      >>> b = ifelse(not a, 'yay', 'nope'); print b
+      >>> b = ifelse(not a, 'yay', 'nope'); print(b)
       nope
 
     """
@@ -2187,21 +2185,21 @@ def uniq(seq):
 
     Examples:
 
-      >>> for value in uniq([4,1,1,2,3,1,2]): print value
+      >>> for value in uniq([4,1,1,2,3,1,2]): print(value)
       ...
       1
       2
       3
       4
 
-      >>> for value in uniq([1,2,3,4]): print value
+      >>> for value in uniq([1,2,3,4]): print(value)
       ...
       1
       2
       3
       4
 
-      >>> for value in uniq([1,1,1,1]): print value
+      >>> for value in uniq([1,1,1,1]): print(value)
       ...
       1
 

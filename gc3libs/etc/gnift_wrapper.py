@@ -77,7 +77,7 @@ def RunFreesurfer(subject, input, output):
 
 
     # DATA INPUT and  CROSS SECTIONAL PROCESSING
-    print "Start DATA INPUT on %d Timepoints" % len(input_nii.keys())
+    print("Start DATA INPUT on %d Timepoints" % len(input_nii.keys()))
     for timepoint in sorted(input_nii.keys()):
         inputs = '-i '+' -i '.join(x for x in input_nii[timepoint])
         data_input_outputfolder =  "%s.cross.%s" % (subject, timepoint)
@@ -91,19 +91,19 @@ def RunFreesurfer(subject, input, output):
             assert os.path.isdir(os.path.join(output,data_input_outputfolder)), \
             "Output folder '%s' not found" % os.path.join(output,data_input_outputfolder)
         except AssertionError as ex:
-            print ex.message
+            print(ex.message)
             return 1
 
         cross_files.append(data_input_outputfolder)
 
-        print "Start CROSS SECTIONAL PROCESSING"
+        print("Start CROSS SECTIONAL PROCESSING")
         "Example: recon-all -s s01.cross.TP1 -all"
         command="recon-all -deface -s %s -all" % data_input_outputfolder
         runme(command)
 
 
     # BASE PROCESSING
-    print "Start BASE PROCESSING with %d timepoints" % len(cross_files)
+    print("Start BASE PROCESSING with %d timepoints" % len(cross_files))
     inputs = '-tp '+' -tp '.join(x for x in sorted(cross_files))
     basefile = "%s.base" % subject
     command = "recon-all -deface -base %s %s -all" % (basefile,inputs)
@@ -112,7 +112,7 @@ def RunFreesurfer(subject, input, output):
 
 
     # LONG PROCESSING s01
-    print "Start LONG PROCESSING with %d timepoints" % len(cross_files)
+    print("Start LONG PROCESSING with %d timepoints" % len(cross_files))
     for cross in sorted(cross_files):
         # Example: recon-all -long s01.cross.TP1 s01.base -all -qcache
         command = "recon-all -deface -long %s %s -all -qcache" % (cross,basefile)
@@ -132,13 +132,13 @@ def runme(command):
         stderr=subprocess.PIPE,
         stdout=subprocess.PIPE)
 
-    print "Running command %s" % command
+    print("Running command %s" % command)
     (stdout, stderr) = proc.communicate()
 
     if proc.returncode != 0:
-        print "Execution failed with exit code: %d" % proc.returncode
-        print "Output message: %s" % stdout
-        print "Error message: %s" % stderr
+        print("Execution failed with exit code: %d" % proc.returncode)
+        print("Output message: %s" % stdout)
+        print("Error message: %s" % stderr)
         raise Exeption(stderr)
 
 if __name__ == '__main__':

@@ -78,19 +78,19 @@ def RunFreesurfer():
     if FS_SEQ_CROSS in args.sequence:
 
         # DATA INPUT and  CROSS SECTIONAL PROCESSING
-        print "Start DATA INPUT on %s" % args.subject
+        print("Start DATA INPUT on %s" % args.subject)
         "Example: recon-all -i file.nii.gz -subjid s01.cross.TP1"
         command="recon-all -i %s -subjid %s.crossTP1" % (args.nifti,args.nifti.split(".")[0])
         runme(command)
 
-        print "Start CROSS SECTIONAL PROCESSING"
+        print("Start CROSS SECTIONAL PROCESSING")
         "Example: recon-all -s s01.cross.TP1 -all"
         command="recon-all -s %s.crossTP1 -all" % args.nifti.split(".")[0]
         runme(command)
 
     if FS_SEQ_LONG in args.sequence:
         # LONG PROCESSING s01
-        print "Start LONG PROCESSING on %s" % args.subject
+        print("Start LONG PROCESSING on %s" % args.subject)
         # Example: recon-all -long s01.cross.TP1 s01.base -all -qcache
         command = "recon-all -long %scross -all -qcache" % args.subject
         runme(command)
@@ -108,13 +108,13 @@ def runme(command):
         stderr=subprocess.PIPE,
         stdout=subprocess.PIPE)
 
-    print "Running command %s" % command
+    print("Running command %s" % command)
     (stdout, stderr) = proc.communicate()
 
     if proc.returncode != 0:
-        print "Execution failed with exit code: %d" % proc.returncode
-        print "Output message: %s" % stdout
-        print "Error message: %s" % stderr
+        print("Execution failed with exit code: %d" % proc.returncode)
+        print("Output message: %s" % stdout)
+        print("Error message: %s" % stderr)
         raise Exeption(stderr)
 
 if __name__ == '__main__':

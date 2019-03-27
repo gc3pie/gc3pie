@@ -1121,7 +1121,7 @@ class Application(Task):
           ...     gc3libs.url.UrlKeyDict, d1, True)
           >>> isinstance(d2, gc3libs.url.UrlKeyDict)
           True
-          >>> for key in sorted(d2.keys()): print key.path
+          >>> for key in sorted(d2.keys()): print(key.path)
           /tmp/1
           /tmp/2
 

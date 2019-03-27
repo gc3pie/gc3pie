@@ -42,16 +42,16 @@ def RunTrac(dmrirc_input):
 
     for step in TRAC_PIPELINE:
         cmd = step.format(dmrirc=dmrirc_input)
-        print "Running '%s' " % cmd,
+        print("Running '%s' " % (cmd,))
         (ret,stdout,stderr) = runme(cmd)
         if ret != 0:
-            print "[failed]"
-            print "Execution failed with exit code: %d" % ret
-            print "Output message: %s" % stdout
-            print "Error message: %s" % stderr
+            print("[failed]")
+            print("Execution failed with exit code: %d" % ret)
+            print("Output message: %s" % stdout)
+            print("Error message: %s" % stderr)
             break
         else:
-            print "[ok]"
+            print("[ok]")
     return ret
 
 def runme(command):

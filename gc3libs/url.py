@@ -3,7 +3,7 @@
 """
 Utility classes and methods for dealing with URLs.
 """
-# Copyright (C) 2011-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2011-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -369,7 +369,7 @@ class UrlKeyDict(dict):
        >>> d = UrlKeyDict()
        >>> d['/tmp/foo'] = 1
        >>> for k in d.keys(): print (type(k), k.path) # doctest:+ELLIPSIS
-       (<class '....Url'>, '/tmp/foo')
+       <class '....Url'> /tmp/foo
 
     Retrieving the value associated with a key works with both the
     string or the url value of the key:
@@ -420,12 +420,12 @@ class UrlKeyDict(dict):
 
         >>> d = UrlKeyDict(force_abs=True)
         >>> d['foo'] = 1
-        >>> for k in d.keys(): print os.path.isabs(k.path)
+        >>> for k in d.keys(): print(os.path.isabs(k.path))
         True
 
         >>> d = UrlKeyDict(force_abs=False)
         >>> d['foo'] = 2
-        >>> for k in d.keys(): print os.path.isabs(k.path)
+        >>> for k in d.keys(): print(os.path.isabs(k.path))
         False
 
     """
@@ -479,8 +479,8 @@ class UrlValueDict(dict):
        >>> d[1] = '/tmp/foo'
        >>> d[2] = Url('file:///tmp/bar')
        >>> for v in d.values(): print (type(v), v.path) # doctest:+ELLIPSIS
-       (<class '....Url'>, '/tmp/foo')
-       (<class '....Url'>, '/tmp/bar')
+       <class '....Url'> /tmp/foo
+       <class '....Url'> /tmp/bar
 
     Retrieving the value associated with a key always returns the
     URL-type value, regardless of how it was set::
@@ -513,12 +513,12 @@ class UrlValueDict(dict):
 
         >>> d = UrlValueDict(force_abs=True)
         >>> d[1] = 'foo'
-        >>> for v in d.values(): print os.path.isabs(v.path)
+        >>> for v in d.values(): print(os.path.isabs(v.path))
         True
 
         >>> d = UrlValueDict(force_abs=False)
         >>> d[2] = 'foo'
-        >>> for v in d.values(): print os.path.isabs(v.path)
+        >>> for v in d.values(): print(os.path.isabs(v.path))
         False
 
     """

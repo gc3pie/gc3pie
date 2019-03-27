@@ -1,8 +1,8 @@
 #!/bin/env python
 
 """
-# gspg_wrapper.py -- Wrapper script to execute CTX analysis 
-# 
+# gspg_wrapper.py -- Wrapper script to execute CTX analysis
+#
 # Authors: Sergio Maffioletti <sergio.maffioletti@uzh.ch>
 #
 # Copyright (C) 2015-2016  University of Zurich. All rights reserved.
@@ -19,7 +19,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #-----------------------------------------------------------------------
 """
 
@@ -43,7 +43,7 @@ def runctx(args):
                         help='location of input .csv file.')
     parser.add_argument('--ctx', dest='ctx', action='store', default=None,
                         help='Alterantive path to ctx binay (default: None)')
-    
+
     arguments = parser.parse_args(args)
 
     command = ""
@@ -72,21 +72,21 @@ def runctx(args):
             stime = time.time()
             (out,err) = _process.communicate()
             ftime = time.time()
-            print "Index %s processed in %d" % (index_of_dat,(ftime-stime))
+            print("Index %s processed in %d" % (index_of_dat,(ftime-stime)))
             exitcode = _process.returncode
-            
+
             if exitcode == 0:
                 results[index_of_dat] = out.strip().split('\t')
             else:
-                print "ERROR %d. message: %s" % (exitcode,err)
+                print("ERROR %d. message: %s" % (exitcode,err))
 
     # collect all results into a single .csv file
     print("Aggregating results")
     with open(RESULT_FILE,'wb') as rd:
         for idx,line in results.items():
             rd.write(idx + "," + ",".join(x for x in line) + "\n")
-    print "Done"
-    
+    print("Done")
+
 if __name__ == '__main__':
     if len(sys.argv[1:]) < 1:
            sys.exit(1)
