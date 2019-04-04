@@ -43,10 +43,16 @@ matrix:
         - FEATURES="[openstack,ec2,daemon]"
         - PRE=""
         - GC3PIE_FORCE_INSTALL="yes"
+    - python: "3.7"
+      env:
+        - FEATURES="[openstack,ec2,daemon]"
+        - PRE=""
+        - GC3PIE_FORCE_INSTALL="yes"
 
   allow_failures:
     - python: '3.5'
     - python: '3.6'
+    - python: '3.7'
 
 after_success:
   # publish code coverage data to http://codecov.io/gh/uzh/gc3pie
