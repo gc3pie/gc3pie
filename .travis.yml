@@ -14,7 +14,7 @@ addons:
 install:
   - "pip install --upgrade setuptools pip"
   - 'if [ -n "$PRE" ]; then pip install $PRE; fi'
-  - 'pip install mock pytest "pytest-cov<2.6" pytest-coverage'
+  - 'pip install mock pytest "pytest-cov<2.6" pytest-coverage codecov'
   - "pip install -e .$FEATURES"
 
 script:
@@ -47,3 +47,7 @@ matrix:
   allow_failures:
     - python: '3.5'
     - python: '3.6'
+
+after_success:
+  # publish code coverage data to http://codecov.io/gh/uzh/gc3pie
+  - codecov
