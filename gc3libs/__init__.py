@@ -1348,8 +1348,8 @@ class Application(Task):
             # Let's make whatever works in our cluster, and see how we can
             # extend/change it when issue reports come...
             qsub += ['-l', ('mem_free=%dM' %
-                            (self.requested_memory.amount(MB) /
-                             self.requested_cores))]
+                            max(1, int(self.requested_memory.amount(MB) /
+                                       self.requested_cores)))]
         if self.join:
             qsub += ['-j', 'yes']
         if self.stdout:
@@ -1435,8 +1435,8 @@ class Application(Task):
             bsub += ['-W', ('%02d:%02d' % (hs, ms))]
         if self.requested_memory:
             # LSF uses `rusage[mem=...]` for memory limits (number of MBs)
-            bsub += ['-R', ('rusage[mem=%d]' %
-                            self.requested_memory.amount(MB))]
+            mem_mb = max(1, int(self.requested_memory.amount(MB)))
+            bsub += ['-R', ('rusage[mem=%d]' % mem_mb)]
         if self.stdout:
             bsub += ['-oo', ('%s' % self.stdout)]
             if not self.join and not self.stderr:
@@ -1473,7 +1473,8 @@ class Application(Task):
             qsub += ['-l', 'walltime=%s' %
                      (self.requested_walltime.amount(seconds))]
         if self.requested_memory:
-            qsub += ['-l', 'mem=%dmb' % self.requested_memory.amount(MB)]
+            mem_mb = max(1, int(self.requested_memory.amount(MB)))
+            qsub += ['-l', ('mem=%dmb' % mem_mb)]
         if self.stdin:
             # `self.stdin` is the full pathname on the GC3Pie client host;
             # it is copied to its basename on the execution host
@@ -1554,7 +1555,8 @@ class Application(Task):
         if self.requested_memory:
             # SLURM uses `mem_free` for memory limits;
             # 'M' suffix allowed for Megabytes
-            sbatch += ['--mem', 1+int(self.requested_memory.amount(MB))]
+            mem_mb = max(1, int(self.requested_memory.amount(MB)))
+            sbatch += ['--mem', ('%d' % mem_mb)]
         if 'jobname' in self and self.jobname:
             sbatch += ['--job-name', ('%s' % self.jobname)]
         # ensure `sbatch` environment is propagated to jobs
