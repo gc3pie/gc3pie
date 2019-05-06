@@ -352,7 +352,7 @@ class Task(Persistable, Struct):
         """
         Remove any reference to the current grid interface.  After
         this, calling any method other than :meth:`attach` results in
-        an exception :class:`TaskDetachedFromGridError` being thrown.
+        an exception :class:`TaskDetachedFromControllerError` being thrown.
         """
         if self._attached:
             try:
