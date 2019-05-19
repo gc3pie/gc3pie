@@ -607,8 +607,10 @@ def get_available_physical_memory():
       are not implemented on this system.
     """
     try:
-        pagesize = os.sysconf('SC_PAGE_SIZE')
-        avail_pages = os.sysconf('SC_AVPHYS_PAGES')
+        # this str() conversion is to make the call to `os.sysconf()`
+        # work on both Python3 and Python2+unicode_literals
+        pagesize = os.sysconf(str('SC_PAGE_SIZE'))
+        avail_pages = os.sysconf(str('SC_AVPHYS_PAGES'))
         return Memory(avail_pages * pagesize, unit=Memory.B)
     except ValueError:
         raise NotImplementedError(
