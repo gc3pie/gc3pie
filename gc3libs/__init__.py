@@ -1195,9 +1195,8 @@ class Application(Task):
                 gc3libs.log.info(
                     "Rejecting resource '%s': requested a different"
                     " architecture (%s) than what resource provides (%s)" %
-                    (lrms.name, self.requested_architecture, str.join(
-                        ', ', [
-                            str(arch) for arch in lrms.architecture])))
+                    (lrms.name, self.requested_architecture,
+                     ', '.join([str(arch) for arch in lrms.architecture])))
                 continue
             # check that Application requirements are within resource limits
             if self.requested_cores > lrms.max_cores_per_job:

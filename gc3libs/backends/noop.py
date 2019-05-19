@@ -164,7 +164,7 @@ class NoOpLrms(LRMS):
         """
         log.debug("No-Op backend updating state of Task %s ...", app)
         transitions = self.transition_graph[app.execution.state]
-        log.debug("Task %s transitions: %s.", app, str.join(", ", [
+        log.debug("Task %s transitions: %s.", app, ", ".join([
             ("with probability %g to state %s" % (prob, state))
             for prob, state in transitions.items() if prob > 0
         ]))
@@ -221,7 +221,7 @@ class NoOpLrms(LRMS):
             )
 
         log.debug("Faking execution of command '%s' ...",
-                  str.join(" ", app.arguments))
+                  " ".join(app.arguments))
 
         # Update application and current resources
         app.execution.lrms_jobid = id(app)

@@ -371,7 +371,7 @@ class EC2Lrms(LRMS):
         because that's the way the fingerprint is returned from the
         EC2 API.
         """
-        return str.join(':', (i.encode('hex')
+        return ':'.join((i.encode('hex')
                               for i in privkey.get_fingerprint()))
 
     @staticmethod
@@ -479,7 +479,7 @@ class EC2Lrms(LRMS):
                 " Aborting!" % (
                     self.public_key,
                     self.keypair_name,
-                    str.join('/', localkey_fingerprints),
+                    '/'.join(localkey_fingerprints),
                     ec2_key.fingerprint,
                 ),
                 do_log=True)

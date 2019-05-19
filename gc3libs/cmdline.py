@@ -438,8 +438,7 @@ class _Script(cli.app.CommandLineApp):
 
         self.add_param("--config-files",
                        action="store",
-                       default=str.join(
-                           ',', gc3libs.Default.CONFIG_FILE_LOCATIONS),
+                       default=','.join(gc3libs.Default.CONFIG_FILE_LOCATIONS),
                        help="Comma separated list of configuration files",
                        )
 
@@ -467,7 +466,7 @@ class _Script(cli.app.CommandLineApp):
                                name=self.name,
                                threshold=self.verbose_logging_threshold)
         self.log.info("Starting %s at %s; invoked as '%s'",
-                      self.name, time.asctime(), str.join(' ', sys.argv))
+                      self.name, time.asctime(), ' '.join(sys.argv))
 
         # Read config file(s) from command line
         self.params.config_files = self.params.config_files.split(',')
@@ -481,7 +480,7 @@ class _Script(cli.app.CommandLineApp):
             raise gc3libs.exceptions.FatalError(
                 "No computational resources defined."
                 " Please edit the configuration file(s): '%s'."
-                % (str.join("', '", self.params.config_files)))
+                % ("', '".join(self.params.config_files)))
 
         # call hook methods from derived classes
         self.parse_args()
@@ -522,7 +521,7 @@ class _Script(cli.app.CommandLineApp):
                    " (You need to be subscribed to post to the mailing list)")
             if len(sys.argv) > 0:
                 msg %= (ex.__class__.__name__, ex,
-                        self.name, str.join(' ', sys.argv[1:]))
+                        self.name, ' '.join(sys.argv[1:]))
             else:
                 msg %= (ex.__class__.__name__, ex, self.name, '')
             rc = os.EX_UNAVAILABLE  # see: /usr/include/sysexits.h
@@ -533,7 +532,7 @@ class _Script(cli.app.CommandLineApp):
                    " (You need to be subscribed to post to the mailing list)"
                    " Thanks for your cooperation!")
             if len(sys.argv) > 0:
-                msg %= (ex, self.name, str.join(' ', sys.argv[1:]))
+                msg %= (ex, self.name, ' '.join(sys.argv[1:]))
             else:
                 msg %= (ex, self.name, '')
             rc = os.EX_SOFTWARE  # see: /usr/include/sysexits.h
@@ -612,7 +611,7 @@ class _Script(cli.app.CommandLineApp):
                 *config_file_locations, **extra_args)
         except:
             self.log.error("Failed loading config file(s) from '%s'",
-                           str.join("', '", config_file_locations))
+                           "', '".join(config_file_locations))
             raise
 
     def _select_resources(self, *resource_names):
@@ -639,7 +638,7 @@ class _Script(cli.app.CommandLineApp):
         if kept == 0:
             raise gc3libs.exceptions.NoResources(
                 "No resources match the names '%s'"
-                % str.join(',', resource_names))
+                % ','.join(resource_names))
 
 
 class _SessionBasedCommand(_Script):
@@ -1610,9 +1609,7 @@ class SessionBasedScript(_SessionBasedCommand):
             nargs='?',
             dest="states",
             default='',
-            const=str.join(
-                ',',
-                gc3libs.Run.State),
+            const=','.join(gc3libs.Run.State),
             help="Print a table of jobs including their status."
             " Optionally, restrict output to jobs with a particular STATE or"
             " STATES (comma-separated list).  The pseudo-states `ok` and"
@@ -2017,7 +2014,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             elif 'yaml' in opts:
                 return yaml.dump(task_ids)
             else:
-                return str.join('\n', task_ids)
+                return '\n'.join(task_ids)
 
 
         def list_details(self, *opts):

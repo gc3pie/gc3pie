@@ -984,7 +984,7 @@ class History(object):
     def __str__(self):
         """Return all messages texts in a single string, separated by newline
         characters."""
-        return '- ' + str.join('\n- ', [self.format_message(record)
+        return '- ' + '\n- '.join([self.format_message(record)
                                for record in self._messages]) + '\n'
 
 
@@ -1377,7 +1377,7 @@ def prettyprint(
                 for name in only_keys:
                     # take only the initial segment, up to a "level" dots
                     dots = min(name.count('.'), level) + 1
-                    prefix = str.join('.', name.split('.')[:dots])
+                    prefix = '.'.join(name.split('.')[:dots])
                     if str(full_name) == prefix:
                         found = True
                         break
@@ -1389,7 +1389,7 @@ def prettyprint(
         # To make a 'key' valid in YAML it must not start with one of the following chars
         sk = str(k)
         sk = sk if sk[0] not in  u'\0 \t\r\n\x85\u2028\u2029-?:,[]{}#&*!|>\'\"%@`' else  "'%s'" % sk
-        first = str.join('', [leading_spaces, sk, ': '])
+        first = ''.join([leading_spaces, sk, ': '])
         if isinstance(
                 v, (dict, UserDict.DictMixin, UserDict.UserDict, OrderedDict)):
             if maxdepth is None or maxdepth > 0:
@@ -1405,7 +1405,7 @@ def prettyprint(
             elif maxdepth == 0:
                 second = "..."
         elif isinstance(v, (list, tuple)):
-            second = str.join(', ', [str(item) for item in v])
+            second = ', '.join([str(item) for item in v])
         else:
             second = str(v)
         # wrap overlong lines, and always wrap if the second part is multi-line
@@ -1423,7 +1423,7 @@ def prettyprint(
             # rebuild `second`, indenting each line by (indent+step) spaces
             second = ''
             for line in lines:
-                second = str.join('', [
+                second = ''.join([
                     second,
                     ' ' * (indent + step),
                     line.rstrip().expandtabs(step)[dedent:],
@@ -1632,7 +1632,7 @@ def sh_quote_safe_cmdline(args):
       >>> sh_quote_safe_cmdline(['sh', '-c', 'echo c(1,2,3)'])
       "'sh' '-c' 'echo c(1,2,3)'"
     """
-    return str.join(' ', (sh_quote_safe(arg) for arg in args))
+    return ' '.join((sh_quote_safe(arg) for arg in args))
 
 
 _DQUOTE_RE = re.compile(r'(\\*)"')
@@ -1671,7 +1671,7 @@ def sh_quote_unsafe_cmdline(args):
       '"sh" "-c" "echo $HOME"'
 
     """
-    return str.join(' ', (sh_quote_unsafe(arg) for arg in args))
+    return ' '.join((sh_quote_unsafe(arg) for arg in args))
 
 
 # see

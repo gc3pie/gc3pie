@@ -87,7 +87,7 @@ class MatchMaker(object):
         """
         gc3libs.log.debug(
             "Performing matching of resource(s) %s to task '%s' ...",
-            str.join(',', (r.name for r in resources)), task)
+            ','.join(r.name for r in resources), task)
         # keep only compatible resources
         try:
             compatible_resources = task.compatible_resources(resources)

@@ -100,10 +100,8 @@ def _split_amount_and_unit(val, default_unit=None, allow=None):
         if unit not in allow:
             raise ValueError(
                 "Unit '%s' is not allowed here: only %s are." %
-                (unit, str.join(
-                    ",", [
-                        ("'%s'" %
-                         a) for a in sorted(allow)])))
+                (unit, ",".join([
+                    ("'%s'" % a) for a in sorted(allow)])))
     return (amount, unit)
 
 
@@ -271,7 +269,7 @@ class _Quantity(object):
             assert unit.name in cls._UNITS, (
                 "Unit '%s' not allowed in '%s' quantity: only %s are."
                 % (unit.name, cls.__name__,
-                   str.join(',', [("'%s'" % u) for u in cls._UNITS])))
+                   ','.join([("'%s'" % u) for u in cls._UNITS])))
             new = cls._new_from_amount_and_unit(val, unit)
         new._name = name
         if name is not None:

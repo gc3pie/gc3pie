@@ -487,7 +487,7 @@ class LsfLrms(batch.BatchSystem):
                 lines.append(line)
 
         # now rebuild stdout by joining the reconstructed lines
-        stdout = str.join('\n', lines)
+        stdout = '\n'.join(lines)
 
         state = Run.State.UNKNOWN
         termstatus = None

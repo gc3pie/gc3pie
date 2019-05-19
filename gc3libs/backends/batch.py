@@ -239,7 +239,7 @@ class BatchSystem(LRMS):
         # lookup the command name in the resource config parameters;
         # return it unchanged as a default
         argv = self._get_command_argv(name, default)
-        return str.join(' ', argv)
+        return ' '.join(argv)
 
     def _submit_command(self, app):
         """This method returns a string containing the command to
@@ -372,7 +372,7 @@ class BatchSystem(LRMS):
                 script_txt.append('\n# inline script BEGIN\n')
                 script_txt.append(self[script])
                 script_txt.append('\n# inline script END\n')
-        return str.join("", script_txt)
+        return "".join(script_txt)
 
     def get_prologue_script(self, app):
         """

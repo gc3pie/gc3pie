@@ -82,7 +82,7 @@ class RosettaApplication(gc3libs.Application):
             self.__protocol + '.tar.gz'
         ]
         if outputs:
-            _arguments = ['--tar', str.join(' ', [str(o) for o in outputs])]
+            _arguments = ['--tar', ' '.join(['{0}'.format(o) for o in outputs])]
         else:
             _arguments = ['--tar', '*.pdb *.sc *.fasc']
 

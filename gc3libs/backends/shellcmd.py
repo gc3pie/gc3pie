@@ -733,8 +733,8 @@ class ShellcmdLrms(LRMS):
             else:
                 raise gc3libs.exceptions.ConfigurationError(
                     "Invalid architecture: configuration file says `%s` but "
-                    "it actually is `%s`" % (str.join(', ', self.architecture),
-                                             str.join(', ', arch)))
+                    "it actually is `%s`" % (', '.join(self.architecture),
+                                             ', '.join(arch)))
 
 
     def _init_max_cores(self):
@@ -871,7 +871,7 @@ class ShellcmdLrms(LRMS):
         pidfiles = self.transport.listdir(self.resource_dir)
         if pidfiles:
             log.debug("Checking status of the following PIDs: %s",
-                      str.join(", ", pidfiles))
+                      ", ".join(pidfiles))
             for pid in pidfiles:
                 job = self._read_job_info_file(pid)
                 if job:

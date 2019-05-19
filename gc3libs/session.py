@@ -224,7 +224,7 @@ class Session(list):
         with open(os.path.join(
                 self.path,
                 self.TIMESTAMP_FILES['start']), 'w') as fd:
-            fd.write(str.join(' ', sys.argv) + '\n')
+            fd.write(' '.join(sys.argv) + '\n')
 
         self.set_start_timestamp()
 

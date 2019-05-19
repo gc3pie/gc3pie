@@ -248,13 +248,13 @@ class Configuration(gc3libs.utils.Struct):
         if files_successfully_read == 0:
             raise gc3libs.exceptions.NoAccessibleConfigurationFile(
                 "Could not read any configuration file; tried location '%s'."
-                % str.join("', '", locations))
+                % "', '".join(locations))
         if files_successfully_parsed == 0:
             raise gc3libs.exceptions.NoValidConfigurationFile(
                 "Could not parse any configuration file;"
                 " tried location(s) '%s' but they all had errors."
                 " (Which see in previous log messages.)"
-                % str.join("', '", locations))
+                % "', '".join(locations))
 
     def merge_file(self, filename):
         """
@@ -413,11 +413,10 @@ class Configuration(gc3libs.utils.Struct):
                 if __debug__:
                     gc3libs.log.debug(
                         "Config._parse(): Resource '%s' defined by: %s.", name,
-                        str.join(
-                            ', ', [
-                                ("%s=%r" %
-                                 (k, v)) for k, v in sorted(
-                                    resources[name].iteritems())]))
+                        ', '.join([
+                            ("%s=%r" %
+                             (k, v)) for k, v in sorted(
+                                 resources[name].iteritems())]))
 
             else:
                 # Unhandled sectname
@@ -721,7 +720,7 @@ class Configuration(gc3libs.utils.Struct):
         if __debug__:
             gc3libs.log.debug(
                 "Creating resource '%s' defined by: %s.",
-                resdict['name'], str.join(', ', [
+                resdict['name'], ', '.join([
                     ("%s=%r" % (k, v)) for k, v in sorted(resdict.iteritems())
                 ]))
 

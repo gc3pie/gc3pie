@@ -296,7 +296,7 @@ class OpenStackLrms(LRMS):
             nics=[{'net-id': netid.strip(), 'v4-fixed-ip': ''}
                   for netid in self.network_ids.split(',')]
             gc3libs.log.debug("Specifying networks for vm %s: %s",
-                      name, str.join(', ', [nic['net-id'] for nic in nics]))
+                      name, ', '.join([nic['net-id'] for nic in nics]))
         args['nics'] = nics
 
         gc3libs.log.debug("Create new VM using image id `%s`", image_id)
@@ -385,7 +385,7 @@ class OpenStackLrms(LRMS):
         because that's the way the fingerprint is returned from the
         OpenStack API.
         """
-        return str.join(':', (i.encode('hex') for i in pkey.get_fingerprint()))
+        return ':'.join((i.encode('hex') for i in pkey.get_fingerprint()))
 
     def _have_keypair(self, keypair):
         """

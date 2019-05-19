@@ -159,8 +159,8 @@ class Template(object):
         """
         Return a string representation such that `x == eval(repr(x))`.
         """
-        return str.join('', ["Template(",
-                             str.join(', ', [repr(self._template)] +
+        return ''.join(["Template(",
+                             ', '.join([repr(self._template)] +
                                       [("%s=%s" % (k, v))
                                        for k, v in self._keywords.items()]),
                              ')'])

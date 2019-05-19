@@ -101,7 +101,7 @@ def trace(fn, log=gc3libs.log.debug):
         keyword = [format_arg_value((key, val))
                    for key, val in k.items()]
         args = positional + defaulted + nameless + keyword
-        log("%s(%s)" % (name(fn), str.join(", ", args)))
+        log("%s(%s)" % (name(fn), ', '.join(args)))
         return fn(*v, **k)
     return wrapped
 
