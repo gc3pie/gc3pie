@@ -19,7 +19,7 @@ Top-level classes for task execution and control.
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 2110-1301 USA
 #
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
 from collections import defaultdict, deque
 from fnmatch import fnmatch
 import functools

@@ -40,7 +40,7 @@
 #
 ########################################################################
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
 from functools import reduce as _reduce
 
 __all__ = ['toposort', 'toposort_flatten']

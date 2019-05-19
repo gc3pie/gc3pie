@@ -20,7 +20,7 @@
 """
 Simple interface to the CODEML application.
 """
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
 __changelog__ = """
 Summary of user-visible changes:
 * 16-08-2011 AM: Extract aln_info from the .phy file and record it

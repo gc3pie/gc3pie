@@ -3,7 +3,7 @@
 """
 Tests for the cmdline module
 """
-# Copyright (C) 2012-2016, 2018 S3IT, Zentrale Informatik, University of
+# Copyright (C) 2012-2016, 2018, 2019 S3IT, Zentrale Informatik, University of
 # Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@ Tests for the cmdline module
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
 import json
 import os
 from os.path import abspath, dirname, exists, isdir, isfile, join

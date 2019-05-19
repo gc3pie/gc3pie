@@ -7,7 +7,7 @@ simple command-line frontend to distributed resources
 This is a generic front-end code; actual implementation of commands
 can be found in `gc3utils.commands`:mod:
 """
-# Copyright (C) 2009-2012  University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012, 2019  University of Zurich. All rights reserved.
 #
 # Includes parts adapted from the ``bzr`` code, which is
 # copyright (C) 2005, 2006, 2007, 2008, 2009 Canonical Ltd
@@ -28,7 +28,8 @@ can be found in `gc3utils.commands`:mod:
 
 
 # stdlib imports
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+
 import os
 import os.path
 import sys

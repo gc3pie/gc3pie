@@ -22,7 +22,7 @@ created inside that URL.
 #
 
 # stdlib imports
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 import os

@@ -3,7 +3,7 @@
 """
 Deal with GC3Pie configuration files.
 """
-# Copyright (C) 2012-2016, 2018  University of Zurich. All rights reserved.
+# Copyright (C) 2012-2016, 2018, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,7 @@ Deal with GC3Pie configuration files.
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
 __docformat__ = 'reStructuredText'
 
 
