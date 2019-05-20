@@ -548,7 +548,7 @@ def first(seq):
     """
     try:  # try iterator interface
         return next(seq)
-    except AttributeError:
+    except TypeError:
         pass
     try:  # seq is no iterator, try indexed lookup
         return seq[0]

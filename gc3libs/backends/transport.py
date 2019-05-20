@@ -6,7 +6,7 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.
 """
-# Copyright (C) 2009-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -32,6 +32,14 @@ import errno
 import shutil
 import getpass
 import shutil
+
+try:
+    # Python 2
+    from types import StringTypes as string_types
+except ImportError:
+    # Python 3
+    string_types = (str,)
+
 
 from gc3libs.quantity import Memory, MiB
 from gc3libs.utils import same_docstring_as, samefile
@@ -537,7 +545,7 @@ class SshTransport(Transport):
         if username is None:
             self.username = ssh_options.get('user', self.username)
         else:
-            assert type(username) in (str,)
+            assert type(username) in string_types
             self.username = username
 
         if port is None:
@@ -548,7 +556,7 @@ class SshTransport(Transport):
         if keyfile is None:
             self.keyfile = ssh_options.get('identityfile', self.keyfile)
         else:
-            assert type(keyfile) in (str,)
+            assert type(keyfile) in string_types
             self.keyfile = keyfile
 
         if timeout is None:

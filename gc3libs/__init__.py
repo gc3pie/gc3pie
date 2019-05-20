@@ -53,6 +53,14 @@ import logging.config
 log = logging.getLogger("gc3.gc3libs")
 log.propagate = True
 
+try:
+    # Python 2
+    from types import StringTypes as string_types
+except ImportError:
+    # Python 3
+    string_types = (str,)
+
+
 from gc3libs.events import TaskStateChange, TermStatusChange
 from gc3libs.quantity import MB, hours, minutes, seconds, MiB
 from gc3libs.compat._collections import OrderedDict
@@ -942,7 +950,7 @@ class Application(Task):
 
     def __init__(self, arguments, inputs, outputs, output_dir, **extra_args):
         # required parameters
-        if isinstance(arguments, (str,)):
+        if isinstance(arguments, string_types):
             arguments = shlex.split(arguments)
 
         if 'executable' in extra_args:
@@ -1157,7 +1165,7 @@ class Application(Task):
     @staticmethod
     def __convert_to_tuple(val):
         """Auxiliary method for `io_spec_to_dict`:meth:, which see."""
-        if isinstance(val, (str,)):
+        if isinstance(val, string_types):
             l = str(val)
             r = os.path.basename(l)
             return (l, r)

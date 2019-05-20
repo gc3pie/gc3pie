@@ -33,6 +33,13 @@ import operator
 import re
 import types
 
+try:
+    # Python 2
+    from types import StringTypes as string_types
+except ImportError:
+    # Python 3
+    string_types = (str,)
+
 
 # utility functions
 
@@ -253,7 +260,7 @@ class _Quantity(object):
     # we need to provide `__new__`, not `__init__`
     def __new__(cls, val, unit=None, name=None):
         # dispatch to actual constructor depending on the type of `val`
-        if isinstance(val, (str,)):
+        if isinstance(val, string_types):
             new = cls._new_from_string(val)
         elif isinstance(val, _Quantity):
             new = cls._new_from_amount_and_unit(val.amount(), val.unit)
