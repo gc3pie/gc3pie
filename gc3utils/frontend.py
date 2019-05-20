@@ -98,7 +98,7 @@ def main():
 
     try:
         locale.setlocale(locale.LC_ALL, '')
-    except locale.Error, e:
+    except locale.Error as e:
         sys.stderr.write(
             '%s: WARNING: %s\n'
             '  could not set the application locale.\n'

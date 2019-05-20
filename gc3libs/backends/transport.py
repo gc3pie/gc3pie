@@ -537,7 +537,7 @@ class SshTransport(Transport):
         if username is None:
             self.username = ssh_options.get('user', self.username)
         else:
-            assert type(username) in types.StringTypes
+            assert type(username) in (str,)
             self.username = username
 
         if port is None:
@@ -548,7 +548,7 @@ class SshTransport(Transport):
         if keyfile is None:
             self.keyfile = ssh_options.get('identityfile', self.keyfile)
         else:
-            assert type(keyfile) in types.StringTypes
+            assert type(keyfile) in (str,)
             self.keyfile = keyfile
 
         if timeout is None:

@@ -527,7 +527,7 @@ class ExponentialBackoff(object):
 
     def wait(self):
         """Wait for another while."""
-        time.sleep(self.next())
+        time.sleep(next(self))
 
 
 def first(seq):
@@ -547,7 +547,7 @@ def first(seq):
       True
     """
     try:  # try iterator interface
-        return seq.next()
+        return next(seq)
     except AttributeError:
         pass
     try:  # seq is no iterator, try indexed lookup
@@ -1171,7 +1171,7 @@ def occurs(pattern, filename, match=grep):
     """
     try:
         # look for the first match -- if one is found, we're done
-        match(pattern, filename).next()
+        next(match(pattern, filename))
         return True
     except StopIteration:
         return False
@@ -2320,7 +2320,7 @@ class YieldAtNext(object):
         elif self._saved:
             return self._saved.popleft()
         else:
-            return self._generator.next()
+            return next(self._generator)
 
     def send(self, value):
         try:

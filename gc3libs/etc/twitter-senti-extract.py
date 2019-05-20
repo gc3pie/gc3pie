@@ -42,7 +42,7 @@ def extract_tweets(lines):
     :param lines: buch of lines containing kv pairs of twitter data
     :return: mean of negative, positive, neutral and compound sentiment in the lines
     """
-    skipped = 0L
+    skipped = 0
     result = []
     for tweet in lines:
         if 'text' in tweet:

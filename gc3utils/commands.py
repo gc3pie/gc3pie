@@ -276,7 +276,7 @@ force removal of a job regardless.
                                 " attempting to kill before cleaning up.", app)
                             try:
                                 app.kill()
-                            except Exception, ex:
+                            except Exception as ex:
                                 self.log.warning(
                                     "Killing job '%s' failed (%s: %s);"
                                     " continuing anyway, but errors might"
@@ -293,7 +293,7 @@ force removal of a job regardless.
 
                     try:
                         app.free()
-                    except Exception, ex:
+                    except Exception as ex:
                         if self.params.force:
                             pass
                         else:
@@ -572,14 +572,14 @@ is canceled before re-submission.
             app.attach(self._core)
             try:
                 app.update_state()  # update state
-            except Exception, ex:
+            except Exception as ex:
                 # ignore errors, and proceed to resubmission anyway
                 self.log.warning("Could not update state of %s: %s: %s",
                                  jobid, ex.__class__.__name__, str(ex))
             # kill remote job
             try:
                 app.kill()
-            except Exception, ex:
+            except Exception as ex:
                 # ignore errors (alert user?)
                 pass
 
@@ -588,7 +588,7 @@ is canceled before re-submission.
                 print("Successfully re-submitted %s; use the 'gstat' command"
                       " to monitor its progress." % app)
                 self.session.store.replace(jobid, app)
-            except Exception, ex:
+            except Exception as ex:
                 failed += 1
                 self.log.error("Failed resubmission of job '%s': %s: %s",
                                jobid, ex.__class__.__name__, str(ex))
@@ -679,7 +679,7 @@ Print job state.
 
         # init lifetimes report (if requested)
         if self.params.lifetimes is not None:
-            if isinstance(self.params.lifetimes, types.StringTypes):
+            if isinstance(self.params.lifetimes, (str,)):
                 self.params.lifetimes = open(self.params.lifetimes, 'w')
             lifetimes_rows = [['JOBID',
                                'SUBMITTED_AT',
@@ -917,7 +917,7 @@ released once the output files have been fetched.
                     print("A snapshot of job results was successfully"
                           " retrieved in '%s'" % (app_download_dir,))
 
-            except Exception, ex:
+            except Exception as ex:
                 print("Failed retrieving results of job '%s': %s"
                       % (jobid, str(ex)))
                 failed += 1
@@ -991,7 +991,7 @@ error occurred.
                     # or shall we simply return an ack message ?
                     print("Sent request to cancel job '%s'." % jobid)
 
-            except Exception, ex:
+            except Exception as ex:
                 print("Failed canceling job '%s': %s" % (jobid, str(ex)))
                 failed += 1
                 continue
@@ -1100,7 +1100,7 @@ as more lines are written to the given stream.
                         app.persistent_id,
                         app.__class__.__name__)
                     failed += 1
-            except Exception, ex:
+            except Exception as ex:
                 print("Failed while reading content of %s for job '%s': %s"
                       % (stream, jobid, str(ex)))
                 failed += 1
@@ -1279,7 +1279,7 @@ To get detailed info on a specific command, run:
                 task.kill()
                 task.free()
                 rc -= 1
-            except gc3libs.exceptions.Error, err:
+            except gc3libs.exceptions.Error as err:
                 gc3libs.log.error(
                     "Could not abort task '%s': %s: %s",
                     task, err.__class__.__name__, err)
@@ -1479,7 +1479,7 @@ in order to be selected.
                 self.jobname_re = re.compile(self.params.jobname, re.I)
                 self.criteria.append(
                     (True, self.filter_by_jobname, (self.jobname_re,)))
-            except re.error, err:
+            except re.error as err:
                 raise gc3libs.exceptions.InvalidUsage(
                     "Regexp `%s` for option `--job-name` is invalid: %s"
                     % (self.params.jobname, err))
@@ -1491,7 +1491,7 @@ in order to be selected.
                 self.criteria.append(
                     (True, self.filter_by_jobid, (self.jobid_re,)))
 
-            except re.error, err:
+            except re.error as err:
                 raise gc3libs.exceptions.InvalidUsage(
                     "Regexp `%s` for option `--job-id` is invalid: %s"
                     % (self.params.jobid, err))
@@ -1523,7 +1523,7 @@ in order to be selected.
             try:
                 self.submission_start = time.mktime(
                     Calendar().parse(self.params.submitted_after)[0])
-            except Exception, ex:
+            except Exception as ex:
                 raise gc3libs.exceptions.InvalidUsage(
                     "Invalid value `%s` for --submitted-after argument: %s"
                     % (self.params.submitted_after, str(ex)))
@@ -1544,7 +1544,7 @@ in order to be selected.
             try:
                 self.submission_end = time.mktime(
                     Calendar().parse(self.params.submitted_before)[0])
-            except Exception, err:
+            except Exception as err:
                 raise gc3libs.exceptions.InvalidUsage(
                     "Invalid value `%s` for --submitted-before argument: %s"
                     % (self.params.submitted_before, err))
@@ -1552,7 +1552,7 @@ in order to be selected.
         else:  # no `--submitted-before` option
             # an ending date is always needed; if user did not specify one,
             # then choose the end of (UNIX) time
-            self.submission_end = float(sys.maxint)
+            self.submission_end = float(sys.maxsize)
 
         self.criteria.append(
             (True, self.filter_by_submission_date,
@@ -1664,7 +1664,7 @@ in order to be selected.
             try:
                 # `Application.inputs` is a `UrlKeyDict`
                 inputs = [os.path.basename(url.path) for url in job.inputs]
-            except AttributeError, err:
+            except AttributeError as err:
                 gc3libs.log.debug(
                     "No input file data in task %s: %s."
                     " I'm turning off input file checks for this task",
@@ -1674,7 +1674,7 @@ in order to be selected.
                 # `Application.inputs` is a `UrlValueDict`, so keys
                 # are simple paths
                 outputs = [os.path.basename(file) for file in job.outputs]
-            except AttributeError, err:
+            except AttributeError as err:
                 gc3libs.log.debug(
                     "No output file data in task %s: %s."
                     " I'm turning off output file checks for this task",
@@ -2053,7 +2053,7 @@ To get detailed info on a specific command, run:
         for vmid in self.params.ID:
             try:
                 self._terminate_vm(vmid)
-            except LookupError, ex:
+            except LookupError as ex:
                 gc3libs.log.warning(str(ex))
                 errors += 1
         return errors
@@ -2079,7 +2079,7 @@ To get detailed info on a specific command, run:
         for vmid in self.params.ID:
             try:
                 self._forget_vm(vmid)
-            except LookupError, ex:
+            except LookupError as ex:
                 gc3libs.log.warning(str(ex))
                 errors += 1
         return errors

@@ -57,7 +57,7 @@ def runctx(args):
     # use csv package only
     with open(arguments.inputcsv,'rb') as rd:
         reader = csv.reader(rd)
-        columns = reader.next()
+        columns = next(reader)
         # open destination file
         for line in reader:
             index_of_dat = line[-1]

@@ -253,7 +253,7 @@ class _Quantity(object):
     # we need to provide `__new__`, not `__init__`
     def __new__(cls, val, unit=None, name=None):
         # dispatch to actual constructor depending on the type of `val`
-        if isinstance(val, types.StringTypes):
+        if isinstance(val, (str,)):
             new = cls._new_from_string(val)
         elif isinstance(val, _Quantity):
             new = cls._new_from_amount_and_unit(val.amount(), val.unit)

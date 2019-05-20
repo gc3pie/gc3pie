@@ -693,7 +693,7 @@ class LsfLrms(batch.BatchSystem):
             match = LsfLrms._RESOURCE_USAGE_RE.match(line)
             if match:
                 # actual resource usage is on next line
-                rusage = lines.next()
+                rusage = next(lines)
                 cpu_t, wait, turnaround, status, hog_factor, mem, swap = \
                     rusage.split()
                 # common backend attrs (see Issue 78)

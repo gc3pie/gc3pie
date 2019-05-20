@@ -1036,7 +1036,7 @@ class scheduler(object):  # pylint: disable=invalid-name
 
     # pylint: disable=missing-docstring
     def next(self):
-        return self._gen.next()
+        return next(self._gen)
 
     # pylint: disable=missing-docstring
     def send(self, value):

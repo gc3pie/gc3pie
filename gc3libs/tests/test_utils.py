@@ -142,17 +142,17 @@ class TestYieldAtNext(object):
         def generator_yield():
             yield 0
         g = gc3libs.utils.YieldAtNext(generator_yield())
-        assert g.next() == 0
+        assert next(g) == 0
 
     def test_YieldAtNext_send(self):
         def generator_yield_send():
             val = (yield 1)
             yield val
         g = gc3libs.utils.YieldAtNext(generator_yield_send())
-        assert g.next() == 1
+        assert next(g) == 1
         result = g.send('a sent value')
         assert result == None
-        assert g.next() == 'a sent value'
+        assert next(g) == 'a sent value'
 
     def test_YieldAtNext_send_iter(self):
         def generator_yield_send():
@@ -185,7 +185,7 @@ class TestYieldAtNext(object):
         g = gc3libs.utils.YieldAtNext(generator_yield_send())
         expected = range(1, 10)
         # consume one value to init the generator
-        g.next()
+        next(g)
         # send all messages
         for msg in expected:
             g.send(msg)
@@ -206,18 +206,18 @@ class TestYieldAtNext(object):
             except RuntimeError:
                 yield 'exception caught'
         g = gc3libs.utils.YieldAtNext(generator_yield_throw())
-        assert g.next() == 2
+        assert next(g) == 2
         result = g.throw(RuntimeError)
         assert result == None
-        assert g.next() == 'exception caught'
+        assert next(g) == 'exception caught'
 
     def test_YieldAtNext_StopIteration(self):
         def generator_yield():
             yield 3
         g = gc3libs.utils.YieldAtNext(generator_yield())
-        assert g.next() == 3
+        assert next(g) == 3
         with pytest.raises(StopIteration):
-            g.next()
+            next(g)
 
 
 # main: run tests
