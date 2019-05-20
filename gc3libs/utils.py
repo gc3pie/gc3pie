@@ -27,7 +27,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 from future import standard_library
 standard_library.install_aliases()
 from builtins import next
-from builtins import str
 from builtins import range
 from builtins import object
 __docformat__ = 'reStructuredText'
@@ -38,6 +37,14 @@ import contextlib
 import functools
 import os
 import os.path
+if bytes == str:
+    # Python2's `os.sysconf()` cannot handle sysconf variable names as
+    # Unicode strings, so we need to cast them to byte-strings
+    def os_sysconf(name):
+        return os.sysconf(str(name))
+else:
+    # Python3
+    from os import sysconf as os_sysconf
 import random
 import re
 import shutil
@@ -613,10 +620,8 @@ def get_available_physical_memory():
       are not implemented on this system.
     """
     try:
-        # this str() conversion is to make the call to `os.sysconf()`
-        # work on both Python3 and Python2+unicode_literals
-        pagesize = os.sysconf(str('SC_PAGE_SIZE'))
-        avail_pages = os.sysconf(str('SC_AVPHYS_PAGES'))
+        pagesize = os_sysconf('SC_PAGE_SIZE')
+        avail_pages = os_sysconf('SC_AVPHYS_PAGES')
         return Memory(avail_pages * pagesize, unit=Memory.B)
     except ValueError:
         raise NotImplementedError(
