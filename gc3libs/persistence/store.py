@@ -20,17 +20,20 @@
 
 # stdlib imports
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import object
 from abc import ABCMeta, abstractmethod
 
 # GC3Pie imports
 import gc3libs
 from gc3libs.url import Url
+from future.utils import with_metaclass
 
 
 __docformat__ = 'reStructuredText'
 
 
-class Store(object):
+class Store(with_metaclass(ABCMeta, object)):
     """
     Interface for storing and retrieving objects on permanent storage.
 
@@ -48,8 +51,6 @@ class Store(object):
         the `Store` class: it should not be set or altered by other
         parts of the code.
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, url=None):
         if url and not isinstance(url, Url):

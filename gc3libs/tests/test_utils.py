@@ -19,10 +19,16 @@ Test for classes and functions in the `utils` module.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import next
+from builtins import range
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 
-from itertools import izip
+
 
 # 3rd party imports
 import mock
@@ -54,7 +60,7 @@ def test_get_linux_memcg_limit_no_memcg():
 
 def test_get_linux_memcg_limit_with_memcg_limit():
     def fake_open(path, mode):
-        from StringIO import StringIO
+        from io import StringIO
         from contextlib import closing
         if path == '/proc/self/cgroup':
             return closing(StringIO('2:memory:/test'))
@@ -160,7 +166,7 @@ class TestYieldAtNext(object):
             while True:
                 val = (yield val)
         g = gc3libs.utils.YieldAtNext(generator_yield_send())
-        expected = range(0, 9)
+        expected = list(range(0, 9))
         n = 0
         print ("expecting %d messages" % (len(expected),))
         for msg in g:
@@ -183,7 +189,7 @@ class TestYieldAtNext(object):
             while True:
                 val = (yield val)
         g = gc3libs.utils.YieldAtNext(generator_yield_send())
-        expected = range(1, 10)
+        expected = list(range(1, 10))
         # consume one value to init the generator
         next(g)
         # send all messages
@@ -192,7 +198,7 @@ class TestYieldAtNext(object):
             print ("sent message '%s'" % (msg,))
         # receive them all
         print ("expecting %d messages back" % (len(expected),))
-        for msg, expected_msg in izip(g, expected):
+        for msg, expected_msg in zip(g, expected):
             print ("received: %s" % (msg,))
             # check msg
             assert msg == expected_msg

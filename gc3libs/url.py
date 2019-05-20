@@ -19,11 +19,14 @@ Utility classes and methods for dealing with URLs.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 
 import os
-import urlparse
+import urllib.parse
 
 
 # XXX: rewrite using `collections.namedtuple` when we no longer
@@ -167,19 +170,19 @@ class Url(tuple):
             else:
                 # parse `urlstring` and use kwd arguments as default values
                 try:
-                    urldata = urlparse.urlsplit(
+                    urldata = urllib.parse.urlsplit(
                         urlstring, scheme=scheme, allow_fragments=True)
                     # Python 2.6 parses fragments only for http(s),
                     # for any other scheme, the fragment is returned as
                     # part of the path...
                     if '#' in urldata.path:
                         path_, fragment_ = urldata.path.split('#')
-                        urldata = urlparse.SplitResult(
+                        urldata = urllib.parse.SplitResult(
                             urldata.scheme, urldata.netloc,
                             path_, urldata.query, fragment_)
                     if urldata.scheme == 'file' and not os.path.isabs(
                             urldata.path) and force_abs:
-                        urldata = urlparse.urlsplit(
+                        urldata = urllib.parse.urlsplit(
                             'file://' + os.path.abspath(urldata.path))
                     return tuple.__new__(cls, (
                         urldata.scheme or scheme,
@@ -436,7 +439,7 @@ class UrlKeyDict(dict):
             try:
                 # if `iter_or_dict` is a dict-like object, then it has
                 # `iteritems()`
-                for k, v in iter_or_dict.iteritems():
+                for k, v in iter_or_dict.items():
                     self[k] = v
             except AttributeError:
                 # then assume `iter_or_dict` is an iterator over (key, value)
@@ -447,7 +450,7 @@ class UrlKeyDict(dict):
     def __contains__(self, key):
         # this is necessary to have key-lookup work with strings as well
         return (dict.__contains__(self, key)
-                or key in self.keys())
+                or key in list(self.keys()))
 
     def __getitem__(self, key):
         try:
@@ -530,14 +533,14 @@ class UrlValueDict(dict):
             try:
                 # if `iter_or_dict` is a dict-like object, then it has
                 # `iteritems()`
-                for k, v in iter_or_dict.iteritems():
+                for k, v in iter_or_dict.items():
                     self[k] = v
             except AttributeError:
                 # then assume `iter_or_dict` is an iterator over (key, value)
                 # pairs
                 for k, v in iter_or_dict:
                     self[k] = v
-        for k, v in extra_args.iteritems():
+        for k, v in extra_args.items():
             self[k] = v
 
     def __setitem__(self, key, value):

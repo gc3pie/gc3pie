@@ -26,6 +26,9 @@ can implement problem-specific job control policies.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import range
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 import itertools
@@ -722,7 +725,7 @@ class StagedTaskCollection(SequentialTaskCollection):
                 # init parent class with the initial task
                 SequentialTaskCollection.__init__(
                     self, [first_stage], **extra_args)
-            elif isinstance(first_stage, (int, long, tuple)):
+            elif isinstance(first_stage, (int, int, tuple)):
                 # init parent class with no tasks,
                 # and immediately set the exitcode
                 SequentialTaskCollection.__init__(self, [], **extra_args)
@@ -759,7 +762,7 @@ class StagedTaskCollection(SequentialTaskCollection):
         if isinstance(next_stage, Task):
             self.add(next_stage)
             return Run.State.RUNNING
-        elif isinstance(next_stage, (int, long, tuple)):
+        elif isinstance(next_stage, (int, int, tuple)):
             self.execution.returncode = next_stage
             return Run.State.TERMINATED
         else:

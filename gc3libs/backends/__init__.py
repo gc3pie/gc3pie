@@ -18,6 +18,7 @@ Interface to different resource management systems for the GC3Libs.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 

@@ -24,6 +24,8 @@
 """
 
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import next
+from builtins import range
 import os
 import sys
 import subprocess
@@ -83,7 +85,7 @@ def runctx(args):
     # collect all results into a single .csv file
     print("Aggregating results")
     with open(RESULT_FILE,'wb') as rd:
-        for idx,line in results.items():
+        for idx,line in list(results.items()):
             rd.write(idx + "," + ",".join(x for x in line) + "\n")
     print("Done")
 

@@ -31,6 +31,10 @@ relevant aspects of the application being represented.
 
 """
 from __future__ import absolute_import, print_function, unicode_literals
+from __future__ import division
+from builtins import str
+from past.utils import old_div
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 __version__ = '2.5.3'
@@ -968,10 +972,10 @@ class Application(Task):
 
         # check that remote entries are all distinct
         # (can happen that two local paths are mapped to the same remote one)
-        if len(self.inputs.values()) != len(set(self.inputs.values())):
+        if len(list(self.inputs.values())) != len(set(self.inputs.values())):
             # try to build an exact error message
             inv = {}
-            for l, r in self.inputs.iteritems():
+            for l, r in self.inputs.items():
                 if r in inv:
                     raise gc3libs.exceptions.DuplicateEntryError(
                         "Local inputs '%s' and '%s'"
@@ -981,17 +985,17 @@ class Application(Task):
                     inv[r] = l
 
         # ensure remote paths are not absolute
-        for r_path in self.inputs.itervalues():
+        for r_path in self.inputs.values():
             if os.path.isabs(r_path):
                 raise gc3libs.exceptions.InvalidArgument(
                     "Remote paths not allowed to be absolute: %s" % r_path)
 
         # check that local entries are all distinct
         # (can happen that two remote paths are mapped to the same local one)
-        if len(self.outputs.values()) != len(set(self.outputs.values())):
+        if len(list(self.outputs.values())) != len(set(self.outputs.values())):
             # try to build an exact error message
             inv = {}
-            for r, l in self.outputs.iteritems():
+            for r, l in self.outputs.items():
                 if l in inv:
                     raise gc3libs.exceptions.DuplicateEntryError(
                         "Remote outputs '%s' and '%s'"
@@ -1001,7 +1005,7 @@ class Application(Task):
                     inv[l] = r
 
         # ensure remote paths are not absolute
-        for r_path in self.outputs.iterkeys():
+        for r_path in self.outputs.keys():
             if os.path.isabs(r_path):
                 raise gc3libs.exceptions.InvalidArgument(
                     "Remote paths not allowed to be absolute")
@@ -1037,8 +1041,8 @@ class Application(Task):
                 % (Run.Arch.X86_32, Run.Arch.X86_64))
 
         self.environment = dict(
-            (str(k), str(v)) for k, v in extra_args.pop(
-                'environment', dict()).items())
+            (str(k), str(v)) for k, v in list(extra_args.pop(
+                'environment', dict()).items()))
 
         self.join = extra_args.pop('join', False)
         self.stdin = extra_args.pop('stdin', None)
@@ -1150,7 +1154,7 @@ class Application(Task):
         """
         try:
             # is `spec` dict-like?
-            return ctor(((str(k), str(v)) for k, v in spec.iteritems()),
+            return ctor(((str(k), str(v)) for k, v in spec.items()),
                         force_abs=force_abs)
         except UnicodeError as err:
             raise gc3libs.exceptions.InvalidValue(
@@ -1231,8 +1235,8 @@ class Application(Task):
                     (lrms.name, self.requested_walltime, lrms.max_walltime))
                 continue
             if not lrms.validate_data(
-                    self.inputs.keys()) or not lrms.validate_data(
-                    self.outputs.values()):
+                    list(self.inputs.keys())) or not lrms.validate_data(
+                    list(self.outputs.values())):
                 gc3libs.log.info(
                     "Rejecting resource '%s': input/output data protocol"
                     " not supported." % lrms.name)
@@ -1298,7 +1302,7 @@ class Application(Task):
         """
         if self.environment:
             return (['/usr/bin/env']
-                    + [('%s=%s' % (k, v)) for k, v in self.environment.items()]
+                    + [('%s=%s' % (k, v)) for k, v in list(self.environment.items())]
                     + self.arguments[:])
         else:
             return self.arguments[:]
@@ -1355,8 +1359,8 @@ class Application(Task):
             # Let's make whatever works in our cluster, and see how we can
             # extend/change it when issue reports come...
             qsub += ['-l', ('mem_free=%dM' %
-                            max(1, int(self.requested_memory.amount(MB) /
-                                       self.requested_cores)))]
+                            max(1, int(old_div(self.requested_memory.amount(MB),
+                                       self.requested_cores))))]
         if self.join:
             qsub += ['-j', 'yes']
         if self.stdout:
@@ -1401,7 +1405,7 @@ class Application(Task):
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '%s' % self.jobname]
         if self.environment:
-            for name, value in self.environment.iteritems():
+            for name, value in self.environment.items():
                 qsub += ['-v', '{0}={1}'.format(name, value)]
         return (qsub, self.cmdline(resource))
 
@@ -1467,7 +1471,7 @@ class Application(Task):
             # the `env` prefix trick.
             bsub = (['/usr/bin/env']
                     + ['{0}={1}'.format(name, value)
-                       for name, value in self.environment.iteritems()]
+                       for name, value in self.environment.items()]
                     + bsub)
         return (bsub, self.cmdline(resource))
 
@@ -1507,7 +1511,7 @@ class Application(Task):
             qsub += ['-N', '%s' % self.jobname[:15]]
         if self.environment:
             # XXX: is the `-v` option also supported by older versions of PBS/TORQUE?
-            for name, value in self.environment.iteritems():
+            for name, value in self.environment.items():
                 qsub += ['-v', '{0}={1}'.format(name, value)]
         return (qsub, self.cmdline(resource))
 
@@ -1574,7 +1578,7 @@ class Application(Task):
             # environment, so they will be propagated to the job
             sbatch = (['/usr/bin/env']
                       + ['{0}={1}'.format(name, value)
-                         for name, value in self.environment.iteritems()]
+                         for name, value in self.environment.items()]
                       + sbatch)
 
         return (sbatch, cmdline)
@@ -1819,7 +1823,7 @@ class Run(Struct):
 
         def fset(self, value):
             try:
-                self.history.append(unicode(value, errors='replace'))
+                self.history.append(str(value, errors='replace'))
             except (TypeError, ValueError):
                 try:
                     self.history.append(str(value))

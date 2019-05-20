@@ -23,6 +23,8 @@ created inside that URL.
 
 # stdlib imports
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import object
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 import os
@@ -32,6 +34,7 @@ from warnings import warn
 # GC3Pie imports
 import gc3libs
 from gc3libs.url import Url
+from future.utils import with_metaclass
 
 
 # Some pollers depend on the presence of specific Python modules;
@@ -103,7 +106,7 @@ def register_poller(scheme):
     return register_class
 
 
-class Poller(object):
+class Poller(with_metaclass(ABCMeta, object)):
     """
     Abstract class for an URL Poller.
 
@@ -112,8 +115,6 @@ class Poller(object):
     it will return a list of tuples (Url, mask) containing the events
     occurred for each one of the underlying URLs.
     """
-
-    __metaclass__ = ABCMeta
 
     __slots__ = ['url']
 

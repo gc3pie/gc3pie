@@ -20,7 +20,9 @@
 
 # stdlib imports
 from __future__ import absolute_import, print_function, unicode_literals
-from cStringIO import StringIO
+from future import standard_library
+standard_library.install_aliases()
+from io import StringIO
 import os
 import shutil
 import tempfile

@@ -2,6 +2,7 @@
 #
 """
 """
+from __future__ import division
 # Copyright (C) 2012-2013,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,6 +19,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
+from future import standard_library
+standard_library.install_aliases()
+from past.utils import old_div
 __docformat__ = 'reStructuredText'
 
 from __future__ import absolute_import, print_function, unicode_literals
@@ -28,8 +32,8 @@ import mimetypes
 import os
 import sys
 import time
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 
 try:
     import magic
@@ -42,7 +46,7 @@ log.setLevel(logging.DEBUG)
 
 def open_http(url):
     log.info("Sending request to %s", url.geturl())
-    return urllib2.urlopen(url.geturl())
+    return urllib.request.urlopen(url.geturl())
 
 
 def open_swift(url, method='get', content_type=None, content_length=0, content_data=None):
@@ -76,10 +80,10 @@ def open_swift(url, method='get', content_type=None, content_length=0, content_d
     log.info("Getting token from '%s' for user '%s', tenant '%s'",
              token_url, username, tenant)
 
-    kreq = urllib2.Request(token_url, data)
+    kreq = urllib.request.Request(token_url, data)
     kreq.add_header("Content-type", "application/json")
 
-    fp = urllib2.urlopen(kreq)
+    fp = urllib.request.urlopen(kreq)
     authresp = json.loads(fp.read())
     fp.close()
 
@@ -98,7 +102,7 @@ def open_swift(url, method='get', content_type=None, content_length=0, content_d
         object_name).encode('utf-8')
 
     # If this is a GET, we just download it
-    sreq = urllib2.Request(object_url, content_data)
+    sreq = urllib.request.Request(object_url, content_data)
     sreq.add_header('X-Auth-Token', token)
 
     # If it's a PUT, we also need to set more information
@@ -111,7 +115,7 @@ def open_swift(url, method='get', content_type=None, content_length=0, content_d
             sreq.add_header('Content-Type', 'application/octect-stream')
     log.info("Headers: %s" % sreq.headers)
     log.info("Sending request to %s", object_url)
-    return urllib2.urlopen(sreq)
+    return urllib.request.urlopen(sreq)
 
 
 def download_file(url, outfile, bufsize=2**20):
@@ -132,7 +136,7 @@ def download_file(url, outfile, bufsize=2**20):
             data = fd.read(bufsize)
     fd.close()
     etime = time.time()
-    log.info("File '%s' downloaded to '%s' in %f seconds (%d bytes/s)", url.geturl(), outfile, etime-stime, os.stat(outfile).st_size/(etime-stime))
+    log.info("File '%s' downloaded to '%s' in %f seconds (%d bytes/s)", url.geturl(), outfile, etime-stime, old_div(os.stat(outfile).st_size,(etime-stime)))
 
 def upload_file(url, local, bufsize=2**20):
     url = urllib2.urlparse.urlparse(url)
@@ -162,7 +166,7 @@ def upload_file(url, local, bufsize=2**20):
                             content_length=clength,
                             content_data=localfd.read())
     etime = time.time()
-    log.info("File '%s' uploaded to '%s' in %f seconds (%d bytes/s)", local, url.geturl(), etime-stime, clength/(etime-stime))
+    log.info("File '%s' uploaded to '%s' in %f seconds (%d bytes/s)", local, url.geturl(), etime-stime, old_div(clength,(etime-stime)))
 
 
 ## main: run tests

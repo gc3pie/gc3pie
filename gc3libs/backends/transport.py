@@ -22,6 +22,10 @@ via SSH.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from __future__ import division
+from builtins import str
+from past.utils import old_div
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 
@@ -490,7 +494,7 @@ class SshTransport(Transport):
             gc3libs.log.debug(
                 "SshTransport: ignoring extra init arguments: %s",
                 ', '.join("{0}={1!r}".format(k, v)
-                          for k,v in extra_args.iteritems()))
+                          for k,v in extra_args.items()))
 
     @staticmethod
     def _estimate_safe_buffer_size():
@@ -505,7 +509,7 @@ class SshTransport(Transport):
             # be sure to use no more than 50% of avail mem
             # if we cannot determine number of processors
             nproc = gc3libs.utils.get_num_processors() or 2
-            return (avail_mem / nproc)
+            return (old_div(avail_mem, nproc))
         else:
             # no clue how much memory is available, fall back to
             # (hard-coded) 32MiB which should be safe on today's computers
@@ -974,7 +978,7 @@ class LocalTransport(Transport):
             gc3libs.log.debug(
                 "LocalTransport: ignoring extra init arguments: %s",
                 ', '.join("{0}={1!r}".format(k, v)
-                          for k,v in extra_args.iteritems()))
+                          for k,v in extra_args.items()))
 
 
     # pylint: disable=too-many-arguments,unused-argument

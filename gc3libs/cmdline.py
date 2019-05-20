@@ -42,6 +42,11 @@ The following public classes are exported from this module:
   `SessionBasedDaemon`:class: via XML-RPC.
 """
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
 from __future__ import (absolute_import, division, print_function)
 
 # stdlib modules
@@ -61,13 +66,13 @@ import sys
 import time
 import threading
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 from collections import defaultdict
-from SimpleXMLRPCServer import SimpleXMLRPCServer
+from xmlrpc.server import SimpleXMLRPCServer
 from warnings import warn
-import xmlrpclib
+import xmlrpc.client
 
 
 # 3rd party modules
@@ -365,7 +370,7 @@ class _Script(cli.app.CommandLineApp):
 
         """
         # use keyword arguments to set additional instance attrs
-        for k, v in extra_args.items():
+        for k, v in list(extra_args.items()):
             if k not in ['name', 'description']:
                 setattr(self, k, v)
         # init and setup pyCLI classes
@@ -1345,7 +1350,7 @@ class _SessionBasedCommand(_Script):
         # `time.sleep()`, so we just do the wait in small
         # steps, to allow the interpreter to process
         # interrupts in the breaks.  Ugly, but works...
-        for x in xrange(self.params.wait):
+        for x in range(self.params.wait):
             time.sleep(1)
 
 
@@ -1800,7 +1805,7 @@ class DaemonClient(_Script):
     def _connect_to_server(self, server_url):
         url = self._parse_connect_string(server_url)
         try:
-            return xmlrpclib.ServerProxy(str(url))
+            return xmlrpc.client.ServerProxy(str(url))
         except Exception as err:
             self.log.error("Cannot connect to server `%s`: %s", url, err)
             return None
@@ -1839,7 +1844,7 @@ class DaemonClient(_Script):
         try:
             print(func(*args))
             return os.EX_OK
-        except xmlrpclib.Fault as err:
+        except xmlrpc.client.Fault as err:
             self.log.error(
                 "Error running command `%s`: %s",
                 cmd, err.faultString)

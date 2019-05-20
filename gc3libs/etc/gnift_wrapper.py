@@ -70,14 +70,14 @@ def RunFreesurfer(subject, input, output):
         for filename in f:
             if filename.endswith(NII_EXTENSION):
                 timepoint = os.path.basename(r)
-                if not timepoint in input_nii.keys():
+                if not timepoint in list(input_nii.keys()):
                     # Initialise
                     input_nii[timepoint] = list()
                 input_nii[timepoint].append(os.path.join(r,filename))
 
 
     # DATA INPUT and  CROSS SECTIONAL PROCESSING
-    print("Start DATA INPUT on %d Timepoints" % len(input_nii.keys()))
+    print("Start DATA INPUT on %d Timepoints" % len(list(input_nii.keys())))
     for timepoint in sorted(input_nii.keys()):
         inputs = '-i '+' -i '.join(x for x in input_nii[timepoint])
         data_input_outputfolder =  "%s.cross.%s" % (subject, timepoint)

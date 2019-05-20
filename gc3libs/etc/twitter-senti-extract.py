@@ -1,4 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import range
+from past.builtins import basestring
 import bz2
 import json
 import os

@@ -18,6 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 
@@ -853,7 +854,7 @@ class EC2Lrms(LRMS):
                         self.instance_type, job.jobname))
 
         # First of all, try to submit to one of the subresources.
-        for vm_id, resource in self.subresources.items():
+        for vm_id, resource in list(self.subresources.items()):
             if not resource.updated:
                 # The VM is probably still booting, let's skip to the
                 # next one and add it to the list of "pending" VMs.
@@ -986,7 +987,7 @@ class EC2Lrms(LRMS):
             return
         # Update status of VMs and remote resources
         self.get_resource_status()
-        for vm_id, resource in self.subresources.items():
+        for vm_id, resource in list(self.subresources.items()):
             if resource.updated and not resource.has_running_tasks():
                 vm = self._get_vm(vm_id)
                 gc3libs.log.warning(

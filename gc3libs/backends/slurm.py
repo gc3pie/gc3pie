@@ -19,6 +19,7 @@ Job control on SLURM clusters (possibly connecting to the front-end via SSH).
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 

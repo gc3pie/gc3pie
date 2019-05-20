@@ -27,6 +27,9 @@ expansions generated recursviely.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import range
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 
@@ -74,7 +77,7 @@ except:
         def __iter__(self):
             return self
 
-        def next(self):
+        def __next__(self):
             if self.__closed:
                 raise StopIteration
             if (0 == self.__L) or (-1 in self.__M):
@@ -169,7 +172,7 @@ class Template(object):
         return ''.join(["Template(",
                              ', '.join([repr(self._template)] +
                                       [("%s=%s" % (k, v))
-                                       for k, v in self._keywords.items()]),
+                                       for k, v in list(self._keywords.items())]),
                              ')'])
 
     def expansions(self, **keywords):
@@ -188,7 +191,7 @@ class Template(object):
                 # check validity based on keywords expanded
                 # on contained templates as well.
                 new_kws = kws.copy()
-                for v in kws.values():
+                for v in list(kws.values()):
                     if isinstance(v, Template):
                         new_kws.update(v._keywords)
                 if self._valid(new_kws):

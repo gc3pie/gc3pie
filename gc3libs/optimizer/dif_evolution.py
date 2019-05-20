@@ -40,6 +40,7 @@ http://www.icsi.berkeley.edu/~storn/DeMat.zip hosted on http://www.icsi.berkeley
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import range
 __author__ = 'Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
 __docformat__ = 'reStructuredText'
 
@@ -303,7 +304,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
     # Adjustments for pickling
     def __getstate__(self):
         state = self.__dict__.copy()
-        if 'logger' in state.keys():
+        if 'logger' in list(state.keys()):
             del state['logger']
 #        return state
         return None

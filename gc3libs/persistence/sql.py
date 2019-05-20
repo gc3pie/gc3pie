@@ -20,14 +20,17 @@ SQL-based storage of GC3pie objects.
 #
 
 from __future__ import absolute_import, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 
 # stdlib imports
 from contextlib import closing
-from cStringIO import StringIO
+from io import StringIO
 import os
-from urlparse import parse_qs
+from urllib.parse import parse_qs
 from warnings import warn
 from weakref import WeakValueDictionary
 
@@ -210,7 +213,7 @@ class SqlStore(Store):
 
         # create internal rep of table
         self._real_extra_fields = {}
-        for col, func in self._init_extra_fields.iteritems():
+        for col, func in self._init_extra_fields.items():
             assert isinstance(col, sqla.Column)
             table.append_column(col.copy())
             self._real_extra_fields[col.name] = func

@@ -166,7 +166,7 @@ class NoOpLrms(LRMS):
         transitions = self.transition_graph[app.execution.state]
         log.debug("Task %s transitions: %s.", app, ", ".join([
             ("with probability %g to state %s" % (prob, state))
-            for prob, state in transitions.items() if prob > 0
+            for prob, state in list(transitions.items()) if prob > 0
         ]))
         dice = random()
         #log.debug("Rolled dice, got %g result", dice)

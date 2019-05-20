@@ -19,11 +19,15 @@ Deal with GC3Pie configuration files.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 
 # stdlib imports
-import ConfigParser
+import configparser
 import inspect
 import os
 import re
@@ -65,7 +69,7 @@ _architecture_value_map = {
 
 def _matching_architecture(value):
     """Return first matching entry from `_architecture_value_map`."""
-    for matcher, arch in _architecture_value_map.iteritems():
+    for matcher, arch in _architecture_value_map.items():
         if matcher.match(value):
             return arch
     raise ValueError("Unknown architecture '%s'." % value)
@@ -284,11 +288,11 @@ class Configuration(gc3libs.utils.Struct):
             filename)
         with open(filename, 'r') as stream:
             defaults, resources, auths = self._parse(stream, filename)
-        for name, values in resources.iteritems():
+        for name, values in resources.items():
             self.resources[name].update(values)
-        for name, values in auths.iteritems():
+        for name, values in auths.items():
             self.auths[name].update(values)
-        for name, value in defaults.iteritems():
+        for name, value in defaults.items():
             if not name.startswith('_'):
                 self[name] = value
 
@@ -320,10 +324,10 @@ class Configuration(gc3libs.utils.Struct):
         resources = defaultdict(dict)
         auths = defaultdict(dict)
 
-        parser = ConfigParser.SafeConfigParser()
+        parser = configparser.SafeConfigParser()
         try:
             parser.readfp(stream, filename)
-        except ConfigParser.Error as err:
+        except configparser.Error as err:
             if filename is None:
                 try:
                     filename = stream.name
@@ -416,7 +420,7 @@ class Configuration(gc3libs.utils.Struct):
                         ', '.join([
                             ("%s=%r" %
                              (k, v)) for k, v in sorted(
-                                 resources[name].iteritems())]))
+                                 resources[name].items())]))
 
             else:
                 # Unhandled sectname
@@ -458,7 +462,7 @@ class Configuration(gc3libs.utils.Struct):
 
     @staticmethod
     def _perform_key_renames(config_items, renames, filename):
-        for oldkey, newkey in renames.iteritems():
+        for oldkey, newkey in renames.items():
             if oldkey in config_items:
                 gc3libs.log.warning(
                     "Configuration item '%s' was renamed to '%s',"
@@ -491,7 +495,7 @@ class Configuration(gc3libs.utils.Struct):
 
     @staticmethod
     def _perform_value_updates(config_items, renames, filename):
-        for key, changed in renames.iteritems():
+        for key, changed in renames.items():
             if key in config_items:
                 value = config_items[key]
                 if value in changed:
@@ -508,7 +512,7 @@ class Configuration(gc3libs.utils.Struct):
 
     @staticmethod
     def _perform_filename_conversion(config_items, path_regexp, filename):
-        for key, value in config_items.iteritems():
+        for key, value in config_items.items():
             if path_regexp.match(key):
                 basedir = (os.path.dirname(value)
                            if os.path.isfile(value)
@@ -537,7 +541,7 @@ class Configuration(gc3libs.utils.Struct):
 
     @staticmethod
     def _perform_type_conversions(config_items, converters, filename):
-        for key, converter in converters.iteritems():
+        for key, converter in converters.items():
             if key in config_items:
                 try:
                     config_items[key] = converter(config_items[key])
@@ -645,7 +649,7 @@ class Configuration(gc3libs.utils.Struct):
         backend.
         """
         resources = {}
-        for name, resdict in self.resources.iteritems():
+        for name, resdict in self.resources.items():
             try:
                 backend = self._make_resource(resdict)
                 if backend is None:  # resource is disabled
@@ -721,7 +725,7 @@ class Configuration(gc3libs.utils.Struct):
             gc3libs.log.debug(
                 "Creating resource '%s' defined by: %s.",
                 resdict['name'], ', '.join([
-                    ("%s=%r" % (k, v)) for k, v in sorted(resdict.iteritems())
+                    ("%s=%r" % (k, v)) for k, v in sorted(resdict.items())
                 ]))
 
         for auth_param in 'auth', 'vm_auth':

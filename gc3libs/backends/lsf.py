@@ -19,6 +19,8 @@ Job control on LSF clusters (possibly connecting to the front-end via SSH).
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import next
 __docformat__ = 'reStructuredText'
 
 
@@ -540,7 +542,7 @@ class LsfLrms(batch.BatchSystem):
             occurrences[ws_length] += 1
         # now find the length that has the max occurrences
         max_occurrences = max(occurrences.values())
-        for length, count in occurrences.items():
+        for length, count in list(occurrences.items()):
             if count == max_occurrences:
                 return length
 

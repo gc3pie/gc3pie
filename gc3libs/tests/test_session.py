@@ -18,6 +18,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 # stdlib imports
@@ -183,7 +187,7 @@ class TestSession(object):
         self.sess.add(_PStruct(a=3, b='baz'))
         sess2 = Session(self.sess.path, **self.extra_args)
         assert len(sess2) == 3
-        for task_id in sess2.tasks.iterkeys():
+        for task_id in sess2.tasks.keys():
             task = sess2.store.load(task_id)
             assert task == sess2.tasks[task_id]
         for task2_id, task1_id in zip(sorted(sess2.tasks.keys()),

@@ -185,7 +185,7 @@ class OpenStackLrms(LRMS):
 
         # `*_instance_type` config items should be consumed here,
         # not in any sub-resource
-        for key, value in extra_args.items():
+        for key, value in list(extra_args.items()):
             if key.endswith('_instance_type'):
                 self[key] = value
                 extra_args.pop(key)
@@ -787,7 +787,7 @@ class OpenStackLrms(LRMS):
                 gc3libs.log.info(
                     "Ignoring error in updating resource '%s': %s."
                     " Trying other IPs.", subresource.name, ex)
-                for ip in sum(vm.networks.values(), []):
+                for ip in sum(list(vm.networks.values()), []):
                     if vm.preferred_ip == ip:
                         continue
                     vm.preferred_ip = ip
@@ -959,7 +959,7 @@ class OpenStackLrms(LRMS):
                 "application %s" % job)
 
         # First of all, try to submit to one of the subresources.
-        for vm_id, subresource in self.subresources.items():
+        for vm_id, subresource in list(self.subresources.items()):
             if not subresource.updated:
                 # The VM is probably still booting, let's skip to the
                 # next one and add it to the list of "pending" VMs.
@@ -1113,7 +1113,7 @@ class OpenStackLrms(LRMS):
             return
         # Update status of VMs and remote resources
         self.get_resource_status()
-        for vm_id, subresource in self.subresources.items():
+        for vm_id, subresource in list(self.subresources.items()):
             if subresource.updated and not subresource.has_running_tasks():
                 vm = self._get_vm(vm_id)
                 gc3libs.log.warning(

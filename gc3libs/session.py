@@ -18,6 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 
@@ -388,27 +389,26 @@ class Session(list):
         return len(self.tasks)
 
     def __iter__(self):
-        return self.tasks.itervalues()
+        return iter(self.tasks.values())
 
     def iter_workflow(self):
-        task_collections = filter(lambda x: isinstance(x, TaskCollection),
-                                  self.tasks.values())
+        task_collections = [x for x in list(self.tasks.values()) if isinstance(x, TaskCollection)]
         proper_tasks = set(self.tasks.values()).difference(task_collections)
         return itertools.chain(
             *([proper_tasks]
-              + map(lambda x: x.iter_workflow(), task_collections)))
+              + [x.iter_workflow() for x in task_collections]))
 
     def list_ids(self):
         """
         Return set of all task IDs belonging to this session.
         """
-        return self.tasks.keys()
+        return list(self.tasks.keys())
 
     def list_names(self):
         """
         Return set of names of tasks belonging to this session.
         """
-        return set(task.jobname for task in self.tasks.values())
+        return set(task.jobname for task in list(self.tasks.values()))
 
     # persistence management
 
@@ -506,7 +506,7 @@ class Session(list):
         """
         Save all modified tasks to persistent storage.
         """
-        for task in self.tasks.itervalues():
+        for task in self.tasks.values():
             if task.changed:
                 self.save(task)
         if flush:

@@ -23,6 +23,7 @@ Part of the code used in this module originally comes from:
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import zip
 __docformat__ = 'reStructuredText'
 
 
@@ -87,7 +88,7 @@ def trace(fn, log=gc3libs.log.debug):
     argcount = code.co_argcount
     argnames = code.co_varnames[:argcount]
     fn_defaults = fn.__defaults__ or list()
-    argdefs = dict(zip(argnames[-len(fn_defaults):], fn_defaults))
+    argdefs = dict(list(zip(argnames[-len(fn_defaults):], fn_defaults)))
 
     @functools.wraps(fn)
     def wrapped(*v, **k):
@@ -99,7 +100,7 @@ def trace(fn, log=gc3libs.log.debug):
                      for a in argnames[len(v):] if a not in k]
         nameless = [repr(val) for val in v[argcount:]]
         keyword = [format_arg_value((key, val))
-                   for key, val in k.items()]
+                   for key, val in list(k.items())]
         args = positional + defaulted + nameless + keyword
         log("%s(%s)" % (name(fn), ', '.join(args)))
         return fn(*v, **k)

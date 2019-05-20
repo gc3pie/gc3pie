@@ -21,7 +21,11 @@
 
 # stdlib imports
 from __future__ import absolute_import, print_function, unicode_literals
-from cStringIO import StringIO
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
+from io import StringIO
 import os
 import shutil
 import tempfile
@@ -582,7 +586,7 @@ app2_epilogue_content = echo epilogue app2
             'myapp_prologue',
             'myapp_epilogue']
         os.mkdir(os.path.join(self.tmpdir, 'scripts'))
-        for k, v in self.cfg['resources']['test'].iteritems():
+        for k, v in self.cfg['resources']['test'].items():
             if k in self.scripts:
                 scriptfd = open(os.path.join(self.tmpdir, v), 'w')
                 scriptfd.write('echo %s' % k)
@@ -602,7 +606,7 @@ app2_epilogue_content = echo epilogue app2
         """Test that prologue and epilogue scripts are absolute pathnames"""
         self.core = gc3libs.core.Core(self.cfg)
         for resource in self.core.get_resources():
-            for (k, v) in resource.iteritems():
+            for (k, v) in resource.items():
                 if k not in ['prologue', 'epilogue',
                              'myapp_prologue', 'myapp_epilogue']:
                     continue
@@ -756,7 +760,7 @@ override = False
 
         self.core = gc3libs.core.Core(self.cfg)
         for resource in self.core.get_resources():
-            for (k, v) in resource.iteritems():
+            for (k, v) in resource.items():
                 if k not in ['prologue', 'epilogue',
                              'myapp_prologue', 'myapp_epilogue']:
                     continue

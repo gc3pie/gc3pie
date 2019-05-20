@@ -19,10 +19,13 @@ Unit tests for the `gc3libs.backends.shellcmd` module.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 
-from cStringIO import StringIO
+from io import StringIO
 import os
 import shutil
 import tempfile
@@ -447,7 +450,7 @@ type=none
 
         try:
             self.core.submit(app)
-            for pid in self.backend._job_infos.keys():
+            for pid in list(self.backend._job_infos.keys()):
                 assert isinstance(pid,str)
         finally:
             self.core.kill(app)

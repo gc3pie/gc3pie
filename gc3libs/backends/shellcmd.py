@@ -16,7 +16,13 @@
 #
 
 # make coding more python3-ish, must be the first statement
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
 from __future__ import (absolute_import, division, print_function)
+from future.utils import with_metaclass
 
 
 ## module doc and other metadata
@@ -32,7 +38,7 @@ __docformat__ = 'reStructuredText'
 # stdlib imports
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
-import cPickle as pickle
+import pickle as pickle
 from getpass import getuser
 import os
 import os.path
@@ -174,7 +180,7 @@ def _parse_returncode_string(val):
 #
 #
 
-class _Machine(object):
+class _Machine(with_metaclass(ABCMeta, object)):
     """
     Base class for OS-specific shell services.
 
@@ -182,8 +188,6 @@ class _Machine(object):
     to achieve the same task. The `Machine` class abstract these into
     a uniform interface.
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, transport):
         self.transport = transport
@@ -821,7 +825,7 @@ class ShellcmdLrms(LRMS):
              `ShellcmdLrms.get_resource_status()` has not been called
              for a while.
         """
-        return sum(1 for info in self._job_infos.values()
+        return sum(1 for info in list(self._job_infos.values())
                    if not info['terminated'])
 
 
@@ -833,7 +837,7 @@ class ShellcmdLrms(LRMS):
         apply here.
         """
         return sum(info['requested_cores']
-                   for info in self._job_infos.values()
+                   for info in list(self._job_infos.values())
                    if not info['terminated'])
 
 
@@ -855,7 +859,7 @@ class ShellcmdLrms(LRMS):
             # pessimistic stance that a job with no memory
             # requirements is using (DefMemPerCPU * NumCPUs)
             ((info['requested_memory'] or 0*MB)
-             for info in self._job_infos.values()
+             for info in list(self._job_infos.values())
              if not info['terminated']), 0*MB)
 
 
@@ -1135,7 +1139,7 @@ class ShellcmdLrms(LRMS):
         # `Application.outputs` list to expand wildcards and
         # directory references.
         stageout = list()
-        for remote_relpath, local_url in app.outputs.iteritems():
+        for remote_relpath, local_url in app.outputs.items():
             if local_url.scheme in ['swift', 'swt', 'swifts', 'swts']:
                 continue
             local_relpath = local_url.path
@@ -1386,7 +1390,7 @@ class ShellcmdLrms(LRMS):
 
     def _stage_app_input_files(self, app):
         destdir = app.execution.lrms_execdir
-        for local_path, remote_path in app.inputs.items():
+        for local_path, remote_path in list(app.inputs.items()):
             if local_path.scheme != 'file':
                 log.debug(
                     "Ignoring input URL `%s` for task %s:"
@@ -1462,7 +1466,7 @@ class ShellcmdLrms(LRMS):
     def _setup_environment(self, app):
         """Return commands to set up the environment for `app`."""
         env_commands = []
-        for k, v in app.environment.iteritems():
+        for k, v in app.environment.items():
             env_commands.append(
                 "export {k}={v};"
                 .format(k=sh_quote_safe(k), v=sh_quote_unsafe(v)))
@@ -1489,12 +1493,12 @@ class ShellcmdLrms(LRMS):
         download_cmds = []
         upload_cmds = []
         mover_path = posixpath.join(destdir, ShellcmdLrms.MOVER_SCRIPT)
-        for url, outfile in app.inputs.items():
+        for url, outfile in list(app.inputs.items()):
             if url.scheme in ['swift', 'swifts', 'swt', 'swts', 'http', 'https']:
                 download_cmds.append(
                     "python '{mover}' download '{url}' '{outfile}'"
                     .format(mover=mover_path, url=str(url), outfile=outfile))
-        for infile, url in app.outputs.items():
+        for infile, url in list(app.outputs.items()):
             if url.scheme in ['swift', 'swt', 'swifts', 'swts']:
                 upload_cmds.append(
                     "python '{mover}' upload '{url}' '{infile}'"

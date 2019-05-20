@@ -20,6 +20,11 @@ Top-level classes for task execution and control.
 #
 
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import next
+from builtins import filter
+from builtins import str
+from builtins import range
+from builtins import object
 from collections import defaultdict, deque
 from fnmatch import fnmatch
 import functools
@@ -188,7 +193,7 @@ class Core(object):
           resources in-place.
         """
         enabled = 0
-        for lrms in self.resources.itervalues():
+        for lrms in self.resources.values():
             try:
                 if not match(lrms):
                     lrms.enabled = False
@@ -318,7 +323,7 @@ class Core(object):
             assert len(targets) > 0
         else:  # targets is None
             enabled_resources = [
-                r for r in self.resources.itervalues() if r.enabled]
+                r for r in self.resources.values() if r.enabled]
             if len(enabled_resources) == 0:
                 raise gc3libs.exceptions.NoResources(
                     "Could not initialize any computational resource"
@@ -697,7 +702,7 @@ class Core(object):
         """
         Return list of resources configured into this `Core` instance.
         """
-        return [lrms for lrms in self.resources.itervalues()]
+        return [lrms for lrms in self.resources.values()]
 
     def kill(self, app, **extra_args):
         """
@@ -842,8 +847,8 @@ class Core(object):
         all configured resources are updated.
         """
         if resources is all:
-            resources = self.resources.values()
-        for lrms in self.resources.itervalues():
+            resources = list(self.resources.values())
+        for lrms in self.resources.values():
             try:
                 if not lrms.enabled:
                     continue
@@ -886,7 +891,7 @@ class Core(object):
         Used to invoke explicitly the destructor on objects
         e.g. LRMS
         """
-        for lrms in self.resources.itervalues():
+        for lrms in self.resources.values():
             lrms.close()
 
     # compatibility with the `Engine` interface
@@ -973,7 +978,7 @@ class Scheduler(object):
         return self
 
     # pylint: disable=missing-docstring
-    def next(self):
+    def __next__(self):
         raise NotImplementedError(
             "Method `next` of class `%s` has not been implemented."
             % self.__class__.__name__)
@@ -1035,7 +1040,7 @@ class scheduler(object):  # pylint: disable=invalid-name
         return self
 
     # pylint: disable=missing-docstring
-    def next(self):
+    def __next__(self):
         return next(self._gen)
 
     # pylint: disable=missing-docstring
@@ -1078,7 +1083,7 @@ def first_come_first_serve(task_queue, resources, matchmaker=MatchMaker()):
     # when e.g. disabling resources that are full
     resources = list(resources)
     total = len(task_queue)
-    for done in xrange(total):
+    for done in range(total):
         task = task_queue.get()
         # keep only compatible resources
         compatible_resources = matchmaker.filter(task, resources)
@@ -1592,7 +1597,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def __iter_only(queue, cls):
-        return itertools.ifilter(
+        return filter(
             (lambda task: isinstance(task, cls)), iter(queue))
 
 
@@ -1652,7 +1657,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         # if no resources are enabled, there's no point in running
         # this further
         nr_enabled_resources = sum(int(rsc.enabled)
-                                   for rsc in self._core.resources.itervalues())
+                                   for rsc in self._core.resources.values())
         if nr_enabled_resources == 0:
             raise gc3libs.exceptions.NoResources(
                 "No resources available for running jobs.")
@@ -1661,7 +1666,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         queue = self._managed.to_kill
         if queue:
             gc3libs.log.debug("Engine %s about to kill jobs ...", self)
-        for _ in xrange(len(queue)):
+        for _ in range(len(queue)):
             task = queue.get()
             old_state = task.execution.state
 
@@ -1694,7 +1699,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             gc3libs.log.debug(
                 "Engine %s about to update status of in-flight tasks ...",
                 self)
-        for _ in xrange(len(queue)):
+        for _ in range(len(queue)):
             task = queue.get()
 
             # ensure pre-condition on state is met
@@ -1802,7 +1807,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
             self._core.update_resources()
             # now try to submit
             with self.scheduler(queue,
-                                self._core.resources.values()) as _sched:
+                                list(self._core.resources.values())) as _sched:
                 # wrap the original generator object so that `send`
                 # and `throw` do not yield a value -- we only get new
                 # stuff from the call to the `next` method in the `for
@@ -1865,7 +1870,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
                 gc3libs.log.debug(
                     "Engine %s about to retrieve output of TERMINATING tasks ...",
                     self)
-            for _ in xrange(len(queue)):
+            for _ in range(len(queue)):
                 task = queue.get()
                 # try to get output
                 try:
@@ -1913,7 +1918,7 @@ class Engine(object):  # pylint: disable=too-many-instance-attributes
         if queue:
             gc3libs.log.debug(
                 "Engine %s about to clean up TERMINATED tasks ...", self)
-        for _ in xrange(len(queue)):
+        for _ in range(len(queue)):
             task = queue.get()
             try:
                 self._core.free(task)

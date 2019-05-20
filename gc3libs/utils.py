@@ -24,6 +24,12 @@ sources of a different project and it would not stop working.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import next
+from builtins import str
+from builtins import range
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 
@@ -38,7 +44,7 @@ import shutil
 import sys
 import tempfile
 import time
-import cStringIO as StringIO
+import io as StringIO
 import UserDict
 
 
@@ -518,7 +524,7 @@ class ExponentialBackoff(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         """Return next waiting time."""
         self.attempt += 1
         if self.attempt > self.max_retries:
@@ -824,7 +830,7 @@ def ifelse(test, if_true, if_false):
 # original source: https://gist.github.com/jtriley/7270594
 def insert_char_every_n_chars(string, char='\n', every=64):
     return char.join(
-        string[i:i + every] for i in xrange(0, len(string), every))
+        string[i:i + every] for i in range(0, len(string), every))
 
 
 def irange(start, stop, step=1):
@@ -1361,7 +1367,7 @@ def prettyprint(
     if _exclude is None:
         _exclude = set()
     _exclude.add(id(D))
-    for k, v in sorted(D.iteritems()):
+    for k, v in sorted(D.items()):
         leading_spaces = indent * ' '
         full_name = "%s%s" % (_key_prefix, k)
         if only_keys is not None:
@@ -1915,13 +1921,13 @@ class Struct(object, UserDict.DictMixin):
         if initializer is not None:
             try:
                 # initializer is `dict`-like?
-                for name, value in initializer.items():
+                for name, value in list(initializer.items()):
                     self[name] = value
             except AttributeError:
                 # initializer is a sequence of (name,value) pairs?
                 for name, value in initializer:
                     self[name] = value
-        for name, value in extra_args.items():
+        for name, value in list(extra_args.items()):
             self[name] = value
 
     def copy(self):
@@ -1937,7 +1943,7 @@ class Struct(object, UserDict.DictMixin):
         return self.__dict__[name]
 
     def keys(self):
-        return self.__dict__.keys()
+        return list(self.__dict__.keys())
 
 
 def string_to_boolean(word):
@@ -2244,7 +2250,7 @@ def update_parameter_in_file(path, var_in, new_val, regex_in):
                             r'(\s*)'),  # spaces (filler)
     }
     isfound = False
-    if regex_in in _loop_regexps.keys():
+    if regex_in in list(_loop_regexps.keys()):
         regex_in = _loop_regexps[regex_in]
     para_file_in = open(path, 'r')
     para_file_out = open(path + '.tmp', 'w')
@@ -2314,7 +2320,7 @@ class YieldAtNext(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self._stop_iteration:
             raise StopIteration
         elif self._saved:

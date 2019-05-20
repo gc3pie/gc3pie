@@ -18,6 +18,8 @@ Authentication support for the GC3Libs.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 import gc3libs.exceptions
@@ -67,7 +69,7 @@ class Auth(object):
         self.__auths = {}
         self._config = config
         self._ctors = {}
-        for auth_name, auth_params in self._config.iteritems():
+        for auth_name, auth_params in self._config.items():
             self._ctors[auth_name] = Auth.types[auth_params['type']]
 
     def add_params(self, **params):
@@ -78,7 +80,7 @@ class Auth(object):
         Parameters that have already been specified are silently
         overwritten.
         """
-        for auth_name, auth_params in self._config.iteritems():
+        for auth_name, auth_params in self._config.items():
             auth_params.update(params)
 
     def get(self, auth_name, **kwargs):

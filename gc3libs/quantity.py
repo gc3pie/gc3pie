@@ -24,6 +24,10 @@ see: `<https://github.com/uzh/gc3pie/issues/47>`
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from __future__ import division
+from builtins import object
+from past.utils import old_div
+from future.utils import with_metaclass
 __docformat__ = 'reStructuredText'
 
 
@@ -202,7 +206,7 @@ class _Quantity(object):
         """
         if unit is None:
             unit = self.unit
-        return (conv(self._amount) / conv(unit._amount))
+        return (old_div(conv(self._amount), conv(unit._amount)))
 
     @property
     def base(self):
@@ -390,8 +394,8 @@ class _Quantity(object):
                 % (self.__class__.__name__, other.__class__.__name__))
         unit = self._smallest_unit(self, other)
         return self._new_from_amount_and_unit(
-            (self.amount(self.base) + other.amount(self.base)) /
-            unit.amount(self.base),
+            old_div((self.amount(self.base) + other.amount(self.base)),
+            unit.amount(self.base)),
             unit=unit)
 
     def __sub__(self, other):
@@ -401,8 +405,8 @@ class _Quantity(object):
                 % (self.__class__.__name__, other.__class__.__name__))
         unit = self._smallest_unit(self, other)
         return self._new_from_amount_and_unit(
-            (self.amount(self.base) - other.amount(self.base)) /
-            unit.amount(self.base),
+            old_div((self.amount(self.base) - other.amount(self.base)),
+            unit.amount(self.base)),
             unit=unit)
 
     def __mul__(self, coeff):
@@ -426,14 +430,14 @@ class _Quantity(object):
         try:
             # the quotient of two (homogeneous) quantities is a ratio (pure
             # number)
-            return (self.amount(self.base, conv=float) /
-                    other.amount(self.base, conv=float))
+            return (old_div(self.amount(self.base, conv=float),
+                    other.amount(self.base, conv=float)))
         except AttributeError:
             # we could really return `self * (1.0/other)`, but we want
             # to set the unit to a possibly smaller one (see
             # `_get_best_unit` above) to have a better "human" representation
             try:
-                amount = self.amount(self.base, conv=float) / float(other)
+                amount = old_div(self.amount(self.base, conv=float), float(other))
             except TypeError:
                 raise TypeError(
                     "Cannot divide '%s' by '%s': can only take"
@@ -443,7 +447,7 @@ class _Quantity(object):
                                                 self.__class__.__name__))
             unit = self._largest_nonfractional_unit(amount)
             return self._new_from_amount_and_unit(
-                amount / unit.amount(self.base), unit)
+                old_div(amount, unit.amount(self.base)), unit)
 
     # be compatible with `from __future__ import division`
     __truediv__ = __div__
@@ -456,8 +460,8 @@ class _Quantity(object):
              " can only take the ratio of homogeneous quantities."
                 % (self.__class__.__name__, other.__class__.__name__))
         # the quotient of two (homogeneous) quantities is a ratio (pure number)
-        return (self.amount(self.base, conv=int) /
-                other.amount(self.base, conv=int))
+        return (old_div(self.amount(self.base, conv=int),
+                other.amount(self.base, conv=int)))
 
     def __radd__(self, other):
         """
@@ -555,7 +559,7 @@ class Quantity(object):
         newcls.register(base)
         setattr(newcls, self.base_unit_name, base)
         # create additional units and add them as class attributes
-        for name, amount in self.other_units.iteritems():
+        for name, amount in self.other_units.items():
             unit = newcls(amount, unit=newcls._base, name=name)
             # make new units default to self when printing the amount
             unit._unit = unit
@@ -564,7 +568,23 @@ class Quantity(object):
         return newcls
 
 
-class Memory(object):
+class Memory(with_metaclass(Quantity(
+        # base unit is "bytes"; use the symbol 'B', although this is not the SI
+        # usage.
+        'B',
+        # 10-base units
+        kB=1000,
+        MB=1000 * 1000,
+        GB=1000 * 1000 * 1000,
+        TB=1000 * 1000 * 1000 * 1000,
+        PB=1000 * 1000 * 1000 * 1000 * 1000,
+        # binary base units
+        KiB=1024,                # KiBiByte
+        MiB=1024 * 1024,           # MiBiByte
+        GiB=1024 * 1024 * 1024,      # GiBiByte
+        TiB=1024 * 1024 * 1024 * 1024,  # TiBiByte
+        PiB=1024 * 1024 * 1024 * 1024 * 1024,  # PiBiByte
+    ), object)):
 
     """
     Represent an amount of RAM.
@@ -691,26 +711,51 @@ class Memory(object):
         '1MB'
 
     """
-    __metaclass__ = Quantity(
-        # base unit is "bytes"; use the symbol 'B', although this is not the SI
-        # usage.
-        'B',
-        # 10-base units
-        kB=1000,
-        MB=1000 * 1000,
-        GB=1000 * 1000 * 1000,
-        TB=1000 * 1000 * 1000 * 1000,
-        PB=1000 * 1000 * 1000 * 1000 * 1000,
-        # binary base units
-        KiB=1024,                # KiBiByte
-        MiB=1024 * 1024,           # MiBiByte
-        GiB=1024 * 1024 * 1024,      # GiBiByte
-        TiB=1024 * 1024 * 1024 * 1024,  # TiBiByte
-        PiB=1024 * 1024 * 1024 * 1024 * 1024,  # PiBiByte
-    )
 
 
-class Duration(object):
+class Duration(with_metaclass(Quantity(
+        # base unit is nanoseconds; use the SI symbol 'ns'
+        'ns',
+        # alternate spellings
+        nanosec=1,
+        nanosecond=1,
+        nanoseconds=1,
+        # microsecond(s)
+        us=1000,  # approx SI symbol
+        microsec=1000,
+        microseconds=1000,
+        # millisecond(s)
+        ms=10 ** 6,
+        millisec=10 ** 6,
+        milliseconds=10 ** 6,
+        # seconds(s)
+        s=10 ** 9,
+        sec=10 ** 9,
+        secs=10 ** 9,
+        second=10 ** 9,
+        seconds=10 ** 9,
+        # minute(s)
+        m=60 * 10 ** 9,
+        min=60 * 10 ** 9,
+        mins=60 * 10 ** 9,
+        minute=60 * 10 ** 9,
+        minutes=60 * 10 ** 9,
+        # hour(s)
+        h=60 * 60 * 10 ** 9,
+        hr=60 * 60 * 10 ** 9,
+        hrs=60 * 60 * 10 ** 9,
+        hour=60 * 60 * 10 ** 9,
+        hours=60 * 60 * 10 ** 9,
+        # day(s)
+        d=24 * 60 * 60 * 10 ** 9,
+        day=24 * 60 * 60 * 10 ** 9,
+        days=24 * 60 * 60 * 10 ** 9,
+        # week(s)
+        w=7 * 24 * 60 * 60 * 10 ** 9,
+        wk=7 * 24 * 60 * 60 * 10 ** 9,
+        week=7 * 24 * 60 * 60 * 10 ** 9,
+        weeks=7 * 24 * 60 * 60 * 10 ** 9,
+    ), object)):
 
     """
     Represent the duration of a time lapse.
@@ -899,49 +944,6 @@ class Duration(object):
         '1hour'
 
     """
-    __metaclass__ = Quantity(
-        # base unit is nanoseconds; use the SI symbol 'ns'
-        'ns',
-        # alternate spellings
-        nanosec=1,
-        nanosecond=1,
-        nanoseconds=1,
-        # microsecond(s)
-        us=1000,  # approx SI symbol
-        microsec=1000,
-        microseconds=1000,
-        # millisecond(s)
-        ms=10 ** 6,
-        millisec=10 ** 6,
-        milliseconds=10 ** 6,
-        # seconds(s)
-        s=10 ** 9,
-        sec=10 ** 9,
-        secs=10 ** 9,
-        second=10 ** 9,
-        seconds=10 ** 9,
-        # minute(s)
-        m=60 * 10 ** 9,
-        min=60 * 10 ** 9,
-        mins=60 * 10 ** 9,
-        minute=60 * 10 ** 9,
-        minutes=60 * 10 ** 9,
-        # hour(s)
-        h=60 * 60 * 10 ** 9,
-        hr=60 * 60 * 10 ** 9,
-        hrs=60 * 60 * 10 ** 9,
-        hour=60 * 60 * 10 ** 9,
-        hours=60 * 60 * 10 ** 9,
-        # day(s)
-        d=24 * 60 * 60 * 10 ** 9,
-        day=24 * 60 * 60 * 10 ** 9,
-        days=24 * 60 * 60 * 10 ** 9,
-        # week(s)
-        w=7 * 24 * 60 * 60 * 10 ** 9,
-        wk=7 * 24 * 60 * 60 * 10 ** 9,
-        week=7 * 24 * 60 * 60 * 10 ** 9,
-        weeks=7 * 24 * 60 * 60 * 10 ** 9,
-    )
 
     # override ctor to hook `_new_from_timedelta` in
     def __new__(cls, val, unit=None, name=None):
@@ -970,7 +972,7 @@ class Duration(object):
                     lapse += int(match.group(name)) * unit_lapse
                     last_unit = unit
             return cls._new_from_amount_and_unit(
-                amount=(lapse / last_unit.amount(Duration.s)),
+                amount=(old_div(lapse, last_unit.amount(Duration.s))),
                 unit=last_unit)
         elif ':' in val:
             # since `val` didn't match `_TIMESPEC_RE`, then it must

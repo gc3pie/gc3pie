@@ -20,6 +20,7 @@ Accessors for object attributes and container items.
 #
 
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 

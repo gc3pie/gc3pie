@@ -25,10 +25,13 @@ modules`__ for more details.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 
-import cPickle as pickle
+import pickle as pickle
 
 from gc3libs.persistence.store import Persistable
 

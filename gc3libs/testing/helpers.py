@@ -23,6 +23,7 @@ Utility functions for use in unit test code.
 
 # stdlib imports
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import range
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile, mkdtemp
 import shutil

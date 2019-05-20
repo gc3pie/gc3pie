@@ -21,6 +21,7 @@ Implementation of the command-line front-ends.
 #
 from __future__ import absolute_import, print_function, unicode_literals
 
+from builtins import str
 __docformat__ = 'reStructuredText'
 __author__ = ', '.join([
     "Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>",
@@ -1267,7 +1268,7 @@ To get detailed info on a specific command, run:
         self.session = self._get_session(self.params.session)
 
         rc = len(self.session.tasks)
-        for task_id in self.session.tasks.keys():
+        for task_id in list(self.session.tasks.keys()):
             task = self.session.tasks[task_id]
             task.attach(self._core)
             if task.execution.state == Run.State.TERMINATED:
@@ -1346,7 +1347,7 @@ To get detailed info on a specific command, run:
             return rows
 
         rows = []
-        for app in self.session.tasks.values():
+        for app in list(self.session.tasks.values()):
             rows.extend(print_app_table(app, '', self.params.recursive))
         table = PrettyTable(["JobID", "Job name", "State", "Info"])
         table.align = 'l'
@@ -1918,8 +1919,7 @@ To get detailed info on a specific command, run:
                 if not images:
                     images.extend(res._get_available_images())
 
-                image_names = filter(
-                    lambda x: x.id == vm.image['id'], images)
+                image_names = [x for x in images if x.id == vm.image['id']]
                 if image_names:
                     image_name = image_names[0].name
                 else:

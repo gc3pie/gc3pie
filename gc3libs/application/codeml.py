@@ -21,6 +21,8 @@
 Simple interface to the CODEML application.
 """
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import range
 __changelog__ = """
 Summary of user-visible changes:
 * 16-08-2011 AM: Extract aln_info from the .phy file and record it
@@ -108,7 +110,7 @@ class CodemlApplication(gc3libs.Application):
                 # try getting the seqfile/treefile path before we
                 # append the '.ctl' file to inputs; if they cannot be
                 # found, we do not append the '.ctl' either...
-                for (key, path) in CodemlApplication.aux_files(ctl).items():
+                for (key, path) in list(CodemlApplication.aux_files(ctl).items()):
                     if key in ['seqfile', 'treefile'] and path not in inputs:
                         inputs[path] = os.path.basename(path)
 

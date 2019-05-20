@@ -20,6 +20,7 @@ batch-like backends should inherit.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 
@@ -419,7 +420,7 @@ class BatchSystem(LRMS):
         ssh_remote_folder = stdout.split('\n')[0]
 
         # Copy the input file(s) to remote directory.
-        for local_path, remote_path in app.inputs.items():
+        for local_path, remote_path in list(app.inputs.items()):
             remote_path = os.path.join(ssh_remote_folder, remote_path)
             remote_parent = os.path.dirname(remote_path)
             try:
@@ -781,7 +782,7 @@ class BatchSystem(LRMS):
             # `Application.outputs` list to expand wildcards and
             # directory references.
             stageout = list()
-            for remote_relpath, local_url in app.outputs.iteritems():
+            for remote_relpath, local_url in app.outputs.items():
                 local_relpath = local_url.path
                 if remote_relpath == gc3libs.ANY_OUTPUT:
                     remote_relpath = ''
