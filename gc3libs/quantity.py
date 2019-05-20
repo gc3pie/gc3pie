@@ -51,12 +51,12 @@ def _split_amount_and_unit(val, default_unit=None, allow=None):
     unit specification. The number and the unit may be separated by 0
     or more spaces.
 
-      >>> _split_amount_and_unit('7 s')
-      (7.0, 's')
-      >>> _split_amount_and_unit('7s')
-      (7.0, 's')
-      >>> _split_amount_and_unit('-7.0s')
-      (-7.0, 's')
+      >>> _split_amount_and_unit('7 s') == (7.0, 's')
+      True
+      >>> _split_amount_and_unit('7s') ==  (7.0, 's')
+      True
+      >>> _split_amount_and_unit('-7.0s') == (-7.0, 's')
+      True
 
     If `val` does not conform to this syntax, a `ValueError` will
     be raised::
@@ -69,15 +69,15 @@ def _split_amount_and_unit(val, default_unit=None, allow=None):
     If string `val` only specifies an amount (e.g., ``42``) with no
     unit, then the optional argument `default_unit` provides one::
 
-      >>> _split_amount_and_unit('7', 'min')
-      (7.0, 'min')
+      >>> _split_amount_and_unit('7', 'min') == (7.0, 'min')
+      True
 
     Note the amount is a floating point number, whereas the unit is
     always a string.  By default, no validity checks are performed
     on the 'unit' part, which can be any word::
 
-      >>> _split_amount_and_unit('7sins')
-      (7.0, 'sins')
+      >>> _split_amount_and_unit('7sins') == (7.0, 'sins')
+      True
 
     The optional argument `allow` restricts the resulting quantity to
     be a one of the specified units; if it's not, a `ValueError`
@@ -655,27 +655,27 @@ class Memory(object):
     By default, the unit used originally for defining the quantity is
     used::
 
-        >>> a_megabyte.to_str('%d [%s]')
-        '1 [MB]'
+        >>> '1 [MB]' == a_megabyte.to_str('%d [%s]')
+        True
 
     This can be overridden by specifying an optional second argument
     `unit`::
 
-        >>> a_megabyte.to_str('%d [%s]', unit=Memory.kB)
-        '1000 [kB]'
+        >>> '1000 [kB]' == a_megabyte.to_str('%d [%s]', unit=Memory.kB)
+        True
 
     A third optional argument `conv` can set the numerical type to be
     used for conversion computations::
 
-        >>> a_megabyte.to_str('%g%s', unit=Memory.GB, conv=float)
-        '0.001GB'
+        >>> '0.001GB' == a_megabyte.to_str('%g%s', unit=Memory.GB, conv=float)
+        True
 
     The default numerical type is `int`, which in particular implies
     that you get a null amount if the requested unit is larger than
     the quantity::
 
-        >>> a_megabyte.to_str('%g%s', unit=Memory.GB, conv=int)
-        '0GB'
+        >>> '0GB' == a_megabyte.to_str('%g%s', unit=Memory.GB, conv=int)
+        True
 
     Conversion to string uses the unit originally used for defining
     the quantity and the ``%g%s`` format::
@@ -863,27 +863,27 @@ class Duration(object):
     By default, the unit used originally for defining the quantity is
     used::
 
-        >>> an_hour.to_str('%d [%s]')
-        '1 [hour]'
+        >>> '1 [hour]' == an_hour.to_str('%d [%s]')
+        True
 
     This can be overridden by specifying an optional second argument
     `unit`::
 
-        >>> an_hour.to_str('%d [%s]', unit=Duration.m)
-        '60 [m]'
+        >>> '60 [m]' == an_hour.to_str('%d [%s]', unit=Duration.m)
+        True
 
     A third optional argument `conv` can set the numerical type to be
     used for conversion computations::
 
-        >>> an_hour.to_str('%.1f [%s]', unit=Duration.m, conv=float)
-        '60.0 [m]'
+        >>> '60.0 [m]' == an_hour.to_str('%.1f [%s]', unit=Duration.m, conv=float)
+        True
 
     The default numerical type is `int`, which in particular implies
     that you get a null amount if the requested unit is larger than
     the quantity::
 
-        >>> an_hour.to_str('%d [%s]', unit=Duration.days)
-        '0 [days]'
+        >>> '0 [days]' == an_hour.to_str('%d [%s]', unit=Duration.days)
+        True
 
     Conversion to string uses the unit originally used for defining
     the quantity and the ``%g%s`` format::

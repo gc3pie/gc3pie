@@ -118,31 +118,31 @@ def basename_sans(path):
     last few characters, up to the rightmost dot, are removed as
     well::
 
-      >>> basename_sans('/tmp/foo.txt')
-      'foo'
+      >>> basename_sans('/tmp/foo.txt') == 'foo'
+      True
 
-      >>> basename_sans('bar.txt')
-      'bar'
+      >>> basename_sans('bar.txt') == 'bar'
+      True
 
     If there is no dot in the file name, no "extension" is chopped
     off::
 
-      >>> basename_sans('baz')
-      'baz'
+      >>> basename_sans('baz') == 'baz'
+      True
 
     If there are several dots in the file name, only the last one and
     trailing characters are removed::
 
-      >>> basename_sans('foo.bar.baz')
-      'foo.bar'
+      >>> basename_sans('foo.bar.baz') == 'foo.bar'
+      True
 
     Leading directory components are chopped off in any case::
 
-      >>> basename_sans('/tmp/foo.bar.baz')
-      'foo.bar'
+      >>> basename_sans('/tmp/foo.bar.baz') == 'foo.bar'
+      True
 
-      >>> basename_sans('/tmp/foo')
-      'foo'
+      >>> basename_sans('/tmp/foo') == 'foo'
+      True
     """
     return os.path.splitext(os.path.basename(path))[0]
 
@@ -178,15 +178,15 @@ def cache_for(lapse):
         ...     @cache_for(2)
         ...     def foo(self):
         ...             self.times += 1
-        ...             return ("times effectively run: %d" % self.times)
+        ...             return self.times
         >>> x = X()
         >>> x.foo()
-        'times effectively run: 1'
+        1
         >>> x.foo()
-        'times effectively run: 1'
+        1
         >>> time.sleep(3)
         >>> x.foo()
-        'times effectively run: 2'
+        2
 
     """
     def decorator(fn):
@@ -543,8 +543,8 @@ def first(seq):
       0
 
       >>> s = {'a':1, 'b':2, 'c':3}
-      >>> first(sorted(s.keys()))
-      'a'
+      >>> first(sorted(s.keys())) == 'a'
+      True
     """
     try:  # try iterator interface
         return seq.next()
@@ -1624,13 +1624,13 @@ def sh_quote_safe(arg):
 def sh_quote_safe_cmdline(args):
     """
     Single-quote a list of strings for passing to the shell as a
-    command.  Return the list of quoted arguments concatenated and
-    separated by spaces.
+    command.  Return string comprised of the quoted arguments,
+    concatenated and separated by spaces.
 
     Examples::
 
-      >>> sh_quote_safe_cmdline(['sh', '-c', 'echo c(1,2,3)'])
-      "'sh' '-c' 'echo c(1,2,3)'"
+      >>> print(sh_quote_safe_cmdline(['sh', '-c', 'echo c(1,2,3)']))
+      'sh' '-c' 'echo c(1,2,3)'
     """
     return ' '.join((sh_quote_safe(arg) for arg in args))
 
@@ -1662,14 +1662,13 @@ def sh_quote_unsafe(arg):
 def sh_quote_unsafe_cmdline(args):
     """
     Double-quote a list of strings for passing to the shell as a
-    command.  Return the list of quoted arguments concatenated and
-    separated by spaces.
+    command.  Return string comprised of the quoted arguments,
+    concatenated and separated by spaces.
 
     Examples::
 
-      >>> sh_quote_unsafe_cmdline(['sh', '-c', 'echo $HOME'])
-      '"sh" "-c" "echo $HOME"'
-
+      >>> print(sh_quote_unsafe_cmdline(['sh', '-c', 'echo $HOME']))
+      "sh" "-c" "echo $HOME"
     """
     return ' '.join((sh_quote_unsafe(arg) for arg in args))
 

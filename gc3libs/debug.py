@@ -7,7 +7,7 @@ Part of the code used in this module originally comes from:
   - http://wordaligned.com/articles/echo
 
 """
-# Copyright (C) 2011, 2015  University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2015, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -67,8 +67,8 @@ def format_arg_value(arg_val):
 
     Example::
 
-      >>> format_arg_value(('x', (1, 2, 3)))
-      'x=(1, 2, 3)'
+      >>> 'x=(1, 2, 3)' == format_arg_value(('x', (1, 2, 3)))
+      True
     """
     arg, val = arg_val
     return "%s=%r" % (arg, val)

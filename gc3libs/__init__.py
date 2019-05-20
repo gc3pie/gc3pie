@@ -1750,26 +1750,26 @@ class Run(Struct):
             >>> j1 = Run()
             >>> print (j1.returncode)
             None
-            >>> j1.state
-            'NEW'
+            >>> j1.state == 'NEW'
+            True
 
           2. Create a new job with additional attributes::
 
             >>> j2 = Run(application='GAMESS', version='2010R1')
             >>> j2.state
             'NEW'
-            >>> j2.application
-            'GAMESS'
-            >>> j2['version']
-            '2010R1'
+            >>> j2.application == 'GAMESS'
+            True
+            >>> j2['version'] == '2010R1'
+            True
 
           3. Clone an existing job object::
 
             >>> j3 = Run(j2)
-            >>> j3.application
-            'GAMESS'
-            >>> j3['version']
-            '2010R1'
+            >>> j3.application == 'GAMESS'
+            True
+            >>> j3['version'] == '2010R1'
+            True
 
         """
         self._ref = attach

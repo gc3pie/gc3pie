@@ -63,8 +63,11 @@ class Session(list):
 
         >>> import tempfile; tmpdir = tempfile.mktemp(dir='.')
         >>> session = Session(tmpdir)
-        >>> sorted(os.listdir(tmpdir))
-        ['created', 'session_ids.txt', 'store.url']
+        >>> for name in sorted(os.listdir(tmpdir)):
+        ...   print(name)
+        created
+        session_ids.txt
+        store.url
 
     When a `Session` object is created with a `path` argument pointing
     to an existing valid session, the index of jobs is automatically

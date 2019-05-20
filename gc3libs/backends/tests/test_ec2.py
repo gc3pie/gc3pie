@@ -3,7 +3,7 @@
 """
 Unit tests for the EC2 backend.
 """
-# Copyright (C) 2011-2013  University of Zurich. All rights reserved.
+# Copyright (C) 2011-2013, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -85,19 +85,31 @@ class TestVMPool(object):
 
     def test_repr(self):
         assert repr(self.pool0) == "set([])"
-        assert repr(self.pool1) == "set(['a'])"
-        # Note: set do not have predictable representation
-        assert repr(self.pool2) in ("set(['a', 'b'])", "set(['b', 'a'])")
-        
+        # representation of unicode strings differs on Py2 and Py3
+        assert repr(self.pool1) in ["set(['a'])", "set([u'a'])"]
+        # ...and also sets do not have predictable representation
+        assert repr(self.pool2) in [
+            "set(['a', 'b'])",
+            "set(['b', 'a'])",
+            "set([u'a', u'b'])",
+            "set([u'b', u'a'])",
+        ]
+
 
     def test_str(self):
         assert str(self.pool0) == "VMPool('pool0') : set([])"
-        assert str(self.pool1) == "VMPool('pool1') : set(['a'])"
-        # Note: set do not have predictable represenetation, and neither VMPool
-        assert str(self.pool2) in (
+        # representation of unicode strings differs on Py2 and Py3
+        assert str(self.pool1) in [
+            "VMPool('pool1') : set(['a'])",
+            "VMPool('pool1') : set([u'a'])",
+        ]
+        # also sets do not have predictable representation
+        assert str(self.pool2) in [
             "VMPool('pool2') : set(['a', 'b'])",
-            "VMPool('pool2') : set(['b', 'a'])"
-        )
+            "VMPool('pool2') : set(['b', 'a'])",
+            "VMPool('pool2') : set([u'a', u'b'])",
+            "VMPool('pool2') : set([u'b', u'a'])",
+        ]
 
     def test_add_remove(self):
         VM_ID = 'x'

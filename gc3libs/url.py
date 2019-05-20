@@ -56,40 +56,40 @@ class Url(tuple):
 
         >>> u = Url('http://www.example.org/data')
 
-        >>> u.scheme
-        'http'
-        >>> u.netloc
-        'www.example.org'
-        >>> u.path
-        '/data'
+        >>> u.scheme == 'http'
+        True
+        >>> u.netloc == 'www.example.org'
+        True
+        >>> u.path == '/data'
+        True
 
       The default URL scheme is ``file``::
 
         >>> u = Url('/tmp/foo')
-        >>> u.scheme
-        'file'
-        >>> u.path
-        '/tmp/foo'
+        >>> u.scheme == 'file'
+        True
+        >>> u.path == '/tmp/foo'
+        True
 
       However, if a ``#`` character is present in the path name, it
       will be taken as separating the path from the "fragment"::
 
         >>> u = Url('/tmp/foo#1')
-        >>> u.path
-        '/tmp/foo'
-        >>> u.fragment
-        '1'
+        >>> u.path == '/tmp/foo'
+        True
+        >>> u.fragment == '1'
+        True
 
       Please note that extra leading slashes '/' are interpreted as
       the begining of a network location:
 
         >>> u = Url('//foo/bar')
-        >>> u.path
-        '/bar'
-        >>> u.netloc
-        'foo'
-        >>> Url('///foo/bar').path
-        '/foo/bar'
+        >>> u.path == '/bar'
+        True
+        >>> u.netloc == 'foo'
+        True
+        >>> Url('///foo/bar').path == '/foo/bar'
+        True
 
       (Check RFC 3986 http://tools.ietf.org/html/rfc3986)
 
@@ -107,31 +107,31 @@ class Url(tuple):
         >>> u = Url('foo', force_abs=False)
         >>> os.path.isabs(u.path)
         False
-        >>> u.path
-        'foo'
+        >>> u.path == 'foo'
+        True
 
       Other keyword arguments can specify defaults for missing parts
       of the URL::
 
         >>> u = Url('/tmp/foo', scheme='file', netloc='localhost')
-        >>> u.scheme
-        'file'
-        >>> u.netloc
-        'localhost'
-        >>> u.path
-        '/tmp/foo'
+        >>> u.scheme == 'file'
+        True
+        >>> u.netloc == 'localhost'
+        True
+        >>> u.path == '/tmp/foo'
+        True
 
       Query attributes are also supported::
 
         >>> u = Url('http://www.example.org?foo=bar')
-        >>> u.query
-        'foo=bar'
+        >>> u.query == 'foo=bar'
+        True
 
       and so are fragments::
 
         >>> u = Url('postgresql://user@db.example.org#table=data')
-        >>> u.fragment
-        'table=data'
+        >>> u.fragment == 'table=data'
+        True
 
     * By passing keyword arguments only, to construct an `Url` object
       with exactly those values for the named fields::
@@ -485,8 +485,9 @@ class UrlValueDict(dict):
     Retrieving the value associated with a key always returns the
     URL-type value, regardless of how it was set::
 
-        >>> repr(d[1]) == "Url(scheme='file', netloc='', path='/tmp/foo', " \
-        "hostname=None, port=None, query='', username=None, password=None, fragment='')"
+        >>> d[1] == Url(scheme='file', netloc='', path='/tmp/foo', \
+              hostname=None, port=None, query='', \
+              username=None, password=None, fragment='')
         True
 
     Class `UrlValueDict` supports initialization by any of the

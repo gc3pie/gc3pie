@@ -155,18 +155,18 @@ class Configuration(gc3libs.utils.Struct):
       >>> cfg = Configuration(auto_enable_auth=False, foo=1, bar='baz')
       >>> cfg.auto_enable_auth
       False
-      >>> cfg.foo
-      1
-      >>> cfg.bar
-      'baz'
+      >>> cfg.foo == 1
+      True
+      >>> cfg.bar == 'baz'
+      True
 
     When both a configuration file *and* a key=value list is present,
     values in the configuration files override those in the key=value
     list::
 
       >>> cfg = Configuration(example_cfgfile, debug=1)
-      >>> cfg.debug
-      '0'
+      >>> cfg.debug == '0'
+      True
 
     Example 3: default initialization::
 

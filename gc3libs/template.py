@@ -11,7 +11,7 @@ with a list of substitutions (using the syntax of Python's standard
 texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.
 """
-# Copyright (C) 2009-2012, 2014  University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012, 2014, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -151,6 +151,13 @@ class Template(object):
         else:
             raise ValueError("Invalid substitution values in template.")
 
+    def __eq__(self, other):
+        return (
+            self._template == other._template
+            and self._keywords == other._keywords
+            and self._valid == other._valid
+        )
+
     def __str__(self):
         """Alias for `Template.substitute`."""
         return self.substitute()
@@ -237,19 +244,23 @@ def expansions(obj, **extra_args):
       Example::
 
         >>> T1 = Template("a=${n}", n=[0,1])
-        >>> list(expansions(T1))
-        [Template('a=${n}', n=0), Template('a=${n}', n=1)]
+        >>> E = list(expansions(T1))
+        >>> len(E)
+        2
+        >>> Template('a=${n}', n=0) in E
+        True
+        >>> Template('a=${n}', n=1) in E
+        True
 
       Note that keywords passed to the `expand` invocation override
       the ones used in template construction::
 
         >>> T2 = Template("a=${n}")
-        >>> list(expansions(T2, n=[1,3]))
-        [Template('a=${n}', n=1), Template('a=${n}', n=3)]
-
-        >>> T3 = Template("a=${n}", n=[0,1])
-        >>> list(expansions(T3, n=[2,3]))
-        [Template('a=${n}', n=2), Template('a=${n}', n=3)]
+        >>> E = list(expansions(T2, n=[1,3]))
+        >>> Template('a=${n}', n=1) in E
+        True
+        >>> Template('a=${n}', n=3) in E
+        True
 
     * Any other value is returned unchanged.
 

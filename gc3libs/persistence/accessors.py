@@ -3,7 +3,7 @@
 """
 Accessors for object attributes and container items.
 """
-# Copyright (C) 2011-2012  University of Zurich. All rights reserved.
+# Copyright (C) 2011-2012, 2019  University of Zurich.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -61,8 +61,8 @@ class GetValue(object):
     used in case the required attribute or item is not found:
 
        >>> fn3 = GetValue(default='no value found').a[3]
-       >>> fn3(x)
-       'no value found'
+       >>> fn3(x) == 'no value found'
+       True
 
     """
     __slots__ = ('default',)
@@ -95,10 +95,10 @@ class GetValue(object):
 
             >>> from gc3libs import Struct
             >>> fn = GetValue(default='foo').a[0].ONLY(Struct)
-            >>> fn(Struct(a=['bar','baz']))
-            'bar'
-            >>> fn(dict(a=['bar','baz']))
-            'foo'
+            >>> fn(Struct(a=['bar','baz'])) == 'bar'
+            True
+            >>> fn(dict(a=['bar','baz'])) == 'foo'
+            True
 
         If it's not last, you will get `AttributeError` like the following:
 
@@ -208,11 +208,11 @@ class GetItemValue(GetValue):
 
         >>> fn = GetItemValue(1)
         >>> a = 'abc'
-        >>> fn(a)
-        'b'
+        >>> fn(a) == 'b'
+        True
         >>> b = { 1:'x', 2:'y' }
-        >>> fn(b)
-        'x'
+        >>> fn(b) == 'x'
+        True
 
     In other words, if `fn = GetItemValue(x)`, then `fn(obj)` evaluates
     to `obj[x]`.
@@ -237,10 +237,10 @@ class GetItemValue(GetValue):
     default value is returned and no error is raised::
 
         >>> fn = GetItemValue(42, default='foo')
-        >>> fn(a)
-        'foo'
-        >>> fn(b)
-        'foo'
+        >>> fn(a) == 'foo'
+        True
+        >>> fn(b) == 'foo'
+        True
 
     The optional second argument `xform` allows composing the accessor
     with an arbitrary function that is passed an object and should
@@ -251,8 +251,8 @@ class GetItemValue(GetValue):
 
         >>> c = 'abc'
         >>> fn = GetItemValue(1, xform=(lambda s: s.upper()))
-        >>> fn(c)
-        'B'
+        >>> fn(c) == 'B'
+        True
 
         >>> c = (('a',1), ('b',2))
         >>> fn = GetItemValue('a', xform=dict)

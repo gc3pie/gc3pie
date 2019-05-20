@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, 2014, 2015,  University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2014, 2015, 2019,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -43,8 +43,9 @@ class FakeTransport(LocalTransport):
 
     >>> t = FakeTransport()
     >>> t.expected_answer['echo'] = (0, 'GC3pie is wonderful', '')
-    >>> t.execute_command("echo 'GC3pie is wonderful'")
-    (0, 'GC3pie is wonderful', '')
+    >>> t.execute_command("echo 'GC3pie is wonderful'") \
+        == (0, 'GC3pie is wonderful', '')
+    True
 
     FIXME: The whole logic in this class is flawed.  GC3Pie does many
     layers of quoting and wrapping commands, to remove which we would
