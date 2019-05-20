@@ -209,6 +209,9 @@ setuptools.setup(
         # needed by DependentTaskCollection
         # (but incompatible with Py 2.6, so we include a patched copy)
         #toposort==1.0
+        # Py2/Py3 compatibility layer
+        'future',
+        'six',  # only used in `gc3libs/quantity.py`
     ]),
     extras_require={
         'ec2': [
