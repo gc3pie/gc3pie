@@ -19,15 +19,19 @@ Deal with GC3Pie configuration files.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+
 from future import standard_library
 standard_library.install_aliases()
 from builtins import zip
 from builtins import str
-__docformat__ = 'reStructuredText'
-
 
 # stdlib imports
-import configparser
+try:
+    # Python 2
+    import ConfigParser as configparser
+except ImportError:
+    # Python 3
+    import configparser
 import inspect
 import os
 import re
@@ -40,6 +44,10 @@ import gc3libs.utils
 
 from gc3libs.quantity import Memory, GB, MB, MiB, Duration, hours
 from gc3libs.utils import defproperty
+
+
+# module metadata
+__docformat__ = 'reStructuredText'
 
 
 # auxiliary methods for `Configuration`

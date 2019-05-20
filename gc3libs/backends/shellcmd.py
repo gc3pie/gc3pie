@@ -1,5 +1,8 @@
 #! /usr/bin/env python
-# Copyright (C) 2009-2018  University of Zurich. All rights reserved.
+"""
+Run applications as processes starting them from the shell.
+"""
+# Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -16,20 +19,17 @@
 #
 
 # make coding more python3-ish, must be the first statement
+from __future__ import (absolute_import, division, print_function)
+
 from future import standard_library
 standard_library.install_aliases()
 from builtins import str
 from builtins import range
 from builtins import object
-from __future__ import (absolute_import, division, print_function)
 from future.utils import with_metaclass
 
 
 ## module doc and other metadata
-"""
-Run applications as processes starting them from the shell.
-"""
-
 __docformat__ = 'reStructuredText'
 
 

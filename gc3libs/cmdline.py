@@ -42,12 +42,13 @@ The following public classes are exported from this module:
   `SessionBasedDaemon`:class: via XML-RPC.
 """
 
+from __future__ import (absolute_import, division, print_function)
+
 from future import standard_library
 standard_library.install_aliases()
 from builtins import str
 from builtins import range
 from builtins import object
-from __future__ import (absolute_import, division, print_function)
 
 # stdlib modules
 import atexit
@@ -70,7 +71,12 @@ try:
 except ImportError:
     from io import StringIO
 from collections import defaultdict
-from xmlrpc.server import SimpleXMLRPCServer
+try:
+    # Python 2
+    from SimpleXMLRPCServer import SimpleXMLRPCServer
+except ImportError:
+    # Python 3
+    from xmlrpc.server import SimpleXMLRPCServer
 from warnings import warn
 import xmlrpc.client
 

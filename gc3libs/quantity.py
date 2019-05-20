@@ -27,9 +27,12 @@ from __future__ import absolute_import, print_function, unicode_literals
 from __future__ import division
 from builtins import object
 from past.utils import old_div
-from future.utils import with_metaclass
-__docformat__ = 'reStructuredText'
 
+# future's own `with_metaclass` does not play well with the `Quantity`
+# implementation here, because `Quantity` defines its own `__init__`
+# and `__call__` , which `future.utils.with_metaclass` overrides with
+# the std ones coming from Python's builtin `type`
+from six import with_metaclass
 
 # stdlib imports
 import datetime
@@ -43,6 +46,10 @@ try:
 except ImportError:
     # Python 3
     string_types = (str,)
+
+
+# module metadata
+__docformat__ = 'reStructuredText'
 
 
 # utility functions
