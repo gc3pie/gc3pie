@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, 2012,  University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2019,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -109,7 +109,7 @@ def test_io_spec_to_dict_unicode():
         Application._io_spec_to_dict(
             gc3libs.url.UrlKeyDict, {
                 u'/tmp/\u0246': u'\u0246',
-                '/tmp/b/': 'b'},
+                b'/tmp/b/': b'b'},
             True)
 
 

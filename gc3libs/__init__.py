@@ -1154,7 +1154,8 @@ class Application(Task):
         """
         try:
             # is `spec` dict-like?
-            return ctor(((str(k), str(v)) for k, v in spec.items()),
+            return ctor(((bytes(k).decode('ascii'), bytes(v).decode('ascii'))
+                         for k, v in spec.items()),
                         force_abs=force_abs)
         except UnicodeError as err:
             raise gc3libs.exceptions.InvalidValue(
