@@ -157,9 +157,11 @@ class Url(_UrlFields):
     __slots__ = ()
 
     def __new__(cls, urlstring=None, force_abs=True,
-                scheme='file', netloc='', path='',
-                hostname=None, port=None, query='',
-                username=None, password=None, fragment=''):
+                # force all string constants to be `future`'s `newstr` type,
+                # see comment at lines 178 and ff. for explanation
+                scheme=str('file'), netloc=str(''), path=str(''),
+                hostname=None, port=None, query=str(''),
+                username=None, password=None, fragment=str('')):
         """
         Create a new `Url` object.  See the `Url`:class: documentation
         for invocation syntax.
@@ -173,6 +175,21 @@ class Url(_UrlFields):
                     urlstring.username, urlstring.password, urlstring.fragment
                 )
             else:
+                # XXX: `future` provides a backport of Py3's
+                # `urlsplit()` function; however, the implementation
+                # requires that all arguments have the same string
+                # type of the 1st one (i.e., `urlstring` here).  This
+                # is a source of problems as default value for
+                # `scheme` is a load-time constant (and thus either
+                # unicode or byte string depending on Python version
+                # and on whether `unicode_literals` is in effect), but
+                # `urlstring`'s type depends on how it was produced
+                # (user input, pickled file, result of some library
+                # call, etc). So we convert `urlstring` to `future`'s
+                # `newstr` type to match the value of `scheme` set at
+                # load-time.
+                urlstring = str(urlstring)
+
                 # parse `urlstring` and use kwd arguments as default values
                 try:
                     urldata = urllib.parse.urlsplit(
