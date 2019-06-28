@@ -220,10 +220,10 @@ setuptools.setup(
             'boto',
         ],
         'daemon': [
-            # daemon and inotifyx required for SessionBasedDaemon
-            # but `inotifyx` only works on Linux, so this is an
-            # optional feature ...
-            'inotifyx',
+            # daemon and inotifyx required for SessionBasedDaemon but
+            # inotify functionality is only available on Linux, so
+            # this is an optional feature ...
+            'inotify_simple',
         ],
         'openstack': [
             'python-keystoneclient',

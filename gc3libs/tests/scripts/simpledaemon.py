@@ -2,11 +2,11 @@
 #
 """
 """
-# Copyright (C) 2017-2018,  University of Zurich. All rights reserved.
+# Copyright (C) 2017-2019,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -23,7 +23,7 @@ __docformat__ = 'reStructuredText'
 import os
 import gc3libs
 from gc3libs.cmdline import SessionBasedDaemon
-import inotifyx
+
 
 class SimpleDaemon(SessionBasedDaemon):
     """Simple daemon"""
