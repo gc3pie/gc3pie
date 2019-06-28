@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-#   Copyright (C) 2010 2013  University of Zurich. All rights reserved.
+#   Copyright (C) 2010 2013, 2019  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Front-end script which runs multiple GEOTop simulations over 
-a presegmented geographical area (usually 18 segments). The 
+Front-end script which runs multiple GEOTop simulations over
+a presegmented geographical area (usually 18 segments). The
 workflow is as follows:
 
 - identify the segment in the global map,
@@ -51,7 +51,7 @@ from gc3libs.quantity import Memory, GB
 from gc3libs.cmdline import SessionBasedScript, existing_directory, existing_file
 from gc3libs.workflow import TaskCollection
 from gc3libs.workflow import ParallelTaskCollection, SequentialTaskCollection
-from pkg_resources import Requirement, resource_filename 
+from pkg_resources import Requirement, resource_filename
 
 GEOTOP_INPUT_ARCHIVE = "input.tgz"
 
@@ -65,7 +65,7 @@ class GTSubControlApplication(Application):
 
         # source the execution script
         run_gtsub_control = resource_filename(Requirement.parse("gc3pie"), "gc3libs/etc/run_gtsub_control.sh")
-        os.chmod(run_gtsub_control,0777) 
+        os.chmod(run_gtsub_control,0o777)
         inputs[run_gtsub_control] = 'run_gtsub_control.sh'
 
         outputs = {
@@ -162,7 +162,7 @@ class GTSubControlScript(SessionBasedScript):
           raise RuntimeError(
               "Expecting one and only one `Nclust=` line in %s, found %d"
               % (paramfile, len(lines)))
-        line = lines[0].strip() 
+        line = lines[0].strip()
         start, end = line.split('=')
         if (end == "" or start == ""):
             raise ValueError("Nclust option in the parfile.r is not properly set."
@@ -191,7 +191,7 @@ class GTSubControlScript(SessionBasedScript):
           raise RuntimeError(
               "Expecting one and only one `beg=` line in %s, found %d"
               % (paramfile, len(lines)))
-        line = lines[0].strip() 
+        line = lines[0].strip()
         line_elements = line.split(' ')
         beg = line_elements[2].replace('"','')
         beg = beg.replace('/','')
@@ -203,7 +203,7 @@ class GTSubControlScript(SessionBasedScript):
           raise RuntimeError(
               "Expecting one and only one `end=` line in %s, found %d"
               % (paramfile, len(lines)))
-        line = lines[0].strip()       
+        line = lines[0].strip()
         line_elements = line.split(' ')
         end = line_elements[2].replace('"','')
         end = end.replace('/','')
@@ -231,9 +231,9 @@ class GTSubControlScript(SessionBasedScript):
         for sim_box in self.sim_boxes:
             extra_args = extra.copy()
             ## specifiedcify the jobname by root and number of box seq
-            jobname = ('GTSC_nS%s_%s_%s_%s_%s' 
-                        % (sim_box, out_dir_nm[0], out_dir_nm[1], 
-                            out_dir_nm[2], out_dir_nm[3])) 
+            jobname = ('GTSC_nS%s_%s_%s_%s_%s'
+                        % (sim_box, out_dir_nm[0], out_dir_nm[1],
+                            out_dir_nm[2], out_dir_nm[3]))
             extra_args['jobname'] = jobname
             yield GTSubControlApplication(
                 sim_box, # pass the simulation box number

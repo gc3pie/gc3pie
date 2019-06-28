@@ -12,7 +12,7 @@
       copy:
         path=/etc/motd
         src=files/motd
-        mode=0444
+        mode=0o444
         owner=root
         group=root
       become: yes
@@ -41,12 +41,12 @@
       get_url:
         dest='{{ansible_user_dir}}/gc3pie-install.sh'
         url=https://raw.githubusercontent.com/uzh/gc3pie/master/scripts/install.py
-        mode=0755
+        mode=0o755
 
     - name: Run GC3Pie install script
       command:
         '{{ansible_user_dir}}/gc3pie-install.sh --yes --feature openstack --overwrite --develop --no-gc3apps'
-        
+
     - name: Create GC3Pie config directory
       file:
         path='{{ansible_user_dir}}/.gc3'

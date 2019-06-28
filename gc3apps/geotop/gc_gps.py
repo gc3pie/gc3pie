@@ -2,7 +2,7 @@
 #
 #   gc_gps.py -- Front-end script for submitting multiple `GC-GPS` R-baseed jobs.
 #
-#   Copyright (C) 2011, 2012  University of Zurich. All rights reserved.
+#   Copyright (C) 2011, 2012, 2019  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -157,7 +157,7 @@ exit $RET
             fd = open(self.tmp_filename,'w')
             fd.write(execution_script)
             fd.close()
-            os.chmod(fd.name,0777)
+            os.chmod(fd.name,0o777)
         except Exception, ex:
             gc3libs.log.debug("Error creating execution script" +
                               "Error type: %s." % type(ex) +

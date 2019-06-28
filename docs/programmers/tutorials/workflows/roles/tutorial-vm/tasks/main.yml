@@ -78,7 +78,7 @@
     dest: '{{home}}/sc-authenticate.sh'
     src: 'sc-authenticate.sh'
     # do not make it executable: the file has to be sourced by the shell!
-    mode: 0444
+    mode: 0o444
 
 - name: Copy `.bashrc` fragment
   tags:
@@ -87,7 +87,7 @@
     dest: '{{home}}/.bashrc.gc3pie'
     src: 'bashrc.gc3pie'
     # do not make it executable: the file has to be sourced by the shell!
-    mode: 0444
+    mode: 0o444
 
 - name: Make `.bashrc` read the GC3Pie-specific fragment
   tags:
@@ -103,13 +103,13 @@
   file:
     path: '{{ansible_user_dir}}/.gc3'
     state: directory
-    mode: 0755
+    mode: 0o755
 
 - name: Deploy pre-edited configuration file(s)
   copy:
     dest: '{{ansible_user_dir}}/.gc3/{{item}}'
     src: '{{item}}'
-    mode: 0644
+    mode: 0o644
   with_items:
     - gc3pie.conf
     - gc3utils.log.conf

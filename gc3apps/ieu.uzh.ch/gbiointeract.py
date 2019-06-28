@@ -3,7 +3,7 @@
 #   gbiointeract.py -- Front-end script for submitting multiple
 #   `biointeract` jobs.
 #
-#   Copyright (C) 2013  University of Zurich. All rights reserved.
+#   Copyright (C) 2013, 2019  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -110,7 +110,7 @@ class GBiointeractApplication(Application):
             arguments.extend(['--num-cells', num_cells])
         if num_trials:
             arguments.extend(['--num-trials', num_trials])
-            
+
         extra_args['jobname'] = "GBiointeract_cdiff:" + \
         "%f_pgdiff:%f_dur:%f_deathrate:%f" % (cell_diffusion,
                                               public_good_diffusion,
@@ -135,7 +135,7 @@ gzip data/*.txt
         try:
             (fd, self.tmp_filename) = tempfile.mkstemp(prefix='gc3pie-gbiointeract_')
             write_contents(self.tmp_filename, executable_script)
-            os.chmod(self.tmp_filename, 0755)
+            os.chmod(self.tmp_filename, 0o755)
         except Exception, ex:
             gc3libs.log.debug("Error creating execution script."
                               "Error type: %s. Message: %s" % (type(ex), ex.message))

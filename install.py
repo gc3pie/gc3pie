@@ -812,7 +812,7 @@ def install_gc3pie_from_pypi(venv_dir, features):
             logging.info('  %s -> %s', app, dst)
             os.symlink(app, dst)
             # setup.py installs package_data without the 'x' permission
-            os.chmod(app, os.stat(app).st_mode|0755)
+            os.chmod(app, os.stat(app).st_mode|0o755)
 
 
 def parse_command_line_options():
