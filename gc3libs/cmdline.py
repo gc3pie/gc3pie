@@ -1811,7 +1811,12 @@ class DaemonClient(_Script):
     def _connect_to_server(self, server_url):
         url = self._parse_connect_string(server_url)
         try:
-            return xmlrpc.client.ServerProxy(str(url))
+            # **NOTE:** This has to be the built-in `bytes` type; when
+            # using `future`'s `newstr` or `newbytes` objects, the
+            # `ServerProxy` becomes unusable, as *every* method call
+            # raises an exception `AttributeError: encode method has
+            # been disabled in newbytes`
+            return xmlrpc.client.ServerProxy(bytes(url))
         except Exception as err:
             self.log.error("Cannot connect to server `%s`: %s", url, err)
             return None
