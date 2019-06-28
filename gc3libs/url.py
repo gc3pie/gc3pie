@@ -22,16 +22,25 @@ from __future__ import absolute_import, print_function, unicode_literals
 from future import standard_library
 standard_library.install_aliases()
 from builtins import str
-__docformat__ = 'reStructuredText'
 
 
+from collections import namedtuple
 import os
 import urllib.parse
 
 
-# XXX: rewrite using `collections.namedtuple` when we no longer
-# support 2.4 and 2.5
-class Url(tuple):
+__docformat__ = 'reStructuredText'
+
+
+_UrlFields = namedtuple('_UrlFields', [
+    # watch out that this is *exactly* the order used in
+    # `_UrlFields.__new__()` calls below!
+    'scheme', 'netloc', 'path',
+    'hostname', 'port', 'query',
+    'username', 'password', 'fragment'
+])
+
+class Url(_UrlFields):
 
     """
     Represent a URL as a named-tuple object.  This is an immutable
@@ -147,10 +156,6 @@ class Url(tuple):
     """
     __slots__ = ()
 
-    _fields = ['scheme', 'netloc', 'path',
-               'hostname', 'port', 'query',
-               'username', 'password', 'fragment']
-
     def __new__(cls, urlstring=None, force_abs=True,
                 scheme='file', netloc='', path='',
                 hostname=None, port=None, query='',
@@ -162,11 +167,11 @@ class Url(tuple):
         if urlstring is not None:
             if isinstance(urlstring, Url):
                 # copy constructor
-                return tuple.__new__(cls, (
+                return _UrlFields.__new__(cls,
                     urlstring.scheme, urlstring.netloc, urlstring.path,
                     urlstring.hostname, urlstring.port, urlstring.query,
                     urlstring.username, urlstring.password, urlstring.fragment
-                ))
+                )
             else:
                 # parse `urlstring` and use kwd arguments as default values
                 try:
@@ -184,7 +189,7 @@ class Url(tuple):
                             urldata.path) and force_abs:
                         urldata = urllib.parse.urlsplit(
                             'file://' + os.path.abspath(urldata.path))
-                    return tuple.__new__(cls, (
+                    return _UrlFields.__new__(cls,
                         urldata.scheme or scheme,
                         urldata.netloc or netloc,
                         urldata.path or path,
@@ -194,25 +199,18 @@ class Url(tuple):
                         urldata.username or username,
                         urldata.password or password,
                         urldata.fragment or fragment,
-                        ))
+                    )
                 except (ValueError, TypeError, AttributeError) as err:
                     raise ValueError(
                         "Cannot parse string '%s' as a URL: %s: %s"
                         % (urlstring, err.__class__.__name__, err))
         else:
             # no `urlstring`, use kwd arguments
-            return tuple.__new__(cls, (
+            return _UrlFields.__new__(cls,
                 scheme, netloc, path,
                 hostname, port, query,
                 username, password, fragment
-            ))
-
-    def __getattr__(self, name):
-        try:
-            return self[self._fields.index(name)]
-        except ValueError:
-            raise AttributeError("'%s' object has no attribute '%s'"
-                                 % (self.__class__.__name__, name))
+            )
 
     def __getnewargs__(self):
         """Support pickling/unpickling `Url` class objects."""
