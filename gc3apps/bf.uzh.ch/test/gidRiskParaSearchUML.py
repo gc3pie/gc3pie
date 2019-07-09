@@ -887,7 +887,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
 
         # Copy base dir
         localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
-        gc3libs.utils.copytree(self.params.initial, localBaseDir)
+        shutil.copytree(self.params.initial, localBaseDir)
 
         for jobname, substs in self.process_para_file(paraLoopFile):
             # yield job

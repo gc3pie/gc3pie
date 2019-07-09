@@ -1,24 +1,40 @@
 #! /usr/bin/env python
-#
+
 """
 ForwardPremium-specific methods and overloads.
+
+Copyright (C) 2011, 2012  University of Zurich. All rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
 """
-# Copyright (C) 2011, 2012  University of Zurich. All rights reserved.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-#
+
+from __future__ import absolute_import, print_function
+
+import glob
+import os
+import re
+import shutil
+
+import gc3libs.debug
+from gc3libs import Application, Run
+from gc3libs.quantity import hours
+from paraLoop import paraLoop
+from supportGc3 import wrapLogger
+
+
 __author__ = 'Riccardo Murri <riccardo.murri@uzh.ch>, Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
@@ -26,23 +42,9 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
+`
+logger = wrapLogger(loggerName=__name__ + 'logger', streamVerb='DEBUG', logFile=__name__ + '.log')
 
-from __future__ import absolute_import, print_function
-import gc3libs.debug
-import re, os
-import numpy as np
-from supportGc3 import lower, flatten, str2tuple, getIndex, extractVal, str2vals
-from supportGc3 import format_newVal, update_parameter_in_file, safe_eval, str2mat, mat2str, getParameter
-from paraLoop import paraLoop
-
-from gc3libs import Application, Run
-from gc3libs.quantity import Memory, kB, MB, GB, Duration, hours, minutes, seconds
-import shutil
-
-import logbook, sys
-from supportGc3 import wrapLogger
-
-logger = wrapLogger(loggerName = __name__ + 'logger', streamVerb = 'DEBUG', logFile = __name__ + '.log')
 
 class GPremiumApplication(Application):
 
@@ -51,13 +53,13 @@ class GPremiumApplication(Application):
     _invalid_chars = re.compile(r'[^_a-zA-Z0-9]+', re.X)
 
     def __init__(self, executable, arguments, inputs, outputs, output_dir, **extra_args):
-        Application.__init__(self, executable, arguments, inputs, outputs, output_dir, requested_walltime = 1*hours)
+        Application.__init__(self, executable, arguments, inputs, outputs, output_dir, requested_walltime=1 * hours)
 
     def fetch_output_error(self, ex):
 
         if self.execution.state == Run.State.TERMINATING:
-        # do notify task/main application that we're done
-        # ignore error, let's continue
+            # do notify task/main application that we're done
+            # ignore error, let's continue
             self.execution.state = Run.State.TERMINATED
             logger.debug('fetch_output_error occured... continuing')
             if self.persistent_id:
@@ -66,7 +68,7 @@ class GPremiumApplication(Application):
                 logger.debug('info: %s exception: %s' % (self.info, str(ex)))
             return None
         else:
-        # non-terminal state, pass on error
+            # non-terminal state, pass on error
             return ex
 
     # def submit_error(self, ex):
@@ -80,7 +82,6 @@ class GPremiumApplication(Application):
     #     except AttributeError:
     #         logger.debug('no `lrms_jobid` hence submission didnt happen')
     #     return None
-
 
     def terminated(self):
         """
@@ -121,31 +122,28 @@ class GPremiumApplication(Application):
             if dirFile != simulation_out:
                 os.remove(dirFile)
         # ------------------------------------
-        if os.path.exists(simulation_out):
-            self.execution.exitcode = 0
-##            ofile = open(simulation_out, 'r')
-##            # parse each line of the `simulation.out` file,
-##            # and try to set an attribute with its value;
-##            # ignore errors - this parser is not very sophisticated!
-##            for line in ofile:
-##                if ':' in line:
-##                    try:
-##                        var, val = line.strip().split(':', 1)
-##                        value = float(val)
-##                        attr = self._invalid_chars.sub('_', var)
-##                        setattr(self, attr, value)
-##                    except:
-##                        pass
-##            ofile.close()
-##            if hasattr(self, 'FamaFrenchBeta'):
-##                self.execution.exitcode = 0
-##                self.info = ("FamaFrenchBeta: %.6f" % self.FamaFrenchBeta)
-##            elif self.execution.exitcode == 0:
-##                # no FamaFrenchBeta, no fun!
-##                self.execution.exitcode = 1
-        else:
-            # no `simulation.out` found, signal error
-            self.execution.exitcode = 2
+
+        self.execution.exitcode = 0 if os.path.exists(simulation_out) else 2
+#            ofile = open(simulation_out, 'r')
+#            # parse each line of the `simulation.out` file,
+#            # and try to set an attribute with its value;
+#            # ignore errors - this parser is not very sophisticated!
+#            for line in ofile:
+#                if ':' in line:
+#                    try:
+#                        var, val = line.strip().split(':', 1)
+#                        value = float(val)
+#                        attr = self._invalid_chars.sub('_', var)
+#                        setattr(self, attr, value)
+#                    except:
+#                        pass
+#            ofile.close()
+#            if hasattr(self, 'FamaFrenchBeta'):
+#                self.execution.exitcode = 0
+#                self.info = ("FamaFrenchBeta: %.6f" % self.FamaFrenchBeta)
+#            elif self.execution.exitcode == 0:
+#                # no FamaFrenchBeta, no fun!
+#                self.execution.exitcode = 1
 
 
 class paraLoop_fp(paraLoop):
@@ -166,16 +164,15 @@ class paraLoop_fp(paraLoop):
         import glob
         # Find Ctry pair
         inputFolder = os.path.join(baseDir, 'input')
-        outputFolder = os.path.join(baseDir, 'output')
         markov_dir = os.path.join(baseDir, 'markov')
         CtryPresetPath = os.path.join(markov_dir, 'presets', Ctry1 + '-' + Ctry2)
         filesToCopy = glob.glob(CtryPresetPath + '/*.in')
         filesToCopy.append(os.path.join(CtryPresetPath, 'markov.out'))
         for fileToCopy in filesToCopy:
             shutil.copy(fileToCopy, inputFolder)
-##        if not os.path.isdir(outputFolder):
-##            os.mkdir(outputFolder)
-##        shutil.copy(os.path.join(CtryPresetPath, 'markov.out'), inputFolder)
+#        if not os.path.isdir(outputFolder):
+#            os.mkdir(outputFolder)
+#        shutil.copy(os.path.join(CtryPresetPath, 'markov.out'), inputFolder)
 
     def fillInputDir(self, baseDir, input_dir):
         '''
@@ -184,10 +181,10 @@ class paraLoop_fp(paraLoop):
           exclude the markov directory which contains markov information
           for all country pairs.
         '''
-        import glob
         inputFolder = os.path.join(baseDir, 'input')
-        gc3libs.utils.copytree(inputFolder , os.path.join(input_dir, 'input'))
+        shutil.copytree(inputFolder, os.path.join(input_dir, 'input'))
         filesToCopy = glob.glob(baseDir + '/*')
         for fileToCopy in filesToCopy:
-            if os.path.isdir(fileToCopy): continue
+            if os.path.isdir(fileToCopy):
+                continue
             shutil.copy(fileToCopy, input_dir)

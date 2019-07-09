@@ -39,7 +39,7 @@ import shutil
 if __name__ == '__main__':
     import sys
     if '-N' in sys.argv:
-        import os, shutil
+        import os
         path2Pymods = os.path.join(os.path.dirname(__file__), '../')
         if not sys.path.count(path2Pymods):
             sys.path.append(path2Pymods)
@@ -169,7 +169,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         # Copy base dir
         localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
 #        gc3libs.utils.copytree(self.params.initial, '/mnt/shareOffice/ForwardPremium/Results/sensitivity/wGridSize/dfs')
-        gc3libs.utils.copytree(self.params.initial, localBaseDir)
+        shutil.copytree(self.params.initial, localBaseDir)
 
         for path in inputs:
             para_loop = path

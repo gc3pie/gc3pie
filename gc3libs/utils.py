@@ -33,6 +33,7 @@ __docformat__ = 'reStructuredText'
 
 
 from collections import defaultdict, deque
+from functools import total_ordering
 import contextlib
 import functools
 import os
@@ -72,6 +73,10 @@ except AttributeError:
 
         """this exception should never be raised"""
     WindowsError = NeverUsedException
+
+# map suffix to pow multipliers. This is 2.6 compatible.
+BYTE_SUFFIX_TO_POW = dict(((l, i)) for i, l in enumerate('kmgtpezy', start=1))
+# 2.7 +:  mapped = {l: i for i, l in enumerate('kmgtpezy', start=1)}
 
 
 def backup(path):
@@ -308,82 +313,6 @@ def copyfile(src, dst, overwrite=False, changed_only=True, link=False):
     except WindowsError:
         pass
     return True
-
-
-def copytree(src, dst, overwrite=False, changed_only=True):
-    """
-    Recursively copy an entire directory tree rooted at `src`.
-
-    If `overwrite` is ``False`` (default), entries that already exist in
-    the destination tree are left unchanged and not overwritten.
-
-    If `overwrite` is ``True``, then `changed_only` determines
-    which files are overwritten:
-
-    - if `changed_only` is ``True`` (default), then only files for
-      which the source has a different size or has been modified
-      more recently than the destination are copied;
-
-    - if `changed_only` is ``False``, then *all* files in `source`
-      will be copied into `destination`, unconditionally.
-
-    Destination directory `dst` is created if it does not exist.
-
-    See also: `shutil.copytree`.
-    """
-    assert os.path.isdir(src), \
-        ("Source path `%s` does not name an existing directory" % src)
-    errors = []
-    if not os.path.exists(dst):
-        os.makedirs(dst)
-    for name in os.listdir(src):
-        srcname = os.path.join(src, name)
-        dstname = os.path.join(dst, name)
-        try:
-            if os.path.isdir(srcname):
-                errors.extend(
-                    copytree(srcname, dstname, overwrite, changed_only))
-            else:
-                copyfile(srcname, dstname)
-        except (IOError, os.error) as why:
-            errors.append((srcname, dstname, why))
-    return errors
-
-
-def copy_recursively(src, dst, overwrite=False, changed_only=True):
-    """
-    Copy `src` to `dst`, descending it recursively if necessary.
-
-    The `overwrite` and `changed_only` optional arguments
-    have the same effect as in `copytree`:func: (which see).
-    """
-    if os.path.isdir(src):
-        copytree(src, dst, overwrite, changed_only)
-    else:
-        copyfile(src, dst, overwrite, changed_only)
-
-
-def count(seq, predicate):
-    """
-    Return number of items in `seq` that match `predicate`.
-    Argument `predicate` should be a callable that accepts
-    one argument and returns a boolean.
-    """
-    count = 0
-    for item in seq:
-        if predicate(item):
-            count += 1
-    return count
-
-
-def defproperty(fn):
-    """
-    Decorator to define properties with a simplified syntax in Python 2.4.
-    See http://goo.gl/IoOZ8m for details and examples.
-    """
-    p = {'doc': fn.__doc__}
-    p.update(fn())
-    return property(**p)
 
 
 def deploy_configuration_file(filename, template_filename=None):
@@ -1610,8 +1539,7 @@ def samefile(path1, path2):
     except OSError as err:
         if err.errno == 2:  # ENOENT
             return False
-        else:
-            raise
+        raise
 
 
 def sh_quote_safe(arg):
@@ -1684,108 +1612,8 @@ def sh_quote_unsafe_cmdline(args):
     return ' '.join((sh_quote_unsafe(arg) for arg in args))
 
 
-# see
-# http://stackoverflow.com/questions/31875/is-there-a-simple-elegant-way-to-define-singletons-in-python/1810391#1810391  # noqa
-class Singleton(object):
-
-    """
-    Derived classes of `Singleton` can have only one instance in the
-    running Python interpreter.
-
-       >>> x = Singleton()
-       >>> y = Singleton()
-       >>> x is y
-       True
-
-    """
-    def __new__(cls, *args, **extra_args):
-        if not hasattr(cls, '_instance'):
-            cls._instance = super(Singleton, cls).__new__(
-                cls, *args, **extra_args)
-        return cls._instance
-
-
-class MinusInfinity(Singleton):
-
-    """An object that is less-than any other object.
-
-        >>> x = MinusInfinity()
-
-        >>> x < 1
-        True
-        >>> 1 > x
-        True
-        >>> x < -1245632479102509834570124871023487235987634518745
-        True
-
-        >>> x < -sys.maxint
-        True
-        >>> x > -sys.maxint
-        False
-        >>> -sys.maxint > x
-        True
-
-    `MinusInfinity` objects are actually smaller than *any* given Python
-    object::
-
-        >>> x < 'azz'
-        True
-        >>> x < object()
-        True
-
-    Note that `MinusInfinity` is a singleton, therefore you always get
-    the same instance when calling the class constructor::
-
-        >>> x = MinusInfinity()
-        >>> y = MinusInfinity()
-        >>> x is y
-        True
-
-    Relational operators try to return the correct value when
-    comparing `MinusInfinity` to itself::
-
-        >>> x < y
-        False
-        >>> x <= y
-        True
-        >>> x == y
-        True
-        >>> x >= y
-        True
-        >>> x > y
-        False
-
-    """
-
-    def __lt__(self, other):
-        if self is other:
-            return False
-        else:
-            return True
-
-    def __le__(self, other):
-        return True
-
-    def __gt__(self, other):
-        return False
-
-    def __ge__(self, other):
-        if self is other:
-            return True
-        else:
-            return False
-
-    def __eq__(self, other):
-        if self is other:
-            return True
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-
-class PlusInfinity(Singleton):
+@total_ordering
+class PlusInfinity(object):
 
     """
     An object that is greater-than any other object.
@@ -1814,28 +1642,6 @@ class PlusInfinity(Singleton):
         >>> x > object()
         True
 
-    Note that `PlusInfinity` is a singleton, therefore you always get
-    the same instance when calling the class constructor::
-
-        >>> x = PlusInfinity()
-        >>> y = PlusInfinity()
-        >>> x is y
-        True
-
-    Relational operators try to return the correct value when
-    comparing `PlusInfinity` to itself::
-
-        >>> x < y
-        False
-        >>> x <= y
-        True
-        >>> x == y
-        True
-        >>> x >= y
-        True
-        >>> x > y
-        False
-
     Finally, addition and subtraction of a finite number from
     `PlusInfinity` always results in `PlusInfinity`::
 
@@ -1846,31 +1652,15 @@ class PlusInfinity(Singleton):
         >>> x == y
         True
 
+    Note that this used to be a singleton with special handling of 'is'.
+    This was removed because it was apparently unused, and a lot of extra code.
+
     """
-
     def __gt__(self, other):
-        if self is other:
-            return False
-        else:
-            return True
-
-    def __ge__(self, other):
-        return True
-
-    def __lt__(self, other):
-        return False
-
-    def __le__(self, other):
-        if self is other:
-            return True
-        else:
-            return False
+        return type(self) != type(other)
 
     def __eq__(self, other):
-        if self is other:
-            return True
-        else:
-            return False
+        return type(self) == type(other)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -1926,13 +1716,13 @@ class Struct(object, UserDict.DictMixin):
         if initializer is not None:
             try:
                 # initializer is `dict`-like?
-                for name, value in list(initializer.items()):
+                for name, value in initializer.items():
                     self[name] = value
             except AttributeError:
                 # initializer is a sequence of (name,value) pairs?
                 for name, value in initializer:
                     self[name] = value
-        for name, value in list(extra_args.items()):
+        for name, value in extra_args.items():
             self[name] = value
 
     def copy(self):
@@ -1990,19 +1780,7 @@ def string_to_boolean(word):
       False
 
     """
-    if word.strip().lower() in ['true', 'yes', 'on', '1']:
-        return True
-    else:
-        return False
-
-
-def stripped(iterable):
-    """
-    Iterate over lines in `iterable` and return each of them stripped
-    of leading and trailing blanks.
-    """
-    for item in iterable:
-        yield item.strip()
+    return word.strip().lower() in ['true', 'yes', 'on', '1']
 
 
 @contextlib.contextmanager
@@ -2109,40 +1887,15 @@ def to_bytes(s):
       1048576
 
     """
-    last = -1
-    unit = s[last].lower()
-    if unit.isdigit():
-        # `s` is a integral number
+    # get the multiplier
+    k = 1024 if 'i' in s.lower() else 1000
+    # strip bad stuff away now
+    s = s.lower().strip(' ib')
+    # if it is just a number, return as int
+    if s.isdigit():
         return int(s)
-    if unit == 'b':
-        # ignore the the 'b' or 'B' suffix
-        last -= 1
-        unit = s[last].lower()
-    if unit == 'i':
-        k = 1024
-        last -= 1
-        unit = s[last].lower()
-    else:
-        k = 1000
-    # convert the substring of `s` that does not include the suffix
-    if unit.isdigit():
-        return int(s[0:(last + 1)])
-    if unit == 'k':
-        return int(float(s[0:last]) * k)
-    if unit == 'm':
-        return int(float(s[0:last]) * k * k)
-    if unit == 'g':
-        return int(float(s[0:last]) * k * k * k)
-    if unit == 't':
-        return int(float(s[0:last]) * k * k * k * k)
-    if unit == 'p':
-        return int(float(s[0:last]) * k * k * k * k * k)
-    if unit == 'e':
-        return int(float(s[0:last]) * k * k * k * k * k * k)
-    if unit == 'z':
-        return int(float(s[0:last]) * k * k * k * k * k * k * k)
-    if unit == 'y':
-        return int(float(s[0:last]) * k * k * k * k * k * k * k * k)
+    num, unit = s[:-1], s[-1]
+    return int(num) * (k ** BYTE_SUFFIX_TO_POW[unit])
 
 
 def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
@@ -2185,38 +1938,7 @@ def touch(path):
     (This is a very limited and stripped down version of the ``touch``
     POSIX utility.)
     """
-    fd = open(path, 'a')
-    fd.close()
-
-
-def uniq(seq):
-    """
-    Iterate over all unique elements in sequence `seq`.
-
-    Distinct values are returned in a sorted fashion.
-
-    Examples:
-
-      >>> for value in uniq([4,1,1,2,3,1,2]): print(value)
-      ...
-      1
-      2
-      3
-      4
-
-      >>> for value in uniq([1,2,3,4]): print(value)
-      ...
-      1
-      2
-      3
-      4
-
-      >>> for value in uniq([1,1,1,1]): print(value)
-      ...
-      1
-
-    """
-    return sorted(set(seq))
+    open(path, 'a').close()
 
 
 def unlock(lock):
@@ -2255,7 +1977,7 @@ def update_parameter_in_file(path, var_in, new_val, regex_in):
                             r'(\s*)'),  # spaces (filler)
     }
     isfound = False
-    if regex_in in list(_loop_regexps.keys()):
+    if regex_in in _loop_regexps.keys():
         regex_in = _loop_regexps[regex_in]
     para_file_in = open(path, 'r')
     para_file_out = open(path + '.tmp', 'w')
@@ -2278,7 +2000,7 @@ def update_parameter_in_file(path, var_in, new_val, regex_in):
     if not isfound:
         gc3libs.log.critical(
             'update_parameter_in_file could not find parameter'
-            ' in sepcified file')
+            ' in specified file')
 
 
 def write_contents(path, data):
@@ -2353,4 +2075,4 @@ class YieldAtNext(object):
 if __name__ == '__main__':
     import doctest
     doctest.testmod(name='utils',
-                    optionflags=doctest.NORMALIZE_WHITESPACE|doctest.ELLIPSIS)
+                    optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS)

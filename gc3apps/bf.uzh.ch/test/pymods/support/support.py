@@ -488,7 +488,8 @@ def fillInputDir(baseDir, input_dir):
     #      gc3libs.utils.copytree(inputFolder , os.path.join(input_dir, 'input'))
     filesToCopy = glob.glob(baseDir + '/*')
     for fileToCopy in filesToCopy:
-        if os.path.isdir(fileToCopy): continue
+        if os.path.isdir(fileToCopy):
+            continue
         shutil.copy(fileToCopy, input_dir)
 
 
