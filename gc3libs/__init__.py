@@ -129,7 +129,7 @@ from gc3libs.events import TaskStateChange
 import gc3libs.exceptions
 from gc3libs.persistence import Persistable
 from gc3libs.url import UrlKeyDict, UrlValueDict
-from gc3libs.utils import (defproperty, deploy_configuration_file, Enum,
+from gc3libs.utils import (deploy_configuration_file, Enum,
                            History, Struct, safe_repr, sh_quote_unsafe)
 
 
@@ -1800,8 +1800,8 @@ class Run(Struct):
         if 'timestamp' not in self:
             self.timestamp = OrderedDict()
 
-    @defproperty
-    def info():
+    @property
+    def info(self):
         """
         A simplified interface for reading/writing entries into `history`.
 
@@ -1818,19 +1818,21 @@ class Run(Struct):
           u'a second message ...'
 
         """
-
-        def fget(self):
-            return self.history.last()
-
-        def fset(self, value):
-            try:
-                self.history.append(str(value, errors='replace'))
-            except (TypeError, ValueError):
-                try:
-                    self.history.append(str(value))
-                except Exception as err:
-                    log.error("Cannot append `%s` to history of task %s", value, self)
         return locals()
+
+    @info.setter
+    def info(self, value):
+        try:
+            self.history.append(str(value, errors='replace'))
+        except (TypeError, ValueError):
+            try:
+                self.history.append(str(value))
+            except Exception as err:
+                log.error("Cannot append `%s` to history of task %s", value, self)
+
+    @info.getter
+    def info(self):
+        return self.history.last()
 
     # states that a `Run` can be in
     State = Enum(
@@ -1871,8 +1873,8 @@ class Run(Struct):
         def __setattr__(self, name, value):
             raise TypeError("Cannot overwrite value of constant '%s'" % name)
 
-    @defproperty
-    def state():
+    @property
+    def state(self):
         """
         The state a `Run` is in.
 
@@ -1930,38 +1932,35 @@ class Run(Struct):
         at all, for example, in case of a fatal failure during the
         submission step.
         """
+        return self._state
 
-        def fget(self):
-            return self._state
-
-        def fset(self, value):
-            assert value in Run.State, \
-                ("Value '{0}' is not a legal `gc3libs.Run.State` value."
-                 .format(value))
-            if self._state == value:
-                # no changes
-                return
-            self.state_last_changed = time.time()
-            self.timestamp[value] = time.time()
-            # record state-transition in Task execution history
-            # (can be later queried with `ginfo` for e.g. debugging)
-            if value == Run.State.TERMINATED:
-                self.history.append(
-                    "Transition from state {0} to state {1} (returncode: {2})"
-                    .format(self._state, value, self.returncode))
-            else:
-                self.history.append(
-                    "Transition from state {0} to state {1}"
-                    .format(self._state, value))
-            if self._ref is not None:
-                self._ref.changed = True
-                # signal state-transition
-                TaskStateChange.send(
-                    self._ref, from_state=self._state, to_state=value)
-            # finally, update state
-            self._state = value
-
-        return locals()
+    @state.setter
+    def state(self, value):
+        assert value in Run.State, \
+            ("Value '{0}' is not a legal `gc3libs.Run.State` value."
+             .format(value))
+        if self._state == value:
+            # no changes
+            return
+        self.state_last_changed = time.time()
+        self.timestamp[value] = time.time()
+        # record state-transition in Task execution history
+        # (can be later queried with `ginfo` for e.g. debugging)
+        if value == Run.State.TERMINATED:
+            self.history.append(
+                "Transition from state {0} to state {1} (returncode: {2})"
+                .format(self._state, value, self.returncode))
+        else:
+            self.history.append(
+                "Transition from state {0} to state {1}"
+                .format(self._state, value))
+        if self._ref is not None:
+            self._ref.changed = True
+            # signal state-transition
+            TaskStateChange.send(
+                self._ref, from_state=self._state, to_state=value)
+        # finally, update state
+        self._state = value
 
     def in_state(self, *names):
         """
@@ -1987,8 +1986,8 @@ class Run(Struct):
         else:
             return False
 
-    @defproperty
-    def signal():
+    @property
+    def signal(self):
         """
         The "signal number" part of a `Run.returncode`, see
         `os.WTERMSIG` for details.
@@ -2002,19 +2001,14 @@ class Run(Struct):
         "fake" one that GC3Libs uses to represent Grid middleware
         errors (see `Run.Signals`).
         """
+        return self._signal
 
-        def fget(self):
-            return self._signal
+    @signal.setter
+    def signal(self, value):
+        self._signal = None if value is None else int(value) & 0x7f
 
-        def fset(self, value):
-            if value is None:
-                self._signal = None
-            else:
-                self._signal = int(value) & 0x7f
-        return (locals())
-
-    @defproperty
-    def exitcode():
+    @property
+    def exitcode(self):
         """
         The "exit code" part of a `Run.returncode`, see `os.WEXITSTATUS`.
         This is an 8-bit integer, whose meaning is entirely
@@ -2022,16 +2016,11 @@ class Run(Struct):
         to mean that an error has occurred and the application could
         not end its execution normally.)
         """
+        return self._exitcode
 
-        def fget(self):
-            return self._exitcode
-
-        def fset(self, value):
-            if value is None:
-                self._exitcode = None
-            else:
-                self._exitcode = int(value) & 0xff
-        return (locals())
+    @exitcode.setter
+    def exitcode(self, value):
+        self._exitcode = None if value is None else int(value) & 0xff
 
     @property
     def returncode(self):
@@ -2119,7 +2108,6 @@ class Run(Struct):
         if signal is None:
             signal = 0
         return (exitcode << 8) | signal
-
 
     # `Run.Signals` is an instance of global class `_Signals`
     Signals = _Signals()

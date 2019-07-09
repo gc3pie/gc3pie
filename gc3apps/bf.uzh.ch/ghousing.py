@@ -714,7 +714,7 @@ def fillInputDir(baseDir, input_dir):
       exclude the markov directory which contains markov information
       for all country pairs.
     '''
-    shutil.copytree(baseDir , input_dir)
+    shutil.copytree(baseDir, input_dir)
 
 def combinedThresholdPlot():
     import copy

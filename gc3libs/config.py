@@ -43,7 +43,6 @@ from collections import defaultdict
 import gc3libs.utils
 
 from gc3libs.quantity import Memory, GB, MB, MiB, Duration, hours
-from gc3libs.utils import defproperty
 
 
 # module metadata
@@ -577,7 +576,6 @@ class Configuration(gc3libs.utils.Struct):
                     err.__class__.__name__, str(err))
                 raise
         return self._auth_factory
-
 
     def make_auth(self, name):
         """
