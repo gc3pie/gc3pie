@@ -1,6 +1,6 @@
 
 #! /usr/bin/env python
-#
+
 """
 Support for finding minima of functions with GC3Pie.
 
@@ -47,6 +47,7 @@ The module is organized as follows:
   used as addons to :class:`~gc3libs.optimizer.EvolutionaryAlgorithm`.
 
 """
+
 # Copyright (C) 2011, 2012, 2013  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -61,7 +62,7 @@ The module is organized as follows:
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import str
 from builtins import object

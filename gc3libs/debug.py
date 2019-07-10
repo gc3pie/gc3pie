@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 """
 Tools for debugging GC3Libs based programs.
 
@@ -7,6 +7,7 @@ Part of the code used in this module originally comes from:
   - http://wordaligned.com/articles/echo
 
 """
+
 # Copyright (C) 2011, 2015, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -21,7 +22,7 @@ Part of the code used in this module originally comes from:
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import zip
 __docformat__ = 'reStructuredText'

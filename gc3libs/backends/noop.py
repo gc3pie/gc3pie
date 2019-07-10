@@ -1,7 +1,9 @@
 #! /usr/bin/env python
+
 """
 Fake running applications, only useful for testing.
 """
+
 # Copyright (C) 2009-2018  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -16,13 +18,12 @@ Fake running applications, only useful for testing.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 __docformat__ = 'reStructuredText'
 
 
 # stdlib imports
-import os
 from random import random
 
 # GC3Pie imports
@@ -31,7 +32,7 @@ import gc3libs.exceptions
 from gc3libs import log, Run
 from gc3libs.utils import same_docstring_as
 from gc3libs.backends import LRMS
-from gc3libs.quantity import Memory, MB
+from gc3libs.quantity import Memory
 
 
 NORMAL_TRANSITION_GRAPH = {
@@ -169,7 +170,7 @@ class NoOpLrms(LRMS):
             for prob, state in list(transitions.items()) if prob > 0
         ]))
         dice = random()
-        #log.debug("Rolled dice, got %g result", dice)
+        # log.debug("Rolled dice, got %g result", dice)
         for prob, to_state in sorted(transitions.items()):
             if dice < prob:
                 log.debug(
@@ -217,7 +218,7 @@ class NoOpLrms(LRMS):
                 " %s requested, but only %s available."
                 % (self.name,
                    app.requested_memory.to_str('%g%s', unit=Memory.MB),
-                   available_memory.to_str('%g%s', unit=Memory.MB),)
+                   app.available_memory.to_str('%g%s', unit=Memory.MB),)
             )
 
         log.debug("Faking execution of command '%s' ...",
@@ -235,7 +236,7 @@ class NoOpLrms(LRMS):
 
     def peek(self, app, remote_filename, local_file, offset=0, size=None):
         """Not supported on this backend."""
-        raise NotImplementedException(
+        raise NotImplementedError(
             "The `peek` operation is not supported"
             " by the `NoOp` backend.")
 

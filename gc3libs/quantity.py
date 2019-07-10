@@ -8,6 +8,7 @@ For details and the discussion leading up to this,
 see: `<https://github.com/uzh/gc3pie/issues/47>`
 
 """
+
 # Copyright (C) 2011 - 2014, 2019,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -22,7 +23,7 @@ see: `<https://github.com/uzh/gc3pie/issues/47>`
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from __future__ import division
 from builtins import object
@@ -38,7 +39,6 @@ from six import with_metaclass
 import datetime
 import operator
 import re
-import types
 
 try:
     # Python 2

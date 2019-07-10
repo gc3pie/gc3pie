@@ -1,7 +1,8 @@
 #! /usr/bin/env python
-#
+
 """
 """
+
 # Copyright (C) 2012-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -16,7 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 
 from builtins import str
@@ -203,8 +204,8 @@ class EC2Lrms(LRMS):
         self.subresource_args['ignore_ssh_host_keys'] = True
         self.subresource_args['keyfile'] = self.public_key
         if self.subresource_args['keyfile'].endswith('.pub'):
-            self.subresource_args['keyfile'] = \
-              self.subresource_args['keyfile'][:-len('.pub')]
+            keyfile = self.subresource_args['keyfile'][:-len('.pub')]
+            self.subresource_args['keyfile'] = keyfile
         # ShellcmdLrms by default trusts the configuration, instead of
         # checking the real amount of memory and number of cpus, but
         # we need the real values instead.
@@ -379,8 +380,7 @@ class EC2Lrms(LRMS):
         because that's the way the fingerprint is returned from the
         EC2 API.
         """
-        return ':'.join((i.encode('hex')
-                              for i in privkey.get_fingerprint()))
+        return ':'.join((i.encode('hex') for i in privkey.get_fingerprint()))
 
     @staticmethod
     def __pubkey_aws_fingerprint(privkeypath,

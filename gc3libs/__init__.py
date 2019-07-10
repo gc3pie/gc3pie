@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 # Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 """
 GC3Libs is a python package for controlling the life-cycle of a Grid
 or batch computational job.
@@ -47,7 +47,6 @@ import platform
 import string
 import sys
 import time
-import types
 import subprocess
 import shlex
 import uuid
@@ -69,6 +68,11 @@ from gc3libs.events import TaskStateChange, TermStatusChange
 from gc3libs.quantity import MB, hours, minutes, seconds, MiB
 from gc3libs.compat._collections import OrderedDict
 
+import gc3libs.exceptions
+from gc3libs.persistence import Persistable
+from gc3libs.url import UrlKeyDict, UrlValueDict
+from gc3libs.utils import (deploy_configuration_file, Enum,
+                           History, Struct, safe_repr)
 # this needs to be defined before we import other GC3Libs modules, as
 # they may depend on it
 
@@ -123,14 +127,6 @@ class Default(object):
     # on batch systems, this should be visible from both
     # the frontend and the compute nodes
     SPOOLDIR = "$HOME/.gc3pie_jobs"
-
-
-from gc3libs.events import TaskStateChange
-import gc3libs.exceptions
-from gc3libs.persistence import Persistable
-from gc3libs.url import UrlKeyDict, UrlValueDict
-from gc3libs.utils import (deploy_configuration_file, Enum,
-                           History, Struct, safe_repr, sh_quote_unsafe)
 
 
 # when used in the `output` attribute of an application,
@@ -207,6 +203,7 @@ def configure_logger(
             log.warning("Could not import `coloredlogs` module: %s", err)
     return log
 
+
 def _load_logging_configuration_file(name):
     if name is None:
         name = os.path.basename(sys.argv[0])
@@ -247,13 +244,11 @@ def error_ignored(*ctx):
     if UNIGNORE_ALL_ERRORS:
         return False
     else:
-        return (0 == len(UNIGNORE_ERRORS.intersection(set(str(word).lower()
-                                                          for word in ctx))))
+        words = set(str(word).lower() for word in ctx)
+        return not UNIGNORE_ERRORS.intersection(words)
 
 
 # Task and Application classes
-#
-
 class Task(Persistable, Struct):
 
     """
@@ -547,10 +542,8 @@ class Task(Persistable, Struct):
              (self._controller, self))
         self._controller.free(self, **extra_args)
 
-
     # convenience methods, do not really add any functionality over
     # what's above
-
     def progress(self):
         """
         Advance the associated job through all states of a regular
@@ -597,7 +590,6 @@ class Task(Persistable, Struct):
             self.fetch_output()
             return self.execution.returncode
 
-
     def redo(self, *args, **kwargs):
         """
         Reset the state of this Task instance to ``NEW``.
@@ -623,7 +615,6 @@ class Task(Persistable, Struct):
             " task {0} is in state {1} instead."
             .format(self, self.execution.state))
         self.execution.state = Run.State.NEW
-
 
     def wait(self, interval=60):
         """

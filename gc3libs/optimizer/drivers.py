@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 """
 Drivers to perform global optimization.
 
@@ -12,6 +12,7 @@ Drivers use an algorithm instance that conforms to
 :class:`optimizer.EvolutionaryAlgorithm <gc3libs.optimizer.EvolutionaryAlgorithm>` to generate new
 populations.
 """
+
 # Copyright (C) 2011, 2012, 2013  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -26,7 +27,7 @@ populations.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import str
 from builtins import range
@@ -35,7 +36,6 @@ __author__ = 'Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
 __docformat__ = 'reStructuredText'
 
 import os
-import sys
 import logging
 import datetime
 

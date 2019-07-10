@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 """
 This module implements a global optimization algorithm called Differential
 Evolution.
@@ -24,6 +24,7 @@ Some information related to Differential Evolution can be found in the following
 `~gc3libs.optimizer.dif_evolution.DifferentialEvolutionAlgorithm.evolve_fn`:func: is an adaptation of the following MATLAB code:
 http://www.icsi.berkeley.edu/~storn/DeMat.zip hosted on http://www.icsi.berkeley.edu/~storn/code.html#deb1.
 """
+
 # Copyright (C) 2011, 2012, 2013  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -38,21 +39,15 @@ http://www.icsi.berkeley.edu/~storn/DeMat.zip hosted on http://www.icsi.berkeley
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import range
 __author__ = 'Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
 __docformat__ = 'reStructuredText'
 
-
-import logging
-import os
-import sys
-
 import numpy as np
 
-from gc3libs.optimizer import EvolutionaryAlgorithm
-from gc3libs.optimizer import draw_population, populate
+from gc3libs.optimizer import EvolutionaryAlgorithm, populate
 from gc3libs.utils import Enum
 
 # in code one can use:

@@ -1,8 +1,9 @@
 #! /usr/bin/env python
-#
+
 """
 Specialized support for TURBOMOLE.
 """
+
 # Copyright (C) 2009-2012  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,14 +18,13 @@ Specialized support for TURBOMOLE.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 __docformat__ = 'reStructuredText'
 
 
 import gc3libs
 import gc3libs.application
-from gc3libs.exceptions import *
 import os
 import os.path
 from pkg_resources import Requirement, resource_filename

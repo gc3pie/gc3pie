@@ -1,8 +1,9 @@
 #! /usr/bin/env python
-#
+
 """
 Utility classes and methods for dealing with URLs.
 """
+
 # Copyright (C) 2011-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,7 +18,7 @@ Utility classes and methods for dealing with URLs.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from future import standard_library
 standard_library.install_aliases()
@@ -39,6 +40,7 @@ _UrlFields = namedtuple('_UrlFields', [
     'hostname', 'port', 'query',
     'username', 'password', 'fragment'
 ])
+
 
 class Url(_UrlFields):
 

@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+
 """Exceptions specific to the `gc3libs` package.
 
 In addition to the exceptions listed here, `gc3libs`:mod: functions
@@ -19,6 +20,7 @@ in core Python, namely:
   this indicates a bug in the software.
 
 """
+
 # Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -33,7 +35,7 @@ in core Python, namely:
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import str
 __docformat__ = 'reStructuredText'

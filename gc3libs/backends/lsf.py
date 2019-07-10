@@ -1,8 +1,9 @@
 #! /usr/bin/env python
-#
+
 """
 Job control on LSF clusters (possibly connecting to the front-end via SSH).
 """
+
 # Copyright (C) 2009-2016  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,7 +18,7 @@ Job control on LSF clusters (possibly connecting to the front-end via SSH).
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import str
 from builtins import next
@@ -712,10 +713,8 @@ class LsfLrms(batch.BatchSystem):
                 break
         return acctinfo
 
-
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._bkill, jobid))
-
 
     @gc3libs.utils.cache_for(gc3libs.Default.LSF_CACHE_TIME)
     @LRMS.authenticated
@@ -843,7 +842,6 @@ class LsfLrms(batch.BatchSystem):
 
 
 # main: run tests
-
 if "__main__" == __name__:
     import doctest
     doctest.testmod(name="lsf",

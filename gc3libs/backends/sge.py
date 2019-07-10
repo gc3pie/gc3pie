@@ -1,8 +1,9 @@
 #! /usr/bin/env python
-#
+
 """
 Job control on SGE clusters (possibly connecting to the front-end via SSH).
 """
+
 # Copyright (C) 2009-2014, 2016  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,7 +18,7 @@ Job control on SGE clusters (possibly connecting to the front-end via SSH).
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import str
 __docformat__ = 'reStructuredText'
@@ -27,7 +28,6 @@ __docformat__ = 'reStructuredText'
 import datetime
 import math
 import re
-import time
 
 from collections import defaultdict
 
@@ -82,6 +82,7 @@ def _to_memory(val):
         gc3libs.log.warning("Grid Engine backend: Cannot interpret '%s' "
                             "as a MEMORY value.", val)
         return None
+
 
 # `_convert` is a `dict` instance, mapping key names to functions
 # that parse a value from a string into a Python native type.

@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+
 """
 Top-level classes for task execution and control.
 """
+
 # Copyright (C) 2009-2018  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,7 +19,7 @@ Top-level classes for task execution and control.
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 2110-1301 USA
-#
+
 
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import next

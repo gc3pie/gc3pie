@@ -1,7 +1,9 @@
 #! /usr/bin/env python
-#
+
 """
+session - persistent collections of tasks
 """
+
 # Copyright (C) 2012-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify

@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 """
 Facade to store and retrieve Job information from permanent storage.
 
@@ -33,6 +33,7 @@ the trick!
   the Python interpreter, or GC3Utils will still complain!
 
 """
+
 # Copyright (C) 2009-2012  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -47,7 +48,7 @@ the trick!
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 __docformat__ = 'reStructuredText'
 

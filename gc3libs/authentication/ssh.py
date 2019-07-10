@@ -1,8 +1,9 @@
 #! /usr/bin/env python
-#
+
 """
 Authentication support for accessing resources through the SSH protocol.
 """
+
 # Copyright (C) 2009-2011, 2015  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,7 +18,7 @@ Authentication support for accessing resources through the SSH protocol.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import object
 __docformat__ = 'reStructuredText'
@@ -60,18 +61,12 @@ class SshAuth(object):
         # `None` as doing otherwise would override settings from the
         # SSH config file in the `SshTransport` constructor.
         try:
-            if port is not None:
-                self.port = int(port)
-            else:
-                self.port = None
+            self.port = None if port is None else int(port)
         except (ValueError, TypeError) as err:
             raise gc3libs.exceptions.ConfigurationError(
                 "Invalid `port` setting in SSH auth section.")
         try:
-            if timeout is not None:
-                self.timeout = float(timeout)
-            else:
-                self.timeout = None
+            self.timeout = None if timeout is None else float(timeout)
         except (ValueError, TypeError) as err:
             raise gc3libs.exceptions.ConfigurationError(
                 "Invalid `timeout` setting in SSH auth section.")
@@ -84,6 +79,7 @@ class SshAuth(object):
 
     def enable(self):
         return True
+
 
 Auth.register('ssh', SshAuth)
 

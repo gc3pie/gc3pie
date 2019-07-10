@@ -1,7 +1,9 @@
 #! /usr/bin/env python
+
 """
 Interface to different resource management systems for the GC3Libs.
 """
+
 # Copyright (C) 2009-2015  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -16,7 +18,7 @@ Interface to different resource management systems for the GC3Libs.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import str
 __docformat__ = 'reStructuredText'
@@ -319,7 +321,6 @@ class LRMS(gc3libs.utils.Struct):
 
 
 # main: run tests
-
 if "__main__" == __name__:
     import doctest
     doctest.testmod(name="__init__",

@@ -1,5 +1,9 @@
 #! /usr/bin/env python
-#
+
+"""
+Simple interface to the CODEML application.
+"""
+
 #   codeml.py -- Simple interface to the CODEML application
 #
 #   Copyright (C) 2010, 2011, 2012  University of Zurich. All rights reserved.
@@ -16,10 +20,8 @@
 #
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-"""
-Simple interface to the CODEML application.
-"""
+
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import str
 from builtins import range

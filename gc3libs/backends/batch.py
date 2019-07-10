@@ -1,9 +1,10 @@
 #! /usr/bin/env python
-#
+
 """
 This module provides a generic BatchSystem class from which all
 batch-like backends should inherit.
 """
+
 # Copyright (C) 2009-2018   University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,7 +19,7 @@ batch-like backends should inherit.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import str
 __docformat__ = 'reStructuredText'

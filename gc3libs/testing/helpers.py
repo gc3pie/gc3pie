@@ -1,9 +1,9 @@
-# helpers.py
 # -*- coding: utf-8 -*-
+
 """
 Utility functions for use in unit test code.
 """
-#
+
 #  Copyright (C) 2015, 2016, 2018  University of Zurich. All rights reserved.
 #
 #
@@ -63,12 +63,12 @@ def test_resource(name='test', **params):
         architecture=set([Run.Arch.X86_64]),
         enabled=True,
         # Use unusual values so that we can easily spot if the `override` option works
-        large_file_chunk_size=1.78*MB,
-        large_file_threshold=1.414*GB,
+        large_file_chunk_size=1.78 * MB,
+        large_file_threshold=1.414 * GB,
         max_cores=123,
         max_cores_per_job=123,
-        max_memory_per_core=999*GB,
-        max_walltime=7*hours,
+        max_memory_per_core=999 * GB,
+        max_walltime=7 * hours,
     )
     # update with given parameters
     rsc.update(**params)
@@ -168,6 +168,7 @@ class SuccessfulApp(Application):
             jobname=name,
             requested_cores=1,
             **extra_args)
+
     def terminated(self):
         self.execution.returncode = 0
 
@@ -184,6 +185,7 @@ class UnsuccessfulApp(Application):
             jobname=name,
             requested_cores=1,
             **extra_args)
+
     def terminated(self):
         self.execution.returncode = (0, 1)
 

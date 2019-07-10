@@ -1,9 +1,10 @@
 #! /usr/bin/env python
-#
+
 """
 Job control on PBS/Torque clusters (possibly connecting to the
 front-end via SSH).
 """
+
 # Copyright (C) 2009-2014, 2016  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,7 +19,7 @@ front-end via SSH).
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import str
 __docformat__ = 'reStructuredText'
@@ -54,6 +55,7 @@ _qstat_line_re = re.compile(
     '(?P<queue>[^\s]+)')
 
 # convert data to GC3Pie internal format
+
 
 def _to_memory(val):
     """
@@ -375,7 +377,6 @@ class PbsLrms(batch.BatchSystem):
 
 
 # main: run tests
-
 if "__main__" == __name__:
     import doctest
     doctest.testmod(name="pbs",

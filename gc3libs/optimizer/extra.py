@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 """
 Collection of tools to supplement optimization algorithm
 :class:`optimizer.EvolutionaryAlgorithm <gc3libs.optimizer.EvolutionaryAlgorithm>`.
@@ -7,6 +7,7 @@ Collection of tools to supplement optimization algorithm
 Include a list of desired tools in param `after_update_opt_state` of
 :class:`optimizer.EvolutionaryAlgorithm <gc3libs.optimizer.EvolutionaryAlgorithm>`.
 """
+
 # Copyright (C) 2011, 2012, 2013  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -21,7 +22,7 @@ Include a list of desired tools in param `after_update_opt_state` of
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import object
 __author__ = 'Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
@@ -94,10 +95,10 @@ class plot_population(object):
         ax.plot([x0_min_plot, x0_max_plot], [x1_max, x1_max])
 
         # all other linear constraints
-        #c_x_min_plot = algo.filter_fn.linearConstr(x_min_plot)
-        #c_xmax = algo.filter_fn.linearConstr(xmax)
+        # c_x_min_plot = algo.filter_fn.linearConstr(x_min_plot)
+        # c_xmax = algo.filter_fn.linearConstr(xmax)
         # for ixC in range(len(c_x_min_plot)):
-        #ax.plot([x_min_plot, xmax], [c_x_min_plot[ixC], c_xmax[ixC]])
+        # ax.plot([x_min_plot, xmax], [c_x_min_plot[ixC], c_xmax[ixC]])
         ax.axis(xmin=x0_min_plot, xmax=x0_max_plot,
                 ymin=x1_min_plot, ymax=x1_max_plot)
 

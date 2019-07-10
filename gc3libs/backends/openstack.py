@@ -1,10 +1,11 @@
 #! /usr/bin/env python
-#
+
 """
 Manage startup and teardown of cloud-based VMs to run applications.
 
 This only works on clouds implementing the OpenStack Compute API.
 """
+
 # Copyright (C) 2012-2018  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -19,7 +20,7 @@ This only works on clouds implementing the OpenStack Compute API.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 __docformat__ = 'reStructuredText'
 
@@ -206,8 +207,8 @@ class OpenStackLrms(LRMS):
         self.subresource_args['ignore_ssh_host_keys'] = True
         self.subresource_args['keyfile'] = self.public_key
         if self.subresource_args['keyfile'].endswith('.pub'):
-            self.subresource_args['keyfile'] = \
-              self.subresource_args['keyfile'][:-len('.pub')]
+            keyfile = self.subresource_args['keyfile'][:-len('.pub')]
+            self.subresource_args['keyfile'] = keyfile
         # ShellcmdLrms by default trusts the configuration, instead of
         # checking the real amount of memory and number of cpus, but
         # we need the real values instead.
@@ -293,7 +294,7 @@ class OpenStackLrms(LRMS):
 
         nics = None
         if hasattr(self,'network_ids') and self.network_ids:
-            nics=[{'net-id': netid.strip(), 'v4-fixed-ip': ''}
+            nics = [{'net-id': netid.strip(), 'v4-fixed-ip': ''}
                   for netid in self.network_ids.split(',')]
             gc3libs.log.debug("Specifying networks for vm %s: %s",
                       name, ', '.join([nic['net-id'] for nic in nics]))
@@ -471,7 +472,6 @@ class OpenStackLrms(LRMS):
         except AttributeError:
             return self.network_client.list_security_groups()['security_groups']
 
-
     @cache_for(120)
     def _get_security_group(self, name):
         groups = self._get_security_groups()
@@ -611,7 +611,7 @@ class OpenStackLrms(LRMS):
            that fits the application requirements.
         """
         req_cores = self._get_task_requirement(task, 'requested_cores', 1)
-        req_memory = self._get_task_requirement(task, 'requested_memory', 0*MiB)
+        req_memory = self._get_task_requirement(task, 'requested_memory', 0 * MiB)
 
         # If there is an option <application>_instance_type, try to use it
         for conf_option in [
@@ -694,7 +694,6 @@ class OpenStackLrms(LRMS):
         """
         return (flavor.vcpus, flavor.ram, flavor.disk)
 
-
     def get_user_data_for_job(self, job):
         """
         If a configuration option <application>_user_data is present,
@@ -740,7 +739,7 @@ class OpenStackLrms(LRMS):
         for vm_id in self._vmpool:
             try:
                 vm = self._vmpool.get_vm(vm_id, force_reload=True)
-            except UnrecoverableError as ex:
+            except UnrecoverableError:
                 gc3libs.log.warning(
                     "Removing stale information on VM `%s`. It has probably"
                     " been deleted from outside GC3Pie.", vm_id)

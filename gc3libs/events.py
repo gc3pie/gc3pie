@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 """
 Support for communication between parts of code through "events".
 
@@ -11,6 +11,7 @@ provided by Python's library `generic`__.
 .. __: https://en.wikipedia.org/wiki/Observer_pattern
 .. __: http://generic.readthedocs.io/en/latest/event_system.html#event-system
 """
+
 # Copyright (C) 2018  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -25,7 +26,7 @@ provided by Python's library `generic`__.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 __docformat__ = 'reStructuredText'
 

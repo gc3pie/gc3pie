@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 """
 Implementation of task collections.
 
@@ -10,6 +10,7 @@ patterns of job group execution; they can be combined to form more
 complex workflows.  Hook methods are provided so that derived classes
 can implement problem-specific job control policies.
 """
+
 # Copyright (C) 2009-2018   University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -24,7 +25,7 @@ can implement problem-specific job control policies.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from builtins import str
 from builtins import range
