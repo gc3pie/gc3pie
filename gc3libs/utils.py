@@ -1642,6 +1642,19 @@ class PlusInfinity(object):
         >>> x > object()
         True
 
+    Relational operators try to return the correct value when
+    comparing `PlusInfinity` to other instances of `PlusInfinity`::
+        >>> x < y
+        False
+        >>> x <= y
+        True
+        >>> x == y
+        True
+        >>> x >= y
+        True
+        >>> x > y
+        False
+
     Finally, addition and subtraction of a finite number from
     `PlusInfinity` always results in `PlusInfinity`::
 
