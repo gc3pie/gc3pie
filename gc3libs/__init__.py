@@ -67,6 +67,7 @@ except ImportError:
 from gc3libs.events import TaskStateChange, TermStatusChange
 from gc3libs.quantity import MB, hours, minutes, seconds, MiB
 from gc3libs.compat._collections import OrderedDict
+from gc3libs.compat._2and3 import to_filesystem_path
 
 import gc3libs.exceptions
 from gc3libs.persistence import Persistable
@@ -1138,14 +1139,9 @@ class Application(Task):
         """
         try:
             # is `spec` dict-like?
-            return ctor(((bytes(k).decode('ascii'), bytes(v).decode('ascii'))
+            return ctor(((to_filesystem_path(k), to_filesystem_path(v))
                          for k, v in spec.items()),
                         force_abs=force_abs)
-        except UnicodeError as err:
-            raise gc3libs.exceptions.InvalidValue(
-                "Use of non-ASCII file names is not (yet) supported in"
-                " GC3Pie: %s: %s" %
-                (err.__class__.__name__, str(err)))
         except AttributeError:
             # `spec` is a list-like
             return ctor((Application.__convert_to_tuple(x) for x in spec),
@@ -1155,11 +1151,12 @@ class Application(Task):
     def __convert_to_tuple(val):
         """Auxiliary method for `io_spec_to_dict`:meth:, which see."""
         if isinstance(val, string_types):
-            l = str(val)
+            l = to_filesystem_path(val)
             r = os.path.basename(l)
             return (l, r)
         else:
-            return (str(val[0]), str(val[1]))
+            return (to_filesystem_path(val[0]),
+                    to_filesystem_path(val[1]))
 
     def __str__(self):
         try:
