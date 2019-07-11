@@ -27,6 +27,7 @@ __docformat__ = 'reStructuredText'
 # stdlib imports
 import atexit
 import csv
+import errno
 import itertools
 import os
 import sys
@@ -189,7 +190,7 @@ class Session(list):
             except IOError as err:
                 gc3libs.log.debug("Cannot load session '%s': %s", path, err)
                 # "No such file or directory" => create new session
-                if err.errno == os.errno.ENOENT:
+                if err.errno == errno.ENOENT:
                     # only create session if no task IDs were given
                     if create and not task_ids:
                         gc3libs.log.debug(
