@@ -3,8 +3,7 @@
 """
 Fake running applications, only useful for testing.
 """
-
-# Copyright (C) 2009-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -174,7 +173,7 @@ class NoOpLrms(LRMS):
         for prob, to_state in sorted(transitions.items()):
             if dice < prob:
                 log.debug(
-                    "Task %s transitions to state '%s'", app, state)
+                    "Task %s transitions to state '%s'", app, to_state)
                 # update resource state based on old and new app state
                 if app.execution.state == Run.State.SUBMITTED:
                     self.queued -= 1
