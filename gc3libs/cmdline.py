@@ -137,14 +137,16 @@ def nonnegative_int(num):
     1
     >>> nonnegative_int(1)
     1
-    >>> nonnegative_int('-1') # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-        ...
-    ArgumentTypeError: '-1' is not a non-negative integer number.
-    >>> nonnegative_int(-1) # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-        ...
-    ArgumentTypeError: '-1' is not a non-negative integer number.
+    >>> try:
+    ...   nonnegative_int('-1')
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err)
+    '-1' is not a non-negative integer number.
+    >>> try:
+    ...   nonnegative_int(-1)
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err)
+    '-1' is not a non-negative integer number.
 
     Please note that `0` and `'-0'` are ok:
 
@@ -164,10 +166,11 @@ def nonnegative_int(num):
     >>> nonnegative_int(0.1)
     0
 
-    >>> nonnegative_int('ThisWillRaiseAnException') # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-        ...
-    ArgumentTypeError: 'ThisWillRaiseAnException' is not a non-negative ...
+    >>> try:
+    ...   nonnegative_int('ThisWillRaiseAnException')
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    'ThisWillRaiseAnException' is not a non-negative ...
     """
     try:
         value = int(num)
@@ -190,53 +193,61 @@ def positive_int(num):
     1
     >>> positive_int(1)
     1
-    >>> positive_int('-1') # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '-1' is not a positive integer number.
-    >>> positive_int(-1) # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '-1' is not a positive integer number.
-    >>> positive_int(0) # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '0' is not a positive integer number.
+    >>> try:
+    ...   positive_int('-1')
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '-1' is not a positive integer number.
+    >>> try:
+    ...   positive_int(-1)
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '-1' is not a positive integer number.
+    >>> try:
+    ...   positive_int(0)
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '0' is not a positive integer number.
 
     Floats are ok too:
 
     >>> positive_int(3.14)
     3
 
-    but please take care that float *greater* than 0 will fail:
+    but please take care that float *greater* than 0 but still less
+    than 1 will fail:
 
-    >>> positive_int(0.1)
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '0.1' is not a positive integer number.
+    >>> try:
+    ...    positive_int(0.1)
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '0.1' is not a positive integer number.
 
-    Please note that `0` is NOT ok:
+    Also note that `0` is *not* OK:
 
-    >>> positive_int(-0) # doctest: +ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '0' is not a positive integer number.
-    >>> positive_int('0') # doctest: +ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '0' is not a positive integer number.
-    >>> positive_int('-0') # doctest: +ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '-0' is not a positive integer number.
+    >>> try:
+    ...   positive_int(-0)
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '0' is not a positive integer number.
+    >>> try:
+    ...   positive_int('0')
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '0' is not a positive integer number.
+    >>> try:
+    ...   positive_int('-0')
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '-0' is not a positive integer number.
 
     Any string which does cannot be converted to an integer will fail:
 
-    >>> positive_int('ThisWillRaiseAnException') # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-        ...
-    ArgumentTypeError: 'ThisWillRaiseAnException' is not a positive integer ...
-
+    >>> try:
+    ...   positive_int('ThisWillRaiseAnException')
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    'ThisWillRaiseAnException' is not a positive integer ...
     """
     try:
         value = int(num)
