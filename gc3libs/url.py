@@ -201,7 +201,7 @@ class Url(_UrlFields):
                     if urldata.scheme == 'file' \
                        and not os.path.isabs(path) \
                        and force_abs:
-                        path = os.path.isabs(path)
+                        path = os.path.abspath(path)
                     # Python 2.6 parses fragments only for http(s),
                     # for any other scheme, the fragment is returned as
                     # part of the path...
