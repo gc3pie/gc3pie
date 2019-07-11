@@ -196,22 +196,24 @@ class Url(_UrlFields):
                 try:
                     urldata = urllib.parse.urlsplit(
                         urlstring, scheme=scheme, allow_fragments=True)
+                    if urldata.path is not None:
+                        path = urldata.path
+                    if urldata.scheme == 'file' \
+                       and not os.path.isabs(path) \
+                       and force_abs:
+                        path = os.path.isabs(path)
                     # Python 2.6 parses fragments only for http(s),
                     # for any other scheme, the fragment is returned as
                     # part of the path...
-                    if '#' in urldata.path:
-                        path_, fragment_ = urldata.path.split('#')
+                    if '#' in path:
+                        path_, fragment_ = path.split('#')
                         urldata = urllib.parse.SplitResult(
                             urldata.scheme, urldata.netloc,
                             path_, urldata.query, fragment_)
-                    if urldata.scheme == 'file' and not os.path.isabs(
-                            urldata.path) and force_abs:
-                        urldata = urllib.parse.urlsplit(
-                            'file://' + os.path.abspath(urldata.path))
                     return _UrlFields.__new__(cls,
                         urldata.scheme or scheme,
                         urldata.netloc or netloc,
-                        urldata.path or path,
+                        path,
                         urldata.hostname or hostname,
                         urldata.port or port,
                         urldata.query or query,
