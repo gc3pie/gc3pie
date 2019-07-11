@@ -66,6 +66,23 @@ from gc3libs.quantity import Duration, Memory, MB
 def _parse_process_status(pstat):
     """
     Map `ps` process status letter to a `Run.State` label.
+
+    Running:
+
+        R: in run queue
+        S: interruptible sleep
+        D: uninterruptible sleep (Linux)
+        U: uninterruptible sleep (MacOSX)
+        I: idle (= sleeping > 20s, MacOSX)
+        W: paging (Linux, no longer valid since the 2.6.xx kernel)
+        Z: "zombie" process
+
+    Stopped:
+
+        T: stopped by job control signal
+        t: stopped by debugger during the tracing
+        X: dead (should never be seen)
+
     """
     # Check manpage of ``ps`` both on linux and MacOSX/BSD to know the meaning
     # of these statuses
@@ -672,14 +689,12 @@ class ShellcmdLrms(LRMS):
                 # cannot continue
                 raise
 
-
     @property
     def time_cmd(self):
         if not self._time_cmd_ok:
             self._time_cmd = self._locate_gnu_time()
             self._time_cmd_ok = True
         return self._time_cmd
-
 
     def _gather_machine_specs(self):
         """
@@ -705,7 +720,6 @@ class ShellcmdLrms(LRMS):
             self._init_total_memory()
             self._update_resource_usage_info()
 
-
     def _init_arch(self):
         arch = self._machine.get_architecture()
         if not (arch <= self.architecture):
@@ -724,7 +738,6 @@ class ShellcmdLrms(LRMS):
                     "it actually is `%s`" % (', '.join(self.architecture),
                                              ', '.join(arch)))
 
-
     def _init_max_cores(self):
         max_cores = self._machine.get_total_cores()
         if max_cores != self.max_cores:
@@ -734,7 +747,6 @@ class ShellcmdLrms(LRMS):
                 " Updating current value.",
                 self.name, self.max_cores, max_cores)
             self.max_cores = max_cores
-
 
     def _init_total_memory(self):
         self.total_memory = self._machine.get_total_memory()
@@ -747,7 +759,6 @@ class ShellcmdLrms(LRMS):
                 self.max_memory_per_core,
                 self.total_memory.to_str('%g%s', unit=Memory.MB))
             self.max_memory_per_core = self.total_memory
-
 
     def _locate_gnu_time(self):
         """
@@ -782,7 +793,6 @@ class ShellcmdLrms(LRMS):
             " configuration option in gc3pie.conf."
             .format(name=self.name))
 
-
     ## Bookkeeping
     #
     # The following methods deal with internal book-keeping: how much
@@ -812,7 +822,6 @@ class ShellcmdLrms(LRMS):
         return sum(1 for info in list(self._job_infos.values())
                    if not info['terminated'])
 
-
     def count_used_cores(self):
         """
         Return total nr. of cores used by running tasks.
@@ -823,7 +832,6 @@ class ShellcmdLrms(LRMS):
         return sum(info['requested_cores']
                    for info in list(self._job_infos.values())
                    if not info['terminated'])
-
 
     def count_used_memory(self):
         """
