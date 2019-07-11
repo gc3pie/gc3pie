@@ -523,8 +523,9 @@ class Quantity(object):
     The name of the base unit is given as argument to the metaclass
     instance::
 
-      >>> class Memory1(object):
-      ...   __metaclass__ = Quantity('B')
+      >>> @add_metaclass(Quantity('B'))
+      ... class Memory1(object):
+      ...   pass
       ...
       >>> B = Memory1('1 B')
       >>> print (2*B)
@@ -534,8 +535,9 @@ class Quantity(object):
     key gives the unit name, and its value gives the ratio of the new
     unit to the base unit.  For example::
 
-      >>> class Memory2(object):
-      ...   __metaclass__ = Quantity('B', kB=1000, MB=1000*1000)
+      >>> @add_metaclass(Quantity('B', kB=1000, MB=1000*1000))
+      ... class Memory2(object):
+      ...   pass
       ...
       >>> a_thousand_kB = Memory2('1000kB')
       >>> MB = Memory2('1   MB')
