@@ -342,7 +342,7 @@ class ApplicationWithCachedResults(gc3libs.Application):
 # and then we create our GrayScaleConvertApplication as::
 
 # An useful function to copy files
-from gc3libs.utils import copyfile
+from shutil import copyfile
 
 class GrayScaleConvertApplication(ApplicationWithCachedResults):
     def __init__(self, input_image, grayscaled_image, output_dir, warhol_dir, resize=None, **extra_args):

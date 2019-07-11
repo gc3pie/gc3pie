@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+
 """
 Generic Python programming utility functions.
 
@@ -8,6 +9,7 @@ function or class belongs in here is the following: place a function
 or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
+
 # Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -22,7 +24,7 @@ sources of a different project and it would not stop working.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 from __future__ import absolute_import, print_function, unicode_literals
 from future import standard_library
 standard_library.install_aliases()
@@ -257,67 +259,6 @@ def cat(*args, **extra_args):
             arg = open(arg, 'r')
         for line in arg:
             output.write(line)
-
-
-def copyfile(src, dst, overwrite=False, changed_only=True, link=False):
-    """
-    Copy a file from `src` to `dst`; return `True` if the copy was
-    actually made.
-
-    If `overwrite` is ``False`` (default), an existing destination entry
-    is left unchanged and `False` is returned.
-
-    If `overwrite` is ``True``, then `changed_only` determines
-    if the destination file is overwritten:
-
-    - if `changed_only` is ``True`` (default), then destination is
-      overwritten if and only if it has a different size or has been
-      modified less recently than the source;
-
-    - if `changed_only` is ``False``, then the destination is
-      overwritten unconditionally.
-
-    If `link` is `True`, an attempt at hard-linking is done first;
-    failing that, we copy the source file onto the destination
-    one. Permission bits and modification times are copied as well.
-
-    If `dst` is a directory, a file with the same basename as `src` is
-    created (or overwritten) in the directory specified.
-
-    Return ``True`` or ``False``, depending on whether the source file
-    was actually copied (or linked) to the destination.
-    """
-    if os.path.isdir(dst):
-        dst = os.path.join(dst, os.path.basename(src))
-    if os.path.exists(dst) and not overwrite:
-        return False
-    if samefile(src, dst):
-        return False
-    try:
-        if not os.path.exists(dst):
-            dstdir = dirname(dst)
-            if not os.path.exists(dstdir):
-                os.makedirs(dstdir)
-        else:
-            # `dst` exists, check for changes
-            if changed_only:
-                sstat = os.stat(src)
-                dstat = os.stat(dst)
-                if (sstat.st_size ==
-                        dstat.st_size and sstat.st_mtime <= dstat.st_mtime):
-                    # same size and destination more recent, do not copy
-                    return False
-        if link:
-            try:
-                os.link(src, dst)
-            except OSError:
-                # retry with normal copy
-                shutil.copy2(src, dst)
-        else:
-            shutil.copy2(src, dst)
-    except WindowsError:
-        pass
-    return True
 
 
 def deploy_configuration_file(filename, template_filename=None):

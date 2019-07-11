@@ -26,6 +26,14 @@ __changelog__ = """
 """
 __docformat__ = 'reStructuredText'
 
+# std module imports
+import numpy as np
+import os
+import re
+import shutil
+import sys
+import time
+import datetime
 
 # Calling syntax one4all:
 # -b ~/workspace/fpProj/model/base/ -x ~/workspace/fpProj/model/bin/forwardPremiumOut -e ~/workspace/fpProj/empirical/ -C 16 -NP 8 -xVars 'EA sigmaA' -xVarsDom '0.8 0.94 0.004 0.006' -sv info -t one4all --itermax 1 --countryList 'AU DE' -J 1000 -X i686 -r localhost --norm "fpSqr2" --initialPop "" -N
@@ -39,23 +47,14 @@ if __name__ == '__main__':
         path2Pymods = os.path.join(os.path.dirname(__file__), '../')
         if not sys.path.count(path2Pymods):
             sys.path.append(path2Pymods)
-        from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
         if 'gParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up.
-            rmFilesAndFolders(curPath)
+            shutil.rmtree(curPath)
 
 if __name__ == "__main__":
     import gParaSearch
 
-# std module imports
-import numpy as np
-import os
-import re
-import shutil
-import sys
-import time
-import datetime
 
 # gc3 library imports
 import gc3libs

@@ -32,7 +32,8 @@ __docformat__ = 'reStructuredText'
 
 from __future__ import absolute_import, print_function
 import shutil
-
+import sys
+import os
 
 # Calls: -x /home/benjamin/workspace/fpProj/model/bin/forwardPremiumOut -b ../base/ para.loop  -C 1 -N -X i686
 # 5-x /home/benjamin/workspace/idrisk/bin/idRiskOut -b ../base/ para.loop  -C 1 -N -X i686
@@ -40,22 +41,20 @@ import shutil
 
 # Remove all files in curPath if -N option specified.
 if __name__ == '__main__':
-    import sys
+
     if '-N' in sys.argv:
-        import os, shutil
         path2Pymods = os.path.join(os.path.dirname(__file__), '../')
         if not sys.path.count(path2Pymods):
             sys.path.append(path2Pymods)
-        from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
         if 'gIdRisk.csv' in filesAndFolder or 'idRiskParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up.
             if 'para.loop' in os.listdir(os.getcwd()):
                 shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
-                rmFilesAndFolders(curPath)
+                shutil.rmtree(curPath)
                 shutil.copyfile(os.path.join('/tmp', 'para.loop'), os.path.join(curPath, 'para.loop'))
             else:
-                rmFilesAndFolders(curPath)
+                shutil.rmtree(curPath)
 
 
 # ugly workaround for Issue 95,

@@ -46,17 +46,16 @@ if __name__ == '__main__':
         path2Pymods = os.path.join(os.path.dirname(__file__), '../')
         if not sys.path.count(path2Pymods):
             sys.path.append(path2Pymods)
-        from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
         if 'taskColAppPot.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
             if 'para.loop' in os.listdir(os.getcwd()):
                 shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
-                rmFilesAndFolders(curPath)
+                shutil.rmtree(curPath)
                 shutil.copyfile(os.path.join('/tmp', 'para.loop'), os.path.join(curPath, 'para.loop'))
                 os.remove(os.path.join('/tmp', 'para.loop'))
-            else: 
-                rmFilesAndFolders(curPath)
+            else:
+                shutil.rmtree(curPath)
 
 if __name__ == "__main__":
     import taskColAppPot

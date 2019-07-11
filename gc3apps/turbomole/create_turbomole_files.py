@@ -323,7 +323,7 @@ controlled with the ``--bas``, ``--jkbas``, ``--cbas`` and
         ridft_dir = os.path.join(work_dir, 'ridft')
         gc3libs.utils.mkdir(ridft_dir)
         ridft_coord = os.path.join(ridft_dir, 'coord')
-        gc3libs.utils.copyfile(coord, ridft_coord)
+        shutil.copyfile(coord, ridft_coord)
         ridft_define_in = self._make_define_in(ridft_dir, ridft_in)
         gc3libs.log.info("Created RIDFT input files in directory '%s'",
                          ridft_dir)
@@ -334,7 +334,7 @@ controlled with the ``--bas``, ``--jkbas``, ``--cbas`` and
             ricc2_dir = os.path.join(work_dir,
                                      'cbas-%s/cabs-%s/ricc2' % (cbas, cabs))
             gc3libs.utils.mkdir(ricc2_dir)
-            gc3libs.utils.copyfile(ridft_coord, ricc2_dir)
+            shutil.copyfile(ridft_coord, ricc2_dir)
             ricc2_define_in = self._make_define_in(ricc2_dir, ricc2_in)
             gc3libs.log.info("Created RICC2 input files in directory '%s'",
                              ricc2_dir)

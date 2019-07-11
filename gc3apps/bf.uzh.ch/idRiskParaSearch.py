@@ -33,7 +33,8 @@ __docformat__ = 'reStructuredText'
 # std module imports
 from __future__ import absolute_import, print_function
 import numpy as np
-import os, sys
+import os
+import sys
 import shutil
 import copy
 import scipy.optimize
@@ -57,21 +58,19 @@ if not sys.path.count(path2Src):
 if __name__ == '__main__':    
     import sys
     if '-N' in sys.argv:
-        import os, shutil
         path2Pymods = os.path.join(os.path.dirname(__file__), '../')
         if not sys.path.count(path2Pymods):
             sys.path.append(path2Pymods)
-        from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
         if 'gc3IdRisk.csv' in filesAndFolder or 'idRiskParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up. 
             if 'para.loop' in os.listdir(os.getcwd()):
                 shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
-                rmFilesAndFolders(curPath)
+                shutil.rmtree(curPath)
                 shutil.copyfile(os.path.join('/tmp', 'para.loop'), os.path.join(curPath, 'para.loop'))
                 os.remove(os.path.join('/tmp', 'para.loop'))
-            else: 
-                rmFilesAndFolders(curPath)
+            else:
+                shutil.rmtree(curPath)
 # Call: 
 # -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b /home/benjamin/workspace/idrisk/model/base para.loop -xVars 'wBarLower' -xVarsDom '-0.2 0.2 ' -target_fx '-0.1' -convCrit '4.9e-2 -sv info  -C 10 -N
 

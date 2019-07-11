@@ -398,7 +398,7 @@ class BasisSweepPasses(StagedTaskCollection):
         gc3libs.utils.mkdir(self.work_dir)
         ridft_dir = os.path.join(self.work_dir, 'ridft')
         gc3libs.utils.mkdir(ridft_dir)
-        gc3libs.utils.copyfile(self.coord, os.path.join(ridft_dir, 'coord'))
+        shutil.copyfile(self.coord, os.path.join(ridft_dir, 'coord'))
         ridft_define_in = _make_define_in(ridft_dir, self.ridft_in)
         ridft_output_dir =  os.path.join(ridft_dir, 'output')
         # application to run in pass 1
@@ -445,7 +445,7 @@ class BasisSweepPasses(StagedTaskCollection):
             ricc2_dir = os.path.join(self.work_dir,
                                      'cbas-%s/cabs-%s/ricc2' % (cbas, cabs))
             gc3libs.utils.mkdir(ricc2_dir)
-            gc3libs.utils.copyfile(ridft_coord, ricc2_dir)
+            shutil.copyfile(ridft_coord, ricc2_dir)
             ricc2_define_in = _make_define_in(ricc2_dir, ricc2_in)
             ricc2_output_dir = os.path.join(ricc2_dir, 'output')
             # guess duration of the RICC2 job
