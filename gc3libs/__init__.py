@@ -348,13 +348,6 @@ class Task(Persistable, Struct):
                     "Task object is not attached to any controller.")
             return throw_error
 
-    __no_controller = __NoController()
-    """
-    A class-shared fake "controller" object.
-
-    Used for marking detached `Task`:class: objects.
-    """
-
     def detach(self):
         """
         Remove any reference to the current grid interface.  After
@@ -366,7 +359,7 @@ class Task(Persistable, Struct):
                 self._controller.remove(self)
             except:
                 pass
-            self._controller = Task.__no_controller
+            self._controller = self.__NoController()
             self._attached = False
 
     # interface with pickle/gc3libs.persistence: do not save the
