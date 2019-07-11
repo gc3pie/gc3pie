@@ -632,7 +632,7 @@ class Configuration(gc3libs.utils.Struct):
                 try:
                     mod = __import__(modname,
                                      globals(), locals(),
-                                     [clsname], -1)
+                                     [clsname], 0)
                     cls = getattr(mod, clsname)
                 except (ImportError, AttributeError) as err:
                     raise gc3libs.exceptions.Error(
