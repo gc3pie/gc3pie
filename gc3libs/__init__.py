@@ -1795,8 +1795,8 @@ class Run(Struct):
         Getting the value of the `info` attribute returns the last
         message entered in the log::
 
-          >>> j1.info # doctest: +ELLIPSIS
-          u'a second message ...'
+          >>> print(j1.info) # doctest: +ELLIPSIS
+          a second message ...
 
         """
         return locals()
