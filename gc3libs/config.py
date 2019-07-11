@@ -28,15 +28,19 @@ from builtins import zip
 from builtins import str
 
 # stdlib imports
-try:
-    # Python 2
-    import ConfigParser as configparser
-except ImportError:
-    # Python 3
-    import configparser
 import inspect
 import os
 import re
+import sys
+if sys.version_info[0] == 2:
+    from ConfigParser import SafeConfigParser
+    def make_config_parser():
+        return SafeConfigParser()
+else:
+    # `SafeConfigParser` was deprecated in Py3 in favor of `ConfigParser`
+    from configparser import ConfigParser
+    def make_config_parser():
+        return ConfigParser(strict=False)
 
 # GC3Pie imports
 import gc3libs
@@ -333,7 +337,7 @@ class Configuration(gc3libs.utils.Struct):
         resources = defaultdict(dict)
         auths = defaultdict(dict)
 
-        parser = configparser.SafeConfigParser()
+        parser = make_config_parser()
         try:
             parser.readfp(stream, filename)
         except configparser.Error as err:
