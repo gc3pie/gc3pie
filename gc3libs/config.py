@@ -36,11 +36,16 @@ if sys.version_info[0] == 2:
     from ConfigParser import SafeConfigParser
     def make_config_parser():
         return SafeConfigParser()
+    def read_config_lines(parser, stream, source):
+        return parser.readfp(stream, source)
 else:
     # `SafeConfigParser` was deprecated in Py3 in favor of `ConfigParser`
     from configparser import ConfigParser
     def make_config_parser():
         return ConfigParser(strict=False)
+    # `readfp()` is deprecated since Py3.2
+    def read_config_lines(parser, stream, source):
+        return parser.read_file(stream, source)
 
 # GC3Pie imports
 import gc3libs
@@ -339,7 +344,7 @@ class Configuration(gc3libs.utils.Struct):
 
         parser = make_config_parser()
         try:
-            parser.readfp(stream, filename)
+            read_config_lines(parser, stream, filename)
         except configparser.Error as err:
             if filename is None:
                 try:
