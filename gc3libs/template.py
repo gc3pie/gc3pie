@@ -35,15 +35,9 @@ __docformat__ = 'reStructuredText'
 
 
 import string
+import itertools
 
-
-try:
-    import itertools
-    SetProductIterator = itertools.product
-except:
-    # use our own implementation, in case `itertools` does not (yet)
-    # provide the set-product
-    from gc3libs.compat.set_product_iterator import SetProductIterator
+SetProductIterator = itertools.product
 
 
 class Template(object):
