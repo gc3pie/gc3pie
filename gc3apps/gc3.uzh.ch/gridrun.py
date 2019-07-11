@@ -173,7 +173,7 @@ to the remote system as the command to be executed.
             if 'from' == kind:
                 gc3libs.utils.test_file(value, os.R_OK,
                                         exception=gc3libs.exceptions.InvalidUsage)
-                self.subst[name] = [i.strip() for i in open(value, 'r').read()]
+                self.subst[name] = [i.strip() for i in open(value, 'r')]
                 gc3libs.log.info(
                     "Reading values for %s from file '%s'", name, value)
             # (2) list of values
