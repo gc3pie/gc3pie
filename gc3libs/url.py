@@ -239,6 +239,13 @@ class Url(_UrlFields):
                 self.scheme, self.netloc, self.path, self.hostname, self.port,
                 self.query, self.username, self.password)
 
+    # In Py3, for some reason `Url` does not inherit `_UrlFields`'
+    # definition of `__hash__()`, thus leading to a "Unhashable type:
+    # Url" errors.  So let's be explicit and state that a `Url` is
+    # nothing but a `_UrlField` with some convenience methods added.
+    def __hash__(self):
+        return _UrlFields.__hash__(self)
+
     def __repr__(self):
         """
         Return a printed representation of this object, such that
