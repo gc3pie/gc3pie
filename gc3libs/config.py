@@ -526,7 +526,7 @@ class Configuration(gc3libs.utils.Struct):
                         filename)
                     config_items[key] = changed[value]
 
-    _path_key_regexp = re.compile('^(\w+_)?(prologue|epilogue)$')
+    _path_key_regexp = re.compile(r'^(\w+_)?(prologue|epilogue)$')
 
     @staticmethod
     def _perform_filename_conversion(config_items, path_regexp, filename):
