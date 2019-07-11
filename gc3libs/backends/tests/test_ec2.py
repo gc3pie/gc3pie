@@ -86,31 +86,45 @@ class TestVMPool(object):
         assert self.pool2._vm_cache == {'a': self.vm1, 'b': self.vm2}
 
     def test_repr(self):
-        assert repr(self.pool0) == "set([])"
-        # representation of unicode strings differs on Py2 and Py3
-        assert repr(self.pool1) in ["set(['a'])", "set([u'a'])"]
+        # representation of empty sets differs in Py2 and Py3 ...
+        assert repr(self.pool0) in ["set([])", "set()"]
+        # ... also representation of unicode strings differs on Py2 and Py3
+        assert repr(self.pool1) in ["{'a'}", "set(['a'])", "set([u'a'])"]
         # ...and also sets do not have predictable representation
         assert repr(self.pool2) in [
+            # Py2
             "set(['a', 'b'])",
             "set(['b', 'a'])",
             "set([u'a', u'b'])",
             "set([u'b', u'a'])",
+            # Py3
+            "{'a', 'b'}",
+            "{'b', 'a'}",
         ]
 
 
     def test_str(self):
-        assert str(self.pool0) == "VMPool('pool0') : set([])"
+        # representation of empty sets differs in Py2 and Py3 ...
+        assert str(self.pool0) in [
+            "VMPool('pool0') : set()",
+            "VMPool('pool0') : set([])",
+        ]
         # representation of unicode strings differs on Py2 and Py3
         assert str(self.pool1) in [
+            "VMPool('pool1') : {'a'}",
             "VMPool('pool1') : set(['a'])",
             "VMPool('pool1') : set([u'a'])",
         ]
         # also sets do not have predictable representation
         assert str(self.pool2) in [
+            # Py2
             "VMPool('pool2') : set(['a', 'b'])",
             "VMPool('pool2') : set(['b', 'a'])",
             "VMPool('pool2') : set([u'a', u'b'])",
             "VMPool('pool2') : set([u'b', u'a'])",
+            # Py3
+            "VMPool('pool2') : {'a', 'b'}",
+            "VMPool('pool2') : {'b', 'a'}",
         ]
 
     def test_add_remove(self):
