@@ -390,9 +390,9 @@ class ExponentialBackoff(object):
     so you can just retrieve waiting times with the `.next()` method,
     or by looping over it::
 
-      >>> random.seed(314) # not-so-random for testing purposes...
-      >>> list(ExponentialBackoff())
-      [0.0, 0.0, 0.0, 0.25, 0.15000000000000002, 0.30000000000000004]
+      >>> lapses = list(ExponentialBackoff(max_retries=7))
+      >>> len(lapses)
+      8
 
     .. _`exponential backoff`: http://goo.gl/PxVICA
 
@@ -743,11 +743,12 @@ def irange(start, stop, step=1):
 
     Of course, a null `step` is not allowed::
 
-      >>> list(irange(1, 2, 0))
-      Traceback (most recent call last):
-        ...
-      AssertionError: Null step in irange.
-
+      >>> try:
+      ...   list(irange(1, 2, 0))
+      ... except AssertionError as err:
+      ...   print(err)
+      Null step in irange.
+      ...
     """
     assert float(step) != 0.0, "Null step in irange."
     value = start
