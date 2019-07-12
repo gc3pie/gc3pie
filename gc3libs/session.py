@@ -399,7 +399,7 @@ class Session(list):
 
         Iteration is done in a breadth-first manner.
         """
-       __slots__ = ('_queue')
+        __slots__ = ('_queue')
 
         def __init__(self, toplevel=None):
             self._queue = []
