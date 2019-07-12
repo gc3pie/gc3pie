@@ -1639,7 +1639,7 @@ class PlusInfinity(object):
 # to make `Struct` inherit from `object` otherwise we loose properties
 # when setting/pickling/unpickling and *very importantly* the ability to
 # use `@property` ...
-class Struct(DictMixin, object):
+class Struct(object, DictMixin):
     """
     A `dict`-like object, whose keys can be accessed with the usual
     '[...]' lookup syntax, or with the '.' get attribute syntax.
