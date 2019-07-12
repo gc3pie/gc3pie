@@ -34,6 +34,7 @@ import re
 import sys
 if sys.version_info[0] == 2:
     from ConfigParser import SafeConfigParser
+    from ConfigParser import Error as ConfigParserError
     def make_config_parser():
         return SafeConfigParser()
     def read_config_lines(parser, stream, source):
@@ -41,6 +42,7 @@ if sys.version_info[0] == 2:
 else:
     # `SafeConfigParser` was deprecated in Py3 in favor of `ConfigParser`
     from configparser import ConfigParser
+    from configparser import Error as ConfigParserError
     def make_config_parser():
         return ConfigParser(strict=False)
     # `readfp()` is deprecated since Py3.2
@@ -345,7 +347,7 @@ class Configuration(gc3libs.utils.Struct):
         parser = make_config_parser()
         try:
             read_config_lines(parser, stream, filename)
-        except configparser.Error as err:
+        except ConfigParserError as err:
             if filename is None:
                 try:
                     filename = stream.name
