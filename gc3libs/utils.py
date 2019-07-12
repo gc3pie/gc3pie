@@ -746,9 +746,7 @@ def irange(start, stop, step=1):
       >>> try:
       ...   list(irange(1, 2, 0))
       ... except AssertionError as err:
-      ...   print(err)
-      Null step in irange.
-      ...
+      ...   assert 'Null step in irange.' in str(err)
     """
     assert float(step) != 0.0, "Null step in irange."
     value = start
