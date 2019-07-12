@@ -35,9 +35,14 @@ __docformat__ = 'reStructuredText'
 
 
 from collections import defaultdict, deque
-from functools import total_ordering
+try:
+    # Python 3
+    from collections.abc import Mapping, MutableMapping
+except ImportError:
+    from collections import Mapping, MutableMapping
 import contextlib
 import functools
+from functools import total_ordering
 import os
 import os.path
 if bytes == str:
@@ -55,12 +60,6 @@ import sys
 import tempfile
 import time
 import io as StringIO
-try:
-    # Python 2
-    from UserDict import DictMixin
-except ImportError:
-    # Python 3
-    from collections.abc import MutableMapping as DictMixin
 
 
 from gc3libs.compat._collections import OrderedDict
@@ -1276,7 +1275,7 @@ def prettyprint(
         sk = sk if sk[0] not in  u'\0 \t\r\n\x85\u2028\u2029-?:,[]{}#&*!|>\'\"%@`' else  "'%s'" % sk
         first = ''.join([leading_spaces, sk, ': '])
         if isinstance(
-                v, (dict, DictMixin, OrderedDict)):
+                v, (dict, Mapping, OrderedDict)):
             if maxdepth is None or maxdepth > 0:
                 if maxdepth is None:
                     depth = None
@@ -1637,7 +1636,7 @@ class PlusInfinity(object):
 # to make `Struct` inherit from `object` otherwise we loose properties
 # when setting/pickling/unpickling and *very importantly* the ability to
 # use `@property` ...
-class Struct(object, DictMixin):
+class Struct(MutableMapping):
     """
     A `dict`-like object, whose keys can be accessed with the usual
     '[...]' lookup syntax, or with the '.' get attribute syntax.
