@@ -1770,7 +1770,7 @@ def tempdir(**kwargs):
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 
-def test_file(path, mode, exception=RuntimeError, isdir=False):
+def check_file_access(path, mode, exception=RuntimeError, isdir=False):
     """
     Test for access to a path; if access is not granted, raise an
     instance of `exception` with an appropriate error message.
@@ -1784,18 +1784,18 @@ def test_file(path, mode, exception=RuntimeError, isdir=False):
 
     If the test succeeds, `True` is returned::
 
-      >>> test_file('/bin/cat', os.F_OK)
+      >>> check_file_access('/bin/cat', os.F_OK)
       True
-      >>> test_file('/bin/cat', os.R_OK)
+      >>> check_file_access('/bin/cat', os.R_OK)
       True
-      >>> test_file('/bin/cat', os.X_OK)
+      >>> check_file_access('/bin/cat', os.X_OK)
       True
-      >>> test_file('/tmp', os.X_OK)
+      >>> check_file_access('/tmp', os.X_OK)
       True
 
     However, if the test fails, then an exception is raised::
 
-      >>> test_file('/bin/cat', os.W_OK)
+      >>> check_file_access('/bin/cat', os.W_OK)
       Traceback (most recent call last):
         ...
       RuntimeError: Cannot write to file '/bin/cat'.
@@ -1803,10 +1803,10 @@ def test_file(path, mode, exception=RuntimeError, isdir=False):
     If the optional argument `isdir` is `True`, then additionally test
     that `path` points to a directory inode::
 
-      >>> test_file('/tmp', os.F_OK, isdir=True)
+      >>> check_file_access('/tmp', os.F_OK, isdir=True)
       True
 
-      >>> test_file('/bin/cat', os.F_OK, isdir=True)
+      >>> check_file_access('/bin/cat', os.F_OK, isdir=True)
       Traceback (most recent call last):
         ...
       RuntimeError: Expected '/bin/cat' to be a directory, but it's not.

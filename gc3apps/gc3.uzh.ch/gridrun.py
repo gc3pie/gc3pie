@@ -171,7 +171,7 @@ to the remote system as the command to be executed.
             kind = kind.lower()
             # (1) file name
             if 'from' == kind:
-                gc3libs.utils.test_file(value, os.R_OK,
+                gc3libs.utils.check_file_access(value, os.R_OK,
                                         exception=gc3libs.exceptions.InvalidUsage)
                 self.subst[name] = [i.strip() for i in open(value, 'r')]
                 gc3libs.log.info(
@@ -223,7 +223,7 @@ to the remote system as the command to be executed.
         # to be searched on the remote systems' PATH
         if os.path.exists(self.params.cmd):
             self.log.info("Uploading local file '%s' as executable.", self.params.cmd)
-            gc3libs.utils.test_file(self.params.cmd, os.R_OK|os.X_OK)
+            gc3libs.utils.check_file_access(self.params.cmd, os.R_OK|os.X_OK)
             executable = './' + os.path.basename(self.params.cmd)
             inputs[os.path.abspath(self.params.cmd)] = os.path.basename(self.params.cmd)
         else:

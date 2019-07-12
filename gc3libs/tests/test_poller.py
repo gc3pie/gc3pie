@@ -52,7 +52,7 @@ class TestPollers(object):
         shutil.rmtree(self.tmpdir)
 
 
-    def test_filepoller(self):
+    def check_file_accesspoller(self):
         poller = plr.FilePoller(self.tmpdir)
         assert self.tmpdir in poller._watched
 

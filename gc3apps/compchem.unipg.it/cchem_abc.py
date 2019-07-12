@@ -142,7 +142,7 @@ class ABCWorkflow(SessionBasedScript):
         self.abc_executable = self.params.args[0]
         if not os.path.isabs(self.abc_executable):
             self.abc_executable = os.path.abspath(self.abc_executable)
-        gc3libs.utils.test_file(self.abc_executable, os.R_OK|os.X_OK,
+        gc3libs.utils.check_file_access(self.abc_executable, os.R_OK|os.X_OK,
                                 gc3libs.exceptions.InvalidUsage)
 
         # build list of input files (w/ absolute path names)
@@ -150,7 +150,7 @@ class ABCWorkflow(SessionBasedScript):
         for path in self.params.args[1:]:
             if not os.path.isabs(path):
                 path = os.path.abspath(path)
-            gc3libs.utils.test_file(path, os.R_OK)
+            gc3libs.utils.check_file_access(path, os.R_OK)
             if os.path.isdir(path):
                 raise gc3libs.exceptions.InvalidUsage(
                     "Argument '%s' should be a file, but is a directory instead."

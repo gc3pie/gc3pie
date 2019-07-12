@@ -449,7 +449,7 @@ Read `.loop` files and execute the `housingOut` program accordingly.
         if os.path.isdir(self.params.executable):
             self.params.executable = os.path.join(self.params.executable,
                                                   'housing')
-        gc3libs.utils.test_file(self.params.executable, os.R_OK|os.X_OK,
+        gc3libs.utils.check_file_access(self.params.executable, os.R_OK|os.X_OK,
                                 gc3libs.exceptions.InvalidUsage)
 
     def run(self):

@@ -338,7 +338,7 @@ newly-created jobs so that this limit is never exceeded.
             raise gc3libs.exceptions.InvalidUsage(
                 "gc_gps command file '%s' does not exist;"
                 % self.params.command_file)
-        gc3libs.utils.test_file(self.params.command_file, os.R_OK,
+        gc3libs.utils.check_file_access(self.params.command_file, os.R_OK,
                                 gc3libs.exceptions.InvalidUsage)
 
         if self.params.input_dir and not os.path.isdir(self.params.input_dir):

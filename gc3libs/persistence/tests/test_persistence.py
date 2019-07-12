@@ -336,7 +336,7 @@ class TestFilesystemStore(GenericStoreChecks):
         shutil.rmtree(self.tmpdir)
 
     # XXX: there's nothing which is `FilesystemStore`-specific here!
-    def test_filesystemstorage_pickler_class(self):
+    def check_file_accesssystemstorage_pickler_class(self):
         """
         Check that `Persistable` instances are saved saparately.
 
