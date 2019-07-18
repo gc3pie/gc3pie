@@ -63,6 +63,7 @@ import io as StringIO
 
 
 from gc3libs.compat._collections import OrderedDict
+from gc3libs.compat._functools import total_ordering
 import lockfile
 
 import gc3libs
