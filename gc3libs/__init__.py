@@ -33,7 +33,7 @@ relevant aspects of the application being represented.
 from __future__ import absolute_import, print_function
 __docformat__ = 'reStructuredText'
 
-__version__ = '2.5.2'
+__version__ = '2.5.3'
 
 
 import inspect
