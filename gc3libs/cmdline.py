@@ -269,7 +269,7 @@ def valid_directory(path):
 
 def make_logger(verbosity, name=None, threshold=0, progname=None):
     loglevel = max(1, logging.WARNING - 10*max(0, verbosity - threshold))
-    return gc3libs.configure_logger(loglevel, progname or name or "gc3utils")
+    return gc3libs.configure_logger(loglevel, progname or name or "gc3pie")
 
 
 class _Script(cli.app.CommandLineApp):
@@ -463,7 +463,8 @@ class _Script(cli.app.CommandLineApp):
         super(_Script, self).pre_run()
 
         # setup GC3Libs logging
-        self.log = make_logger(self.params.verbose, 'gc3utils',
+        self.log = make_logger(self.params.verbose,
+                               name=self.name,
                                threshold=self.verbose_logging_threshold)
         self.log.info("Starting %s at %s; invoked as '%s'",
                       self.name, time.asctime(), str.join(' ', sys.argv))

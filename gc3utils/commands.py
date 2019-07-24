@@ -3,7 +3,7 @@
 """
 Implementation of the command-line front-ends.
 """
-# Copyright (C) 2009-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -74,7 +74,10 @@ class GC3UtilsScript(gc3libs.cmdline._Script):
         this package's version.
         """
         super(GC3UtilsScript, self).__init__(
-            main=self.main, version=__version__, **extra_args)
+            main=self.main,
+            version=__version__,
+            name='gc3utils',  # for logging purposes
+            **extra_args)
 
     ##
     # CUSTOMIZATION METHODS
