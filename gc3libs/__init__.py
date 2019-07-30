@@ -67,7 +67,7 @@ except ImportError:
 from gc3libs.events import TaskStateChange, TermStatusChange
 from gc3libs.quantity import MB, hours, minutes, seconds, MiB
 from gc3libs.compat._collections import OrderedDict
-from gc3libs.compat._2and3 import to_filesystem_path
+from gc3libs.compat.py2and3 import to_filesystem_path
 
 import gc3libs.exceptions
 from gc3libs.persistence import Persistable
