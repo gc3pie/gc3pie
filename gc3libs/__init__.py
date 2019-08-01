@@ -107,7 +107,7 @@ class Default(object):
     LSF_LRMS = 'lsf'
     SHELLCMD_LRMS = 'shellcmd'
     SLURM_LRMS = 'slurm'
-    SUBPROCESS_LRMS = 'subprocess'
+    SUBPROCESS_LRMS = 'shellcmd'
     EC2_LRMS = 'ec2'
     OPENSTACK_LRMS = 'openstack'
 
