@@ -1207,7 +1207,7 @@ class LocalTransport(Transport):
                 % (path, err.__class__.__name__, str(err)))
 
     @same_docstring_as(Transport.open)
-    def open(self, source, mode, bufsize=0):
+    def open(self, source, mode, bufsize=-1):
         try:
             return open(source, mode, bufsize)
         except Exception as ex:
