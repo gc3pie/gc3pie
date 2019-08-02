@@ -1,7 +1,7 @@
 # test_engine.py
 # -*- coding: utf-8 -*-
 #
-#  Copyright (C) 2015, 2018  University of Zurich. All rights reserved.
+#  Copyright (C) 2015, 2018, 2019  University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -309,9 +309,9 @@ def test_engine_redo_Task2():
         assert task.execution.state != Run.State.NEW
 
         # cannot redo a task that is not yet terminated
-        with pytest.raises(AssertionError,
-                           message="`Task.redo()` succeeded on task not yet finished"):
+        with pytest.raises(AssertionError):
             task.redo()
+            pytest.fail("`Task.redo()` succeeded on task not yet finished")
 
 
 def test_engine_redo_Task3():

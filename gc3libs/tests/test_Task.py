@@ -3,7 +3,7 @@
 """
 Test class `Task`:class:.
 """
-# Copyright (C) 2011, 2012, 2018,  University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2018, 2019,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -111,9 +111,9 @@ def test_task_redo2():
         assert task.execution.state == Run.State.SUBMITTED
 
         # cannot redo a task that is not yet terminated
-        with pytest.raises(AssertionError,
-                   message="`Task.redo()` succeeded on task not yet finished"):
+        with pytest.raises(AssertionError):
             task.redo()
+            pytest.fail("`Task.redo()` succeeded on task not yet finished")
 
 
 def test_task_redo3():
