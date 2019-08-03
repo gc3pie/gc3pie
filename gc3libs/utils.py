@@ -34,6 +34,7 @@ from builtins import object
 __docformat__ = 'reStructuredText'
 
 
+from codecs import decode
 from collections import defaultdict, deque
 try:
     # Python 3
@@ -43,6 +44,7 @@ except ImportError:
 import contextlib
 import functools
 from functools import total_ordering
+import locale
 import os
 import os.path
 if bytes == str:
@@ -71,6 +73,15 @@ import gc3libs.exceptions
 import gc3libs.debug
 from gc3libs.quantity import Duration, Memory
 
+
+if bytes == str:
+    # Python 2
+    text_str = unicode
+else:
+    # Python 3+
+    text_str = str
+
+
 # This fixes an issue with Python 2.4, which does not have
 # `shutl.WindowsError`
 try:
@@ -80,6 +91,7 @@ except AttributeError:
 
         """this exception should never be raised"""
     WindowsError = NeverUsedException
+
 
 # map suffix to pow multipliers. This is 2.6 compatible.
 BYTE_SUFFIX_TO_POW = dict(((l, i)) for i, l in enumerate('kmgtpezy', start=1))
@@ -539,6 +551,102 @@ def from_template(template, **extra_args):
         template_contents = template
     # substitute `extra_args` into `t` and return it
     return (template_contents % extra_args)
+
+
+def from_encoded_bytes(chars, encodings):
+    """
+    Convert *chars* to Python unicode string, trying different encodings.
+
+    Try converting byte string *chars* to a Python text string (type
+    ``unicode`` on Py2, type ``str`` on Py3), trying each of the
+    encodings specified until one of them succeeds.
+
+    If none of the encodings work, raise ``UnicodeDecodeError``.
+
+    :param bytes chars:
+      Byte string to convert to text
+    :param list encodings:
+      List of encodings to try, in sequence. (e.g., ``['utf-8', 'latin-1']``
+    :raises UnicodeDecodeError:
+      When none of the encodings can successfully convert the given byte string.
+    """
+    for encoding in encodings:
+        try:
+            return decode(chars, encoding)
+        except UnicodeDecodeError:
+            pass
+    raise UnicodeDecodeError(
+        "Cannot decode byte string {0!r}; tried encodings {1!r}."
+        .format(chars, encodings))
+
+
+def from_filesystem_bytes(chars):
+    """
+    Convert *chars* to Python unicode string, trying different encodings.
+
+    This function should be used to make a Python text string (type
+    ``unicode`` on Python 2, type ``str`` on Pythoin 3) out of a byte
+    string of characters that result from a filesystem lookup
+    operation.  Conversion to a text string is attempted using the
+    following encodings, in order:
+
+    #. the encoding determined by the current locale
+       (as determined by Python's ``locale.getlocale()``);
+    #. the "user's preferred encoding", as determined
+       by Python's ``locale.getpreferredencoding()``;
+    #. UTF-8 encoding;
+    #. direct map of byte values 0x0 through 0xff to the corresponding
+       Unicode code points.
+
+    The latter conversion will *not* be a valid text conversion (i.e.,
+    it will not preserve any text representation of the string),
+    unless the ISO-8859-1 (aka "latin-1") encoding is used.
+
+    However, the issue we need to solve here is the mismatch of
+    Python's use of text strings to represent path names with UNIX' C
+    library use of byte strings to represent the same.  Since the UNIX
+    kernel has no notion of character encoding in path names (as
+    opposed to Windows, which uses UNICODE since Win95), there is
+    actually no guarantee that a given file name can be decoded.  This
+    is particularly evident on multi-user Linux/UNIX systems where you
+    may be using e.g. the ``en_US.UTF-8`` locale but your Russian
+    colleague may be using KOI8-R...
+
+    :param bytes chars:
+      Byte string to convert to text
+    :raises UnicodeDecodeError:
+      When none of the encodings can successfully convert the given byte string.
+    """
+    encodings = [ 'utf-8', 'latin-1']
+    preferred = locale.getpreferredencoding()
+    if preferred:
+        encodings.insert(0, preferred)
+    default = locale.getlocale()[1]
+    if default:
+        encodings.insert(0, default)
+    return from_encoded_bytes(chars, encodings)
+
+
+def from_terminal_bytes(chars):
+    """
+    Convert *chars* to Python unicode string, using current locale encoding.
+
+    This function should be used to make a Python text string (type
+    ``unicode`` on Python 2, type ``str`` on Pythoin 3) out of a byte
+    string of characters that were inputed by users in a terminal
+    application (e.g., returned by ``input()`` or typed as
+    command-line arguments).
+
+    If the current locale encoding cannot be determined, then the byte
+    string is assumed to be an ASCII-only string.
+
+    :param bytes chars:
+      Byte string to convert to text
+    :raises UnicodeDecodeError:
+      When none of the encodings can successfully convert the given byte string.
+    """
+    return decode(chars, locale.getlocale()[1] or 'ascii')
+
 
 
 def get_available_physical_memory():
@@ -1863,6 +1971,47 @@ def to_bytes(s):
         return int(s)
     num, unit = s[:-1], s[-1]
     return int(num) * (k ** BYTE_SUFFIX_TO_POW[unit])
+
+
+def to_str(arg, origin='ascii'):
+    """
+    Convert *arg* to a Python text string.
+
+    If *arg* is already a text string (i.e., a ``unicode`` object in
+    Python 2, and a ``str`` object in Python 3), then return it
+    unchanged.  As an exception, if *arg* is ``None``, return
+    ``None`` (unchanged).
+
+    Second argument *origin* determines the handling of *arg* when
+    *arg* is a byte-string:
+
+    - if *origin* is ``'filesystem'`` then *arg* is converted to a
+      text string using `from_filesystem_bytes`:func: (which see);
+
+    - if *origin* is ``'terminal'`` then conversion of *arg* is
+      attempted using `from_terminal_bytes`:func: (which see);
+
+    - otherwise, *origin* is interpreted as an encoding name, and byte
+      string *arg* is decoded using that encoding's rules.
+
+    If *arg* is neither a text string nor a byte string, then
+    conversion to string is attempted using Python's built-in
+    ``str()`` function.
+    """
+    if arg is None:
+        return None
+    elif isinstance(arg, text_str):
+        return arg  # unmodified
+    elif isinstance(arg, bytes):
+        if origin == 'filesystem':
+            return from_filesystem_bytes(arg)
+        elif origin == 'terminal':
+            return from_terminal_bytes(arg)
+        else:
+            # interpret `origin` as encoding
+            return decode(arg, origin)
+    else:
+        return text_str(arg)
 
 
 def touch(path):

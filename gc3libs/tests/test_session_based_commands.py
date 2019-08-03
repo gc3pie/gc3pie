@@ -38,7 +38,7 @@ import pytest
 
 import gc3libs
 import gc3libs.session
-from gc3libs.utils import read_contents, write_contents
+from gc3libs.utils import read_contents, write_contents, to_str
 
 
 class _TestsCommon(object):
@@ -94,7 +94,7 @@ resourcedir = {basedir}/resource.d
             [sys.executable] + cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT)
-        stdout, _ = proc.communicate()
+        stdout = to_str(proc.communicate()[0], 'terminal')
         rc = proc.returncode
         gc3libs.log.debug(
             "Log of command `%s`:\n```\n%s\n```",

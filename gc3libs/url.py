@@ -29,6 +29,8 @@ from collections import namedtuple
 import os
 import urllib.parse
 
+from gc3libs.utils import to_str
+
 
 __docformat__ = 'reStructuredText'
 
@@ -159,11 +161,9 @@ class Url(_UrlFields):
     __slots__ = ()
 
     def __new__(cls, urlstring=None, force_abs=True,
-                # force all string constants to be `future`'s `newstr` type,
-                # see comment at lines 178 and ff. for explanation
-                scheme=str('file'), netloc=str(''), path=str(''),
-                hostname=None, port=None, query=str(''),
-                username=None, password=None, fragment=str('')):
+                scheme='file', netloc='', path='',
+                hostname=None, port=None, query='',
+                username=None, password=None, fragment=''):
         """
         Create a new `Url` object.  See the `Url`:class: documentation
         for invocation syntax.
@@ -190,12 +190,14 @@ class Url(_UrlFields):
                 # call, etc). So we convert `urlstring` to `future`'s
                 # `newstr` type to match the value of `scheme` set at
                 # load-time.
-                urlstring = str(urlstring)
+                urlstring = to_str(urlstring, 'filesystem')
 
                 # parse `urlstring` and use kwd arguments as default values
                 try:
                     urldata = urllib.parse.urlsplit(
-                        urlstring, scheme=scheme, allow_fragments=True)
+                        urlstring,
+                        scheme=to_str(scheme, 'filesystem'),
+                        allow_fragments=True)
                     if urldata.path is not None:
                         path = urldata.path
                     if urldata.scheme == 'file' \
@@ -211,15 +213,15 @@ class Url(_UrlFields):
                             urldata.scheme, urldata.netloc,
                             path_, urldata.query, fragment_)
                     return _UrlFields.__new__(cls,
-                        urldata.scheme or scheme,
-                        urldata.netloc or netloc,
+                        urldata.scheme or to_str(scheme, 'filesystem'),
+                        urldata.netloc or to_str(netloc, 'filesystem'),
                         path,
-                        urldata.hostname or hostname,
-                        urldata.port or port,
-                        urldata.query or query,
-                        urldata.username or username,
-                        urldata.password or password,
-                        urldata.fragment or fragment,
+                        urldata.hostname or to_str(hostname, 'filesystem'),
+                        urldata.port or to_str(port, 'filesystem'),
+                        urldata.query or to_str(query, 'filesystem'),
+                        urldata.username or to_str(username, 'filesystem'),
+                        urldata.password or to_str(password, 'filesystem'),
+                        urldata.fragment or to_str(fragment, 'filesystem'),
                     )
                 except (ValueError, TypeError, AttributeError) as err:
                     raise ValueError(
@@ -227,10 +229,17 @@ class Url(_UrlFields):
                         % (urlstring, err.__class__.__name__, err))
         else:
             # no `urlstring`, use kwd arguments
-            return _UrlFields.__new__(cls,
-                scheme, netloc, path,
-                hostname, port, query,
-                username, password, fragment
+            return _UrlFields.__new__(
+                cls,
+                to_str(scheme, 'filesystem'),
+                to_str(netloc, 'filesystem'),
+                to_str(path, 'filesystem'),
+                to_str(hostname, 'filesystem'),
+                to_str(port, 'filesystem'),
+                to_str(query, 'filesystem'),
+                to_str(username, 'filesystem'),
+                to_str(password, 'filesystem'),
+                to_str(fragment, 'filesystem')
             )
 
     def __getnewargs__(self):
@@ -491,7 +500,7 @@ class UrlKeyDict(dict):
     def __setitem__(self, key, value):
         try:
             dict.__setitem__(self, Url(key, self._force_abs), value)
-        except:
+        except (TypeError, ValueError):
             dict.__setitem__(self, key, value)
 
 

@@ -102,15 +102,18 @@ def test_valid_invocation():
     Application(**ma)
 
 
-def test_io_spec_to_dict_unicode():
+def test_io_spec_to_dict_mixed():
     # pylint: disable=import-error,protected-access,redefined-outer-name
-    import gc3libs.url
-    with pytest.raises(gc3libs.exceptions.InvalidValue):
-        Application._io_spec_to_dict(
-            gc3libs.url.UrlKeyDict, {
-                u'/tmp/\u0246': u'\u0246',
-                b'/tmp/b/': b'b'},
-            True)
+    from gc3libs.utils import text_str
+    d = Application._io_spec_to_dict(
+          gc3libs.url.UrlKeyDict, {
+              u'/tmp/\u0246': u'\u0246',
+              b'/tmp/b/': b'b'},
+        True)
+    for k, v in d.items():
+        # Python 3+
+        assert isinstance(v, text_str)
+        assert isinstance(k.path, text_str)
 
 
 # main: run tests

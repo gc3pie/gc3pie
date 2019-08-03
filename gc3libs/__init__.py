@@ -67,16 +67,15 @@ except ImportError:
 from gc3libs.events import TaskStateChange, TermStatusChange
 from gc3libs.quantity import MB, hours, minutes, seconds, MiB
 from gc3libs.compat._collections import OrderedDict
-from gc3libs.compat.py2and3 import to_filesystem_path
+
 
 import gc3libs.exceptions
 from gc3libs.persistence import Persistable
 from gc3libs.url import UrlKeyDict, UrlValueDict
 from gc3libs.utils import (deploy_configuration_file, Enum,
-                           History, Struct, safe_repr)
+                           History, Struct, safe_repr, to_str)
 # this needs to be defined before we import other GC3Libs modules, as
 # they may depend on it
-
 
 class Default(object):
     """
@@ -1139,7 +1138,7 @@ class Application(Task):
         """
         try:
             # is `spec` dict-like?
-            return ctor(((to_filesystem_path(k), to_filesystem_path(v))
+            return ctor(((to_str(k, 'filesystem'), to_str(v, 'filesystem'))
                          for k, v in spec.items()),
                         force_abs=force_abs)
         except AttributeError:
@@ -1151,12 +1150,12 @@ class Application(Task):
     def __convert_to_tuple(val):
         """Auxiliary method for `io_spec_to_dict`:meth:, which see."""
         if isinstance(val, string_types):
-            l = to_filesystem_path(val)
+            l = to_str(val, 'filesystem')
             r = os.path.basename(l)
             return (l, r)
         else:
-            return (to_filesystem_path(val[0]),
-                    to_filesystem_path(val[1]))
+            return (to_str(val[0], 'filesystem'),
+                    to_str(val[1], 'filesystem'))
 
     def __str__(self):
         try:

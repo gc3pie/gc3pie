@@ -39,6 +39,7 @@ import gc3libs.exceptions
 import gc3libs.persistence
 import gc3libs.persistence.store
 import gc3libs.utils
+from gc3libs.utils import to_str
 from gc3libs.workflow import TaskCollection
 
 
@@ -133,9 +134,11 @@ class Session(list):
     """
 
     INDEX_FILENAME = 'session_ids.txt'
-    STORE_URL_FILENAME = "store.url"
-    TIMESTAMP_FILES = {'start': 'created',
-                       'end': 'finished'}
+    STORE_URL_FILENAME = 'store.url'
+    TIMESTAMP_FILES = {
+        'start': 'created',
+        'end':   'finished'
+    }
 
     DEFAULT_JOBS_DIR = 'jobs'
 
@@ -174,7 +177,7 @@ class Session(list):
         ``True``, meaning that data from existing sessions is loaded
         into memory.
         """
-        self.path = os.path.abspath(path)
+        self.path = os.path.abspath(to_str(path, 'filesystem'))
         self.name = os.path.basename(self.path)
         self.tasks = {}
         # Session not yet created

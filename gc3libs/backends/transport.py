@@ -46,7 +46,7 @@ except ImportError:
 
 
 from gc3libs.quantity import Memory, MiB
-from gc3libs.utils import same_docstring_as, samefile
+from gc3libs.utils import same_docstring_as, samefile, to_str
 import gc3libs.exceptions
 
 
@@ -1080,6 +1080,12 @@ class LocalTransport(Transport):
             gc3libs.log.debug(
                 "Executed local command '%s', got exit status: %d",
                 command, exitcode)
+            # output and error streams are opened in binary mode, so
+            # we must convert them into text strings
+            if stdout:
+                stdout = to_str(stdout, 'terminal')
+            if stderr:
+                stderr = to_str(stdout, 'terminal')
             return exitcode, stdout, stderr
         except Exception as ex:
             raise gc3libs.exceptions.TransportError(
