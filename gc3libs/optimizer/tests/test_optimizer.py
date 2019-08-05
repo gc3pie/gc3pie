@@ -231,7 +231,7 @@ type=none
                                  #  ,'-vvvv'
                                  )
 
-        assert result.stderr.find('Converged:')
+        assert result.stderr.find(b'Converged:')
 
 
 # main: run tests
