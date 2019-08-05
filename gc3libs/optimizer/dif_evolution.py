@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-"""
+r"""
 This module implements a global optimization algorithm called Differential
 Evolution.
 
@@ -25,7 +25,7 @@ Some information related to Differential Evolution can be found in the following
 http://www.icsi.berkeley.edu/~storn/DeMat.zip hosted on http://www.icsi.berkeley.edu/~storn/code.html#deb1.
 """
 
-# Copyright (C) 2011, 2012, 2013  University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2013, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -260,7 +260,7 @@ class DifferentialEvolutionAlgorithm(EvolutionaryAlgorithm):
         elif (de_strategy == 'DE_best_with_jitter'):
             #origin = bm
             ui = bm + (pm1 - pm2) * ((1 - 0.9999) * \
-                       np.random.random_sample((pop_size, dim)) + de_step_size) 
+                       np.random.random_sample((pop_size, dim)) + de_step_size)
             ui = population * mpo + ui * mui
         elif (de_strategy == 'DE_rand_with_per_vector_dither'):
             #origin = pm3

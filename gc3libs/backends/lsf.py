@@ -341,9 +341,9 @@ _bsub_jobid_re = re.compile(r'^Job <(?P<jobid>\d+)> is submitted', re.I)
 # Wed Jul 11 14:11:48: Completed <exit>.
 
 _bjobs_long_re = re.compile(
-    '(?P<end_time>[a-zA-Z]+\s+[a-zA-Z]+\s+\d+\s+\d+:\d+:\d+):\s+'
-    'Exited with exit code (?P<exit_status>\d+)[^0-9]+'
-    'The CPU time used is (?P<used_cpu_time>[0-9\.]+)\s+'
+    r'(?P<end_time>[a-zA-Z]+\s+[a-zA-Z]+\s+\d+\s+\d+:\d+:\d+):\s+'
+    r'Exited with exit code (?P<exit_status>\d+)[^0-9]+'
+    r'The CPU time used is (?P<used_cpu_time>[0-9\.]+)\s+'
 )
 
 
@@ -662,18 +662,18 @@ class LsfLrms(batch.BatchSystem):
 
 
     _RESOURCE_USAGE_RE = re.compile(r'^\s+ CPU_T \s+ '
-                                    'WAIT \s+ '
-                                    'TURNAROUND \s+ '
-                                    'STATUS \s+ '
-                                    'HOG_FACTOR \s+ '
-                                    'MEM \s+ '
-                                    'SWAP', re.X)
+                                    r'WAIT \s+ '
+                                    r'TURNAROUND \s+ '
+                                    r'STATUS \s+ '
+                                    r'HOG_FACTOR \s+ '
+                                    r'MEM \s+ '
+                                    r'SWAP', re.X)
     _EVENT_RE = re.compile(
         r'^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)'
-        ' \s+ (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
-        ' \s+ [0-9]+ \s+ [0-9:]+:'
-        ' \s+ (?P<event>Submitted|Dispatched|Started|Completed|'
-        'Done\ successfully)', re.X)
+        r' \s+ (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+        r' \s+ [0-9]+ \s+ [0-9:]+:'
+        r' \s+ (?P<event>Submitted|Dispatched|Started|Completed|'
+        r'Done\ successfully)', re.X)
 
     @staticmethod
     def __parse_acct_output_w_bacct(stdout):
