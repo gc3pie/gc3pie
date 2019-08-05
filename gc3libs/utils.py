@@ -904,10 +904,11 @@ def irange(start, stop, step=1):
     Also unlike the built-in `range`, *both* `start` and `stop` have
     to be specified::
 
-      >>> irange(42)
-      Traceback (most recent call last):
-        ...
-      TypeError: irange() takes at least 2 arguments (1 given)
+      >>> try:
+      ...   irange(42)
+      ... except TypeError:
+      ...   print("missing required argument!")
+      missing required argument!
 
     Of course, a null `step` is not allowed::
 
@@ -1591,7 +1592,7 @@ def read_contents(path):
       >>> import tempfile
       >>> (fd, tmpfile) = tempfile.mkstemp()
       >>> w = open(tmpfile, 'w')
-      >>> w.write('hey')
+      >>> w.write('hey') and None  # make doctest compatible with Py2 and Py3
       >>> w.close()
       >>> read_contents(tmpfile)
       'hey'
@@ -1696,7 +1697,7 @@ def sh_quote_unsafe(arg):
     Double-quote a string for passing as argument to a shell command.
 
     Return a double-quoted string that expands to the contents of
-    `text` but still allows variable expansion and ``\``-escapes
+    `text` but still allows variable expansion and ``\\``-escapes
     processing by the UNIX shell.  Examples (note that backslashes are
     doubled because of Python's string read syntax)::
 
@@ -1740,11 +1741,11 @@ class PlusInfinity(object):
         >>> 1245632479102509834570124871023487235987634518745 < x
         True
 
-        >>> x > sys.maxint
+        >>> x > sys.maxsize
         True
-        >>> x < sys.maxint
+        >>> x < sys.maxsize
         False
-        >>> sys.maxint < x
+        >>> sys.maxsize < x
         True
 
     `PlusInfinity` objects are actually larger than *any* given Python
@@ -1757,6 +1758,8 @@ class PlusInfinity(object):
 
     Relational operators try to return the correct value when
     comparing `PlusInfinity` to other instances of `PlusInfinity`::
+
+        >>> y = PlusInfinity()
         >>> x < y
         False
         >>> x <= y
@@ -2098,7 +2101,7 @@ def write_contents(path, data):
 
       >>> import tempfile
       >>> (fd, tmpfile) = tempfile.mkstemp()
-      >>> write_contents(tmpfile, 'big data here')
+      >>> write_contents(tmpfile, 'big data here') and None # discard return value on Py3
       >>> read_contents(tmpfile)
       'big data here'
 
