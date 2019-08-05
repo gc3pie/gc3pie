@@ -4,8 +4,7 @@
 This module provides a generic BatchSystem class from which all
 batch-like backends should inherit.
 """
-
-# Copyright (C) 2009-2018   University of Zurich. All rights reserved.
+# Copyright (C) 2009-2019   University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -462,7 +461,7 @@ class BatchSystem(LRMS):
                 # create temporary script name
                 script_filename = ('./script.%s.sh' % uuid.uuid4())
                 # save script to a temporary file and submit that one instead
-                local_script_file = tempfile.NamedTemporaryFile()
+                local_script_file = tempfile.NamedTemporaryFile(mode='wt')
                 local_script_file.write('#!/bin/sh\n')
                 # Add preamble file
                 prologue = self.get_prologue_script(app)

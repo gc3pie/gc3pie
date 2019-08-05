@@ -2,7 +2,7 @@
 #
 # -*- coding: utf-8 -*-
 #
-#  Copyright (C) 2010-2012, 2015, 2018  University of Zurich. All rights reserved.
+#  Copyright (C) 2010-2012, 2015, 2018, 2019  University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -268,7 +268,7 @@ def test_load_non_existing_file():
 
 def test_load_non_readable_file():
     """Test that `Configuration.load()` raises a `NoAccessibleConfigurationFile` exception if no configuration file can be read"""
-    with tempfile.NamedTemporaryFile(prefix=__name__) as tmpfile:
+    with tempfile.NamedTemporaryFile(prefix=__name__, mode='wt') as tmpfile:
         os.chmod(tmpfile.name, 0)
         with pytest.raises(gc3libs.exceptions.NoAccessibleConfigurationFile):
             # pylint: disable=unused-variable

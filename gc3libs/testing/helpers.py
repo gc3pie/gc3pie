@@ -3,8 +3,8 @@
 """
 Utility functions for use in unit test code.
 """
-
-#  Copyright (C) 2015, 2016, 2018  University of Zurich. All rights reserved.
+#
+#  Copyright (C) 2015, 2016, 2018, 2019  University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -136,7 +136,9 @@ auth = none
 override = no
             """)
     with NamedTemporaryFile(prefix='gc3libs.test.',
-                            suffix='.tmp', delete=(not keep)) as cfgfile:
+                            suffix='.tmp',
+                            mode='w+t',
+                            delete=(not keep)) as cfgfile:
         cfgfile.write(cfgtext)
         cfgfile.flush()
         yield cfgfile

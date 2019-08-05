@@ -3,8 +3,7 @@
 """
 Top-level classes for task execution and control.
 """
-
-# Copyright (C) 2009-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -824,7 +823,7 @@ class Core(object):
             #     'auto_enable_auth', self.auto_enable_auth)
             lrms = self.get_backend(job.resource_name)
             local_file = tempfile.NamedTemporaryFile(
-                suffix='.tmp', prefix='gc3libs.')
+                suffix='.tmp', prefix='gc3libs.', mode='w+t')
             lrms.peek(app, remote_filename, local_file, offset, size)
             local_file.flush()
             local_file.seek(0)

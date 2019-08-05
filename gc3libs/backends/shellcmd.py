@@ -1268,7 +1268,7 @@ class ShellcmdLrms(LRMS):
             wrapper_script_path = posixpath.join(wrapper_dir, self.WRAPPER_SCRIPT)
 
             # create the wrapper script
-            with self.transport.open(wrapper_script_path, 'w') as wrapper:
+            with self.transport.open(wrapper_script_path, 'wt') as wrapper:
                 wrapper.write(
                     r"""#!/bin/sh
                     echo $$ >'{pidfilename}'

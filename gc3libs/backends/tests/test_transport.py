@@ -99,7 +99,6 @@ class StubForTestTransport(object):
         with NamedTemporaryFile(prefix='gc3libs.test.',
                                 suffix='.tmp',
                                 mode='wt',
-                                buffering=-1,
                                 delete=False) as tmpfile:
             try:
                 path = tmpfile.name  # save for later
@@ -139,7 +138,6 @@ class StubForTestTransport(object):
         with NamedTemporaryFile(prefix='gc3libs.test.',
                                 suffix='.tmp',
                                 mode='wt',
-                                buffering=-1,
                                 delete=False) as tmpfile:
             try:
                 path = tmpfile.name  # save for later
