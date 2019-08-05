@@ -1075,7 +1075,7 @@ class Application(Task):
                     " generating UUID job name", self)
                 jobname = ("GC3Pie.%s.%s"
                            % (self.__class__.__name__, uuid.uuid4()))
-            elif str(jobname)[0] not in string.letters:
+            elif str(jobname)[0] not in string.ascii_letters:
                 gc3libs.log.warning(
                     "Supplied job name `%s` for %s does not start"
                     " with a letter; changing it to `GC3Pie.%s`"
