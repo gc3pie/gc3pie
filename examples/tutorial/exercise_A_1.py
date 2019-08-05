@@ -12,7 +12,7 @@ work on the source for `gdemo_simple.py`:
 """
 #
 #
-# Copyright (C) 2009-2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012, 2019 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -67,7 +67,7 @@ app = GdemoSimpleApp()
 
 # create an instance of Core. Read configuration from your default
 # configuration file
-cfg = gc3libs.config.Configuration(*gc3libs.Default.CONFIG_FILE_LOCATIONS,
+cfg = gc3libs.config.Configuration(*gc3libs.defaults.CONFIG_FILE_LOCATIONS,
                                    **{'auto_enable_auth': True})
 core = gc3libs.core.Core(cfg)
 

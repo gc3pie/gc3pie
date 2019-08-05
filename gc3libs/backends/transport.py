@@ -45,6 +45,7 @@ except ImportError:
     string_types = (str,)
 
 
+import gc3libs.defaults
 from gc3libs.quantity import Memory, MiB
 from gc3libs.utils import same_docstring_as, samefile, to_str
 import gc3libs.exceptions
@@ -472,13 +473,13 @@ class SshTransport(Transport):
         # init connection params
         self.username = None
         self.keyfile = None
-        self.port = gc3libs.Default.SSH_PORT
-        self.timeout = gc3libs.Default.SSH_CONNECT_TIMEOUT
+        self.port = gc3libs.defaults.SSH_PORT
+        self.timeout = gc3libs.defaults.SSH_CONNECT_TIMEOUT
         self.proxy_command = None
 
         # use SSH options, if available
         self._ssh_config = paramiko.SSHConfig()
-        config_filename = os.path.expanduser(ssh_config or gc3libs.Default.SSH_CONFIG_FILE)
+        config_filename = os.path.expanduser(ssh_config or gc3libs.defaults.SSH_CONFIG_FILE)
         if os.path.exists(config_filename):
             with open(config_filename, 'r') as config_file:
                 self._ssh_config.parse(config_file)

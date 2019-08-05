@@ -47,7 +47,7 @@ class FilesystemStore(Store):
     standard `pickle` module to serialize objects onto files.
 
     All objects are saved as files in the given directory (default:
-    `gc3libs.Default.JOBS_DIR`).  The file name is the object ID.
+    `gc3libs.defaults.JOBS_DIR`).  The file name is the object ID.
 
     If an object contains references to other `Persistable` objects,
     these are saved in the file they would have been saved if the
@@ -69,7 +69,7 @@ class FilesystemStore(Store):
     """
 
     def __init__(self,
-                 directory=gc3libs.Default.JOBS_DIR,
+                 directory=gc3libs.defaults.JOBS_DIR,
                  idfactory=IdFactory(),
                  protocol=DEFAULT_PROTOCOL,
                  **extra_args):

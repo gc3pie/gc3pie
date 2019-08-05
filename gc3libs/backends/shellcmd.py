@@ -52,7 +52,8 @@ from pkg_resources import Requirement
 import gc3libs
 import gc3libs.exceptions
 import gc3libs.backends.transport
-from gc3libs import Default, log, Run
+from gc3libs import log, Run
+import gc3libs.defaults
 from gc3libs.utils import same_docstring_as, Struct, sh_quote_safe, sh_quote_unsafe
 from gc3libs.backends import LRMS
 from gc3libs.quantity import Duration, Memory, MB
@@ -580,7 +581,7 @@ class ShellcmdLrms(LRMS):
                  frontend='localhost', transport='local',
                  time_cmd=None,
                  override='False',
-                 spooldir=Default.SPOOLDIR,
+                 spooldir=gc3libs.defaults.SPOOLDIR,
                  resourcedir=None,
                  # SSH-related options; ignored if `transport` is 'local'
                  ssh_config=None,

@@ -103,6 +103,7 @@ import yaml
 
 # interface to GC3Pie
 import gc3libs
+import gc3libs.defaults
 import gc3libs.config
 import gc3libs.core
 import gc3libs.exceptions
@@ -469,7 +470,7 @@ class _Script(cli.app.CommandLineApp):
 
         self.add_param("--config-files",
                        action="store",
-                       default=','.join(gc3libs.Default.CONFIG_FILE_LOCATIONS),
+                       default=','.join(gc3libs.defaults.CONFIG_FILE_LOCATIONS),
                        help="Comma separated list of configuration files",
                        )
 
@@ -607,7 +608,7 @@ class _Script(cli.app.CommandLineApp):
 
     def _make_config(
             self,
-            config_file_locations=gc3libs.Default.CONFIG_FILE_LOCATIONS,
+            config_file_locations=gc3libs.defaults.CONFIG_FILE_LOCATIONS,
             **extra_args):
         """
         Return a `gc3libs.config.Configuration`:class: instance configured

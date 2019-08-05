@@ -4,7 +4,7 @@
 Authentication support for accessing resources through the SSH protocol.
 """
 
-# Copyright (C) 2009-2011, 2015  University of Zurich. All rights reserved.
+# Copyright (C) 2009-2011, 2015, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -25,6 +25,7 @@ __docformat__ = 'reStructuredText'
 
 
 import gc3libs
+import gc3libs.defaults
 from gc3libs.authentication import Auth
 import gc3libs.exceptions
 
@@ -55,7 +56,7 @@ class SshAuth(object):
         if ssh_config is not None:
             self.ssh_config = ssh_config
         else:
-            self.ssh_config = gc3libs.Default.SSH_CONFIG_FILE
+            self.ssh_config = gc3libs.defaults.SSH_CONFIG_FILE
 
         # these need type conversion; if no value is supplied, use
         # `None` as doing otherwise would override settings from the

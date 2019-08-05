@@ -63,76 +63,30 @@ except ImportError:
     # Python 3
     string_types = (str,)
 
-
-from gc3libs.events import TaskStateChange, TermStatusChange
+import gc3libs.defaults
 from gc3libs.quantity import MB, hours, minutes, seconds, MiB
+from gc3libs.events import TaskStateChange, TermStatusChange
 from gc3libs.compat._collections import OrderedDict
-
 
 import gc3libs.exceptions
 from gc3libs.persistence import Persistable
 from gc3libs.url import UrlKeyDict, UrlValueDict
 from gc3libs.utils import (deploy_configuration_file, Enum,
                            History, Struct, safe_repr, to_str)
-# this needs to be defined before we import other GC3Libs modules, as
-# they may depend on it
 
-class Default(object):
-    """
-    A namespace for all constants and default values used in the
-    GC3Libs package.
-    """
+#
+# global constants
+#
 
-    RCDIR = os.path.join(os.path.expandvars('$HOME'), ".gc3")
-    CONFIG_FILE_LOCATIONS = [
-        # system-wide config file
-        "/etc/gc3/gc3pie.conf",
-        # virtualenv config file
-        os.path.expandvars("$VIRTUAL_ENV/etc/gc3/gc3pie.conf"),
-        # user-private config file: first look into `$GC3PIE_CONF`, and
-        # fall-back to `~/.gc3/gc3pie.conf`
-        os.environ.get('GC3PIE_CONF', os.path.join(RCDIR, "gc3pie.conf"))
-    ]
-    JOBS_DIR = os.path.join(RCDIR, "jobs")
-
-    # the ARC backends have been removed, but keep their names around
-    # so we can issue a warning if a user still has these resources in
-    # the configuration file
-    ARC0_LRMS = 'arc0'
-    ARC1_LRMS = 'arc1'
-
-    SGE_LRMS = 'sge'
-    PBS_LRMS = 'pbs'
-    LSF_LRMS = 'lsf'
-    SHELLCMD_LRMS = 'shellcmd'
-    SLURM_LRMS = 'slurm'
-    SUBPROCESS_LRMS = 'shellcmd'
-    EC2_LRMS = 'ec2'
-    OPENSTACK_LRMS = 'openstack'
-
-    # Transport information
-    SSH_CONFIG_FILE = '~/.ssh/config'
-    SSH_PORT = 22
-    SSH_CONNECT_TIMEOUT = 30
-
-    PEEK_FILE_SIZE = 120  # expressed in bytes
-
-    # Openstack default VM Operating System overhead
-    VM_OS_OVERHEAD = 512 * MiB
-
-    # time to cache lshosts/bjobs information for
-    LSF_CACHE_TIME = 30
-
-    # root path for the working directory of jobs;
-    # on batch systems, this should be visible from both
-    # the frontend and the compute nodes
-    SPOOLDIR = "$HOME/.gc3pie_jobs"
-
-
-# when used in the `output` attribute of an application,
-# it stands for "fetch the whole contents of the remote
-# directory"
 ANY_OUTPUT = '*'
+"""
+When used in the `output` attribute of an application,
+it stands for 'fetch the whole contents of the remote
+directory'.
+"""
+
+# for compatibility with GC3Pie <2.6.0
+Default = gc3libs.defaults
 
 
 # utility functions
@@ -207,10 +161,10 @@ def configure_logger(
 def _load_logging_configuration_file(name):
     if name is None:
         name = os.path.basename(sys.argv[0])
-    log_conf = os.path.join(Default.RCDIR, name + '.log.conf')
+    log_conf = os.path.join(gc3libs.defaults.RCDIR, name + '.log.conf')
     deploy_configuration_file(log_conf, "logging.conf.example")
     logging.config.fileConfig(log_conf, {
-        'RCDIR': Default.RCDIR,
+        'RCDIR': gc3libs.defaults.RCDIR,
         'HOMEDIR': os.path.expandvars('$HOME'),
         'HOSTNAME': platform.node(),
     })
@@ -2171,7 +2125,7 @@ def create_core(*conf_files, **extra_args):
     It accepts an optional list of configuration filenames.  Filenames
     containing a `~` or an environment variable reference, will be
     expanded automatically. If called without arguments, the paths
-    specified in `gc3libs.Default.CONFIG_FILE_LOCATIONS` will be
+    specified in `gc3libs.defaults.CONFIG_FILE_LOCATIONS` will be
     used.
 
     Any keyword argument matching the name of a parameter used by
@@ -2185,7 +2139,7 @@ def create_core(*conf_files, **extra_args):
         os.path.expandvars(
             os.path.expanduser(fname)) for fname in conf_files]
     if not conf_files:
-        conf_files = Default.CONFIG_FILE_LOCATIONS[:]
+        conf_files = gc3libs.defaults.CONFIG_FILE_LOCATIONS[:]
 
     # extract params specific to the `Core` instance
     core_specific_args = _split_specific_args(Core.__init__, extra_args)

@@ -6,7 +6,7 @@ Manage startup and teardown of cloud-based VMs to run applications.
 This only works on clouds implementing the OpenStack Compute API.
 """
 
-# Copyright (C) 2012-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2012-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -63,6 +63,7 @@ except ImportError as err:
 
 # GC3Pie imports
 import gc3libs
+import gc3libs.defaults
 from gc3libs.exceptions import \
     ConfigurationError, \
     LRMSSubmitError, \
@@ -82,7 +83,7 @@ from gc3libs.utils import cache_for, lookup
 from gc3libs.quantity import MiB
 
 
-available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
+available_subresource_types = [gc3libs.defaults.SHELLCMD_LRMS]
 
 ERROR_STATES = ['ERROR', 'UNNKNOWN']
 PENDING_STATES = ['BUILD', 'REBUILD', 'REBOOT', 'HARD_REBOOT',
@@ -119,7 +120,7 @@ class OpenStackLrms(LRMS):
                  os_region=None, image_id=None, os_auth_url=None,
                  instance_type=None, auth=None,
                  vm_pool_max_size=None, user_data=None,
-                 vm_os_overhead=gc3libs.Default.VM_OS_OVERHEAD,
+                 vm_os_overhead=gc3libs.defaults.VM_OS_OVERHEAD,
                  # extra args are used to instanciate "sub-resources"
                  **extra_args):
 
@@ -212,7 +213,7 @@ class OpenStackLrms(LRMS):
         # ShellcmdLrms by default trusts the configuration, instead of
         # checking the real amount of memory and number of cpus, but
         # we need the real values instead.
-        if self.subresource_type == gc3libs.Default.SHELLCMD_LRMS:
+        if self.subresource_type == gc3libs.defaults.SHELLCMD_LRMS:
             self.subresource_args['override'] = 'True'
 
         if image_id is None:

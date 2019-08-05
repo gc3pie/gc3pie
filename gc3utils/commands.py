@@ -45,6 +45,7 @@ from prettytable import PrettyTable
 
 # local modules
 from gc3libs import __version__, Run
+import gc3libs.defaults
 from gc3libs.quantity import Duration, Memory
 from gc3libs.session import Session, TemporarySession
 import gc3libs.cmdline
@@ -130,7 +131,7 @@ class GC3UtilsScript(gc3libs.cmdline._Script):
                        "--session",
                        action="store",
                        required=True,
-                       default=gc3libs.Default.JOBS_DIR,
+                       default=gc3libs.defaults.JOBS_DIR,
                        help="Directory where job information will be stored.")
 
     def pre_run(self):
@@ -1086,8 +1087,8 @@ as more lines are written to the given stream.
                             file_handle.close()
                             time.sleep(5)
                     else:
-                        estimated_size = gc3libs.Default.PEEK_FILE_SIZE * \
-                            self.params.num_lines
+                        estimated_size = (
+                            gc3libs.defaults.PEEK_FILE_SIZE * self.params.num_lines)
                         fh = app.peek(stream, offset=-estimated_size,
                                       size=estimated_size)
                         for line in fh.readlines()[-(self.params.num_lines):]:

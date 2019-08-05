@@ -48,6 +48,7 @@ import Crypto.PublicKey.RSA
 
 # GC3Pie imports
 import gc3libs
+import gc3libs.defaults
 from gc3libs.exceptions import UnrecoverableError, \
     ConfigurationError, MaximumCapacityReached, ResourceNotReady, \
     UnrecoverableAuthError, TransportError
@@ -64,7 +65,7 @@ __docformat__ = 'reStructuredText'
 
 
 ## module-level constants
-available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
+available_subresource_types = [gc3libs.defaults.SHELLCMD_LRMS]
 
 # example Boto error message:
 # <Response><Errors><Error><Code>TooManyInstances</Code><Message>Quota exceeded for ram: Requested 8000, but already used 16000 of 16384 ram</Message></Error></Errors><RequestID>req-c219213b-88d2-42dc-a3ab-10ac80aa7df7</RequestID></Response>  # noqa
@@ -209,7 +210,7 @@ class EC2Lrms(LRMS):
         # ShellcmdLrms by default trusts the configuration, instead of
         # checking the real amount of memory and number of cpus, but
         # we need the real values instead.
-        if self.subresource_type == gc3libs.Default.SHELLCMD_LRMS:
+        if self.subresource_type == gc3libs.defaults.SHELLCMD_LRMS:
             self.subresource_args['override'] = 'True'
 
         if not image_name and not image_id:

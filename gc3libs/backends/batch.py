@@ -35,7 +35,8 @@ import time
 import uuid
 
 import gc3libs
-from gc3libs import Default, log, Run
+from gc3libs import log, Run
+import gc3libs.defaults
 from gc3libs.backends import LRMS
 from gc3libs.utils import same_docstring_as, sh_quote_safe
 import gc3libs.backends.transport
@@ -127,7 +128,7 @@ class BatchSystem(LRMS):
                  ssh_timeout=None,
                  large_file_threshold=None,
                  large_file_chunk_size=None,
-                 spooldir=Default.SPOOLDIR,
+                 spooldir=gc3libs.defaults.SPOOLDIR,
                  **extra_args):
 
         # init base class

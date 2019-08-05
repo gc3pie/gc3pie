@@ -51,6 +51,7 @@ else:
 
 # GC3Pie imports
 import gc3libs
+import gc3libs.defaults
 import gc3libs.authentication
 from collections import defaultdict
 import gc3libs.utils
@@ -507,9 +508,9 @@ class Configuration(gc3libs.utils.Struct):
         # key name  old value             new value
         # ========  ===================   ==================
         'type': {
-                    'arc'               : gc3libs.Default.ARC0_LRMS,
-                    'ssh'               : gc3libs.Default.SGE_LRMS,
-                    'subprocess'        : gc3libs.Default.SHELLCMD_LRMS,
+                    'arc'               : gc3libs.defaults.ARC0_LRMS,
+                    'ssh'               : gc3libs.defaults.SGE_LRMS,
+                    'subprocess'        : gc3libs.defaults.SHELLCMD_LRMS,
         },
     }
 
@@ -599,25 +600,23 @@ class Configuration(gc3libs.utils.Struct):
         return (lambda **extra_args: self.auth_factory.get(name, **extra_args))
 
     _removed_resource_types = (
-        gc3libs.Default.ARC0_LRMS,
-        gc3libs.Default.ARC1_LRMS,
+        gc3libs.defaults.ARC0_LRMS,
+        gc3libs.defaults.ARC1_LRMS,
     )
 
     # map resource type name (e.g., 'sge' or 'openstack') to module
     # name + class/function within that module
     TYPE_CONSTRUCTOR_MAP = {
-        gc3libs.Default.EC2_LRMS:  ("gc3libs.backends.ec2",  "EC2Lrms"),
-        gc3libs.Default.LSF_LRMS:  ("gc3libs.backends.lsf",  "LsfLrms"),
-        gc3libs.Default.PBS_LRMS:  ("gc3libs.backends.pbs",  "PbsLrms"),
-        gc3libs.Default.OPENSTACK_LRMS:
-                                   ("gc3libs.backends.openstack",
-                                    "OpenStackLrms"),
-        gc3libs.Default.SGE_LRMS:  ("gc3libs.backends.sge",  "SgeLrms"),
-        gc3libs.Default.SHELLCMD_LRMS:
-                                   ("gc3libs.backends.shellcmd",
-                                    "ShellcmdLrms"),
-        gc3libs.Default.SLURM_LRMS:("gc3libs.backends.slurm",
-                                    "SlurmLrms"),
+        gc3libs.defaults.EC2_LRMS: ("gc3libs.backends.ec2",  "EC2Lrms"),
+        gc3libs.defaults.LSF_LRMS: ("gc3libs.backends.lsf",  "LsfLrms"),
+        gc3libs.defaults.PBS_LRMS: ("gc3libs.backends.pbs",  "PbsLrms"),
+        gc3libs.defaults.OPENSTACK_LRMS:
+                                   ("gc3libs.backends.openstack", "OpenStackLrms"),
+        gc3libs.defaults.SGE_LRMS: ("gc3libs.backends.sge",  "SgeLrms"),
+        gc3libs.defaults.SHELLCMD_LRMS:
+                                   ("gc3libs.backends.shellcmd", "ShellcmdLrms"),
+        gc3libs.defaults.SLURM_LRMS:
+                                   ("gc3libs.backends.slurm", "SlurmLrms"),
     }
 
     def _get_resource_constructor(self, resource_type):

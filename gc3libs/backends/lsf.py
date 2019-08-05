@@ -4,7 +4,7 @@
 Job control on LSF clusters (possibly connecting to the front-end via SSH).
 """
 
-# Copyright (C) 2009-2016  University of Zurich. All rights reserved.
+# Copyright (C) 2009-2016, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -31,6 +31,7 @@ import re
 import time
 
 from gc3libs import log, Run
+import gc3libs.defaults
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
 from gc3libs.quantity import Duration, seconds, Memory, GB, MB, kB, bytes
@@ -716,7 +717,7 @@ class LsfLrms(batch.BatchSystem):
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._bkill, jobid))
 
-    @gc3libs.utils.cache_for(gc3libs.Default.LSF_CACHE_TIME)
+    @gc3libs.utils.cache_for(gc3libs.defaults.LSF_CACHE_TIME)
     @LRMS.authenticated
     def get_resource_status(self):
         """
