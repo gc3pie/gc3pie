@@ -30,8 +30,8 @@ matrix:
     - python: "2.6"
       env:
         - FEATURES=""
-        # `inotifyx` is required otherwise collection of tests errors out
-        - PRE="inotifyx numpy<1.12 pycparser<2.19 pytest==3.2.5"
+        # `inotify_simple` is required otherwise collection of tests errors out
+        - PRE="inotify_simple numpy<1.12 pycparser<2.19 pytest==3.2.5"
         - PYTEST_ADDOPTS="--ignore gc3libs/backends/ec2.py --ignore gc3libs/backends/tests/test_ec2.py"
     - python: "3.5"
       env:
