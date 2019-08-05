@@ -42,8 +42,7 @@ The following public classes are exported from this module:
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from __future__ import (absolute_import, division, print_function)
+from __future__ import (absolute_import, division, print_function, unicode_literals)
 
 from future import standard_library
 standard_library.install_aliases()
@@ -75,11 +74,20 @@ from collections import defaultdict
 try:
     # Python 2
     from SimpleXMLRPCServer import SimpleXMLRPCServer
+    import xmlrpc.client
+    def ServerProxy(url):
+        # **NOTE:** This has to be the built-in `bytes` type; when
+        # using `future`'s `newstr` or `newbytes` objects, the
+        # `ServerProxy` becomes unusable, as *every* method call
+        # raises an exception `AttributeError: encode method has
+        # been disabled in newbytes`
+        return xmlrpc.client.ServerProxy(bytes(url))
 except ImportError:
     # Python 3
     from xmlrpc.server import SimpleXMLRPCServer
+    import xmlrpc.client
+    from xmlrpc.client import ServerProxy
 from warnings import warn
-import xmlrpc.client
 
 
 # 3rd party modules
@@ -1828,7 +1836,7 @@ class DaemonClient(_Script):
             # `ServerProxy` becomes unusable, as *every* method call
             # raises an exception `AttributeError: encode method has
             # been disabled in newbytes`
-            return xmlrpc.client.ServerProxy(bytes(url))
+            return ServerProxy(str(url))
         except Exception as err:
             self.log.error("Cannot connect to server `%s`: %s", url, err)
             return None
