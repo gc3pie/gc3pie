@@ -70,10 +70,10 @@ def test_engine_progress(num_jobs=5, transition_graph=None, max_iter=100):
 
         # run them all
         current_iter = 0
-        done = engine.stats()[Run.State.TERMINATED]
+        done = engine.counts()[Run.State.TERMINATED]
         while done < num_jobs and current_iter < max_iter:
             engine.progress()
-            done = engine.stats()[Run.State.TERMINATED]
+            done = engine.counts()[Run.State.TERMINATED]
             current_iter += 1
 
         # check state
@@ -95,10 +95,10 @@ def test_engine_forget_terminated(num_jobs=3, transition_graph=None, max_iter=10
 
         # run them all
         current_iter = 0
-        done = engine.stats()[Run.State.TERMINATED]
+        done = engine.counts()[Run.State.TERMINATED]
         while done < num_jobs and current_iter < max_iter:
             engine.progress()
-            done = engine.stats()[Run.State.TERMINATED]
+            done = engine.counts()[Run.State.TERMINATED]
             current_iter += 1
 
         # check that they have been forgotten
@@ -343,18 +343,18 @@ def test_engine_resubmit():
 def test_engine_submit1():
     """Engine.submit is equivalent to `add` if a task is not yet managed."""
     with temporary_engine() as engine:
-        assert engine.stats()['NEW'] == 0
+        assert engine.counts()['NEW'] == 0
 
         app = SuccessfulApp()
         assert app.execution.state == 'NEW'
         engine.submit(app)
         assert app.execution.state == 'NEW'
-        assert engine.stats()['NEW'] == 1
+        assert engine.counts()['NEW'] == 1
 
         engine.progress()
         assert app.execution.state in ['SUBMITTED', 'RUNNING']
-        assert engine.stats()['NEW'] == 0
-        assert engine.stats()[app.execution.state] == 1
+        assert engine.counts()['NEW'] == 0
+        assert engine.counts()[app.execution.state] == 1
 
 
 def test_engine_submit2():
@@ -362,20 +362,20 @@ def test_engine_submit2():
     with temporary_engine() as engine:
         app = SuccessfulApp()
         engine.add(app)
-        assert engine.stats()['NEW'] == 1
+        assert engine.counts()['NEW'] == 1
 
         engine.submit(app)
-        assert engine.stats()['NEW'] == 1
+        assert engine.counts()['NEW'] == 1
 
         engine.progress()
         state = app.execution.state
         assert state in ['SUBMITTED', 'RUNNING']
-        assert engine.stats()['NEW'] == 0
-        assert engine.stats()[state] == 1
+        assert engine.counts()['NEW'] == 0
+        assert engine.counts()[state] == 1
 
         engine.submit(app)
         assert app.execution.state == state
-        assert engine.stats()[state] == 1
+        assert engine.counts()[state] == 1
 
 
 def test_engine_submit_to_multiple_resources(num_resources=3, num_jobs=50):

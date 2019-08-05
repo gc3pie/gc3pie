@@ -1263,7 +1263,7 @@ class _SessionBasedCommand(_Script):
         # compute exitcode based on the running status of jobs
         stats = self._main_loop_after_tasks_progress()
         if stats is None:
-            stats = self._controller.stats()
+            stats = self._controller.counts()
         return self._main_loop_exitcode(stats)
 
 
@@ -1314,9 +1314,9 @@ class _SessionBasedCommand(_Script):
         Code that runs in the main loop after `.progress()` is invoked.
 
         Return either ``None`` or a dictionary of the same form that
-        `Engine.stats()`:meth: would return.  In the latter case, the
+        `Engine.counts()`:meth: would return.  In the latter case, the
         return value of this method is used *in stead* of the task
-        statistics returned by ``self._controller.stats()``.
+        statistics returned by ``self._controller.counts()``.
 
         Override in subclasses to plug any behavior here; the default
         implementation does nothing.
@@ -1556,7 +1556,7 @@ class SessionBasedScript(_SessionBasedCommand):
         The `output` argument is a file-like object, only the `write`
         method of which is used.  The `stats` argument is a
         dictionary, mapping each possible `Run.State` to the count of
-        tasks in that state; see `Engine.stats` for a detailed
+        tasks in that state; see `Engine.counts` for a detailed
         description.
         """
         table = PrettyTable(['state', 'n', 'n%'])
@@ -1664,7 +1664,7 @@ class SessionBasedScript(_SessionBasedCommand):
         See `_SessionBasedCommand._main_loop_after_tasks_progress`:meth:
         for a description of what this method can generally do.
         """
-        stats = self._controller.stats()
+        stats = self._controller.counts()
         # print results to user
         print ("Status of jobs in the '%s' session: (at %s)"
                % (self.session.name, time.strftime('%X, %x')))
@@ -1672,7 +1672,7 @@ class SessionBasedScript(_SessionBasedCommand):
         if total > 0:
             if self.stats_only_for is not None:
                 self.print_summary_table(sys.stdout,
-                                         self._controller.stats(
+                                         self._controller.counts(
                                              self.stats_only_for))
             else:
                 self.print_summary_table(sys.stdout, stats)
@@ -2304,7 +2304,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             the output format, with ``text`` being the default.
             """
 
-            stats = dict(self._parent._controller.stats())
+            stats = dict(self._parent._controller.counts())
 
             if 'json' in opts:
                 return json.dumps(stats)
