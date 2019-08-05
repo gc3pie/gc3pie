@@ -51,9 +51,6 @@ matrix:
 
   allow_failures:
     - python: '2.6'
-    - python: '3.5'
-    - python: '3.6'
-    - python: '3.7'
 
 after_success:
   # publish code coverage data to http://codecov.io/gh/uzh/gc3pie
