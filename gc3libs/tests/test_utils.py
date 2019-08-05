@@ -3,7 +3,7 @@
 """
 Test for classes and functions in the `utils` module.
 """
-# Copyright (C) 2012, 2013,  University of Zurich. All rights reserved.
+# Copyright (C) 2012, 2013, 2019,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -43,7 +43,7 @@ import gc3libs.utils
 # test definitions
 
 def test_get_linux_memcg_limit_no_proc_self_cgroup():
-    with mock.patch('__builtin__.open') as mo:
+    with mock.patch('gc3libs.utils.open') as mo:
         mo.side_effect = OSError(2, 'No such file or directory', '/proc/self/cgroup')
         limit = gc3libs.utils.get_linux_memcg_limit()
         mo.assert_called_once_with('/proc/self/cgroup', 'r')
@@ -52,7 +52,7 @@ def test_get_linux_memcg_limit_no_proc_self_cgroup():
 
 def test_get_linux_memcg_limit_no_memcg():
     mo = mock.mock_open(read_data='*** no memcg ***')
-    with mock.patch('__builtin__.open', mo):
+    with mock.patch('gc3libs.utils.open', mo):
         limit = gc3libs.utils.get_linux_memcg_limit()
         mo.assert_called_once_with('/proc/self/cgroup', 'r')
         assert limit is None
@@ -73,7 +73,7 @@ def test_get_linux_memcg_limit_with_memcg_limit():
             raise AssertionError(
                 "Unexpected call to open({0!r}, {1!r})"
                 .format(path, mode))
-    with mock.patch('__builtin__.open') as mo:
+    with mock.patch('gc3libs.utils.open') as mo:
         mo.side_effect = fake_open
         limit = gc3libs.utils.get_linux_memcg_limit()
         mo.assert_has_calls([
