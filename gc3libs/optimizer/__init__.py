@@ -1,4 +1,3 @@
-
 #! /usr/bin/env python
 
 """
@@ -158,7 +157,10 @@ class EvolutionaryAlgorithm(object):
 
         # Check `dx_conv_crit`
         dxs = np.abs(self.pop[:, :] - self.pop[0, :])
-        has_dx_converged = (dxs <= self.dx_conv_crit).all()
+        if self.dx_conv_crit is not None:
+            has_dx_converged = (dxs <= self.dx_conv_crit).all()
+        else:
+            has_dx_converged = False
         if has_dx_converged:
             converged = True
             self.logger.info(
