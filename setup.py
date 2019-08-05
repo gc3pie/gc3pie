@@ -218,6 +218,7 @@ setuptools.setup(
             'python-glanceclient',
             'python-neutronclient',
             'python-novaclient',
+            'python-swiftclient',
             'os-client-config',
         ],
         'optimizer': [
