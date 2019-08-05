@@ -10,8 +10,7 @@ patterns of job group execution; they can be combined to form more
 complex workflows.  Hook methods are provided so that derived classes
 can implement problem-specific job control policies.
 """
-
-# Copyright (C) 2009-2018   University of Zurich. All rights reserved.
+# Copyright (C) 2009-2019   University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -292,13 +291,26 @@ class TaskCollection(Task):
         `returncode`) and the final output has been retrieved.
 
         Default implementation for `TaskCollection` is to set the
-        exitcode to the maximum of the exit codes of its tasks.
+        exitcode to the maximum of the exit codes of its tasks,
+        or ``None`` if no task has a numeric exit code.
+
         If no tasks were run, the exitcode is set to 0.
         """
+        # Use a numeric argument instead of ``None``, so max() below
+        # does not throw an error on Python 3.x because ``None`` and
+        # integer numbers are not comparable.  Since the exit code is
+        # limited to (signed) 8 bits, any number larger than that will do.
+        NONE = -1000
         if self.tasks:
-            self.execution._exitcode = max(
-                task.execution._exitcode for task in self.tasks
+            exitcode = max(
+                (task.execution._exitcode
+                 if task.execution._exitcode is not None
+                 else NONE)
+                for task in self.tasks
             )
+            if exitcode == NONE:
+                exitcode = None
+            self.execution._exitcode = exitcode
         else:
             # a sequence with no tasks terminates successfully
             self.execution._exitcode = 0
