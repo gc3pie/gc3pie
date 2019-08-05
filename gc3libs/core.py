@@ -2402,6 +2402,11 @@ class BgEngine(object):
             self._engine.close()
 
 
+    def counts(self, only=Task):
+        """Proxy to `Engine.counts`:meth: (which see)."""
+        return self._engine.counts(only)
+
+
     def fetch_output(self, task, output_dir=None,
                      overwrite=False, changed_only=True, **extra_args):
         """Proxy to `Engine.fetch_output`:meth: (which see)."""
