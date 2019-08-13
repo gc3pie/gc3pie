@@ -101,7 +101,7 @@ if len(sys.argv)>1:
 for app in applications:
     core.submit(app)
     # After submssion, you have to check the application for its state:
-    print  "Job id: %s" % app.execution.lrms_jobid
+    print("Job id: %s" % app.execution.lrms_jobid)
 
 
 while True:
@@ -123,7 +123,7 @@ while True:
 
     time.sleep(5)
 
-print "Job is now in state %s. Fetching output." % app.execution.state
+print("Job is now in state %s. Fetching output." % app.execution.state)
 
 # You can specify a different `download_dir` option if you want to
 # override the value used in the GdemoSimpleApp initialization
@@ -140,6 +140,6 @@ for app in applications:
     else:
         model_names[app.model_name] += 1
 
-print "Model names:"
+print("Model names:")
 for (k,v) in model_names.iteritems():
-    print "Model '%s': %d" % (k,v)
+    print("Model '%s': %d" % (k,v))

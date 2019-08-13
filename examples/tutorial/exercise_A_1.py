@@ -80,14 +80,14 @@ if len(sys.argv)>1:
 core.submit(app)
 
 # After submssion, you have to check the application for its state:
-print  "Job id: %s" % app.execution.lrms_jobid
+print("Job id: %s" % app.execution.lrms_jobid)
 
 # Periodically check the status of your application.
 while app.execution.state in [ gc3libs.Run.State.SUBMITTED,
                                gc3libs.Run.State.RUNNING,
                                ]:
     try:
-        print "Job in status %s " % app.execution.state
+        print("Job in status %s " % app.execution.state)
         time.sleep(5)
         # This call will contact the resource(s) and get the current
         # job state
@@ -97,7 +97,7 @@ while app.execution.state in [ gc3libs.Run.State.SUBMITTED,
     except:
         raise
 
-print "Job is now in state %s. Fetching output." % app.execution.state
+print("Job is now in state %s. Fetching output." % app.execution.state)
 
 # You can specify a different `download_dir` option if you want to
 # override the value used in the GdemoSimpleApp initialization
@@ -108,4 +108,4 @@ print "Job is now in state %s. Fetching output." % app.execution.state
 # of output_dir.~N~ with N the first available number.
 core.fetch_output(app, overwrite=False)
 
-print "Done. Results are in %s" % app.output_dir
+print("Done. Results are in %s" % app.output_dir)

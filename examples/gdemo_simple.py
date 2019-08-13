@@ -3,7 +3,7 @@
 # @(#)gdemo_simple.py
 #
 #
-# Copyright (C) 2009-2013, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2013, 2015, 2019 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -35,7 +35,7 @@ command line argument.
 """
 
 # stdlib imports
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import sys
 import time
 
@@ -91,7 +91,7 @@ if len(sys.argv)>1:
 
 # Periodically check the status of your application.
 while app.execution.state != gc3libs.Run.State.TERMINATED:
-    print "Job in status %s " % app.execution.state
+    print("Job in status %s " % app.execution.state)
     # `Engine.progress()` will do the GC3Pie magic:
     # submit new jobs, update status of submitted jobs, get
     # results of terminating jobs etc...
@@ -100,5 +100,5 @@ while app.execution.state != gc3libs.Run.State.TERMINATED:
     # Wait a few seconds...
     time.sleep(1)
 
-print "Job is now terminated."
-print "The output of the application is in `%s`." %  app.output_dir
+print("Job is now terminated.")
+print("The output of the application is in `%s`." %  app.output_dir)

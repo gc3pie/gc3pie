@@ -8,7 +8,7 @@ collection.
 This is mainly used for testing and didactic purpouses, don't use it
 on a production environment!
 """
-# Copyright (C) 2012-2014 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012-2014, 2019 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -24,10 +24,8 @@ on a production environment!
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
-__docformat__ = 'reStructuredText'
+from __future__ import absolute_import, print_function
 
-
-from __future__ import absolute_import
 import os
 import os.path
 import shlex
@@ -127,16 +125,16 @@ class GRunScript(SessionBasedScript):
         return [task]
 
     def after_main_loop(self):
-        print ""
+        print("")
         tasks = self.session.tasks.values()
         for app in tasks:
             if isinstance(app, TaskCollection):
                 tasks.extend(app.tasks)
             if not isinstance(app, Application):
                 continue
-            print "==========================================="
-            print "Application     %s" % app.jobname
-            print "  state:        %s" % app.execution.state
-            print "  command line: %s" % str.join(" ", app.arguments)
-            print "  return code:  %s" % app.execution._exitcode
-            print "  output dir:   %s" % app.output_dir
+            print("===========================================")
+            print("Application     %s" % app.jobname)
+            print("  state:        %s" % app.execution.state)
+            print("  command line: %s" % str.join(" ", app.arguments))
+            print("  return code:  %s" % app.execution._exitcode)
+            print("  output dir:   %s" % app.output_dir)

@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, 2012 GC3, University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2019 GC3, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,6 +18,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
+from __future__ import absolute_import, print_function
+
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
@@ -48,7 +50,6 @@ __docformat__ = 'reStructuredText'
 #import ConfigParser
 #import csv
 #import math
-from __future__ import absolute_import
 import os
 import os.path
 #import shutil

@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012, 2019 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+from __future__ import absolute_import, print_function
 
 
 # GC3Pie tutorial - Warholize
@@ -109,7 +111,6 @@
 #
 # Let's start importing it, among with the main `gc3libs` module::
 
-from __future__ import absolute_import
 import gc3libs
 from gc3libs.cmdline import SessionBasedScript
 import os

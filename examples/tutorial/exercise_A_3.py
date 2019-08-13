@@ -114,7 +114,7 @@ for app in applications:
                                    gc3libs.Run.State.RUNNING,
                                    ]:
         try:
-            print "Job in status %s " % app.execution.state
+            print("Job in status %s " % app.execution.state)
             time.sleep(1)
             # This call will contact the resource(s) and get the current
             # job state
@@ -126,7 +126,7 @@ for app in applications:
 
     # Application is done. Fetching output so the `terminated()`
     # method is claled.
-    print "Job is completed. Fetching the output."
+    print("Job is completed. Fetching the output.")
     core.fetch_output(app, overwrite=False)
     if app.model_name not in model_names:
         model_names[app.model_name] = 1
@@ -135,4 +135,4 @@ for app in applications:
 
 
 for (k,v) in model_names.iteritems():
-    print "Model name: %s (%d)" % (k,v)
+    print("Model name: %s (%d)" % (k,v))

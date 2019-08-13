@@ -3,10 +3,8 @@
 """
 Recursive substitution into templates.
 """
-__docformat__ = 'reStructuredText'
+from __future__ import absolute_import, print_function
 
-
-from __future__ import absolute_import
 import os
 import os.path
 import string
@@ -15,6 +13,7 @@ import sys
 from optparse import OptionParser
 
 from gc3libs.template import Template, expansions
+
 
 PROG = os.path.basename(sys.argv[0])
 
