@@ -63,6 +63,8 @@ the correct 'python' binary.  For example:
 
 import logging
 
+from codecs import encode
+
 # see: http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 from distutils.spawn import find_executable
 
@@ -575,7 +577,7 @@ def download(url, to_file=None, keep=True):
     if to_file is None:
         to_file = path.basename(url)
     src = urlopen(url)
-    dst = open(to_file, 'w')
+    dst = open(to_file, 'wb')
     dst.write(src.read())
     if not keep:
         cleanup_defer(to_file)
@@ -734,10 +736,10 @@ def have_sw_package(pkg):
         #     ii  gcc                                   4:4.9.2-2ubuntu2        amd64                   GNU C compiler
         #
         try:
-            lines = check_output(['dpkg', '-l', pkg]).split('\n')
+            lines = check_output(['dpkg', '-l', pkg]).split(b'\n')
         except CalledProcessError:
             return False
-        found = lines[-2].startswith('ii  ' + pkg)
+        found = lines[-2].startswith(b'ii  ' + encode(pkg, 'ascii'))
         return found
     elif have_command('rpm'):
         # `rpm -q` exists with non-zero status if the package is not installed
