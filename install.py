@@ -101,8 +101,6 @@ except:
             raise CalledProcessError(retcode, cmd, output=output)
         return output
 
-
-
 try:
     # python 3
     from urllib.request import urlopen
@@ -111,6 +109,12 @@ except ImportError:
     from urllib2 import urlopen
 
 import json
+
+try:
+    raw_input
+except NameError:
+    # Python 3
+    raw_input = input
 
 
 ## defaults and constants
@@ -131,8 +135,15 @@ DO_NOT_ASK_AND_ASSUME_YES = False
 paths_to_cleanup = []
 
 def cleanup(paths=paths_to_cleanup):
-    if isinstance(paths, (str, basestring)):
+    # If `paths` is a string, wrap it into a 1-element list.  In order
+    # to work portably on Py2 and Py3, we determine if we deal with a
+    # string by checking for the existence of method `.capitalize()`,
+    # which only string-like objects have.
+    try:
+        paths.capitalize
         paths = [paths]
+    except AttributeError:
+        pass
 
     for path in paths:
         path = os.path.abspath(path)
@@ -146,8 +157,15 @@ def cleanup(paths=paths_to_cleanup):
 
 
 def cleanup_defer(paths):
-    if isinstance(paths, (str, basestring)):
+    # If `paths` is a string, wrap it into a 1-element list.  In order
+    # to work portably on Py2 and Py3, we determine if we deal with a
+    # string by checking for the existence of method `.capitalize()`,
+    # which only string-like objects have.
+    try:
+        paths.capitalize
         paths = [paths]
+    except AttributeError:
+        pass
     paths_to_cleanup.extend([os.path.abspath(path) for path in paths])
 
 
@@ -937,7 +955,7 @@ def require_cc():
     if not found:
         found = have_command('cc')
     if not found:
-        die(os.EX_UNAVAILABLE, """
+        die(os.EX_UNAVAILABLE, "missing software prerequisites", """
 To install the GC3Pie development version, a C language compiler
 is needed.
 
@@ -960,7 +978,7 @@ def require_command(cmd):
 
 def require_git():
     if not have_command('git'):
-        die(os.EX_UNAVAILABLE, """
+        die(os.EX_UNAVAILABLE, "missing software prerequisites", """
 To install the GC3Pie development version,
 the Git ('git') command is needed.
 
