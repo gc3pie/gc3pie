@@ -42,9 +42,11 @@ major = (sys.hexversion >> 24)
 minor = (sys.hexversion >> 16) & 0xff
 release = (sys.hexversion >> 8) & 0xff
 
-if major < 2 or (major == 2 and minor < 6) or major >= 3:
+if (major < 2
+    or (major == 2 and minor < 6)
+    or (major == 3 and minor < 5)):
     sys.stderr.write("""
-GC3Pie requires Python version 2.6 or 2.7.
+GC3Pie requires Python version 2.6, 2.7, or 3.5+.
 Unfortunately, the Python interpreter '%s'
 is running version %d.%d.%d of the language.
 
@@ -52,7 +54,7 @@ If a version of Python suitable for using GC3Pie is present in some
 non-standard location, then please run this script again through
 the correct 'python' binary.  For example:
 
-  /usr/local/bin/python26 %s
+  /usr/local/bin/python3 %s
 """ % (sys.executable, major, minor, release, sys.argv[0]))
     sys.exit(70) # os.EX_UNAVAILABLE
 
