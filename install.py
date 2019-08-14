@@ -103,7 +103,13 @@ except:
 
 
 
-from urllib2 import urlopen
+try:
+    # python 3
+    from urllib.request import urlopen
+except ImportError:
+    # python 2
+    from urllib2 import urlopen
+
 import json
 
 
