@@ -182,44 +182,56 @@ class SlurmLrms(batch.BatchSystem):
     #   %U: numeric UID of the submitting user
     #
     def _stat_command(self, job):
-        return "%s --noheader -o %%i^%%T^%%r -j %s" % \
-            (self._squeue, job.lrms_jobid)
+        return ("{squeue} --noheader -o GC3Pie^%%i^%%T^%%r -j {jobid}"
+                .format(squeue=self._squeue, jobid=job.lrms_jobid))
 
     def _parse_stat_output(self, stdout, stderr):
         """
-        Receive the output of ``squeue --noheader -o %i:%T:%r and parse it.
+        Parse output of ``squeue --noheader -o %i:%T:%r``.
         """
         state = Run.State.UNKNOWN
-        if stdout.strip() == '':
-            # If stdout is empty and `squeue -j` exitcode is 0, then
+        for line in stdout.split('\n'):
+            line = line.strip()
+            # sites might wrap basic SLURM commands like `squeue` or
+            # `sacct` to provide additional information to users; we
+            # need to tell the actual SLURM output from the sites' own
+            # info; fortunately, SLURM's `--format` option allows
+            # arbitrary string prefixes which we can leverage to tag
+            # the interesting output lines.
+            if line.startswith('GC3Pie^'):
+                # parse stdout
+                _, job_id, job_state_code, reason = stdout.split('^')
+                log.debug(
+                    "translating SLURM state `%s` to gc3libs.Run.State",
+                    job_state_code)
+                if job_state_code in ['PENDING', 'CONFIGURING']:
+                    # XXX: see comments in `count_jobs` for a discussion
+                    # of whether 'CONFIGURING' should be grouped with
+                    # 'RUNNING' or not; here it's likely the correct
+                    # choice to group it with 'PENDING' as the
+                    # "configuring" phase may last a few minutes during
+                    # which the job is not yet really running.
+                    state = Run.State.SUBMITTED
+                elif job_state_code in ['RUNNING', 'COMPLETING']:
+                    state = Run.State.RUNNING
+                elif job_state_code in ['SUSPENDED']:
+                    state = Run.State.STOPPED
+                elif job_state_code in ['COMPLETED', 'CANCELLED', 'FAILED',
+                                        'NODE_FAIL', 'PREEMPTED', 'TIMEOUT']:
+                    state = Run.State.TERMINATING
+                else:
+                    state = Run.State.UNKNOWN
+                break
+        else:
+            # No `GC3pie:` line found in output:
+            #
+            # * If stdout is empty and `squeue -j` exitcode is 0, then
             # the job has recently completed (but we still need to
             # call `sacct` to reap the termination status).
             #
-            # If the job has been removed from the controllers'
+            # * If the job has been removed from the controllers'
             # memory, then `squeue -j` exits with code 1.
             state = Run.State.TERMINATING
-        else:
-            # parse stdout
-            job_id, job_state_code, reason = stdout.split('^')
-            log.debug("translating SLURM's state '%s' to gc3libs.Run.State",
-                      job_state_code)
-            if job_state_code in ['PENDING', 'CONFIGURING']:
-                # XXX: see comments in `count_jobs` for a discussion
-                # of whether 'CONFIGURING' should be grouped with
-                # 'RUNNING' or not; here it's likely the correct
-                # choice to group it with 'PENDING' as the
-                # "configuring" phase may last a few minutes during
-                # which the job is not yet really running.
-                state = Run.State.SUBMITTED
-            elif job_state_code in ['RUNNING', 'COMPLETING']:
-                state = Run.State.RUNNING
-            elif job_state_code in ['SUSPENDED']:
-                state = Run.State.STOPPED
-            elif job_state_code in ['COMPLETED', 'CANCELLED', 'FAILED',
-                                    'NODE_FAIL', 'PREEMPTED', 'TIMEOUT']:
-                state = Run.State.TERMINATING
-            else:
-                state = Run.State.UNKNOWN
         return self._stat_result(state, None)  # no term status info
 
     # acct cmd: sacct --noheader --parsable --format jobid,ncpus,cputimeraw,elapsed,submit,eligible,reserved,start,end,exitcode,maxrss,maxvmsize,totalcpu -j JOBID  # noqa
