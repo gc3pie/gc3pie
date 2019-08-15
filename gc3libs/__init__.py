@@ -268,6 +268,15 @@ class Task(Persistable, Struct):
         self.changed = True
         TaskStateChange.connect(self._on_state_change, sender=self)
 
+    def __hash__(self):
+        # FIXME: this might be incorrect, still `__hash__
+        # = id` is what Python 2 does, and it has not broken
+        # GC3Pie so far... For more details, see:
+        # - https://docs.python.org/3/reference/datamodel.html#object.__hash__
+        # - https://docs.python.org/2/reference/datamodel.html#object.__hash__
+        return id(self)
+
+
     # manipulate the "controller" interface used to control the associated job
     def attach(self, controller):
         """
