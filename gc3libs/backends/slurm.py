@@ -53,7 +53,7 @@ from gc3libs.utils import (same_docstring_as, sh_quote_safe_cmdline,
 #
 _sbatch_jobid_re = re.compile(
     r'(sbatch:\s*)?(Granted job allocation|Submitted batch job)'
-    ' (?P<jobid>\d+)')
+    r' (?P<jobid>\d+)')
 
 
 ## code
