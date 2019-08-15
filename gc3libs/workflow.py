@@ -1240,9 +1240,12 @@ class DependentTaskCollection(SequentialTaskCollection):
             "Can only add tasks to a DependentTaskCollection while it's in state `NEW`"
         # collect all task dependencies
         task_dependencies = self._deps[task]
-        task_dependencies.update(after)
+        if after is not None:
+            task_dependencies.update(after)
         try:
-            task_dependencies.update(task.after)
+            task_after = task.after
+            if task_after:
+                task_dependencies.update(task_after)
         except AttributeError:
             pass
 
