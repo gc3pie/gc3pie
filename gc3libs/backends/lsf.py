@@ -605,9 +605,9 @@ class LsfLrms(batch.BatchSystem):
         # and put `bacct = bacct`, we also have to ensure that we are
         # calling the correct function to parse the output of the acct
         # command.
-        if self._bacct.startswith('bacct'):
+        if 'bacct' in self._bacct:
             parser = self.__parse_acct_output_w_bacct
-        elif self._bacct.startswith('bjobs'):
+        elif 'bjobs' in self._bacct:
             parser = self.__parse_acct_output_w_bjobs
         else:
             log.warning(
