@@ -150,8 +150,8 @@ setuptools.setup(
         "Environment :: Console",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: GNU Library or"
-        " Lesser General Public License (LGPL)",
+        ("License :: OSI Approved :: GNU Library or"
+         " Lesser General Public License (LGPL)"),
         "License :: DFSG approved",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python",
