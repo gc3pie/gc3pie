@@ -390,8 +390,7 @@ class LsfLrms(batch.BatchSystem):
         self._lshosts = self._get_command('lshosts')
 
         if lsf_continuation_line_prefix_length is not None:
-            self._CONTINUATION_LINE_START = ' ' \
-                * lsf_continuation_line_prefix_length
+            self._CONTINUATION_LINE_START = (' ' * lsf_continuation_line_prefix_length)
         else:
             self._CONTINUATION_LINE_START = None
 
@@ -596,7 +595,7 @@ class LsfLrms(batch.BatchSystem):
             return Memory(int(m), unit=bytes)
 
     def _parse_acct_output(self, stdout, stderr):
-        # Antonio: this is an ugly fix, but we have issues with bacct
+        # FIXME: this is an ugly fix, but we have issues with bacct
         # on some LSF installation being veeeeery slow, so we have to
         # try and use `bjobs` whenever possible, and fall back to
         # bacct if bjobs does not work.
@@ -611,7 +610,8 @@ class LsfLrms(batch.BatchSystem):
             parser = self.__parse_acct_output_w_bjobs
         else:
             log.warning(
-                "Unknown acct command `%s`. Assuming its output is compatible"
+                "Unknown accounting command `%s`."
+                " Assuming its output is compatible"
                 " with `bacct`", self._bacct)
             parser = self.__parse_acct_output_w_bacct
         return parser(stdout)
