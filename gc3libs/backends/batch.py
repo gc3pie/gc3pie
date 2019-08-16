@@ -171,8 +171,8 @@ class BatchSystem(LRMS):
             if match:
                 return match.group('jobid')
         raise gc3libs.exceptions.InternalError(
-            "Could not extract jobid from qsub output '%s'"
-            % output.rstrip())
+            "Could not extract jobid from submission command output `{0}`"
+            .format(output.rstrip()))
 
     def _get_command_argv(self, name, default=None):
         """
