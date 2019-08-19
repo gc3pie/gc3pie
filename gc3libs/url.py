@@ -29,8 +29,8 @@ from collections import namedtuple
 import os
 import urllib.parse
 
-from gc3libs.utils import to_str
-
+from .persistence.serialization import Persistable
+from .utils import to_str
 
 __docformat__ = 'reStructuredText'
 

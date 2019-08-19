@@ -30,13 +30,52 @@ standard_library.install_aliases()
 from builtins import object
 __docformat__ = 'reStructuredText'
 
-
-import pickle as pickle
-
-from gc3libs.persistence.store import Persistable
+import pickle
 
 
 DEFAULT_PROTOCOL = pickle.HIGHEST_PROTOCOL
+
+
+class Persistable(object):
+
+    """
+    A mix-in class to mark that an object should be persisted by its ID.
+
+    Any instance of this class is saved as an 'external reference'
+    when a container holding a reference to it is saved.
+
+    """
+
+    # __slots__ = (
+    #     '__weakref__',
+    #     'changed',
+    #     'persistent_id',
+    # )
+
+    def __init__(self, *args, **kwargs):
+        # ensure object will be saved next time Store.save() is invoked
+        self.changed = True
+        if 'persistent_id' in kwargs:
+            self.persistent_id = kwargs.pop('persistent_id')
+        super(Persistable, self).__init__(*args, **kwargs)
+
+    def __str__(self):
+        try:
+            return str(self.persistent_id)
+        except AttributeError:
+            return super(Persistable, self).__str__()
+
+    def __eq__(self, other):
+        if id(self) == id(other):
+            return True
+        try:
+            return self.persistent_id == other.persistent_id
+        except AttributeError:
+            # fall back to Python object comparison
+            return super(Persistable, self) == other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 def make_pickler(driver, stream, root, protocol=pickle.HIGHEST_PROTOCOL):

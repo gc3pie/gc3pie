@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2011-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -141,39 +141,6 @@ class Store(with_metaclass(ABCMeta, object)):
         Save an object, and return an ID.
         """
         pass
-
-
-class Persistable(object):
-
-    """
-    A mix-in class to mark that an object should be persisted by its ID.
-
-    Any instance of this class is saved as an 'external reference'
-    when a container holding a reference to it is saved.
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        # ensure object will be saved next time Store.save() is invoked
-        self.changed = True
-
-    def __str__(self):
-        try:
-            return str(self.persistent_id)
-        except AttributeError:
-            return super(Persistable, self).__str__()
-
-    def __eq__(self, other):
-        if id(self) == id(other):
-            return True
-        try:
-            return self.persistent_id == other.persistent_id
-        except AttributeError:
-            # fall back to Python object comparison
-            return super(Persistable, self) == other
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
 
 # registration mechanism

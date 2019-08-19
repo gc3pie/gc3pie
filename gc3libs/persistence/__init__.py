@@ -34,7 +34,7 @@ the trick!
 
 """
 
-# Copyright (C) 2009-2012  University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -59,7 +59,8 @@ __docformat__ = 'reStructuredText'
 # this package should be considered "internal use only".
 from .filesystem import FilesystemStore
 from .idfactory import IdFactory, JobIdFactory
-from .store import make_store, Persistable
+from .serialization import Persistable
+from .store import make_store
 
 __all__ = ['make_store', 'Persistable', 'IdFactory',
            'JobIdFactory', 'FilesystemStore']
