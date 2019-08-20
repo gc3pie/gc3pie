@@ -102,9 +102,9 @@ def test_eq_non_persisted_objects():
     assert a != b
     assert a is not b
 
+
 # for testing basic functionality we do no need fully-fledged GC3Pie
 # objects; let's define some simple make-do's.
-
 
 class SimplePersistableObject(Persistable):
 
@@ -340,18 +340,18 @@ def test_task_objects_buggy(task):
         store.load(id)
     finally:
         os.remove(tmpfile)
-            
+
 
 class TestFilesystemStore(GenericStoreChecks):
 
-    @pytest.fixture(autouse=True)    
+    @pytest.fixture(autouse=True)
     def setUp(self):
         from gc3libs.persistence.filesystem import FilesystemStore
         self.tmpdir = tempfile.mkdtemp()
         self.store = FilesystemStore(self.tmpdir)
 
         yield
-        
+
         shutil.rmtree(self.tmpdir)
 
     # XXX: there's nothing which is `FilesystemStore`-specific here!
