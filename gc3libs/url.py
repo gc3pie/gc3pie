@@ -395,7 +395,38 @@ class Url(_UrlFields):
                    query=self.query, fragment=self.fragment)
 
 
-class UrlKeyDict(dict):
+class _UrlDict(dict):
+    """
+    Base class for `UrlKeyDict`:class: and `UrlValueDict`:class:
+    """
+    __slots__ = (
+        '_force_abs',
+    )
+
+    def __init__(self, iter_or_dict=None, force_abs=False, **extra_kv):
+        self._force_abs = force_abs
+        if iter_or_dict is not None:
+            try:
+                # if `iter_or_dict` is a dict-like object, then it has
+                # `iteritems()`
+                for k, v in iter_or_dict.items():
+                    self[k] = v
+            except AttributeError:
+                # then assume `iter_or_dict` is an iterator over (key, value)
+                # pairs
+                for k, v in iter_or_dict:
+                    self[k] = v
+        if extra_kv:
+            for k, v in extra_kv.items():
+                self[k] = v
+
+    def __repr__(self):
+        return ('{0}({1}, force_abs={2})'
+                .format(self.__class__.__name__, dict(self), self._force_abs))
+
+
+
+class UrlKeyDict(_UrlDict):
 
     """
     A dictionary class enforcing that all keys are URLs.
@@ -437,15 +468,6 @@ class UrlKeyDict(dict):
         >>> d1 == d2
         True
 
-    Differently from `dict`, initialization from keyword arguments
-    alone is *not* supported:
-
-        >>> d3 = UrlKeyDict(foo='foo') # doctest: +ELLIPSIS
-        Traceback (most recent call last):
-            ...
-        TypeError: __init__() got an unexpected keyword argument 'foo'
-
-
     An empty `UrlKeyDict` instance is returned by the constructor
     when called with no parameters::
 
@@ -468,43 +490,28 @@ class UrlKeyDict(dict):
 
     """
 
-    def __init__(self, iter_or_dict=None, force_abs=False):
-        self._force_abs = force_abs
-        if iter_or_dict is not None:
-            try:
-                # if `iter_or_dict` is a dict-like object, then it has
-                # `iteritems()`
-                for k, v in iter_or_dict.items():
-                    self[k] = v
-            except AttributeError:
-                # then assume `iter_or_dict` is an iterator over (key, value)
-                # pairs
-                for k, v in iter_or_dict:
-                    self[k] = v
-
-    def __contains__(self, key):
-        # this is necessary to have key-lookup work with strings as well
-        return (dict.__contains__(self, key)
-                or key in list(self.keys()))
-
-    def __getitem__(self, key):
-        try:
-            return dict.__getitem__(self, key)
-        except KeyError as ex:
-            # map `key` to a URL and try with that
-            try:
-                return dict.__getitem__(self, Url(key, self._force_abs))
-            except:
-                raise ex
+    __slots__ = ()
 
     def __setitem__(self, key, value):
-        try:
-            dict.__setitem__(self, Url(key, self._force_abs), value)
-        except (TypeError, ValueError):
-            dict.__setitem__(self, key, value)
+        if not isinstance(key, Url):
+            key = Url(key, self._force_abs)
+        super(UrlKeyDict, self).__setitem__(key, value)
+
+    # these two methods are necessary to have key-lookup work with
+    # strings as well
+
+    def __getitem__(self, key):
+        if not isinstance(key, Url):
+            key = Url(key, self._force_abs)
+        return super(UrlKeyDict, self).__getitem__(key)
+
+    def __contains__(self, key):
+        if not isinstance(key, Url):
+            key = Url(key, self._force_abs)
+        return super(UrlKeyDict, self).__contains__(key)
 
 
-class UrlValueDict(dict):
+class UrlValueDict(_UrlDict):
 
     """
     A dictionary class enforcing that all values are URLs.
@@ -562,27 +569,12 @@ class UrlValueDict(dict):
 
     """
 
-    def __init__(self, iter_or_dict=None, force_abs=False, **extra_args):
-        self._force_abs = force_abs
-        if iter_or_dict is not None:
-            try:
-                # if `iter_or_dict` is a dict-like object, then it has
-                # `iteritems()`
-                for k, v in iter_or_dict.items():
-                    self[k] = v
-            except AttributeError:
-                # then assume `iter_or_dict` is an iterator over (key, value)
-                # pairs
-                for k, v in iter_or_dict:
-                    self[k] = v
-        for k, v in extra_args.items():
-            self[k] = v
+    __slots__ = ()
 
     def __setitem__(self, key, value):
-        try:
-            dict.__setitem__(self, key, Url(value, self._force_abs))
-        except:
-            dict.__setitem__(self, key, value)
+        if not isinstance(value, Url):
+            value = Url(value, self._force_abs)
+        super(UrlValueDict, self).__setitem__(key, value)
 
 
 # main: run tests
