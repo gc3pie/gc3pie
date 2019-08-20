@@ -3,7 +3,7 @@
 """
 Test persistence backends.
 """
-# Copyright (C) 2011, 2012,  University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2019,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -49,7 +49,7 @@ from gc3libs.persistence.serialization import DEFAULT_PROTOCOL
 from gc3libs.persistence.idfactory import IdFactory
 from gc3libs.persistence.filesystem import FilesystemStore
 from gc3libs.persistence.sql import SqlStore
-from gc3libs.url import Url
+from gc3libs.url import Url, UrlKeyDict
 
 
 @pytest.mark.parametrize("cls", (SqlStore, FilesystemStore))
@@ -301,6 +301,25 @@ class GenericStoreChecks(object):
 
         # return objects for further testing
         return (container_id, objid)
+
+    def test_persist_urlkeydict(self):
+        """
+        Test that we can persist GC3Pie's `UrlKeyDict` classes.
+        """
+        a = Task(attr=UrlKeyDict({'/tmp/1': 1, '/tmp/2': 2}))
+        id_ = self.store.save(a)
+        b = self.store.load(id_)
+        assert b.attr == a.attr
+
+
+    def test_persist_urlvaluedict(self):
+        """
+        Test that we can persist GC3Pie's `UrlValueDict` classes.
+        """
+        a = Task(attr=UrlKeyDict({'foo': '/tmp/1', 'bar': '/tmp/2'}))
+        id_ = self.store.save(a)
+        b = self.store.load(id_)
+        assert b.attr == a.attr
 
 
 @pytest.mark.parametrize("task", (Task(),
