@@ -1486,9 +1486,7 @@ def prettyprint(
         # there can be multiple trailing '\n's, which we remove here
         second = second.rstrip()
         # finally print line(s)
-        output.write(first)
-        output.write(second)
-        output.write('\n')
+        output.write('%s%s\n' % (first, second))
 
 
 def progressive_number(qty=None, id_filename=None):
