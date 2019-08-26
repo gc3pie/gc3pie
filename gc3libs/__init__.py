@@ -795,7 +795,9 @@ class Application(Task):
       give them in the task execution setting.  Keys of the dictionary
       are environmental variables names, and dictionary values define
       the corresponding variable content.  Both keys and values must
-      be strings or convertible to string.
+      be strings or convertible to string; keys (environment variable
+      names) must be ASCII-only or a ``UnicodeDecodeError`` will be
+      raised.
 
       For example, to run the application in an environment where the
       variable ``LC_ALL`` has the value ``C`` and the variable ``HZ``
@@ -829,6 +831,9 @@ class Application(Task):
       if this evaluates to `True`, then standard error is
       redirected to the file specified by `stdout` and `stderr` is
       ignored.  (`join` has no effect if `stdout` is not given.)
+
+    `jobname`
+      a string to display this job in user-oriented listings
 
     `tags`
       list of tag names (string) that must be present on a
@@ -911,7 +916,7 @@ class Application(Task):
                 " only.")
             arguments = [extra_args['executable']] + list(arguments)
 
-        self.arguments = [str(x) for x in arguments]
+        self.arguments = [to_str(x, 'filesystem') for x in arguments]
 
         self.inputs = Application._io_spec_to_dict(UrlKeyDict, inputs, True)
         self.outputs = Application._io_spec_to_dict(
@@ -957,7 +962,7 @@ class Application(Task):
                 raise gc3libs.exceptions.InvalidArgument(
                     "Remote paths not allowed to be absolute")
 
-        self.output_dir = output_dir
+        self.output_dir = to_str(output_dir, 'filesystem')
 
         # optional params
         self.output_base_url = extra_args.pop('output_base_url', None)
@@ -988,14 +993,15 @@ class Application(Task):
                 % (Run.Arch.X86_32, Run.Arch.X86_64))
 
         self.environment = dict(
-            (str(k), str(v)) for k, v in list(extra_args.pop(
+            (to_str(k), to_str(v, 'terminal'))
+            for k, v in list(extra_args.pop(
                 'environment', dict()).items()))
 
         self.join = extra_args.pop('join', False)
-        self.stdin = extra_args.pop('stdin', None)
+        self.stdin = to_str(extra_args.pop('stdin', None), 'filesystem')
         if self.stdin and (self.stdin not in self.inputs):
             self.inputs[self.stdin] = os.path.basename(self.stdin)
-        self.stdout = extra_args.pop('stdout', None)
+        self.stdout = to_str(extra_args.pop('stdout', None), 'filesystem')
         if self.stdout is not None and os.path.isabs(self.stdout):
             raise gc3libs.exceptions.InvalidArgument(
                 "Absolute path '%s' passed as `Application.stdout`"
@@ -1005,7 +1011,7 @@ class Application(Task):
                 and (self.stdout not in self.outputs)):
             self.outputs[self.stdout] = self.stdout
 
-        self.stderr = extra_args.pop('stderr', None)
+        self.stderr = to_str(extra_args.pop('stderr', None), 'filesystem')
         join_stdout_and_stderr = (self.join
                                   or self.stderr == self.stdout
                                   or self.stderr == subprocess.STDOUT)
@@ -1028,7 +1034,9 @@ class Application(Task):
         self.tags = extra_args.pop('tags', list())
 
         if 'jobname' in extra_args:
-            jobname = extra_args['jobname']
+            # constrain job name to be ASCII-only, or some
+            # batch-queuing systems might reject it
+            jobname = to_str(extra_args['jobname'], 'ascii')
             # Check whether the first character of a jobname is an
             # integer. SGE does not allow job names to start with a
             # number, so add a prefix...
