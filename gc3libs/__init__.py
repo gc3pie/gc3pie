@@ -37,7 +37,7 @@ from past.utils import old_div
 from builtins import object
 __docformat__ = 'reStructuredText'
 
-__version__ = '2.5.3'
+__version__ = '2.6.0'
 
 
 import inspect
