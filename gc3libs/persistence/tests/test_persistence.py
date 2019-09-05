@@ -28,7 +28,7 @@ __docformat__ = 'reStructuredText'
 # stdlib imports
 import os
 import shutil
-import tempfile
+from tempfile import NamedTemporaryFile, mkdtemp
 
 # 3rd party imports
 import pytest
@@ -333,13 +333,10 @@ def test_task_objects_buggy(task):
     """
     Test that all `Task`-like objects are persistable
     """
-    fd, tmpfile = tempfile.mkstemp()
-    store = make_store("sqlite://%s" % tmpfile)
-    try:
+    with NamedTemporaryFile(prefix='gc3libs.', suffix='.tmp') as tmp:
+        store = make_store("sqlite://%s" % tmp.name)
         id = store.save(task)
         store.load(id)
-    finally:
-        os.remove(tmpfile)
 
 
 class TestFilesystemStore(GenericStoreChecks):
@@ -347,7 +344,7 @@ class TestFilesystemStore(GenericStoreChecks):
     @pytest.fixture(autouse=True)
     def setUp(self):
         from gc3libs.persistence.filesystem import FilesystemStore
-        self.tmpdir = tempfile.mkdtemp()
+        self.tmpdir = mkdtemp(prefix='gc3libs.', suffix='.tmp.d')
         self.store = FilesystemStore(self.tmpdir)
 
         yield
@@ -587,16 +584,16 @@ class TestSqliteStore(SqlStoreChecks):
 
     @pytest.fixture(autouse=True)
     def setUp(self):
-        fd, self.tmpfile = tempfile.mkstemp()
-        self.db_url = Url('sqlite://%s' % self.tmpfile)
-        self.store = self._make_store()
+        with NamedTemporaryFile(prefix='gc3libs.', suffix='.tmp') as tmp:
+            self.tmpfile = tmp.name
+            self.db_url = Url('sqlite://%s' % self.tmpfile)
+            self.store = self._make_store()
 
-        # create a connection to the database
-        self.conn = self.store._engine.connect()
+            # create a connection to the database
+            self.conn = self.store._engine.connect()
 
-        yield
-        self.conn.close()
-        os.remove(self.tmpfile)
+            yield
+            self.conn.close()
 
     def _make_store(self, **kwargs):
         return make_store(self.db_url, **kwargs)
@@ -636,9 +633,10 @@ class TestMysqlStore(SqlStoreChecks):
 
     @pytest.fixture(autouse=True)
     def setUp(self):
-        fd, tmpfile = tempfile.mkstemp()
-        os.remove(tmpfile)
-        self.table_name = tmpfile.split('/')[-1]
+        # generate random table name
+        from string import ascii_letters as letters
+        import random
+        self.table_name = 'test_' + (''.join(random.choice(letters) for _ in range(10)))
 
         try:
             self.db_url = Url('mysql://gc3user:gc3pwd@localhost/gc3')
