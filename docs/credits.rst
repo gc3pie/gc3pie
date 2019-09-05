@@ -21,6 +21,7 @@ The list is sorted by last name.  Please send an email to
 * Niko Ehrenfeuchter <nikolaus.ehrenfeuchter@unibas.ch>
 * Benjamin Jonen <benjamin.jonen@gmail.com>
 * Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>
+* Daniel McDonald <daniel.mcdonald@uzh.ch>
 * Antonio Messina <arcimboldo@gmail.com>
 * Mark Monroe <markjmonroe@yahoo.com>
 * Riccardo Murri <riccardo.murri@gmail.com>
