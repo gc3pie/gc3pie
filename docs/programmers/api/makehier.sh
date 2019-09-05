@@ -9,6 +9,7 @@ repeat () {
 
 modules=$(find ../../../gc3libs ../../../gc3utils -name '*.py' \
     | cut -c10- \
+    | egrep -v '/etc/' \
     | egrep -v '/tests/' \
     | egrep -v '/compat/' \
     | sed -e 's|\.py$||' \

@@ -8,3 +8,4 @@
 ==================================
 .. automodule:: gc3libs.authentication.openstack
    :members:
+

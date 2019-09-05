@@ -4,8 +4,8 @@
    http://docutils.sf.net/rst.html for more information.
 
 
-`gc3libs.authentication.ec2`
-============================
-.. automodule:: gc3libs.authentication.ec2
+`gc3libs.testing`
+=================
+.. automodule:: gc3libs.testing
    :members:
 
