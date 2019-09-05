@@ -25,10 +25,10 @@ modules`__ for more details.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import, print_function, unicode_literals
+
 from future import standard_library
 standard_library.install_aliases()
 from builtins import object
-__docformat__ = 'reStructuredText'
 
 import pickle
 
@@ -79,18 +79,14 @@ class Persistable(object):
 
 
 def make_pickler(driver, stream, root, protocol=pickle.HIGHEST_PROTOCOL):
-    p = pickle.Pickler(stream, protocol=protocol)
-    p.persistent_id = _PersistentIdToSave(driver, root)
-    return p
+    return _PicklerWithPersistentID(driver, root, stream, protocol=protocol)
 
 
 def make_unpickler(driver, stream):
-    p = pickle.Unpickler(stream)
-    p.persistent_load = _PersistentLoadExternalId(driver)
-    return p
+    return _UnpicklerWithPersistentID(driver, stream)
 
 
-class _PersistentIdToSave(object):
+class _PicklerWithPersistentID(pickle.Pickler):
 
     """Used internally to provide `persistent_id` support to *cPickle*.
 
@@ -100,17 +96,19 @@ class _PersistentIdToSave(object):
     * we want to use the *cPickle* module for performance reasons.
 
     Check the `documentation of Python's *pickle* module`__ for
-    details on the differences between *pickle* and *cPickle* modules.
+    details on `persistent_id` support:
 
     .. __: http://goo.gl/CCknrT
 
     """
 
-    def __init__(self, driver, root):
+    def __init__(self, driver, root, stream, **kwargs):
         self._root = root
         self._driver = driver
+        self._stream = stream
+        pickle.Pickler.__init__(self, stream, **kwargs)
 
-    def __call__(self, obj):
+    def persistent_id(self, obj):
         if obj is self._root:
             return None
         elif isinstance(obj, Persistable):
@@ -120,7 +118,7 @@ class _PersistentIdToSave(object):
             return obj.persistent_id
 
 
-class _PersistentLoadExternalId(object):
+class _UnpicklerWithPersistentID(pickle.Unpickler):
 
     """Used internally to provide `persistent_id` support to *cPickle*.
 
@@ -136,8 +134,9 @@ class _PersistentLoadExternalId(object):
 
     """
 
-    def __init__(self, driver):
+    def __init__(self, driver, *args, **kwargs):
         self._driver = driver
+        pickle.Unpickler.__init__(self, *args, **kwargs)
 
-    def __call__(self, id_):
+    def persistent_load(self, id_):
         return self._driver.load(id_)
