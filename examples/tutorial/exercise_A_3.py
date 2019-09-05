@@ -14,7 +14,7 @@ work on the source for `exercise_A_2.py`:
 """
 #
 #
-# Copyright (C) 2009-2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012, 2019 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -90,7 +90,7 @@ applications = [GdemoSimpleApp() for i in range(10)]
 
 # create an instance of Core. Read configuration from your default
 # configuration file
-cfg = gc3libs.config.Configuration(*gc3libs.Default.CONFIG_FILE_LOCATIONS,
+cfg = gc3libs.config.Configuration(*gc3libs.defaults.CONFIG_FILE_LOCATIONS,
                                    **{'auto_enable_auth': True})
 core = gc3libs.core.Core(cfg)
 
@@ -107,14 +107,14 @@ model_names = dict()
 for app in applications:
     # Submit the application
     core.submit(app)
-    
+
     # Periodically check the status of the application.
     while app.execution.state in [ gc3libs.Run.State.NEW,
                                    gc3libs.Run.State.SUBMITTED,
                                    gc3libs.Run.State.RUNNING,
                                    ]:
         try:
-            print "Job in status %s " % app.execution.state
+            print("Job in status %s " % app.execution.state)
             time.sleep(1)
             # This call will contact the resource(s) and get the current
             # job state
@@ -126,13 +126,13 @@ for app in applications:
 
     # Application is done. Fetching output so the `terminated()`
     # method is claled.
-    print "Job is completed. Fetching the output."
+    print("Job is completed. Fetching the output.")
     core.fetch_output(app, overwrite=False)
     if app.model_name not in model_names:
         model_names[app.model_name] = 1
     else:
         model_names[app.model_name] += 1
-        
+
 
 for (k,v) in model_names.iteritems():
-    print "Model name: %s (%d)" % (k,v)
+    print("Model name: %s (%d)" % (k,v))

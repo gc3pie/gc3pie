@@ -92,7 +92,7 @@ def _scan_and_tar(tarfile_folder, input_folder):
         tar.close()
         os.chdir(cwd)
         return os.path.join(tarfile_folder,GCRASHDETECT_INPUT_ARCHIVE)
-    except Exception, x:
+    except Exception as x:
         gc3libs.log.error("Failed creating input archive '%s': %s: %s",
                           os.path.join(tarfile_folder, GCRASHDETECT_INPUT_ARCHIVE),
                           x.__class__,x.message)

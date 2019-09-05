@@ -1,5 +1,10 @@
 #! /usr/bin/env python
-# Copyright (C) 2009-2018  University of Zurich. All rights reserved.
+
+"""
+Run applications as processes starting them from the shell.
+"""
+
+# Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -13,39 +18,42 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 
 # make coding more python3-ish, must be the first statement
 from __future__ import (absolute_import, division, print_function)
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
+from future.utils import with_metaclass
 
-## module doc and other metadata
-"""
-Run applications as processes starting them from the shell.
-"""
-
+# module doc and other metadata
 __docformat__ = 'reStructuredText'
 
 
-## imports and other dependencies
+# imports and other dependencies
 
 # stdlib imports
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
-import cPickle as pickle
+import pickle as pickle
 from getpass import getuser
 import os
 import os.path
 import posixpath
 import time
 
-from pkg_resources import Requirement, resource_filename
+from pkg_resources import Requirement
 
 # GC3Pie imports
 import gc3libs
 import gc3libs.exceptions
 import gc3libs.backends.transport
-from gc3libs import Default, log, Run
+from gc3libs import log, Run
+import gc3libs.defaults
 from gc3libs.utils import same_docstring_as, Struct, sh_quote_safe, sh_quote_unsafe
 from gc3libs.backends import LRMS
 from gc3libs.quantity import Duration, Memory, MB
@@ -59,26 +67,29 @@ from gc3libs.quantity import Duration, Memory, MB
 def _parse_process_status(pstat):
     """
     Map `ps` process status letter to a `Run.State` label.
+
+    Running:
+
+        R: in run queue
+        S: interruptible sleep
+        D: uninterruptible sleep (Linux)
+        U: uninterruptible sleep (MacOSX)
+        I: idle (= sleeping > 20s, MacOSX)
+        W: paging (Linux, no longer valid since the 2.6.xx kernel)
+        Z: "zombie" process
+
+    Stopped:
+
+        T: stopped by job control signal
+        t: stopped by debugger during the tracing
+        X: dead (should never be seen)
+
     """
     # Check manpage of ``ps`` both on linux and MacOSX/BSD to know the meaning
     # of these statuses
-    if pstat[0] in [
-            # sort by likelihood of process being in this state,
-            # to minimize loookup times
-            'R',  # in run queue
-            'S',  # interruptible sleep
-            'D',  # uninterruptible sleep (Linux)
-            'U',  # uninterruptible sleep (MacOSX)
-            'I',  # idle (= sleeping > 20s, MacOSX)
-            'W',  # paging (Linux, no longer valid since the 2.6.xx kernel)
-            'Z',  # "zombie" process
-    ]:
+    if pstat.startswith(('R', 'S', 'D', 'Y', 'I', 'W', 'Z')):
         return Run.State.RUNNING
-    elif pstat[0] in [
-            'T',  # stopped by job control signal
-            't',  # stopped by debugger during the tracing
-            'X'   # dead (should never be seen)
-    ]:
+    elif pstat.startswith(('T', 't', 'X')):
         return Run.State.STOPPED
     else:
         raise KeyError("Unknown process status code `{0}`".format(pstat[0]))
@@ -174,7 +185,7 @@ def _parse_returncode_string(val):
 #
 #
 
-class _Machine(object):
+class _Machine(with_metaclass(ABCMeta, object)):
     """
     Base class for OS-specific shell services.
 
@@ -182,8 +193,6 @@ class _Machine(object):
     to achieve the same task. The `Machine` class abstract these into
     a uniform interface.
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, transport):
         self.transport = transport
@@ -286,7 +295,7 @@ class _Machine(object):
         try:
             qty = parts[index]
             amount = int(qty)
-            return amount*unit
+            return amount * unit
         except KeyError:  # index out of bounds
             raise AssertionError(
                 "Call to {0} returned out-of-bounds index {1} into sequence {2}"
@@ -332,7 +341,6 @@ class _Machine(object):
                 queue.insert(0, child)  # enqueue
 
         return result
-
 
 
 class _LinuxMachine(_Machine):
@@ -573,7 +581,7 @@ class ShellcmdLrms(LRMS):
                  frontend='localhost', transport='local',
                  time_cmd=None,
                  override='False',
-                 spooldir=Default.SPOOLDIR,
+                 spooldir=gc3libs.defaults.SPOOLDIR,
                  resourcedir=None,
                  # SSH-related options; ignored if `transport` is 'local'
                  ssh_config=None,
@@ -639,7 +647,6 @@ class ShellcmdLrms(LRMS):
         self._time_cmd = time_cmd
         self._time_cmd_ok = False  # check on first use
 
-
     @property
     def frontend(self):
         return self._frontend
@@ -648,7 +655,6 @@ class ShellcmdLrms(LRMS):
     def frontend(self, value):
         self._frontend = value
         self.transport.set_connection_params(value)
-
 
     @property
     def resource_dir(self):
@@ -684,14 +690,12 @@ class ShellcmdLrms(LRMS):
                 # cannot continue
                 raise
 
-
     @property
     def time_cmd(self):
         if not self._time_cmd_ok:
             self._time_cmd = self._locate_gnu_time()
             self._time_cmd_ok = True
         return self._time_cmd
-
 
     def _gather_machine_specs(self):
         """
@@ -717,7 +721,6 @@ class ShellcmdLrms(LRMS):
             self._init_total_memory()
             self._update_resource_usage_info()
 
-
     def _init_arch(self):
         arch = self._machine.get_architecture()
         if not (arch <= self.architecture):
@@ -733,9 +736,8 @@ class ShellcmdLrms(LRMS):
             else:
                 raise gc3libs.exceptions.ConfigurationError(
                     "Invalid architecture: configuration file says `%s` but "
-                    "it actually is `%s`" % (str.join(', ', self.architecture),
-                                             str.join(', ', arch)))
-
+                    "it actually is `%s`" % (', '.join(self.architecture),
+                                             ', '.join(arch)))
 
     def _init_max_cores(self):
         max_cores = self._machine.get_total_cores()
@@ -746,7 +748,6 @@ class ShellcmdLrms(LRMS):
                 " Updating current value.",
                 self.name, self.max_cores, max_cores)
             self.max_cores = max_cores
-
 
     def _init_total_memory(self):
         self.total_memory = self._machine.get_total_memory()
@@ -759,7 +760,6 @@ class ShellcmdLrms(LRMS):
                 self.max_memory_per_core,
                 self.total_memory.to_str('%g%s', unit=Memory.MB))
             self.max_memory_per_core = self.total_memory
-
 
     def _locate_gnu_time(self):
         """
@@ -794,7 +794,6 @@ class ShellcmdLrms(LRMS):
             " configuration option in gc3pie.conf."
             .format(name=self.name))
 
-
     ## Bookkeeping
     #
     # The following methods deal with internal book-keeping: how much
@@ -821,9 +820,8 @@ class ShellcmdLrms(LRMS):
              `ShellcmdLrms.get_resource_status()` has not been called
              for a while.
         """
-        return sum(1 for info in self._job_infos.values()
+        return sum(1 for info in list(self._job_infos.values())
                    if not info['terminated'])
-
 
     def count_used_cores(self):
         """
@@ -833,9 +831,8 @@ class ShellcmdLrms(LRMS):
         apply here.
         """
         return sum(info['requested_cores']
-                   for info in self._job_infos.values()
+                   for info in list(self._job_infos.values())
                    if not info['terminated'])
-
 
     def count_used_memory(self):
         """
@@ -855,7 +852,7 @@ class ShellcmdLrms(LRMS):
             # pessimistic stance that a job with no memory
             # requirements is using (DefMemPerCPU * NumCPUs)
             ((info['requested_memory'] or 0*MB)
-             for info in self._job_infos.values()
+             for info in list(self._job_infos.values())
              if not info['terminated']), 0*MB)
 
 
@@ -871,7 +868,7 @@ class ShellcmdLrms(LRMS):
         pidfiles = self.transport.listdir(self.resource_dir)
         if pidfiles:
             log.debug("Checking status of the following PIDs: %s",
-                      str.join(", ", pidfiles))
+                      ", ".join(pidfiles))
             for pid in pidfiles:
                 job = self._read_job_info_file(pid)
                 if job:
@@ -1135,7 +1132,7 @@ class ShellcmdLrms(LRMS):
         # `Application.outputs` list to expand wildcards and
         # directory references.
         stageout = list()
-        for remote_relpath, local_url in app.outputs.iteritems():
+        for remote_relpath, local_url in app.outputs.items():
             if local_url.scheme in ['swift', 'swt', 'swifts', 'swts']:
                 continue
             local_relpath = local_url.path
@@ -1272,7 +1269,7 @@ class ShellcmdLrms(LRMS):
             wrapper_script_path = posixpath.join(wrapper_dir, self.WRAPPER_SCRIPT)
 
             # create the wrapper script
-            with self.transport.open(wrapper_script_path, 'w') as wrapper:
+            with self.transport.open(wrapper_script_path, 'wt') as wrapper:
                 wrapper.write(
                     r"""#!/bin/sh
                     echo $$ >'{pidfilename}'
@@ -1386,7 +1383,7 @@ class ShellcmdLrms(LRMS):
 
     def _stage_app_input_files(self, app):
         destdir = app.execution.lrms_execdir
-        for local_path, remote_path in app.inputs.items():
+        for local_path, remote_path in list(app.inputs.items()):
             if local_path.scheme != 'file':
                 log.debug(
                     "Ignoring input URL `%s` for task %s:"
@@ -1462,7 +1459,7 @@ class ShellcmdLrms(LRMS):
     def _setup_environment(self, app):
         """Return commands to set up the environment for `app`."""
         env_commands = []
-        for k, v in app.environment.iteritems():
+        for k, v in app.environment.items():
             env_commands.append(
                 "export {k}={v};"
                 .format(k=sh_quote_safe(k), v=sh_quote_unsafe(v)))
@@ -1489,12 +1486,12 @@ class ShellcmdLrms(LRMS):
         download_cmds = []
         upload_cmds = []
         mover_path = posixpath.join(destdir, ShellcmdLrms.MOVER_SCRIPT)
-        for url, outfile in app.inputs.items():
+        for url, outfile in list(app.inputs.items()):
             if url.scheme in ['swift', 'swifts', 'swt', 'swts', 'http', 'https']:
                 download_cmds.append(
                     "python '{mover}' download '{url}' '{outfile}'"
                     .format(mover=mover_path, url=str(url), outfile=outfile))
-        for infile, url in app.outputs.items():
+        for infile, url in list(app.outputs.items()):
             if url.scheme in ['swift', 'swt', 'swifts', 'swts']:
                 upload_cmds.append(
                     "python '{mover}' upload '{url}' '{infile}'"

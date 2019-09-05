@@ -2,7 +2,7 @@
 #
 # -*- coding: utf-8 -*-
 #
-#  Copyright (C) 2010-2012, 2015, 2018  University of Zurich. All rights reserved.
+#  Copyright (C) 2010-2012, 2015, 2018, 2019  University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -20,8 +20,14 @@
 #  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 # stdlib imports
-from __future__ import absolute_import, print_function
-from cStringIO import StringIO
+from __future__ import absolute_import, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
+from builtins import str
+
+from io import StringIO
 import os
 import shutil
 import tempfile
@@ -262,7 +268,7 @@ def test_load_non_existing_file():
 
 def test_load_non_readable_file():
     """Test that `Configuration.load()` raises a `NoAccessibleConfigurationFile` exception if no configuration file can be read"""
-    with tempfile.NamedTemporaryFile(prefix=__name__) as tmpfile:
+    with tempfile.NamedTemporaryFile(prefix=__name__, mode='wt') as tmpfile:
         os.chmod(tmpfile.name, 0)
         with pytest.raises(gc3libs.exceptions.NoAccessibleConfigurationFile):
             # pylint: disable=unused-variable
@@ -582,7 +588,7 @@ app2_epilogue_content = echo epilogue app2
             'myapp_prologue',
             'myapp_epilogue']
         os.mkdir(os.path.join(self.tmpdir, 'scripts'))
-        for k, v in self.cfg['resources']['test'].iteritems():
+        for k, v in self.cfg['resources']['test'].items():
             if k in self.scripts:
                 scriptfd = open(os.path.join(self.tmpdir, v), 'w')
                 scriptfd.write('echo %s' % k)
@@ -602,7 +608,7 @@ app2_epilogue_content = echo epilogue app2
         """Test that prologue and epilogue scripts are absolute pathnames"""
         self.core = gc3libs.core.Core(self.cfg)
         for resource in self.core.get_resources():
-            for (k, v) in resource.iteritems():
+            for (k, v) in resource.items():
                 if k not in ['prologue', 'epilogue',
                              'myapp_prologue', 'myapp_epilogue']:
                     continue
@@ -756,7 +762,7 @@ override = False
 
         self.core = gc3libs.core.Core(self.cfg)
         for resource in self.core.get_resources():
-            for (k, v) in resource.iteritems():
+            for (k, v) in resource.items():
                 if k not in ['prologue', 'epilogue',
                              'myapp_prologue', 'myapp_epilogue']:
                     continue

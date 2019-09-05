@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, 2018  University of Zurich. All rights reserved.
+# Copyright (C) 2011-2019  University of Zurich.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,7 +17,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 import operator
@@ -64,6 +66,8 @@ class Id(str):
     the two sequence numbers.
     """
 
+    __slots__ = ('_seqno', '_prefix')
+
     def __new__(cls, prefix, seqno):
         """
         Construct a new "unique identifier" instance (a string).
@@ -75,6 +79,9 @@ class Id(str):
 
     def __getnewargs__(self):
         return (self._prefix, self._seqno)
+
+    def __hash__(self):
+        return hash((self._prefix, self._seqno))
 
     # Rich comparison operators, to ensure `Id` is sorted by numerical value
     @_Id_make_comparison_function(operator.gt)

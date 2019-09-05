@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 """
 Tools for debugging GC3Libs based programs.
 
@@ -7,7 +7,8 @@ Part of the code used in this module originally comes from:
   - http://wordaligned.com/articles/echo
 
 """
-# Copyright (C) 2011, 2015  University of Zurich. All rights reserved.
+
+# Copyright (C) 2011, 2015, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -21,8 +22,9 @@ Part of the code used in this module originally comes from:
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
+
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import zip
 __docformat__ = 'reStructuredText'
 
 
@@ -39,7 +41,7 @@ def name(item):
 
 def is_classmethod(instancemethod):
     """Determine if an instancemethod is a classmethod."""
-    return instancemethod.im_self is not None
+    return instancemethod.__self__ is not None
 
 
 def is_class_private_name(name):
@@ -57,7 +59,7 @@ def method_name(method):
     """
     mname = name(method)
     if is_class_private_name(mname):
-        mname = "_%s%s" % (name(method.im_class), mname)
+        mname = "_%s%s" % (name(method.__self__.__class__), mname)
     return mname
 
 
@@ -67,8 +69,8 @@ def format_arg_value(arg_val):
 
     Example::
 
-      >>> format_arg_value(('x', (1, 2, 3)))
-      'x=(1, 2, 3)'
+      >>> 'x=(1, 2, 3)' == format_arg_value(('x', (1, 2, 3)))
+      True
     """
     arg, val = arg_val
     return "%s=%r" % (arg, val)
@@ -83,11 +85,11 @@ def trace(fn, log=gc3libs.log.debug):
     called with.
     """
     # Unpack function's arg count, arg names, arg defaults
-    code = fn.func_code
+    code = fn.__code__
     argcount = code.co_argcount
     argnames = code.co_varnames[:argcount]
-    fn_defaults = fn.func_defaults or list()
-    argdefs = dict(zip(argnames[-len(fn_defaults):], fn_defaults))
+    fn_defaults = fn.__defaults__ or list()
+    argdefs = dict(list(zip(argnames[-len(fn_defaults):], fn_defaults)))
 
     @functools.wraps(fn)
     def wrapped(*v, **k):
@@ -99,9 +101,9 @@ def trace(fn, log=gc3libs.log.debug):
                      for a in argnames[len(v):] if a not in k]
         nameless = [repr(val) for val in v[argcount:]]
         keyword = [format_arg_value((key, val))
-                   for key, val in k.items()]
+                   for key, val in list(k.items())]
         args = positional + defaulted + nameless + keyword
-        log("%s(%s)" % (name(fn), str.join(", ", args)))
+        log("%s(%s)" % (name(fn), ', '.join(args)))
         return fn(*v, **k)
     return wrapped
 
@@ -119,7 +121,7 @@ def trace_instancemethod(cls, method, log=gc3libs.log.debug):
     if mname in never_echo:
         pass
     elif is_classmethod(method):
-        setattr(cls, mname, classmethod(trace(method.im_func, log)))
+        setattr(cls, mname, classmethod(trace(method.__func__, log)))
     else:
         setattr(cls, mname, trace(method, log))
 

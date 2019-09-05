@@ -3,7 +3,7 @@
 #   gcelljunction.py -- GC3Pie front-end for running the
 #   "tricellular_junction" code by T. Aegerter
 #
-#   Copyright (C) 2014  University of Zurich. All rights reserved.
+#   Copyright (C) 2014, 2019  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ from pkg_resources import Requirement, resource_filename
 
 # gc3 library imports
 import gc3libs
+import gc3libs.defaults
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedScript
 from collections import defaultdict
@@ -174,7 +175,7 @@ class GCellJunctionTask(RetryableTask, gc3libs.utils.Struct):
         super(GCellJunctionTask, self).update_state(**extra_args)
         if self.execution.state == Run.State.RUNNING:
             try:
-                estimated_size = gc3libs.Default.PEEK_FILE_SIZE * self._CHECK_LINES
+                estimated_size = gc3libs.defaults.PEEK_FILE_SIZE * self._CHECK_LINES
                 with self.task.peek('stdout', offset=-estimated_size, size=estimated_size) as fd:
                     # drop first and last lines, as they may be partial
                     lines = fd.readlines()[1:-1]

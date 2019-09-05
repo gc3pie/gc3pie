@@ -45,7 +45,7 @@ x = int(sys.argv[1])
 # Read configuration from the default configuration file, and create
 # an instance of `Core`.
 cfg = gc3libs.config.Configuration(
-    *gc3libs.Default.CONFIG_FILE_LOCATIONS,
+    *gc3libs.defaults.CONFIG_FILE_LOCATIONS,
     auto_enable_auth=True)
 core = gc3libs.core.Core(cfg)
 

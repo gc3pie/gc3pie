@@ -14,12 +14,12 @@ addons:
 install:
   - "pip install --upgrade setuptools pip"
   - 'if [ -n "$PRE" ]; then pip install $PRE; fi'
-  - 'pip install mock pytest "pytest-cov<2.6" pytest-coverage codecov'
+  - 'pip install mock "pytest>=4.1" "pytest-cov<2.6" pytest-coverage codecov'
   - "pip install -e .$FEATURES"
 
 script:
   - export BOTO_CONFIG=/dev/null
-  - pytest -v --cov=gc3libs --cov-branch
+  - pytest -v --cov=gc3libs --cov-branch --ignore install.py
 
 matrix:
   include:
@@ -30,9 +30,11 @@ matrix:
     - python: "2.6"
       env:
         - FEATURES=""
-        # `inotifyx` is required otherwise collection of tests errors out
-        - PRE="inotifyx numpy<1.12 pycparser<2.19 pytest==3.2.5"
+        # `inotify_simple` is required otherwise collection of tests errors out
+        - PRE="inotify_simple numpy<1.12 pycparser<2.19 pytest==3.2.5"
         - PYTEST_ADDOPTS="--ignore gc3libs/backends/ec2.py --ignore gc3libs/backends/tests/test_ec2.py"
+      # Python 2.6 is not supported on more recent Travis build images
+      dist: trusty
     - python: "3.5"
       env:
         - FEATURES="[openstack,ec2,daemon]"
@@ -51,9 +53,6 @@ matrix:
 
   allow_failures:
     - python: '2.6'
-    - python: '3.5'
-    - python: '3.6'
-    - python: '3.7'
 
 after_success:
   # publish code coverage data to http://codecov.io/gh/uzh/gc3pie

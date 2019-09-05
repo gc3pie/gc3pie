@@ -1,9 +1,10 @@
 #! /usr/bin/env python
-#
+
 """
 Deal with GC3Pie configuration files.
 """
-# Copyright (C) 2012-2016, 2018  University of Zurich. All rights reserved.
+
+# Copyright (C) 2012-2016, 2018, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,25 +18,49 @@ Deal with GC3Pie configuration files.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
-__docformat__ = 'reStructuredText'
 
+
+from __future__ import absolute_import, print_function, unicode_literals
+
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import str
 
 # stdlib imports
-import ConfigParser
 import inspect
 import os
 import re
+import sys
+if sys.version_info[0] == 2:
+    from ConfigParser import SafeConfigParser
+    from ConfigParser import Error as ConfigParserError
+    def make_config_parser():
+        return SafeConfigParser()
+    def read_config_lines(parser, stream, source):
+        return parser.readfp(stream, source)
+else:
+    # `SafeConfigParser` was deprecated in Py3 in favor of `ConfigParser`
+    from configparser import ConfigParser
+    from configparser import Error as ConfigParserError
+    def make_config_parser():
+        return ConfigParser(strict=False)
+    # `readfp()` is deprecated since Py3.2
+    def read_config_lines(parser, stream, source):
+        return parser.read_file(stream, source)
 
 # GC3Pie imports
 import gc3libs
+import gc3libs.defaults
 import gc3libs.authentication
 from collections import defaultdict
 import gc3libs.utils
 
 from gc3libs.quantity import Memory, GB, MB, MiB, Duration, hours
-from gc3libs.utils import defproperty
+
+
+# module metadata
+__docformat__ = 'reStructuredText'
 
 
 # auxiliary methods for `Configuration`
@@ -65,7 +90,7 @@ _architecture_value_map = {
 
 def _matching_architecture(value):
     """Return first matching entry from `_architecture_value_map`."""
-    for matcher, arch in _architecture_value_map.iteritems():
+    for matcher, arch in _architecture_value_map.items():
         if matcher.match(value):
             return arch
     raise ValueError("Unknown architecture '%s'." % value)
@@ -155,18 +180,18 @@ class Configuration(gc3libs.utils.Struct):
       >>> cfg = Configuration(auto_enable_auth=False, foo=1, bar='baz')
       >>> cfg.auto_enable_auth
       False
-      >>> cfg.foo
-      1
-      >>> cfg.bar
-      'baz'
+      >>> cfg.foo == 1
+      True
+      >>> cfg.bar == 'baz'
+      True
 
     When both a configuration file *and* a key=value list is present,
     values in the configuration files override those in the key=value
     list::
 
       >>> cfg = Configuration(example_cfgfile, debug=1)
-      >>> cfg.debug
-      '0'
+      >>> cfg.debug == '0'
+      True
 
     Example 3: default initialization::
 
@@ -248,13 +273,13 @@ class Configuration(gc3libs.utils.Struct):
         if files_successfully_read == 0:
             raise gc3libs.exceptions.NoAccessibleConfigurationFile(
                 "Could not read any configuration file; tried location '%s'."
-                % str.join("', '", locations))
+                % "', '".join(locations))
         if files_successfully_parsed == 0:
             raise gc3libs.exceptions.NoValidConfigurationFile(
                 "Could not parse any configuration file;"
                 " tried location(s) '%s' but they all had errors."
                 " (Which see in previous log messages.)"
-                % str.join("', '", locations))
+                % "', '".join(locations))
 
     def merge_file(self, filename):
         """
@@ -284,11 +309,11 @@ class Configuration(gc3libs.utils.Struct):
             filename)
         with open(filename, 'r') as stream:
             defaults, resources, auths = self._parse(stream, filename)
-        for name, values in resources.iteritems():
+        for name, values in resources.items():
             self.resources[name].update(values)
-        for name, values in auths.iteritems():
+        for name, values in auths.items():
             self.auths[name].update(values)
-        for name, value in defaults.iteritems():
+        for name, value in defaults.items():
             if not name.startswith('_'):
                 self[name] = value
 
@@ -320,10 +345,10 @@ class Configuration(gc3libs.utils.Struct):
         resources = defaultdict(dict)
         auths = defaultdict(dict)
 
-        parser = ConfigParser.SafeConfigParser()
+        parser = make_config_parser()
         try:
-            parser.readfp(stream, filename)
-        except ConfigParser.Error as err:
+            read_config_lines(parser, stream, filename)
+        except ConfigParserError as err:
             if filename is None:
                 try:
                     filename = stream.name
@@ -413,11 +438,10 @@ class Configuration(gc3libs.utils.Struct):
                 if __debug__:
                     gc3libs.log.debug(
                         "Config._parse(): Resource '%s' defined by: %s.", name,
-                        str.join(
-                            ', ', [
-                                ("%s=%r" %
-                                 (k, v)) for k, v in sorted(
-                                    resources[name].iteritems())]))
+                        ', '.join([
+                            ("%s=%r" %
+                             (k, v)) for k, v in sorted(
+                                 resources[name].items())]))
 
             else:
                 # Unhandled sectname
@@ -459,7 +483,7 @@ class Configuration(gc3libs.utils.Struct):
 
     @staticmethod
     def _perform_key_renames(config_items, renames, filename):
-        for oldkey, newkey in renames.iteritems():
+        for oldkey, newkey in renames.items():
             if oldkey in config_items:
                 gc3libs.log.warning(
                     "Configuration item '%s' was renamed to '%s',"
@@ -484,15 +508,15 @@ class Configuration(gc3libs.utils.Struct):
         # key name  old value             new value
         # ========  ===================   ==================
         'type': {
-                    'arc'               : gc3libs.Default.ARC0_LRMS,
-                    'ssh'               : gc3libs.Default.SGE_LRMS,
-                    'subprocess'        : gc3libs.Default.SHELLCMD_LRMS,
+                    'arc'               : gc3libs.defaults.ARC0_LRMS,
+                    'ssh'               : gc3libs.defaults.SGE_LRMS,
+                    'subprocess'        : gc3libs.defaults.SHELLCMD_LRMS,
         },
     }
 
     @staticmethod
     def _perform_value_updates(config_items, renames, filename):
-        for key, changed in renames.iteritems():
+        for key, changed in renames.items():
             if key in config_items:
                 value = config_items[key]
                 if value in changed:
@@ -505,11 +529,11 @@ class Configuration(gc3libs.utils.Struct):
                         filename)
                     config_items[key] = changed[value]
 
-    _path_key_regexp = re.compile('^(\w+_)?(prologue|epilogue)$')
+    _path_key_regexp = re.compile(r'^(\w+_)?(prologue|epilogue)$')
 
     @staticmethod
     def _perform_filename_conversion(config_items, path_regexp, filename):
-        for key, value in config_items.iteritems():
+        for key, value in config_items.items():
             if path_regexp.match(key):
                 basedir = (os.path.dirname(value)
                            if os.path.isfile(value)
@@ -538,7 +562,7 @@ class Configuration(gc3libs.utils.Struct):
 
     @staticmethod
     def _perform_type_conversions(config_items, converters, filename):
-        for key, converter in converters.iteritems():
+        for key, converter in converters.items():
             if key in config_items:
                 try:
                     config_items[key] = converter(config_items[key])
@@ -567,7 +591,6 @@ class Configuration(gc3libs.utils.Struct):
                 raise
         return self._auth_factory
 
-
     def make_auth(self, name):
         """
         Return factory for auth credentials configured in section
@@ -577,25 +600,23 @@ class Configuration(gc3libs.utils.Struct):
         return (lambda **extra_args: self.auth_factory.get(name, **extra_args))
 
     _removed_resource_types = (
-        gc3libs.Default.ARC0_LRMS,
-        gc3libs.Default.ARC1_LRMS,
+        gc3libs.defaults.ARC0_LRMS,
+        gc3libs.defaults.ARC1_LRMS,
     )
 
     # map resource type name (e.g., 'sge' or 'openstack') to module
     # name + class/function within that module
     TYPE_CONSTRUCTOR_MAP = {
-        gc3libs.Default.EC2_LRMS:  ("gc3libs.backends.ec2",  "EC2Lrms"),
-        gc3libs.Default.LSF_LRMS:  ("gc3libs.backends.lsf",  "LsfLrms"),
-        gc3libs.Default.PBS_LRMS:  ("gc3libs.backends.pbs",  "PbsLrms"),
-        gc3libs.Default.OPENSTACK_LRMS:
-                                   ("gc3libs.backends.openstack",
-                                    "OpenStackLrms"),
-        gc3libs.Default.SGE_LRMS:  ("gc3libs.backends.sge",  "SgeLrms"),
-        gc3libs.Default.SHELLCMD_LRMS:
-                                   ("gc3libs.backends.shellcmd",
-                                    "ShellcmdLrms"),
-        gc3libs.Default.SLURM_LRMS:("gc3libs.backends.slurm",
-                                    "SlurmLrms"),
+        gc3libs.defaults.EC2_LRMS: ("gc3libs.backends.ec2",  "EC2Lrms"),
+        gc3libs.defaults.LSF_LRMS: ("gc3libs.backends.lsf",  "LsfLrms"),
+        gc3libs.defaults.PBS_LRMS: ("gc3libs.backends.pbs",  "PbsLrms"),
+        gc3libs.defaults.OPENSTACK_LRMS:
+                                   ("gc3libs.backends.openstack", "OpenStackLrms"),
+        gc3libs.defaults.SGE_LRMS: ("gc3libs.backends.sge",  "SgeLrms"),
+        gc3libs.defaults.SHELLCMD_LRMS:
+                                   ("gc3libs.backends.shellcmd", "ShellcmdLrms"),
+        gc3libs.defaults.SLURM_LRMS:
+                                   ("gc3libs.backends.slurm", "SlurmLrms"),
     }
 
     def _get_resource_constructor(self, resource_type):
@@ -612,7 +633,7 @@ class Configuration(gc3libs.utils.Struct):
                 try:
                     mod = __import__(modname,
                                      globals(), locals(),
-                                     [clsname], -1)
+                                     [clsname], 0)
                     cls = getattr(mod, clsname)
                 except (ImportError, AttributeError) as err:
                     raise gc3libs.exceptions.Error(
@@ -646,7 +667,7 @@ class Configuration(gc3libs.utils.Struct):
         backend.
         """
         resources = {}
-        for name, resdict in self.resources.iteritems():
+        for name, resdict in self.resources.items():
             try:
                 backend = self._make_resource(resdict)
                 if backend is None:  # resource is disabled
@@ -721,8 +742,8 @@ class Configuration(gc3libs.utils.Struct):
         if __debug__:
             gc3libs.log.debug(
                 "Creating resource '%s' defined by: %s.",
-                resdict['name'], str.join(', ', [
-                    ("%s=%r" % (k, v)) for k, v in sorted(resdict.iteritems())
+                resdict['name'], ', '.join([
+                    ("%s=%r" % (k, v)) for k, v in sorted(resdict.items())
                 ]))
 
         for auth_param in 'auth', 'vm_auth':

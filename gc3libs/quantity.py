@@ -8,7 +8,8 @@ For details and the discussion leading up to this,
 see: `<https://github.com/uzh/gc3pie/issues/47>`
 
 """
-# Copyright (C) 2011 - 2014,  University of Zurich. All rights reserved.
+
+# Copyright (C) 2011 - 2014, 2019,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -22,16 +23,33 @@ see: `<https://github.com/uzh/gc3pie/issues/47>`
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
-__docformat__ = 'reStructuredText'
 
+from __future__ import absolute_import, print_function, unicode_literals
+from __future__ import division
+from builtins import object
+from past.utils import old_div
+
+# future's own `with_metaclass` does not play well with the `Quantity`
+# implementation here, because `Quantity` defines its own `__init__`
+# and `__call__` , which `future.utils.with_metaclass` overrides with
+# the std ones coming from Python's builtin `type`
+from six import add_metaclass
 
 # stdlib imports
 import datetime
 import operator
 import re
-import types
+
+try:
+    # Python 2
+    from types import StringTypes as string_types
+except ImportError:
+    # Python 3
+    string_types = (str,)
+
+
+# module metadata
+__docformat__ = 'reStructuredText'
 
 
 # utility functions
@@ -51,12 +69,12 @@ def _split_amount_and_unit(val, default_unit=None, allow=None):
     unit specification. The number and the unit may be separated by 0
     or more spaces.
 
-      >>> _split_amount_and_unit('7 s')
-      (7.0, 's')
-      >>> _split_amount_and_unit('7s')
-      (7.0, 's')
-      >>> _split_amount_and_unit('-7.0s')
-      (-7.0, 's')
+      >>> _split_amount_and_unit('7 s') == (7.0, 's')
+      True
+      >>> _split_amount_and_unit('7s') ==  (7.0, 's')
+      True
+      >>> _split_amount_and_unit('-7.0s') == (-7.0, 's')
+      True
 
     If `val` does not conform to this syntax, a `ValueError` will
     be raised::
@@ -69,15 +87,15 @@ def _split_amount_and_unit(val, default_unit=None, allow=None):
     If string `val` only specifies an amount (e.g., ``42``) with no
     unit, then the optional argument `default_unit` provides one::
 
-      >>> _split_amount_and_unit('7', 'min')
-      (7.0, 'min')
+      >>> _split_amount_and_unit('7', 'min') == (7.0, 'min')
+      True
 
     Note the amount is a floating point number, whereas the unit is
     always a string.  By default, no validity checks are performed
     on the 'unit' part, which can be any word::
 
-      >>> _split_amount_and_unit('7sins')
-      (7.0, 'sins')
+      >>> _split_amount_and_unit('7sins') == (7.0, 'sins')
+      True
 
     The optional argument `allow` restricts the resulting quantity to
     be a one of the specified units; if it's not, a `ValueError`
@@ -100,10 +118,8 @@ def _split_amount_and_unit(val, default_unit=None, allow=None):
         if unit not in allow:
             raise ValueError(
                 "Unit '%s' is not allowed here: only %s are." %
-                (unit, str.join(
-                    ",", [
-                        ("'%s'" %
-                         a) for a in sorted(allow)])))
+                (unit, ",".join([
+                    ("'%s'" % a) for a in sorted(allow)])))
     return (amount, unit)
 
 
@@ -178,7 +194,6 @@ class _Quantity(object):
         '_base',
         '_name',
         '_unit',
-        '_UNITS',
     )
 
     def amount(self, unit=None, conv=(lambda value: value)):
@@ -197,7 +212,7 @@ class _Quantity(object):
         """
         if unit is None:
             unit = self.unit
-        return (conv(self._amount) / conv(unit._amount))
+        return (old_div(conv(self._amount), conv(unit._amount)))
 
     @property
     def base(self):
@@ -255,7 +270,7 @@ class _Quantity(object):
     # we need to provide `__new__`, not `__init__`
     def __new__(cls, val, unit=None, name=None):
         # dispatch to actual constructor depending on the type of `val`
-        if isinstance(val, types.StringTypes):
+        if isinstance(val, string_types):
             new = cls._new_from_string(val)
         elif isinstance(val, _Quantity):
             new = cls._new_from_amount_and_unit(val.amount(), val.unit)
@@ -271,7 +286,7 @@ class _Quantity(object):
             assert unit.name in cls._UNITS, (
                 "Unit '%s' not allowed in '%s' quantity: only %s are."
                 % (unit.name, cls.__name__,
-                   str.join(',', [("'%s'" % u) for u in cls._UNITS])))
+                   ','.join([("'%s'" % u) for u in cls._UNITS])))
             new = cls._new_from_amount_and_unit(val, unit)
         new._name = name
         if name is not None:
@@ -385,8 +400,8 @@ class _Quantity(object):
                 % (self.__class__.__name__, other.__class__.__name__))
         unit = self._smallest_unit(self, other)
         return self._new_from_amount_and_unit(
-            (self.amount(self.base) + other.amount(self.base)) /
-            unit.amount(self.base),
+            old_div((self.amount(self.base) + other.amount(self.base)),
+            unit.amount(self.base)),
             unit=unit)
 
     def __sub__(self, other):
@@ -396,8 +411,8 @@ class _Quantity(object):
                 % (self.__class__.__name__, other.__class__.__name__))
         unit = self._smallest_unit(self, other)
         return self._new_from_amount_and_unit(
-            (self.amount(self.base) - other.amount(self.base)) /
-            unit.amount(self.base),
+            old_div((self.amount(self.base) - other.amount(self.base)),
+            unit.amount(self.base)),
             unit=unit)
 
     def __mul__(self, coeff):
@@ -421,14 +436,14 @@ class _Quantity(object):
         try:
             # the quotient of two (homogeneous) quantities is a ratio (pure
             # number)
-            return (self.amount(self.base, conv=float) /
-                    other.amount(self.base, conv=float))
+            return (old_div(self.amount(self.base, conv=float),
+                    other.amount(self.base, conv=float)))
         except AttributeError:
             # we could really return `self * (1.0/other)`, but we want
             # to set the unit to a possibly smaller one (see
             # `_get_best_unit` above) to have a better "human" representation
             try:
-                amount = self.amount(self.base, conv=float) / float(other)
+                amount = old_div(self.amount(self.base, conv=float), float(other))
             except TypeError:
                 raise TypeError(
                     "Cannot divide '%s' by '%s': can only take"
@@ -438,7 +453,7 @@ class _Quantity(object):
                                                 self.__class__.__name__))
             unit = self._largest_nonfractional_unit(amount)
             return self._new_from_amount_and_unit(
-                amount / unit.amount(self.base), unit)
+                old_div(amount, unit.amount(self.base)), unit)
 
     # be compatible with `from __future__ import division`
     __truediv__ = __div__
@@ -451,8 +466,8 @@ class _Quantity(object):
              " can only take the ratio of homogeneous quantities."
                 % (self.__class__.__name__, other.__class__.__name__))
         # the quotient of two (homogeneous) quantities is a ratio (pure number)
-        return (self.amount(self.base, conv=int) /
-                other.amount(self.base, conv=int))
+        return (old_div(self.amount(self.base, conv=int),
+                other.amount(self.base, conv=int)))
 
     def __radd__(self, other):
         """
@@ -508,8 +523,9 @@ class Quantity(object):
     The name of the base unit is given as argument to the metaclass
     instance::
 
-      >>> class Memory1(object):
-      ...   __metaclass__ = Quantity('B')
+      >>> @add_metaclass(Quantity('B'))
+      ... class Memory1(object):
+      ...   pass
       ...
       >>> B = Memory1('1 B')
       >>> print (2*B)
@@ -519,8 +535,9 @@ class Quantity(object):
     key gives the unit name, and its value gives the ratio of the new
     unit to the base unit.  For example::
 
-      >>> class Memory2(object):
-      ...   __metaclass__ = Quantity('B', kB=1000, MB=1000*1000)
+      >>> @add_metaclass(Quantity('B', kB=1000, MB=1000*1000))
+      ... class Memory2(object):
+      ...   pass
       ...
       >>> a_thousand_kB = Memory2('1000kB')
       >>> MB = Memory2('1   MB')
@@ -550,7 +567,7 @@ class Quantity(object):
         newcls.register(base)
         setattr(newcls, self.base_unit_name, base)
         # create additional units and add them as class attributes
-        for name, amount in self.other_units.iteritems():
+        for name, amount in self.other_units.items():
             unit = newcls(amount, unit=newcls._base, name=name)
             # make new units default to self when printing the amount
             unit._unit = unit
@@ -559,6 +576,23 @@ class Quantity(object):
         return newcls
 
 
+@add_metaclass(Quantity(
+        # base unit is "bytes"; use the symbol 'B', although this is not the SI
+        # usage.
+        'B',
+        # 10-base units
+        kB=1000,
+        MB=1000 * 1000,
+        GB=1000 * 1000 * 1000,
+        TB=1000 * 1000 * 1000 * 1000,
+        PB=1000 * 1000 * 1000 * 1000 * 1000,
+        # binary base units
+        KiB=1024,                # KiBiByte
+        MiB=1024 * 1024,           # MiBiByte
+        GiB=1024 * 1024 * 1024,      # GiBiByte
+        TiB=1024 * 1024 * 1024 * 1024,  # TiBiByte
+        PiB=1024 * 1024 * 1024 * 1024 * 1024,  # PiBiByte
+    ))
 class Memory(object):
 
     """
@@ -657,27 +691,27 @@ class Memory(object):
     By default, the unit used originally for defining the quantity is
     used::
 
-        >>> a_megabyte.to_str('%d [%s]')
-        '1 [MB]'
+        >>> '1 [MB]' == a_megabyte.to_str('%d [%s]')
+        True
 
     This can be overridden by specifying an optional second argument
     `unit`::
 
-        >>> a_megabyte.to_str('%d [%s]', unit=Memory.kB)
-        '1000 [kB]'
+        >>> '1000 [kB]' == a_megabyte.to_str('%d [%s]', unit=Memory.kB)
+        True
 
     A third optional argument `conv` can set the numerical type to be
     used for conversion computations::
 
-        >>> a_megabyte.to_str('%g%s', unit=Memory.GB, conv=float)
-        '0.001GB'
+        >>> '0.001GB' == a_megabyte.to_str('%g%s', unit=Memory.GB, conv=float)
+        True
 
     The default numerical type is `int`, which in particular implies
     that you get a null amount if the requested unit is larger than
     the quantity::
 
-        >>> a_megabyte.to_str('%g%s', unit=Memory.GB, conv=int)
-        '0GB'
+        >>> '0GB' == a_megabyte.to_str('%g%s', unit=Memory.GB, conv=int)
+        True
 
     Conversion to string uses the unit originally used for defining
     the quantity and the ``%g%s`` format::
@@ -686,25 +720,51 @@ class Memory(object):
         '1MB'
 
     """
-    __metaclass__ = Quantity(
-        # base unit is "bytes"; use the symbol 'B', although this is not the SI
-        # usage.
-        'B',
-        # 10-base units
-        kB=1000,
-        MB=1000 * 1000,
-        GB=1000 * 1000 * 1000,
-        TB=1000 * 1000 * 1000 * 1000,
-        PB=1000 * 1000 * 1000 * 1000 * 1000,
-        # binary base units
-        KiB=1024,                # KiBiByte
-        MiB=1024 * 1024,           # MiBiByte
-        GiB=1024 * 1024 * 1024,      # GiBiByte
-        TiB=1024 * 1024 * 1024 * 1024,  # TiBiByte
-        PiB=1024 * 1024 * 1024 * 1024 * 1024,  # PiBiByte
-    )
 
 
+@add_metaclass(Quantity(
+        # base unit is nanoseconds; use the SI symbol 'ns'
+        'ns',
+        # alternate spellings
+        nanosec=1,
+        nanosecond=1,
+        nanoseconds=1,
+        # microsecond(s)
+        us=1000,  # approx SI symbol
+        microsec=1000,
+        microseconds=1000,
+        # millisecond(s)
+        ms=10 ** 6,
+        millisec=10 ** 6,
+        milliseconds=10 ** 6,
+        # seconds(s)
+        s=10 ** 9,
+        sec=10 ** 9,
+        secs=10 ** 9,
+        second=10 ** 9,
+        seconds=10 ** 9,
+        # minute(s)
+        m=60 * 10 ** 9,
+        min=60 * 10 ** 9,
+        mins=60 * 10 ** 9,
+        minute=60 * 10 ** 9,
+        minutes=60 * 10 ** 9,
+        # hour(s)
+        h=60 * 60 * 10 ** 9,
+        hr=60 * 60 * 10 ** 9,
+        hrs=60 * 60 * 10 ** 9,
+        hour=60 * 60 * 10 ** 9,
+        hours=60 * 60 * 10 ** 9,
+        # day(s)
+        d=24 * 60 * 60 * 10 ** 9,
+        day=24 * 60 * 60 * 10 ** 9,
+        days=24 * 60 * 60 * 10 ** 9,
+        # week(s)
+        w=7 * 24 * 60 * 60 * 10 ** 9,
+        wk=7 * 24 * 60 * 60 * 10 ** 9,
+        week=7 * 24 * 60 * 60 * 10 ** 9,
+        weeks=7 * 24 * 60 * 60 * 10 ** 9,
+    ))
 class Duration(object):
 
     """
@@ -865,27 +925,27 @@ class Duration(object):
     By default, the unit used originally for defining the quantity is
     used::
 
-        >>> an_hour.to_str('%d [%s]')
-        '1 [hour]'
+        >>> '1 [hour]' == an_hour.to_str('%d [%s]')
+        True
 
     This can be overridden by specifying an optional second argument
     `unit`::
 
-        >>> an_hour.to_str('%d [%s]', unit=Duration.m)
-        '60 [m]'
+        >>> '60 [m]' == an_hour.to_str('%d [%s]', unit=Duration.m)
+        True
 
     A third optional argument `conv` can set the numerical type to be
     used for conversion computations::
 
-        >>> an_hour.to_str('%.1f [%s]', unit=Duration.m, conv=float)
-        '60.0 [m]'
+        >>> '60.0 [m]' == an_hour.to_str('%.1f [%s]', unit=Duration.m, conv=float)
+        True
 
     The default numerical type is `int`, which in particular implies
     that you get a null amount if the requested unit is larger than
     the quantity::
 
-        >>> an_hour.to_str('%d [%s]', unit=Duration.days)
-        '0 [days]'
+        >>> '0 [days]' == an_hour.to_str('%d [%s]', unit=Duration.days)
+        True
 
     Conversion to string uses the unit originally used for defining
     the quantity and the ``%g%s`` format::
@@ -894,49 +954,6 @@ class Duration(object):
         '1hour'
 
     """
-    __metaclass__ = Quantity(
-        # base unit is nanoseconds; use the SI symbol 'ns'
-        'ns',
-        # alternate spellings
-        nanosec=1,
-        nanosecond=1,
-        nanoseconds=1,
-        # microsecond(s)
-        us=1000,  # approx SI symbol
-        microsec=1000,
-        microseconds=1000,
-        # millisecond(s)
-        ms=10 ** 6,
-        millisec=10 ** 6,
-        milliseconds=10 ** 6,
-        # seconds(s)
-        s=10 ** 9,
-        sec=10 ** 9,
-        secs=10 ** 9,
-        second=10 ** 9,
-        seconds=10 ** 9,
-        # minute(s)
-        m=60 * 10 ** 9,
-        min=60 * 10 ** 9,
-        mins=60 * 10 ** 9,
-        minute=60 * 10 ** 9,
-        minutes=60 * 10 ** 9,
-        # hour(s)
-        h=60 * 60 * 10 ** 9,
-        hr=60 * 60 * 10 ** 9,
-        hrs=60 * 60 * 10 ** 9,
-        hour=60 * 60 * 10 ** 9,
-        hours=60 * 60 * 10 ** 9,
-        # day(s)
-        d=24 * 60 * 60 * 10 ** 9,
-        day=24 * 60 * 60 * 10 ** 9,
-        days=24 * 60 * 60 * 10 ** 9,
-        # week(s)
-        w=7 * 24 * 60 * 60 * 10 ** 9,
-        wk=7 * 24 * 60 * 60 * 10 ** 9,
-        week=7 * 24 * 60 * 60 * 10 ** 9,
-        weeks=7 * 24 * 60 * 60 * 10 ** 9,
-    )
 
     # override ctor to hook `_new_from_timedelta` in
     def __new__(cls, val, unit=None, name=None):
@@ -965,7 +982,7 @@ class Duration(object):
                     lapse += int(match.group(name)) * unit_lapse
                     last_unit = unit
             return cls._new_from_amount_and_unit(
-                amount=(lapse / last_unit.amount(Duration.s)),
+                amount=(old_div(lapse, last_unit.amount(Duration.s))),
                 unit=last_unit)
         elif ':' in val:
             # since `val` didn't match `_TIMESPEC_RE`, then it must

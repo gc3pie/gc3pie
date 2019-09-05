@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+
 """
 Generic Python programming utility functions.
 
@@ -8,6 +9,7 @@ function or class belongs in here is the following: place a function
 or class in this module if you could copy its code into the
 sources of a different project and it would not stop working.
 """
+
 # Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -22,33 +24,63 @@ sources of a different project and it would not stop working.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
+
+from __future__ import absolute_import, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import next
+from builtins import range
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 
+from codecs import decode
 from collections import defaultdict, deque
+try:
+    # Python 3
+    from collections.abc import Mapping, MutableMapping
+except ImportError:
+    from collections import Mapping, MutableMapping
 import contextlib
 import functools
+from functools import total_ordering
+import locale
 import os
 import os.path
+if bytes == str:
+    # Python2's `os.sysconf()` cannot handle sysconf variable names as
+    # Unicode strings, so we need to cast them to byte-strings
+    def os_sysconf(name):
+        return os.sysconf(str(name))
+else:
+    # Python3
+    from os import sysconf as os_sysconf
 import random
 import re
 import shutil
 import sys
 import tempfile
 import time
-import cStringIO as StringIO
-import UserDict
+import io as StringIO
 
 
 from gc3libs.compat._collections import OrderedDict
+from gc3libs.compat._functools import total_ordering
 import lockfile
 
 import gc3libs
 import gc3libs.exceptions
 import gc3libs.debug
 from gc3libs.quantity import Duration, Memory
+
+
+if bytes == str:
+    # Python 2
+    text_str = unicode
+else:
+    # Python 3+
+    text_str = str
+
 
 # This fixes an issue with Python 2.4, which does not have
 # `shutl.WindowsError`
@@ -59,6 +91,11 @@ except AttributeError:
 
         """this exception should never be raised"""
     WindowsError = NeverUsedException
+
+
+# map suffix to pow multipliers. This is 2.6 compatible.
+BYTE_SUFFIX_TO_POW = dict(((l, i)) for i, l in enumerate('kmgtpezy', start=1))
+# 2.7 +:  mapped = {l: i for i, l in enumerate('kmgtpezy', start=1)}
 
 
 def backup(path):
@@ -118,31 +155,31 @@ def basename_sans(path):
     last few characters, up to the rightmost dot, are removed as
     well::
 
-      >>> basename_sans('/tmp/foo.txt')
-      'foo'
+      >>> basename_sans('/tmp/foo.txt') == 'foo'
+      True
 
-      >>> basename_sans('bar.txt')
-      'bar'
+      >>> basename_sans('bar.txt') == 'bar'
+      True
 
     If there is no dot in the file name, no "extension" is chopped
     off::
 
-      >>> basename_sans('baz')
-      'baz'
+      >>> basename_sans('baz') == 'baz'
+      True
 
     If there are several dots in the file name, only the last one and
     trailing characters are removed::
 
-      >>> basename_sans('foo.bar.baz')
-      'foo.bar'
+      >>> basename_sans('foo.bar.baz') == 'foo.bar'
+      True
 
     Leading directory components are chopped off in any case::
 
-      >>> basename_sans('/tmp/foo.bar.baz')
-      'foo.bar'
+      >>> basename_sans('/tmp/foo.bar.baz') == 'foo.bar'
+      True
 
-      >>> basename_sans('/tmp/foo')
-      'foo'
+      >>> basename_sans('/tmp/foo') == 'foo'
+      True
     """
     return os.path.splitext(os.path.basename(path))[0]
 
@@ -178,15 +215,15 @@ def cache_for(lapse):
         ...     @cache_for(2)
         ...     def foo(self):
         ...             self.times += 1
-        ...             return ("times effectively run: %d" % self.times)
+        ...             return self.times
         >>> x = X()
         >>> x.foo()
-        'times effectively run: 1'
+        1
         >>> x.foo()
-        'times effectively run: 1'
+        1
         >>> time.sleep(3)
         >>> x.foo()
-        'times effectively run: 2'
+        2
 
     """
     def decorator(fn):
@@ -236,141 +273,64 @@ def cat(*args, **extra_args):
             output.write(line)
 
 
-def copyfile(src, dst, overwrite=False, changed_only=True, link=False):
+def check_file_access(path, mode, exception=RuntimeError, isdir=False):
     """
-    Copy a file from `src` to `dst`; return `True` if the copy was
-    actually made.
+    Test for access to a path; if access is not granted, raise an
+    instance of `exception` with an appropriate error message.
+    This is a frontend to `os.access`:func:, which see for exact
+    semantics and the meaning of `path` and `mode`.
 
-    If `overwrite` is ``False`` (default), an existing destination entry
-    is left unchanged and `False` is returned.
+    :param path: Filesystem path to test.
+    :param mode: See `os.access`:func:
+    :param exception: Class of exception to raise if test fails.
+    :param isdir: If `True` then also test that `path` points to a directory.
 
-    If `overwrite` is ``True``, then `changed_only` determines
-    if the destination file is overwritten:
+    If the test succeeds, `True` is returned::
 
-    - if `changed_only` is ``True`` (default), then destination is
-      overwritten if and only if it has a different size or has been
-      modified less recently than the source;
+      >>> check_file_access('/bin/cat', os.F_OK)
+      True
+      >>> check_file_access('/bin/cat', os.R_OK)
+      True
+      >>> check_file_access('/bin/cat', os.X_OK)
+      True
+      >>> check_file_access('/tmp', os.X_OK)
+      True
 
-    - if `changed_only` is ``False``, then the destination is
-      overwritten unconditionally.
+    However, if the test fails, then an exception is raised::
 
-    If `link` is `True`, an attempt at hard-linking is done first;
-    failing that, we copy the source file onto the destination
-    one. Permission bits and modification times are copied as well.
+      >>> check_file_access('/bin/cat', os.W_OK)
+      Traceback (most recent call last):
+        ...
+      RuntimeError: Cannot write to file '/bin/cat'.
 
-    If `dst` is a directory, a file with the same basename as `src` is
-    created (or overwritten) in the directory specified.
+    If the optional argument `isdir` is `True`, then additionally test
+    that `path` points to a directory inode::
 
-    Return ``True`` or ``False``, depending on whether the source file
-    was actually copied (or linked) to the destination.
+      >>> check_file_access('/tmp', os.F_OK, isdir=True)
+      True
+
+      >>> check_file_access('/bin/cat', os.F_OK, isdir=True)
+      Traceback (most recent call last):
+        ...
+      RuntimeError: Expected '/bin/cat' to be a directory, but it's not.
     """
-    if os.path.isdir(dst):
-        dst = os.path.join(dst, os.path.basename(src))
-    if os.path.exists(dst) and not overwrite:
-        return False
-    if samefile(src, dst):
-        return False
-    try:
-        if not os.path.exists(dst):
-            dstdir = dirname(dst)
-            if not os.path.exists(dstdir):
-                os.makedirs(dstdir)
+    what = ("directory" if isdir else "file")
+    if not os.access(path, os.F_OK):
+        raise exception("Cannot access %s '%s'." % (what, path))
+    if isdir and not os.path.isdir(path):
+        raise exception(
+            "Expected '%s' to be a directory, but it's not." % path)
+    if (mode & os.R_OK) and not os.access(path, os.R_OK):
+        raise exception("Cannot read %s '%s'." % (what, path))
+    if (mode & os.W_OK) and not os.access(path, os.W_OK):
+        raise exception("Cannot write to %s '%s'." % (what, path))
+    if (mode & os.X_OK) and not os.access(path, os.X_OK):
+        if isdir:
+            raise exception("Cannot traverse directory '%s':"
+                            " lacks 'x' permission." % path)
         else:
-            # `dst` exists, check for changes
-            if changed_only:
-                sstat = os.stat(src)
-                dstat = os.stat(dst)
-                if (sstat.st_size ==
-                        dstat.st_size and sstat.st_mtime <= dstat.st_mtime):
-                    # same size and destination more recent, do not copy
-                    return False
-        if link:
-            try:
-                os.link(src, dst)
-            except OSError:
-                # retry with normal copy
-                shutil.copy2(src, dst)
-        else:
-            shutil.copy2(src, dst)
-    except WindowsError:
-        pass
+            raise exception("File '%s' lacks execute ('x') permission." % path)
     return True
-
-
-def copytree(src, dst, overwrite=False, changed_only=True):
-    """
-    Recursively copy an entire directory tree rooted at `src`.
-
-    If `overwrite` is ``False`` (default), entries that already exist in
-    the destination tree are left unchanged and not overwritten.
-
-    If `overwrite` is ``True``, then `changed_only` determines
-    which files are overwritten:
-
-    - if `changed_only` is ``True`` (default), then only files for
-      which the source has a different size or has been modified
-      more recently than the destination are copied;
-
-    - if `changed_only` is ``False``, then *all* files in `source`
-      will be copied into `destination`, unconditionally.
-
-    Destination directory `dst` is created if it does not exist.
-
-    See also: `shutil.copytree`.
-    """
-    assert os.path.isdir(src), \
-        ("Source path `%s` does not name an existing directory" % src)
-    errors = []
-    if not os.path.exists(dst):
-        os.makedirs(dst)
-    for name in os.listdir(src):
-        srcname = os.path.join(src, name)
-        dstname = os.path.join(dst, name)
-        try:
-            if os.path.isdir(srcname):
-                errors.extend(
-                    copytree(srcname, dstname, overwrite, changed_only))
-            else:
-                copyfile(srcname, dstname)
-        except (IOError, os.error) as why:
-            errors.append((srcname, dstname, why))
-    return errors
-
-
-def copy_recursively(src, dst, overwrite=False, changed_only=True):
-    """
-    Copy `src` to `dst`, descending it recursively if necessary.
-
-    The `overwrite` and `changed_only` optional arguments
-    have the same effect as in `copytree`:func: (which see).
-    """
-    if os.path.isdir(src):
-        copytree(src, dst, overwrite, changed_only)
-    else:
-        copyfile(src, dst, overwrite, changed_only)
-
-
-def count(seq, predicate):
-    """
-    Return number of items in `seq` that match `predicate`.
-    Argument `predicate` should be a callable that accepts
-    one argument and returns a boolean.
-    """
-    count = 0
-    for item in seq:
-        if predicate(item):
-            count += 1
-    return count
-
-
-def defproperty(fn):
-    """
-    Decorator to define properties with a simplified syntax in Python 2.4.
-    See http://goo.gl/IoOZ8m for details and examples.
-    """
-    p = {'doc': fn.__doc__}
-    p.update(fn())
-    return property(**p)
 
 
 def deploy_configuration_file(filename, template_filename=None):
@@ -502,9 +462,9 @@ class ExponentialBackoff(object):
     so you can just retrieve waiting times with the `.next()` method,
     or by looping over it::
 
-      >>> random.seed(314) # not-so-random for testing purposes...
-      >>> list(ExponentialBackoff())
-      [0.0, 0.0, 0.0, 0.25, 0.15000000000000002, 0.30000000000000004]
+      >>> lapses = list(ExponentialBackoff(max_retries=7))
+      >>> len(lapses)
+      8
 
     .. _`exponential backoff`: http://goo.gl/PxVICA
 
@@ -518,7 +478,7 @@ class ExponentialBackoff(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         """Return next waiting time."""
         self.attempt += 1
         if self.attempt > self.max_retries:
@@ -527,7 +487,7 @@ class ExponentialBackoff(object):
 
     def wait(self):
         """Wait for another while."""
-        time.sleep(self.next())
+        time.sleep(next(self))
 
 
 def first(seq):
@@ -543,12 +503,12 @@ def first(seq):
       0
 
       >>> s = {'a':1, 'b':2, 'c':3}
-      >>> first(sorted(s.keys()))
-      'a'
+      >>> first(sorted(s.keys())) == 'a'
+      True
     """
     try:  # try iterator interface
-        return seq.next()
-    except AttributeError:
+        return next(seq)
+    except TypeError:
         pass
     try:  # seq is no iterator, try indexed lookup
         return seq[0]
@@ -593,6 +553,102 @@ def from_template(template, **extra_args):
     return (template_contents % extra_args)
 
 
+def from_encoded_bytes(chars, encodings):
+    """
+    Convert *chars* to Python unicode string, trying different encodings.
+
+    Try converting byte string *chars* to a Python text string (type
+    ``unicode`` on Py2, type ``str`` on Py3), trying each of the
+    encodings specified until one of them succeeds.
+
+    If none of the encodings work, raise ``UnicodeDecodeError``.
+
+    :param bytes chars:
+      Byte string to convert to text
+    :param list encodings:
+      List of encodings to try, in sequence. (e.g., ``['utf-8', 'latin-1']``
+    :raises UnicodeDecodeError:
+      When none of the encodings can successfully convert the given byte string.
+    """
+    for encoding in encodings:
+        try:
+            return decode(chars, encoding)
+        except UnicodeDecodeError:
+            pass
+    raise UnicodeDecodeError(
+        "Cannot decode byte string {0!r}; tried encodings {1!r}."
+        .format(chars, encodings))
+
+
+def from_filesystem_bytes(chars):
+    """
+    Convert *chars* to Python unicode string, trying different encodings.
+
+    This function should be used to make a Python text string (type
+    ``unicode`` on Python 2, type ``str`` on Pythoin 3) out of a byte
+    string of characters that result from a filesystem lookup
+    operation.  Conversion to a text string is attempted using the
+    following encodings, in order:
+
+    #. the encoding determined by the current locale
+       (as determined by Python's ``locale.getlocale()``);
+    #. the "user's preferred encoding", as determined
+       by Python's ``locale.getpreferredencoding()``;
+    #. UTF-8 encoding;
+    #. direct map of byte values 0x0 through 0xff to the corresponding
+       Unicode code points.
+
+    The latter conversion will *not* be a valid text conversion (i.e.,
+    it will not preserve any text representation of the string),
+    unless the ISO-8859-1 (aka "latin-1") encoding is used.
+
+    However, the issue we need to solve here is the mismatch of
+    Python's use of text strings to represent path names with UNIX' C
+    library use of byte strings to represent the same.  Since the UNIX
+    kernel has no notion of character encoding in path names (as
+    opposed to Windows, which uses UNICODE since Win95), there is
+    actually no guarantee that a given file name can be decoded.  This
+    is particularly evident on multi-user Linux/UNIX systems where you
+    may be using e.g. the ``en_US.UTF-8`` locale but your Russian
+    colleague may be using KOI8-R...
+
+    :param bytes chars:
+      Byte string to convert to text
+    :raises UnicodeDecodeError:
+      When none of the encodings can successfully convert the given byte string.
+    """
+    encodings = [ 'utf-8', 'latin-1']
+    preferred = locale.getpreferredencoding()
+    if preferred:
+        encodings.insert(0, preferred)
+    default = locale.getlocale()[1]
+    if default:
+        encodings.insert(0, default)
+    return from_encoded_bytes(chars, encodings)
+
+
+def from_terminal_bytes(chars):
+    """
+    Convert *chars* to Python unicode string, using current locale encoding.
+
+    This function should be used to make a Python text string (type
+    ``unicode`` on Python 2, type ``str`` on Pythoin 3) out of a byte
+    string of characters that were inputed by users in a terminal
+    application (e.g., returned by ``input()`` or typed as
+    command-line arguments).
+
+    If the current locale encoding cannot be determined, then the byte
+    string is assumed to be an ASCII-only string.
+
+    :param bytes chars:
+      Byte string to convert to text
+    :raises UnicodeDecodeError:
+      When none of the encodings can successfully convert the given byte string.
+    """
+    return decode(chars, locale.getlocale()[1] or 'ascii')
+
+
+
 def get_available_physical_memory():
     """
     Return size of available memory (as a `gc3libs.quantity.Memory` object).
@@ -607,8 +663,8 @@ def get_available_physical_memory():
       are not implemented on this system.
     """
     try:
-        pagesize = os.sysconf('SC_PAGE_SIZE')
-        avail_pages = os.sysconf('SC_AVPHYS_PAGES')
+        pagesize = os_sysconf('SC_PAGE_SIZE')
+        avail_pages = os_sysconf('SC_AVPHYS_PAGES')
         return Memory(avail_pages * pagesize, unit=Memory.B)
     except ValueError:
         raise NotImplementedError(
@@ -822,7 +878,7 @@ def ifelse(test, if_true, if_false):
 # original source: https://gist.github.com/jtriley/7270594
 def insert_char_every_n_chars(string, char='\n', every=64):
     return char.join(
-        string[i:i + every] for i in xrange(0, len(string), every))
+        string[i:i + every] for i in range(0, len(string), every))
 
 
 def irange(start, stop, step=1):
@@ -848,18 +904,18 @@ def irange(start, stop, step=1):
     Also unlike the built-in `range`, *both* `start` and `stop` have
     to be specified::
 
-      >>> irange(42)
-      Traceback (most recent call last):
-        ...
-      TypeError: irange() takes at least 2 arguments (1 given)
+      >>> try:
+      ...   irange(42)
+      ... except TypeError:
+      ...   print("missing required argument!")
+      missing required argument!
 
     Of course, a null `step` is not allowed::
 
-      >>> list(irange(1, 2, 0))
-      Traceback (most recent call last):
-        ...
-      AssertionError: Null step in irange.
-
+      >>> try:
+      ...   list(irange(1, 2, 0))
+      ... except AssertionError as err:
+      ...   assert 'Null step in irange.' in str(err)
     """
     assert float(step) != 0.0, "Null step in irange."
     value = start
@@ -982,7 +1038,7 @@ class History(object):
     def __str__(self):
         """Return all messages texts in a single string, separated by newline
         characters."""
-        return '- ' + str.join('\n- ', [self.format_message(record)
+        return '- ' + '\n- '.join([self.format_message(record)
                                for record in self._messages]) + '\n'
 
 
@@ -1169,7 +1225,7 @@ def occurs(pattern, filename, match=grep):
     """
     try:
         # look for the first match -- if one is found, we're done
-        match(pattern, filename).next()
+        next(match(pattern, filename))
         return True
     except StopIteration:
         return False
@@ -1359,7 +1415,7 @@ def prettyprint(
     if _exclude is None:
         _exclude = set()
     _exclude.add(id(D))
-    for k, v in sorted(D.iteritems()):
+    for k, v in sorted(D.items()):
         leading_spaces = indent * ' '
         full_name = "%s%s" % (_key_prefix, k)
         if only_keys is not None:
@@ -1375,7 +1431,7 @@ def prettyprint(
                 for name in only_keys:
                     # take only the initial segment, up to a "level" dots
                     dots = min(name.count('.'), level) + 1
-                    prefix = str.join('.', name.split('.')[:dots])
+                    prefix = '.'.join(name.split('.')[:dots])
                     if str(full_name) == prefix:
                         found = True
                         break
@@ -1387,9 +1443,9 @@ def prettyprint(
         # To make a 'key' valid in YAML it must not start with one of the following chars
         sk = str(k)
         sk = sk if sk[0] not in  u'\0 \t\r\n\x85\u2028\u2029-?:,[]{}#&*!|>\'\"%@`' else  "'%s'" % sk
-        first = str.join('', [leading_spaces, sk, ': '])
+        first = ''.join([leading_spaces, sk, ': '])
         if isinstance(
-                v, (dict, UserDict.DictMixin, UserDict.UserDict, OrderedDict)):
+                v, (dict, Mapping, OrderedDict)):
             if maxdepth is None or maxdepth > 0:
                 if maxdepth is None:
                     depth = None
@@ -1403,7 +1459,7 @@ def prettyprint(
             elif maxdepth == 0:
                 second = "..."
         elif isinstance(v, (list, tuple)):
-            second = str.join(', ', [str(item) for item in v])
+            second = ', '.join([str(item) for item in v])
         else:
             second = str(v)
         # wrap overlong lines, and always wrap if the second part is multi-line
@@ -1421,7 +1477,7 @@ def prettyprint(
             # rebuild `second`, indenting each line by (indent+step) spaces
             second = ''
             for line in lines:
-                second = str.join('', [
+                second = ''.join([
                     second,
                     ' ' * (indent + step),
                     line.rstrip().expandtabs(step)[dedent:],
@@ -1430,9 +1486,7 @@ def prettyprint(
         # there can be multiple trailing '\n's, which we remove here
         second = second.rstrip()
         # finally print line(s)
-        output.write(first)
-        output.write(second)
-        output.write('\n')
+        output.write('%s%s\n' % (first, second))
 
 
 def progressive_number(qty=None, id_filename=None):
@@ -1536,7 +1590,7 @@ def read_contents(path):
       >>> import tempfile
       >>> (fd, tmpfile) = tempfile.mkstemp()
       >>> w = open(tmpfile, 'w')
-      >>> w.write('hey')
+      >>> w.write('hey') and None  # make doctest compatible with Py2 and Py3
       >>> w.close()
       >>> read_contents(tmpfile)
       'hey'
@@ -1597,8 +1651,7 @@ def samefile(path1, path2):
     except OSError as err:
         if err.errno == 2:  # ENOENT
             return False
-        else:
-            raise
+        raise
 
 
 def sh_quote_safe(arg):
@@ -1622,15 +1675,15 @@ def sh_quote_safe(arg):
 def sh_quote_safe_cmdline(args):
     """
     Single-quote a list of strings for passing to the shell as a
-    command.  Return the list of quoted arguments concatenated and
-    separated by spaces.
+    command.  Return string comprised of the quoted arguments,
+    concatenated and separated by spaces.
 
     Examples::
 
-      >>> sh_quote_safe_cmdline(['sh', '-c', 'echo c(1,2,3)'])
-      "'sh' '-c' 'echo c(1,2,3)'"
+      >>> print(sh_quote_safe_cmdline(['sh', '-c', 'echo c(1,2,3)']))
+      'sh' '-c' 'echo c(1,2,3)'
     """
-    return str.join(' ', (sh_quote_safe(arg) for arg in args))
+    return ' '.join((sh_quote_safe(arg) for arg in args))
 
 
 _DQUOTE_RE = re.compile(r'(\\*)"')
@@ -1642,7 +1695,7 @@ def sh_quote_unsafe(arg):
     Double-quote a string for passing as argument to a shell command.
 
     Return a double-quoted string that expands to the contents of
-    `text` but still allows variable expansion and ``\``-escapes
+    `text` but still allows variable expansion and ``\\``-escapes
     processing by the UNIX shell.  Examples (note that backslashes are
     doubled because of Python's string read syntax)::
 
@@ -1660,120 +1713,19 @@ def sh_quote_unsafe(arg):
 def sh_quote_unsafe_cmdline(args):
     """
     Double-quote a list of strings for passing to the shell as a
-    command.  Return the list of quoted arguments concatenated and
-    separated by spaces.
+    command.  Return string comprised of the quoted arguments,
+    concatenated and separated by spaces.
 
     Examples::
 
-      >>> sh_quote_unsafe_cmdline(['sh', '-c', 'echo $HOME'])
-      '"sh" "-c" "echo $HOME"'
-
+      >>> print(sh_quote_unsafe_cmdline(['sh', '-c', 'echo $HOME']))
+      "sh" "-c" "echo $HOME"
     """
-    return str.join(' ', (sh_quote_unsafe(arg) for arg in args))
+    return ' '.join((sh_quote_unsafe(arg) for arg in args))
 
 
-# see
-# http://stackoverflow.com/questions/31875/is-there-a-simple-elegant-way-to-define-singletons-in-python/1810391#1810391  # noqa
-class Singleton(object):
-
-    """
-    Derived classes of `Singleton` can have only one instance in the
-    running Python interpreter.
-
-       >>> x = Singleton()
-       >>> y = Singleton()
-       >>> x is y
-       True
-
-    """
-    def __new__(cls, *args, **extra_args):
-        if not hasattr(cls, '_instance'):
-            cls._instance = super(Singleton, cls).__new__(
-                cls, *args, **extra_args)
-        return cls._instance
-
-
-class MinusInfinity(Singleton):
-
-    """An object that is less-than any other object.
-
-        >>> x = MinusInfinity()
-
-        >>> x < 1
-        True
-        >>> 1 > x
-        True
-        >>> x < -1245632479102509834570124871023487235987634518745
-        True
-
-        >>> x < -sys.maxint
-        True
-        >>> x > -sys.maxint
-        False
-        >>> -sys.maxint > x
-        True
-
-    `MinusInfinity` objects are actually smaller than *any* given Python
-    object::
-
-        >>> x < 'azz'
-        True
-        >>> x < object()
-        True
-
-    Note that `MinusInfinity` is a singleton, therefore you always get
-    the same instance when calling the class constructor::
-
-        >>> x = MinusInfinity()
-        >>> y = MinusInfinity()
-        >>> x is y
-        True
-
-    Relational operators try to return the correct value when
-    comparing `MinusInfinity` to itself::
-
-        >>> x < y
-        False
-        >>> x <= y
-        True
-        >>> x == y
-        True
-        >>> x >= y
-        True
-        >>> x > y
-        False
-
-    """
-
-    def __lt__(self, other):
-        if self is other:
-            return False
-        else:
-            return True
-
-    def __le__(self, other):
-        return True
-
-    def __gt__(self, other):
-        return False
-
-    def __ge__(self, other):
-        if self is other:
-            return True
-        else:
-            return False
-
-    def __eq__(self, other):
-        if self is other:
-            return True
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-
-class PlusInfinity(Singleton):
+@total_ordering
+class PlusInfinity(object):
 
     """
     An object that is greater-than any other object.
@@ -1787,11 +1739,11 @@ class PlusInfinity(Singleton):
         >>> 1245632479102509834570124871023487235987634518745 < x
         True
 
-        >>> x > sys.maxint
+        >>> x > sys.maxsize
         True
-        >>> x < sys.maxint
+        >>> x < sys.maxsize
         False
-        >>> sys.maxint < x
+        >>> sys.maxsize < x
         True
 
     `PlusInfinity` objects are actually larger than *any* given Python
@@ -1802,17 +1754,10 @@ class PlusInfinity(Singleton):
         >>> x > object()
         True
 
-    Note that `PlusInfinity` is a singleton, therefore you always get
-    the same instance when calling the class constructor::
-
-        >>> x = PlusInfinity()
-        >>> y = PlusInfinity()
-        >>> x is y
-        True
-
     Relational operators try to return the correct value when
-    comparing `PlusInfinity` to itself::
+    comparing `PlusInfinity` to other instances of `PlusInfinity`::
 
+        >>> y = PlusInfinity()
         >>> x < y
         False
         >>> x <= y
@@ -1834,31 +1779,15 @@ class PlusInfinity(Singleton):
         >>> x == y
         True
 
+    Note that this used to be a singleton with special handling of 'is'.
+    This was removed because it was apparently unused, and a lot of extra code.
+
     """
-
     def __gt__(self, other):
-        if self is other:
-            return False
-        else:
-            return True
-
-    def __ge__(self, other):
-        return True
-
-    def __lt__(self, other):
-        return False
-
-    def __le__(self, other):
-        if self is other:
-            return True
-        else:
-            return False
+        return type(self) != type(other)
 
     def __eq__(self, other):
-        if self is other:
-            return True
-        else:
-            return False
+        return type(self) == type(other)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -1875,9 +1804,9 @@ class PlusInfinity(Singleton):
 
 # In Python 2.7 still, `DictMixin` is an old-style class; thus, we need
 # to make `Struct` inherit from `object` otherwise we loose properties
-# when setting/pickling/unpickling
-class Struct(object, UserDict.DictMixin):
-
+# when setting/pickling/unpickling and *very importantly* the ability to
+# use `@property` ...
+class Struct(MutableMapping):
     """
     A `dict`-like object, whose keys can be accessed with the usual
     '[...]' lookup syntax, or with the '.' get attribute syntax.
@@ -1929,14 +1858,23 @@ class Struct(object, UserDict.DictMixin):
 
     # the `DictMixin` class defines all std `dict` methods, provided
     # that `__getitem__`, `__setitem__` and `keys` are defined.
-    def __setitem__(self, name, val):
-        self.__dict__[name] = val
+    def __delitem__(self, name):
+        del self.__dict__[name]
 
     def __getitem__(self, name):
         return self.__dict__[name]
 
+    def __setitem__(self, name, val):
+        self.__dict__[name] = val
+
+    def __iter__(self):
+        return iter(self.__dict__)
+
+    def __len__(self):
+        return len(self.__dict__)
+
     def keys(self):
-        return self.__dict__.keys()
+        return list(self.__dict__.keys())
 
 
 def string_to_boolean(word):
@@ -1978,19 +1916,7 @@ def string_to_boolean(word):
       False
 
     """
-    if word.strip().lower() in ['true', 'yes', 'on', '1']:
-        return True
-    else:
-        return False
-
-
-def stripped(iterable):
-    """
-    Iterate over lines in `iterable` and return each of them stripped
-    of leading and trailing blanks.
-    """
-    for item in iterable:
-        yield item.strip()
+    return word.strip().lower() in ['true', 'yes', 'on', '1']
 
 
 @contextlib.contextmanager
@@ -2009,66 +1935,6 @@ def tempdir(**kwargs):
     finally:
         if os.path.isdir(tmpdir):
             shutil.rmtree(tmpdir, ignore_errors=True)
-
-
-def test_file(path, mode, exception=RuntimeError, isdir=False):
-    """
-    Test for access to a path; if access is not granted, raise an
-    instance of `exception` with an appropriate error message.
-    This is a frontend to `os.access`:func:, which see for exact
-    semantics and the meaning of `path` and `mode`.
-
-    :param path: Filesystem path to test.
-    :param mode: See `os.access`:func:
-    :param exception: Class of exception to raise if test fails.
-    :param isdir: If `True` then also test that `path` points to a directory.
-
-    If the test succeeds, `True` is returned::
-
-      >>> test_file('/bin/cat', os.F_OK)
-      True
-      >>> test_file('/bin/cat', os.R_OK)
-      True
-      >>> test_file('/bin/cat', os.X_OK)
-      True
-      >>> test_file('/tmp', os.X_OK)
-      True
-
-    However, if the test fails, then an exception is raised::
-
-      >>> test_file('/bin/cat', os.W_OK)
-      Traceback (most recent call last):
-        ...
-      RuntimeError: Cannot write to file '/bin/cat'.
-
-    If the optional argument `isdir` is `True`, then additionally test
-    that `path` points to a directory inode::
-
-      >>> test_file('/tmp', os.F_OK, isdir=True)
-      True
-
-      >>> test_file('/bin/cat', os.F_OK, isdir=True)
-      Traceback (most recent call last):
-        ...
-      RuntimeError: Expected '/bin/cat' to be a directory, but it's not.
-    """
-    what = ("directory" if isdir else "file")
-    if not os.access(path, os.F_OK):
-        raise exception("Cannot access %s '%s'." % (what, path))
-    if isdir and not os.path.isdir(path):
-        raise exception(
-            "Expected '%s' to be a directory, but it's not." % path)
-    if (mode & os.R_OK) and not os.access(path, os.R_OK):
-        raise exception("Cannot read %s '%s'." % (what, path))
-    if (mode & os.W_OK) and not os.access(path, os.W_OK):
-        raise exception("Cannot write to %s '%s'." % (what, path))
-    if (mode & os.X_OK) and not os.access(path, os.X_OK):
-        if isdir:
-            raise exception("Cannot traverse directory '%s':"
-                            " lacks 'x' permission." % path)
-        else:
-            raise exception("File '%s' lacks execute ('x') permission." % path)
-    return True
 
 
 def to_bytes(s):
@@ -2097,70 +1963,56 @@ def to_bytes(s):
       1048576
 
     """
-    last = -1
-    unit = s[last].lower()
-    if unit.isdigit():
-        # `s` is a integral number
+    # get the multiplier
+    k = 1024 if 'i' in s.lower() else 1000
+    # strip bad stuff away now
+    s = s.lower().strip(' ib')
+    # if it is just a number, return as int
+    if s.isdigit():
         return int(s)
-    if unit == 'b':
-        # ignore the the 'b' or 'B' suffix
-        last -= 1
-        unit = s[last].lower()
-    if unit == 'i':
-        k = 1024
-        last -= 1
-        unit = s[last].lower()
+    num, unit = s[:-1], s[-1]
+    return int(num) * (k ** BYTE_SUFFIX_TO_POW[unit])
+
+
+def to_str(arg, origin='ascii'):
+    """
+    Convert *arg* to a Python text string.
+
+    If *arg* is already a text string (i.e., a ``unicode`` object in
+    Python 2, and a ``str`` object in Python 3), then return it
+    unchanged.  As an exception, if *arg* is ``None``, return
+    ``None`` (unchanged).
+
+    Second argument *origin* determines the handling of *arg* when
+    *arg* is a byte-string:
+
+    - if *origin* is ``'filesystem'`` then *arg* is converted to a
+      text string using `from_filesystem_bytes`:func: (which see);
+
+    - if *origin* is ``'terminal'`` then conversion of *arg* is
+      attempted using `from_terminal_bytes`:func: (which see);
+
+    - otherwise, *origin* is interpreted as an encoding name, and byte
+      string *arg* is decoded using that encoding's rules.
+
+    If *arg* is neither a text string nor a byte string, then
+    conversion to string is attempted using Python's built-in
+    ``str()`` function.
+    """
+    if arg is None:
+        return None
+    elif isinstance(arg, text_str):
+        return arg  # unmodified
+    elif isinstance(arg, bytes):
+        if origin == 'filesystem':
+            return from_filesystem_bytes(arg)
+        elif origin == 'terminal':
+            return from_terminal_bytes(arg)
+        else:
+            # interpret `origin` as encoding
+            return decode(arg, origin)
     else:
-        k = 1000
-    # convert the substring of `s` that does not include the suffix
-    if unit.isdigit():
-        return int(s[0:(last + 1)])
-    if unit == 'k':
-        return int(float(s[0:last]) * k)
-    if unit == 'm':
-        return int(float(s[0:last]) * k * k)
-    if unit == 'g':
-        return int(float(s[0:last]) * k * k * k)
-    if unit == 't':
-        return int(float(s[0:last]) * k * k * k * k)
-    if unit == 'p':
-        return int(float(s[0:last]) * k * k * k * k * k)
-    if unit == 'e':
-        return int(float(s[0:last]) * k * k * k * k * k * k)
-    if unit == 'z':
-        return int(float(s[0:last]) * k * k * k * k * k * k * k)
-    if unit == 'y':
-        return int(float(s[0:last]) * k * k * k * k * k * k * k * k)
-
-
-def send_mail(send_from, send_to, subject, text, files=[], server="localhost"):
-
-    from smtplib import SMTP
-    from email.MIMEMultipart import MIMEMultipart
-    from email.MIMEBase import MIMEBase
-    from email.MIMEText import MIMEText
-    from email.Utils import COMMASPACE, formatdate
-    from email import Encoders
-
-    msg = MIMEMultipart()
-    msg['From'] = send_from
-    msg['To'] = COMMASPACE.join(send_to)
-    msg['Date'] = formatdate(localtime=True)
-    msg['Subject'] = subject
-
-    msg.attach(MIMEText(text))
-
-    for f in files:
-        part = MIMEBase('application', "octet-stream")
-        part.set_payload(open(f, "rb").read())
-        Encoders.encode_base64(part)
-        part.add_header('Content-Disposition',
-                        'attachment; filename="%s"' % os.path.basename(f))
-        msg.attach(part)
-
-    smtp = SMTP(server)
-    smtp.sendmail(send_from, send_to, msg.as_string())
-    smtp.close()
+        return text_str(arg)
 
 
 def touch(path):
@@ -2173,38 +2025,7 @@ def touch(path):
     (This is a very limited and stripped down version of the ``touch``
     POSIX utility.)
     """
-    fd = open(path, 'a')
-    fd.close()
-
-
-def uniq(seq):
-    """
-    Iterate over all unique elements in sequence `seq`.
-
-    Distinct values are returned in a sorted fashion.
-
-    Examples:
-
-      >>> for value in uniq([4,1,1,2,3,1,2]): print(value)
-      ...
-      1
-      2
-      3
-      4
-
-      >>> for value in uniq([1,2,3,4]): print(value)
-      ...
-      1
-      2
-      3
-      4
-
-      >>> for value in uniq([1,1,1,1]): print(value)
-      ...
-      1
-
-    """
-    return sorted(set(seq))
+    open(path, 'a').close()
 
 
 def unlock(lock):
@@ -2266,7 +2087,7 @@ def update_parameter_in_file(path, var_in, new_val, regex_in):
     if not isfound:
         gc3libs.log.critical(
             'update_parameter_in_file could not find parameter'
-            ' in sepcified file')
+            ' in specified file')
 
 
 def write_contents(path, data):
@@ -2278,7 +2099,7 @@ def write_contents(path, data):
 
       >>> import tempfile
       >>> (fd, tmpfile) = tempfile.mkstemp()
-      >>> write_contents(tmpfile, 'big data here')
+      >>> write_contents(tmpfile, 'big data here') and None # discard return value on Py3
       >>> read_contents(tmpfile)
       'big data here'
 
@@ -2288,7 +2109,8 @@ def write_contents(path, data):
       >>> os.remove(tmpfile)
 
     """
-    with open(path, 'wb') as stream:
+    mode = 'wb' if isinstance(data, bytes) else 'w'
+    with open(path, mode) as stream:
         return stream.write(data)
 
 
@@ -2313,13 +2135,13 @@ class YieldAtNext(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self._stop_iteration:
             raise StopIteration
         elif self._saved:
             return self._saved.popleft()
         else:
-            return self._generator.next()
+            return next(self._generator)
 
     def send(self, value):
         try:
@@ -2341,4 +2163,4 @@ class YieldAtNext(object):
 if __name__ == '__main__':
     import doctest
     doctest.testmod(name='utils',
-                    optionflags=doctest.NORMALIZE_WHITESPACE|doctest.ELLIPSIS)
+                    optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS)

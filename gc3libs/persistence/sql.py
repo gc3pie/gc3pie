@@ -3,7 +3,7 @@
 """
 SQL-based storage of GC3pie objects.
 """
-# Copyright (C) 2011-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2011-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,15 +19,18 @@ SQL-based storage of GC3pie objects.
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 
 # stdlib imports
 from contextlib import closing
-from cStringIO import StringIO
+from io import BytesIO
 import os
-from urlparse import parse_qs
+from urllib.parse import parse_qs
 from warnings import warn
 from weakref import WeakValueDictionary
 
@@ -210,7 +213,7 @@ class SqlStore(Store):
 
         # create internal rep of table
         self._real_extra_fields = {}
-        for col, func in self._init_extra_fields.iteritems():
+        for col, func in self._init_extra_fields.items():
             assert isinstance(col, sqla.Column)
             table.append_column(col.copy())
             self._real_extra_fields[col.name] = func
@@ -304,7 +307,7 @@ class SqlStore(Store):
         # build row to insert/update
         fields = {'id': id_}
 
-        with closing(StringIO()) as dstdata:
+        with closing(BytesIO()) as dstdata:
             make_pickler(self, dstdata, obj).dump(obj)
             fields['data'] = dstdata.getvalue()
 
@@ -391,7 +394,7 @@ class SqlStore(Store):
         if not rawdata:
             raise gc3libs.exceptions.LoadError(
                 "Unable to find any object with ID '%s'" % id_)
-        obj = make_unpickler(self, StringIO(rawdata[0])).load()
+        obj = make_unpickler(self, BytesIO(rawdata[0])).load()
         super(SqlStore, self)._update_to_latest_schema()
         assert str(id_) not in self._loaded
         self._loaded[str(id_)] = obj

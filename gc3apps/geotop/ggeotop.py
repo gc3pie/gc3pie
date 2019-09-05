@@ -425,7 +425,7 @@ newly-created jobs so that this limit is never exceeded.
                 "Path '%s' to the GEOtop executable does not exist;"
                 " use the '-x' option to specify a valid one."
                 % self.params.executable)
-        gc3libs.utils.test_file(self.params.executable, os.R_OK|os.X_OK,
+        gc3libs.utils.check_file_access(self.params.executable, os.R_OK|os.X_OK,
                                 gc3libs.exceptions.InvalidUsage)
 
 

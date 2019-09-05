@@ -1,6 +1,5 @@
-
 #! /usr/bin/env python
-#
+
 """
 Support for finding minima of functions with GC3Pie.
 
@@ -47,6 +46,7 @@ The module is organized as follows:
   used as addons to :class:`~gc3libs.optimizer.EvolutionaryAlgorithm`.
 
 """
+
 # Copyright (C) 2011, 2012, 2013  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -61,8 +61,10 @@ The module is organized as follows:
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
+
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import object
 __author__ = 'Benjamin Jonen <benjamin.jonen@bf.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
@@ -155,7 +157,10 @@ class EvolutionaryAlgorithm(object):
 
         # Check `dx_conv_crit`
         dxs = np.abs(self.pop[:, :] - self.pop[0, :])
-        has_dx_converged = (dxs <= self.dx_conv_crit).all()
+        if self.dx_conv_crit is not None:
+            has_dx_converged = (dxs <= self.dx_conv_crit).all()
+        else:
+            has_dx_converged = False
         if has_dx_converged:
             converged = True
             self.logger.info(

@@ -1,10 +1,11 @@
 #! /usr/bin/env python
-#
+
 """
 Job control on PBS/Torque clusters (possibly connecting to the
 front-end via SSH).
 """
-# Copyright (C) 2009-2014, 2016  University of Zurich. All rights reserved.
+
+# Copyright (C) 2009-2014, 2016, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,8 +19,9 @@ front-end via SSH).
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
+
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 
@@ -46,13 +48,14 @@ _qsub_jobid_re = re.compile(r'(?P<jobid>\d+).*', re.I)
 
 _qstat_line_re = re.compile(
     r'^(?P<jobid>\d+)[^\d]+\s+'
-    '(?P<jobname>[^\s]+)\s+'
-    '(?P<username>[^\s]+)\s+'
-    '(?P<time_used>[^\s]+)\s+'
-    '(?P<state>[^\s]+)\s+'
-    '(?P<queue>[^\s]+)')
+    r'(?P<jobname>[^\s]+)\s+'
+    r'(?P<username>[^\s]+)\s+'
+    r'(?P<time_used>[^\s]+)\s+'
+    r'(?P<state>[^\s]+)\s+'
+    r'(?P<queue>[^\s]+)')
 
 # convert data to GC3Pie internal format
+
 
 def _to_memory(val):
     """
@@ -224,21 +227,21 @@ class PbsLrms(batch.BatchSystem):
         return self._stat_result(state, None)  # no term status info
 
     _tracejob_queued_re = re.compile(
-        '(?P<submission_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
-        'Job Queued at request of .*job name =\s*(?P<job_name>[^,]+),'
-        '\s+queue =\s*(?P<queue>[^,]+)')
+        r'(?P<submission_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
+        r'Job Queued at request of .*job name =\s*(?P<job_name>[^,]+),'
+        r'\s+queue =\s*(?P<queue>[^,]+)')
 
     _tracejob_run_re = re.compile(
-        '(?P<running_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
-        'Job Run at request of .*')
+        r'(?P<running_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.\s+'
+        r'Job Run at request of .*')
 
     _tracejob_last_re = re.compile(
-        '(?P<end_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.'
-        '\s+Exit_status=(?P<exit_status>\d+)\s+'
-        'resources_used.cput=(?P<used_cpu_time>[^ ]+)\s+'
-        'resources_used.mem=(?P<mem>[^ ]+)\s+'
-        'resources_used.vmem=(?P<used_memory>[^ ]+)\s+'
-        'resources_used.walltime=(?P<used_walltime>[^ ]+)')
+        r'(?P<end_time>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+.'
+        r'\s+Exit_status=(?P<exit_status>\d+)\s+'
+        r'resources_used.cput=(?P<used_cpu_time>[^ ]+)\s+'
+        r'resources_used.mem=(?P<mem>[^ ]+)\s+'
+        r'resources_used.vmem=(?P<used_memory>[^ ]+)\s+'
+        r'resources_used.walltime=(?P<used_walltime>[^ ]+)')
 
     _tracejob_keyval_mapping = {
         # regexp group name
@@ -274,7 +277,7 @@ class PbsLrms(batch.BatchSystem):
             ]:
                 match = pattern.match(line)
                 if match:
-                    for key, value in match.groupdict().iteritems():
+                    for key, value in match.groupdict().items():
                         attr, conv = self._tracejob_keyval_mapping[key]
                         acctinfo[attr] = conv(value)
                     if carry_on:
@@ -374,7 +377,6 @@ class PbsLrms(batch.BatchSystem):
 
 
 # main: run tests
-
 if "__main__" == __name__:
     import doctest
     doctest.testmod(name="pbs",

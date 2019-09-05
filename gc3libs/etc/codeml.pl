@@ -13,7 +13,7 @@ use warnings;
 my $bin         = 'codeml';                 # CODEML binary
 my $pwd         = $ENV{'PWD'};              # current path
 my $RTE         = $ENV{'CODEML_LOCATION'};  # CODEML Runtime Environment (RTE)
-my $host        = GetHostname();            # get hostname 
+my $host        = GetHostname();            # get hostname
 my $cpuinfo     = GetCPUinfo();             # get CPU information
 my $binmode     = 0555;                     # file permissions
 my $CODEML;
@@ -51,7 +51,7 @@ foreach my $ctl (@ARGV) {
         print "$0: Running '$CODEML $ctl'...\n";
         print "HOST: $host\n";
         print "CPU: $cpuinfo\n";
-        
+
         # remove temporary files left from previous runs
         unlink @temp_files;
 

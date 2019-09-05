@@ -1,7 +1,9 @@
 #! /usr/bin/env python
-#
+
 """
+session - persistent collections of tasks
 """
+
 # Copyright (C) 2012-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,14 +19,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 
 # stdlib imports
 import atexit
 import csv
-import itertools
+import errno
 import os
 import sys
 import shutil
@@ -36,6 +39,7 @@ import gc3libs.exceptions
 import gc3libs.persistence
 import gc3libs.persistence.store
 import gc3libs.utils
+from gc3libs.utils import to_str
 from gc3libs.workflow import TaskCollection
 
 
@@ -63,8 +67,11 @@ class Session(list):
 
         >>> import tempfile; tmpdir = tempfile.mktemp(dir='.')
         >>> session = Session(tmpdir)
-        >>> sorted(os.listdir(tmpdir))
-        ['created', 'session_ids.txt', 'store.url']
+        >>> for name in sorted(os.listdir(tmpdir)):
+        ...   print(name)
+        created
+        session_ids.txt
+        store.url
 
     When a `Session` object is created with a `path` argument pointing
     to an existing valid session, the index of jobs is automatically
@@ -127,9 +134,11 @@ class Session(list):
     """
 
     INDEX_FILENAME = 'session_ids.txt'
-    STORE_URL_FILENAME = "store.url"
-    TIMESTAMP_FILES = {'start': 'created',
-                       'end': 'finished'}
+    STORE_URL_FILENAME = 'store.url'
+    TIMESTAMP_FILES = {
+        'start': 'created',
+        'end':   'finished'
+    }
 
     DEFAULT_JOBS_DIR = 'jobs'
 
@@ -168,7 +177,7 @@ class Session(list):
         ``True``, meaning that data from existing sessions is loaded
         into memory.
         """
-        self.path = os.path.abspath(path)
+        self.path = os.path.abspath(to_str(path, 'filesystem'))
         self.name = os.path.basename(self.path)
         self.tasks = {}
         # Session not yet created
@@ -183,7 +192,7 @@ class Session(list):
             except IOError as err:
                 gc3libs.log.debug("Cannot load session '%s': %s", path, err)
                 # "No such file or directory" => create new session
-                if err.errno == os.errno.ENOENT:
+                if err.errno == errno.ENOENT:
                     # only create session if no task IDs were given
                     if create and not task_ids:
                         gc3libs.log.debug(
@@ -224,7 +233,7 @@ class Session(list):
         with open(os.path.join(
                 self.path,
                 self.TIMESTAMP_FILES['start']), 'w') as fd:
-            fd.write(str.join(' ', sys.argv) + '\n')
+            fd.write(' '.join(sys.argv) + '\n')
 
         self.set_start_timestamp()
 
@@ -385,27 +394,57 @@ class Session(list):
         return len(self.tasks)
 
     def __iter__(self):
-        return self.tasks.itervalues()
+        return iter(self.tasks.values())
+
+    class _BfsIterator(object):
+        """
+        Iterate over tasks in a group, recursively descending `TaskCollection`s.
+
+        Iteration is done in a breadth-first manner.
+        """
+        __slots__ = ('_queue')
+
+        def __init__(self, toplevel=None):
+            self._queue = []
+            if toplevel:
+                self._queue.extend(toplevel)
+
+        def __iter__(self):
+            return self
+
+        def __next__(self):
+            try:
+                task = self._queue.pop(0)
+                try:
+                    self._queue.extend(task.tasks)
+                except AttributeError:
+                    pass  # `task` is no `TaskCollection`
+                return task
+            except IndexError: # empty queue
+                raise StopIteration()
+
+        next = __next__
 
     def iter_workflow(self):
-        task_collections = filter(lambda x: isinstance(x, TaskCollection),
-                                  self.tasks.values())
-        proper_tasks = set(self.tasks.values()).difference(task_collections)
-        return itertools.chain(
-            *([proper_tasks]
-              + map(lambda x: x.iter_workflow(), task_collections)))
+        """
+        Iterate over all tasks in this session.
+
+        Recursively descends `TaskCollection`:class:
+        in  a breadth-first manner.
+        """
+        return self._BfsIterator(self.tasks.values())
 
     def list_ids(self):
         """
         Return set of all task IDs belonging to this session.
         """
-        return self.tasks.keys()
+        return list(self.tasks.keys())
 
     def list_names(self):
         """
         Return set of names of tasks belonging to this session.
         """
-        return set(task.jobname for task in self.tasks.values())
+        return set(task.jobname for task in list(self.tasks.values()))
 
     # persistence management
 
@@ -503,7 +542,7 @@ class Session(list):
         """
         Save all modified tasks to persistent storage.
         """
-        for task in self.tasks.itervalues():
+        for task in self.tasks.values():
             if task.changed:
                 self.save(task)
         if flush:

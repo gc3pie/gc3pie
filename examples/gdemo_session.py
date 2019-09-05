@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011-2013, 2015 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2011-2013, 2015, 2019 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,6 +18,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
+from __future__ import absolute_import, print_function
+
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@gc3.uzh.ch>'
 # summary of user-visible changes
 __changelog__ = """
@@ -31,7 +33,6 @@ __docformat__ = 'reStructuredText'
 # Workaround for Issue 95: import this module and run it first
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
-from __future__ import absolute_import
     import gdemo_session
     gdemo_session.Gdemo().run()
 

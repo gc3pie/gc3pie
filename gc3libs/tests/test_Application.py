@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011, 2012,  University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2019,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
 __docformat__ = 'reStructuredText'
 
 
@@ -102,15 +102,18 @@ def test_valid_invocation():
     Application(**ma)
 
 
-def test_io_spec_to_dict_unicode():
+def test_io_spec_to_dict_mixed():
     # pylint: disable=import-error,protected-access,redefined-outer-name
-    import gc3libs.url
-    with pytest.raises(gc3libs.exceptions.InvalidValue):
-        Application._io_spec_to_dict(
-            gc3libs.url.UrlKeyDict, {
-                u'/tmp/\u0246': u'\u0246',
-                '/tmp/b/': 'b'},
-            True)
+    from gc3libs.utils import text_str
+    d = Application._io_spec_to_dict(
+          gc3libs.url.UrlKeyDict, {
+              u'/tmp/\u0246': u'\u0246',
+              b'/tmp/b/': b'b'},
+        True)
+    for k, v in d.items():
+        # Python 3+
+        assert isinstance(v, text_str)
+        assert isinstance(k.path, text_str)
 
 
 # main: run tests

@@ -169,7 +169,7 @@ of newly-created jobs so that this limit is never exceeded.
         if self.params.codeml is not None:
             if not os.path.isabs(self.params.codeml):
                 self.params.codeml = os.path.abspath(self.params.codeml)
-            gc3libs.utils.test_file(self.params.codeml, os.R_OK|os.X_OK)
+            gc3libs.utils.check_file_access(self.params.codeml, os.R_OK|os.X_OK)
 
         ## collect input directories/files
         def contain_ctl_files(paths):

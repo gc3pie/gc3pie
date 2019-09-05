@@ -4,7 +4,7 @@
   Finding minimum energy for a certain set of geometries.
 """
 
-# Copyright (C) 2011, 2012 University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2019 University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -127,7 +127,7 @@ C1
     return file_name
 
 #create_gamess_input_file(np.array([ 1.,1.,1.,2.,2.,2.,3.,3.,3.,4.,4.,4.,5.,5.,5.,6.,6.,6.]), os.getcwd())
-#print 'done'
+#print('done')
 
 def task_constructor_geometries(x_vals, iteration_directory, **extra_args):
     '''
@@ -261,10 +261,10 @@ class GeometriesScript(SessionBasedScript):
 
 
 if __name__ == '__main__':
-    print 'starting'
+    print('starting')
     if os.path.isdir(optimization_dir):
         import shutil
         shutil.rmtree(optimization_dir)
     os.mkdir(optimization_dir)
     GeometriesScript().run()
-    print 'done'
+    print('done')

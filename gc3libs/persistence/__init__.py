@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 """
 Facade to store and retrieve Job information from permanent storage.
 
@@ -33,7 +33,8 @@ the trick!
   the Python interpreter, or GC3Utils will still complain!
 
 """
-# Copyright (C) 2009-2012  University of Zurich. All rights reserved.
+
+# Copyright (C) 2009-2012, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -47,8 +48,8 @@ the trick!
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
+
+from __future__ import absolute_import, print_function, unicode_literals
 __docformat__ = 'reStructuredText'
 
 
@@ -58,7 +59,8 @@ __docformat__ = 'reStructuredText'
 # this package should be considered "internal use only".
 from .filesystem import FilesystemStore
 from .idfactory import IdFactory, JobIdFactory
-from .store import make_store, Persistable
+from .serialization import Persistable
+from .store import make_store
 
 __all__ = ['make_store', 'Persistable', 'IdFactory',
            'JobIdFactory', 'FilesystemStore']

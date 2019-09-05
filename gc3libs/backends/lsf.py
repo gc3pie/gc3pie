@@ -1,9 +1,10 @@
 #! /usr/bin/env python
-#
+
 """
 Job control on LSF clusters (possibly connecting to the front-end via SSH).
 """
-# Copyright (C) 2009-2016  University of Zurich. All rights reserved.
+
+# Copyright (C) 2009-2016, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,8 +18,10 @@ Job control on LSF clusters (possibly connecting to the front-end via SSH).
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
+
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import next
 __docformat__ = 'reStructuredText'
 
 
@@ -28,6 +31,7 @@ import re
 import time
 
 from gc3libs import log, Run
+import gc3libs.defaults
 from gc3libs.backends import LRMS
 import gc3libs.exceptions
 from gc3libs.quantity import Duration, seconds, Memory, GB, MB, kB, bytes
@@ -337,9 +341,9 @@ _bsub_jobid_re = re.compile(r'^Job <(?P<jobid>\d+)> is submitted', re.I)
 # Wed Jul 11 14:11:48: Completed <exit>.
 
 _bjobs_long_re = re.compile(
-    '(?P<end_time>[a-zA-Z]+\s+[a-zA-Z]+\s+\d+\s+\d+:\d+:\d+):\s+'
-    'Exited with exit code (?P<exit_status>\d+)[^0-9]+'
-    'The CPU time used is (?P<used_cpu_time>[0-9\.]+)\s+'
+    r'(?P<end_time>[a-zA-Z]+\s+[a-zA-Z]+\s+\d+\s+\d+:\d+:\d+):\s+'
+    r'Exited with exit code (?P<exit_status>\d+)[^0-9]+'
+    r'The CPU time used is (?P<used_cpu_time>[0-9\.]+)\s+'
 )
 
 
@@ -386,8 +390,7 @@ class LsfLrms(batch.BatchSystem):
         self._lshosts = self._get_command('lshosts')
 
         if lsf_continuation_line_prefix_length is not None:
-            self._CONTINUATION_LINE_START = ' ' \
-                * lsf_continuation_line_prefix_length
+            self._CONTINUATION_LINE_START = (' ' * lsf_continuation_line_prefix_length)
         else:
             self._CONTINUATION_LINE_START = None
 
@@ -487,7 +490,7 @@ class LsfLrms(batch.BatchSystem):
                 lines.append(line)
 
         # now rebuild stdout by joining the reconstructed lines
-        stdout = str.join('\n', lines)
+        stdout = '\n'.join(lines)
 
         state = Run.State.UNKNOWN
         termstatus = None
@@ -540,7 +543,7 @@ class LsfLrms(batch.BatchSystem):
             occurrences[ws_length] += 1
         # now find the length that has the max occurrences
         max_occurrences = max(occurrences.values())
-        for length, count in occurrences.items():
+        for length, count in list(occurrences.items()):
             if count == max_occurrences:
                 return length
 
@@ -592,7 +595,7 @@ class LsfLrms(batch.BatchSystem):
             return Memory(int(m), unit=bytes)
 
     def _parse_acct_output(self, stdout, stderr):
-        # Antonio: this is an ugly fix, but we have issues with bacct
+        # FIXME: this is an ugly fix, but we have issues with bacct
         # on some LSF installation being veeeeery slow, so we have to
         # try and use `bjobs` whenever possible, and fall back to
         # bacct if bjobs does not work.
@@ -601,13 +604,14 @@ class LsfLrms(batch.BatchSystem):
         # and put `bacct = bacct`, we also have to ensure that we are
         # calling the correct function to parse the output of the acct
         # command.
-        if self._bacct.startswith('bacct'):
+        if 'bacct' in self._bacct:
             parser = self.__parse_acct_output_w_bacct
-        elif self._bacct.startswith('bjobs'):
+        elif 'bjobs' in self._bacct:
             parser = self.__parse_acct_output_w_bjobs
         else:
             log.warning(
-                "Unknown acct command `%s`. Assuming its output is compatible"
+                "Unknown accounting command `%s`."
+                " Assuming its output is compatible"
                 " with `bacct`", self._bacct)
             parser = self.__parse_acct_output_w_bacct
         return parser(stdout)
@@ -658,18 +662,18 @@ class LsfLrms(batch.BatchSystem):
 
 
     _RESOURCE_USAGE_RE = re.compile(r'^\s+ CPU_T \s+ '
-                                    'WAIT \s+ '
-                                    'TURNAROUND \s+ '
-                                    'STATUS \s+ '
-                                    'HOG_FACTOR \s+ '
-                                    'MEM \s+ '
-                                    'SWAP', re.X)
+                                    r'WAIT \s+ '
+                                    r'TURNAROUND \s+ '
+                                    r'STATUS \s+ '
+                                    r'HOG_FACTOR \s+ '
+                                    r'MEM \s+ '
+                                    r'SWAP', re.X)
     _EVENT_RE = re.compile(
         r'^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)'
-        ' \s+ (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
-        ' \s+ [0-9]+ \s+ [0-9:]+:'
-        ' \s+ (?P<event>Submitted|Dispatched|Started|Completed|'
-        'Done\ successfully)', re.X)
+        r' \s+ (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+        r' \s+ [0-9]+ \s+ [0-9:]+:'
+        r' \s+ (?P<event>Submitted|Dispatched|Started|Completed|'
+        r'Done\ successfully)', re.X)
 
     @staticmethod
     def __parse_acct_output_w_bacct(stdout):
@@ -693,7 +697,7 @@ class LsfLrms(batch.BatchSystem):
             match = LsfLrms._RESOURCE_USAGE_RE.match(line)
             if match:
                 # actual resource usage is on next line
-                rusage = lines.next()
+                rusage = next(lines)
                 cpu_t, wait, turnaround, status, hog_factor, mem, swap = \
                     rusage.split()
                 # common backend attrs (see Issue 78)
@@ -710,12 +714,10 @@ class LsfLrms(batch.BatchSystem):
                 break
         return acctinfo
 
-
     def _cancel_command(self, jobid):
         return ("%s %s" % (self._bkill, jobid))
 
-
-    @gc3libs.utils.cache_for(gc3libs.Default.LSF_CACHE_TIME)
+    @gc3libs.utils.cache_for(gc3libs.defaults.LSF_CACHE_TIME)
     @LRMS.authenticated
     def get_resource_status(self):
         """
@@ -841,7 +843,6 @@ class LsfLrms(batch.BatchSystem):
 
 
 # main: run tests
-
 if "__main__" == __name__:
     import doctest
     doctest.testmod(name="lsf",

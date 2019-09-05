@@ -45,7 +45,7 @@ from BeautifulSoup import BeautifulSoup
 # interface to gc3utils
 import gc3utils
 from gc3utils.Application import GamessApplication
-import gc3utils.Default
+import gc3utils.defaults
 import gc3utils.gcli
 from gc3utils.Job import Job as Gc3utilsJob
 import gc3utils.utils
@@ -722,7 +722,7 @@ cmdline.add_option("-m", "--memory-per-core", dest="memory_per_core", type="int"
                         " are available to each execution core."
                    )
 cmdline.add_option("-t", "--template", dest="template", metavar="TEMPLATE",
-                   default=os.path.join(gc3utils.Default.RCDIR, "grundb.inp.template"),
+                   default=os.path.join(gc3utils.defaults.RCDIR, "grundb.inp.template"),
                    help="Prefix geometry data with the contents of the specified file,"
                    " to build the full GAMESS '.inp' file (Default: '%default')"
                    )

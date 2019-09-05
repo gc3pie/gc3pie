@@ -265,7 +265,7 @@ To create a generic application we create a class which inherit from
 `__init__` method::
 
   # An useful function to copy files
-  from gc3libs.utils import copyfile
+  from shutil import copyfile
   
   class GrayScaleConvertApplication(gc3libs.Application):
       def __init__(self, input_image, grayscaled_image, output_dir, warhol_dir):

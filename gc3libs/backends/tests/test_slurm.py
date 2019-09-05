@@ -3,7 +3,7 @@
 """
 Test interaction with the SLURM batch-queueing system.
 """
-# Copyright (C) 2011-2013, 2015, 2016  University of Zurich. All rights reserved.
+# Copyright (C) 2011-2013, 2015, 2016, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,8 @@ Test interaction with the SLURM batch-queueing system.
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 import datetime
@@ -67,29 +68,29 @@ def sacct_no_accounting(jobid=123):
 
 
 def squeue_pending(jobid=123):
-    # squeue --noheader --format='%i^%T^%r' -j $jobid
+    # squeue --noheader --format='GC3Pie^%i^%T^%r' -j $jobid
     return (
         # command exitcode
         0,
         # stdout
-        ('%d^PENDING^Resources' % jobid),
+        ('GC3Pie^%d^PENDING^Resources' % jobid),
         # stderr
         '')
 
 
 def squeue_running(jobid=123):
-    # squeue --noheader --format='%i^%T^%u^%U^%r^%R' -j $jobid
+    # squeue --noheader --format='GC3Pie^%i^%T^%r' -j $jobid
     return (
         # command exitcode
         0,
         # stdout
-        ('%d^RUNNING^None' % jobid),
+        ('GC3Pie^%d^RUNNING^None' % jobid),
         # stderr
         '')
 
 
 def squeue_recently_completed(jobid=123):
-    # squeue --noheader --format='%i^%T^%u^%U^%r^%R' -j $jobid
+    # squeue --noheader --format='GC3Pie^%i^%T^%r' -j $jobid
     return (
         # command exitcode
         0,
@@ -99,8 +100,41 @@ def squeue_recently_completed(jobid=123):
         '')
 
 
+def squeue_pending_with_additions(jobid=123):
+    # squeue --noheader --format='GC3Pie^%i^%T^%r' -j $jobid
+    return (
+        # command exitcode
+        0,
+        # stdout
+        ('Site-specific preamble here.\nGC3Pie^%d^PENDING^Resources\n\nAdditional info.' % jobid),
+        # stderr
+        '')
+
+
+def squeue_running_with_additions(jobid=123):
+    # squeue --noheader --format='GC3Pie^%i^%T^%r' -j $jobid
+    return (
+        # command exitcode
+        0,
+        # stdout
+        ('Site-specific preamble here.\nGC3Pie^%d^RUNNING^None\n\nAdditional info.' % jobid),
+        # stderr
+        '')
+
+
+def squeue_recently_completed_with_additions(jobid=123):
+    # squeue --noheader --format='GC3Pie^%i^%T^%r' -j $jobid
+    return (
+        # command exitcode
+        0,
+        # stdout
+        'Site-specific output here.',
+        # stderr
+        '')
+
+
 def squeue_notfound(jobid=123):
-    # squeue --noheader --format='%i^%T^%u^%U^%r^%R' -j $jobid
+    # squeue --noheader --format='GC3Pie^%i^%T^%r' -j $jobid
     return (
         # command exitcode
         1,
@@ -393,6 +427,16 @@ username=NONEXISTENT
         self.core.update_job_state(app)
         assert app.execution.state == State.SUBMITTED
 
+    def test_parse_squeue_output_with_additions_pending(self):
+        """Test `squeue` output parsing with a job in PENDING state."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_pending_with_additions()
+        self.core.update_job_state(app)
+        assert app.execution.state == State.SUBMITTED
+
     def test_parse_squeue_output_pending_then_running(self):
         """Test `squeue` output parsing with a job in PENDING and then RUNNING state."""
         app = FakeApp()
@@ -407,6 +451,20 @@ username=NONEXISTENT
         self.core.update_job_state(app)
         assert app.execution.state == State.RUNNING
 
+    def test_parse_squeue_output_with_additions_pending_then_running(self):
+        """Test `squeue` output parsing with a job in PENDING and then RUNNING state."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_pending_with_additions()
+        self.core.update_job_state(app)
+        assert app.execution.state == State.SUBMITTED
+
+        self.transport.expected_answer['squeue'] = squeue_running_with_additions()
+        self.core.update_job_state(app)
+        assert app.execution.state == State.RUNNING
+
     def test_parse_squeue_output_immediately_running(self):
         """Test `squeue` output parsing with a job that turns immediately to RUNNING state."""
         app = FakeApp()
@@ -414,6 +472,16 @@ username=NONEXISTENT
         self.core.submit(app)
 
         self.transport.expected_answer['squeue'] = squeue_running()
+        self.core.update_job_state(app)
+        assert app.execution.state == State.RUNNING
+
+    def test_parse_squeue_output_with_additions_immediately_running(self):
+        """Test `squeue` output parsing with a job that turns immediately to RUNNING state."""
+        app = FakeApp()
+        self.transport.expected_answer['sbatch'] = sbatch_submit_ok()
+        self.core.submit(app)
+
+        self.transport.expected_answer['squeue'] = squeue_running_with_additions()
         self.core.update_job_state(app)
         assert app.execution.state == State.RUNNING
 
@@ -539,6 +607,8 @@ username=NONEXISTENT
         Test that an error is raised if both `squeue` and `sacct` fail repeatedly, exceeding the accounting delay.
         """
         mock_time.time.return_value = 0
+
+        gc3libs.log.setLevel(10)
 
         app = FakeApp()
         self.transport.expected_answer['sbatch'] = sbatch_submit_ok()

@@ -3,7 +3,7 @@
 """
 Unit tests for the EC2 backend.
 """
-# Copyright (C) 2011-2013  University of Zurich. All rights reserved.
+# Copyright (C) 2011-2013, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,9 @@ Unit tests for the EC2 backend.
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 # stdlib imports
@@ -41,7 +43,7 @@ class _MockVM(object):
 
     def __init__(self, id, **extra):
         self.id = id
-        for k, v in extra.iteritems():
+        for k, v in extra.items():
             setattr(self, k, v)
 
 
@@ -84,20 +86,46 @@ class TestVMPool(object):
         assert self.pool2._vm_cache == {'a': self.vm1, 'b': self.vm2}
 
     def test_repr(self):
-        assert repr(self.pool0) == "set([])"
-        assert repr(self.pool1) == "set(['a'])"
-        # Note: set do not have predictable representation
-        assert repr(self.pool2) in ("set(['a', 'b'])", "set(['b', 'a'])")
-        
+        # representation of empty sets differs in Py2 and Py3 ...
+        assert repr(self.pool0) in ["set([])", "set()"]
+        # ... also representation of unicode strings differs on Py2 and Py3
+        assert repr(self.pool1) in ["{'a'}", "set(['a'])", "set([u'a'])"]
+        # ...and also sets do not have predictable representation
+        assert repr(self.pool2) in [
+            # Py2
+            "set(['a', 'b'])",
+            "set(['b', 'a'])",
+            "set([u'a', u'b'])",
+            "set([u'b', u'a'])",
+            # Py3
+            "{'a', 'b'}",
+            "{'b', 'a'}",
+        ]
+
 
     def test_str(self):
-        assert str(self.pool0) == "VMPool('pool0') : set([])"
-        assert str(self.pool1) == "VMPool('pool1') : set(['a'])"
-        # Note: set do not have predictable represenetation, and neither VMPool
-        assert str(self.pool2) in (
+        # representation of empty sets differs in Py2 and Py3 ...
+        assert str(self.pool0) in [
+            "VMPool('pool0') : set()",
+            "VMPool('pool0') : set([])",
+        ]
+        # representation of unicode strings differs on Py2 and Py3
+        assert str(self.pool1) in [
+            "VMPool('pool1') : {'a'}",
+            "VMPool('pool1') : set(['a'])",
+            "VMPool('pool1') : set([u'a'])",
+        ]
+        # also sets do not have predictable representation
+        assert str(self.pool2) in [
+            # Py2
             "VMPool('pool2') : set(['a', 'b'])",
-            "VMPool('pool2') : set(['b', 'a'])"
-        )
+            "VMPool('pool2') : set(['b', 'a'])",
+            "VMPool('pool2') : set([u'a', u'b'])",
+            "VMPool('pool2') : set([u'b', u'a'])",
+            # Py3
+            "VMPool('pool2') : {'a', 'b'}",
+            "VMPool('pool2') : {'b', 'a'}",
+        ]
 
     def test_add_remove(self):
         VM_ID = 'x'

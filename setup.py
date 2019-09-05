@@ -1,20 +1,10 @@
 #!/usr/bin/env python
 """
 Setup file for installing GC3Pie.
-
-If environment variable ``GC3PIE_FORCE_INSTALL`` has the value ``1``,
-then compatiblity checks are skipped.
 """
 
 from __future__ import absolute_import
 import sys
-
-import os
-if (os.environ.get('GC3PIE_FORCE_INSTALL', 'no').lower()
-    in ['1', 'y', 'yes', 'true', 'on']):
-    force_install = True
-else:
-    force_install = False  # default
 
 # ensure we run a "recent enough" version of `setuptools` (CentOS7 still ships
 # with setuptools 0.9.8!). There has been some instability in the support for
@@ -99,7 +89,7 @@ if python_version == (2, 6):
         # SQLAlchemy ceased support for Py 2.6 in version 1.2.0
         'sqlalchemy<1.2',
     ]
-elif python_version == (2, 7) or force_install:
+else:
     version_dependent_requires = [
         'lockfile',
         'paramiko', 'pycrypto',
@@ -110,8 +100,6 @@ elif python_version == (2, 7) or force_install:
         'pyyaml',
         'sqlalchemy',
     ]
-else:
-    raise RuntimeError("GC3Pie requires Python 2.6 or 2.7")
 
 
 ## real setup description begins here
@@ -162,14 +150,18 @@ setuptools.setup(
         "Environment :: Console",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: GNU Library or"
-        " Lesser General Public License (LGPL)",
+        ("License :: OSI Approved :: GNU Library or"
+         " Lesser General Public License (LGPL)"),
         "License :: DFSG approved",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
         "Topic :: Scientific/Engineering :: Chemistry",
@@ -209,6 +201,9 @@ setuptools.setup(
         # needed by DependentTaskCollection
         # (but incompatible with Py 2.6, so we include a patched copy)
         #toposort==1.0
+        # Py2/Py3 compatibility layer
+        'future>=0.17.0',
+        'six',  # only used in `gc3libs/quantity.py`
     ]),
     extras_require={
         'ec2': [
@@ -217,16 +212,17 @@ setuptools.setup(
             'boto',
         ],
         'daemon': [
-            # daemon and inotifyx required for SessionBasedDaemon
-            # but `inotifyx` only works on Linux, so this is an
-            # optional feature ...
-            'inotifyx',
+            # daemon and inotifyx required for SessionBasedDaemon but
+            # inotify functionality is only available on Linux, so
+            # this is an optional feature ...
+            'inotify_simple',
         ],
         'openstack': [
             'python-keystoneclient',
             'python-glanceclient',
             'python-neutronclient',
             'python-novaclient',
+            'python-swiftclient',
             'os-client-config',
         ],
         'optimizer': [
@@ -239,9 +235,8 @@ setuptools.setup(
     # Apparently, this list is read from bottom to top...
     tests_require=[
         'tox',
-        'pytest-colordots',
         'pytest-catchlog',
-        'pytest',
+        'pytest>=4.1',
         'mock',
     ],
     cmdclass={'test': Tox},

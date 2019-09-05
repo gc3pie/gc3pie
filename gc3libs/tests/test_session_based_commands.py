@@ -3,7 +3,7 @@
 """
 Tests for the cmdline module
 """
-# Copyright (C) 2012-2016, 2018 S3IT, Zentrale Informatik, University of
+# Copyright (C) 2012-2016, 2018, 2019 S3IT, Zentrale Informatik, University of
 # Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,9 @@ Tests for the cmdline module
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import range
+from builtins import object
 import json
 import os
 from os.path import abspath, dirname, exists, isdir, isfile, join
@@ -36,7 +38,7 @@ import pytest
 
 import gc3libs
 import gc3libs.session
-from gc3libs.utils import read_contents, write_contents
+from gc3libs.utils import read_contents, write_contents, to_str
 
 
 class _TestsCommon(object):
@@ -92,7 +94,7 @@ resourcedir = {basedir}/resource.d
             [sys.executable] + cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT)
-        stdout, _ = proc.communicate()
+        stdout = to_str(proc.communicate()[0], 'terminal')
         rc = proc.returncode
         gc3libs.log.debug(
             "Log of command `%s`:\n```\n%s\n```",

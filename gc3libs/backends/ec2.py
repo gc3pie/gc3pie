@@ -1,8 +1,9 @@
 #! /usr/bin/env python
-#
+
 """
 """
-# Copyright (C) 2012-2018  University of Zurich. All rights reserved.
+
+# Copyright (C) 2012-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -16,10 +17,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
-__docformat__ = 'reStructuredText'
 
+from __future__ import absolute_import, print_function, unicode_literals
+
+from builtins import str
 
 import hashlib
 import os
@@ -47,6 +48,7 @@ import Crypto.PublicKey.RSA
 
 # GC3Pie imports
 import gc3libs
+import gc3libs.defaults
 from gc3libs.exceptions import UnrecoverableError, \
     ConfigurationError, MaximumCapacityReached, ResourceNotReady, \
     UnrecoverableAuthError, TransportError
@@ -57,7 +59,13 @@ from gc3libs.backends import LRMS
 from gc3libs.backends.shellcmd import ShellcmdLrms
 from gc3libs.backends.vmpool import VMPool, InstanceNotFound
 
-available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
+
+## module metadata
+__docformat__ = 'reStructuredText'
+
+
+## module-level constants
+available_subresource_types = [gc3libs.defaults.SHELLCMD_LRMS]
 
 # example Boto error message:
 # <Response><Errors><Error><Code>TooManyInstances</Code><Message>Quota exceeded for ram: Requested 8000, but already used 16000 of 16384 ram</Message></Error></Errors><RequestID>req-c219213b-88d2-42dc-a3ab-10ac80aa7df7</RequestID></Response>  # noqa
@@ -65,6 +73,8 @@ available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
 _BOTO_ERRMSG_RE = re.compile(r'<Code>(?P<code>[A-Za-z0-9]+)</Code>'
                              '<Message>(?P<message>.*)</Message>', re.X)
 
+
+## code
 
 class EC2VMPool(VMPool):
 
@@ -195,12 +205,12 @@ class EC2Lrms(LRMS):
         self.subresource_args['ignore_ssh_host_keys'] = True
         self.subresource_args['keyfile'] = self.public_key
         if self.subresource_args['keyfile'].endswith('.pub'):
-            self.subresource_args['keyfile'] = \
-              self.subresource_args['keyfile'][:-len('.pub')]
+            keyfile = self.subresource_args['keyfile'][:-len('.pub')]
+            self.subresource_args['keyfile'] = keyfile
         # ShellcmdLrms by default trusts the configuration, instead of
         # checking the real amount of memory and number of cpus, but
         # we need the real values instead.
-        if self.subresource_type == gc3libs.Default.SHELLCMD_LRMS:
+        if self.subresource_type == gc3libs.defaults.SHELLCMD_LRMS:
             self.subresource_args['override'] = 'True'
 
         if not image_name and not image_id:
@@ -371,8 +381,7 @@ class EC2Lrms(LRMS):
         because that's the way the fingerprint is returned from the
         EC2 API.
         """
-        return str.join(':', (i.encode('hex')
-                              for i in privkey.get_fingerprint()))
+        return ':'.join((i.encode('hex') for i in privkey.get_fingerprint()))
 
     @staticmethod
     def __pubkey_aws_fingerprint(privkeypath,
@@ -479,7 +488,7 @@ class EC2Lrms(LRMS):
                 " Aborting!" % (
                     self.public_key,
                     self.keypair_name,
-                    str.join('/', localkey_fingerprints),
+                    '/'.join(localkey_fingerprints),
                     ec2_key.fingerprint,
                 ),
                 do_log=True)
@@ -853,7 +862,7 @@ class EC2Lrms(LRMS):
                         self.instance_type, job.jobname))
 
         # First of all, try to submit to one of the subresources.
-        for vm_id, resource in self.subresources.items():
+        for vm_id, resource in list(self.subresources.items()):
             if not resource.updated:
                 # The VM is probably still booting, let's skip to the
                 # next one and add it to the list of "pending" VMs.
@@ -986,7 +995,7 @@ class EC2Lrms(LRMS):
             return
         # Update status of VMs and remote resources
         self.get_resource_status()
-        for vm_id, resource in self.subresources.items():
+        for vm_id, resource in list(self.subresources.items()):
             if resource.updated and not resource.has_running_tasks():
                 vm = self._get_vm(vm_id)
                 gc3libs.log.warning(

@@ -6,7 +6,7 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.
 """
-# Copyright (C) 2009-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,11 @@ via SSH.
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from __future__ import division
+from builtins import str
+from past.utils import old_div
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 
@@ -33,8 +37,17 @@ import shutil
 import getpass
 import shutil
 
+try:
+    # Python 2
+    from types import StringTypes as string_types
+except ImportError:
+    # Python 3
+    string_types = (str,)
+
+
+import gc3libs.defaults
 from gc3libs.quantity import Memory, MiB
-from gc3libs.utils import same_docstring_as, samefile
+from gc3libs.utils import same_docstring_as, samefile, to_str
 import gc3libs.exceptions
 
 
@@ -460,13 +473,13 @@ class SshTransport(Transport):
         # init connection params
         self.username = None
         self.keyfile = None
-        self.port = gc3libs.Default.SSH_PORT
-        self.timeout = gc3libs.Default.SSH_CONNECT_TIMEOUT
+        self.port = gc3libs.defaults.SSH_PORT
+        self.timeout = gc3libs.defaults.SSH_CONNECT_TIMEOUT
         self.proxy_command = None
 
         # use SSH options, if available
         self._ssh_config = paramiko.SSHConfig()
-        config_filename = os.path.expanduser(ssh_config or gc3libs.Default.SSH_CONFIG_FILE)
+        config_filename = os.path.expanduser(ssh_config or gc3libs.defaults.SSH_CONFIG_FILE)
         if os.path.exists(config_filename):
             with open(config_filename, 'r') as config_file:
                 self._ssh_config.parse(config_file)
@@ -482,7 +495,7 @@ class SshTransport(Transport):
             gc3libs.log.debug(
                 "SshTransport: ignoring extra init arguments: %s",
                 ', '.join("{0}={1!r}".format(k, v)
-                          for k,v in extra_args.iteritems()))
+                          for k,v in extra_args.items()))
 
     @staticmethod
     def _estimate_safe_buffer_size():
@@ -497,7 +510,7 @@ class SshTransport(Transport):
             # be sure to use no more than 50% of avail mem
             # if we cannot determine number of processors
             nproc = gc3libs.utils.get_num_processors() or 2
-            return (avail_mem / nproc)
+            return (old_div(avail_mem, nproc))
         else:
             # no clue how much memory is available, fall back to
             # (hard-coded) 32MiB which should be safe on today's computers
@@ -537,7 +550,7 @@ class SshTransport(Transport):
         if username is None:
             self.username = ssh_options.get('user', self.username)
         else:
-            assert type(username) in types.StringTypes
+            assert type(username) in string_types
             self.username = username
 
         if port is None:
@@ -548,7 +561,7 @@ class SshTransport(Transport):
         if keyfile is None:
             self.keyfile = ssh_options.get('identityfile', self.keyfile)
         else:
-            assert type(keyfile) in types.StringTypes
+            assert type(keyfile) in string_types
             self.keyfile = keyfile
 
         if timeout is None:
@@ -966,7 +979,7 @@ class LocalTransport(Transport):
             gc3libs.log.debug(
                 "LocalTransport: ignoring extra init arguments: %s",
                 ', '.join("{0}={1!r}".format(k, v)
-                          for k,v in extra_args.iteritems()))
+                          for k,v in extra_args.items()))
 
 
     # pylint: disable=too-many-arguments,unused-argument
@@ -1068,6 +1081,12 @@ class LocalTransport(Transport):
             gc3libs.log.debug(
                 "Executed local command '%s', got exit status: %d",
                 command, exitcode)
+            # output and error streams are opened in binary mode, so
+            # we must convert them into text strings
+            if stdout:
+                stdout = to_str(stdout, 'terminal')
+            if stderr:
+                stderr = to_str(stdout, 'terminal')
             return exitcode, stdout, stderr
         except Exception as ex:
             raise gc3libs.exceptions.TransportError(
@@ -1195,7 +1214,7 @@ class LocalTransport(Transport):
                 % (path, err.__class__.__name__, str(err)))
 
     @same_docstring_as(Transport.open)
-    def open(self, source, mode, bufsize=0):
+    def open(self, source, mode, bufsize=-1):
         try:
             return open(source, mode, bufsize)
         except Exception as ex:

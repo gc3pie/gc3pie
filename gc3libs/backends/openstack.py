@@ -1,11 +1,12 @@
 #! /usr/bin/env python
-#
+
 """
 Manage startup and teardown of cloud-based VMs to run applications.
 
 This only works on clouds implementing the OpenStack Compute API.
 """
-# Copyright (C) 2012-2018  University of Zurich. All rights reserved.
+
+# Copyright (C) 2012-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,8 +20,8 @@ This only works on clouds implementing the OpenStack Compute API.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
+
+from __future__ import absolute_import, print_function, unicode_literals
 __docformat__ = 'reStructuredText'
 
 
@@ -62,6 +63,7 @@ except ImportError as err:
 
 # GC3Pie imports
 import gc3libs
+import gc3libs.defaults
 from gc3libs.exceptions import \
     ConfigurationError, \
     LRMSSubmitError, \
@@ -81,7 +83,7 @@ from gc3libs.utils import cache_for, lookup
 from gc3libs.quantity import MiB
 
 
-available_subresource_types = [gc3libs.Default.SHELLCMD_LRMS]
+available_subresource_types = [gc3libs.defaults.SHELLCMD_LRMS]
 
 ERROR_STATES = ['ERROR', 'UNNKNOWN']
 PENDING_STATES = ['BUILD', 'REBUILD', 'REBOOT', 'HARD_REBOOT',
@@ -118,7 +120,7 @@ class OpenStackLrms(LRMS):
                  os_region=None, image_id=None, os_auth_url=None,
                  instance_type=None, auth=None,
                  vm_pool_max_size=None, user_data=None,
-                 vm_os_overhead=gc3libs.Default.VM_OS_OVERHEAD,
+                 vm_os_overhead=gc3libs.defaults.VM_OS_OVERHEAD,
                  # extra args are used to instanciate "sub-resources"
                  **extra_args):
 
@@ -185,7 +187,7 @@ class OpenStackLrms(LRMS):
 
         # `*_instance_type` config items should be consumed here,
         # not in any sub-resource
-        for key, value in extra_args.items():
+        for key, value in list(extra_args.items()):
             if key.endswith('_instance_type'):
                 self[key] = value
                 extra_args.pop(key)
@@ -206,12 +208,12 @@ class OpenStackLrms(LRMS):
         self.subresource_args['ignore_ssh_host_keys'] = True
         self.subresource_args['keyfile'] = self.public_key
         if self.subresource_args['keyfile'].endswith('.pub'):
-            self.subresource_args['keyfile'] = \
-              self.subresource_args['keyfile'][:-len('.pub')]
+            keyfile = self.subresource_args['keyfile'][:-len('.pub')]
+            self.subresource_args['keyfile'] = keyfile
         # ShellcmdLrms by default trusts the configuration, instead of
         # checking the real amount of memory and number of cpus, but
         # we need the real values instead.
-        if self.subresource_type == gc3libs.Default.SHELLCMD_LRMS:
+        if self.subresource_type == gc3libs.defaults.SHELLCMD_LRMS:
             self.subresource_args['override'] = 'True'
 
         if image_id is None:
@@ -293,10 +295,10 @@ class OpenStackLrms(LRMS):
 
         nics = None
         if hasattr(self,'network_ids') and self.network_ids:
-            nics=[{'net-id': netid.strip(), 'v4-fixed-ip': ''}
+            nics = [{'net-id': netid.strip(), 'v4-fixed-ip': ''}
                   for netid in self.network_ids.split(',')]
             gc3libs.log.debug("Specifying networks for vm %s: %s",
-                      name, str.join(', ', [nic['net-id'] for nic in nics]))
+                      name, ', '.join([nic['net-id'] for nic in nics]))
         args['nics'] = nics
 
         gc3libs.log.debug("Create new VM using image id `%s`", image_id)
@@ -385,7 +387,7 @@ class OpenStackLrms(LRMS):
         because that's the way the fingerprint is returned from the
         OpenStack API.
         """
-        return str.join(':', (i.encode('hex') for i in pkey.get_fingerprint()))
+        return ':'.join((i.encode('hex') for i in pkey.get_fingerprint()))
 
     def _have_keypair(self, keypair):
         """
@@ -470,7 +472,6 @@ class OpenStackLrms(LRMS):
             return self.compute_client.security_groups.list()
         except AttributeError:
             return self.network_client.list_security_groups()['security_groups']
-
 
     @cache_for(120)
     def _get_security_group(self, name):
@@ -611,7 +612,7 @@ class OpenStackLrms(LRMS):
            that fits the application requirements.
         """
         req_cores = self._get_task_requirement(task, 'requested_cores', 1)
-        req_memory = self._get_task_requirement(task, 'requested_memory', 0*MiB)
+        req_memory = self._get_task_requirement(task, 'requested_memory', 0 * MiB)
 
         # If there is an option <application>_instance_type, try to use it
         for conf_option in [
@@ -694,7 +695,6 @@ class OpenStackLrms(LRMS):
         """
         return (flavor.vcpus, flavor.ram, flavor.disk)
 
-
     def get_user_data_for_job(self, job):
         """
         If a configuration option <application>_user_data is present,
@@ -740,7 +740,7 @@ class OpenStackLrms(LRMS):
         for vm_id in self._vmpool:
             try:
                 vm = self._vmpool.get_vm(vm_id, force_reload=True)
-            except UnrecoverableError as ex:
+            except UnrecoverableError:
                 gc3libs.log.warning(
                     "Removing stale information on VM `%s`. It has probably"
                     " been deleted from outside GC3Pie.", vm_id)
@@ -787,7 +787,7 @@ class OpenStackLrms(LRMS):
                 gc3libs.log.info(
                     "Ignoring error in updating resource '%s': %s."
                     " Trying other IPs.", subresource.name, ex)
-                for ip in sum(vm.networks.values(), []):
+                for ip in sum(list(vm.networks.values()), []):
                     if vm.preferred_ip == ip:
                         continue
                     vm.preferred_ip = ip
@@ -959,7 +959,7 @@ class OpenStackLrms(LRMS):
                 "application %s" % job)
 
         # First of all, try to submit to one of the subresources.
-        for vm_id, subresource in self.subresources.items():
+        for vm_id, subresource in list(self.subresources.items()):
             if not subresource.updated:
                 # The VM is probably still booting, let's skip to the
                 # next one and add it to the list of "pending" VMs.
@@ -1113,7 +1113,7 @@ class OpenStackLrms(LRMS):
             return
         # Update status of VMs and remote resources
         self.get_resource_status()
-        for vm_id, subresource in self.subresources.items():
+        for vm_id, subresource in list(self.subresources.items()):
             if subresource.updated and not subresource.has_running_tasks():
                 vm = self._get_vm(vm_id)
                 gc3libs.log.warning(

@@ -1,10 +1,10 @@
-# helpers.py
 # -*- coding: utf-8 -*-
+
 """
 Utility functions for use in unit test code.
 """
 #
-#  Copyright (C) 2015, 2016, 2018  University of Zurich. All rights reserved.
+#  Copyright (C) 2015, 2016, 2018, 2019  University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -22,7 +22,8 @@ Utility functions for use in unit test code.
 #  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 # stdlib imports
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import range
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile, mkdtemp
 import shutil
@@ -62,12 +63,12 @@ def test_resource(name='test', **params):
         architecture=set([Run.Arch.X86_64]),
         enabled=True,
         # Use unusual values so that we can easily spot if the `override` option works
-        large_file_chunk_size=1.78*MB,
-        large_file_threshold=1.414*GB,
+        large_file_chunk_size=1.78 * MB,
+        large_file_threshold=1.414 * GB,
         max_cores=123,
         max_cores_per_job=123,
-        max_memory_per_core=999*GB,
-        max_walltime=7*hours,
+        max_memory_per_core=999 * GB,
+        max_walltime=7 * hours,
     )
     # update with given parameters
     rsc.update(**params)
@@ -135,7 +136,9 @@ auth = none
 override = no
             """)
     with NamedTemporaryFile(prefix='gc3libs.test.',
-                            suffix='.tmp', delete=(not keep)) as cfgfile:
+                            suffix='.tmp',
+                            mode='w+t',
+                            delete=(not keep)) as cfgfile:
         cfgfile.write(cfgtext)
         cfgfile.flush()
         yield cfgfile
@@ -167,6 +170,7 @@ class SuccessfulApp(Application):
             jobname=name,
             requested_cores=1,
             **extra_args)
+
     def terminated(self):
         self.execution.returncode = 0
 
@@ -183,6 +187,7 @@ class UnsuccessfulApp(Application):
             jobname=name,
             requested_cores=1,
             **extra_args)
+
     def terminated(self):
         self.execution.returncode = (0, 1)
 

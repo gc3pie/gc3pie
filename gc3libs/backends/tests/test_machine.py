@@ -4,7 +4,7 @@
 Unit tests for `_Machine`:class: and derived classes
 (from module `gc3libs.backends.shellcmd`).
 """
-# Copyright (C) 2011-2015  University of Zurich. All rights reserved.
+# Copyright (C) 2011-2015, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,7 +19,7 @@ Unit tests for `_Machine`:class: and derived classes
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
 __docformat__ = 'reStructuredText'
 
 
@@ -54,7 +54,7 @@ def test_list_process_tree_empty(transport):
 
 
 def test_list_process_tree_full(transport):
-    """
+    r"""
     Check that the output relative to this process tree is correct
     (process tree as displayed by `ps f`)::
 

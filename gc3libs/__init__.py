@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 # Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 """
 GC3Libs is a python package for controlling the life-cycle of a Grid
 or batch computational job.
@@ -30,7 +30,11 @@ subclasses can expose adapted interfaces, focusing on the most
 relevant aspects of the application being represented.
 
 """
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from __future__ import division
+from builtins import str
+from past.utils import old_div
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 __version__ = '2.5.3'
@@ -43,7 +47,6 @@ import platform
 import string
 import sys
 import time
-import types
 import subprocess
 import shlex
 import uuid
@@ -53,78 +56,37 @@ import logging.config
 log = logging.getLogger("gc3.gc3libs")
 log.propagate = True
 
-from gc3libs.events import TaskStateChange, TermStatusChange
+try:
+    # Python 2
+    from types import StringTypes as string_types
+except ImportError:
+    # Python 3
+    string_types = (str,)
+
+import gc3libs.defaults
 from gc3libs.quantity import MB, hours, minutes, seconds, MiB
+from gc3libs.events import TaskStateChange, TermStatusChange
 from gc3libs.compat._collections import OrderedDict
 
-# this needs to be defined before we import other GC3Libs modules, as
-# they may depend on it
-
-
-class Default(object):
-    """
-    A namespace for all constants and default values used in the
-    GC3Libs package.
-    """
-
-    RCDIR = os.path.join(os.path.expandvars('$HOME'), ".gc3")
-    CONFIG_FILE_LOCATIONS = [
-        # system-wide config file
-        "/etc/gc3/gc3pie.conf",
-        # virtualenv config file
-        os.path.expandvars("$VIRTUAL_ENV/etc/gc3/gc3pie.conf"),
-        # user-private config file: first look into `$GC3PIE_CONF`, and
-        # fall-back to `~/.gc3/gc3pie.conf`
-        os.environ.get('GC3PIE_CONF', os.path.join(RCDIR, "gc3pie.conf"))
-    ]
-    JOBS_DIR = os.path.join(RCDIR, "jobs")
-
-    # the ARC backends have been removed, but keep their names around
-    # so we can issue a warning if a user still has these resources in
-    # the configuration file
-    ARC0_LRMS = 'arc0'
-    ARC1_LRMS = 'arc1'
-
-    SGE_LRMS = 'sge'
-    PBS_LRMS = 'pbs'
-    LSF_LRMS = 'lsf'
-    SHELLCMD_LRMS = 'shellcmd'
-    SLURM_LRMS = 'slurm'
-    SUBPROCESS_LRMS = 'subprocess'
-    EC2_LRMS = 'ec2'
-    OPENSTACK_LRMS = 'openstack'
-
-    # Transport information
-    SSH_CONFIG_FILE = '~/.ssh/config'
-    SSH_PORT = 22
-    SSH_CONNECT_TIMEOUT = 30
-
-    PEEK_FILE_SIZE = 120  # expressed in bytes
-
-    # Openstack default VM Operating System overhead
-    VM_OS_OVERHEAD = 512 * MiB
-
-    # time to cache lshosts/bjobs information for
-    LSF_CACHE_TIME = 30
-
-    # root path for the working directory of jobs;
-    # on batch systems, this should be visible from both
-    # the frontend and the compute nodes
-    SPOOLDIR = "$HOME/.gc3pie_jobs"
-
-
-from gc3libs.events import TaskStateChange
 import gc3libs.exceptions
 from gc3libs.persistence import Persistable
 from gc3libs.url import UrlKeyDict, UrlValueDict
-from gc3libs.utils import (defproperty, deploy_configuration_file, Enum,
-                           History, Struct, safe_repr, sh_quote_unsafe)
+from gc3libs.utils import (deploy_configuration_file, Enum,
+                           History, Struct, safe_repr, to_str)
 
+#
+# global constants
+#
 
-# when used in the `output` attribute of an application,
-# it stands for "fetch the whole contents of the remote
-# directory"
 ANY_OUTPUT = '*'
+"""
+When used in the `output` attribute of an application,
+it stands for 'fetch the whole contents of the remote
+directory'.
+"""
+
+# for compatibility with GC3Pie <2.6.0
+Default = gc3libs.defaults
 
 
 # utility functions
@@ -195,13 +157,14 @@ def configure_logger(
             log.warning("Could not import `coloredlogs` module: %s", err)
     return log
 
+
 def _load_logging_configuration_file(name):
     if name is None:
         name = os.path.basename(sys.argv[0])
-    log_conf = os.path.join(Default.RCDIR, name + '.log.conf')
+    log_conf = os.path.join(gc3libs.defaults.RCDIR, name + '.log.conf')
     deploy_configuration_file(log_conf, "logging.conf.example")
     logging.config.fileConfig(log_conf, {
-        'RCDIR': Default.RCDIR,
+        'RCDIR': gc3libs.defaults.RCDIR,
         'HOMEDIR': os.path.expandvars('$HOME'),
         'HOSTNAME': platform.node(),
     })
@@ -235,13 +198,11 @@ def error_ignored(*ctx):
     if UNIGNORE_ALL_ERRORS:
         return False
     else:
-        return (0 == len(UNIGNORE_ERRORS.intersection(set(str(word).lower()
-                                                          for word in ctx))))
+        words = set(str(word).lower() for word in ctx)
+        return not UNIGNORE_ERRORS.intersection(words)
 
 
 # Task and Application classes
-#
-
 class Task(Persistable, Struct):
 
     """
@@ -307,6 +268,15 @@ class Task(Persistable, Struct):
         self.changed = True
         TaskStateChange.connect(self._on_state_change, sender=self)
 
+    def __hash__(self):
+        # FIXME: this might be incorrect, still `__hash__
+        # = id` is what Python 2 does, and it has not broken
+        # GC3Pie so far... For more details, see:
+        # - https://docs.python.org/3/reference/datamodel.html#object.__hash__
+        # - https://docs.python.org/2/reference/datamodel.html#object.__hash__
+        return id(self)
+
+
     # manipulate the "controller" interface used to control the associated job
     def attach(self, controller):
         """
@@ -341,13 +311,6 @@ class Task(Persistable, Struct):
                     "Task object is not attached to any controller.")
             return throw_error
 
-    __no_controller = __NoController()
-    """
-    A class-shared fake "controller" object.
-
-    Used for marking detached `Task`:class: objects.
-    """
-
     def detach(self):
         """
         Remove any reference to the current grid interface.  After
@@ -359,7 +322,7 @@ class Task(Persistable, Struct):
                 self._controller.remove(self)
             except:
                 pass
-            self._controller = Task.__no_controller
+            self._controller = self.__NoController()
             self._attached = False
 
     # interface with pickle/gc3libs.persistence: do not save the
@@ -535,10 +498,8 @@ class Task(Persistable, Struct):
              (self._controller, self))
         self._controller.free(self, **extra_args)
 
-
     # convenience methods, do not really add any functionality over
     # what's above
-
     def progress(self):
         """
         Advance the associated job through all states of a regular
@@ -585,7 +546,6 @@ class Task(Persistable, Struct):
             self.fetch_output()
             return self.execution.returncode
 
-
     def redo(self, *args, **kwargs):
         """
         Reset the state of this Task instance to ``NEW``.
@@ -611,7 +571,6 @@ class Task(Persistable, Struct):
             " task {0} is in state {1} instead."
             .format(self, self.execution.state))
         self.execution.state = Run.State.NEW
-
 
     def wait(self, interval=60):
         """
@@ -836,7 +795,9 @@ class Application(Task):
       give them in the task execution setting.  Keys of the dictionary
       are environmental variables names, and dictionary values define
       the corresponding variable content.  Both keys and values must
-      be strings or convertible to string.
+      be strings or convertible to string; keys (environment variable
+      names) must be ASCII-only or a ``UnicodeDecodeError`` will be
+      raised.
 
       For example, to run the application in an environment where the
       variable ``LC_ALL`` has the value ``C`` and the variable ``HZ``
@@ -870,6 +831,9 @@ class Application(Task):
       if this evaluates to `True`, then standard error is
       redirected to the file specified by `stdout` and `stderr` is
       ignored.  (`join` has no effect if `stdout` is not given.)
+
+    `jobname`
+      a string to display this job in user-oriented listings
 
     `tags`
       list of tag names (string) that must be present on a
@@ -942,7 +906,7 @@ class Application(Task):
 
     def __init__(self, arguments, inputs, outputs, output_dir, **extra_args):
         # required parameters
-        if isinstance(arguments, types.StringTypes):
+        if isinstance(arguments, string_types):
             arguments = shlex.split(arguments)
 
         if 'executable' in extra_args:
@@ -952,7 +916,7 @@ class Application(Task):
                 " only.")
             arguments = [extra_args['executable']] + list(arguments)
 
-        self.arguments = [str(x) for x in arguments]
+        self.arguments = [to_str(x, 'filesystem') for x in arguments]
 
         self.inputs = Application._io_spec_to_dict(UrlKeyDict, inputs, True)
         self.outputs = Application._io_spec_to_dict(
@@ -960,10 +924,10 @@ class Application(Task):
 
         # check that remote entries are all distinct
         # (can happen that two local paths are mapped to the same remote one)
-        if len(self.inputs.values()) != len(set(self.inputs.values())):
+        if len(list(self.inputs.values())) != len(set(self.inputs.values())):
             # try to build an exact error message
             inv = {}
-            for l, r in self.inputs.iteritems():
+            for l, r in self.inputs.items():
                 if r in inv:
                     raise gc3libs.exceptions.DuplicateEntryError(
                         "Local inputs '%s' and '%s'"
@@ -973,17 +937,17 @@ class Application(Task):
                     inv[r] = l
 
         # ensure remote paths are not absolute
-        for r_path in self.inputs.itervalues():
+        for r_path in self.inputs.values():
             if os.path.isabs(r_path):
                 raise gc3libs.exceptions.InvalidArgument(
                     "Remote paths not allowed to be absolute: %s" % r_path)
 
         # check that local entries are all distinct
         # (can happen that two remote paths are mapped to the same local one)
-        if len(self.outputs.values()) != len(set(self.outputs.values())):
+        if len(list(self.outputs.values())) != len(set(self.outputs.values())):
             # try to build an exact error message
             inv = {}
-            for r, l in self.outputs.iteritems():
+            for r, l in self.outputs.items():
                 if l in inv:
                     raise gc3libs.exceptions.DuplicateEntryError(
                         "Remote outputs '%s' and '%s'"
@@ -993,12 +957,12 @@ class Application(Task):
                     inv[l] = r
 
         # ensure remote paths are not absolute
-        for r_path in self.outputs.iterkeys():
+        for r_path in self.outputs.keys():
             if os.path.isabs(r_path):
                 raise gc3libs.exceptions.InvalidArgument(
                     "Remote paths not allowed to be absolute")
 
-        self.output_dir = output_dir
+        self.output_dir = to_str(output_dir, 'filesystem')
 
         # optional params
         self.output_base_url = extra_args.pop('output_base_url', None)
@@ -1029,14 +993,15 @@ class Application(Task):
                 % (Run.Arch.X86_32, Run.Arch.X86_64))
 
         self.environment = dict(
-            (str(k), str(v)) for k, v in extra_args.pop(
-                'environment', dict()).items())
+            (to_str(k), to_str(v, 'terminal'))
+            for k, v in list(extra_args.pop(
+                'environment', dict()).items()))
 
         self.join = extra_args.pop('join', False)
-        self.stdin = extra_args.pop('stdin', None)
+        self.stdin = to_str(extra_args.pop('stdin', None), 'filesystem')
         if self.stdin and (self.stdin not in self.inputs):
             self.inputs[self.stdin] = os.path.basename(self.stdin)
-        self.stdout = extra_args.pop('stdout', None)
+        self.stdout = to_str(extra_args.pop('stdout', None), 'filesystem')
         if self.stdout is not None and os.path.isabs(self.stdout):
             raise gc3libs.exceptions.InvalidArgument(
                 "Absolute path '%s' passed as `Application.stdout`"
@@ -1046,7 +1011,7 @@ class Application(Task):
                 and (self.stdout not in self.outputs)):
             self.outputs[self.stdout] = self.stdout
 
-        self.stderr = extra_args.pop('stderr', None)
+        self.stderr = to_str(extra_args.pop('stderr', None), 'filesystem')
         join_stdout_and_stderr = (self.join
                                   or self.stderr == self.stdout
                                   or self.stderr == subprocess.STDOUT)
@@ -1069,7 +1034,9 @@ class Application(Task):
         self.tags = extra_args.pop('tags', list())
 
         if 'jobname' in extra_args:
-            jobname = extra_args['jobname']
+            # constrain job name to be ASCII-only, or some
+            # batch-queuing systems might reject it
+            jobname = to_str(extra_args['jobname'], 'ascii')
             # Check whether the first character of a jobname is an
             # integer. SGE does not allow job names to start with a
             # number, so add a prefix...
@@ -1079,7 +1046,7 @@ class Application(Task):
                     " generating UUID job name", self)
                 jobname = ("GC3Pie.%s.%s"
                            % (self.__class__.__name__, uuid.uuid4()))
-            elif str(jobname)[0] not in string.letters:
+            elif str(jobname)[0] not in string.ascii_letters:
                 gc3libs.log.warning(
                     "Supplied job name `%s` for %s does not start"
                     " with a letter; changing it to `GC3Pie.%s`"
@@ -1142,13 +1109,9 @@ class Application(Task):
         """
         try:
             # is `spec` dict-like?
-            return ctor(((str(k), str(v)) for k, v in spec.iteritems()),
+            return ctor(((to_str(k, 'filesystem'), to_str(v, 'filesystem'))
+                         for k, v in spec.items()),
                         force_abs=force_abs)
-        except UnicodeError as err:
-            raise gc3libs.exceptions.InvalidValue(
-                "Use of non-ASCII file names is not (yet) supported in"
-                " GC3Pie: %s: %s" %
-                (err.__class__.__name__, str(err)))
         except AttributeError:
             # `spec` is a list-like
             return ctor((Application.__convert_to_tuple(x) for x in spec),
@@ -1157,12 +1120,13 @@ class Application(Task):
     @staticmethod
     def __convert_to_tuple(val):
         """Auxiliary method for `io_spec_to_dict`:meth:, which see."""
-        if isinstance(val, types.StringTypes):
-            l = str(val)
+        if isinstance(val, string_types):
+            l = to_str(val, 'filesystem')
             r = os.path.basename(l)
             return (l, r)
         else:
-            return (str(val[0]), str(val[1]))
+            return (to_str(val[0], 'filesystem'),
+                    to_str(val[1], 'filesystem'))
 
     def __str__(self):
         try:
@@ -1195,9 +1159,8 @@ class Application(Task):
                 gc3libs.log.info(
                     "Rejecting resource '%s': requested a different"
                     " architecture (%s) than what resource provides (%s)" %
-                    (lrms.name, self.requested_architecture, str.join(
-                        ', ', [
-                            str(arch) for arch in lrms.architecture])))
+                    (lrms.name, self.requested_architecture,
+                     ', '.join([str(arch) for arch in lrms.architecture])))
                 continue
             # check that Application requirements are within resource limits
             if self.requested_cores > lrms.max_cores_per_job:
@@ -1224,8 +1187,8 @@ class Application(Task):
                     (lrms.name, self.requested_walltime, lrms.max_walltime))
                 continue
             if not lrms.validate_data(
-                    self.inputs.keys()) or not lrms.validate_data(
-                    self.outputs.values()):
+                    list(self.inputs.keys())) or not lrms.validate_data(
+                    list(self.outputs.values())):
                 gc3libs.log.info(
                     "Rejecting resource '%s': input/output data protocol"
                     " not supported." % lrms.name)
@@ -1291,7 +1254,7 @@ class Application(Task):
         """
         if self.environment:
             return (['/usr/bin/env']
-                    + [('%s=%s' % (k, v)) for k, v in self.environment.items()]
+                    + [('%s=%s' % (k, v)) for k, v in list(self.environment.items())]
                     + self.arguments[:])
         else:
             return self.arguments[:]
@@ -1348,8 +1311,8 @@ class Application(Task):
             # Let's make whatever works in our cluster, and see how we can
             # extend/change it when issue reports come...
             qsub += ['-l', ('mem_free=%dM' %
-                            max(1, int(self.requested_memory.amount(MB) /
-                                       self.requested_cores)))]
+                            max(1, int(old_div(self.requested_memory.amount(MB),
+                                       self.requested_cores))))]
         if self.join:
             qsub += ['-j', 'yes']
         if self.stdout:
@@ -1394,7 +1357,7 @@ class Application(Task):
         if 'jobname' in self and self.jobname:
             qsub += ['-N', '%s' % self.jobname]
         if self.environment:
-            for name, value in self.environment.iteritems():
+            for name, value in self.environment.items():
                 qsub += ['-v', '{0}={1}'.format(name, value)]
         return (qsub, self.cmdline(resource))
 
@@ -1460,7 +1423,7 @@ class Application(Task):
             # the `env` prefix trick.
             bsub = (['/usr/bin/env']
                     + ['{0}={1}'.format(name, value)
-                       for name, value in self.environment.iteritems()]
+                       for name, value in self.environment.items()]
                     + bsub)
         return (bsub, self.cmdline(resource))
 
@@ -1500,7 +1463,7 @@ class Application(Task):
             qsub += ['-N', '%s' % self.jobname[:15]]
         if self.environment:
             # XXX: is the `-v` option also supported by older versions of PBS/TORQUE?
-            for name, value in self.environment.iteritems():
+            for name, value in self.environment.items():
                 qsub += ['-v', '{0}={1}'.format(name, value)]
         return (qsub, self.cmdline(resource))
 
@@ -1567,7 +1530,7 @@ class Application(Task):
             # environment, so they will be propagated to the job
             sbatch = (['/usr/bin/env']
                       + ['{0}={1}'.format(name, value)
-                         for name, value in self.environment.iteritems()]
+                         for name, value in self.environment.items()]
                       + sbatch)
 
         return (sbatch, cmdline)
@@ -1751,26 +1714,26 @@ class Run(Struct):
             >>> j1 = Run()
             >>> print (j1.returncode)
             None
-            >>> j1.state
-            'NEW'
+            >>> j1.state == 'NEW'
+            True
 
           2. Create a new job with additional attributes::
 
             >>> j2 = Run(application='GAMESS', version='2010R1')
             >>> j2.state
             'NEW'
-            >>> j2.application
-            'GAMESS'
-            >>> j2['version']
-            '2010R1'
+            >>> j2.application == 'GAMESS'
+            True
+            >>> j2['version'] == '2010R1'
+            True
 
           3. Clone an existing job object::
 
             >>> j3 = Run(j2)
-            >>> j3.application
-            'GAMESS'
-            >>> j3['version']
-            '2010R1'
+            >>> j3.application == 'GAMESS'
+            True
+            >>> j3['version'] == '2010R1'
+            True
 
         """
         self._ref = attach
@@ -1788,8 +1751,8 @@ class Run(Struct):
         if 'timestamp' not in self:
             self.timestamp = OrderedDict()
 
-    @defproperty
-    def info():
+    @property
+    def info(self):
         """
         A simplified interface for reading/writing entries into `history`.
 
@@ -1802,23 +1765,25 @@ class Run(Struct):
         Getting the value of the `info` attribute returns the last
         message entered in the log::
 
-          >>> j1.info # doctest: +ELLIPSIS
-          u'a second message ...'
+          >>> print(j1.info) # doctest: +ELLIPSIS
+          a second message ...
 
         """
-
-        def fget(self):
-            return self.history.last()
-
-        def fset(self, value):
-            try:
-                self.history.append(unicode(value, errors='replace'))
-            except (TypeError, ValueError):
-                try:
-                    self.history.append(str(value))
-                except Exception as err:
-                    log.error("Cannot append `%s` to history of task %s", value, self)
         return locals()
+
+    @info.setter
+    def info(self, value):
+        try:
+            self.history.append(str(value, errors='replace'))
+        except (TypeError, ValueError):
+            try:
+                self.history.append(str(value))
+            except Exception as err:
+                log.error("Cannot append `%s` to history of task %s", value, self)
+
+    @info.getter
+    def info(self):
+        return self.history.last()
 
     # states that a `Run` can be in
     State = Enum(
@@ -1859,8 +1824,8 @@ class Run(Struct):
         def __setattr__(self, name, value):
             raise TypeError("Cannot overwrite value of constant '%s'" % name)
 
-    @defproperty
-    def state():
+    @property
+    def state(self):
         """
         The state a `Run` is in.
 
@@ -1918,38 +1883,35 @@ class Run(Struct):
         at all, for example, in case of a fatal failure during the
         submission step.
         """
+        return self._state
 
-        def fget(self):
-            return self._state
-
-        def fset(self, value):
-            assert value in Run.State, \
-                ("Value '{0}' is not a legal `gc3libs.Run.State` value."
-                 .format(value))
-            if self._state == value:
-                # no changes
-                return
-            self.state_last_changed = time.time()
-            self.timestamp[value] = time.time()
-            # record state-transition in Task execution history
-            # (can be later queried with `ginfo` for e.g. debugging)
-            if value == Run.State.TERMINATED:
-                self.history.append(
-                    "Transition from state {0} to state {1} (returncode: {2})"
-                    .format(self._state, value, self.returncode))
-            else:
-                self.history.append(
-                    "Transition from state {0} to state {1}"
-                    .format(self._state, value))
-            if self._ref is not None:
-                self._ref.changed = True
-                # signal state-transition
-                TaskStateChange.send(
-                    self._ref, from_state=self._state, to_state=value)
-            # finally, update state
-            self._state = value
-
-        return locals()
+    @state.setter
+    def state(self, value):
+        assert value in Run.State, \
+            ("Value '{0}' is not a legal `gc3libs.Run.State` value."
+             .format(value))
+        if self._state == value:
+            # no changes
+            return
+        self.state_last_changed = time.time()
+        self.timestamp[value] = time.time()
+        # record state-transition in Task execution history
+        # (can be later queried with `ginfo` for e.g. debugging)
+        if value == Run.State.TERMINATED:
+            self.history.append(
+                "Transition from state {0} to state {1} (returncode: {2})"
+                .format(self._state, value, self.returncode))
+        else:
+            self.history.append(
+                "Transition from state {0} to state {1}"
+                .format(self._state, value))
+        if self._ref is not None:
+            self._ref.changed = True
+            # signal state-transition
+            TaskStateChange.send(
+                self._ref, from_state=self._state, to_state=value)
+        # finally, update state
+        self._state = value
 
     def in_state(self, *names):
         """
@@ -1975,8 +1937,8 @@ class Run(Struct):
         else:
             return False
 
-    @defproperty
-    def signal():
+    @property
+    def signal(self):
         """
         The "signal number" part of a `Run.returncode`, see
         `os.WTERMSIG` for details.
@@ -1990,19 +1952,14 @@ class Run(Struct):
         "fake" one that GC3Libs uses to represent Grid middleware
         errors (see `Run.Signals`).
         """
+        return self._signal
 
-        def fget(self):
-            return self._signal
+    @signal.setter
+    def signal(self, value):
+        self._signal = None if value is None else int(value) & 0x7f
 
-        def fset(self, value):
-            if value is None:
-                self._signal = None
-            else:
-                self._signal = int(value) & 0x7f
-        return (locals())
-
-    @defproperty
-    def exitcode():
+    @property
+    def exitcode(self):
         """
         The "exit code" part of a `Run.returncode`, see `os.WEXITSTATUS`.
         This is an 8-bit integer, whose meaning is entirely
@@ -2010,16 +1967,11 @@ class Run(Struct):
         to mean that an error has occurred and the application could
         not end its execution normally.)
         """
+        return self._exitcode
 
-        def fget(self):
-            return self._exitcode
-
-        def fset(self, value):
-            if value is None:
-                self._exitcode = None
-            else:
-                self._exitcode = int(value) & 0xff
-        return (locals())
+    @exitcode.setter
+    def exitcode(self, value):
+        self._exitcode = None if value is None else int(value) & 0xff
 
     @property
     def returncode(self):
@@ -2108,7 +2060,6 @@ class Run(Struct):
             signal = 0
         return (exitcode << 8) | signal
 
-
     # `Run.Signals` is an instance of global class `_Signals`
     Signals = _Signals()
 
@@ -2191,7 +2142,7 @@ def create_core(*conf_files, **extra_args):
     It accepts an optional list of configuration filenames.  Filenames
     containing a `~` or an environment variable reference, will be
     expanded automatically. If called without arguments, the paths
-    specified in `gc3libs.Default.CONFIG_FILE_LOCATIONS` will be
+    specified in `gc3libs.defaults.CONFIG_FILE_LOCATIONS` will be
     used.
 
     Any keyword argument matching the name of a parameter used by
@@ -2205,7 +2156,7 @@ def create_core(*conf_files, **extra_args):
         os.path.expandvars(
             os.path.expanduser(fname)) for fname in conf_files]
     if not conf_files:
-        conf_files = Default.CONFIG_FILE_LOCATIONS[:]
+        conf_files = gc3libs.defaults.CONFIG_FILE_LOCATIONS[:]
 
     # extract params specific to the `Core` instance
     core_specific_args = _split_specific_args(Core.__init__, extra_args)

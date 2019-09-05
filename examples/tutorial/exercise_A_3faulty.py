@@ -13,7 +13,7 @@ work on the source for `exercise_A_2.py`:
 """
 #
 #
-# Copyright (C) 2009-2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2009-2012, 2019 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 #
 #  This program is free software; you can redistribute it and/or modify it
@@ -89,7 +89,7 @@ applications = [GdemoSimpleApp() for i in range(10)]
 
 # create an instance of Core. Read configuration from your default
 # configuration file
-cfg = gc3libs.config.Configuration(*gc3libs.Default.CONFIG_FILE_LOCATIONS,
+cfg = gc3libs.config.Configuration(*gc3libs.defaults.CONFIG_FILE_LOCATIONS,
                                    **{'auto_enable_auth': True})
 core = gc3libs.core.Core(cfg)
 
@@ -101,7 +101,7 @@ if len(sys.argv)>1:
 for app in applications:
     core.submit(app)
     # After submssion, you have to check the application for its state:
-    print  "Job id: %s" % app.execution.lrms_jobid
+    print("Job id: %s" % app.execution.lrms_jobid)
 
 
 while True:
@@ -123,7 +123,7 @@ while True:
 
     time.sleep(5)
 
-print "Job is now in state %s. Fetching output." % app.execution.state
+print("Job is now in state %s. Fetching output." % app.execution.state)
 
 # You can specify a different `download_dir` option if you want to
 # override the value used in the GdemoSimpleApp initialization
@@ -140,6 +140,6 @@ for app in applications:
     else:
         model_names[app.model_name] += 1
 
-print "Model names:"
+print("Model names:")
 for (k,v) in model_names.iteritems():
-    print "Model '%s': %d" % (k,v)
+    print("Model '%s': %d" % (k,v))

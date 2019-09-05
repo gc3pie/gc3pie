@@ -1,9 +1,10 @@
 # __init__.py
 # -*- coding: utf-8 -*-
+
 """
 Sub-package of utility function to aid in writing GC3Pie unit tests.
 """
-#
+
 #  Copyright (C) 2016,  University of Zurich. All rights reserved.
 #
 #

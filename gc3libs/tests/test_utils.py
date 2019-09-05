@@ -3,7 +3,7 @@
 """
 Test for classes and functions in the `utils` module.
 """
-# Copyright (C) 2012, 2013,  University of Zurich. All rights reserved.
+# Copyright (C) 2012, 2013, 2019,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,11 +18,17 @@ Test for classes and functions in the `utils` module.
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import next
+from builtins import range
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 
-from itertools import izip
+
 
 # 3rd party imports
 import mock
@@ -37,7 +43,7 @@ import gc3libs.utils
 # test definitions
 
 def test_get_linux_memcg_limit_no_proc_self_cgroup():
-    with mock.patch('__builtin__.open') as mo:
+    with mock.patch('gc3libs.utils.open') as mo:
         mo.side_effect = OSError(2, 'No such file or directory', '/proc/self/cgroup')
         limit = gc3libs.utils.get_linux_memcg_limit()
         mo.assert_called_once_with('/proc/self/cgroup', 'r')
@@ -46,7 +52,7 @@ def test_get_linux_memcg_limit_no_proc_self_cgroup():
 
 def test_get_linux_memcg_limit_no_memcg():
     mo = mock.mock_open(read_data='*** no memcg ***')
-    with mock.patch('__builtin__.open', mo):
+    with mock.patch('gc3libs.utils.open', mo):
         limit = gc3libs.utils.get_linux_memcg_limit()
         mo.assert_called_once_with('/proc/self/cgroup', 'r')
         assert limit is None
@@ -54,7 +60,7 @@ def test_get_linux_memcg_limit_no_memcg():
 
 def test_get_linux_memcg_limit_with_memcg_limit():
     def fake_open(path, mode):
-        from StringIO import StringIO
+        from io import StringIO
         from contextlib import closing
         if path == '/proc/self/cgroup':
             return closing(StringIO('2:memory:/test'))
@@ -67,7 +73,7 @@ def test_get_linux_memcg_limit_with_memcg_limit():
             raise AssertionError(
                 "Unexpected call to open({0!r}, {1!r})"
                 .format(path, mode))
-    with mock.patch('__builtin__.open') as mo:
+    with mock.patch('gc3libs.utils.open') as mo:
         mo.side_effect = fake_open
         limit = gc3libs.utils.get_linux_memcg_limit()
         mo.assert_has_calls([
@@ -142,17 +148,17 @@ class TestYieldAtNext(object):
         def generator_yield():
             yield 0
         g = gc3libs.utils.YieldAtNext(generator_yield())
-        assert g.next() == 0
+        assert next(g) == 0
 
     def test_YieldAtNext_send(self):
         def generator_yield_send():
             val = (yield 1)
             yield val
         g = gc3libs.utils.YieldAtNext(generator_yield_send())
-        assert g.next() == 1
+        assert next(g) == 1
         result = g.send('a sent value')
         assert result == None
-        assert g.next() == 'a sent value'
+        assert next(g) == 'a sent value'
 
     def test_YieldAtNext_send_iter(self):
         def generator_yield_send():
@@ -160,7 +166,7 @@ class TestYieldAtNext(object):
             while True:
                 val = (yield val)
         g = gc3libs.utils.YieldAtNext(generator_yield_send())
-        expected = range(0, 9)
+        expected = list(range(0, 9))
         n = 0
         print ("expecting %d messages" % (len(expected),))
         for msg in g:
@@ -183,16 +189,16 @@ class TestYieldAtNext(object):
             while True:
                 val = (yield val)
         g = gc3libs.utils.YieldAtNext(generator_yield_send())
-        expected = range(1, 10)
+        expected = list(range(1, 10))
         # consume one value to init the generator
-        g.next()
+        next(g)
         # send all messages
         for msg in expected:
             g.send(msg)
             print ("sent message '%s'" % (msg,))
         # receive them all
         print ("expecting %d messages back" % (len(expected),))
-        for msg, expected_msg in izip(g, expected):
+        for msg, expected_msg in zip(g, expected):
             print ("received: %s" % (msg,))
             # check msg
             assert msg == expected_msg
@@ -206,18 +212,18 @@ class TestYieldAtNext(object):
             except RuntimeError:
                 yield 'exception caught'
         g = gc3libs.utils.YieldAtNext(generator_yield_throw())
-        assert g.next() == 2
+        assert next(g) == 2
         result = g.throw(RuntimeError)
         assert result == None
-        assert g.next() == 'exception caught'
+        assert next(g) == 'exception caught'
 
     def test_YieldAtNext_StopIteration(self):
         def generator_yield():
             yield 3
         g = gc3libs.utils.YieldAtNext(generator_yield())
-        assert g.next() == 3
+        assert next(g) == 3
         with pytest.raises(StopIteration):
-            g.next()
+            next(g)
 
 
 # main: run tests

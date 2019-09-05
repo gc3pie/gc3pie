@@ -1,8 +1,12 @@
 #! /usr/bin/env python
-#
+
+"""
+Simple interface to the CODEML application.
+"""
+
 #   codeml.py -- Simple interface to the CODEML application
 #
-#   Copyright (C) 2010, 2011, 2012  University of Zurich. All rights reserved.
+#   Copyright (C) 2010, 2011, 2012, 2019  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -16,11 +20,11 @@
 #
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-"""
-Simple interface to the CODEML application.
-"""
-from __future__ import absolute_import, print_function
+
+
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import range
 __changelog__ = """
 Summary of user-visible changes:
 * 16-08-2011 AM: Extract aln_info from the .phy file and record it
@@ -108,7 +112,7 @@ class CodemlApplication(gc3libs.Application):
                 # try getting the seqfile/treefile path before we
                 # append the '.ctl' file to inputs; if they cannot be
                 # found, we do not append the '.ctl' either...
-                for (key, path) in CodemlApplication.aux_files(ctl).items():
+                for (key, path) in list(CodemlApplication.aux_files(ctl).items()):
                     if key in ['seqfile', 'treefile'] and path not in inputs:
                         inputs[path] = os.path.basename(path)
 
@@ -171,7 +175,7 @@ class CodemlApplication(gc3libs.Application):
         self.time_used = [None] * len(ctls)
 
     # split a line 'key = value' around the middle '=' and ignore spaces
-    _assignment_re = re.compile('\s* = \s*', re.X)
+    _assignment_re = re.compile(r'\s* = \s*', re.X)
     _aux_file_keys = ['seqfile', 'treefile', 'outfile']
 
     # aux function to get thw seqfile and treefile paths

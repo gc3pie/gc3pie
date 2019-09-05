@@ -42,9 +42,11 @@ major = (sys.hexversion >> 24)
 minor = (sys.hexversion >> 16) & 0xff
 release = (sys.hexversion >> 8) & 0xff
 
-if major < 2 or (major == 2 and minor < 6) or major >= 3:
+if (major < 2
+    or (major == 2 and minor < 6)
+    or (major == 3 and minor < 5)):
     sys.stderr.write("""
-GC3Pie requires Python version 2.6 or 2.7.
+GC3Pie requires Python version 2.6, 2.7, or 3.5+.
 Unfortunately, the Python interpreter '%s'
 is running version %d.%d.%d of the language.
 
@@ -52,7 +54,7 @@ If a version of Python suitable for using GC3Pie is present in some
 non-standard location, then please run this script again through
 the correct 'python' binary.  For example:
 
-  /usr/local/bin/python26 %s
+  /usr/local/bin/python3 %s
 """ % (sys.executable, major, minor, release, sys.argv[0]))
     sys.exit(70) # os.EX_UNAVAILABLE
 
@@ -60,6 +62,8 @@ the correct 'python' binary.  For example:
 ## now we know we're running Py 2.6+, do the rest of the setup
 
 import logging
+
+from codecs import encode
 
 # see: http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 from distutils.spawn import find_executable
@@ -99,10 +103,20 @@ except:
             raise CalledProcessError(retcode, cmd, output=output)
         return output
 
+try:
+    # python 3
+    from urllib.request import urlopen
+except ImportError:
+    # python 2
+    from urllib2 import urlopen
 
-
-from urllib2 import urlopen
 import json
+
+try:
+    raw_input
+except NameError:
+    # Python 3
+    raw_input = input
 
 
 ## defaults and constants
@@ -123,8 +137,15 @@ DO_NOT_ASK_AND_ASSUME_YES = False
 paths_to_cleanup = []
 
 def cleanup(paths=paths_to_cleanup):
-    if isinstance(paths, (str, basestring)):
+    # If `paths` is a string, wrap it into a 1-element list.  In order
+    # to work portably on Py2 and Py3, we determine if we deal with a
+    # string by checking for the existence of method `.capitalize()`,
+    # which only string-like objects have.
+    try:
+        paths.capitalize
         paths = [paths]
+    except AttributeError:
+        pass
 
     for path in paths:
         path = os.path.abspath(path)
@@ -138,8 +159,15 @@ def cleanup(paths=paths_to_cleanup):
 
 
 def cleanup_defer(paths):
-    if isinstance(paths, (str, basestring)):
+    # If `paths` is a string, wrap it into a 1-element list.  In order
+    # to work portably on Py2 and Py3, we determine if we deal with a
+    # string by checking for the existence of method `.capitalize()`,
+    # which only string-like objects have.
+    try:
+        paths.capitalize
         paths = [paths]
+    except AttributeError:
+        pass
     paths_to_cleanup.extend([os.path.abspath(path) for path in paths])
 
 
@@ -549,7 +577,7 @@ def download(url, to_file=None, keep=True):
     if to_file is None:
         to_file = path.basename(url)
     src = urlopen(url)
-    dst = open(to_file, 'w')
+    dst = open(to_file, 'wb')
     dst.write(src.read())
     if not keep:
         cleanup_defer(to_file)
@@ -708,10 +736,10 @@ def have_sw_package(pkg):
         #     ii  gcc                                   4:4.9.2-2ubuntu2        amd64                   GNU C compiler
         #
         try:
-            lines = check_output(['dpkg', '-l', pkg]).split('\n')
+            lines = check_output(['dpkg', '-l', pkg]).split(b'\n')
         except CalledProcessError:
             return False
-        found = lines[-2].startswith('ii  ' + pkg)
+        found = lines[-2].startswith(b'ii  ' + encode(pkg, 'ascii'))
         return found
     elif have_command('rpm'):
         # `rpm -q` exists with non-zero status if the package is not installed
@@ -812,7 +840,7 @@ def install_gc3pie_from_pypi(venv_dir, features):
             logging.info('  %s -> %s', app, dst)
             os.symlink(app, dst)
             # setup.py installs package_data without the 'x' permission
-            os.chmod(app, os.stat(app).st_mode|0755)
+            os.chmod(app, os.stat(app).st_mode|0o755)
 
 
 def parse_command_line_options():
@@ -929,7 +957,7 @@ def require_cc():
     if not found:
         found = have_command('cc')
     if not found:
-        die(os.EX_UNAVAILABLE, """
+        die(os.EX_UNAVAILABLE, "missing software prerequisites", """
 To install the GC3Pie development version, a C language compiler
 is needed.
 
@@ -952,7 +980,7 @@ def require_command(cmd):
 
 def require_git():
     if not have_command('git'):
-        die(os.EX_UNAVAILABLE, """
+        die(os.EX_UNAVAILABLE, "missing software prerequisites", """
 To install the GC3Pie development version,
 the Git ('git') command is needed.
 
@@ -967,11 +995,11 @@ def require_sw_prerequisites():
     # package manager name as it basically identifies the distro!
     if have_command('dpkg'):
         # Debian/Ubuntu
-        required = ['git', 'python-dev', 'gcc', 'g++', 'libffi-dev', 'libssl-dev']
+        required = ['git', 'python-dev', 'gcc', 'g++', 'libffi-dev', 'libssl-dev', 'make']
         install_cmd = 'sudo apt-get install'
     elif have_command('yum'):
         install_cmd = 'sudo yum install'
-        required = ['git', 'python-devel', 'gcc', 'gcc-c++', 'libffi-devel', 'openssl-devel']
+        required = ['git', 'python-devel', 'gcc', 'gcc-c++', 'libffi-devel', 'make', 'openssl-devel']
     elif have_command('zypper'):
         # SuSE
         logging.warning(

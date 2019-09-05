@@ -11,7 +11,7 @@ trac-all -bedp -c {dmrirc}
 trac-all -path -c {dmrirc}
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
 import sys
 import os
 import subprocess

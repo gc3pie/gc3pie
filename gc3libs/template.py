@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 """
 Support and expansion of programmatic templates.
 
@@ -11,7 +11,8 @@ with a list of substitutions (using the syntax of Python's standard
 texts coming from the same template.  Templates can be nested, and
 expansions generated recursviely.
 """
-# Copyright (C) 2009-2012, 2014  University of Zurich. All rights reserved.
+
+# Copyright (C) 2009-2012, 2014, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -25,83 +26,18 @@ expansions generated recursviely.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
+
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import range
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 
 import string
+import itertools
 
-
-try:
-    import itertools
-    SetProductIterator = itertools.product
-except:
-    # use our own implementation, in case `itertools` does not (yet)
-    # provide the set-product
-    class SetProductIterator(object):
-
-        """Iterate over all elements in a cartesian product.
-
-        Argument `factors` is a sequence, all whose items are sequences
-        themselves: the returned iterator will return -upon each
-        successive invocation- a list `[t_1, t_2, ..., t_n]` where `t_k`
-        is an item in the `k`-th sequence.
-
-        Examples::
-          >>> list(SetProductIterator([]))
-          [[]]
-          >>> list(SetProductIterator([1]))
-          [[1]]
-          >>> list(SetProductIterator([1],[1]))
-          [[1, 1]]
-          >>> list(SetProductIterator([1,2],[]))
-          [[]]
-          >>> list(SetProductIterator([1,2],[1]))
-          [[1, 1], [2, 1]]
-          >>> list(SetProductIterator([1, 2], [1, 2]))
-          [[1, 1], [2, 1], [1, 2], [2, 2]]
-        """
-
-        def __init__(self, *factors):
-            self.__closed = False
-            self.__factors = factors
-            self.__L = len(factors)
-            self.__M = [len(s) - 1 for s in factors]
-            self.__m = [0] * self.__L
-            self.__i = 0
-
-        def __iter__(self):
-            return self
-
-        def next(self):
-            if self.__closed:
-                raise StopIteration
-            if (0 == self.__L) or (-1 in self.__M):
-                # there are no factors, or one of them has no elements
-                self.__closed = True
-                return []
-            else:
-                if self.__i < self.__L:
-                    # will return element corresponding to current multi-index
-                    result = [s[self.__m[i]]
-                              for (i, s) in enumerate(self.__factors)]
-                    # advance multi-index
-                    i = 0
-                    while (i < self.__L):
-                        if self.__m[i] == self.__M[i]:
-                            self.__m[i] = 0
-                            i += 1
-                        else:
-                            self.__m[i] += 1
-                            break
-                    self.__i = i
-                    # back to caller
-                    return result
-                else:
-                    # at end of iteration
-                    self.__closed = True
-                    raise StopIteration
+SetProductIterator = itertools.product
 
 
 class Template(object):
@@ -151,6 +87,13 @@ class Template(object):
         else:
             raise ValueError("Invalid substitution values in template.")
 
+    def __eq__(self, other):
+        return (
+            self._template == other._template
+            and self._keywords == other._keywords
+            and self._valid == other._valid
+        )
+
     def __str__(self):
         """Alias for `Template.substitute`."""
         return self.substitute()
@@ -159,10 +102,10 @@ class Template(object):
         """
         Return a string representation such that `x == eval(repr(x))`.
         """
-        return str.join('', ["Template(",
-                             str.join(', ', [repr(self._template)] +
+        return ''.join(["Template(",
+                             ', '.join([repr(self._template)] +
                                       [("%s=%s" % (k, v))
-                                       for k, v in self._keywords.items()]),
+                                       for k, v in list(self._keywords.items())]),
                              ')'])
 
     def expansions(self, **keywords):
@@ -181,7 +124,7 @@ class Template(object):
                 # check validity based on keywords expanded
                 # on contained templates as well.
                 new_kws = kws.copy()
-                for v in kws.values():
+                for v in list(kws.values()):
                     if isinstance(v, Template):
                         new_kws.update(v._keywords)
                 if self._valid(new_kws):
@@ -237,19 +180,23 @@ def expansions(obj, **extra_args):
       Example::
 
         >>> T1 = Template("a=${n}", n=[0,1])
-        >>> list(expansions(T1))
-        [Template('a=${n}', n=0), Template('a=${n}', n=1)]
+        >>> E = list(expansions(T1))
+        >>> len(E)
+        2
+        >>> Template('a=${n}', n=0) in E
+        True
+        >>> Template('a=${n}', n=1) in E
+        True
 
       Note that keywords passed to the `expand` invocation override
       the ones used in template construction::
 
         >>> T2 = Template("a=${n}")
-        >>> list(expansions(T2, n=[1,3]))
-        [Template('a=${n}', n=1), Template('a=${n}', n=3)]
-
-        >>> T3 = Template("a=${n}", n=[0,1])
-        >>> list(expansions(T3, n=[2,3]))
-        [Template('a=${n}', n=2), Template('a=${n}', n=3)]
+        >>> E = list(expansions(T2, n=[1,3]))
+        >>> Template('a=${n}', n=1) in E
+        True
+        >>> Template('a=${n}', n=3) in E
+        True
 
     * Any other value is returned unchanged.
 

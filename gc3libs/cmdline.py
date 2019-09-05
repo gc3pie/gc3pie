@@ -1,22 +1,5 @@
 #! /usr/bin/env python
-#
-#   cmdline.py -- Base classes for GC3Libs-based scripts
-#
-#   Copyright (C) 2010-2019  University of Zurich. All rights reserved.
-#
-#   This program is free software: you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+
 """
 Base classes for GC3Libs-based scripts.
 
@@ -42,7 +25,30 @@ The following public classes are exported from this module:
   `SessionBasedDaemon`:class: via XML-RPC.
 """
 
-from __future__ import (absolute_import, division, print_function)
+#   cmdline.py -- Base classes for GC3Libs-based scripts
+#
+#   Copyright (C) 2010-2019  University of Zurich. All rights reserved.
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
 
 # stdlib modules
 import atexit
@@ -61,13 +67,27 @@ import sys
 import time
 import threading
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 from collections import defaultdict
-from SimpleXMLRPCServer import SimpleXMLRPCServer
+try:
+    # Python 2
+    from SimpleXMLRPCServer import SimpleXMLRPCServer
+    import xmlrpc.client
+    def ServerProxy(url):
+        # **NOTE:** This has to be the built-in `bytes` type; when
+        # using `future`'s `newstr` or `newbytes` objects, the
+        # `ServerProxy` becomes unusable, as *every* method call
+        # raises an exception `AttributeError: encode method has
+        # been disabled in newbytes`
+        return xmlrpc.client.ServerProxy(bytes(url))
+except ImportError:
+    # Python 3
+    from xmlrpc.server import SimpleXMLRPCServer
+    import xmlrpc.client
+    from xmlrpc.client import ServerProxy
 from warnings import warn
-import xmlrpclib
 
 
 # 3rd party modules
@@ -83,6 +103,7 @@ import yaml
 
 # interface to GC3Pie
 import gc3libs
+import gc3libs.defaults
 import gc3libs.config
 import gc3libs.core
 import gc3libs.exceptions
@@ -95,7 +116,7 @@ from gc3libs.utils import (
     read_contents,
     remove as rm_f,
     same_docstring_as,
-    test_file,
+    check_file_access,
     write_contents,
 )
 import gc3libs.url
@@ -125,14 +146,16 @@ def nonnegative_int(num):
     1
     >>> nonnegative_int(1)
     1
-    >>> nonnegative_int('-1') # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-        ...
-    ArgumentTypeError: '-1' is not a non-negative integer number.
-    >>> nonnegative_int(-1) # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-        ...
-    ArgumentTypeError: '-1' is not a non-negative integer number.
+    >>> try:
+    ...   nonnegative_int('-1')
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err)
+    '-1' is not a non-negative integer number.
+    >>> try:
+    ...   nonnegative_int(-1)
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err)
+    '-1' is not a non-negative integer number.
 
     Please note that `0` and `'-0'` are ok:
 
@@ -152,10 +175,11 @@ def nonnegative_int(num):
     >>> nonnegative_int(0.1)
     0
 
-    >>> nonnegative_int('ThisWillRaiseAnException') # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-        ...
-    ArgumentTypeError: 'ThisWillRaiseAnException' is not a non-negative ...
+    >>> try:
+    ...   nonnegative_int('ThisWillRaiseAnException')
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    'ThisWillRaiseAnException' is not a non-negative ...
     """
     try:
         value = int(num)
@@ -178,53 +202,61 @@ def positive_int(num):
     1
     >>> positive_int(1)
     1
-    >>> positive_int('-1') # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '-1' is not a positive integer number.
-    >>> positive_int(-1) # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '-1' is not a positive integer number.
-    >>> positive_int(0) # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '0' is not a positive integer number.
+    >>> try:
+    ...   positive_int('-1')
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '-1' is not a positive integer number.
+    >>> try:
+    ...   positive_int(-1)
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '-1' is not a positive integer number.
+    >>> try:
+    ...   positive_int(0)
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '0' is not a positive integer number.
 
     Floats are ok too:
 
     >>> positive_int(3.14)
     3
 
-    but please take care that float *greater* than 0 will fail:
+    but please take care that float *greater* than 0 but still less
+    than 1 will fail:
 
-    >>> positive_int(0.1)
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '0.1' is not a positive integer number.
+    >>> try:
+    ...    positive_int(0.1)
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '0.1' is not a positive integer number.
 
-    Please note that `0` is NOT ok:
+    Also note that `0` is *not* OK:
 
-    >>> positive_int(-0) # doctest: +ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '0' is not a positive integer number.
-    >>> positive_int('0') # doctest: +ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '0' is not a positive integer number.
-    >>> positive_int('-0') # doctest: +ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    ArgumentTypeError: '-0' is not a positive integer number.
+    >>> try:
+    ...   positive_int(-0)
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '0' is not a positive integer number.
+    >>> try:
+    ...   positive_int('0')
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '0' is not a positive integer number.
+    >>> try:
+    ...   positive_int('-0')
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    '-0' is not a positive integer number.
 
     Any string which does cannot be converted to an integer will fail:
 
-    >>> positive_int('ThisWillRaiseAnException') # doctest:+ELLIPSIS
-    Traceback (most recent call last):
-        ...
-    ArgumentTypeError: 'ThisWillRaiseAnException' is not a positive integer ...
-
+    >>> try:
+    ...   positive_int('ThisWillRaiseAnException')
+    ... except argparse.ArgumentTypeError as err:
+    ...   print(err) # doctest:+ELLIPSIS
+    'ThisWillRaiseAnException' is not a positive integer ...
     """
     try:
         value = int(num)
@@ -238,19 +270,19 @@ def positive_int(num):
 
 
 def existing_file(path):
-    test_file(path, os.F_OK | os.R_OK,
+    check_file_access(path, os.F_OK | os.R_OK,
               argparse.ArgumentTypeError)
     return path
 
 
 def executable_file(path):
-    test_file(path, os.F_OK | os.R_OK | os.X_OK,
+    check_file_access(path, os.F_OK | os.R_OK | os.X_OK,
               argparse.ArgumentTypeError)
     return path
 
 
 def existing_directory(path):
-    test_file(path, os.F_OK | os.R_OK | os.X_OK,
+    check_file_access(path, os.F_OK | os.R_OK | os.X_OK,
               argparse.ArgumentTypeError, isdir=True)
     return path
 
@@ -365,7 +397,7 @@ class _Script(cli.app.CommandLineApp):
 
         """
         # use keyword arguments to set additional instance attrs
-        for k, v in extra_args.items():
+        for k, v in list(extra_args.items()):
             if k not in ['name', 'description']:
                 setattr(self, k, v)
         # init and setup pyCLI classes
@@ -438,8 +470,7 @@ class _Script(cli.app.CommandLineApp):
 
         self.add_param("--config-files",
                        action="store",
-                       default=str.join(
-                           ',', gc3libs.Default.CONFIG_FILE_LOCATIONS),
+                       default=','.join(gc3libs.defaults.CONFIG_FILE_LOCATIONS),
                        help="Comma separated list of configuration files",
                        )
 
@@ -467,7 +498,7 @@ class _Script(cli.app.CommandLineApp):
                                name=self.name,
                                threshold=self.verbose_logging_threshold)
         self.log.info("Starting %s at %s; invoked as '%s'",
-                      self.name, time.asctime(), str.join(' ', sys.argv))
+                      self.name, time.asctime(), ' '.join(sys.argv))
 
         # Read config file(s) from command line
         self.params.config_files = self.params.config_files.split(',')
@@ -481,7 +512,7 @@ class _Script(cli.app.CommandLineApp):
             raise gc3libs.exceptions.FatalError(
                 "No computational resources defined."
                 " Please edit the configuration file(s): '%s'."
-                % (str.join("', '", self.params.config_files)))
+                % ("', '".join(self.params.config_files)))
 
         # call hook methods from derived classes
         self.parse_args()
@@ -522,7 +553,7 @@ class _Script(cli.app.CommandLineApp):
                    " (You need to be subscribed to post to the mailing list)")
             if len(sys.argv) > 0:
                 msg %= (ex.__class__.__name__, ex,
-                        self.name, str.join(' ', sys.argv[1:]))
+                        self.name, ' '.join(sys.argv[1:]))
             else:
                 msg %= (ex.__class__.__name__, ex, self.name, '')
             rc = os.EX_UNAVAILABLE  # see: /usr/include/sysexits.h
@@ -533,7 +564,7 @@ class _Script(cli.app.CommandLineApp):
                    " (You need to be subscribed to post to the mailing list)"
                    " Thanks for your cooperation!")
             if len(sys.argv) > 0:
-                msg %= (ex, self.name, str.join(' ', sys.argv[1:]))
+                msg %= (ex, self.name, ' '.join(sys.argv[1:]))
             else:
                 msg %= (ex, self.name, '')
             rc = os.EX_SOFTWARE  # see: /usr/include/sysexits.h
@@ -577,7 +608,7 @@ class _Script(cli.app.CommandLineApp):
 
     def _make_config(
             self,
-            config_file_locations=gc3libs.Default.CONFIG_FILE_LOCATIONS,
+            config_file_locations=gc3libs.defaults.CONFIG_FILE_LOCATIONS,
             **extra_args):
         """
         Return a `gc3libs.config.Configuration`:class: instance configured
@@ -612,7 +643,7 @@ class _Script(cli.app.CommandLineApp):
                 *config_file_locations, **extra_args)
         except:
             self.log.error("Failed loading config file(s) from '%s'",
-                           str.join("', '", config_file_locations))
+                           "', '".join(config_file_locations))
             raise
 
     def _select_resources(self, *resource_names):
@@ -639,7 +670,7 @@ class _Script(cli.app.CommandLineApp):
         if kept == 0:
             raise gc3libs.exceptions.NoResources(
                 "No resources match the names '%s'"
-                % str.join(',', resource_names))
+                % ','.join(resource_names))
 
 
 class _SessionBasedCommand(_Script):
@@ -1232,7 +1263,7 @@ class _SessionBasedCommand(_Script):
         # compute exitcode based on the running status of jobs
         stats = self._main_loop_after_tasks_progress()
         if stats is None:
-            stats = self._controller.stats()
+            stats = self._controller.counts()
         return self._main_loop_exitcode(stats)
 
 
@@ -1283,9 +1314,9 @@ class _SessionBasedCommand(_Script):
         Code that runs in the main loop after `.progress()` is invoked.
 
         Return either ``None`` or a dictionary of the same form that
-        `Engine.stats()`:meth: would return.  In the latter case, the
+        `Engine.counts()`:meth: would return.  In the latter case, the
         return value of this method is used *in stead* of the task
-        statistics returned by ``self._controller.stats()``.
+        statistics returned by ``self._controller.counts()``.
 
         Override in subclasses to plug any behavior here; the default
         implementation does nothing.
@@ -1346,7 +1377,7 @@ class _SessionBasedCommand(_Script):
         # `time.sleep()`, so we just do the wait in small
         # steps, to allow the interpreter to process
         # interrupts in the breaks.  Ugly, but works...
-        for x in xrange(self.params.wait):
+        for x in range(self.params.wait):
             time.sleep(1)
 
 
@@ -1525,7 +1556,7 @@ class SessionBasedScript(_SessionBasedCommand):
         The `output` argument is a file-like object, only the `write`
         method of which is used.  The `stats` argument is a
         dictionary, mapping each possible `Run.State` to the count of
-        tasks in that state; see `Engine.stats` for a detailed
+        tasks in that state; see `Engine.counts` for a detailed
         description.
         """
         table = PrettyTable(['state', 'n', 'n%'])
@@ -1610,9 +1641,7 @@ class SessionBasedScript(_SessionBasedCommand):
             nargs='?',
             dest="states",
             default='',
-            const=str.join(
-                ',',
-                gc3libs.Run.State),
+            const=','.join(gc3libs.Run.State),
             help="Print a table of jobs including their status."
             " Optionally, restrict output to jobs with a particular STATE or"
             " STATES (comma-separated list).  The pseudo-states `ok` and"
@@ -1635,7 +1664,7 @@ class SessionBasedScript(_SessionBasedCommand):
         See `_SessionBasedCommand._main_loop_after_tasks_progress`:meth:
         for a description of what this method can generally do.
         """
-        stats = self._controller.stats()
+        stats = self._controller.counts()
         # print results to user
         print ("Status of jobs in the '%s' session: (at %s)"
                % (self.session.name, time.strftime('%X, %x')))
@@ -1643,7 +1672,7 @@ class SessionBasedScript(_SessionBasedCommand):
         if total > 0:
             if self.stats_only_for is not None:
                 self.print_summary_table(sys.stdout,
-                                         self._controller.stats(
+                                         self._controller.counts(
                                              self.stats_only_for))
             else:
                 self.print_summary_table(sys.stdout, stats)
@@ -1803,7 +1832,12 @@ class DaemonClient(_Script):
     def _connect_to_server(self, server_url):
         url = self._parse_connect_string(server_url)
         try:
-            return xmlrpclib.ServerProxy(str(url))
+            # **NOTE:** This has to be the built-in `bytes` type; when
+            # using `future`'s `newstr` or `newbytes` objects, the
+            # `ServerProxy` becomes unusable, as *every* method call
+            # raises an exception `AttributeError: encode method has
+            # been disabled in newbytes`
+            return ServerProxy(str(url))
         except Exception as err:
             self.log.error("Cannot connect to server `%s`: %s", url, err)
             return None
@@ -1842,7 +1876,7 @@ class DaemonClient(_Script):
         try:
             print(func(*args))
             return os.EX_OK
-        except xmlrpclib.Fault as err:
+        except xmlrpc.client.Fault as err:
             self.log.error(
                 "Error running command `%s`: %s",
                 cmd, err.faultString)
@@ -2017,7 +2051,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             elif 'yaml' in opts:
                 return yaml.dump(task_ids)
             else:
-                return str.join('\n', task_ids)
+                return '\n'.join(task_ids)
 
 
         def list_details(self, *opts):
@@ -2270,7 +2304,7 @@ class SessionBasedDaemon(_SessionBasedCommand):
             the output format, with ``text`` being the default.
             """
 
-            stats = dict(self._parent._controller.stats())
+            stats = dict(self._parent._controller.counts())
 
             if 'json' in opts:
                 return json.dumps(stats)
@@ -2600,7 +2634,7 @@ Run `help CMD` to get help on command CMD.
                     logging.handlers.BufferingHandler,
                     logging.handlers.HTTPHandler,
                     logging.handlers.MemoryHandler,
-                    logging.handlers.SMTPHandler,
+                    logging.handlers.SMTPHandler
             )):
                 continue
             # code below works for StreamHandler and FileHandler

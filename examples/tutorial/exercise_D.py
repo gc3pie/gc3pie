@@ -12,7 +12,7 @@ and runs one job per each file in directory that matches the given
 pattern
 
 """
-# Copyright (C) 2012 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
+# Copyright (C) 2012, 2019 S3IT, Zentrale Informatik, University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -48,7 +48,7 @@ class ProcessFilesInParallel(gc3libs.cmdline.SessionBasedScript):
 
     and it will execute command `COMMAND` for each file matching
     `PATTERN` into the directory `DIRECTORY`.
-    
+
     """
     version = '0.1'
 
@@ -66,9 +66,9 @@ class ProcessFilesInParallel(gc3libs.cmdline.SessionBasedScript):
             pattern=self.params.pattern)
 
         if not input_files:
-            print "No input files matching `%s` in directory `%s`" % (
-                self.params.pattern, self.params.directory)
-            return 
+            print("No input files matching `%s` in directory `%s`"
+                  % (self.params.pattern, self.params.directory))
+            return
 
         for ifile in input_files:
             kw = extra.copy()
@@ -81,8 +81,8 @@ class ProcessFilesInParallel(gc3libs.cmdline.SessionBasedScript):
                  [],
                  ],
                 kw)
-                
-        
+
+
 ## main: run tests
 
 if "__main__" == __name__:

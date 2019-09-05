@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-#
+
 """
 Implementation of task collections.
 
@@ -10,7 +10,7 @@ patterns of job group execution; they can be combined to form more
 complex workflows.  Hook methods are provided so that derived classes
 can implement problem-specific job control policies.
 """
-# Copyright (C) 2009-2018   University of Zurich. All rights reserved.
+# Copyright (C) 2009-2019   University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -24,8 +24,11 @@ can implement problem-specific job control policies.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
+
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import range
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 import itertools
@@ -89,25 +92,22 @@ class TaskCollection(Task):
             (task for task in self.tasks),
         )
 
-    @gc3libs.utils.defproperty
-    def changed():
+    @property
+    def changed(self):
         """
         Evaluates to `True` if this task or any of its subtasks has been
         modified and should be saved to persistent storage.
         """
-
-        def fget(self):
-            if self._changed:
+        if self._changed:
+            return True
+        for task in self.tasks:
+            if '_changed' in task and task._changed:
                 return True
-            for task in self.tasks:
-                if '_changed' in task:
-                    if task._changed:
-                        return True
-            return False
+        return False
 
-        def fset(self, value):
-            self._changed = value
-        return locals()
+    @changed.setter
+    def changed(self, value):
+        self._changed = value
 
     # manipulate the "controller" interface used to control the associated task
     def attach(self, controller):
@@ -291,13 +291,26 @@ class TaskCollection(Task):
         `returncode`) and the final output has been retrieved.
 
         Default implementation for `TaskCollection` is to set the
-        exitcode to the maximum of the exit codes of its tasks.
+        exitcode to the maximum of the exit codes of its tasks,
+        or ``None`` if no task has a numeric exit code.
+
         If no tasks were run, the exitcode is set to 0.
         """
+        # Use a numeric argument instead of ``None``, so max() below
+        # does not throw an error on Python 3.x because ``None`` and
+        # integer numbers are not comparable.  Since the exit code is
+        # limited to (signed) 8 bits, any number larger than that will do.
+        NONE = -1000
         if self.tasks:
-            self.execution._exitcode = max(
-                task.execution._exitcode for task in self.tasks
+            exitcode = max(
+                (task.execution._exitcode
+                 if task.execution._exitcode is not None
+                 else NONE)
+                for task in self.tasks
             )
+            if exitcode == NONE:
+                exitcode = None
+            self.execution._exitcode = exitcode
         else:
             # a sequence with no tasks terminates successfully
             self.execution._exitcode = 0
@@ -722,7 +735,7 @@ class StagedTaskCollection(SequentialTaskCollection):
                 # init parent class with the initial task
                 SequentialTaskCollection.__init__(
                     self, [first_stage], **extra_args)
-            elif isinstance(first_stage, (int, long, tuple)):
+            elif isinstance(first_stage, (int, int, tuple)):
                 # init parent class with no tasks,
                 # and immediately set the exitcode
                 SequentialTaskCollection.__init__(self, [], **extra_args)
@@ -759,7 +772,7 @@ class StagedTaskCollection(SequentialTaskCollection):
         if isinstance(next_stage, Task):
             self.add(next_stage)
             return Run.State.RUNNING
-        elif isinstance(next_stage, (int, long, tuple)):
+        elif isinstance(next_stage, (int, int, tuple)):
             self.execution.returncode = next_stage
             return Run.State.TERMINATED
         else:
@@ -1025,19 +1038,17 @@ class RetryableTask(Task):
         self.would_output = self.task.would_output
         Task.__init__(self, **extra_args)
 
-    @gc3libs.utils.defproperty
-    def changed():
+    @property
+    def changed(self):
         """
         Evaluates to `True` if this task or any of its subtasks has been
         modified and should be saved to persistent storage.
         """
+        return self._changed or self.task.changed
 
-        def fget(self):
-            return self._changed or self.task.changed
-
-        def fset(self, value):
-            self._changed = value
-        return locals()
+    @changed.setter
+    def changed(self, value):
+        self._changed = value
 
     def __getattr__(self, name):
         """Proxy public attributes of the wrapped task."""
@@ -1229,9 +1240,12 @@ class DependentTaskCollection(SequentialTaskCollection):
             "Can only add tasks to a DependentTaskCollection while it's in state `NEW`"
         # collect all task dependencies
         task_dependencies = self._deps[task]
-        task_dependencies.update(after)
+        if after is not None:
+            task_dependencies.update(after)
         try:
-            task_dependencies.update(task.after)
+            task_after = task.after
+            if task_after:
+                task_dependencies.update(task_after)
         except AttributeError:
             pass
 

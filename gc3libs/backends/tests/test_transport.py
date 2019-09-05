@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2012  University of Zurich. All rights reserved.
+# Copyright (C) 2012, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,13 +17,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 # System imports
 import os
 import getpass
-import tempfile
+from tempfile import NamedTemporaryFile
 
 # Nose imports
 import pytest
@@ -95,26 +96,34 @@ class StubForTestTransport(object):
             pass
 
     def test_get_and_put(self):
-        # create a local temporary file
-        (fd, tmpfile) = tempfile.mkstemp()
-        try:
-            os.write(fd, "Test file")
-            os.close(fd)
+        with NamedTemporaryFile(prefix='gc3libs.test.',
+                                suffix='.tmp',
+                                mode='wt',
+                                delete=False) as tmpfile:
+            try:
+                path = tmpfile.name  # save for later
 
-            # copy it to the remote end using Transport.put()
-            destfile = os.path.join(self.tmpdir, os.path.basename(tmpfile))
-            self.transport.put(tmpfile, destfile)
-            # remove the local file
-            os.remove(tmpfile)
+                # create file with some content
+                tmpfile.write("Test file")
+                tmpfile.close()
 
-            # get the file using Transport.get()
-            self.transport.get(destfile, tmpfile)
+                # copy it to the remote end using Transport.put()
+                destfile = os.path.join(self.tmpdir, os.path.basename(path))
+                self.transport.put(path, destfile)
+                # remove the local file
+                os.remove(path)
 
-            # check the content
-            fd = open(tmpfile)
-            assert fd.read() == "Test file"
-        finally:
-            os.remove(tmpfile)
+                # get the file using Transport.get()
+                self.transport.get(destfile, path)
+
+                # check the content
+                assert open(path).read() == "Test file"
+
+            finally:
+                try:
+                    os.unlink(path)
+                except:
+                    pass
 
     def test_open_failure_nonexistent_file(self):
         with pytest.raises(TransportError):
@@ -126,18 +135,27 @@ class StubForTestTransport(object):
         # we cannot rely on *any* file being unreadable, as tests may
         # be running as `root` (e.g., in a Docker container), so we
         # need to explicitly create one
-        fd, path = tempfile.mkstemp()
-        os.fchmod(fd, 0o000)
-        os.close(fd)
-        # now re-open with normal Python functions
-        with pytest.raises(TransportError):
-            # pylint: disable=no-member
-            with self.transport.open(path, 'r') as stream:
-                assert stream is False
-        try:
-            os.unlink(path)
-        except:
-            pass
+        with NamedTemporaryFile(prefix='gc3libs.test.',
+                                suffix='.tmp',
+                                mode='wt',
+                                delete=False) as tmpfile:
+            try:
+                path = tmpfile.name  # save for later
+
+                fd = tmpfile.fileno()
+                os.fchmod(fd, 0o000)
+                tmpfile.close()
+
+                # now re-open with normal Python functions
+                with pytest.raises(TransportError):
+                    # pylint: disable=no-member
+                    with self.transport.open(path, 'r') as stream:
+                        assert stream is False
+            finally:
+                try:
+                    os.unlink(path)
+                except:
+                    pass
 
     def test_remove_failure(self):
         with pytest.raises(TransportError):

@@ -39,20 +39,19 @@ import shutil
 if __name__ == '__main__':
     import sys
     if '-N' in sys.argv:
-        import os, shutil
+        import os
         path2Pymods = os.path.join(os.path.dirname(__file__), '../')
         if not sys.path.count(path2Pymods):
             sys.path.append(path2Pymods)
-        from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
         if 'gIdRiskUML.csv' in filesAndFolder or 'idRiskParaSearch.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up.
             if 'para.loop' in os.listdir(os.getcwd()):
                 shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
-                rmFilesAndFolders(curPath)
+                shutil.rmtree(curPath)
                 shutil.copyfile(os.path.join('/tmp', 'para.loop'), os.path.join(curPath, 'para.loop'))
             else:
-                rmFilesAndFolders(curPath)
+                shutil.rmtree(curPath)
 
 
 # ugly workaround for Issue 95,
@@ -147,7 +146,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         if os.path.isdir(self.params.executable):
             self.params.executable = os.path.join(self.params.executable,
                                                   'forwardPremium')
-        gc3libs.utils.test_file(self.params.executable, os.R_OK|os.X_OK,
+        gc3libs.utils.check_file_access(self.params.executable, os.R_OK|os.X_OK,
                                 gc3libs.exceptions.InvalidUsage)
 
 
@@ -169,7 +168,7 @@ Read `.loop` files and execute the `forwardPremium` program accordingly.
         # Copy base dir
         localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
 #        gc3libs.utils.copytree(self.params.initial, '/mnt/shareOffice/ForwardPremium/Results/sensitivity/wGridSize/dfs')
-        gc3libs.utils.copytree(self.params.initial, localBaseDir)
+        shutil.copytree(self.params.initial, localBaseDir)
 
         for path in inputs:
             para_loop = path

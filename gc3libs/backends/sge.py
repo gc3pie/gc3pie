@@ -1,8 +1,9 @@
 #! /usr/bin/env python
-#
+
 """
 Job control on SGE clusters (possibly connecting to the front-end via SSH).
 """
+
 # Copyright (C) 2009-2014, 2016  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,8 +18,9 @@ Job control on SGE clusters (possibly connecting to the front-end via SSH).
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
+
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 
@@ -26,7 +28,6 @@ __docformat__ = 'reStructuredText'
 import datetime
 import math
 import re
-import time
 
 from collections import defaultdict
 
@@ -81,6 +82,7 @@ def _to_memory(val):
         gc3libs.log.warning("Grid Engine backend: Cannot interpret '%s' "
                             "as a MEMORY value.", val)
         return None
+
 
 # `_convert` is a `dict` instance, mapping key names to functions
 # that parse a value from a string into a Python native type.
@@ -226,8 +228,8 @@ def compute_nr_of_slots(qstat_output):
     def dict_with_zero_initializer():
         return defaultdict(zero_initializer)
     result = defaultdict(dict_with_zero_initializer)
-    for q in qstat.iterkeys():
-        for host in qstat[q].iterkeys():
+    for q in qstat.keys():
+        for host in qstat[q].keys():
             r = result[host]
             s = qstat[q][host]
             r['total'] = max(s['slots_total'], r['total'])
@@ -236,7 +238,7 @@ def compute_nr_of_slots(qstat_output):
     # compute available slots by subtracting the number of
     # used+reserved from the total
     g = result['global']
-    for host in result.iterkeys():
+    for host in result.keys():
         r = result[host]
         r['available'] = r['total'] - r['unavailable']
         # update cluster-wide ('global') totals

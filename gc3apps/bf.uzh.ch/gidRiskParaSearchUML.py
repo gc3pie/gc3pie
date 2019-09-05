@@ -30,12 +30,14 @@ __docformat__ = 'reStructuredText'
 # -x /home/benjamin/workspace/idrisk/model/bin/idRiskOut -b /home/benjamin/workspace/idrisk/model/base para.loop -xVars 'wBarLower' -xVarsDom '-0.5 -0.35' -targetVars 'iBar_Shock0Agent0' --makePlots False -target_fx -0.5 -yC 4.9e-3 -sv info -C 10 -N -A '/home/benjamin/apppot0+ben.diskUpd.img'
 
 
-
 # std module imports
 from __future__ import absolute_import, print_function
 import numpy as np
-import os, sys, time
+import os
+import sys
+import time
 import copy
+import shutil
 
 # set some ugly paths
 # export PYTHONPATH=$PYTHONPATH:/home/benjamin/workspace/idrisk/model/code
@@ -48,23 +50,20 @@ if not sys.path.count(path2Src):
 
 # Remove all files in curPath if -N option specified.
 if __name__ == '__main__':
-    import sys
     if '-N' in sys.argv:
-        import os, shutil
         path2Pymods = os.path.join(os.path.dirname(__file__), '../')
         if not sys.path.count(path2Pymods):
             sys.path.append(path2Pymods)
-        from pymods.support.support import rmFilesAndFolders
         curPath = os.getcwd()
         filesAndFolder = os.listdir(curPath)
         if 'gc3IdRisk.csv' in filesAndFolder or 'idRiskParaSearch.csv' in filesAndFolder or 'gidRiskParaSearchUML.csv' in filesAndFolder: # if another paraSearch was run in here before, clean up.
             if 'para.loop' in os.listdir(os.getcwd()):
                 shutil.copyfile(os.path.join(curPath, 'para.loop'), os.path.join('/tmp', 'para.loop'))
-                rmFilesAndFolders(curPath)
+                shutil.rmtree(curPath)
                 shutil.copyfile(os.path.join('/tmp', 'para.loop'), os.path.join(curPath, 'para.loop'))
                 os.remove(os.path.join('/tmp', 'para.loop'))
             else:
-                rmFilesAndFolders(curPath)
+                shutil.rmtree(curPath)
 
 # ugly workaround for Issue 95,
 # see: https://github.com/uzh/gc3pie/issues/95
@@ -855,7 +854,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
         if os.path.isdir(self.params.executable):
             self.params.executable = os.path.join(self.params.executable,
                                                   'idrisk')
-        gc3libs.utils.test_file(self.params.executable, os.R_OK|os.X_OK,
+        gc3libs.utils.check_file_access(self.params.executable, os.R_OK|os.X_OK,
                                 gc3libs.exceptions.InvalidUsage)
 
 
@@ -916,7 +915,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
 
         # Copy base dir
         localBaseDir = os.path.join(os.getcwd(), 'localBaseDir')
-        gc3libs.utils.copytree(self.params.initial, localBaseDir)
+        shutil.copytree(self.params.initial, localBaseDir)
 
         for jobname, substs in self.process_para_file(paraLoopFile):
             # yield job
@@ -926,7 +925,7 @@ class idRiskParaSearchScript(SessionBasedScript, paraLoop):
             sessionParas['architecture'] = self.params.architecture
             sessionParas['localBaseDir'] = localBaseDir
             sessionParas['jobname'] = jobname
-            sessionParas['rte']     = self.params.rte
+            sessionParas['rte'] = self.params.rte
             # Compute domain
             xVarsDom = self.params.xVarsDom.split()
             xVarsDom = [ [ ele ] for ele in xVarsDom ]

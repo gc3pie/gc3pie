@@ -1,11 +1,12 @@
 #! /usr/bin/env python
-#
+
 """
 This module implements "pollers". A "Poller" is an object that
 monitors a given URL and returns `events` whenever a new object is
 created inside that URL.
 """
-# Copyright (C) 2017-2018,  University of Zurich. All rights reserved.
+
+# Copyright (C) 2017-2019,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,10 +20,10 @@ created inside that URL.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
 
-# stdlib imports
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import object
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 import os
@@ -32,6 +33,7 @@ from warnings import warn
 # GC3Pie imports
 import gc3libs
 from gc3libs.url import Url
+from future.utils import with_metaclass
 
 
 # Some pollers depend on the presence of specific Python modules;
@@ -51,9 +53,9 @@ class _Unavailable(object):
             .format(module=self.__missing))
 
 try:
-    import inotifyx
+    import inotify_simple as inotify
 except:
-    inotifyx = _Unavailable('inotifyx')
+    inotify = _Unavailable('inotify_simple')
 
 try:
     import swiftclient
@@ -103,7 +105,7 @@ def register_poller(scheme):
     return register_class
 
 
-class Poller(object):
+class Poller(with_metaclass(ABCMeta, object)):
     """
     Abstract class for an URL Poller.
 
@@ -112,8 +114,6 @@ class Poller(object):
     it will return a list of tuples (Url, mask) containing the events
     occurred for each one of the underlying URLs.
     """
-
-    __metaclass__ = ABCMeta
 
     __slots__ = ['url']
 
@@ -165,14 +165,14 @@ class Poller(object):
 @register_poller('file')
 class INotifyPoller(Poller):
     """
-    Use `inotifyx` to track new events on the specified filesystem location.
+    Use Linux' inofity to track new events on the specified filesystem location.
 
     :params recurse:
       When ``True``, automatically track events in any
       (already-existing or newly-created) subdirectory.
 
-    This poller is used by default when the `inotifyx` Python package
-    is available and the URL has a `file` schema.
+    This poller is used by default when the `inotify_simple` Python
+    package is available and the URL has a `file` schema.
 
     .. warning::
 
@@ -202,7 +202,7 @@ class INotifyPoller(Poller):
         super(INotifyPoller, self).__init__(path, **kw)
 
         self._recurse = recurse
-        self._ifd = inotifyx.init()
+        self._ifd = inotify.INotify()
 
         # Ensure inbox directory exists
         if not os.path.exists(self.url.path):
@@ -236,23 +236,21 @@ class INotifyPoller(Poller):
             " which does not lie in directory tree rooted at `%s`",
             path, self.url.path)
         gc3libs.log.debug("Adding watch for path %s", path)
-        inotifyx.add_watch(self._ifd, path,
-                           # only watch for inotify(7) events that
-                           # translate to something we can report
-                           (0
-                            |inotifyx.IN_CLOSE
-                            |inotifyx.IN_CREATE
-                            |inotifyx.IN_DELETE
-                            # `IN_EXCL_UNLINK` still unsupported as of
-                            # `inotifyx` version 0.2.2
-                            #|inotifyx.IN_EXCL_UNLINK
-                            |inotifyx.IN_MODIFY
-                            |inotifyx.IN_OPEN
-                           ))
+        self._ifd.add_watch(path,
+                            # only watch for inotify(7) events that
+                            # translate to something we can report
+                            (0
+                             |inotify.flags.CLOSE_WRITE
+                             |inotify.flags.CREATE
+                             |inotify.flags.DELETE
+                             |inotify.flags.EXCL_UNLINK
+                             |inotify.flags.MODIFY
+                             |inotify.flags.OPEN
+                            ))
 
     def get_new_events(self):
         new_events = []
-        ievents = inotifyx.get_events(self._ifd, 0)
+        ievents = self._ifd.read(0)
         cumulative = defaultdict(int)
         for ievent in ievents:
             # if `name` is empty, it's the same directory
@@ -261,19 +259,19 @@ class INotifyPoller(Poller):
             # we want to dispatch a single `created` or `modified`
             # event, so check once the file is closed what past events
             # have been recorded
-            if (ievent.mask & inotifyx.IN_CLOSE):
-                if (accumulated & inotifyx.IN_CREATE):
+            if (ievent.mask & inotify.flags.CLOSE_WRITE):
+                if (accumulated & inotify.flags.CREATE):
                     new_events.append(
                         self.__make_event(ievent.name, 'created'))
-                elif (accumulated & inotifyx.IN_MODIFY):
+                elif (accumulated & inotify.flags.MODIFY):
                     new_events.append(
                         self.__make_event(ievent.name, 'modified'))
-            if (ievent.mask & inotifyx.IN_DELETE):
+            if (ievent.mask & inotify.flags.DELETE):
                 new_events.append(
                     self.__make_event(ievent.name, 'deleted'))
             if (self._recurse
-                and ievent.mask & inotifyx.IN_ISDIR
-                and ievent.mask & inotifyx.IN_CREATE):
+                and ievent.mask & inotify.flags.ISDIR
+                and ievent.mask & inotify.flags.CREATE):
                 # A new directory has been created. Add a watch
                 # for it too and for all its subdirectories. Also,
                 # we need to trigger new events for any file
@@ -315,7 +313,7 @@ class FilePoller(Poller):
       file less than 1s after creating it will not be detected.
 
     This implementation is only used to track Url with `file` schema
-    whenever :py:mod:`inotifyx` module is not available.
+    whenever the :py:mod:`inotify_simple` module is not available.
     """
 
     __slots__ = [
@@ -383,7 +381,6 @@ class FilePoller(Poller):
             return [(Url(path), event)]
         else:
             return []
-
 
     def _get_events_dir(self, dirpath):
         new_events = []
@@ -499,6 +496,7 @@ class SwiftPoller(Poller):
                 self._known_objects.pop(url)
         return newevents
 
+
 # register for multiple schemes
 register_poller('swift')(SwiftPoller)
 register_poller('swifts')(SwiftPoller)
@@ -506,8 +504,7 @@ register_poller('swt')(SwiftPoller)
 register_poller('swts')(SwiftPoller)
 
 
-## main: run tests
-
+# main: run tests
 if "__main__" == __name__:
     import doctest
     doctest.testmod(name="poller",

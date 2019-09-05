@@ -3,7 +3,7 @@
 """
 Test persistence backends.
 """
-# Copyright (C) 2011, 2012,  University of Zurich. All rights reserved.
+# Copyright (C) 2011, 2012, 2019,  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,13 +19,16 @@ Test persistence backends.
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import range
+from builtins import object
 __docformat__ = 'reStructuredText'
 
 # stdlib imports
 import os
 import shutil
-import tempfile
+from tempfile import NamedTemporaryFile, mkdtemp
 
 # 3rd party imports
 import pytest
@@ -46,7 +49,7 @@ from gc3libs.persistence.serialization import DEFAULT_PROTOCOL
 from gc3libs.persistence.idfactory import IdFactory
 from gc3libs.persistence.filesystem import FilesystemStore
 from gc3libs.persistence.sql import SqlStore
-from gc3libs.url import Url
+from gc3libs.url import Url, UrlKeyDict
 
 
 @pytest.mark.parametrize("cls", (SqlStore, FilesystemStore))
@@ -99,9 +102,9 @@ def test_eq_non_persisted_objects():
     assert a != b
     assert a is not b
 
+
 # for testing basic functionality we do no need fully-fledged GC3Pie
 # objects; let's define some simple make-do's.
-
 
 class SimplePersistableObject(Persistable):
 
@@ -299,6 +302,25 @@ class GenericStoreChecks(object):
         # return objects for further testing
         return (container_id, objid)
 
+    def test_persist_urlkeydict(self):
+        """
+        Test that we can persist GC3Pie's `UrlKeyDict` classes.
+        """
+        a = Task(attr=UrlKeyDict({'/tmp/1': 1, '/tmp/2': 2}))
+        id_ = self.store.save(a)
+        b = self.store.load(id_)
+        assert b.attr == a.attr
+
+
+    def test_persist_urlvaluedict(self):
+        """
+        Test that we can persist GC3Pie's `UrlValueDict` classes.
+        """
+        a = Task(attr=UrlKeyDict({'foo': '/tmp/1', 'bar': '/tmp/2'}))
+        id_ = self.store.save(a)
+        b = self.store.load(id_)
+        assert b.attr == a.attr
+
 
 @pytest.mark.parametrize("task", (Task(),
         gc3libs.workflow.TaskCollection(tasks=[Task(), Task()]),
@@ -311,29 +333,26 @@ def test_task_objects_buggy(task):
     """
     Test that all `Task`-like objects are persistable
     """
-    fd, tmpfile = tempfile.mkstemp()
-    store = make_store("sqlite://%s" % tmpfile)
-    try:
+    with NamedTemporaryFile(prefix='gc3libs.', suffix='.tmp') as tmp:
+        store = make_store("sqlite://%s" % tmp.name)
         id = store.save(task)
         store.load(id)
-    finally:
-        os.remove(tmpfile)
-            
+
 
 class TestFilesystemStore(GenericStoreChecks):
 
-    @pytest.fixture(autouse=True)    
+    @pytest.fixture(autouse=True)
     def setUp(self):
         from gc3libs.persistence.filesystem import FilesystemStore
-        self.tmpdir = tempfile.mkdtemp()
+        self.tmpdir = mkdtemp(prefix='gc3libs.', suffix='.tmp.d')
         self.store = FilesystemStore(self.tmpdir)
 
         yield
-        
+
         shutil.rmtree(self.tmpdir)
 
     # XXX: there's nothing which is `FilesystemStore`-specific here!
-    def test_filesystemstorage_pickler_class(self):
+    def check_file_accesssystemstorage_pickler_class(self):
         """
         Check that `Persistable` instances are saved saparately.
 
@@ -565,16 +584,16 @@ class TestSqliteStore(SqlStoreChecks):
 
     @pytest.fixture(autouse=True)
     def setUp(self):
-        fd, self.tmpfile = tempfile.mkstemp()
-        self.db_url = Url('sqlite://%s' % self.tmpfile)
-        self.store = self._make_store()
+        with NamedTemporaryFile(prefix='gc3libs.', suffix='.tmp') as tmp:
+            self.tmpfile = tmp.name
+            self.db_url = Url('sqlite://%s' % self.tmpfile)
+            self.store = self._make_store()
 
-        # create a connection to the database
-        self.conn = self.store._engine.connect()
+            # create a connection to the database
+            self.conn = self.store._engine.connect()
 
-        yield
-        self.conn.close()
-        os.remove(self.tmpfile)
+            yield
+            self.conn.close()
 
     def _make_store(self, **kwargs):
         return make_store(self.db_url, **kwargs)
@@ -614,9 +633,10 @@ class TestMysqlStore(SqlStoreChecks):
 
     @pytest.fixture(autouse=True)
     def setUp(self):
-        fd, tmpfile = tempfile.mkstemp()
-        os.remove(tmpfile)
-        self.table_name = tmpfile.split('/')[-1]
+        # generate random table name
+        from string import ascii_letters as letters
+        import random
+        self.table_name = 'test_' + (''.join(random.choice(letters) for _ in range(10)))
 
         try:
             self.db_url = Url('mysql://gc3user:gc3pwd@localhost/gc3')

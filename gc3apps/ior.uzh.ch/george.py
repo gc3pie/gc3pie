@@ -111,14 +111,11 @@ class ValueFunctionIteration(SequentialTaskCollection):
         self.datadir = output_dir
         self.extra = extra_args
 
-        # count initial values
+        # count initial values (i.e. number of lines in file)
+        self.num_input_values = 0
         if os.path.exists(initial_values_file):
-            f = open(initial_values_file, 'r')
-            self.num_input_values = gc3libs.utils.count(f, lambda _: True)
-            f.close()
-        else:
-            # XXX: there's no good default value!
-            self.num_input_values = 0
+            with open(initial_values_file, 'r') as fo:
+                self.num_input_values = sum(1 for i in fo)
 
         # this little piece of black magic is to ensure intermediate
         # filenames appear numerically sorted in `ls -l` output

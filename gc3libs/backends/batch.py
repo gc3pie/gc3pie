@@ -1,10 +1,10 @@
 #! /usr/bin/env python
-#
+
 """
 This module provides a generic BatchSystem class from which all
 batch-like backends should inherit.
 """
-# Copyright (C) 2009-2018   University of Zurich. All rights reserved.
+# Copyright (C) 2009-2019   University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,8 +18,9 @@ batch-like backends should inherit.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
+
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
 __docformat__ = 'reStructuredText'
 
 
@@ -34,7 +35,8 @@ import time
 import uuid
 
 import gc3libs
-from gc3libs import Default, log, Run
+from gc3libs import log, Run
+import gc3libs.defaults
 from gc3libs.backends import LRMS
 from gc3libs.utils import same_docstring_as, sh_quote_safe
 import gc3libs.backends.transport
@@ -126,7 +128,7 @@ class BatchSystem(LRMS):
                  ssh_timeout=None,
                  large_file_threshold=None,
                  large_file_chunk_size=None,
-                 spooldir=Default.SPOOLDIR,
+                 spooldir=gc3libs.defaults.SPOOLDIR,
                  **extra_args):
 
         # init base class
@@ -169,8 +171,8 @@ class BatchSystem(LRMS):
             if match:
                 return match.group('jobid')
         raise gc3libs.exceptions.InternalError(
-            "Could not extract jobid from qsub output '%s'"
-            % output.rstrip())
+            "Could not extract jobid from submission command output `{0}`"
+            .format(output.rstrip()))
 
     def _get_command_argv(self, name, default=None):
         """
@@ -239,7 +241,7 @@ class BatchSystem(LRMS):
         # lookup the command name in the resource config parameters;
         # return it unchanged as a default
         argv = self._get_command_argv(name, default)
-        return str.join(' ', argv)
+        return ' '.join(argv)
 
     def _submit_command(self, app):
         """This method returns a string containing the command to
@@ -372,7 +374,7 @@ class BatchSystem(LRMS):
                 script_txt.append('\n# inline script BEGIN\n')
                 script_txt.append(self[script])
                 script_txt.append('\n# inline script END\n')
-        return str.join("", script_txt)
+        return "".join(script_txt)
 
     def get_prologue_script(self, app):
         """
@@ -419,7 +421,7 @@ class BatchSystem(LRMS):
         ssh_remote_folder = stdout.split('\n')[0]
 
         # Copy the input file(s) to remote directory.
-        for local_path, remote_path in app.inputs.items():
+        for local_path, remote_path in list(app.inputs.items()):
             remote_path = os.path.join(ssh_remote_folder, remote_path)
             remote_parent = os.path.dirname(remote_path)
             try:
@@ -460,7 +462,7 @@ class BatchSystem(LRMS):
                 # create temporary script name
                 script_filename = ('./script.%s.sh' % uuid.uuid4())
                 # save script to a temporary file and submit that one instead
-                local_script_file = tempfile.NamedTemporaryFile()
+                local_script_file = tempfile.NamedTemporaryFile(mode='wt')
                 local_script_file.write('#!/bin/sh\n')
                 # Add preamble file
                 prologue = self.get_prologue_script(app)
@@ -781,7 +783,7 @@ class BatchSystem(LRMS):
             # `Application.outputs` list to expand wildcards and
             # directory references.
             stageout = list()
-            for remote_relpath, local_url in app.outputs.iteritems():
+            for remote_relpath, local_url in app.outputs.items():
                 local_relpath = local_url.path
                 if remote_relpath == gc3libs.ANY_OUTPUT:
                     remote_relpath = ''

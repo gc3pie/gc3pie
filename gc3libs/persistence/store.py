@@ -2,7 +2,7 @@
 #
 """
 """
-# Copyright (C) 2011-2018  University of Zurich. All rights reserved.
+# Copyright (C) 2011-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,18 +19,21 @@
 #
 
 # stdlib imports
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
+from builtins import object
 from abc import ABCMeta, abstractmethod
 
 # GC3Pie imports
 import gc3libs
 from gc3libs.url import Url
+from future.utils import with_metaclass
 
 
 __docformat__ = 'reStructuredText'
 
 
-class Store(object):
+class Store(with_metaclass(ABCMeta, object)):
     """
     Interface for storing and retrieving objects on permanent storage.
 
@@ -48,8 +51,6 @@ class Store(object):
         the `Store` class: it should not be set or altered by other
         parts of the code.
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, url=None):
         if url and not isinstance(url, Url):
@@ -140,39 +141,6 @@ class Store(object):
         Save an object, and return an ID.
         """
         pass
-
-
-class Persistable(object):
-
-    """
-    A mix-in class to mark that an object should be persisted by its ID.
-
-    Any instance of this class is saved as an 'external reference'
-    when a container holding a reference to it is saved.
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        # ensure object will be saved next time Store.save() is invoked
-        self.changed = True
-
-    def __str__(self):
-        try:
-            return str(self.persistent_id)
-        except AttributeError:
-            return super(Persistable, self).__str__()
-
-    def __eq__(self, other):
-        if id(self) == id(other):
-            return True
-        try:
-            return self.persistent_id == other.persistent_id
-        except AttributeError:
-            # fall back to Python object comparison
-            return super(Persistable, self) == other
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
 
 # registration mechanism

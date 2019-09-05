@@ -172,11 +172,11 @@ Installation into a virtualenv has two distinct advantages:
 
    * On Debian/Ubuntu, install these system packages::
 
-       apt-get install gcc g++ git python-dev libffi-dev libssl-dev
+       apt-get install gcc g++ git python-dev libffi-dev libssl-dev make
 
    * On CentOS5, install these packages::
 
-       yum install git python-devel gcc gcc-c++ libffi-devel openssl-devel
+       yum install git python-devel gcc gcc-c++ libffi-devel make openssl-devel
 
    * On other Linux distributions, you will need to install:
 

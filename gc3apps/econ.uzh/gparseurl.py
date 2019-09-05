@@ -144,7 +144,7 @@ newly-created jobs so that this limit is never exceeded.
             raise gc3libs.exceptions.InvalidUsage(
                 "gparseurl command file '%s' does not exist;"
                 % self.params.url_file)
-        gc3libs.utils.test_file(self.params.url_file, os.R_OK,
+        gc3libs.utils.check_file_access(self.params.url_file, os.R_OK,
                                 gc3libs.exceptions.InvalidUsage)
 
         if self.params.master_script and \

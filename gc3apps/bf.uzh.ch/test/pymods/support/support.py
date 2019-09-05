@@ -12,21 +12,6 @@ import shutil
 verb = 'INFO'
 logger = wrapLogger(loggerName = 'createTableLog', streamVerb = verb, logFile = None)
 
-def rmFilesAndFolders(top):
-  # works like rm -r *
-  # taken from http://stackoverflow.com/questions/303200/how-do-i-remove-delete-a-folder-that-is-not-empty-with-python
-  # Delete everything reachable from the directory named in 'top',
-  # assuming there are no symbolic links.
-  # CAUTION:  This is dangerous!  For example, if top == '/', it
-  # could delete all your disk files.
-  import os
-  for root, dirs, files in os.walk(top, topdown=False):
-    for name in files:
-      os.remove(os.path.join(root, name))
-    for name in dirs:
-      os.rmdir(os.path.join(root, name))
-  return
-
 
 def lower(npStrAr):
   print('here')
@@ -488,7 +473,8 @@ def fillInputDir(baseDir, input_dir):
     #      gc3libs.utils.copytree(inputFolder , os.path.join(input_dir, 'input'))
     filesToCopy = glob.glob(baseDir + '/*')
     for fileToCopy in filesToCopy:
-        if os.path.isdir(fileToCopy): continue
+        if os.path.isdir(fileToCopy):
+            continue
         shutil.copy(fileToCopy, input_dir)
 
 

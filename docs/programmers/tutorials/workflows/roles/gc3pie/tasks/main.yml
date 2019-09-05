@@ -27,7 +27,7 @@
   get_url:
     url: https://raw.githubusercontent.com/uzh/gc3pie/master/install.py
     dest: /var/tmp/install.py
-    mode: 0755
+    mode: 0o755
 
 - name: Run GC3Pie installer
   command:

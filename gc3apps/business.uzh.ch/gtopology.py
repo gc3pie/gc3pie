@@ -3,7 +3,7 @@
 #   gtopology.py -- Front-end script for running topology evaluations in
 #   python over different initial parameter conditions.
 #
-#   Copyright (C) 2016  University of Zurich. All rights reserved.
+#   Copyright (C) 2016, 2019  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or
 #   modify
@@ -120,7 +120,7 @@ exit $RET
             fd = open(self.tmp_filename,'w')
             fd.write(execution_script)
             fd.close()
-            os.chmod(fd.name,0777)
+            os.chmod(fd.name,0o777)
         except Exception, ex:
             gc3libs.log.debug("Error creating execution script" +
                               "Error type: %s." % type(ex) +

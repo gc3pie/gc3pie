@@ -1,8 +1,9 @@
 #! /usr/bin/env python
-#
+
 """
 Utility classes and methods for dealing with URLs.
 """
+
 # Copyright (C) 2011-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,18 +18,33 @@ Utility classes and methods for dealing with URLs.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-from __future__ import absolute_import, print_function
+
+from __future__ import absolute_import, print_function, unicode_literals
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+
+
+from collections import namedtuple
+import os
+import urllib.parse
+
+from .persistence.serialization import Persistable
+from .utils import to_str
+
 __docformat__ = 'reStructuredText'
 
 
-import os
-import urlparse
+_UrlFields = namedtuple('_UrlFields', [
+    # watch out that this is *exactly* the order used in
+    # `_UrlFields.__new__()` calls below!
+    'scheme', 'netloc', 'path',
+    'hostname', 'port', 'query',
+    'username', 'password', 'fragment'
+])
 
 
-# XXX: rewrite using `collections.namedtuple` when we no longer
-# support 2.4 and 2.5
-class Url(tuple):
+class Url(_UrlFields):
 
     """
     Represent a URL as a named-tuple object.  This is an immutable
@@ -56,40 +72,40 @@ class Url(tuple):
 
         >>> u = Url('http://www.example.org/data')
 
-        >>> u.scheme
-        'http'
-        >>> u.netloc
-        'www.example.org'
-        >>> u.path
-        '/data'
+        >>> u.scheme == 'http'
+        True
+        >>> u.netloc == 'www.example.org'
+        True
+        >>> u.path == '/data'
+        True
 
       The default URL scheme is ``file``::
 
         >>> u = Url('/tmp/foo')
-        >>> u.scheme
-        'file'
-        >>> u.path
-        '/tmp/foo'
+        >>> u.scheme == 'file'
+        True
+        >>> u.path == '/tmp/foo'
+        True
 
       However, if a ``#`` character is present in the path name, it
       will be taken as separating the path from the "fragment"::
 
         >>> u = Url('/tmp/foo#1')
-        >>> u.path
-        '/tmp/foo'
-        >>> u.fragment
-        '1'
+        >>> u.path == '/tmp/foo'
+        True
+        >>> u.fragment == '1'
+        True
 
       Please note that extra leading slashes '/' are interpreted as
       the begining of a network location:
 
         >>> u = Url('//foo/bar')
-        >>> u.path
-        '/bar'
-        >>> u.netloc
-        'foo'
-        >>> Url('///foo/bar').path
-        '/foo/bar'
+        >>> u.path == '/bar'
+        True
+        >>> u.netloc == 'foo'
+        True
+        >>> Url('///foo/bar').path == '/foo/bar'
+        True
 
       (Check RFC 3986 http://tools.ietf.org/html/rfc3986)
 
@@ -107,31 +123,31 @@ class Url(tuple):
         >>> u = Url('foo', force_abs=False)
         >>> os.path.isabs(u.path)
         False
-        >>> u.path
-        'foo'
+        >>> u.path == 'foo'
+        True
 
       Other keyword arguments can specify defaults for missing parts
       of the URL::
 
         >>> u = Url('/tmp/foo', scheme='file', netloc='localhost')
-        >>> u.scheme
-        'file'
-        >>> u.netloc
-        'localhost'
-        >>> u.path
-        '/tmp/foo'
+        >>> u.scheme == 'file'
+        True
+        >>> u.netloc == 'localhost'
+        True
+        >>> u.path == '/tmp/foo'
+        True
 
       Query attributes are also supported::
 
         >>> u = Url('http://www.example.org?foo=bar')
-        >>> u.query
-        'foo=bar'
+        >>> u.query == 'foo=bar'
+        True
 
       and so are fragments::
 
         >>> u = Url('postgresql://user@db.example.org#table=data')
-        >>> u.fragment
-        'table=data'
+        >>> u.fragment == 'table=data'
+        True
 
     * By passing keyword arguments only, to construct an `Url` object
       with exactly those values for the named fields::
@@ -144,10 +160,6 @@ class Url(tuple):
     """
     __slots__ = ()
 
-    _fields = ['scheme', 'netloc', 'path',
-               'hostname', 'port', 'query',
-               'username', 'password', 'fragment']
-
     def __new__(cls, urlstring=None, force_abs=True,
                 scheme='file', netloc='', path='',
                 hostname=None, port=None, query='',
@@ -159,63 +171,89 @@ class Url(tuple):
         if urlstring is not None:
             if isinstance(urlstring, Url):
                 # copy constructor
-                return tuple.__new__(cls, (
+                return _UrlFields.__new__(cls,
                     urlstring.scheme, urlstring.netloc, urlstring.path,
                     urlstring.hostname, urlstring.port, urlstring.query,
                     urlstring.username, urlstring.password, urlstring.fragment
-                ))
+                )
             else:
+                # XXX: `future` provides a backport of Py3's
+                # `urlsplit()` function; however, the implementation
+                # requires that all arguments have the same string
+                # type of the 1st one (i.e., `urlstring` here).  This
+                # is a source of problems as default value for
+                # `scheme` is a load-time constant (and thus either
+                # unicode or byte string depending on Python version
+                # and on whether `unicode_literals` is in effect), but
+                # `urlstring`'s type depends on how it was produced
+                # (user input, pickled file, result of some library
+                # call, etc). So we convert `urlstring` to `future`'s
+                # `newstr` type to match the value of `scheme` set at
+                # load-time.
+                urlstring = to_str(urlstring, 'filesystem')
+
                 # parse `urlstring` and use kwd arguments as default values
                 try:
-                    urldata = urlparse.urlsplit(
-                        urlstring, scheme=scheme, allow_fragments=True)
+                    urldata = urllib.parse.urlsplit(
+                        urlstring,
+                        scheme=to_str(scheme, 'filesystem'),
+                        allow_fragments=True)
+                    if urldata.path is not None:
+                        path = urldata.path
+                    if urldata.scheme == 'file' \
+                       and not os.path.isabs(path) \
+                       and force_abs:
+                        path = os.path.abspath(path)
                     # Python 2.6 parses fragments only for http(s),
                     # for any other scheme, the fragment is returned as
                     # part of the path...
-                    if '#' in urldata.path:
-                        path_, fragment_ = urldata.path.split('#')
-                        urldata = urlparse.SplitResult(
+                    if '#' in path:
+                        path_, fragment_ = path.split('#')
+                        urldata = urllib.parse.SplitResult(
                             urldata.scheme, urldata.netloc,
                             path_, urldata.query, fragment_)
-                    if urldata.scheme == 'file' and not os.path.isabs(
-                            urldata.path) and force_abs:
-                        urldata = urlparse.urlsplit(
-                            'file://' + os.path.abspath(urldata.path))
-                    return tuple.__new__(cls, (
-                        urldata.scheme or scheme,
-                        urldata.netloc or netloc,
-                        urldata.path or path,
-                        urldata.hostname or hostname,
-                        urldata.port or port,
-                        urldata.query or query,
-                        urldata.username or username,
-                        urldata.password or password,
-                        urldata.fragment or fragment,
-                        ))
+                    return _UrlFields.__new__(cls,
+                        urldata.scheme or to_str(scheme, 'filesystem'),
+                        urldata.netloc or to_str(netloc, 'filesystem'),
+                        path,
+                        urldata.hostname or to_str(hostname, 'filesystem'),
+                        urldata.port or to_str(port, 'filesystem'),
+                        urldata.query or to_str(query, 'filesystem'),
+                        urldata.username or to_str(username, 'filesystem'),
+                        urldata.password or to_str(password, 'filesystem'),
+                        urldata.fragment or to_str(fragment, 'filesystem'),
+                    )
                 except (ValueError, TypeError, AttributeError) as err:
                     raise ValueError(
                         "Cannot parse string '%s' as a URL: %s: %s"
                         % (urlstring, err.__class__.__name__, err))
         else:
             # no `urlstring`, use kwd arguments
-            return tuple.__new__(cls, (
-                scheme, netloc, path,
-                hostname, port, query,
-                username, password, fragment
-            ))
-
-    def __getattr__(self, name):
-        try:
-            return self[self._fields.index(name)]
-        except ValueError:
-            raise AttributeError("'%s' object has no attribute '%s'"
-                                 % (self.__class__.__name__, name))
+            return _UrlFields.__new__(
+                cls,
+                to_str(scheme, 'filesystem'),
+                to_str(netloc, 'filesystem'),
+                to_str(path, 'filesystem'),
+                to_str(hostname, 'filesystem'),
+                to_str(port, 'filesystem'),
+                to_str(query, 'filesystem'),
+                to_str(username, 'filesystem'),
+                to_str(password, 'filesystem'),
+                to_str(fragment, 'filesystem')
+            )
 
     def __getnewargs__(self):
         """Support pickling/unpickling `Url` class objects."""
         return (None, False,  # urlstring, force_abs
                 self.scheme, self.netloc, self.path, self.hostname, self.port,
                 self.query, self.username, self.password)
+
+    # In Py3, for some reason `Url` does not inherit `_UrlFields`'
+    # definition of `__hash__()`, thus leading to a "Unhashable type:
+    # Url" errors.  So let's be explicit and state that a `Url` is
+    # nothing but a `_UrlField` with some convenience methods added.
+    def __hash__(self):
+        return _UrlFields.__hash__(self)
 
     def __repr__(self):
         """
@@ -357,7 +395,38 @@ class Url(tuple):
                    query=self.query, fragment=self.fragment)
 
 
-class UrlKeyDict(dict):
+class _UrlDict(dict):
+    """
+    Base class for `UrlKeyDict`:class: and `UrlValueDict`:class:
+    """
+    __slots__ = (
+        '_force_abs',
+    )
+
+    def __init__(self, iter_or_dict=None, force_abs=False, **extra_kv):
+        self._force_abs = force_abs
+        if iter_or_dict is not None:
+            try:
+                # if `iter_or_dict` is a dict-like object, then it has
+                # `iteritems()`
+                for k, v in iter_or_dict.items():
+                    self[k] = v
+            except AttributeError:
+                # then assume `iter_or_dict` is an iterator over (key, value)
+                # pairs
+                for k, v in iter_or_dict:
+                    self[k] = v
+        if extra_kv:
+            for k, v in extra_kv.items():
+                self[k] = v
+
+    def __repr__(self):
+        return ('{0}({1}, force_abs={2})'
+                .format(self.__class__.__name__, dict(self), self._force_abs))
+
+
+
+class UrlKeyDict(_UrlDict):
 
     """
     A dictionary class enforcing that all keys are URLs.
@@ -399,15 +468,6 @@ class UrlKeyDict(dict):
         >>> d1 == d2
         True
 
-    Differently from `dict`, initialization from keyword arguments
-    alone is *not* supported:
-
-        >>> d3 = UrlKeyDict(foo='foo') # doctest: +ELLIPSIS
-        Traceback (most recent call last):
-            ...
-        TypeError: __init__() got an unexpected keyword argument 'foo'
-
-
     An empty `UrlKeyDict` instance is returned by the constructor
     when called with no parameters::
 
@@ -430,43 +490,28 @@ class UrlKeyDict(dict):
 
     """
 
-    def __init__(self, iter_or_dict=None, force_abs=False):
-        self._force_abs = force_abs
-        if iter_or_dict is not None:
-            try:
-                # if `iter_or_dict` is a dict-like object, then it has
-                # `iteritems()`
-                for k, v in iter_or_dict.iteritems():
-                    self[k] = v
-            except AttributeError:
-                # then assume `iter_or_dict` is an iterator over (key, value)
-                # pairs
-                for k, v in iter_or_dict:
-                    self[k] = v
-
-    def __contains__(self, key):
-        # this is necessary to have key-lookup work with strings as well
-        return (dict.__contains__(self, key)
-                or key in self.keys())
-
-    def __getitem__(self, key):
-        try:
-            return dict.__getitem__(self, key)
-        except KeyError as ex:
-            # map `key` to a URL and try with that
-            try:
-                return dict.__getitem__(self, Url(key, self._force_abs))
-            except:
-                raise ex
+    __slots__ = ()
 
     def __setitem__(self, key, value):
-        try:
-            dict.__setitem__(self, Url(key, self._force_abs), value)
-        except:
-            dict.__setitem__(self, key, value)
+        if not isinstance(key, Url):
+            key = Url(key, self._force_abs)
+        super(UrlKeyDict, self).__setitem__(key, value)
+
+    # these two methods are necessary to have key-lookup work with
+    # strings as well
+
+    def __getitem__(self, key):
+        if not isinstance(key, Url):
+            key = Url(key, self._force_abs)
+        return super(UrlKeyDict, self).__getitem__(key)
+
+    def __contains__(self, key):
+        if not isinstance(key, Url):
+            key = Url(key, self._force_abs)
+        return super(UrlKeyDict, self).__contains__(key)
 
 
-class UrlValueDict(dict):
+class UrlValueDict(_UrlDict):
 
     """
     A dictionary class enforcing that all values are URLs.
@@ -485,8 +530,9 @@ class UrlValueDict(dict):
     Retrieving the value associated with a key always returns the
     URL-type value, regardless of how it was set::
 
-        >>> repr(d[1]) == "Url(scheme='file', netloc='', path='/tmp/foo', " \
-        "hostname=None, port=None, query='', username=None, password=None, fragment='')"
+        >>> d[1] == Url(scheme='file', netloc='', path='/tmp/foo', \
+              hostname=None, port=None, query='', \
+              username=None, password=None, fragment='')
         True
 
     Class `UrlValueDict` supports initialization by any of the
@@ -523,27 +569,12 @@ class UrlValueDict(dict):
 
     """
 
-    def __init__(self, iter_or_dict=None, force_abs=False, **extra_args):
-        self._force_abs = force_abs
-        if iter_or_dict is not None:
-            try:
-                # if `iter_or_dict` is a dict-like object, then it has
-                # `iteritems()`
-                for k, v in iter_or_dict.iteritems():
-                    self[k] = v
-            except AttributeError:
-                # then assume `iter_or_dict` is an iterator over (key, value)
-                # pairs
-                for k, v in iter_or_dict:
-                    self[k] = v
-        for k, v in extra_args.iteritems():
-            self[k] = v
+    __slots__ = ()
 
     def __setitem__(self, key, value):
-        try:
-            dict.__setitem__(self, key, Url(value, self._force_abs))
-        except:
-            dict.__setitem__(self, key, value)
+        if not isinstance(value, Url):
+            value = Url(value, self._force_abs)
+        super(UrlValueDict, self).__setitem__(key, value)
 
 
 # main: run tests

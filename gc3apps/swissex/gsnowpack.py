@@ -3,7 +3,7 @@
 #   gsnowpack.py -- Front-end script for running 'snowpack' on data gathered
 #   from GSN stations. Generate plots and return the corresponding plot images.
 #
-#   Copyright (C) 2011, 2012  University of Zurich. All rights reserved.
+#   Copyright (C) 2011, 2012, 2019  University of Zurich. All rights reserved.
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -186,7 +186,7 @@ echo "[`date`] End"
 
             f_handle.file.write(command)
             f_handle.file.close()
-            os.chmod(f_handle.name,0777)
+            os.chmod(f_handle.name,0o777)
         except Exception, ex:
             gc3libs.log.debug("Error creating execution script." +
                               "Error type: %s." % type(ex) +

@@ -3,7 +3,7 @@
 """
 Repeatedly execute a given command.
 """
-# Copyright (C) 2018 University of Zurich.
+# Copyright (C) 2018, 2019 University of Zurich.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,6 +18,8 @@ Repeatedly execute a given command.
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from __future__ import absolute_import, print_function
+
 __author__ = 'Riccardo Murri <riccardo.murri@gmail.com>'
 # summary of user-visible changes
 __changelog__ = """
@@ -30,7 +32,6 @@ __docformat__ = 'reStructuredText'
 # Workaround for Issue 95: import this module and run it first
 # for details, see: https://github.com/uzh/gc3pie/issues/95
 if __name__ == '__main__':
-from __future__ import absolute_import
     import repeat
     repeat.Script().run()
 
