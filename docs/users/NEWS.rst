@@ -31,6 +31,62 @@
 .. contents::
 
 
+GC3Pie 2.6
+==========
+
+GC3Pie 2.6.0 introduces compatibility with Python 3.5+. The changes
+for this are rather extensive, but lucklily mostly confined to GC3Pie
+internals, so users of the library should not notice.
+
+.. warning::
+
+   This release can introduce a few backwards-incompatible changes in
+   the format for persisting tasks in files and databases (see
+   *Important changes* below).  Be sure to have all your
+   currently-running sessions done before you upgrade!
+
+This release depends on a few new external packages; if you're
+upgrading from earlier sources, be sure to re-run `pip install .` in
+the GC3Pie source directory; no such additional step is needed if
+you're installing from PyPI with `pip install gc3pie` or using
+GC3Pie's own `install.py` script.
+
+Important changes
+-----------------
+
+* Python 3.5+ is now fully supported and tested!
+
+* The on-disk format for saving jobs might have changed incompatibly
+  in some cases: a few internal classes have completely changed their
+  inheritance hierarchy so Python's `pickle` might not be able to read
+  them back.
+
+* GC3Pie now defaults to using "unicode" strings everywhere, but will
+  make a best attempt at converting parameters passed as byte strings:
+
+  - command-line arguments and paths for I/O need to be converted
+    using the locale's own encoding/charset and revert to mapping byte
+    strings to Unicode code points by keeping the *numeric* value of
+    bytes (instead of the textual / glyph value) if the former attempt
+    has failed
+
+  - output from commands (e.g., when interacting with a batch-queuing
+    system): we *assume* that programs are complying with the
+    locale-defined encoding and use the locale's own encoding to
+    convert the output into a unicode text string.
+
+* Minor (internal) API changes:
+
+  - class `gc3libs.Default` is now a separate module `gc3libs.default`.
+  - a few unused utility methods have been removed from module `gc3libs.utils`.
+
+Bug fixes
+---------
+
+* SLURM: ignore extraneous lines in `squeue` output.
+* LSF: If accounting command name contains the string `bjobs`, parse its output like bjobs'.
+
+
 GC3Pie 2.5
 ==========
 
