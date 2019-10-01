@@ -20,6 +20,10 @@ The following environmental variables affect GC3Pie operations.
   of the default ``$HOME/.gc3/gc3pie.conf``; if undefined or empty,
   the usual configuration file is loaded.
 
+  If this variable is defined, the logging configuration file is
+  looked for in the same directory as the ``gc3pie.conf`` file,
+  falling back to ``$HOME/.gc3/gc3pie.log.conf`` if not found there.
+
 `GC3PIE_ID_FILE`
 
   Path to the a shared state file, used for recording the "next

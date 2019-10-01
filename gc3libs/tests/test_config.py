@@ -34,6 +34,7 @@ import tempfile
 import re
 from itertools import product
 
+import mock
 import pytest
 
 # GC3Pie imports
@@ -45,6 +46,8 @@ from gc3libs.quantity import GB, hours
 from gc3libs.backends.shellcmd import ShellcmdLrms
 from gc3libs.backends.transport import SshTransport
 from gc3libs.quantity import Memory, Duration
+
+from gc3libs.testing.helpers import temporary_directory
 
 
 def _setup_config_file(confstr):
@@ -941,6 +944,101 @@ large_file_chunk_size = 200 MB
         assert backend.transport.large_file_chunk_size == 200*10**6 # 200*MB in bytes
     finally:
         os.remove(tmpfile)
+
+
+def test_override_config_file_location():
+    """Check that config file location is overriden by env var GC3PIE_CONF"""
+    tmpfile = _setup_config_file("""
+[resource/test]
+type = shellcmd
+auth = none
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2
+max_walltime = 8h
+max_cores = 2
+architecture = x86_64
+override = False
+    """)
+    gc3pie_conf_orig = os.environ.get('GC3PIE_CONF')
+    try:
+        os.environ['GC3PIE_CONF'] = tmpfile
+        from gc3libs import defaults
+        try:
+            reload(defaults)  # Py2
+        except NameError:
+            import importlib; importlib.reload(defaults)  # Py3
+        with mock.patch('gc3libs.config.open') as mo:
+            mo.return_value = open(tmpfile, 'r')
+            gc3libs.create_core()
+            mo.assert_called_with(tmpfile, 'r')
+    finally:
+        os.remove(tmpfile)
+        if gc3pie_conf_orig is None:
+            del os.environ['GC3PIE_CONF']
+        else:
+            os.environ['GC3PIE_CONF'] = gc3pie_conf_orig
+
+
+def test_override_logging_config_location():
+    """Check that logging config file location is overriden by env var GC3PIE_CONF"""
+    gc3pie_conf_orig = os.environ.get('GC3PIE_CONF')
+    with temporary_directory() as tmpdir:
+        # create config file
+        cfg_loc = os.path.join(tmpdir, 'gc3pie.conf')
+        with open(cfg_loc, 'w') as cfg_file:
+            cfg_file.write('# actually ignored')
+        # create logging config file
+        logcfg_loc = os.path.join(tmpdir, 'gc3pie.log.conf')
+        with open(logcfg_loc, 'w') as logcfg_file:
+            # logging.fileConfig() errors out if not given a valid
+            # file with all the sections and values...
+            logcfg_file.write('''
+[formatters]
+keys=none
+
+[formatter_none]
+
+[handlers]
+keys=none
+
+[handler_none]
+class=NullHandler
+args=()
+
+[loggers]
+keys=root
+
+[logger_root]
+level=NOTSET
+handlers=none
+''')
+        # point to alternate config file
+        os.environ['GC3PIE_CONF'] = cfg_loc
+        # do the actual check
+        #
+        # `logging.fileConfig()` module does not perform an `open()`
+        # call itself -- rather it uses a `ConfigParser` object to
+        # read the file; this means we have to patch `ConfigParser` to
+        # intercept its calls to `open()`, which in turn means we need
+        # to discriminate between Py2 and Py3 because that module was
+        # renamed in the transition...
+        try:
+            import ConfigParser  # Py2
+            open_fn = 'ConfigParser.open'
+            extra_args = {}
+        except ImportError:
+            import configparser  # Py3
+            open_fn = 'configparser.open'
+            extra_args = {'encoding': None}
+        with mock.patch(open_fn) as mo:
+            mo.return_value = open(logcfg_loc)
+            gc3libs.configure_logger()
+            mo.assert_called_with(logcfg_loc, **extra_args)
+    if gc3pie_conf_orig is None:
+        del os.environ['GC3PIE_CONF']
+    else:
+        os.environ['GC3PIE_CONF'] = gc3pie_conf_orig
 
 
 if __name__ == "__main__":
