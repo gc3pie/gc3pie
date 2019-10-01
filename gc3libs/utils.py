@@ -43,7 +43,7 @@ except ImportError:
     from collections import Mapping, MutableMapping
 import contextlib
 import functools
-from compat._functools import total_ordering
+from .compat._functools import total_ordering
 import locale
 import os
 import os.path
