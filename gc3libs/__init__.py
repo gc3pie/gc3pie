@@ -37,7 +37,7 @@ from past.utils import old_div
 from builtins import object
 __docformat__ = 'reStructuredText'
 
-__version__ = '2.6.1'
+__version__ = '2.6.2'
 
 
 import inspect
@@ -85,7 +85,7 @@ it stands for 'fetch the whole contents of the remote
 directory'.
 """
 
-# for compatibility with GC3Pie <2.6.1
+# for compatibility with GC3Pie <2.6.2
 Default = gc3libs.defaults
 
 
