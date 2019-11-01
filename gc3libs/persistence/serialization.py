@@ -32,6 +32,9 @@ from builtins import object
 
 import pickle
 
+import sys
+PY2 = (sys.version_info[0] == 2)
+
 
 DEFAULT_PROTOCOL = pickle.HIGHEST_PROTOCOL
 
@@ -140,3 +143,56 @@ class _UnpicklerWithPersistentID(pickle.Unpickler):
 
     def persistent_load(self, id_):
         return self._driver.load(id_)
+
+    # Override pickle's default `load_build()` to use `setattr()` upon
+    # `AttributeError` and not just on `RuntimeError`.  This works only on
+    # Python2, since Python3 has a completely different implemenation of `pickle`.
+    if PY2:
+        def load_build(self):
+            stack = self.stack
+            state = stack.pop()
+            inst = stack[-1]
+            setstate = getattr(inst, "__setstate__", None)
+            if setstate:
+                setstate(state)
+                return
+            slotstate = None
+            if isinstance(state, tuple) and len(state) == 2:
+                state, slotstate = state
+            if state:
+                try:
+                    d = inst.__dict__
+                    try:
+                        for k, v in state.iteritems():
+                            d[intern(k)] = v
+                    # keys in state don't have to be strings
+                    # don't blow up, but don't go out of our way
+                    except TypeError:
+                        d.update(state)
+
+                except (AttributeError, RuntimeError):
+                    # XXX In restricted execution, the instance's __dict__
+                    # is not accessible.  Use the old way of unpickling
+                    # the instance variables.  This is a semantic
+                    # difference when unpickling in restricted
+                    # vs. unrestricted modes.
+                    # Note, however, that cPickle has never tried to do the
+                    # .update() business, and always uses
+                    #     PyObject_SetItem(inst.__dict__, key, value) in a
+                    # loop over state.items().
+                    for k, v in state.items():
+                        setattr(inst, k, v)
+            if slotstate:
+                for k, v in slotstate.items():
+                    setattr(inst, k, v)
+
+if PY2:
+    # the `dispatch` table is a class attribute of `pickle.Unpickler` so
+    # we need to take a copy, otherwise overriding the handler for
+    # `pickle.BUILD` with a method bound to class
+    # `_UnpicklerWithPersistentID` makes it fail when called from an
+    # instance of `pickle.Unpickler`
+    _UnpicklerWithPersistentID.dispatch = pickle.Unpickler.dispatch.copy()
+
+    # register the modified `load_build` as handler for `pickle.BUILD`
+    _UnpicklerWithPersistentID.dispatch[pickle.BUILD] = _UnpicklerWithPersistentID.load_build
