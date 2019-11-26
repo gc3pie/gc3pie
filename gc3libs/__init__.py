@@ -37,7 +37,7 @@ from past.utils import old_div
 from builtins import object
 __docformat__ = 'reStructuredText'
 
-__version__ = '2.6.0'
+__version__ = '2.6.4'
 
 
 import inspect
@@ -85,7 +85,7 @@ it stands for 'fetch the whole contents of the remote
 directory'.
 """
 
-# for compatibility with GC3Pie <2.6.0
+# for compatibility with GC3Pie <2.6.4
 Default = gc3libs.defaults
 
 
@@ -119,10 +119,12 @@ def configure_logger(
     .. _coloredlogs: https://coloredlogs.readthedocs.org/en/latest/#
     .. __: http://humanfriendly.readthedocs.org/en/latest/index.html#humanfriendly.terminal.terminal_supports_colors
 
-    If a user configuration file exists in file NAME.log.conf in the
-    ``Default.RCDIR`` directory (usually ``~/.gc3``), it is read and
-    used for more advanced configuration; if it does not exist, then a
-    sample one is created.
+    A user configuration file named ``NAME.log.conf`` or
+    ``gc3pie.log.conf`` is searched for in the directory pointed to by
+    environment variable ``GC3PIE_CONF``, and then in ``~/.gc3``; if
+    found, it is read and used for more advanced configuration; if it
+    does not exist, then a sample one is created in location
+    ``~/.gc3/gc3pie.log.conf``
     """
     # ensure basic logger configuration is there, and load more
     # complex config from file if it exists
@@ -158,11 +160,28 @@ def configure_logger(
     return log
 
 
-def _load_logging_configuration_file(name):
+def _load_logging_configuration_file(name=None):
     if name is None:
         name = os.path.basename(sys.argv[0])
-    log_conf = os.path.join(gc3libs.defaults.RCDIR, name + '.log.conf')
-    deploy_configuration_file(log_conf, "logging.conf.example")
+    # determine where to look for conf files
+    log_conf_dirs = [gc3libs.defaults.RCDIR]
+    gc3pie_conf_path = os.environ.get('GC3PIE_CONF', '')
+    if os.path.exists(gc3pie_conf_path):
+        if not os.path.isdir(gc3pie_conf_path):
+            gc3pie_conf_path = os.path.dirname(gc3pie_conf_path)
+        log_conf_dirs.insert(0, gc3pie_conf_path)
+    # use first logging configuration found
+    for log_conf_file in [
+            name + '.log.conf',
+            'gc3pie.log.conf',
+    ]:
+        for log_conf_dir in log_conf_dirs:
+            log_conf = os.path.join(log_conf_dir, log_conf_file)
+            if os.path.exists(log_conf):
+                break
+    else:
+        deploy_configuration_file(log_conf, "logging.conf.example")
+    # actually read the file that was found or deployed above
     logging.config.fileConfig(log_conf, {
         'RCDIR': gc3libs.defaults.RCDIR,
         'HOMEDIR': os.path.expandvars('$HOME'),
