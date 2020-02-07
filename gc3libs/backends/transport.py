@@ -1083,10 +1083,8 @@ class LocalTransport(Transport):
                 command, exitcode)
             # output and error streams are opened in binary mode, so
             # we must convert them into text strings
-            if stdout:
-                stdout = to_str(stdout, 'terminal')
-            if stderr:
-                stderr = to_str(stdout, 'terminal')
+            stdout = to_str(stdout, 'terminal')
+            stderr = to_str(stdout, 'terminal')
             return exitcode, stdout, stderr
         except Exception as ex:
             raise gc3libs.exceptions.TransportError(
