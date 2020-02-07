@@ -1083,9 +1083,9 @@ class LocalTransport(Transport):
                 command, exitcode)
             # output and error streams are opened in binary mode, so
             # we must convert them into text strings
-            if stdout:
+            if type(stdout) == bytes:
                 stdout = to_str(stdout, 'terminal')
-            if stderr:
+            if type(stderr) == bytes:
                 stderr = to_str(stdout, 'terminal')
             return exitcode, stdout, stderr
         except Exception as ex:
