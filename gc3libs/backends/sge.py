@@ -133,6 +133,7 @@ def _parse_asctime(val):
     for fmt in [
             '%a %b %d %H:%M:%S %Y',  # standard asctime() format
             '%m/%d/%Y %H:%M:%S',     # sge_ctime()
+            '%m/%d/%Y %H:%M:%S.%f',  # sge_ctime() including milliseconds
             '%Y-%m-%dT%H:%M:%S',     # ISO 8601 / sge_ctimeXML()
     ]:
         try:
