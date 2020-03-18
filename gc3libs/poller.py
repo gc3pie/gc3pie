@@ -7,6 +7,7 @@ created inside that URL.
 """
 
 # Copyright (C) 2017-2019,  University of Zurich. All rights reserved.
+# Copyright (C) 2020,  ETH Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -189,6 +190,7 @@ class INotifyPoller(Poller):
     __slots__ = [
         '_ifd',
         '_recurse',
+        '_wd',
     ]
 
     def __init__(self, url, recurse=False, **kw):
@@ -203,6 +205,7 @@ class INotifyPoller(Poller):
 
         self._recurse = recurse
         self._ifd = inotify.INotify()
+        self._wd = {}
 
         # Ensure inbox directory exists
         if not os.path.exists(self.url.path):
@@ -235,40 +238,48 @@ class INotifyPoller(Poller):
             "Request to watch path `%s`"
             " which does not lie in directory tree rooted at `%s`",
             path, self.url.path)
-        gc3libs.log.debug("Adding watch for path %s", path)
-        self._ifd.add_watch(path,
-                            # only watch for inotify(7) events that
-                            # translate to something we can report
-                            (0
-                             |inotify.flags.CLOSE_WRITE
-                             |inotify.flags.CREATE
-                             |inotify.flags.DELETE
-                             |inotify.flags.EXCL_UNLINK
-                             |inotify.flags.MODIFY
-                             |inotify.flags.OPEN
-                            ))
+        wd = self._ifd.add_watch(path,
+                                 # only watch for inotify(7) events that
+                                 # translate to something we can report
+                                 (0
+                                  |inotify.flags.CLOSE_WRITE
+                                  |inotify.flags.CREATE
+                                  |inotify.flags.DELETE
+                                  |inotify.flags.EXCL_UNLINK
+                                  |inotify.flags.MODIFY
+                                  |inotify.flags.OPEN
+                                 ))
+        self._wd[wd] = path
+        gc3libs.log.debug(
+            "Added watch for path `%s` as watch descriptor %d ", path, wd)
 
     def get_new_events(self):
         new_events = []
         ievents = self._ifd.read(0)
         cumulative = defaultdict(int)
         for ievent in ievents:
+            try:
+                path = os.path.join(self._wd[ievent.wd], ievent.name)
+            except KeyError:
+                raise AssertionError(
+                    "Received event {0} for unknown watch descriptor {1}"
+                    .format(ievent, ievent.wd))
             # if `name` is empty, it's the same directory
-            cumulative[ievent.name] |= ievent.mask
-            accumulated = cumulative[ievent.name]
+            cumulative[path] |= ievent.mask
+            accumulated = cumulative[path]
             # we want to dispatch a single `created` or `modified`
             # event, so check once the file is closed what past events
             # have been recorded
             if (ievent.mask & inotify.flags.CLOSE_WRITE):
                 if (accumulated & inotify.flags.CREATE):
                     new_events.append(
-                        self.__make_event(ievent.name, 'created'))
+                        self.__make_event(path, 'created'))
                 elif (accumulated & inotify.flags.MODIFY):
                     new_events.append(
-                        self.__make_event(ievent.name, 'modified'))
+                        self.__make_event(path, 'modified'))
             if (ievent.mask & inotify.flags.DELETE):
                 new_events.append(
-                    self.__make_event(ievent.name, 'deleted'))
+                    self.__make_event(path, 'deleted'))
             if (self._recurse
                 and ievent.mask & inotify.flags.ISDIR
                 and ievent.mask & inotify.flags.CREATE):
@@ -276,8 +287,7 @@ class INotifyPoller(Poller):
                 # for it too and for all its subdirectories. Also,
                 # we need to trigger new events for any file
                 # created in it.
-                abspath = os.path.join(self.url.path, ievent.name)
-                for (rootdir, dirnames, filenames) in os.walk(abspath):
+                for (rootdir, dirnames, filenames) in os.walk(path):
                     for dirname in dirnames:
                         self.watch(os.path.join(rootdir, dirname))
                     for filename in filenames:
