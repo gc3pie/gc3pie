@@ -17,9 +17,9 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from __future__ import absolute_import
-__version__ = '2.0.5'
+__version__ = '2.0.6'
 __author__ = '''
-Antonio Messina <antonio.s.messina@gmail.com>
+Antonio Messina <antonio.s.messina@gmail.com>,
 Riccardo Murri <riccardo.murri@gmail.com>
 '''
 
@@ -423,26 +423,24 @@ bug to the GC3Pie mailing list gc3pie@googlegroups.com
         # no issue in allowing access to system site packages
         with_site_packages = ['--system-site-packages']
 
-    tarball = download_from_pypi('virtualenv', keep=False)
-
-    tar = tarfile.open(tarball)
-    tar.extractall()
-    venvsourcedir = tar.getnames()[0]
-    cleanup_defer(venvsourcedir)
-
-    # search 'virtualenv.py'
-    venvpath = search_for(venvsourcedir, 'virtualenv.py')
-    if not venvpath:
+    # download virtualenv zipapp, to be sure we don't run into
+    # incompatibilities with CentOS/RHEL shipping severely outdated
+    # Python virtualenv packages ...
+    try:
+        virtualenv_pyz_url = (
+            "https://bootstrap.pypa.io/virtualenv/{0}.{1}/virtualenv.pyz"
+            .format(*sys.version_info[:2]))
+        virtualenv_pyz = download(virtualenv_pyz_url, keep=False)
+        virtualenv_cmd = [python, virtualenv_pyz]
+    except Exception as err:
         die(os.EX_SOFTWARE,
-            "Failed to locate `virtualenv.py`.",
-            """
-            Failed to locate `virtualenv.py` in downloaded package directory `{0}`
-            """.format(venvsourcedir))
+            "Failed to download `virtualenv.pyz` from `{0}`: {1}."
+            .format(virtualenv_pyz_url, err))
 
     # run: python virtualenv.py --[no,system]-site-packages $DESTDIR
     try:
         check_call(
-            [python, venvpath]
+            virtualenv_cmd
             + with_site_packages
             + ['-p', python, destdir])
         logging.info("Created Python virtual environment in '%s'", destdir)
