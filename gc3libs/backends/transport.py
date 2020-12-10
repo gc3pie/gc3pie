@@ -726,8 +726,8 @@ class SshTransport(Transport):
                 stdout = ''
                 stderr = ''
             else:
-                stdout = stdout_stream.read()
-                stderr = stderr_stream.read()
+                stdout = stdout_stream.read().decode()
+                stderr = stderr_stream.read().decode()
             exitcode = stdout_stream.channel.recv_exit_status()
             gc3libs.log.debug(
                 "Executed command '%s' on host '%s'; exit code: %d"
