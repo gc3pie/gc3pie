@@ -425,7 +425,8 @@ class SshTransport(Transport):
                  ignore_ssh_host_keys=False,
                  ssh_config=None,
                  username=None, port=None,
-                 keyfile=None, timeout=None,
+                 keyfile=None, pkey=None,
+                 timeout=None,
                  large_file_threshold=None,
                  large_file_chunk_size=None,
                  **extra_args):
@@ -473,6 +474,7 @@ class SshTransport(Transport):
         # init connection params
         self.username = None
         self.keyfile = None
+        self.pkey = None
         self.port = gc3libs.defaults.SSH_PORT
         self.timeout = gc3libs.defaults.SSH_CONNECT_TIMEOUT
         self.proxy_command = None
@@ -483,7 +485,7 @@ class SshTransport(Transport):
         if os.path.exists(config_filename):
             with open(config_filename, 'r') as config_file:
                 self._ssh_config.parse(config_file)
-        self.set_connection_params(remote_frontend, username, keyfile, port, timeout)
+        self.set_connection_params(remote_frontend, username, keyfile, pkey, port, timeout)
 
         # SSH copy size params; convert to int for more efficiency at time of use
         self.large_file_threshold = self._memory_to_bytes(
@@ -531,7 +533,7 @@ class SshTransport(Transport):
                 .format(qty, type(qty)))
 
     def set_connection_params(self, hostname, username=None, keyfile=None,
-                               port=None, timeout=None):
+                               pkey=None, port=None, timeout=None):
         """
         Set remote host name and other parameters used for new connections.
         Currently-established connections are not affected.
@@ -568,6 +570,8 @@ class SshTransport(Transport):
             self.timeout = float(ssh_options.get('connecttimeout', self.timeout))
         else:
             self.timeout = float(timeout)
+
+        self.pkey = pkey
 
         # support for extra configuration options, not having a direct
         # equivalent in the GC3Pie configuration file
@@ -627,6 +631,7 @@ class SshTransport(Transport):
                                  timeout=self.timeout,
                                  username=self.username,
                                  port=self.port,
+                                 pkey=self.pkey,
                                  allow_agent=True,
                                  key_filename=self.keyfile,
                                  sock=proxy)

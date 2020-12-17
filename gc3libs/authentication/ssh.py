@@ -24,6 +24,10 @@ from builtins import object
 __docformat__ = 'reStructuredText'
 
 
+import io
+
+import paramiko
+
 import gc3libs
 import gc3libs.defaults
 from gc3libs.authentication import Auth
@@ -38,6 +42,7 @@ class SshAuth(object):
                  # SSH-specific arguments
                  username,
                  keyfile=None,
+                 pkey=None,
                  port=None,
                  ssh_config=None,
                  timeout=None,
@@ -53,6 +58,7 @@ class SshAuth(object):
         # (no sensible default)
         self.keyfile = keyfile
 
+        self.pkey = paramiko.RSAKey.from_private_key(io.StringIO(pkey)) if pkey else None
         if ssh_config is not None:
             self.ssh_config = ssh_config
         else:
