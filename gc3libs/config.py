@@ -201,7 +201,7 @@ class Configuration(gc3libs.utils.Struct):
 
     """
 
-    def __init__(self, *locations, **extra_args):
+    def __init__(self, *locations, cfg_dict=None, **extra_args):
         self._auth_factory = None
 
         # these fields are required
@@ -218,13 +218,30 @@ class Configuration(gc3libs.utils.Struct):
         # save the list of (valid) config files
         self.cfgfiles = []
 
+        if not cfg_dict is None:
+            self.construct_from_cfg_dict(cfg_dict)
+
         # load configuration files if any
-        if locations:
+        elif locations:
             self.load(*locations)
+
 
         # actual resource constructor classes
         self._resource_constructors_cache = {}
 
+    def construct_from_cfg_dict(self, cfg_dict):
+        parser = make_config_parser()
+        for key, item in cfg_dict.items():
+            parser[key] = item
+
+        defaults, resources, auths = self._parse(parser)
+        for name, values in resources.items():
+            self.resources[name].update(values)
+        for name, values in auths.items():
+            self.auths[name].update(values)
+        for name, value in defaults.items():
+            if not name.startswith('_'):
+                self[name] = value
 
     def load(self, *locations):
         """
@@ -308,7 +325,8 @@ class Configuration(gc3libs.utils.Struct):
             "Configuration.merge_file(): Reading file '%s' ...",
             filename)
         with open(filename, 'r') as stream:
-            defaults, resources, auths = self._parse(stream, filename)
+            parser = self.read_file(stream, filename)
+        defaults, resources, auths = self._parse(parser, filename)
         for name, values in resources.items():
             self.resources[name].update(values)
         for name, values in auths.items():
@@ -317,7 +335,18 @@ class Configuration(gc3libs.utils.Struct):
             if not name.startswith('_'):
                 self[name] = value
 
-    def _parse(self, stream, filename=None):
+    def read_file(self, stream, filename):
+        parser = make_config_parser()
+        try:
+            read_config_lines(parser, stream, filename)
+        except ConfigParserError as err:
+            raise gc3libs.exceptions.ConfigurationError(
+                "Configuration file '%s' is unreadable or malformed: %s: %s"
+                % (filename, err.__class__.__name__, err))
+
+        return parser
+
+    def _parse(self, parser, filename=None):
         """
         Read configuration file and return a `(defaults, resources, auths)`
         triple.
@@ -344,19 +373,6 @@ class Configuration(gc3libs.utils.Struct):
         defaults = dict()
         resources = defaultdict(dict)
         auths = defaultdict(dict)
-
-        parser = make_config_parser()
-        try:
-            read_config_lines(parser, stream, filename)
-        except ConfigParserError as err:
-            if filename is None:
-                try:
-                    filename = stream.name
-                except AttributeError:
-                    filename = repr(stream)
-            raise gc3libs.exceptions.ConfigurationError(
-                "Configuration file '%s' is unreadable or malformed: %s: %s"
-                % (filename, err.__class__.__name__, err))
 
         # update `defaults` with the contents of the `[DEFAULTS]` section
         defaults.update(parser.defaults())
