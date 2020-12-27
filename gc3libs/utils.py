@@ -585,7 +585,7 @@ def from_filesystem_bytes(chars):
     Convert *chars* to Python unicode string, trying different encodings.
 
     This function should be used to make a Python text string (type
-    ``unicode`` on Python 2, type ``str`` on Pythoin 3) out of a byte
+    ``unicode`` on Python 2, type ``str`` on Python 3) out of a byte
     string of characters that result from a filesystem lookup
     operation.  Conversion to a text string is attempted using the
     following encodings, in order:
@@ -617,7 +617,7 @@ def from_filesystem_bytes(chars):
     :raises UnicodeDecodeError:
       When none of the encodings can successfully convert the given byte string.
     """
-    encodings = [ 'utf-8', 'latin-1']
+    encodings = ['utf-8', 'latin-1']
     preferred = locale.getpreferredencoding()
     if preferred:
         encodings.insert(0, preferred)
@@ -632,7 +632,7 @@ def from_terminal_bytes(chars):
     Convert *chars* to Python unicode string, using current locale encoding.
 
     This function should be used to make a Python text string (type
-    ``unicode`` on Python 2, type ``str`` on Pythoin 3) out of a byte
+    ``unicode`` on Python 2, type ``str`` on Python 3) out of a byte
     string of characters that were inputed by users in a terminal
     application (e.g., returned by ``input()`` or typed as
     command-line arguments).
