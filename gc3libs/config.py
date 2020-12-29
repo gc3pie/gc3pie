@@ -218,7 +218,7 @@ class Configuration(gc3libs.utils.Struct):
         # save the list of (valid) config files
         self.cfgfiles = []
 
-        if not cfg_dict is None:
+        if cfg_dict:
             self.construct_from_cfg_dict(cfg_dict)
 
         # load configuration files if any
