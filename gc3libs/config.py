@@ -156,15 +156,18 @@ class Configuration(gc3libs.utils.Struct):
 
     * parsing configuration files (methods `load`:meth: and
       `merge_file`:meth:);
+    * parsing a configuration from a python dictionary
+      (method `construct_from_cfg_dict`:meth:);
     * validating the loaded values;
     * instanciating the internal GC3Pie objects resulting from the
       configuration (methods `make_auth`:meth: and
       `make_resource`:meth:).
 
-    The constructor takes a list of files to load (`locations`) and a
-    list of key=value pairs to provide defaults for the configuration.
-    Both lists are optional and can be omitted, resulting in a
-    configuration containing only GC3Pie default values.
+    The constructor takes a list of files to load (`locations`), a python
+    dictionary of sections with key value pairs (`cfg_dict`), and a list of
+    key=value pairs to provide defaults for the configuration. All three
+    arguments are optional and can be omitted, resulting in a configuration
+    containing only GC3Pie default values.
 
     Example 1: initialization from config file::
 
@@ -175,7 +178,19 @@ class Configuration(gc3libs.utils.Struct):
       >>> cfg.debug
       '0'
 
-    Example 2: initialization from key=value list::
+    Example 2: initialization from a Python dictionary::
+
+      >>> d = dict()
+      >>> d["DEFAULT"] = {"debug": 0}
+      >>> d["auth/ssh_bob"] = {
+      ... "type": "ssh", "username": "your_ssh_user_name_on_computer_bob"}
+      >>> cfg = Configuration(cfg_dict=d)
+      >>> cfg.debug
+      '0'
+      >>> cfg.auths["ssh_bob"]["type"]
+      'ssh'
+
+    Example 3: initialization from key=value list::
 
       >>> cfg = Configuration(auto_enable_auth=False, foo=1, bar='baz')
       >>> cfg.auto_enable_auth
@@ -185,15 +200,29 @@ class Configuration(gc3libs.utils.Struct):
       >>> cfg.bar == 'baz'
       True
 
-    When both a configuration file *and* a key=value list is present,
-    values in the configuration files override those in the key=value
-    list::
+    When all three arguments are supplied, configuration options are taken
+    in the following order of precedence:
+    * config file [highest priority],
+    * Python dictionary [middle priority],
+    * key=value list [lowest priority]
 
-      >>> cfg = Configuration(example_cfgfile, debug=1)
+      >>> # config file > Python dictionary
+      ... d = {"DEFAULTS": {"debug": 1}}
+      >>> cfg = Configuration(example_cfgfile, config_dict=d)
       >>> cfg.debug == '0'
       True
+      >>>
+      >>> # config file > key=value list
+      ... cfg = Configuration(example_cfgfile, debug=1)
+      >>> cfg.debug == '0'
+      True
+      >>>
+      >>> # Python dictionary > key=value list
+      ... cfg = Configuration(config_dict=d, debug=0)
+      >>> cfg.debug == '0'
+      False
 
-    Example 3: default initialization::
+    Example 4: default initialization::
 
       >>> cfg = Configuration()
       >>> cfg.auto_enable_auth
@@ -222,7 +251,7 @@ class Configuration(gc3libs.utils.Struct):
             self.construct_from_cfg_dict(cfg_dict)
 
         # load configuration files if any
-        elif locations:
+        if locations:
             self.load(*locations)
 
 
