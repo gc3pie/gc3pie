@@ -83,11 +83,12 @@ def read_invalid_conf(confstr, **extra_args):
 
 
 # pylint: disable=unused-argument
-def parse_invalid_conf(confstr, **extra_args):
-    """`_parse` raises a `ConfigurationError` exception on invalid input."""
+def parse_and_split_invalid_conf(confstr, **extra_args):
+    """`_parse` and `_split` raise a `ConfigurationError` exception on invalid input."""
     cfg = gc3libs.config.Configuration()
     # pylint: disable=unused-variable,protected-access
-    defaults, resources, auths = cfg._parse(StringIO(confstr))
+    parser = cfg._parse(StringIO(confstr))
+    defaults, resources, auths = cfg._split(parser)
 
 
 def test_valid_conf():
@@ -255,10 +256,10 @@ def test_read_invalid_confs(conf):
         read_invalid_conf(conf[1])
 
 @pytest.mark.parametrize("conf", invalid_confs)
-def test_parse_invalid_confs(conf):
+def test_parse_and_split_invalid_confs(conf):
     """Test reading invalid configuration files"""
     with pytest.raises(gc3libs.exceptions.ConfigurationError):
-        parse_invalid_conf(conf[1])
+        parse_and_split_invalid_conf(conf[1])
 
 
 
@@ -490,12 +491,13 @@ max_walltime = 8 hours
 max_cores = 10
 architecture = ${arch}
 """)
-    _check_parse_arch(config_template.substitute(arch=arch[0]), arch[1])
+    _check_parse_and_split_arch(config_template.substitute(arch=arch[0]), arch[1])
 
 
-def _check_parse_arch(confstr, result):
+def _check_parse_and_split_arch(confstr, result):
     cfg = gc3libs.config.Configuration()
-    defaults, resources, auths = cfg._parse(StringIO(confstr))
+    parser = cfg._parse(StringIO(confstr))
+    defaults, resources, auths = cfg._split(parser)
     assert isinstance(resources['test']['architecture'], set)
     assert resources['test']['architecture'] == set(result)
 
@@ -519,7 +521,7 @@ max_cores = 10
 architecture = ${arch}
 """).substitute(arch=arch)
     with pytest.raises(gc3libs.exceptions.ConfigurationError):
-        _check_parse_arch(config, "should not be used")
+        _check_parse_and_split_arch(config, "should not be used")
 
 
 class TestPrologueEpilogueScripts(object):

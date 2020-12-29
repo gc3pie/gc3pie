@@ -350,6 +350,11 @@ class Configuration(gc3libs.utils.Struct):
         try:
             read_config_lines(parser, stream, filename)
         except ConfigParserError as err:
+            if filename is None:
+                try:
+                    filename = stream.name
+                except AttributeError:
+                    filename = repr(stream)
             raise gc3libs.exceptions.ConfigurationError(
                 "Configuration file '%s' is unreadable or malformed: %s: %s"
                 % (filename, err.__class__.__name__, err))
