@@ -234,7 +234,7 @@ class Configuration(gc3libs.utils.Struct):
         for key, item in cfg_dict.items():
             parser[key] = item
 
-        defaults, resources, auths = self._parse(parser)
+        defaults, resources, auths = self._split(parser)
         for name, values in resources.items():
             self.resources[name].update(values)
         for name, values in auths.items():
@@ -325,8 +325,8 @@ class Configuration(gc3libs.utils.Struct):
             "Configuration.merge_file(): Reading file '%s' ...",
             filename)
         with open(filename, 'r') as stream:
-            parser = self.read_file(stream, filename)
-        defaults, resources, auths = self._parse(parser, filename)
+            parser = self._parse(stream, filename)
+        defaults, resources, auths = self._split(parser, filename)
         for name, values in resources.items():
             self.resources[name].update(values)
         for name, values in auths.items():
@@ -335,7 +335,17 @@ class Configuration(gc3libs.utils.Struct):
             if not name.startswith('_'):
                 self[name] = value
 
-    def read_file(self, stream, filename):
+    def _parse(self, stream, filename=None):
+        """
+        Populates a `ConfigParser` or `SafeConfigParser` object
+        with the content of `stream`. `stream` should be in a valid
+        configuration file format.
+
+        :raise gc3libs.exceptions.ConfigurationError if `stream`
+            cannot be read.
+
+        :rtype: a `ConfigParser` or `SafeConfigParser` object
+        """
         parser = make_config_parser()
         try:
             read_config_lines(parser, stream, filename)
@@ -346,9 +356,9 @@ class Configuration(gc3libs.utils.Struct):
 
         return parser
 
-    def _parse(self, parser, filename=None):
+    def _split(self, parser, filename=None):
         """
-        Read configuration file and return a `(defaults, resources, auths)`
+        Read `parser` object and return a `(defaults, resources, auths)`
         triple.
 
         The members of the result triple are as follows:
@@ -383,7 +393,7 @@ class Configuration(gc3libs.utils.Struct):
                 name = sectname.split('/', 1)[1]
                 config_items = dict(parser.items(sectname))
                 gc3libs.log.debug(
-                    "Config._parse():"
+                    "Config._split():"
                     " Read configuration stanza for auth '%s'",
                     name)
 
@@ -408,7 +418,7 @@ class Configuration(gc3libs.utils.Struct):
                 # handle resource section
                 name = sectname.split('/', 1)[1]
                 gc3libs.log.debug(
-                    "Config._parse():"
+                    "Config._split():"
                     " Read configuration stanza for resource '%s'." %
                     name)
 
@@ -453,7 +463,7 @@ class Configuration(gc3libs.utils.Struct):
                 resources[name]['name'] = name
                 if __debug__:
                     gc3libs.log.debug(
-                        "Config._parse(): Resource '%s' defined by: %s.", name,
+                        "Config._split(): Resource '%s' defined by: %s.", name,
                         ', '.join([
                             ("%s=%r" %
                              (k, v)) for k, v in sorted(
@@ -462,7 +472,7 @@ class Configuration(gc3libs.utils.Struct):
             else:
                 # Unhandled sectname
                 gc3libs.log.warning(
-                    "Config._parse(): unknown configuration section '%s'"
+                    "Config._split(): unknown configuration section '%s'"
                     " -- ignoring!",
                     sectname)
 
