@@ -124,7 +124,6 @@ class BatchSystem(LRMS):
                  # SSH-related options; ignored if `transport` is 'local'
                  ssh_config=None,
                  keyfile=None,
-                 pkey=None,
                  ignore_ssh_host_keys=False,
                  ssh_timeout=None,
                  large_file_threshold=None,
