@@ -889,6 +889,84 @@ def test_resource_definition_via_dict():
     assert resource.max_cores == 2
     assert resource.architecture == Run.Arch.X86_64
 
+def test_construct_from_dict():
+    cfg_dict = {
+        'auth/ssh': {
+            'type': 'ssh',
+            'username': 'gc3pie'
+        },
+        'resource/test': {
+            'type': 'shellcmd',
+            'auth': 'ssh',
+            'transport': 'local',
+            'max_memory_per_core': '2',
+            'max_walltime': '8',
+            'max_cores': '2',
+            'architecture': 'x86_64',
+            'override': 'False'
+        },
+        'DEFAULT': {
+            'max_cores_per_job': '2'
+        }
+    }
+    cfg = gc3libs.config.Configuration(cfg_dict=cfg_dict)
+    resources = cfg.make_resources(ignore_errors=False)
+
+    # resources are enabled by default
+    assert 'test' in resources
+    assert isinstance(resources['test'], ShellcmdLrms)
+    # test types
+    assert isinstance(resources['test']['name'], str)
+    assert isinstance(resources['test']['max_cores_per_job'], int)
+    assert isinstance(resources['test']['max_memory_per_core'], Memory)
+    assert isinstance(resources['test']['max_walltime'], Duration)
+    assert isinstance(resources['test']['max_cores'], int)
+    assert isinstance(resources['test']['architecture'], set)
+    # test parsed values
+    assert resources['test']['name'] == 'test'
+    assert resources['test']['max_cores_per_job'] == 2
+    assert resources['test']['max_memory_per_core'] == 2 * GB
+    assert resources['test']['max_walltime'] == 8 * hours
+    assert resources['test']['max_cores'] == 2
+    assert (resources['test']['architecture'] ==
+                 set([Run.Arch.X86_64]))
+
+def test_constructor_param_priority():
+    """Check that parameters ."""
+    cfg_file = _setup_config_file("""
+[resource/localhost]
+foo = 1
+type = shellcmd
+frontend = localhost
+transport = local
+max_cores_per_job = 2
+max_memory_per_core = 2GiB
+max_walltime = 8 hours
+max_cores = 10
+architecture = x86_64
+    """)
+
+    cfg_dict = {
+        "resource/localhost": {
+            'foo': '2',
+            'bar': '1',
+            'type': 'shellcmd',
+            'frontend': 'localhost',
+            'transport': 'local',
+            'max_cores_per_job': '2',
+            'max_memory_per_core': '2GiB',
+            'max_walltime': '8 hours',
+            'max_cores': '10',
+            'architecture': 'x86_64'
+        }
+    }
+    cfg = gc3libs.config.Configuration(cfg_file, cfg_dict=cfg_dict, foo='3', bar='2')
+    # The dictionary "bar" should override the default "bar".
+    # The cfg_file "foo" should override the dictionary "foo".
+    # In the end we should see foo and bar both equal 1.
+    assert cfg.resources['localhost']['foo'] == '1'
+    assert cfg.resources['localhost']['bar'] == '1'
+
 
 def test_multiple_instanciation(num_resources=3):
     """Check that multiple resources of the same type can be instanciated."""
