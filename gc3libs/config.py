@@ -252,8 +252,13 @@ class Configuration(gc3libs.utils.Struct):
 
         # load configuration files if any
         if locations:
-            self.load(*locations)
-
+            try:
+                self.load(*locations)
+            # If we successfully loaded parameters from a cfg_dict,
+            # don't raise an exception if we couldn't find any configuration files.
+            except gc3libs.exceptions.NoAccessibleConfigurationFile as ex:
+                if cfg_dict is None:
+                    raise ex
 
         # actual resource constructor classes
         self._resource_constructors_cache = {}
