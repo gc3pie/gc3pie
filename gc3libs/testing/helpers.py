@@ -144,6 +144,25 @@ override = no
         yield cfgfile
         # file is automatically deleted upon exit
 
+def example_cfg_dict():
+    """
+    Write a GC3Pie configuration into a Python dictionary.
+    """
+    return {
+        "resource/test": {
+            'enabled': 'yes',
+            'type': 'shellcmd',
+            'frontend': 'localhost',
+            'transport': 'local',
+            'max_cores_per_job': '4',
+            'max_memory_per_core': '8GiB',
+            'max_walltime': '8 hours',
+            'max_cores': '10',
+            'architecture': 'x86_64',
+            'auth': 'none',
+            'override': 'no'
+        }
+    }
 
 @contextmanager
 def temporary_config(cfgtext=None):
