@@ -890,6 +890,7 @@ def test_resource_definition_via_dict():
     assert resource.architecture == Run.Arch.X86_64
 
 def test_construct_from_dict():
+    """Test that config objects can be created via a Python dictionary."""
     cfg_dict = {
         'auth/ssh': {
             'type': 'ssh',
@@ -932,7 +933,11 @@ def test_construct_from_dict():
                  set([Run.Arch.X86_64]))
 
 def test_constructor_param_priority():
-    """Check that parameters ."""
+    """
+    Check that parameters defined in different sources
+    (files, dictionary, defaults) are prioritized / overriden in
+    the correct order.
+    """
     cfg_file = _setup_config_file("""
 [resource/localhost]
 foo = 1

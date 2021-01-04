@@ -167,7 +167,9 @@ class Configuration(gc3libs.utils.Struct):
     dictionary of sections with key value pairs (`cfg_dict`), and a list of
     key=value pairs to provide defaults for the configuration. All three
     arguments are optional and can be omitted, resulting in a configuration
-    containing only GC3Pie default values.
+    containing only GC3Pie default values. If `locations` is not empty but
+    there are no config files at those locations, the constructor will raise
+    a `NoAccessibleConfigurationFile` exception if cfg_dict is None.
 
     Example 1: initialization from config file::
 
@@ -264,6 +266,55 @@ class Configuration(gc3libs.utils.Struct):
         self._resource_constructors_cache = {}
 
     def construct_from_cfg_dict(self, cfg_dict):
+        """
+        Create a Configuration object from the settings defined in
+        a Python dictionary, `cfg_dict`.
+
+        The dictionary must follow the same general format as a configuration file.
+        See below for an example of a configuration file converted to a dictionary.
+
+        Example: A Configuration File::
+
+            [auth/ssh]
+            type = ssh
+            username = gc3pie
+
+            [resource/test]
+            type = shellcmd
+            auth = ssh
+            transport = local
+            max_memory_per_core = 2
+            max_walltime = 8
+            max_cores = 2
+            architecture = x86_64
+            override = False
+
+            [DEFAULT]
+            max_cores_per_job = 2
+
+        Example: Equivalent Dictionary::
+
+            >>> cfg_dict = {
+            ...         'auth/ssh': {
+            ...             'type': 'ssh',
+            ...             'username': 'gc3pie'
+            ...         },
+            ...         'resource/test': {
+            ...             'type': 'shellcmd',
+            ...             'auth': 'ssh',
+            ...             'transport': 'local',
+            ...             'max_memory_per_core': '2',
+            ...             'max_walltime': '8',
+            ...             'max_cores': '2',
+            ...             'architecture': 'x86_64',
+            ...             'override': 'False'
+            ...         },
+            ...         'DEFAULT': {
+            ...             'max_cores_per_job': '2'
+            ...         }
+            ...     }
+            >>>
+        """
         parser = make_config_parser()
         for key, item in cfg_dict.items():
             parser[key] = item

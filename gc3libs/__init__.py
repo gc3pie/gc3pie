@@ -2158,11 +2158,11 @@ def _split_specific_args(fn, argdict):
 def create_core(*conf_files, cfg_dict=None, **extra_args):
     """Make and return a `gc3libs.core.Core`:class: instance.
 
-    It accepts an optional list of configuration filenames.  Filenames
-    containing a `~` or an environment variable reference, will be
-    expanded automatically. If called without arguments, the paths
-    specified in `gc3libs.defaults.CONFIG_FILE_LOCATIONS` will be
-    used.
+    It accepts an optional list of configuration filenames and a dictionary
+    to create a configuration object from. Filenames containing a `~` or
+    an environment variable reference, will be expanded automatically.
+    If called without arguments, the paths specified in
+    `gc3libs.defaults.CONFIG_FILE_LOCATIONS` will be used.
 
     Any keyword argument matching the name of a parameter used by
     `Core.__init__` is passed to it.  Any leftover keyword argument is
@@ -2193,11 +2193,11 @@ def create_engine(*conf_files, cfg_dict=None, **extra_args):
     """
     Make and return a `gc3libs.core.Engine`:class: instance.
 
-    It accepts an optional list of configuration filenames.  Filenames
-    containing a `~` or an environment variable reference, will be
-    expanded automatically. If called without arguments, the paths
-    specified in `gc3libs.Default.CONFIG_FILE_LOCATIONS` will be
-    used.
+    It accepts an optional list of configuration filenames and a dictionary
+    to create a configuration object from. Filenames containing a `~` or
+    an environment variable reference, will be expanded automatically.
+    If called without arguments, the paths specified in
+    `gc3libs.Default.CONFIG_FILE_LOCATIONS` will be used.
 
     Any keyword argument that matches the name of a parameter of the
     constructor for :class:`Engine` is passed to that constructor.
