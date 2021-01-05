@@ -58,7 +58,7 @@ class SshAuth(object):
         # (no sensible default)
         self.keyfile = keyfile
 
-        self.pkey = paramiko.RSAKey.from_private_key(io.StringIO(pkey)) if pkey else None
+        self.pkey = pkey
         if ssh_config is not None:
             self.ssh_config = ssh_config
         else:
