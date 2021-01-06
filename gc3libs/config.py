@@ -559,7 +559,8 @@ class Configuration(gc3libs.utils.Struct):
                              (k, v)) for k, v in sorted(
                                  resources[name].items())]))
 
-            else:
+            # Don't warn about default section
+            elif sectname != "DEFAULT":
                 # Unhandled sectname
                 gc3libs.log.warning(
                     "Config._split(): unknown configuration section '%s'"
