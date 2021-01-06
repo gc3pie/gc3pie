@@ -188,7 +188,7 @@ class Configuration(gc3libs.utils.Struct):
       ... "type": "ssh", "username": "your_ssh_user_name_on_computer_bob"}
       >>> cfg = Configuration(cfg_dict=d)
       >>> cfg.debug
-      '0'
+      0
       >>> cfg.auths["ssh_bob"]["type"]
       'ssh'
 
@@ -265,13 +265,18 @@ class Configuration(gc3libs.utils.Struct):
         # actual resource constructor classes
         self._resource_constructors_cache = {}
 
-    def construct_from_cfg_dict(self, cfg_dict):
+    def construct_from_cfg_dict(self, cfg_dict, filename=None):
         """
         Create a Configuration object from the settings defined in
         a Python dictionary, `cfg_dict`.
 
         The dictionary must follow the same general format as a configuration file.
         See below for an example of a configuration file converted to a dictionary.
+
+        :param dict cfg_dict: The Python dictionary to load settings from.
+
+        :param string filename: Optional. If this dictionary was constructed from
+        a config file, `filename` is the name of the config file.
 
         Example: A Configuration File::
 
@@ -315,11 +320,7 @@ class Configuration(gc3libs.utils.Struct):
             ...     }
             >>>
         """
-        parser = make_config_parser()
-        for key, item in cfg_dict.items():
-            parser[key] = item
-
-        defaults, resources, auths = self._split(parser)
+        defaults, resources, auths = self._split(cfg_dict, filename)
         for name, values in resources.items():
             self.resources[name].update(values)
         for name, values in auths.items():
@@ -411,14 +412,7 @@ class Configuration(gc3libs.utils.Struct):
             filename)
         with open(filename, 'r') as stream:
             parser = self._parse(stream, filename)
-        defaults, resources, auths = self._split(parser, filename)
-        for name, values in resources.items():
-            self.resources[name].update(values)
-        for name, values in auths.items():
-            self.auths[name].update(values)
-        for name, value in defaults.items():
-            if not name.startswith('_'):
-                self[name] = value
+        self.construct_from_cfg_dict(dict(parser), filename)
 
     def _parse(self, stream, filename=None):
         """
@@ -446,9 +440,9 @@ class Configuration(gc3libs.utils.Struct):
 
         return parser
 
-    def _split(self, parser, filename=None):
+    def _split(self, cfg_dict, filename=None):
         """
-        Read `parser` object and return a `(defaults, resources, auths)`
+        Iterate through `cfg_dict` and return a `(defaults, resources, auths)`
         triple.
 
         The members of the result triple are as follows:
@@ -475,13 +469,16 @@ class Configuration(gc3libs.utils.Struct):
         auths = defaultdict(dict)
 
         # update `defaults` with the contents of the `[DEFAULTS]` section
-        defaults.update(parser.defaults())
+        if 'DEFAULT' in cfg_dict:
+            defaults.update(cfg_dict['DEFAULT'])
 
-        for sectname in parser.sections():
+        for sectname in cfg_dict:
             if sectname.startswith('auth/'):
                 # handle auth section
                 name = sectname.split('/', 1)[1]
-                config_items = dict(parser.items(sectname))
+                # Make sure defaults are merged in
+                config_items = defaults.copy()
+                config_items.update(dict(cfg_dict[sectname].items()))
                 gc3libs.log.debug(
                     "Config._split():"
                     " Read configuration stanza for auth '%s'",
@@ -512,7 +509,10 @@ class Configuration(gc3libs.utils.Struct):
                     " Read configuration stanza for resource '%s'." %
                     name)
 
-                config_items = dict(parser.items(sectname))
+                # Make sure defaults are merged in
+                config_items = defaults.copy()
+                config_items.update(dict(cfg_dict[sectname].items()))
+
                 self._perform_key_renames(
                     config_items, self._renamed_keys, filename)
                 self._perform_value_updates(
