@@ -457,6 +457,30 @@ class SshTransport(Transport):
         Additional arguments ``user``, ``port``, ``keyfile``, and
         ``timeout``, if given, override the above settings.
 
+        `pkey` is a reference to a `paramiko.pkey.PKey` object.
+        If specified, `pkey` will be used for authentification to
+        the remote resource, much like the `pkey` argument to
+        `paramiko.client.SSHClient.connect()`. This is useful for
+        any case where the key is already in memory, as writing it
+        to a file can be avoided. Any subclass of `paramiko.pkey.PKey`
+        (`DSSKey`, `RSAKey`, `ECDSAKey`, and `Ed25519Key`) can be passed
+        in. Because of this, this option cannot be set via a config file.
+        This option can be set, however from a `create_engine` call, passing
+        in a `cfg_dict` with `pkey` as a parameter to any `auth` section.
+        See below example::
+
+        Setting `pkey` from `create_engine`
+
+        >>> import gc3libs, io, paramiko
+        >>> d = dict()
+        >>> gen_key = paramiko.RSAKey.generate(bits=4096)
+        >>>
+        >>> d["DEFAULT"] = {"debug": 0}
+        >>> d["auth/ssh_bob"] = {
+        ... "type": "ssh", "username": "your_ssh_user_name_on_computer_bob",
+        ... "pkey": gen_key, "foo": "5"}
+        >>> engine = gc3libs.create_engine(cfg_dict=d)
+
         Finally, the two parameters `large_file_threshold` and
         `large_file_chunk_size` control how file copy is being made:
         if a file is larger than `large_file_threshold`, then it will
