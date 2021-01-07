@@ -25,5 +25,6 @@ The list is sorted by last name.  Please send an email to
 * Antonio Messina <arcimboldo@gmail.com>
 * Mark Monroe <markjmonroe@yahoo.com>
 * Riccardo Murri <riccardo.murri@gmail.com>
+* Tom Osika <tom.osika@kitware.com>
 * Michael Packard <mrghort@gmail.com>
 * Xin Zhou <xin.zhou1983@gmail.com>
