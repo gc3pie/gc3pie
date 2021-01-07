@@ -29,10 +29,10 @@ import pytest
 from gc3libs import Run, Application, create_core
 import gc3libs.config
 from gc3libs.core import Core, MatchMaker
-from gc3libs.quantity import GB, hours
+from gc3libs.quantity import GB, GiB, hours
 from gc3libs.utils import string_to_boolean
 
-from gc3libs.testing.helpers import temporary_config_file, temporary_core
+from gc3libs.testing.helpers import example_cfg_dict, temporary_config_file, temporary_core
 
 
 def test_core_resources():
@@ -167,6 +167,19 @@ def test_create_core_non_default():
         core = create_core(cfgfile.name, matchmaker=mm)
         assert core.auto_enable_auth == True
         assert core.matchmaker == mm
+
+def test_create_core_with_cfg_dict():
+    """
+    Check that we can use a python dictionary in `create_core` to configure resources.
+    """
+    core = create_core(cfg_dict=example_cfg_dict())
+    resources = core.resources
+    assert len(resources) == 1
+    assert 'test' in resources
+    test_rsc = resources['test']
+    assert test_rsc.max_cores_per_job == 4
+    assert test_rsc.max_memory_per_core == 8*GiB
+    assert test_rsc.max_walltime == 8*hours
 
 
 def test_create_core_no_auto_enable_auth():
