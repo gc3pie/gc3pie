@@ -153,6 +153,7 @@ class BatchSystem(LRMS):
                 username=self._username,
                 port=auth.port,
                 keyfile=(keyfile or auth.keyfile),
+                pkey=auth.pkey,
                 timeout=(ssh_timeout or auth.timeout),
                 large_file_threshold=large_file_threshold,
                 large_file_chunk_size=large_file_chunk_size,
