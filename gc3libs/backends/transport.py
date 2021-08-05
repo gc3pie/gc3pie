@@ -457,8 +457,8 @@ class SshTransport(Transport):
         Additional arguments ``user``, ``port``, ``keyfile``, and
         ``timeout``, if given, override the above settings.
 
-        `pkey` is a reference to a `paramiko.pkey.PKey` object.
-        If specified, `pkey` will be used for authentification to
+        Argument `pkey` is a reference to a `paramiko.pkey.PKey` object.
+        If specified, `pkey` will be used for authentication to
         the remote resource, much like the `pkey` argument to
         `paramiko.client.SSHClient.connect()`. This is useful for
         any case where the key is already in memory, as writing it
@@ -467,10 +467,9 @@ class SshTransport(Transport):
         in. Because of this, this option cannot be set via a config file.
         This option can be set, however from a `create_engine` call, passing
         in a `cfg_dict` with `pkey` as a parameter to any `auth` section.
-        See below example::
+        See example below::
 
-        Setting `pkey` from `create_engine`
-
+        >>> # Setting `pkey` from `create_engine`
         >>> import gc3libs, io, paramiko
         >>> d = dict()
         >>> gen_key = paramiko.RSAKey.generate(bits=4096)
@@ -553,7 +552,7 @@ class SshTransport(Transport):
         except (ValueError, TypeError):
             raise TypeError(
                 "`gc3libs.quantity.Memory` or integer (count of bytes) expected,"
-                " instead gotten {0!r} {1}"
+                " gotten {0!r} {1} instead"
                 .format(qty, type(qty)))
 
     def set_connection_params(self, hostname, username=None, keyfile=None,
