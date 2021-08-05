@@ -37,9 +37,9 @@ from gc3libs import Run, Application, create_engine
 import gc3libs.config
 from gc3libs.core import Core, Engine, MatchMaker
 from gc3libs.persistence.filesystem import FilesystemStore
-from gc3libs.quantity import GB, hours
+from gc3libs.quantity import GB, GiB, hours
 
-from gc3libs.testing.helpers import SimpleParallelTaskCollection, SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_config_file, temporary_core, temporary_directory, temporary_engine
+from gc3libs.testing.helpers import example_cfg_dict, SimpleParallelTaskCollection, SimpleSequentialTaskCollection, SuccessfulApp, temporary_config, temporary_config_file, temporary_core, temporary_directory, temporary_engine
 
 
 def test_engine_resources():
@@ -437,6 +437,18 @@ def test_create_engine_default():
         engine = create_engine(cfgfile.name)
         assert isinstance(engine, Engine)
 
+def test_create_engine_with_cfg_dict():
+    """
+    Check that we can use a python dictionary in `create_engine` to configure resources.
+    """
+    engine = create_engine(cfg_dict=example_cfg_dict())
+    resources = engine.resources
+    assert len(resources) == 1
+    assert 'test' in resources
+    test_rsc = resources['test']
+    assert test_rsc.max_cores_per_job == 4
+    assert test_rsc.max_memory_per_core == 8*GiB
+    assert test_rsc.max_walltime == 8*hours
 
 def test_create_engine_non_default1():
     """Test `create_engine` with one non-default argument."""

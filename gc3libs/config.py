@@ -156,15 +156,20 @@ class Configuration(gc3libs.utils.Struct):
 
     * parsing configuration files (methods `load`:meth: and
       `merge_file`:meth:);
+    * parsing a configuration from a python dictionary
+      (method `construct_from_cfg_dict`:meth:);
     * validating the loaded values;
     * instanciating the internal GC3Pie objects resulting from the
       configuration (methods `make_auth`:meth: and
       `make_resource`:meth:).
 
-    The constructor takes a list of files to load (`locations`) and a
-    list of key=value pairs to provide defaults for the configuration.
-    Both lists are optional and can be omitted, resulting in a
-    configuration containing only GC3Pie default values.
+    The constructor takes a list of files to load (`locations`), a python
+    dictionary of sections with key value pairs (`cfg_dict`), and a list of
+    key=value pairs to provide defaults for the configuration. All three
+    arguments are optional and can be omitted, resulting in a configuration
+    containing only GC3Pie default values. If `locations` is not empty but
+    there are no config files at those locations, the constructor will raise
+    a `NoAccessibleConfigurationFile` exception if cfg_dict is None.
 
     Example 1: initialization from config file::
 
@@ -175,7 +180,19 @@ class Configuration(gc3libs.utils.Struct):
       >>> cfg.debug
       '0'
 
-    Example 2: initialization from key=value list::
+    Example 2: initialization from a Python dictionary::
+
+      >>> d = dict()
+      >>> d["DEFAULT"] = {"debug": 0}
+      >>> d["auth/ssh_bob"] = {
+      ... "type": "ssh", "username": "your_ssh_user_name_on_computer_bob"}
+      >>> cfg = Configuration(cfg_dict=d)
+      >>> cfg.debug
+      0
+      >>> cfg.auths["ssh_bob"]["type"]
+      'ssh'
+
+    Example 3: initialization from key=value list::
 
       >>> cfg = Configuration(auto_enable_auth=False, foo=1, bar='baz')
       >>> cfg.auto_enable_auth
@@ -185,15 +202,29 @@ class Configuration(gc3libs.utils.Struct):
       >>> cfg.bar == 'baz'
       True
 
-    When both a configuration file *and* a key=value list is present,
-    values in the configuration files override those in the key=value
-    list::
+    When all three arguments are supplied, configuration options are taken
+    in the following order of precedence:
+    * config file [highest priority],
+    * Python dictionary [middle priority],
+    * key=value list [lowest priority]
 
-      >>> cfg = Configuration(example_cfgfile, debug=1)
+      >>> # config file > Python dictionary
+      ... d = {"DEFAULTS": {"debug": 1}}
+      >>> cfg = Configuration(example_cfgfile, config_dict=d)
       >>> cfg.debug == '0'
       True
+      >>>
+      >>> # config file > key=value list
+      ... cfg = Configuration(example_cfgfile, debug=1)
+      >>> cfg.debug == '0'
+      True
+      >>>
+      >>> # Python dictionary > key=value list
+      ... cfg = Configuration(config_dict=d, debug=0)
+      >>> cfg.debug == '0'
+      False
 
-    Example 3: default initialization::
+    Example 4: default initialization::
 
       >>> cfg = Configuration()
       >>> cfg.auto_enable_auth
@@ -201,7 +232,7 @@ class Configuration(gc3libs.utils.Struct):
 
     """
 
-    def __init__(self, *locations, **extra_args):
+    def __init__(self, *locations, cfg_dict=None, **extra_args):
         self._auth_factory = None
 
         # these fields are required
@@ -218,13 +249,85 @@ class Configuration(gc3libs.utils.Struct):
         # save the list of (valid) config files
         self.cfgfiles = []
 
+        if cfg_dict:
+            self.construct_from_cfg_dict(cfg_dict)
+
         # load configuration files if any
         if locations:
-            self.load(*locations)
+            try:
+                self.load(*locations)
+            # If we successfully loaded parameters from a cfg_dict,
+            # don't raise an exception if we couldn't find any configuration files.
+            except gc3libs.exceptions.NoAccessibleConfigurationFile as ex:
+                if cfg_dict is None:
+                    raise ex
 
         # actual resource constructor classes
         self._resource_constructors_cache = {}
 
+    def construct_from_cfg_dict(self, cfg_dict, filename=None):
+        """
+        Create a Configuration object from the settings defined in
+        a Python dictionary, `cfg_dict`.
+
+        The dictionary must follow the same general format as a configuration file.
+        See below for an example of a configuration file converted to a dictionary.
+
+        :param dict cfg_dict: The Python dictionary to load settings from.
+
+        :param string filename: Optional. If this dictionary was constructed from
+        a config file, `filename` is the name of the config file.
+
+        Example: A Configuration File::
+
+            [auth/ssh]
+            type = ssh
+            username = gc3pie
+
+            [resource/test]
+            type = shellcmd
+            auth = ssh
+            transport = local
+            max_memory_per_core = 2
+            max_walltime = 8
+            max_cores = 2
+            architecture = x86_64
+            override = False
+
+            [DEFAULT]
+            max_cores_per_job = 2
+
+        Example: Equivalent Dictionary::
+
+            >>> cfg_dict = {
+            ...         'auth/ssh': {
+            ...             'type': 'ssh',
+            ...             'username': 'gc3pie'
+            ...         },
+            ...         'resource/test': {
+            ...             'type': 'shellcmd',
+            ...             'auth': 'ssh',
+            ...             'transport': 'local',
+            ...             'max_memory_per_core': '2',
+            ...             'max_walltime': '8',
+            ...             'max_cores': '2',
+            ...             'architecture': 'x86_64',
+            ...             'override': 'False'
+            ...         },
+            ...         'DEFAULT': {
+            ...             'max_cores_per_job': '2'
+            ...         }
+            ...     }
+            >>>
+        """
+        defaults, resources, auths = self._split(cfg_dict, filename)
+        for name, values in resources.items():
+            self.resources[name].update(values)
+        for name, values in auths.items():
+            self.auths[name].update(values)
+        for name, value in defaults.items():
+            if not name.startswith('_'):
+                self[name] = value
 
     def load(self, *locations):
         """
@@ -308,18 +411,38 @@ class Configuration(gc3libs.utils.Struct):
             "Configuration.merge_file(): Reading file '%s' ...",
             filename)
         with open(filename, 'r') as stream:
-            defaults, resources, auths = self._parse(stream, filename)
-        for name, values in resources.items():
-            self.resources[name].update(values)
-        for name, values in auths.items():
-            self.auths[name].update(values)
-        for name, value in defaults.items():
-            if not name.startswith('_'):
-                self[name] = value
+            parser = self._parse(stream, filename)
+        self.construct_from_cfg_dict(dict(parser), filename)
 
     def _parse(self, stream, filename=None):
         """
-        Read configuration file and return a `(defaults, resources, auths)`
+        Populates a `ConfigParser` or `SafeConfigParser` object
+        with the content of `stream`. `stream` should be in a valid
+        configuration file format.
+
+        :raise gc3libs.exceptions.ConfigurationError if `stream`
+            cannot be read.
+
+        :rtype: a `ConfigParser` or `SafeConfigParser` object
+        """
+        parser = make_config_parser()
+        try:
+            read_config_lines(parser, stream, filename)
+        except ConfigParserError as err:
+            if filename is None:
+                try:
+                    filename = stream.name
+                except AttributeError:
+                    filename = repr(stream)
+            raise gc3libs.exceptions.ConfigurationError(
+                "Configuration file '%s' is unreadable or malformed: %s: %s"
+                % (filename, err.__class__.__name__, err))
+
+        return parser
+
+    def _split(self, cfg_dict, filename=None):
+        """
+        Iterate through `cfg_dict` and return a `(defaults, resources, auths)`
         triple.
 
         The members of the result triple are as follows:
@@ -345,29 +468,19 @@ class Configuration(gc3libs.utils.Struct):
         resources = defaultdict(dict)
         auths = defaultdict(dict)
 
-        parser = make_config_parser()
-        try:
-            read_config_lines(parser, stream, filename)
-        except ConfigParserError as err:
-            if filename is None:
-                try:
-                    filename = stream.name
-                except AttributeError:
-                    filename = repr(stream)
-            raise gc3libs.exceptions.ConfigurationError(
-                "Configuration file '%s' is unreadable or malformed: %s: %s"
-                % (filename, err.__class__.__name__, err))
-
         # update `defaults` with the contents of the `[DEFAULTS]` section
-        defaults.update(parser.defaults())
+        if 'DEFAULT' in cfg_dict:
+            defaults.update(cfg_dict['DEFAULT'])
 
-        for sectname in parser.sections():
+        for sectname in cfg_dict:
             if sectname.startswith('auth/'):
                 # handle auth section
                 name = sectname.split('/', 1)[1]
-                config_items = dict(parser.items(sectname))
+                # Make sure defaults are merged in
+                config_items = defaults.copy()
+                config_items.update(dict(cfg_dict[sectname].items()))
                 gc3libs.log.debug(
-                    "Config._parse():"
+                    "Config._split():"
                     " Read configuration stanza for auth '%s'",
                     name)
 
@@ -392,11 +505,14 @@ class Configuration(gc3libs.utils.Struct):
                 # handle resource section
                 name = sectname.split('/', 1)[1]
                 gc3libs.log.debug(
-                    "Config._parse():"
+                    "Config._split():"
                     " Read configuration stanza for resource '%s'." %
                     name)
 
-                config_items = dict(parser.items(sectname))
+                # Make sure defaults are merged in
+                config_items = defaults.copy()
+                config_items.update(dict(cfg_dict[sectname].items()))
+
                 self._perform_key_renames(
                     config_items, self._renamed_keys, filename)
                 self._perform_value_updates(
@@ -437,16 +553,17 @@ class Configuration(gc3libs.utils.Struct):
                 resources[name]['name'] = name
                 if __debug__:
                     gc3libs.log.debug(
-                        "Config._parse(): Resource '%s' defined by: %s.", name,
+                        "Config._split(): Resource '%s' defined by: %s.", name,
                         ', '.join([
                             ("%s=%r" %
                              (k, v)) for k, v in sorted(
                                  resources[name].items())]))
 
-            else:
+            # Don't warn about default section
+            elif sectname != "DEFAULT":
                 # Unhandled sectname
                 gc3libs.log.warning(
-                    "Config._parse(): unknown configuration section '%s'"
+                    "Config._split(): unknown configuration section '%s'"
                     " -- ignoring!",
                     sectname)
 
