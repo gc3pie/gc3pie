@@ -25,10 +25,6 @@ from builtins import zip
 from builtins import next
 from builtins import range
 from builtins import object
-__docformat__ = 'reStructuredText'
-
-
-
 
 # 3rd party imports
 import mock
@@ -38,6 +34,9 @@ import pytest
 import gc3libs.exceptions
 from gc3libs.quantity import Duration, Memory
 import gc3libs.utils
+
+
+__docformat__ = 'reStructuredText'
 
 
 # test definitions

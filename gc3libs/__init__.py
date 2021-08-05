@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+# Copyright (C) 2021       Google LLC. All rights reserved.
 # Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -40,7 +41,6 @@ __docformat__ = 'reStructuredText'
 __version__ = '2.6.5'
 
 
-import inspect
 import os
 import os.path
 import platform
@@ -67,6 +67,7 @@ import gc3libs.defaults
 from gc3libs.quantity import MB, hours, minutes, seconds, MiB
 from gc3libs.events import TaskStateChange, TermStatusChange
 from gc3libs.compat._collections import OrderedDict
+from gc3libs.compat._inspect import getargspec
 
 import gc3libs.exceptions
 from gc3libs.persistence import Persistable
@@ -2137,12 +2138,12 @@ class Run(Struct):
 
 def _split_specific_args(fn, argdict):
     """
-    Pop any key appears as an argument name in the definition of
+    Pop keys from `argdict` which appear as argument names in the definition of
     function `fn` out into a separate dictionary, and return it.
 
     *Note:* Argument `argdict` is modified in-place!
     """
-    args, varargs, _, _ = inspect.getargspec(fn)
+    args, varargs, _, _ = getargspec(fn)
     specific_args = {}
     for n, argname in enumerate(args):
         if n == 0 and argname == 'self':
