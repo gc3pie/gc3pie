@@ -2156,7 +2156,7 @@ def _split_specific_args(fn, argdict):
     return specific_args
 
 
-def create_core(*conf_files, cfg_dict=None, **extra_args):
+def create_core(*conf_files, **extra_args):
     """Make and return a `gc3libs.core.Core`:class: instance.
 
     It accepts an optional list of configuration filenames and a dictionary
@@ -2168,7 +2168,9 @@ def create_core(*conf_files, cfg_dict=None, **extra_args):
     Any keyword argument matching the name of a parameter used by
     `Core.__init__` is passed to it.  Any leftover keyword argument is
     passed unchanged to the `gc3libs.config.Configuration`:class:
-    constructor.
+    constructor.  In particular,
+    a `cfg_dict` keyword argument can be used to initialize a GC3Pie Core
+    from a dictionary of configuration values, without reading in any files.
     """
     from gc3libs.config import Configuration
     from gc3libs.core import Core
@@ -2184,13 +2186,15 @@ def create_core(*conf_files, cfg_dict=None, **extra_args):
     # params specific to the `Configuration` instance
     if 'auto_enable_auth' not in extra_args:
         extra_args['auto_enable_auth'] = True
+    if 'cfg_dict' not in extra_args:
+        extra_args['cfg_dict'] = None
 
     # make 'em all
-    cfg = Configuration(*conf_files, cfg_dict=cfg_dict, **extra_args)
+    cfg = Configuration(*conf_files, **extra_args)
     return Core(cfg, **core_specific_args)
 
 
-def create_engine(*conf_files, cfg_dict=None, **extra_args):
+def create_engine(*conf_files, **extra_args):
     """
     Make and return a `gc3libs.core.Engine`:class: instance.
 
@@ -2205,14 +2209,19 @@ def create_engine(*conf_files, cfg_dict=None, **extra_args):
     Likewise, any keyword argument that matches the name of a parameter
     used by `Core.__init__` is passed to it.  Any leftover keyword
     argument is passed unchanged to the
-    `gc3libs.config.Configuration`:class: constructor.
+    `gc3libs.config.Configuration`:class: constructor.  In particular,
+    a `cfg_dict` keyword argument can be used to initialize a GC3Pie Engine
+    from a dictionary of configuration values, without reading in any files.
     """
     from gc3libs.core import Engine
 
     # extract `Engine`-specific construction params
     engine_specific_args = _split_specific_args(Engine.__init__, extra_args)
 
-    core = create_core(*conf_files, cfg_dict=cfg_dict, **extra_args)
+    if 'cfg_dict' not in extra_args:
+        extra_args['cfg_dict'] = None
+
+    core = create_core(*conf_files, **extra_args)
     return Engine(core, **engine_specific_args)
 
 

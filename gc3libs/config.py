@@ -166,11 +166,11 @@ class Configuration(gc3libs.utils.Struct):
 
     The constructor takes a list of files to load (`locations`), a python
     dictionary of sections with key value pairs (`cfg_dict`), and a list of
-    key=value pairs to provide defaults for the configuration. All three
+    *key=value* pairs to provide defaults for the configuration. All three
     arguments are optional and can be omitted, resulting in a configuration
     containing only GC3Pie default values. If `locations` is not empty but
     there are no config files at those locations, the constructor will raise
-    a `NoAccessibleConfigurationFile` exception if cfg_dict is None.
+    a `NoAccessibleConfigurationFile` exception if `cfg_dict` is None.
 
     Example 1: initialization from config file::
 
@@ -233,7 +233,7 @@ class Configuration(gc3libs.utils.Struct):
 
     """
 
-    def __init__(self, *locations, cfg_dict=None, **extra_args):
+    def __init__(self, *locations, **extra_args):
         self._auth_factory = None
 
         # these fields are required
@@ -250,6 +250,7 @@ class Configuration(gc3libs.utils.Struct):
         # save the list of (valid) config files
         self.cfgfiles = []
 
+        cfg_dict = extra_args.pop('cfg_dict', None)
         if cfg_dict:
             self.construct_from_cfg_dict(cfg_dict)
 
