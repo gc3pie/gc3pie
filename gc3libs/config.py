@@ -38,6 +38,13 @@ if sys.version_info[0] == 2:
     from ConfigParser import Error as ConfigParserError
     def make_config_parser():
         return SafeConfigParser()
+    # a `SafeConfigParser` cannot easily be cast to Python dict
+    def cp2dict(parser):
+        result = {}
+        for sectname in parser.sections():
+            result[sectname] = dict(parser.items(sectname))
+        result['DEFAULT'] = parser.defaults()
+        return result
     def read_config_lines(parser, stream, source):
         return parser.readfp(stream, source)
 else:
@@ -49,6 +56,8 @@ else:
     # `readfp()` is deprecated since Py3.2
     def read_config_lines(parser, stream, source):
         return parser.read_file(stream, source)
+    def cp2dict(parser):
+        return dict(parser)
 
 # GC3Pie imports
 import gc3libs
@@ -395,7 +404,7 @@ class Configuration(gc3libs.utils.Struct):
         literally and an error is raised if the file cannot be read
         for whatever reason.
 
-        Any parameter which is set in the configuration files
+        Any parameter which is set in the configuration files'
         ``[DEFAULT]`` section, and whose name does not start with
         underscore (``_``) defines an attribute in the current
         `Configuration`.
@@ -414,7 +423,7 @@ class Configuration(gc3libs.utils.Struct):
             filename)
         with open(filename, 'r') as stream:
             parser = self._parse(stream, filename)
-        self.construct_from_cfg_dict(dict(parser), filename)
+        self.construct_from_cfg_dict(cp2dict(parser), filename)
 
     def _parse(self, stream, filename=None):
         """
@@ -437,7 +446,7 @@ class Configuration(gc3libs.utils.Struct):
                 except AttributeError:
                     filename = repr(stream)
             raise gc3libs.exceptions.ConfigurationError(
-                "Configuration file '%s' is unreadable or malformed: %s: %s"
+                "Configuration file `%s` is unreadable or malformed: %s: %s"
                 % (filename, err.__class__.__name__, err))
 
         return parser
