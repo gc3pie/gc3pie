@@ -237,7 +237,6 @@ setuptools.setup(
     # Apparently, this list is read from bottom to top...
     tests_require=[
         'tox',
-        'pytest-catchlog',
         'pytest>=4.1',
         'mock',
     ],
