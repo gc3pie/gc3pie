@@ -6,6 +6,7 @@ execute commands and copy/move files irrespective of whether the
 destination is the local computer or a remote front-end that we access
 via SSH.
 """
+# Copyright (C) 2021  Google LLC.
 # Copyright (C) 2009-2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -36,6 +37,7 @@ import errno
 import shutil
 import getpass
 import shutil
+from warnings import warn
 
 try:
     # Python 2
@@ -457,8 +459,8 @@ class SshTransport(Transport):
         Additional arguments ``user``, ``port``, ``keyfile``, and
         ``timeout``, if given, override the above settings.
 
-        `pkey` is a reference to a `paramiko.pkey.PKey` object.
-        If specified, `pkey` will be used for authentification to
+        Argument `pkey` is a reference to a `paramiko.pkey.PKey` object.
+        If specified, `pkey` will be used for authentication to
         the remote resource, much like the `pkey` argument to
         `paramiko.client.SSHClient.connect()`. This is useful for
         any case where the key is already in memory, as writing it
@@ -467,10 +469,9 @@ class SshTransport(Transport):
         in. Because of this, this option cannot be set via a config file.
         This option can be set, however from a `create_engine` call, passing
         in a `cfg_dict` with `pkey` as a parameter to any `auth` section.
-        See below example::
+        See example below::
 
-        Setting `pkey` from `create_engine`
-
+        >>> # Setting `pkey` from `create_engine`
         >>> import gc3libs, io, paramiko
         >>> d = dict()
         >>> gen_key = paramiko.RSAKey.generate(bits=4096)
@@ -553,7 +554,7 @@ class SshTransport(Transport):
         except (ValueError, TypeError):
             raise TypeError(
                 "`gc3libs.quantity.Memory` or integer (count of bytes) expected,"
-                " instead gotten {0!r} {1}"
+                " gotten {0!r} {1} instead"
                 .format(qty, type(qty)))
 
     def set_connection_params(self, hostname, username=None, keyfile=None,
@@ -649,14 +650,28 @@ class SshTransport(Transport):
                     "Connecting to host '%s' (port %s) as user '%s' via SSH "
                     "(timeout %ds)...", self.remote_frontend, self.port,
                     self.username, self.timeout)
-                self.ssh.connect(self.remote_frontend,
-                                 timeout=self.timeout,
-                                 username=self.username,
-                                 port=self.port,
-                                 pkey=self.pkey,
-                                 allow_agent=True,
-                                 key_filename=self.keyfile,
-                                 sock=proxy)
+                try:
+                    self.ssh.connect(self.remote_frontend,
+                                     timeout=self.timeout,
+                                     username=self.username,
+                                     port=self.port,
+                                     pkey=self.pkey,
+                                     allow_agent=True,
+                                     key_filename=self.keyfile,
+                                     sock=proxy)
+                except ValueError as err:
+                    msg = str(err)
+                    if msg.startswith("q must be exactly") or msg.startswith("p must be exactly"):
+                        # warn and continue, this is just Paramiko mistakenly using an RSA
+                        # key as DSA one, see: https://github.com/paramiko/paramiko/pull/1606
+                        warn(
+                            "The configured SSH private RSA key file `{0}`"
+                            " can also be mistakenly read as a DSA key file."
+                            " If you run into SSH connection problems, use"
+                            " a different key."
+                            .format(self.keyfile))
+                    else:
+                        raise
                 self.sftp = self.ssh.open_sftp()
                 self._is_open = True
         except Exception as ex:
@@ -666,9 +681,17 @@ class SshTransport(Transport):
             self._is_open = False
 
             # Try to understand why the ssh connection failed.
-            if isinstance(ex, paramiko.SSHException):
+            if isinstance(ex, socket.error):
+                gc3libs.log.error(
+                    "Host `%s` not reachable within %d seconds: %r: %s",
+                    self.remote_frontend, self.timeout, type(ex), ex)
+            elif isinstance(ex, paramiko.BadHostKeyException):
+                gc3libs.log.error(
+                    "Invalid SSH host key for host `%s`: %s",
+                    self.remote_frontend, ex)
+            elif isinstance(ex, paramiko.SSHException):
                 if self.keyfile:
-                    # ~/.ssh/config has a ItentityFile line for this host
+                    # ~/.ssh/config has a IdentityFile line for this host
                     if not os.path.isfile(self.keyfile):
                         # but the key does not exists.
                         # Note that in this case we should have

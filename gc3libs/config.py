@@ -4,6 +4,7 @@
 Deal with GC3Pie configuration files.
 """
 
+# Copyright (C) 2021                   Google LLC.
 # Copyright (C) 2012-2016, 2018, 2019  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -28,7 +29,7 @@ from builtins import zip
 from builtins import str
 
 # stdlib imports
-import inspect
+from collections import defaultdict
 import os
 import re
 import sys
@@ -52,8 +53,8 @@ else:
 # GC3Pie imports
 import gc3libs
 import gc3libs.defaults
+from gc3libs.compat._inspect import getargspec
 import gc3libs.authentication
-from collections import defaultdict
 import gc3libs.utils
 
 from gc3libs.quantity import Memory, GB, MB, MiB, Duration, hours
@@ -881,8 +882,7 @@ class Configuration(gc3libs.utils.Struct):
             #       problem?
             #
             # which gives no clue about what to correct!
-            args, varargs, keywords, defaults = inspect.getargspec(
-                cls.__init__)
+            args, varargs, keywords, defaults = getargspec(cls.__init__)
             if defaults is not None:
                 # `defaults` is a list of default values for the last N args
                 defaulted = dict((argname, value)
