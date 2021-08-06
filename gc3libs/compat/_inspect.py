@@ -6,7 +6,7 @@ try:
     from inspect import getfullargspec
     def getargspec(fn):
         """
-        Return names and default values of a Python function’s parameters.
+        Return names and default values of a Python function's parameters.
         See https://docs.python.org/3/library/inspect.html
         """
         spec = getfullargspec(fn)
