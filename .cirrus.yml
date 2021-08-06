@@ -2,6 +2,11 @@
 # Configuration for Cirrus CI tests
 #
 
+env:
+  # no need for full Git history
+  CIRRUS_CLONE_DEPTH: 1
+
+
 checkout_and_setup_task_template: &SETUP_TASK_TEMPLATE
   env_info_script: |
     # display data about Python interpreter
