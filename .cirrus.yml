@@ -58,6 +58,7 @@ task:
     # GNU `time` is required by ShellLrms during initialization, hence even
     # for testing.  The `python` official Docker image is built on top of
     # Debian, so use `apt` to install it.
+    apt-get update
     apt-get install -y time
   install_script: |
     pip install -e '.[daemon,ec2,openstack,optimizer]'
