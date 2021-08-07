@@ -199,8 +199,8 @@ class Configuration(gc3libs.utils.Struct):
       >>> cfg = Configuration(cfg_dict=d)
       >>> cfg.debug
       0
-      >>> cfg.auths["ssh_bob"]["type"]
-      'ssh'
+      >>> cfg.auths["ssh_bob"]["type"] == 'ssh'
+      True
 
     Example 3: initialization from key=value list::
 
