@@ -78,7 +78,6 @@ task:
 
 
 task:
-  <<: *CHECKOUT_TASK_TEMPLATE
   matrix:
     - compute_engine_instance:
         image_project: centos-cloud
@@ -88,6 +87,8 @@ task:
         image_project: centos-cloud
         image: family/centos-8
       name: Install Script Tests (CentOS 8)
+      os_dependencies_script: |
+        yum install python
     - compute_engine_instance:
         image_project: debian-cloud
         image: family/debian-9
@@ -104,20 +105,30 @@ task:
         image_project: ubuntu-os-cloud
         image: family/ubuntu-1804
       name: Install Script Tests (Ubuntu 18.04 "bionic")
+      os_dependencies_script: |
+        apt-get update
+        apt-get install -y python
     - compute_engine_instance:
         image_project: ubuntu-os-cloud
         image: family/ubuntu-2004
       name: Install Script Tests (Ubuntu 20.04 "focal")
+      os_dependencies_script: |
+        apt-get update
+        apt-get install -y python
     - compute_engine_instance:
         image_project: ubuntu-os-cloud
         image: family/ubuntu-2104
       name: Install Script Tests (Ubuntu 21.04)
+      os_dependencies_script: |
+        apt-get update
+        apt-get install -y python
     - macos_instance:
         image: big-sur-base
       name: Install Script Tests (MacOSX "Big Sur")
     - macos_instance:
         image: catalina-base
       name: Install Script Tests (MacOSX "Catalina")
+  <<: *CHECKOUT_TASK_TEMPLATE
   install_script: |
     python ./install.py --version
   # Run the install script on multiple platforms
