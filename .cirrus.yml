@@ -90,28 +90,28 @@ task:
       name: Install Script Tests (CentOS 8)
     - compute_engine_instance:
         image_project: debian-cloud
-        image: family/debian-9-stretch
+        image: family/debian-9
       name: Install Script Tests (Debian 9 "stretch")
     - compute_engine_instance:
         image_project: debian-cloud
-        image: family/debian-10-buster
+        image: family/debian-10
       name: Install Script Tests (Debian 10 "buster")
     - compute_engine_instance:
         image_project: ubuntu-os-cloud
-        image: family/ubuntu-1604-xenial
-      name: Install Script Tests (Ubuntu 16.04)
+        image: family/ubuntu-1604
+      name: Install Script Tests (Ubuntu 16.04 "xenial")
     - compute_engine_instance:
         image_project: ubuntu-os-cloud
-        image: family/ubuntu-1804-bionic
-      name: Install Script Tests (Ubuntu 18.04)
+        image: family/ubuntu-1804
+      name: Install Script Tests (Ubuntu 18.04 "bionic")
     - compute_engine_instance:
         image_project: ubuntu-os-cloud
-        image: family/ubuntu-2004-focal
-      name: Install Script Tests (Ubuntu 20.04)
+        image: family/ubuntu-2004
+      name: Install Script Tests (Ubuntu 20.04 "focal")
     - compute_engine_instance:
         image_project: ubuntu-os-cloud
-        image: family/ubuntu-2010-groovy
-      name: Install Script Tests (Ubuntu 20.10)
+        image: family/ubuntu-2104
+      name: Install Script Tests (Ubuntu 21.04)
     - macos_instance:
         image: big-sur-base
       name: Install Script Tests (MacOSX "Big Sur")
