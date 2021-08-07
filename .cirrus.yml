@@ -6,6 +6,9 @@ env:
   # no need for full Git history
   CIRRUS_CLONE_DEPTH: 1
 
+  # avoid locale issues
+  LC_ALL: C
+
 
 checkout_task_template: &CHECKOUT_TASK_TEMPLATE
   env_info_script: |
