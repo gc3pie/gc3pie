@@ -19,9 +19,9 @@ checkout_task_template: &CHECKOUT_TASK_TEMPLATE
     echo "### Python version ###"
     python -V 2>&1
     echo "### Python-related env variables ###"
-    env | grep '^PYTHON'
+    env | grep '^PYTHON' || echo "No 'PYTHON*' env variables."
     echo "### OS-related info ###"
-    cat /etc/os-release
+    cat /etc/os-release || echo "No file '/etc/os-release'."
     echo "### Shell search path ###"
     echo "$PATH"
   python_setup_script: |
