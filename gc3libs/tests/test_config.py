@@ -2,6 +2,7 @@
 #
 # -*- coding: utf-8 -*-
 #
+#  Copyright (C) 2021                         Google LLC.
 #  Copyright (C) 2010-2012, 2015, 2018, 2019  University of Zurich. All rights reserved.
 #
 #
@@ -88,7 +89,8 @@ def parse_and_split_invalid_conf(confstr, **extra_args):
     cfg = gc3libs.config.Configuration()
     # pylint: disable=unused-variable,protected-access
     parser = cfg._parse(StringIO(confstr))
-    defaults, resources, auths = cfg._split(parser)
+    cfg_dict = gc3libs.config._cp2dict(parser)
+    defaults, resources, auths = cfg._split(cfg_dict)
 
 
 def test_valid_conf():
@@ -497,7 +499,8 @@ architecture = ${arch}
 def _check_parse_and_split_arch(confstr, result):
     cfg = gc3libs.config.Configuration()
     parser = cfg._parse(StringIO(confstr))
-    defaults, resources, auths = cfg._split(parser)
+    cfg_dict = gc3libs.config._cp2dict(parser)
+    defaults, resources, auths = cfg._split(cfg_dict)
     assert isinstance(resources['test']['architecture'], set)
     assert resources['test']['architecture'] == set(result)
 

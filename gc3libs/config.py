@@ -43,7 +43,7 @@ if sys.version_info[0] == 2:
     def make_config_parser():
         return SafeConfigParser()
     # a `SafeConfigParser` cannot easily be cast to Python dict
-    def cp2dict(parser):
+    def _cp2dict(parser):
         result = {}
         for sectname in parser.sections():
             result[sectname] = dict(parser.items(sectname))
@@ -60,7 +60,7 @@ else:
     # `readfp()` is deprecated since Py3.2
     def read_config_lines(parser, stream, source):
         return parser.read_file(stream, source)
-    def cp2dict(parser):
+    def _cp2dict(parser):
         return dict(parser)
 
 # GC3Pie imports
@@ -340,7 +340,7 @@ class Configuration(gc3libs.utils.Struct):
         # if `cfg_dict` is a non-iterable ConfigParser (which may happen on Py
         # 2.7), then convert it to a Python `dict` instance
         if not isinstance(cfg_dict, Mapping):
-            cfg_dict = cp2dict(cfg_dict)
+            cfg_dict = _cp2dict(cfg_dict)
 
         defaults, resources, auths = self._split(cfg_dict, filename)
         for name, values in resources.items():
