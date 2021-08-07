@@ -21,7 +21,7 @@ checkout_task_template: &CHECKOUT_TASK_TEMPLATE
     cat /etc/os-release
     echo "### Shell search path ###"
     echo "$PATH"
-  dependencies_script: |
+  python_setup_script: |
     # Python deps
     case $(python V 2>&1) in
       'Python 2.7'*)
@@ -54,6 +54,11 @@ task:
         image: python:3.9
   env:
     BOTO_CONFIG: '/dev/null'
+  os_dependencies_script: |
+    # GNU `time` is required by ShellLrms during initialization, hence even
+    # for testing.  The `python` official Docker image is built on top of
+    # Debian, so use `apt` to install it.
+    apt-get install -y time
   install_script: |
     pip install -e '.[daemon,ec2,openstack,optimizer]'
   test_script: |
