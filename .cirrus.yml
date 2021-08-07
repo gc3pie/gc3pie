@@ -62,13 +62,14 @@ task:
     # for testing.  The `python` official Docker image is built on top of
     # Debian, so use `apt` to install it.
     apt-get update
-    apt-get install -y time
+    apt-get install -y sudo time
   install_script: |
     pip install -e '.[daemon,ec2,openstack,optimizer]'
   test_script: |
     set -e
     pip install 'pytest>=4.1' 'pytest-cov' 'pytest-coverage' 'mock' 'tox' 'codecov'
-    pytest -v --cov=gc3libs --cov-branch --ignore install.py
+    # run tests as a non-privileged user, otherwise access control tests fail
+    sudo -u bin pytest -v --cov=gc3libs --cov-branch --ignore install.py
     codecov
     echo "OK: GC3Pie's unit tests successfully performed."
     exit 0
