@@ -7,12 +7,15 @@ env:
   CIRRUS_CLONE_DEPTH: 1
 
 
-checkout_and_setup_task_template: &SETUP_TASK_TEMPLATE
+checkout_task_template: &CHECKOUT_TASK_TEMPLATE
   env_info_script: |
     # display data about Python interpreter
     set -e
     echo "Python executable: $(command -v python)"
     echo "Python version: $(python -V 2>&1)"
+    echo "Python-related env variables:"; env | grep '^PYTHON'
+    echo "OS-related info:"; cat /etc/os-release
+    echo "Shell search path: ${PATH}"
   dependencies_script: |
     # Python deps
     case $(python V 2>&1) in
@@ -27,36 +30,78 @@ checkout_and_setup_task_template: &SETUP_TASK_TEMPLATE
 
 
 task:
-  <<: *SETUP_TASK_TEMPLATE
-  name: Unit Tests
-  setup_script: |
+  <<: *CHECKOUT_TASK_TEMPLATE
+  matrix:
+    - name: Unit Tests (Python 2.7)
+      container:
+        image: python:2.7
+    - name: Unit Tests (Python 3.6)
+      container:
+        image: python:3.6
+    - name: Unit Tests (Python 3.7)
+      container:
+        image: python:3.7
+    - name: Unit Tests (Python 3.8)
+      container:
+        image: python:3.8
+    - name: Unit Tests (Python 3.9)
+      container:
+        image: python:3.9
+  env:
+    BOTO_CONFIG: '/dev/null'
+  install_script: |
     pip install -e '.[daemon,ec2,openstack,optimizer]'
   test_script: |
     set -e
     pip install 'pytest>=4.1' 'pytest-cov' 'pytest-coverage' 'mock' 'tox' 'codecov'
-    export BOTO_CONFIG=/dev/null
     pytest -v --cov=gc3libs --cov-branch --ignore install.py
     codecov
     echo "OK: GC3Pie's unit tests successfully performed."
     exit 0
-  matrix:
-    - container:
-        image: python:2.7
-      allow_failures: true
-    - container:
-        image: python:3.6
-    - container:
-        image: python:3.7
-    - container:
-        image: python:3.8
-    - container:
-        image: python:3.9
 
 
 task:
-  <<: *SETUP_TASK_TEMPLATE
-  name: Install Script Tests
-  setup_script: |
+  <<: *CHECKOUT_TASK_TEMPLATE
+  matrix:
+    - compute_engine_instance:
+        image_project: centos-cloud
+        image: family/centos-7
+      name: Install Script Tests (CentOS 7)
+    - compute_engine_instance:
+        image_project: centos-cloud
+        image: family/centos-8
+      name: Install Script Tests (CentOS 8)
+    - compute_engine_instance:
+        image_project: debian-cloud
+        image: family/debian-9-stretch
+      name: Install Script Tests (Debian 9 "stretch")
+    - compute_engine_instance:
+        image_project: debian-cloud
+        image: family/debian-10-buster
+      name: Install Script Tests (Debian 10 "buster")
+    - compute_engine_instance:
+        image_project: ubuntu-os-cloud
+        image: family/ubuntu-1604-xenial
+      name: Install Script Tests (Ubuntu 16.04)
+    - compute_engine_instance:
+        image_project: ubuntu-os-cloud
+        image: family/ubuntu-1804-bionic
+      name: Install Script Tests (Ubuntu 18.04)
+    - compute_engine_instance:
+        image_project: ubuntu-os-cloud
+        image: family/ubuntu-2004-focal
+      name: Install Script Tests (Ubuntu 20.04)
+    - compute_engine_instance:
+        image_project: ubuntu-os-cloud
+        image: family/ubuntu-2010-groovy
+      name: Install Script Tests (Ubuntu 20.10)
+    - macos_instance:
+        image: big-sur-base
+      name: Install Script Tests (MacOSX "Big Sur")
+    - macos_instance:
+        image: catalina-base
+      name: Install Script Tests (MacOSX "Catalina")
+  install_script: |
     python ./install.py --version
   # Run the install script on multiple platforms
   test_script: |
@@ -66,32 +111,3 @@ task:
     gc3utils servers
     echo "OK: GC3Pie successfully installed."
     exit 0
-  matrix:
-    - compute_engine_instance:
-        image_project: centos-cloud
-        image: family/centos-7
-    - compute_engine_instance:
-        image_project: centos-cloud
-        image: family/centos-8
-    - compute_engine_instance:
-        image_project: debian-cloud
-        image: family/debian-9-stretch
-    - compute_engine_instance:
-        image_project: debian-cloud
-        image: family/debian-10-buster
-    - compute_engine_instance:
-        image_project: ubuntu-os-cloud
-        image: family/ubuntu-1604-xenial
-    - compute_engine_instance:
-        image_project: ubuntu-os-cloud
-        image: family/ubuntu-1804-bionic
-    - compute_engine_instance:
-        image_project: ubuntu-os-cloud
-        image: family/ubuntu-2004-focal
-    - compute_engine_instance:
-        image_project: ubuntu-os-cloud
-        image: family/ubuntu-2010-groovy
-    - macos_instance:
-        image: big-sur-base
-    - macos_instance:
-        image: catalina-base
