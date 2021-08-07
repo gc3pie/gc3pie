@@ -11,11 +11,16 @@ checkout_task_template: &CHECKOUT_TASK_TEMPLATE
   env_info_script: |
     # display data about Python interpreter
     set -e
-    echo "Python executable: $(command -v python)"
-    echo "Python version: $(python -V 2>&1)"
-    echo "Python-related env variables:"; env | grep '^PYTHON'
-    echo "OS-related info:"; cat /etc/os-release
-    echo "Shell search path: ${PATH}"
+    echo "### Python executable ###"
+    command -v python
+    echo "### Python version ###"
+    python -V 2>&1
+    echo "### Python-related env variables ###"
+    env | grep '^PYTHON'
+    echo "### OS-related info ###"
+    cat /etc/os-release
+    echo "### Shell search path ###"
+    echo "$PATH"
   dependencies_script: |
     # Python deps
     case $(python V 2>&1) in
