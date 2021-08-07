@@ -29,6 +29,10 @@ from builtins import zip
 from builtins import str
 
 # stdlib imports
+try:
+    from collections.abc import Mapping  # Python 3.3+
+except ImportError:
+    from collections import Mapping
 from collections import defaultdict
 import os
 import re
@@ -278,11 +282,13 @@ class Configuration(gc3libs.utils.Struct):
 
     def construct_from_cfg_dict(self, cfg_dict, filename=None):
         """
-        Create a Configuration object from the settings defined in
-        a Python dictionary, `cfg_dict`.
+        Create a Configuration object from the settings defined in `cfg_dict`.
 
-        The dictionary must follow the same general format as a configuration file.
-        See below for an example of a configuration file converted to a dictionary.
+        Parameter `cfg_dict` may either be a Python dictionary, having the
+        same general format as a configuration file, or a `ConfigParser`
+        instance into which an INI-format configuration file has been read.
+        See below for an example of a configuration file converted to a
+        dictionary.
 
         :param dict cfg_dict: The Python dictionary to load settings from.
 
@@ -331,6 +337,11 @@ class Configuration(gc3libs.utils.Struct):
             ...     }
             >>>
         """
+        # if `cfg_dict` is a non-iterable ConfigParser (which may happen on Py
+        # 2.7), then convert it to a Python `dict` instance
+        if not isinstance(cfg_dict, Mapping):
+            cfg_dict = cp2dict(cfg_dict)
+
         defaults, resources, auths = self._split(cfg_dict, filename)
         for name, values in resources.items():
             self.resources[name].update(values)
@@ -423,7 +434,7 @@ class Configuration(gc3libs.utils.Struct):
             filename)
         with open(filename, 'r') as stream:
             parser = self._parse(stream, filename)
-        self.construct_from_cfg_dict(cp2dict(parser), filename)
+        self.construct_from_cfg_dict(parser, filename)
 
     def _parse(self, stream, filename=None):
         """
