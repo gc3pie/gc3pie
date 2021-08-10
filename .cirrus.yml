@@ -1,0 +1,141 @@
+#
+# Configuration for Cirrus CI tests
+#
+
+env:
+  # no need for full Git history
+  CIRRUS_CLONE_DEPTH: 1
+
+  # avoid locale issues
+  LC_ALL: C
+
+
+checkout_task_template: &CHECKOUT_TASK_TEMPLATE
+  env_info_script: |
+    # display data about Python interpreter
+    set -e
+    echo "### Python executable ###"
+    command -v python
+    echo "### Python version ###"
+    python -V 2>&1
+    echo "### Python-related env variables ###"
+    env | grep '^PYTHON' || echo "No 'PYTHON*' env variables."
+    echo "### OS-related info ###"
+    cat /etc/os-release || echo "No file '/etc/os-release'."
+    echo "### Shell search path ###"
+    echo "$PATH"
+  python_setup_script: |
+    # Python deps
+    case $(python V 2>&1) in
+      'Python 2.7'*)
+        # as of 2021-01-05, setuptools 51 and pip 21 have dropped support
+        # for Py 2.7 completely, so we need to use earlier versions to
+        # continue testing
+        pip install --upgrade 'setuptools<=44.1.1' 'pip==20.3.3' ;;
+      'Python 3.'*)
+        pip install --upgrade 'setuptools>=21' 'pip>=9.0.0' ;;
+    esac
+
+
+task:
+  <<: *CHECKOUT_TASK_TEMPLATE
+  matrix:
+    - name: Unit Tests (Python 2.7)
+      container:
+        image: python:2.7
+    - name: Unit Tests (Python 3.6)
+      container:
+        image: python:3.6
+    - name: Unit Tests (Python 3.7)
+      container:
+        image: python:3.7
+    - name: Unit Tests (Python 3.8)
+      container:
+        image: python:3.8
+    - name: Unit Tests (Python 3.9)
+      container:
+        image: python:3.9
+  env:
+    BOTO_CONFIG: '/dev/null'
+  os_dependencies_script: |
+    # GNU `time` is required by ShellLrms during initialization, hence even
+    # for testing.  The `python` official Docker image is built on top of
+    # Debian, so use `apt` to install it.
+    apt-get update
+    apt-get install -y sudo time
+  install_script: |
+    pip install -e '.[daemon,ec2,openstack,optimizer]'
+  test_script: |
+    set -e
+    pip install 'pytest>=4.1' 'pytest-cov' 'pytest-coverage' 'mock' 'tox' 'codecov'
+    # run tests as a non-privileged user, otherwise access control tests fail
+    chown -R bin "$CIRRUS_WORKING_DIR"
+    export HOME="$CIRRUS_WORKING_DIR"
+    sudo -E -u bin pytest -v --cov=gc3libs --cov-branch --ignore install.py
+    sudo -E -u bin codecov
+    echo "OK: GC3Pie's unit tests successfully performed."
+    exit 0
+
+
+task:
+  matrix:
+    - compute_engine_instance:
+        image_project: centos-cloud
+        image: family/centos-7
+      name: Install Script Tests (CentOS 7)
+    - compute_engine_instance:
+        image_project: centos-cloud
+        image: family/centos-8
+      name: Install Script Tests (CentOS 8)
+      os_dependencies_script: |
+        yum install python
+    - compute_engine_instance:
+        image_project: debian-cloud
+        image: family/debian-9
+      name: Install Script Tests (Debian 9 "stretch")
+    - compute_engine_instance:
+        image_project: debian-cloud
+        image: family/debian-10
+      name: Install Script Tests (Debian 10 "buster")
+    - compute_engine_instance:
+        image_project: ubuntu-os-cloud
+        image: family/ubuntu-1604
+      name: Install Script Tests (Ubuntu 16.04 "xenial")
+    - compute_engine_instance:
+        image_project: ubuntu-os-cloud
+        image: family/ubuntu-1804
+      name: Install Script Tests (Ubuntu 18.04 "bionic")
+      os_dependencies_script: |
+        apt-get update
+        apt-get install -y python
+    - compute_engine_instance:
+        image_project: ubuntu-os-cloud
+        image: family/ubuntu-2004
+      name: Install Script Tests (Ubuntu 20.04 "focal")
+      os_dependencies_script: |
+        apt-get update
+        apt-get install -y python
+    - compute_engine_instance:
+        image_project: ubuntu-os-cloud
+        image: family/ubuntu-2104
+      name: Install Script Tests (Ubuntu 21.04)
+      os_dependencies_script: |
+        apt-get update
+        apt-get install -y python
+    - macos_instance:
+        image: big-sur-base
+      name: Install Script Tests (MacOSX "Big Sur")
+    - macos_instance:
+        image: catalina-base
+      name: Install Script Tests (MacOSX "Catalina")
+  <<: *CHECKOUT_TASK_TEMPLATE
+  install_script: |
+    python ./install.py --version
+  # Run the install script on multiple platforms
+  test_script: |
+    set -e
+    python ./install.py --development --remove-target-dir --target $PWD/venv --yes
+    . venv/bin/activate
+    gc3utils servers
+    echo "OK: GC3Pie successfully installed."
+    exit 0

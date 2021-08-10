@@ -29,6 +29,10 @@ from builtins import zip
 from builtins import str
 
 # stdlib imports
+try:
+    from collections.abc import Mapping  # Python 3.3+
+except ImportError:
+    from collections import Mapping
 from collections import defaultdict
 import os
 import re
@@ -38,6 +42,13 @@ if sys.version_info[0] == 2:
     from ConfigParser import Error as ConfigParserError
     def make_config_parser():
         return SafeConfigParser()
+    # a `SafeConfigParser` cannot easily be cast to Python dict
+    def _cp2dict(parser):
+        result = {}
+        for sectname in parser.sections():
+            result[sectname] = dict(parser.items(sectname))
+        result['DEFAULT'] = parser.defaults()
+        return result
     def read_config_lines(parser, stream, source):
         return parser.readfp(stream, source)
 else:
@@ -49,6 +60,8 @@ else:
     # `readfp()` is deprecated since Py3.2
     def read_config_lines(parser, stream, source):
         return parser.read_file(stream, source)
+    def _cp2dict(parser):
+        return dict(parser)
 
 # GC3Pie imports
 import gc3libs
@@ -166,11 +179,11 @@ class Configuration(gc3libs.utils.Struct):
 
     The constructor takes a list of files to load (`locations`), a python
     dictionary of sections with key value pairs (`cfg_dict`), and a list of
-    key=value pairs to provide defaults for the configuration. All three
+    *key=value* pairs to provide defaults for the configuration. All three
     arguments are optional and can be omitted, resulting in a configuration
     containing only GC3Pie default values. If `locations` is not empty but
     there are no config files at those locations, the constructor will raise
-    a `NoAccessibleConfigurationFile` exception if cfg_dict is None.
+    a `NoAccessibleConfigurationFile` exception if `cfg_dict` is None.
 
     Example 1: initialization from config file::
 
@@ -190,8 +203,8 @@ class Configuration(gc3libs.utils.Struct):
       >>> cfg = Configuration(cfg_dict=d)
       >>> cfg.debug
       0
-      >>> cfg.auths["ssh_bob"]["type"]
-      'ssh'
+      >>> cfg.auths["ssh_bob"]["type"] == 'ssh'
+      True
 
     Example 3: initialization from key=value list::
 
@@ -233,7 +246,7 @@ class Configuration(gc3libs.utils.Struct):
 
     """
 
-    def __init__(self, *locations, cfg_dict=None, **extra_args):
+    def __init__(self, *locations, **extra_args):
         self._auth_factory = None
 
         # these fields are required
@@ -250,6 +263,7 @@ class Configuration(gc3libs.utils.Struct):
         # save the list of (valid) config files
         self.cfgfiles = []
 
+        cfg_dict = extra_args.pop('cfg_dict', None)
         if cfg_dict:
             self.construct_from_cfg_dict(cfg_dict)
 
@@ -268,11 +282,13 @@ class Configuration(gc3libs.utils.Struct):
 
     def construct_from_cfg_dict(self, cfg_dict, filename=None):
         """
-        Create a Configuration object from the settings defined in
-        a Python dictionary, `cfg_dict`.
+        Create a Configuration object from the settings defined in `cfg_dict`.
 
-        The dictionary must follow the same general format as a configuration file.
-        See below for an example of a configuration file converted to a dictionary.
+        Parameter `cfg_dict` may either be a Python dictionary, having the
+        same general format as a configuration file, or a `ConfigParser`
+        instance into which an INI-format configuration file has been read.
+        See below for an example of a configuration file converted to a
+        dictionary.
 
         :param dict cfg_dict: The Python dictionary to load settings from.
 
@@ -321,6 +337,11 @@ class Configuration(gc3libs.utils.Struct):
             ...     }
             >>>
         """
+        # if `cfg_dict` is a non-iterable ConfigParser (which may happen on Py
+        # 2.7), then convert it to a Python `dict` instance
+        if not isinstance(cfg_dict, Mapping):
+            cfg_dict = _cp2dict(cfg_dict)
+
         defaults, resources, auths = self._split(cfg_dict, filename)
         for name, values in resources.items():
             self.resources[name].update(values)
@@ -394,7 +415,7 @@ class Configuration(gc3libs.utils.Struct):
         literally and an error is raised if the file cannot be read
         for whatever reason.
 
-        Any parameter which is set in the configuration files
+        Any parameter which is set in the configuration files'
         ``[DEFAULT]`` section, and whose name does not start with
         underscore (``_``) defines an attribute in the current
         `Configuration`.
@@ -413,7 +434,7 @@ class Configuration(gc3libs.utils.Struct):
             filename)
         with open(filename, 'r') as stream:
             parser = self._parse(stream, filename)
-        self.construct_from_cfg_dict(dict(parser), filename)
+        self.construct_from_cfg_dict(parser, filename)
 
     def _parse(self, stream, filename=None):
         """
@@ -436,7 +457,7 @@ class Configuration(gc3libs.utils.Struct):
                 except AttributeError:
                     filename = repr(stream)
             raise gc3libs.exceptions.ConfigurationError(
-                "Configuration file '%s' is unreadable or malformed: %s: %s"
+                "Configuration file `%s` is unreadable or malformed: %s: %s"
                 % (filename, err.__class__.__name__, err))
 
         return parser

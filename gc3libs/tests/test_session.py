@@ -2,11 +2,12 @@
 #
 """
 """
+# Copyright (C) 2021              Google LLC.
 # Copyright (C) 2012, 2015, 2018  University of Zurich. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -278,8 +279,8 @@ class StubForSqlSession(TestSession):
     def test_sql_store(self):
         jobid = self.sess.save(_PStruct(a=1, b='foo'))
         self.sess.flush()
-        q = (sql.select([self.sess.store.t_store.c.id])
-             .where(self.sess.store.t_store.c.id == jobid))
+        q = (sql.select([self.sess.store._tables.c.id])
+             .where(self.sess.store._tables.c.id == jobid))
         conn = self.sess.store._engine.connect()
         results = conn.execute(q)
         rows = results.fetchall()

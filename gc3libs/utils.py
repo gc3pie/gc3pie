@@ -287,21 +287,21 @@ def check_file_access(path, mode, exception=RuntimeError, isdir=False):
 
     If the test succeeds, `True` is returned::
 
-      >>> check_file_access('/bin/cat', os.F_OK)
+      >>> check_file_access('/bin/sh', os.F_OK)
       True
-      >>> check_file_access('/bin/cat', os.R_OK)
+      >>> check_file_access('/bin/sh', os.R_OK)
       True
-      >>> check_file_access('/bin/cat', os.X_OK)
+      >>> check_file_access('/bin/sh', os.X_OK)
       True
       >>> check_file_access('/tmp', os.X_OK)
       True
 
     However, if the test fails, then an exception is raised::
 
-      >>> check_file_access('/bin/cat', os.W_OK)
+      >>> check_file_access('/proc/version', os.W_OK)
       Traceback (most recent call last):
         ...
-      RuntimeError: Cannot write to file '/bin/cat'.
+      RuntimeError: Cannot write to file '/proc/version'.
 
     If the optional argument `isdir` is `True`, then additionally test
     that `path` points to a directory inode::
@@ -309,10 +309,10 @@ def check_file_access(path, mode, exception=RuntimeError, isdir=False):
       >>> check_file_access('/tmp', os.F_OK, isdir=True)
       True
 
-      >>> check_file_access('/bin/cat', os.F_OK, isdir=True)
+      >>> check_file_access('/bin/sh', os.F_OK, isdir=True)
       Traceback (most recent call last):
         ...
-      RuntimeError: Expected '/bin/cat' to be a directory, but it's not.
+      RuntimeError: Expected '/bin/sh' to be a directory, but it's not.
     """
     what = ("directory" if isdir else "file")
     if not os.access(path, os.F_OK):

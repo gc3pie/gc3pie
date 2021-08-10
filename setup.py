@@ -162,6 +162,8 @@ setuptools.setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
         "Topic :: Scientific/Engineering :: Chemistry",
@@ -235,7 +237,6 @@ setuptools.setup(
     # Apparently, this list is read from bottom to top...
     tests_require=[
         'tox',
-        'pytest-catchlog',
         'pytest>=4.1',
         'mock',
     ],

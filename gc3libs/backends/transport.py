@@ -476,10 +476,24 @@ class SshTransport(Transport):
         >>> d = dict()
         >>> gen_key = paramiko.RSAKey.generate(bits=4096)
         >>>
-        >>> d["DEFAULT"] = {"debug": 0}
         >>> d["auth/ssh_bob"] = {
-        ... "type": "ssh", "username": "your_ssh_user_name_on_computer_bob",
-        ... "pkey": gen_key, "foo": "5"}
+        ...   "type": "ssh",
+        ...   "username": "your_ssh_user_name_on_computer_bob",
+        ...   "pkey": gen_key,
+        ... }
+        >>> d["resource/bob"] = {
+        ...   "type": "shellcmd",
+        ...   "transport": "ssh",
+        ...   "auth": "ssh_bob",
+        ...   "frontend": "bob.example.org",
+        ...   "override": "yes",
+        ...   "architecture": "x86_64",
+        ...   "max_cores": 2,
+        ...   "max_cores_per_job": 1,
+        ...   # NOTE: these must be strings, cannot use `gc3libs.quantity` types :(
+        ...   "max_memory_per_core": "1 GB",
+        ...   "max_walltime": "1 hour",
+        ... }
         >>> engine = gc3libs.create_engine(cfg_dict=d)
 
         Finally, the two parameters `large_file_threshold` and
