@@ -155,7 +155,7 @@ class LRMS(gc3libs.utils.Struct):
                     self._auth_fn()
                 except Exception as err:
                     # log error and disable resource - if the "*Auth"
-                    # object cannot be instanciated, there is not much
+                    # object cannot be instantiated, there is not much
                     # we can do...
                     gc3libs.log.warning(
                         "Problems initializing authentication backend"

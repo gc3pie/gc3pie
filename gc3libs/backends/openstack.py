@@ -121,7 +121,7 @@ class OpenStackLrms(LRMS):
                  instance_type=None, auth=None,
                  vm_pool_max_size=None, user_data=None,
                  vm_os_overhead=gc3libs.defaults.VM_OS_OVERHEAD,
-                 # extra args are used to instanciate "sub-resources"
+                 # extra args are used to instantiate "sub-resources"
                  **extra_args):
 
         # Note: this creates attributes from key/value pairs given in the
@@ -434,7 +434,7 @@ class OpenStackLrms(LRMS):
             # check this first
             except paramiko.PasswordRequiredException:
                 gc3libs.log.warning(
-                    "Key %s is encripted with a password, so we cannot check"
+                    "Key %s is encrypted with a password, so we cannot check"
                     " if it matches the remote keypair (maybe you should start"
                     " `ssh-agent`?). Continuing without consistency check with"
                     " remote fingerprint.", keyfile)
@@ -603,7 +603,7 @@ class OpenStackLrms(LRMS):
         """
         Return the "best" instance_type (aka flavor) for the task.
 
-        This method will always returns an instance_type that accomodates the
+        This method will always returns an instance_type that accommodates the
         task's requirements. Preference will be given, in order, to:
 
         1) ``<application>_instance_type configuration`` option

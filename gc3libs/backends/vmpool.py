@@ -218,7 +218,7 @@ class VMPool(object):
             except UnrecoverableError as ex:
                 gc3libs.log.warning(
                     "Cloud resource `%s`: ignoring error while trying to "
-                    "get information on VM wiht id `%s`: %s"
+                    "get information on VM with id `%s`: %s"
                     % (self.name, vm_id, ex))
         return vms
 

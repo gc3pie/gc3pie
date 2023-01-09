@@ -80,7 +80,7 @@ if python_version == (2, 6):
         'pynacl<1.1.0',
         'idna<2.7',
         'paramiko<2.4',
-        # parsedatetime officially dropped supprt for Py 2.6 in version 1.0
+        # parsedatetime officially dropped support for Py 2.6 in version 1.0
         # but the PyPI tags show that it is compatible with Py2.6 until <=1.4
         'parsedatetime<1.5',
         # python-daemon seems to have dropped Py2.6 between v1.6 and v2.0

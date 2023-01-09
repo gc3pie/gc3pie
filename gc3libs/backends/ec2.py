@@ -254,7 +254,7 @@ class EC2Lrms(LRMS):
             all_images = self._conn.get_all_images()
         except boto.exception.EC2ResponseError as ex:
             if ex.status == 404:
-                # NotFound, probaly the endpoint is wrong
+                # NotFound, probably the endpoint is wrong
                 raise RuntimeError(
                     "Unable to contact the EC2 endpoint at `%s`. Please, "
                     "verify that the URL in the configuration file is "
@@ -463,7 +463,7 @@ class EC2Lrms(LRMS):
             # check this first
             except paramiko.PasswordRequiredException:
                 gc3libs.log.warning(
-                    "Key %s is encripted with a password, so we cannot check "
+                    "Key %s is encrypted with a password, so we cannot check "
                     " if it matches the remote keypair (maybe you should"
                     " start `ssh-agent`?). Continuing without consistency"
                     " check with remote fingerprint.", keyfile)

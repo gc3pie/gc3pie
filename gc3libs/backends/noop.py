@@ -81,7 +81,7 @@ class NoOpLrms(LRMS):
     |   Run.State.RUNNING = {
     |     0.50: Run.State.TERMINATING,
     |     0.10: Run.State.STOPPED,
-    |     0.40: Run.State.RUNNING, # implcit, could be omitted
+    |     0.40: Run.State.RUNNING, # implicit, could be omitted
     |   },
     |   Run.State.STOPPED = {
     |     1.00: Run.State.STOPPED,
@@ -198,7 +198,7 @@ class NoOpLrms(LRMS):
         Transition `app`'s status to `Run.State.SUBMITTED` if possible.
 
         Note that this method still checks that `app`'s requirements
-        are compatible with what this resource was instanciated with,
+        are compatible with what this resource was instantiated with,
         and that conversely the resource still has enough free
         cores/memory/etc to host a new application.  So, submission to
         a No-Op resource may still fail!

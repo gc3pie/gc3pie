@@ -80,7 +80,7 @@ class Transport(object):
 
     def execute_command(self, command, detach=False):
         """
-        Execute a command using the available tranport media.
+        Execute a command using the available transport media.
 
         The command's input and output streams are returned as python
         ``file``-like objects representing exit_status, stdout,
@@ -332,7 +332,7 @@ class Transport(object):
                         if (sst.st_size == dst.st_size
                                 and sst.st_mtime <= dst.st_mtime):
                             gc3libs.log.debug(
-                                "Tranport.put(): Remote file '%s'"
+                                "Transport.put(): Remote file '%s'"
                                 " has same size and modification time as"
                                 " local file '%s' from host '%s':"
                                 " NOT overwriting it.",
@@ -709,7 +709,7 @@ class SshTransport(Transport):
                     if not os.path.isfile(self.keyfile):
                         # but the key does not exists.
                         # Note that in this case we should have
-                        # received an IOError excepetion...
+                        # received an IOError exception...
                         gc3libs.log.error(
                             "Key file %s not found. Please check your ssh "
                             "configuration file ~/.ssh/config", self.keyfile)
@@ -968,7 +968,7 @@ class SshTransport(Transport):
                               % (path, self.remote_frontend))
             # Note: At the moment rmdir does not work as expected
             # self.sftp.rmdir(path)
-            # easy workaround: use SSHClient to issue an rm -rf comamnd
+            # easy workaround: use SSHClient to issue an rm -rf command
             _command = "rm -rf '%s'" % path
             exit_code, stdout, stderr = self.execute_command(_command)
             if exit_code != 0:

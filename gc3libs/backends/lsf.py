@@ -519,7 +519,7 @@ class LsfLrms(batch.BatchSystem):
         Guess the most likely length of the initial run of spaces in
         continuation lines in `bjobs` output.
 
-        The euristics is rather crude: we count how many spaces are at
+        The heuristics is rather crude: we count how many spaces are at
         the beginning of each line, and take the value with most
         occurrences.
 

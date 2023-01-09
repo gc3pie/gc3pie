@@ -6,7 +6,7 @@
 ** DONE rename `DifferntialEvolutionSequential` not to suggest it's a `SequentialTaskCollection`
 ** DONE rename the `best*` variables because they're too similar in names
 ** DONE `max_n_resample` should not be hard-coded
-** DONE use `raise NotImplementedError` instead of `pass` in the base class (unless `pass` is a reasoable default implementation)
+** DONE use `raise NotImplementedError` instead of `pass` in the base class (unless `pass` is a reasonable default implementation)
 ** DONE move the "generic" code from DifferentialEvolutionAlgorithm into `EvolutionaryAlgorithm`
 ** DONE use a `strategy` enum (`gc3libs.utils.Enum`) to collect all strategies
 ** DONE credit the DiffEvo website for the description of strategies?

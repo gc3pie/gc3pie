@@ -832,7 +832,7 @@ architecture = x86_64
 
 
 def test_additional_backend():
-    """Test instanciating a non-std backend."""
+    """Test instantiating a non-std backend."""
     tmpfile = _setup_config_file("""
 [resource/test]
 type = noop
@@ -938,7 +938,7 @@ def test_construct_from_dict():
 def test_constructor_param_priority():
     """
     Check that parameters defined in different sources
-    (files, dictionary, defaults) are prioritized / overriden in
+    (files, dictionary, defaults) are prioritized / overridden in
     the correct order.
     """
     cfg_file = _setup_config_file("""
@@ -977,7 +977,7 @@ architecture = x86_64
 
 
 def test_multiple_instanciation(num_resources=3):
-    """Check that multiple resources of the same type can be instanciated."""
+    """Check that multiple resources of the same type can be instantiated."""
     cfg = gc3libs.config.Configuration()
     for n in range(num_resources):
         name = ('test%d' % (n+1))
@@ -1035,7 +1035,7 @@ large_file_chunk_size = 200 MB
 
 
 def test_override_config_file_location():
-    """Check that config file location is overriden by env var GC3PIE_CONF"""
+    """Check that config file location is overridden by env var GC3PIE_CONF"""
     tmpfile = _setup_config_file("""
 [resource/test]
 type = shellcmd
@@ -1069,7 +1069,7 @@ override = False
 
 
 def test_override_logging_config_location():
-    """Check that logging config file location is overriden by env var GC3PIE_CONF"""
+    """Check that logging config file location is overridden by env var GC3PIE_CONF"""
     gc3pie_conf_orig = os.environ.get('GC3PIE_CONF')
     with temporary_directory() as tmpdir:
         # create config file

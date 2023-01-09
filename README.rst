@@ -12,11 +12,11 @@
 GC3Pie is a python package for executing computational workflows
 consisting of tasks with complex inter-dependencies. GC3Pie accomplishes
 this by defining a run-time task list in which a task can only be
-executed once all upstream task dependencies have been successfullly
+executed once all upstream task dependencies have been successfully
 completed. In contrast to other workflow managers, GC3Pie accplications
 are written in python and not a markup language. The advantage is that
 this makes it trivial to write highly complex workflows. GC3Pies roots
-are in shared-nothing achitectures (server-less for example) and can be
+are in shared-nothing architectures (server-less for example) and can be
 configured to use backends such as batch clusters or clouds.
 
 GC3Pie is a suite of Python classes (and command-line tools built
