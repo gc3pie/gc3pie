@@ -1086,7 +1086,7 @@ class LocalTransport(Transport):
                 status = fd.readline().split(" ")[2]
                 fd.close()
                 if status in 'RSDZTW':
-                    # process still runing
+                    # process still running
                     return 1
                 else:
                     # unknown state

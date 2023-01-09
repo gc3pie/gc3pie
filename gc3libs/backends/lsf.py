@@ -776,7 +776,7 @@ class LsfLrms(batch.BatchSystem):
             # bjobs output format:
             # JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME  # noqa
             _command = ('%s -u all -w' % self._bjobs)
-            log.debug("Runing `%s`... ", _command)
+            log.debug("Running `%s`... ", _command)
             exit_code, stdout, stderr = \
                 self.transport.execute_command(_command)
             if exit_code != 0:
@@ -793,7 +793,7 @@ class LsfLrms(batch.BatchSystem):
             else:
                 bjobs_output = []
 
-            # user runing/queued
+            # user running/queued
             used_cores = 0
             self.queued = 0
             self.user_queued = 0

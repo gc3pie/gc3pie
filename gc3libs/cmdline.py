@@ -2467,7 +2467,7 @@ Run `help CMD` to get help on command CMD.
                        metavar='PATH', default=os.getcwd(),
                        help=("Store session information and output files"
                              " in the directory pointed to by PATH."
-                             " Ignored when runing in foreground."
+                             " Ignored when running in foreground."
                              " Default: %(default)s"))
 
         self.add_param('--listen', default="localhost:0", metavar="IP_ADDR",

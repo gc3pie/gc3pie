@@ -1021,7 +1021,7 @@ class OpenStackLrms(LRMS):
                     do_log=True)
 
         # If we reached this point, we are waiting for a VM to be
-        # ready, so delay the submission until we wither can submit to
+        # ready, so delay the submission until we whether can submit to
         # one of the available resources or until all the VMs are
         # ready.
         gc3libs.log.debug(
