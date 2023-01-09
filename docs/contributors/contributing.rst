@@ -212,7 +212,7 @@ remember:
   the tested code. (*Debugging is twice as hard as writing the code in
   the first place.*,  Brian W. Kernighan and P. J. Plauger)
 
-* Write multiple indipendent tests to test different possible behavior
+* Write multiple independent tests to test different possible behavior
   and/or different methods of a class.
 
 * Tests should cover methods and functions, but also specific use cases.
@@ -433,7 +433,7 @@ procedures:
   before you commit!
 
 Docstrings are written in reStructuredText_ format.  To be able to
-cross-reference between differen objects in the documentation, you
+cross-reference between different objects in the documentation, you
 should be familiar with `Sphinx domains`_ in general and the `Python
 domain`_ in particular.
 

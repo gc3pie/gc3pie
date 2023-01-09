@@ -860,7 +860,7 @@ class ShellcmdLrms(LRMS):
         """
         Get information on total resources from the files stored in
         `self.resource_dir`. It then returns a dictionary {PID: {key:
-        values}} with informations for each job which is associated to
+        values}} with information for each job which is associated to
         a running process.
         """
         self.transport.connect()
@@ -1670,7 +1670,7 @@ class ShellcmdLrms(LRMS):
             else:
                 acctinfo[name] = conv(v)
 
-        # apprently GNU time does not report the total CPU time, used
+        # apparently GNU time does not report the total CPU time, used
         # so compute it here
         try:
             acctinfo['used_cpu_time'] = (

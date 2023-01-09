@@ -44,7 +44,7 @@ def runctx(args):
     parser.add_argument('inputcsv', metavar='I',
                         help='location of input .csv file.')
     parser.add_argument('--ctx', dest='ctx', action='store', default=None,
-                        help='Alterantive path to ctx binay (default: None)')
+                        help='Alterantive path to ctx binary (default: None)')
 
     arguments = parser.parse_args(args)
 

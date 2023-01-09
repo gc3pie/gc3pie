@@ -611,7 +611,7 @@ class BatchSystem(LRMS):
         ]:
             cmd = cmd_fn(job)
             # `._secondary_acct_command` returns ``None`` if no
-            # "secondary" accouting method is defined -- skip to next
+            # "secondary" accounting method is defined -- skip to next
             # iteration, if any
             if cmd is None:
                 continue

@@ -29,7 +29,7 @@ import sys
 
 # since we do not (yet) know what version of Python this script is
 # running on, we can only use a very restricted subset of Python, in
-# order to stay comaptible with the broadest range of version:
+# order to stay compatible with the broadest range of version:
 #
 # - use `sys.hexversion` since it's there since 1.5.2
 # - use `sys.stdout.write()` instead of `print()` since it did not
